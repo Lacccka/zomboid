@@ -3,6 +3,5 @@ id=LaccckaB4220Compat
 author=Lacccka
 description=Compatibility fixes for MFS, SVU3/TsarLib, PZK VLC, zRe, Bandits, Lifestyle, Aegis Panel, and Federal Ranger's Chimera.
 modversion=1.0.0
-versionMin=42.20
-loadafter=\AP,\Bandits2,\Federal_Rangers_Chimera,\LifestyleHobbies,\ModernFirearmsSystem,\MFS_community_fix,\PzkVanillaPlusCarPack,\StandardizedVehicleUpgrades3Core,\tsarslib,\zReFRAMEWORK
-
+versionMin=42.20.0
+loadafter=\AP,\Bandits2,\Federal_Rangers_Chimera,\GridInventory,\LifestyleHobbies,\ModernFirearmsSystem,\MFS_community_fix,\PzkVanillaPlusCarPack,\StandardizedVehicleUpgrades3Core,\tsarslib,\zReFRAMEWORK
