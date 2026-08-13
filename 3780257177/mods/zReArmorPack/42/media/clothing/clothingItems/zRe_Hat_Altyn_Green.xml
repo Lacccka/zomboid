@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>static\Hat\M_zRe_Hat_Altyn</m_MaleModel>
+	<m_FemaleModel>static\Hat\F_zRe_Hat_Altyn</m_FemaleModel>
+	<m_GUID>aeebea10-b7f1-48da-909b-a65098ac03d1</m_GUID>
+	<m_Static>true</m_Static>
+	<m_AllowRandomHue>false</m_AllowRandomHue>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone>Bip01_Head</m_AttachBone>
+	<m_HatCategory>nohairnobeard</m_HatCategory>
+	<m_MasksFolder>media/textures/Clothes/Hat/Masks</m_MasksFolder>
+	<textureChoices>clothes\Hat\zRe_Hat_Altyn-Green</textureChoices>
+</clothingItem>

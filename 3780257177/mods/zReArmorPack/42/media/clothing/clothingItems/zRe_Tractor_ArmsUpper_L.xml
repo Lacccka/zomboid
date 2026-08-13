@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>Skinned\ArmorParts\M_zRe_ArmsProtectionUpper_Tractor_Left_ALT</m_MaleModel>
+	<m_AltMaleModel>Skinned\ArmorParts\M_zRe_ArmsProtectionUpper_Tractor_Left</m_AltMaleModel>
+	<m_FemaleModel>Skinned\ArmorParts\F_zRe_ArmsProtectionUpper_Tractor_Left_ALT</m_FemaleModel>
+	<m_AltFemaleModel>Skinned\ArmorParts\F_zRe_ArmsProtectionUpper_Tractor_Left</m_AltFemaleModel>
+	<m_GUID>628cba0b-13e0-4230-9484-3d7ce827e086</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+	<textureChoices>Clothes\ArmorParts\zRe_ArmsProtectionUpper_Tractor</textureChoices>
+	<m_SpawnWith>6e5e555b-56ef-420a-ae47-74575e19da27</m_SpawnWith>
+</clothingItem>

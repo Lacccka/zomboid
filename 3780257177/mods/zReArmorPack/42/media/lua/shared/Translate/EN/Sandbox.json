@@ -1,0 +1,9 @@
+{
+    "Sandbox_zReArmorPack_general": "zRe ARMOR PACK",
+    "Sandbox_zRePA_ChanceMillitary": "PALADIN Zombie. Spawn weight:",
+    "Sandbox_zRePA_ChanceMillitary_tooltip": "It is recommended to keep the number no lower than the default value.<br> Setting to 0 disables zombie spawn.<br> Regular zombies range from 2000+.<br> For example, the Golfer zombie (quite rare) has a weight of 2000, while the Park Ranger has 10000.",
+    "Sandbox_zRePA_ChanceMilEXO": "PALADIN Zombie in Exoskeleton. Spawn weight:",
+    "Sandbox_zRePA_ChanceMilEXO_tooltip": "It is recommended to keep the number no lower than the default value.<br> Setting to 0 disables zombie spawn.<br> Regular zombies range from 2000+.<br> For example, the Golfer zombie (quite rare) has a weight of 2000, while the Park Ranger has 10000.",
+    "Sandbox_zRePA_ChanceTractor": "TRACTOR Zombie. Spawn weight:",
+    "Sandbox_zRePA_ChanceTractor_tooltip": "It is recommended to keep the number no lower than the default value.<br> Setting to 0 disables zombie spawn.<br> Regular zombies range from 2000+.<br> For example, the Golfer zombie (quite rare) has a weight of 2000, while the Park Ranger has 10000."
+}

@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>skinned\BulletVest\m_zRe_Interceptor_s</m_MaleModel>
+	<m_FemaleModel>skinned\BulletVest\f_zRe_Interceptor_s</m_FemaleModel>
+	<m_GUID>a6b0b5a2-e59c-4f40-9993-01f9f6e1b511</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+	<textureChoices>clothes\BulletVest\zRe_Interceptor_Armor2</textureChoices>
+	</clothingItem>

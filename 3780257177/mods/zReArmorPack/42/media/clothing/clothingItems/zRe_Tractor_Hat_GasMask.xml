@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>static\Hat\M_zRe_GasMask_Tractor</m_MaleModel>
+	<m_FemaleModel>static\Hat\F_zRe_GasMask_Tractor</m_FemaleModel>
+	<m_GUID>c4566421-c348-4d38-8531-bcdd428749ad</m_GUID>
+	<m_Static>true</m_Static>
+	<m_AllowRandomHue>false</m_AllowRandomHue>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone>Bip01_Head</m_AttachBone>
+	<m_HatCategory>nobeard</m_HatCategory>
+	<m_MasksFolder>media/textures/Clothes/Hat/Masks</m_MasksFolder>
+	<textureChoices>clothes\hat\zRe_GasMask_Tractor</textureChoices>
+</clothingItem>

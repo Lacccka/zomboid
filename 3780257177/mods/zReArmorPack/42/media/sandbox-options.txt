@@ -1,0 +1,19 @@
+VERSION = 1,
+
+option zRePA.ChanceMillitary
+{
+	type = integer, min = 0, max = 30000, default = 20,
+	page = zReArmorPack_general, translation = zRePA_ChanceMillitary,
+}
+
+option zRePA.ChanceMilEXO
+{
+	type = integer, min = 0, max = 30000, default = 10,
+	page = zReArmorPack_general, translation = zRePA_ChanceMilEXO,
+}
+
+option zRePA.ChanceTractor
+{
+	type = integer, min = 0, max = 30000, default = 10,
+	page = zReArmorPack_general, translation = zRePA_ChanceTractor,
+}

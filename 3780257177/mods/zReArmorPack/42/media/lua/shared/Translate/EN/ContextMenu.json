@@ -1,0 +1,10 @@
+{
+    "ContextMenu_UseStraps": "With vest",
+    "ContextMenu_RemoveStraps": "Pouches only",
+    "ContextMenu_zRe_Interceptor_Pouches": "Pouches only",
+    "ContextMenu_zRe_Interceptor_Pouches_Straps": "With vest",
+    "ContextMenu_Interceptor_Pouches": "Pouches only",
+    "ContextMenu_Interceptor_Pouches_Straps": "With vest",
+    "ContextMenu_zRe_Visor_ON": "Lower visor",
+    "ContextMenu_zRe_Visor_OFF": "Raise visor"
+}

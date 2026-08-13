@@ -1,0 +1,15 @@
+name=zRe ARMOR PACK
+id=zReArmorPackBYK42S
+
+require=\zReFRAMEWORK
+loadModAfter=\zReFRAMEWORK
+
+description=Based on KP Armory, USMC Armory, S.T.A.L.K.E.R, COD MW and Another...
+
+modversion=zombie RE engine
+versionMin=42.20
+
+author=kERHUS, Krolldar
+
+icon=icon.png
+poster=preview.png

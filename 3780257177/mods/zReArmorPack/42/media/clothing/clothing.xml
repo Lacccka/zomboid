@@ -1,0 +1,1115 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<outfitManager>
+<!-- ********************************************
+
+		ПРЕСЕТЫ ОДЕЖДЫ ЗОМБИ
+		
+	GUID одежды брать в fileGuidTable.xml
+	probablility шанс на появление 
+	Пресеты зедов - NAME!
+	Шансы на спавн зомби добавлять в media/lua/shared/NPCs
+
+************************************************ -->
+<!-- ******* ZReMod by kERHUS  ******* -->
+<!-- ********** МИЛИТАРИСТЫ ********** -->
+<!-- ******* ZReMod by kERHUS  ******* -->
+
+			<!-- MALE OUTFIT -->
+
+<m_MaleOutfits>
+		<m_Name>zRe_Military_1</m_Name>
+		<m_Guid>09d48f2d-b744-44d1-8bb7-adfcbc0c4188</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<probability>0.3</probability>
+			<itemGUID>0d0e4482-5dd9-42e7-a8fc-f519967e9607</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>6edb541e-9a63-4add-9042-26e77621ec08</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>52082347-adc3-47cf-a46f-b22d842e8663</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>f1fe8db4-5f80-4f5f-88a7-bface1df5d9c</itemGUID>
+		</m_items>
+		<m_items>	<!-- Разгрузка -->
+			<probability>0.3</probability>
+			<itemGUID>636d083d-588e-46a9-a3a2-fe922f5d7f27</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<probability>0.3</probability>
+			<itemGUID>739ab7e8-14a7-4251-bdea-e7c1d1c60185</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<probability>0.3</probability>
+			<itemGUID>86c9e993-369b-4b93-ac0f-3dc4af4c1022</itemGUID>
+		</m_items>
+		<m_items>	<!-- Балаклава -->
+			<probability>0.4</probability>
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Защитные очки -->
+			<probability>0.4</probability>
+			<itemGUID>8e0c2b8f-237d-4326-93de-6bc1d252bc25</itemGUID>
+		</m_items>
+		<m_items>	<!-- Респиратор -->
+			<probability>0.4</probability>
+			<itemGUID>300c28a0-d105-462b-a870-9ddb908852da</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<probability>0.6</probability>
+			<itemGUID>d2dae8fa-637a-4495-b1bd-cd1c2619b9b6</itemGUID>
+		</m_items>
+			</m_MaleOutfits>
+
+<m_MaleOutfits>
+		<m_Name>zRe_Military_2</m_Name>
+		<m_Guid>77d0ca33-c2d1-4e68-b9ad-38283444e932</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<probability>0.3</probability>
+			<itemGUID>9f1f947f-4d36-4081-9648-e7247e91bb62</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>75bacc4d-b8dc-43a6-a0a3-2e0cef743f98</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>cb3f8484-7424-4bbe-a203-437d9bf9dd72</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>a6b0b5a2-e59c-4f40-9993-01f9f6e1b511</itemGUID>
+		</m_items>
+		<m_items>	<!-- Разгрузка -->
+			<probability>0.3</probability>
+			<itemGUID>636d083d-588e-46a9-a3a2-fe922f5d7f27</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<probability>0.3</probability>
+			<itemGUID>8a337421-3c29-41ac-ba53-06bf09d11e44</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<probability>0.3</probability>
+			<itemGUID>1a78aa33-aa94-438f-86e3-76d82f29e6c8</itemGUID>
+		</m_items>
+		<m_items>	<!-- Балаклава -->
+			<probability>0.4</probability>
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Защитные очки -->
+			<probability>0.4</probability>
+			<itemGUID>8e0c2b8f-237d-4326-93de-6bc1d252bc25</itemGUID>
+		</m_items>
+		<m_items>	<!-- Респиратор -->
+			<probability>0.4</probability>
+			<itemGUID>300c28a0-d105-462b-a870-9ddb908852da</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<probability>0.6</probability>
+			<itemGUID>d2dae8fa-637a-4495-b1bd-cd1c2619b9b6</itemGUID>
+		</m_items>
+			</m_MaleOutfits>
+
+<m_MaleOutfits>
+		<m_Name>zRe_Military_3</m_Name>
+		<m_Guid>a373ff97-c825-4521-9430-215de7c248ba</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<probability>0.3</probability>
+			<itemGUID>eaae8f63-f59f-4eb8-9411-b9b9e47da0ea</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>5f9ce58c-271b-46b5-87f1-59f2f7bcbc75</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>e17404e5-524f-48ab-a59e-425052efadba</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>15578609-0957-4980-8c71-e102b01685c5</itemGUID>
+		</m_items>
+		<m_items>	<!-- Разгрузка -->
+			<probability>0.3</probability>
+			<itemGUID>636d083d-588e-46a9-a3a2-fe922f5d7f27</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<probability>0.3</probability>
+			<itemGUID>54d569bd-0333-4f6a-87fb-570488c3ef6e</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<probability>0.3</probability>
+			<itemGUID>093ac86e-d09f-464a-8221-309786e3baa1</itemGUID>
+		</m_items>
+		<m_items>	<!-- Балаклава -->
+			<probability>0.4</probability>
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Защитные очки -->
+			<probability>0.4</probability>
+			<itemGUID>8e0c2b8f-237d-4326-93de-6bc1d252bc25</itemGUID>
+		</m_items>
+		<m_items>	<!-- Респиратор -->
+			<probability>0.4</probability>
+			<itemGUID>300c28a0-d105-462b-a870-9ddb908852da</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<probability>0.6</probability>
+			<itemGUID>d2dae8fa-637a-4495-b1bd-cd1c2619b9b6</itemGUID>
+		</m_items>
+			</m_MaleOutfits>	
+
+
+<m_MaleOutfits>
+		<m_Name>zRe_Military_4</m_Name>
+		<m_Guid>fc640015-d000-424f-a57f-4a9e568dfeac</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>165765b1-c1ac-48d7-9129-e80a251d7a69</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>2d2a739a-b9b3-409d-9985-cc9f8f32ccf2</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>d234e3b1-4e68-41b9-a48c-5669a8a52629</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<probability>0.5</probability>
+			<itemGUID>739ab7e8-14a7-4251-bdea-e7c1d1c60185</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<probability>0.8</probability>
+			<itemGUID>d2dae8fa-637a-4495-b1bd-cd1c2619b9b6</itemGUID>
+		</m_items>
+			</m_MaleOutfits>
+
+<m_MaleOutfits>
+		<m_Name>zRe_Military_5</m_Name>
+		<m_Guid>9a9ea378-484a-4dc8-9aa9-b3b89d449b13</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<probability>0.3</probability>
+			<itemGUID>9f1f947f-4d36-4081-9648-e7247e91bb62</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>6b2f45cb-5f75-4af9-bf34-993ca102e533</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>0a009b2c-2a34-49ce-8aea-72b6ca0d7486</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>a6b0b5a2-e59c-4f40-9993-01f9f6e1b511</itemGUID>
+		</m_items>
+		<m_items>	<!-- Разгрузка -->
+			<probability>0.3</probability>
+			<itemGUID>636d083d-588e-46a9-a3a2-fe922f5d7f27</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<probability>0.3</probability>
+			<itemGUID>8a337421-3c29-41ac-ba53-06bf09d11e44</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<probability>0.3</probability>
+			<itemGUID>1a78aa33-aa94-438f-86e3-76d82f29e6c8</itemGUID>
+		</m_items>
+		<m_items>	<!-- Балаклава -->
+			<probability>0.4</probability>
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Защитные очки -->
+			<probability>0.4</probability>
+			<itemGUID>8e0c2b8f-237d-4326-93de-6bc1d252bc25</itemGUID>
+		</m_items>
+		<m_items>	<!-- Респиратор -->
+			<probability>0.4</probability>
+			<itemGUID>300c28a0-d105-462b-a870-9ddb908852da</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<probability>0.6</probability>
+			<itemGUID>d2dae8fa-637a-4495-b1bd-cd1c2619b9b6</itemGUID>
+		</m_items>
+			</m_MaleOutfits>
+
+<m_MaleOutfits>
+		<m_Name>zRe_Military_6</m_Name>
+		<m_Guid>f89ea630-b283-4212-8c2b-9468847c30ac</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<probability>0.3</probability>
+			<itemGUID>eaae8f63-f59f-4eb8-9411-b9b9e47da0ea</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>0a37352e-dd6c-4f4f-817d-b4fa3fb46702</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>f399013b-bbfc-433e-b45a-f834e9051b70</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>15578609-0957-4980-8c71-e102b01685c5</itemGUID>
+		</m_items>
+		<m_items>	<!-- Разгрузка -->
+			<probability>0.3</probability>
+			<itemGUID>636d083d-588e-46a9-a3a2-fe922f5d7f27</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<probability>0.3</probability>
+			<itemGUID>54d569bd-0333-4f6a-87fb-570488c3ef6e</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<probability>0.3</probability>
+			<itemGUID>093ac86e-d09f-464a-8221-309786e3baa1</itemGUID>
+		</m_items>
+		<m_items>	<!-- Балаклава -->
+			<probability>0.4</probability>
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Защитные очки -->
+			<probability>0.4</probability>
+			<itemGUID>8e0c2b8f-237d-4326-93de-6bc1d252bc25</itemGUID>
+		</m_items>
+		<m_items>	<!-- Респиратор -->
+			<probability>0.4</probability>
+			<itemGUID>300c28a0-d105-462b-a870-9ddb908852da</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<probability>0.6</probability>
+			<itemGUID>d2dae8fa-637a-4495-b1bd-cd1c2619b9b6</itemGUID>
+		</m_items>
+			</m_MaleOutfits>
+
+
+<m_MaleOutfits>
+		<m_Name>zRe_Military_exo1</m_Name>
+		<m_Guid>b6ede53c-7053-449b-9bf0-676846f03f9a</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<itemGUID>0d0e4482-5dd9-42e7-a8fc-f519967e9607</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>29f3457a-4a79-4bcd-9410-30d9f7b7d7cf</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>5b706b69-dff0-4168-bd80-c9bb8dd663f9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>95d7e0e1-c65e-4b64-b209-d10b287e12e4</itemGUID>
+		</m_items>
+		<m_items>	<!-- Разгрузка -->
+			<itemGUID>636d083d-588e-46a9-a3a2-fe922f5d7f27</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<itemGUID>739ab7e8-14a7-4251-bdea-e7c1d1c60185</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<itemGUID>86c9e993-369b-4b93-ac0f-3dc4af4c1022</itemGUID>
+		</m_items>
+		<m_items>	<!-- Балаклава -->
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Защитные очки -->
+			<itemGUID>8e0c2b8f-237d-4326-93de-6bc1d252bc25</itemGUID>
+		</m_items>
+		<m_items>	<!-- Респиратор -->
+			<itemGUID>300c28a0-d105-462b-a870-9ddb908852da</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<itemGUID>d2dae8fa-637a-4495-b1bd-cd1c2619b9b6</itemGUID>
+		</m_items>
+		<m_items>	<!-- Части брони, руки верх  -->
+			<itemGUID>e66e31c2-03df-4165-ae27-a8a35fcc412f</itemGUID>
+		</m_items>
+		<m_items>	<!-- Части брони, руки верх  -->
+			<itemGUID>3b74e514-85d6-4ca2-9069-aed3f1dec208</itemGUID>
+		</m_items>
+		<m_items>	<!-- Экзоскелет -->
+			<itemGUID>9ef8fb01-3e88-49d2-8864-7a68f9fcb633</itemGUID>
+		</m_items>
+			</m_MaleOutfits>
+
+<m_MaleOutfits>
+		<m_Name>zRe_Military_exo2</m_Name>
+		<m_Guid>a3bfae04-3bdd-4002-a875-22498b4a8662</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<itemGUID>9f1f947f-4d36-4081-9648-e7247e91bb62</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>29f3457a-4a79-4bcd-9410-30d9f7b7d7cf</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>5b706b69-dff0-4168-bd80-c9bb8dd663f9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>4190e7a5-afc4-4024-933c-8dc45c5b1130</itemGUID>
+		</m_items>
+		<m_items>	<!-- Разгрузка -->
+			<itemGUID>636d083d-588e-46a9-a3a2-fe922f5d7f27</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<itemGUID>8a337421-3c29-41ac-ba53-06bf09d11e44</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<itemGUID>aeebea10-b7f1-48da-909b-a65098ac03d1</itemGUID>
+		</m_items>
+		<m_items>	<!-- Балаклава -->
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Защитные очки -->
+			<itemGUID>8e0c2b8f-237d-4326-93de-6bc1d252bc25</itemGUID>
+		</m_items>
+		<m_items>	<!-- Респиратор -->
+			<itemGUID>300c28a0-d105-462b-a870-9ddb908852da</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<itemGUID>d2dae8fa-637a-4495-b1bd-cd1c2619b9b6</itemGUID>
+		</m_items>
+		<m_items>	<!-- Части брони, руки верх -->
+			<itemGUID>d0a60905-5526-47b7-9856-6b26d0615289</itemGUID>
+		</m_items>
+		<m_items>	<!-- Части брони, руки верх -->
+			<itemGUID>a3493920-976b-470f-99a2-6d891edcc22f</itemGUID>
+		</m_items>
+		<m_items>	<!-- Экзоскелет -->
+			<itemGUID>9ef8fb01-3e88-49d2-8864-7a68f9fcb633</itemGUID>
+		</m_items>
+			</m_MaleOutfits>
+
+<m_MaleOutfits>
+		<m_Name>zRe_Military_exo3</m_Name>
+		<m_Guid>938a6a95-d770-4922-8e7f-fa4fe61af365</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<itemGUID>eaae8f63-f59f-4eb8-9411-b9b9e47da0ea</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>29f3457a-4a79-4bcd-9410-30d9f7b7d7cf</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>5b706b69-dff0-4168-bd80-c9bb8dd663f9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>35adf3fd-b92a-49b3-bce5-2a41d6a9e7f7</itemGUID>
+		</m_items>
+		<m_items>	<!-- Разгрузка -->
+			<itemGUID>636d083d-588e-46a9-a3a2-fe922f5d7f27</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<itemGUID>54d569bd-0333-4f6a-87fb-570488c3ef6e</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<itemGUID>7d0828f4-cc51-4693-a38f-51db68af1c7c</itemGUID>
+		</m_items>
+		<m_items>	<!-- Балаклава -->
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Защитные очки -->
+			<itemGUID>8e0c2b8f-237d-4326-93de-6bc1d252bc25</itemGUID>
+		</m_items>
+		<m_items>	<!-- Респиратор -->
+			<itemGUID>300c28a0-d105-462b-a870-9ddb908852da</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<itemGUID>d2dae8fa-637a-4495-b1bd-cd1c2619b9b6</itemGUID>
+		</m_items>
+		<m_items>	<!-- Части брони, руки верх -->
+			<itemGUID>af6f88ed-e270-4799-bca3-c8b0dfdf99f8</itemGUID>
+		</m_items>
+		<m_items>	<!-- Части брони, руки верх -->
+			<itemGUID>c7eca8a7-0324-4f50-9e33-6323f07fc24a</itemGUID>
+		</m_items>
+		<m_items>	<!-- Экзоскелет -->
+			<itemGUID>9ef8fb01-3e88-49d2-8864-7a68f9fcb633</itemGUID>
+		</m_items>
+			</m_MaleOutfits>
+
+<m_MaleOutfits>
+		<m_Name>zRe_Military_Tractor</m_Name>
+		<m_Guid>938a6a95-d770-4922-8e7f-fa4fe61af365</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<itemGUID>d25af197-d771-4c8d-83f3-b6bb1c226dea</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>19fdd913-23ac-4f9d-b7d2-e043f3efcd2f</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>d4b3add8-60c1-43a4-bfa7-ec68fd4f61e5</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>bad79355-ae60-4e07-924a-8945e1a466c3</itemGUID>
+		</m_items>
+		<m_items>	<!-- Части брони, руки низ -->
+			<itemGUID>a42959e1-94d3-46ca-82e3-e4816521858d</itemGUID>
+		</m_items>
+			<m_items>
+				<itemGUID>dc4bd101-622e-40f7-a298-2ca443452c65</itemGUID>
+			</m_items>
+		<m_items>	<!-- Части брони, руки верх -->
+			<itemGUID>628cba0b-13e0-4230-9484-3d7ce827e086</itemGUID>
+		</m_items>
+			<m_items>
+				<itemGUID>6e5e555b-56ef-420a-ae47-74575e19da27</itemGUID>
+			</m_items>
+		<m_items>	<!-- Части брони, ноги низ -->
+			<itemGUID>70b2109f-845e-4fda-b928-895d44a70c88</itemGUID>
+		</m_items>
+			<m_items>
+				<itemGUID>3bc55f14-9ffd-457c-9c1d-61990bde100c</itemGUID>
+			</m_items>
+		<m_items>	<!-- Части брони, ноги верх -->
+			<itemGUID>41f4bbb4-4081-45f0-93b5-a40c75f3fdc8</itemGUID>
+		</m_items>
+			<m_items>
+				<itemGUID>76b56a5e-2cf8-49a6-bda7-caa83d33422d</itemGUID>
+			</m_items>
+		<m_items>	<!-- Балаклава -->
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<itemGUID>4ec6258d-afbd-4597-9378-3087fc672139</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<itemGUID>86510d41-3c51-4b81-b64f-0ae7844edfe0</itemGUID>
+		</m_items>
+		<m_items>	<!-- Противогаз -->
+			<itemGUID>c4566421-c348-4d38-8531-bcdd428749ad</itemGUID>
+		</m_items>
+			</m_MaleOutfits>
+
+			<!-- FEMALE OUTFIT -->
+			
+<m_FemaleOutfits>
+		<m_Name>zRe_Military_1</m_Name>
+		<m_Guid>09d48f2d-b744-44d1-8bb7-adfcbc0c4188</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<probability>0.3</probability>
+			<itemGUID>0d0e4482-5dd9-42e7-a8fc-f519967e9607</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>6edb541e-9a63-4add-9042-26e77621ec08</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>52082347-adc3-47cf-a46f-b22d842e8663</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>b3952622-57f1-4d43-9abe-a8a1e2322cd2</itemGUID>
+		</m_items>
+		<m_items>	<!-- Разгрузка -->
+			<probability>0.3</probability>
+			<itemGUID>636d083d-588e-46a9-a3a2-fe922f5d7f27</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<probability>0.3</probability>
+			<itemGUID>739ab7e8-14a7-4251-bdea-e7c1d1c60185</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<probability>0.3</probability>
+			<itemGUID>86c9e993-369b-4b93-ac0f-3dc4af4c1022</itemGUID>
+		</m_items>
+		<m_items>	<!-- Балаклава -->
+			<probability>0.4</probability>
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Защитные очки -->
+			<probability>0.4</probability>
+			<itemGUID>8e0c2b8f-237d-4326-93de-6bc1d252bc25</itemGUID>
+		</m_items>
+		<m_items>	<!-- Респиратор -->
+			<probability>0.4</probability>
+			<itemGUID>300c28a0-d105-462b-a870-9ddb908852da</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<probability>0.6</probability>
+			<itemGUID>e650bd37-434a-4e78-af94-2fa4872d4c26</itemGUID>
+		</m_items>
+			</m_FemaleOutfits>
+
+<m_FemaleOutfits>
+		<m_Name>zRe_Military_2</m_Name>
+		<m_Guid>77d0ca33-c2d1-4e68-b9ad-38283444e932</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<probability>0.3</probability>
+			<itemGUID>9f1f947f-4d36-4081-9648-e7247e91bb62</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>75bacc4d-b8dc-43a6-a0a3-2e0cef743f98</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>cb3f8484-7424-4bbe-a203-437d9bf9dd72</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>4e021a7d-dd1c-4dd9-be65-81e7fe099a4b</itemGUID>
+		</m_items>
+		<m_items>	<!-- Разгрузка -->
+			<probability>0.3</probability>
+			<itemGUID>636d083d-588e-46a9-a3a2-fe922f5d7f27</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<probability>0.3</probability>
+			<itemGUID>8a337421-3c29-41ac-ba53-06bf09d11e44</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<probability>0.3</probability>
+			<itemGUID>1a78aa33-aa94-438f-86e3-76d82f29e6c8</itemGUID>
+		</m_items>
+		<m_items>	<!-- Балаклава -->
+			<probability>0.4</probability>
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Защитные очки -->
+			<probability>0.4</probability>
+			<itemGUID>8e0c2b8f-237d-4326-93de-6bc1d252bc25</itemGUID>
+		</m_items>
+		<m_items>	<!-- Респиратор -->
+			<probability>0.4</probability>
+			<itemGUID>300c28a0-d105-462b-a870-9ddb908852da</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<probability>0.6</probability>
+			<itemGUID>e650bd37-434a-4e78-af94-2fa4872d4c26</itemGUID>
+		</m_items>
+			</m_FemaleOutfits>
+
+<m_FemaleOutfits>
+		<m_Name>zRe_Military_3</m_Name>
+		<m_Guid>a373ff97-c825-4521-9430-215de7c248ba</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<probability>0.3</probability>
+			<itemGUID>eaae8f63-f59f-4eb8-9411-b9b9e47da0ea</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>5f9ce58c-271b-46b5-87f1-59f2f7bcbc75</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>e17404e5-524f-48ab-a59e-425052efadba</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>9b2c6e15-1d96-4fba-b04b-9b77d3c85b35</itemGUID>
+		</m_items>
+		<m_items>	<!-- Разгрузка -->
+			<probability>0.3</probability>
+			<itemGUID>636d083d-588e-46a9-a3a2-fe922f5d7f27</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<probability>0.3</probability>
+			<itemGUID>54d569bd-0333-4f6a-87fb-570488c3ef6e</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<probability>0.3</probability>
+			<itemGUID>093ac86e-d09f-464a-8221-309786e3baa1</itemGUID>
+		</m_items>
+		<m_items>	<!-- Балаклава -->
+			<probability>0.4</probability>
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Защитные очки -->
+			<probability>0.4</probability>
+			<itemGUID>8e0c2b8f-237d-4326-93de-6bc1d252bc25</itemGUID>
+		</m_items>
+		<m_items>	<!-- Респиратор -->
+			<probability>0.4</probability>
+			<itemGUID>300c28a0-d105-462b-a870-9ddb908852da</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<probability>0.6</probability>
+			<itemGUID>e650bd37-434a-4e78-af94-2fa4872d4c26</itemGUID>
+		</m_items>
+			</m_FemaleOutfits>	
+
+
+<m_FemaleOutfits>
+		<m_Name>zRe_Military_4</m_Name>
+		<m_Guid>fc640015-d000-424f-a57f-4a9e568dfeac</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>165765b1-c1ac-48d7-9129-e80a251d7a69</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>2d2a739a-b9b3-409d-9985-cc9f8f32ccf2</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>b3952622-57f1-4d43-9abe-a8a1e2322cd2</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<probability>0.5</probability>
+			<itemGUID>739ab7e8-14a7-4251-bdea-e7c1d1c60185</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<probability>0.8</probability>
+			<itemGUID>e650bd37-434a-4e78-af94-2fa4872d4c26</itemGUID>
+		</m_items>
+			</m_FemaleOutfits>
+
+<m_FemaleOutfits>
+		<m_Name>zRe_Military_5</m_Name>
+		<m_Guid>9a9ea378-484a-4dc8-9aa9-b3b89d449b13</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<probability>0.3</probability>
+			<itemGUID>9f1f947f-4d36-4081-9648-e7247e91bb62</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>6b2f45cb-5f75-4af9-bf34-993ca102e533</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>0a009b2c-2a34-49ce-8aea-72b6ca0d7486</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>4e021a7d-dd1c-4dd9-be65-81e7fe099a4b</itemGUID>
+		</m_items>
+		<m_items>	<!-- Разгрузка -->
+			<probability>0.3</probability>
+			<itemGUID>636d083d-588e-46a9-a3a2-fe922f5d7f27</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<probability>0.3</probability>
+			<itemGUID>8a337421-3c29-41ac-ba53-06bf09d11e44</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<probability>0.3</probability>
+			<itemGUID>1a78aa33-aa94-438f-86e3-76d82f29e6c8</itemGUID>
+		</m_items>
+		<m_items>	<!-- Балаклава -->
+			<probability>0.4</probability>
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Защитные очки -->
+			<probability>0.4</probability>
+			<itemGUID>8e0c2b8f-237d-4326-93de-6bc1d252bc25</itemGUID>
+		</m_items>
+		<m_items>	<!-- Респиратор -->
+			<probability>0.4</probability>
+			<itemGUID>300c28a0-d105-462b-a870-9ddb908852da</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<probability>0.6</probability>
+			<itemGUID>e650bd37-434a-4e78-af94-2fa4872d4c26</itemGUID>
+		</m_items>
+			</m_FemaleOutfits>
+
+<m_FemaleOutfits>
+		<m_Name>zRe_Military_6</m_Name>
+		<m_Guid>f89ea630-b283-4212-8c2b-9468847c30ac</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<probability>0.3</probability>
+			<itemGUID>eaae8f63-f59f-4eb8-9411-b9b9e47da0ea</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>0a37352e-dd6c-4f4f-817d-b4fa3fb46702</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>f399013b-bbfc-433e-b45a-f834e9051b70</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>9b2c6e15-1d96-4fba-b04b-9b77d3c85b35</itemGUID>
+		</m_items>
+		<m_items>	<!-- Разгрузка -->
+			<probability>0.3</probability>
+			<itemGUID>636d083d-588e-46a9-a3a2-fe922f5d7f27</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<probability>0.3</probability>
+			<itemGUID>54d569bd-0333-4f6a-87fb-570488c3ef6e</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<probability>0.3</probability>
+			<itemGUID>093ac86e-d09f-464a-8221-309786e3baa1</itemGUID>
+		</m_items>
+		<m_items>	<!-- Балаклава -->
+			<probability>0.4</probability>
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Защитные очки -->
+			<probability>0.4</probability>
+			<itemGUID>8e0c2b8f-237d-4326-93de-6bc1d252bc25</itemGUID>
+		</m_items>
+		<m_items>	<!-- Респиратор -->
+			<probability>0.4</probability>
+			<itemGUID>300c28a0-d105-462b-a870-9ddb908852da</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<probability>0.6</probability>
+			<itemGUID>e650bd37-434a-4e78-af94-2fa4872d4c26</itemGUID>
+		</m_items>
+			</m_FemaleOutfits>
+
+
+<m_FemaleOutfits>
+		<m_Name>zRe_Military_exo1</m_Name>
+		<m_Guid>b6ede53c-7053-449b-9bf0-676846f03f9a</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<itemGUID>0d0e4482-5dd9-42e7-a8fc-f519967e9607</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>29f3457a-4a79-4bcd-9410-30d9f7b7d7cf</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>5b706b69-dff0-4168-bd80-c9bb8dd663f9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>95d7e0e1-c65e-4b64-b209-d10b287e12e4</itemGUID>
+		</m_items>
+		<m_items>	<!-- Разгрузка -->
+			<itemGUID>636d083d-588e-46a9-a3a2-fe922f5d7f27</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<itemGUID>739ab7e8-14a7-4251-bdea-e7c1d1c60185</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<itemGUID>86c9e993-369b-4b93-ac0f-3dc4af4c1022</itemGUID>
+		</m_items>
+		<m_items>	<!-- Балаклава -->
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Защитные очки -->
+			<itemGUID>8e0c2b8f-237d-4326-93de-6bc1d252bc25</itemGUID>
+		</m_items>
+		<m_items>	<!-- Респиратор -->
+			<itemGUID>300c28a0-d105-462b-a870-9ddb908852da</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<itemGUID>d2dae8fa-637a-4495-b1bd-cd1c2619b9b6</itemGUID>
+		</m_items>
+		<m_items>	<!-- Части брони, руки верх -->
+			<itemGUID>e66e31c2-03df-4165-ae27-a8a35fcc412f</itemGUID>
+		</m_items>
+		<m_items>	<!-- Части брони, руки верх  -->
+			<itemGUID>3b74e514-85d6-4ca2-9069-aed3f1dec208</itemGUID>
+		</m_items>
+		<m_items>	<!-- Экзоскелет -->
+			<itemGUID>9ef8fb01-3e88-49d2-8864-7a68f9fcb633</itemGUID>
+		</m_items>
+			</m_FemaleOutfits>
+
+<m_FemaleOutfits>
+		<m_Name>zRe_Military_exo2</m_Name>
+		<m_Guid>a3bfae04-3bdd-4002-a875-22498b4a8662</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<probability>0.3</probability>
+			<itemGUID>9f1f947f-4d36-4081-9648-e7247e91bb62</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>29f3457a-4a79-4bcd-9410-30d9f7b7d7cf</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>5b706b69-dff0-4168-bd80-c9bb8dd663f9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>4190e7a5-afc4-4024-933c-8dc45c5b1130</itemGUID>
+		</m_items>
+		<m_items>	<!-- Разгрузка -->
+			<itemGUID>636d083d-588e-46a9-a3a2-fe922f5d7f27</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<itemGUID>8a337421-3c29-41ac-ba53-06bf09d11e44</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<itemGUID>aeebea10-b7f1-48da-909b-a65098ac03d1</itemGUID>
+		</m_items>
+		<m_items>	<!-- Балаклава -->
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Защитные очки -->
+			<itemGUID>8e0c2b8f-237d-4326-93de-6bc1d252bc25</itemGUID>
+		</m_items>
+		<m_items>	<!-- Респиратор -->
+			<itemGUID>300c28a0-d105-462b-a870-9ddb908852da</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<itemGUID>d2dae8fa-637a-4495-b1bd-cd1c2619b9b6</itemGUID>
+		</m_items>
+		<m_items>	<!-- Части брони, руки верх -->
+			<itemGUID>d0a60905-5526-47b7-9856-6b26d0615289</itemGUID>
+		</m_items>
+		<m_items>	<!-- Части брони, руки верх -->
+			<itemGUID>a3493920-976b-470f-99a2-6d891edcc22f</itemGUID>
+		</m_items>
+		<m_items>	<!-- Экзоскелет -->
+			<itemGUID>9ef8fb01-3e88-49d2-8864-7a68f9fcb633</itemGUID>
+		</m_items>
+			</m_FemaleOutfits>
+
+<m_FemaleOutfits>
+		<m_Name>zRe_Military_exo3</m_Name>
+		<m_Guid>938a6a95-d770-4922-8e7f-fa4fe61af365</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<probability>0.3</probability>
+			<itemGUID>eaae8f63-f59f-4eb8-9411-b9b9e47da0ea</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>29f3457a-4a79-4bcd-9410-30d9f7b7d7cf</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>5b706b69-dff0-4168-bd80-c9bb8dd663f9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>35adf3fd-b92a-49b3-bce5-2a41d6a9e7f7</itemGUID>
+		</m_items>
+		<m_items>	<!-- Разгрузка -->
+			<itemGUID>636d083d-588e-46a9-a3a2-fe922f5d7f27</itemGUID>
+		</m_items>
+		<m_items>	<!-- Набедренная сумка -->
+			<itemGUID>54d569bd-0333-4f6a-87fb-570488c3ef6e</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<itemGUID>7d0828f4-cc51-4693-a38f-51db68af1c7c</itemGUID>
+		</m_items>
+		<m_items>	<!-- Балаклава -->
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Защитные очки -->
+			<itemGUID>8e0c2b8f-237d-4326-93de-6bc1d252bc25</itemGUID>
+		</m_items>
+		<m_items>	<!-- Респиратор -->
+			<itemGUID>300c28a0-d105-462b-a870-9ddb908852da</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<itemGUID>d2dae8fa-637a-4495-b1bd-cd1c2619b9b6</itemGUID>
+		</m_items>
+		<m_items>	<!-- Части брони, руки верх -->
+			<itemGUID>af6f88ed-e270-4799-bca3-c8b0dfdf99f8</itemGUID>
+		</m_items>
+		<m_items>	<!-- Части брони, руки верх -->
+			<itemGUID>c7eca8a7-0324-4f50-9e33-6323f07fc24a</itemGUID>
+		</m_items>
+		<m_items>	<!-- Экзоскелет -->
+			<itemGUID>9ef8fb01-3e88-49d2-8864-7a68f9fcb633</itemGUID>
+		</m_items>
+			</m_FemaleOutfits>
+
+<m_FemaleOutfits>
+		<m_Name>zRe_Military_Tractor</m_Name>
+		<m_Guid>938a6a95-d770-4922-8e7f-fa4fe61af365</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_AllowTopTint>false</m_AllowTopTint>
+		<m_AllowTShirtDecal>false</m_AllowTShirtDecal>
+		<m_items>	<!-- Сапоги, Army -->
+			<itemGUID>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</itemGUID>
+		</m_items>
+		<m_items>	<!-- Носки -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- Рюкзаки, AlicePack --> 
+			<itemGUID>d25af197-d771-4c8d-83f3-b6bb1c226dea</itemGUID>
+		</m_items>
+		<m_items>	<!-- Куртка -->
+			<itemGUID>19fdd913-23ac-4f9d-b7d2-e043f3efcd2f</itemGUID>
+		</m_items>
+		<m_items>	<!-- Штаны -->
+			<itemGUID>d4b3add8-60c1-43a4-bfa7-ec68fd4f61e5</itemGUID>
+		</m_items>
+		<m_items>	<!-- Бронежилет -->
+			<itemGUID>194220f5-97f0-4eb9-8a2b-b1fb53005ff7</itemGUID>
+		</m_items>
+		<m_items>	<!-- Балаклава -->
+			<itemGUID>abda05ba-4533-4a5f-ab1b-43da940120d9</itemGUID>
+		</m_items>
+		<m_items>	<!-- Перчатки -->
+			<itemGUID>4ec6258d-afbd-4597-9378-3087fc672139</itemGUID>
+		</m_items>
+		<m_items>	<!-- Шлем -->
+			<itemGUID>86510d41-3c51-4b81-b64f-0ae7844edfe0</itemGUID>
+		</m_items>
+		<m_items>	<!-- Противогаз -->
+			<itemGUID>c4566421-c348-4d38-8531-bcdd428749ad</itemGUID>
+		</m_items>
+			</m_FemaleOutfits>
+			
+</outfitManager>
