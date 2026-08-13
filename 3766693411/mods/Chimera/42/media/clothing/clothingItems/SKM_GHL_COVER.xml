@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Static\Clothes\SKM_GHL_COVER.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Static\Clothes\SKM_GHL_COVER.fbx</m_FemaleModel>
+	<m_GUID>5f4c02dd-9f96-47f0-a39f-55718b9bae11</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+		<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+	<textureChoices>GHL/GHL</textureChoices>
+	<textureChoices>GHL/GHL2</textureChoices>
+	<textureChoices>GHL/GHL3</textureChoices>
+	<textureChoices>GHL/GHL4</textureChoices>
+	<textureChoices>GHL/GHL5</textureChoices>
+	<textureChoices>GHL/GHL6</textureChoices>
+	<textureChoices>GHL/GHL7</textureChoices>
+	<textureChoices>GHL/GHL8</textureChoices>
+	<textureChoices>GHL/GHL9</textureChoices>
+	<textureChoices>GHL/GHL10</textureChoices>
+	<textureChoices>GHL/GHL11</textureChoices>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</clothingItem>

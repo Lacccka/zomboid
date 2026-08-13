@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Skinned\Clothes\Operator_PantsMain.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Skinned\Clothes\Operator_PantsMain.fbx</m_FemaleModel>
+	<m_GUID>d25fe2ef-fb88-4e87-be6c-791cfe20447a</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+	<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+
+	<textureChoices>PANTS/T_Pants_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorJ_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorI_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorH_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorG_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorF_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorE_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorD_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorC_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorB_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorA_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoI_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoH_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoG_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoF_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoC_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoA_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoD_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoE_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoB_D</textureChoices>
+
+
+</clothingItem>

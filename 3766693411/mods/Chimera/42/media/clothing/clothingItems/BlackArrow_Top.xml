@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel></m_MaleModel>
+	<m_FemaleModel>media\models_X\Skinned\Clothes\BlackArrow_Top.fbx</m_FemaleModel>
+	<m_GUID>201f66d0-92e7-43c4-877b-cfc9f5439bd5</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+	<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+
+	<textureChoices>V3X/BlackArrow_Shirt1</textureChoices>
+	<textureChoices>V3X/BlackArrow_Shirt2</textureChoices>
+	<textureChoices>V3X/BlackArrow_Shirt3</textureChoices>
+	<textureChoices>V3X/BlackArrow_Shirt4</textureChoices>
+	<textureChoices>V3X/BlackArrow_Shirt5</textureChoices>
+	<textureChoices>V3X/BlackArrow_Shirt6</textureChoices>
+	<textureChoices>V3X/BlackArrow_Shirt_SNW</textureChoices>
+
+	<textureChoices>V3X/BlackArrow_ShirtC1</textureChoices>
+	<textureChoices>V3X/BlackArrow_ShirtC2</textureChoices>
+	<textureChoices>V3X/BlackArrow_ShirtC3</textureChoices>
+	<textureChoices>V3X/BlackArrow_ShirtC4</textureChoices>
+	<textureChoices>V3X/BlackArrow_ShirtC5</textureChoices>
+	<textureChoices>V3X/BlackArrow_ShirtC6</textureChoices>
+	<textureChoices>V3X/BlackArrow_ShirtC7</textureChoices>
+
+	<textureChoices>V3X/BlackArrow_Shirt7</textureChoices>
+	<textureChoices>V3X/BlackArrow_Shirt8</textureChoices>
+
+</clothingItem>

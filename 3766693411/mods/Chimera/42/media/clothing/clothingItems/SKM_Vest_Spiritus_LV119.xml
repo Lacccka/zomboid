@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Skinned\Clothes\SKM_Vest_Spiritus_LV119.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Skinned\Clothes\SKM_Vest_Spiritus_LV119_F.fbx</m_FemaleModel>
+	<m_GUID>b028064a-fe39-4c0e-8a17-ef9b417ec74c</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+		<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+	<textureChoices>SPECIALS/LV119</textureChoices>
+	<textureChoices>SPECIALS/LV119_Coyote_Alt2</textureChoices>
+	<textureChoices>SPECIALS/LV119_Coyote_Urban2</textureChoices>
+	<textureChoices>SPECIALS/LV119_Coyote_Urban</textureChoices>
+	<textureChoices>SPECIALS/LV119_Coyote</textureChoices>
+	<textureChoices>SPECIALS/LV119_CadPat</textureChoices>
+	<textureChoices>SPECIALS/LV119_Woodland</textureChoices>
+	<textureChoices>SPECIALS/LV119_Multicam</textureChoices>
+	<textureChoices>SPECIALS/LV119_J_D</textureChoices>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</clothingItem>

@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Skinned\Clothes\Operator_Mechanix_Gloves_M.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Skinned\Clothes\Operator_Mechanix_Gloves.fbx</m_FemaleModel>
+	<m_GUID>561d0390-1b6a-4ac3-b0f0-c4b4f7b9b763</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+	<m_Shader>basicEffect_AddRed</m_Shader>
+	<m_Masks>4</m_Masks>
+	<m_Masks>6</m_Masks>
+		<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+	<textureChoices>EQUIPMENT/Operator_Mechanix_Gloves6</textureChoices>
+
+
+</clothingItem>
