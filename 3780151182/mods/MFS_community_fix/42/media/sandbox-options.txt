@@ -1,0 +1,9 @@
+VERSION = 1,
+
+option ModernFirearmsSystemSandboxGun._MSR7T_Rifle_Spawn
+{
+    type = boolean,
+    default = true,
+    page = ModernFirearmsSystemSandbox_Gun,
+    translation = ModernFirearmsSystemSandboxGun_MSR7T_Rifle_Spawn,
+}

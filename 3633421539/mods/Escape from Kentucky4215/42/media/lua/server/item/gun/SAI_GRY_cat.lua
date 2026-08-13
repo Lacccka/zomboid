@@ -1,0 +1,43 @@
+require 'Items/ProceduralDistributions'
+require "Items/ItemPicker"
+
+if not SandboxVars.ModernFirearmsSystemSandboxGun._SAI_GRY_cat_Spawn then return end
+
+table.insert(ProceduralDistributions["list"]["GunStoreShelf"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["GunStoreShelf"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["PlankStashGun"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["PlankStashGun"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["FirearmWeapons"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["FirearmWeapons"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["ArmyStorageGuns"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["ArmyStorageGuns"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["GunStoreCounter"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["GunStoreCounter"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["PoliceStorageGuns"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["PoliceStorageGuns"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["PawnShopGunsSpecial"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["PawnShopGunsSpecial"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["GunStoreDisplayCase"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["GunStoreDisplayCase"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["GarageFirearms"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["GarageFirearms"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["DrugLabGuns"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["DrugLabGuns"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["GunStoreAmmunition"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["GunStoreAmmunition"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["ArmyStorageAmmunition"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["ArmyStorageAmmunition"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["ArmySurplusCases"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["ArmySurplusCases"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["LockerArmyBedroom"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["LockerArmyBedroom"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["LockerArmyBedroomHome"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["LockerArmyBedroomHome"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["ArmySurplusAmmoBoxes"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["ArmySurplusAmmoBoxes"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["PoliceStorageAmmunition"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["PoliceStorageAmmunition"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["PrisonArmoryShotguns"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["PrisonArmoryShotguns"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["GunStoreShelf"].items, "Base.SAI_GRY_cat");
+table.insert(ProceduralDistributions["list"]["GunStoreShelf"].items, 0.3);

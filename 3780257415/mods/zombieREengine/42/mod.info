@@ -1,0 +1,12 @@
+name=zombie RE engine [framework]
+id=zReFRAMEWORK
+
+description=STUFF for zRe mods
+
+modversion=ZERO
+versionMin=42.20
+
+author=kERHUS
+
+icon=icon.png
+poster=preview.png

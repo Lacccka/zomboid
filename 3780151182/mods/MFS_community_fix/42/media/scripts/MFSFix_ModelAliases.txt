@@ -1,0 +1,15 @@
+module Gunpart
+{
+    imports
+    {
+        Base,
+    }
+
+    model DBAL77Laser_catt
+    {
+        cullface = None,
+        mesh = 镭射/DBAL77Laser_cat,
+        texture = GunTexture/DBAL77Laser_cat,
+        shader = basicEffect_AddRed,
+    }
+}
