@@ -1,0 +1,7 @@
+name=Lifestyle 42.20 Compatibility Patch
+id=Lifestyle4220Compat
+description=Compatibility fixes for Lifestyle: Hobbies on Project Zomboid 42.20. Restores missing Lifestyle player moodle data in multiplayer and fixes overlapping Lifestyle moodle tooltips at larger font/UI sizes.
+author=Local compatibility patch
+modversion=1.0.3
+versionMin=42.20.0
+require=LifestyleHobbies
