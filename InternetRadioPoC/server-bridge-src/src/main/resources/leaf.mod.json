@@ -1,9 +1,9 @@
 {
     "schemaVersion": 1,
     "id": "lcc-internet-radio-server-bridge",
-    "version": "0.8.7",
+    "version": "0.9.0",
     "name": "LCC Internet Radio Server Voice Bridge",
-    "description": "Server-only deterministic RakVoice direct-injection probe.",
+    "description": "Server-only synthetic radio sender probe on 104.6 MHz.",
     "authors": ["Lacccka"],
     "contact": {"sources": "https://github.com/Lacccka/zomboid"},
     "license": "All-Rights-Reserved",

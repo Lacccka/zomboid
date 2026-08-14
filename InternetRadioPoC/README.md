@@ -1,104 +1,127 @@
-# Internet Vehicle Radio — Direct Server Transport Probe 0.8.7
+# Internet Vehicle Radio — Synthetic Radio Sender 0.9.0
 
-Proof of concept for Project Zomboid Build 42.20.2 multiplayer.
+Server-only transport proof of concept for Project Zomboid Build 42.20.2.
 
 Workshop ID: `3783046891`  
 Mod ID: `LaccckaInternetRadioPoC`
 
 ## Current milestone
 
-Version 0.8.7 tests one narrow question:
-
-> Can `RakVoice.SendFrame()` be called after Dedicated Server VOIP
-> initialization and deliver generated PCM to an ordinary Project Zomboid
-> client?
-
-It does not claim that radio routing, frequency 104.6, a virtual sender, HTTP,
-AAC decoding, buffering, or vehicle integration work yet.
-
-Version 0.8.2 targeted a client lifecycle method. Version 0.8.4 proved that the
-Leaf entrypoint runs, but also proved that `ServerMap.preupdate()` is not called
-by this Dedicated Server lifecycle. Version 0.8.5 removed the lifecycle mixin
-and started a lightweight daemon monitor from the proven entrypoint, but its
-direct access to `UdpConnection.playerIDs` was incompatible with the runtime
-class and stopped the probe before `SendFrame()`. Version 0.8.6 then established
-that the documented `GameServer.getAnyPlayerFromConnection()` method is also
-absent from the actual B42.20.2 server JAR. Version 0.8.7 removes hard bytecode
-links to both unstable members and resolves the online ID reflectively.
-
-## Probe architecture
+Version 0.9.0 tests the lightest architecture compatible with an unmodified
+Project Zomboid client:
 
 ```text
-Leaf main entrypoint
-  -> [BOOT]
-Server-only daemon monitor
-  -> [MONITOR_OK]
-GameServer.udpEngine.connections
-  -> reflect connection.players / connection.playerIDs
-  -> single-connection GameServer player collections as fallback
-  -> fully connected GUID + runtime player onlineID
-RakVoice server state
-  -> sample rate + frame period + buffer size
-440 Hz mono S16LE generator
-  -> RakVoice.SendFrame(recipientGuid, sourceOnlineId, frame, size)
-  -> ordinary Project Zomboid client
+server-generated PCM
+  -> synthetic remote onlineID
+  -> vanilla SyncRadioData on 104.6 MHz
+  -> RakVoice.SendFrame(recipientGuid, syntheticOnlineID, PCM)
+  -> ordinary client tuned to 104.6 MHz
 ```
 
-The probe waits for at least one fully connected client, then waits five
-seconds, sends a four-second tone once, and never retries during the same
-server process.
+No Steam-authenticated Virtual Client is created in this phase. The synthetic
+identity does not open its own network connection and does not consume a
+normal player slot.
 
-With one client, that connection supplies both the temporary source onlineID
-and recipient GUID. Logs mark this as `mode=self-target` and
-`selfSuppressionPossible=true`. Silence in this mode is inconclusive because
-the client may suppress audio attributed to its own player. With two clients,
-the first connection is the source identity and the second is the recipient.
+The test source is still a deterministic 440 Hz tone. HLS, AAC and the WIVK-FM
+API are intentionally behind the `PcmSource` boundary and are not enabled
+until this transport reaches the normal client.
 
-`SEND_RETURN` proves only that the Java/native call returned without an
-exception. Audible delivery must still be confirmed in game.
+## Why 0.9.0 differs from 0.8.7
+
+Inspection of the actual B42.20.2 `projectzomboid.jar` established that:
+
+- `RakVoice.SendFrame` has descriptor `(long, long, byte[], long)`;
+- `UdpConnection.players` is the stable runtime player array;
+- the server converts client `SyncRadioData` into
+  `RakVoice.SetChannelsRouting`;
+- the client only calls `RakVoice.ReceiveFrame(onlineID, buffer)` for remote
+  players known to `GameClient`;
+- one-client self injection is therefore expected to be suppressed or ignored.
+
+Version 0.9.0 announces a minimal remote `IsoPlayer` with reserved online ID
+`3000`, sends radio metadata for that ID, and then injects PCM using the same
+ID. This makes the one-client test meaningful without requiring a full bot
+login.
+
+## Runtime behavior
+
+For every fully connected client the bridge:
+
+1. waits five seconds for the game connection to settle;
+2. verifies that online ID `3000` does not collide with a real player;
+3. sends a vanilla `ConnectedPlayer` representation named
+   `[Radio] WIVK-FM 104.6`;
+4. sends `SyncRadioData` containing one route:
+   `104600, 30000, x, y`;
+5. waits two seconds;
+6. sends a six-second 440 Hz PCM tone;
+7. repeats the tone every 30 seconds so a single tester cannot miss it.
+
+The radio metadata contains four integer values:
+
+```text
+frequency, transmitDistance, x, y
+```
+
+The bridge queries sample rate, frame period and PCM buffer size from
+`RakVoice` at runtime instead of hard-coding a frame size.
 
 ## Expected server log
 
 ```text
-[InternetRadioBridge][BOOT] version=0.8.7; ...
-[InternetRadioBridge][MONITOR_OK] daemon polling started; ...
-[InternetRadioBridge][WAIT] no fully-connected player ...
-[InternetRadioBridge][TARGET_RESOLVE] strategy=...; onlineId=...; ...
-[InternetRadioBridge][VOICE_STATE] serverEnabled=true; sampleRate=...; ...
-[InternetRadioBridge][TARGET] sourceGuid=...; sourceOnlineId=...; ...
-[InternetRadioBridge][DIRECT_TEST] guid=...; onlineId=...; bytes=...; ...
-[InternetRadioBridge][SEND_ENTER] guid=...; onlineId=...; bytes=...
-[InternetRadioBridge][SEND_RETURN] first frame returned ...
-[InternetRadioBridge][DIRECT_RESULT] sendFrameReturned=true; framesSent=...;
+[InternetRadioBridge][BOOT] version=0.9.0; transport=synthetic-radio-sender; frequency=104.6; onlineId=3000
+[InternetRadioBridge][MONITOR_OK] ...
+[InternetRadioBridge][VOICE_STATE] serverEnabled=true; ...
+[InternetRadioBridge][SYNTHETIC_ID] reserved onlineId=3000; collision=false
+[InternetRadioBridge][IDENTITY_ENTER] ...
+[InternetRadioBridge][IDENTITY_RETURN] GameServer.sendPlayerConnected returned
+[InternetRadioBridge][RADIO_ROUTE_RETURN] SyncRadioData sent; values=4
+[InternetRadioBridge][IDENTITY_READY] ... frequency=104.6
+[InternetRadioBridge][SYNTHETIC_TEST] ... expectedFrequency=104.6
+[InternetRadioBridge][SEND_ENTER] ... onlineId=3000; ...
+[InternetRadioBridge][SEND_RETURN] first synthetic frame returned without exception
+[InternetRadioBridge][SYNTHETIC_RESULT] ... listenOn=104.6
 ```
 
 Interpretation:
 
-- no `BOOT`: Leaf found metadata but did not run the entrypoint;
-- `BOOT` without `MONITOR_OK`: the entrypoint could not start its daemon;
-- `MONITOR_POLL FAIL`: target discovery failed before the VOIP test;
-- `TARGET_RESOLVE unresolved`: no supported runtime player representation was
-  found; the same line includes the actual connection field inventory;
-- `serverEnabled=false`: VOIP is disabled in server settings;
-- `SEND_ENTER` without `SEND_RETURN`: native call failed or blocked;
-- `DIRECT_RESULT` without audible sound: the call was accepted but delivery,
-  source identity, client loopback, or routing rejected the frame.
+- no `BOOT`: Leaf did not execute the bridge entrypoint;
+- `IDENTITY FAIL`: the minimal synthetic player could not be serialized;
+- `RADIO_ROUTE FAIL`: the vanilla radio metadata packet was rejected;
+- `SEND_ENTER` without `SEND_RETURN`: the native send call failed;
+- `SYNTHETIC_RESULT` with silence on 104.6: native RakVoice requires a real
+  connected peer, so the next transport must be a minimal server-side RadioBot.
+
+## Test procedure
+
+1. Publish/update Workshop item `3783046891` and fully restart the server.
+2. Confirm Leaf loads `lcc-internet-radio-server-bridge 0.9.0`.
+3. Join with the single ordinary client and enable VOIP.
+4. Sit in a vehicle with a working radio.
+5. Turn the radio on and tune it to exactly `104.6 MHz`.
+6. Set radio volume above zero and make sure no cassette/media is playing.
+7. Wait up to 40 seconds. The six-second tone repeats every 30 seconds.
+8. Also test a nearby powered handheld radio on `104.6` if available.
+9. Save both the client and server logs.
+
+F9/F10/F11 remain local packaged-audio controls and are independent of the
+server radio test.
 
 ## Installation boundary
 
 - Players install only the normal Steam Workshop mod.
-- Players do not install Leaf, JARs, DLLs, ffmpeg, or a custom launcher.
-- Leaf and this Java bridge are server-only.
+- Players do not install Leaf, JARs, DLLs, ffmpeg, a browser extension, or a
+  custom launcher.
+- Leaf and the Java bridge are server-only.
 
-The Workshop upload source contains the bridge here:
+The Workshop source contains the bridge here:
 
 ```text
 Contents/mods/LaccckaInternetRadioPoC/leaf/mods/
   LaccckaInternetRadioServerBridge.jar
 ```
 
-Steam installs the contents of `Contents` at the item root, so the actual
-Dedicated Server path is:
+Steam installs the contents at the Workshop item root:
 
 ```text
 steamapps/workshop/content/108600/3783046891/
@@ -106,50 +129,27 @@ steamapps/workshop/content/108600/3783046891/
     LaccckaInternetRadioServerBridge.jar
 ```
 
-For a standard Dedicated Server installation, load the exact JAR before `-cp`:
+When the server lives under `steamapps/common/Project Zomboid Dedicated
+Server`, its global Workshop directory is reached with `..\..\workshop`, not
+with a nested `Dedicated Server\steamapps\workshop` copy:
 
 ```bat
-"-Dleaf.addMods=%CD%\steamapps\workshop\content\108600\3783046891\mods\LaccckaInternetRadioPoC\leaf\mods\LaccckaInternetRadioServerBridge.jar"
-"-Dleaf.gameWorkshopPath=%CD%\steamapps\workshop\content\108600"
+set "BRIDGE_SOURCE=%~dp0..\..\workshop\content\108600\3783046891\mods\LaccckaInternetRadioPoC\leaf\mods\LaccckaInternetRadioServerBridge.jar"
+set "BRIDGE_TARGET=%~dp0.leaf\runtime-mods\LaccckaInternetRadioServerBridge.jar"
 ```
 
-## Test procedure
+## Next step after the test
 
-1. Update Workshop item `3783046891` and fully restart the server.
-2. Confirm Leaf reports `lcc-internet-radio-server-bridge 0.8.7`.
-3. Confirm `[BOOT]` and `[MONITOR_OK]` appear.
-4. Connect the available ordinary client with VOIP enabled.
-5. Wait at least ten seconds after it finishes loading.
-6. Record whether it hears a four-second 440 Hz tone, but do not treat silence
-   in `self-target` mode as proof that direct injection failed.
-7. Save both client logs and the server log.
-
-No radio or 104.6 tuning is used in this phase. Frequency routing is the next
-test only if direct delivery works.
-
-## Existing client controls
-
-- F8: report client HTTP availability only.
-- F9: packaged `GameSoundClip` through the vehicle emitter.
-- F10: packaged positional world sound.
-- F11: packaged sound through the vehicle emitter.
-
-F11 remains the confirmed control for packaged audio and moving vehicle
-positioning; it is independent of this RakVoice probe.
-
-## Decision after 0.8.7
-
-- If direct delivery works, the next probe adds radio routing on 104.6 MHz.
-- If `SendFrame()` returns but clients consistently receive no audio with valid
-  cross-client identities, stop expanding direct injection and move to a
-  separate Virtual Client transport.
-- HTTP/AAC work starts only after `synthetic PCM -> PZ transport -> ordinary
-  client` succeeds.
+- If the tone is heard: keep the synthetic sender and implement
+  `HlsPcmSource`, listener-driven station sessions and additional frequencies.
+- If identity and send calls succeed but no tone is received: retain the same
+  `PcmSource` and station manager interfaces, replacing only the transport with
+  a minimal connected RadioBot.
 
 ## Build
 
 The JAR compiles against narrow local stubs. No Project Zomboid or Leaf classes
-are bundled into it:
+are bundled:
 
 ```bash
 bash server-bridge-src/build.sh

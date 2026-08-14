@@ -1,27 +1,43 @@
 package lcc.internetradio.server;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import zombie.characters.IsoPlayer;
+import zombie.core.network.ByteBufferWriter;
 import zombie.core.raknet.RakVoice;
 import zombie.core.raknet.UdpConnection;
 import zombie.core.raknet.UdpEngine;
+import zombie.iso.IsoCell;
 import zombie.network.GameServer;
+import zombie.network.PacketTypes;
 
-/** Server-only Phase 0 probe for RakVoice.SendFrame after RVInitServer. */
+/**
+ * Server-only synthetic radio sender probe for Project Zomboid B42.20.2.
+ *
+ * <p>The server announces a minimal remote player identity to each recipient,
+ * gives that identity a vanilla radio route on 104.6 MHz, and sends generated
+ * PCM under the synthetic online ID. This tests whether a real network client
+ * is required or whether a lightweight server-native station identity is
+ * sufficient.</p>
+ */
 public final class ServerToneBridge {
-    public static final String VERSION = "0.8.7";
+    public static final String VERSION = "0.9.0";
+
+    private static final int RADIO_FREQUENCY = 104_600;
+    private static final int RADIO_RANGE = 30_000;
+    private static final short SYNTHETIC_ONLINE_ID = 3_000;
+    private static final String SYNTHETIC_USERNAME = "[Radio] WIVK-FM 104.6";
 
     private static final long MONITOR_PERIOD_MS = 250L;
-    private static final long TEST_DELAY_MS = 5_000L;
-    private static final long TONE_DURATION_MS = 4_000L;
-    private static final double TONE_HZ = 440.0;
-    private static final double AMPLITUDE = 0.20;
+    private static final long CLIENT_SETTLE_MS = 5_000L;
+    private static final long IDENTITY_SETTLE_MS = 2_000L;
+    private static final long TONE_INTERVAL_MS = 30_000L;
+    private static final long TONE_DURATION_MS = 6_000L;
 
     private static final AtomicBoolean BOOTSTRAPPED = new AtomicBoolean();
     private static final AtomicBoolean MONITOR_STARTED = new AtomicBoolean();
@@ -29,22 +45,25 @@ public final class ServerToneBridge {
     private static final AtomicBoolean CONNECTION_WAIT_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean VOICE_STATE_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean VOICE_DISABLED_LOGGED = new AtomicBoolean();
-    private static final AtomicBoolean TARGET_LOGGED = new AtomicBoolean();
-    private static final AtomicBoolean TARGET_RESOLUTION_LOGGED = new AtomicBoolean();
-    private static final AtomicBoolean TARGET_RESOLUTION_FAILURE_LOGGED = new AtomicBoolean();
-    private static final AtomicBoolean PROBE_STARTED = new AtomicBoolean();
+    private static final AtomicBoolean SYNTHETIC_ID_VALIDATED = new AtomicBoolean();
 
-    private static volatile long eligibleSince;
+    private static final ConcurrentMap<Long, RecipientState> RECIPIENTS =
+            new ConcurrentHashMap<>();
+    private static final PcmSource TEST_SOURCE = new TonePcmSource(440.0, 0.20);
+
     private static volatile boolean disabled;
 
     private ServerToneBridge() {
     }
 
-    /** Called by Leaf's deterministic main entrypoint. */
+    /** Called by Leaf's deterministic server entrypoint. */
     public static void bootstrap() {
         if (!BOOTSTRAPPED.compareAndSet(false, true)) return;
-        log("BOOT", "version=" + VERSION + "; environment=dedicated-server"
-                + "; directProbe=true; frequencyFuture=104.6");
+        log("BOOT", "version=" + VERSION
+                + "; environment=dedicated-server"
+                + "; transport=synthetic-radio-sender"
+                + "; frequency=" + formatFrequency(RADIO_FREQUENCY)
+                + "; onlineId=" + SYNTHETIC_ONLINE_ID);
 
         Thread monitor = new Thread(
                 ServerToneBridge::monitorLoop,
@@ -62,16 +81,13 @@ public final class ServerToneBridge {
                     + Thread.currentThread().getName());
         }
 
-        while (!disabled && !PROBE_STARTED.get()) {
+        while (!disabled) {
             pollOnce();
-            if (!disabled && !PROBE_STARTED.get()) sleepMonitorPeriod();
+            sleep(MONITOR_PERIOD_MS);
         }
     }
 
     private static void pollOnce() {
-        if (disabled) return;
-        if (PROBE_STARTED.get()) return;
-
         try {
             UdpEngine engine = GameServer.udpEngine;
             if (engine == null) {
@@ -81,62 +97,37 @@ public final class ServerToneBridge {
                 return;
             }
 
-            List<Target> connected = snapshotTargets(engine.connections);
-            if (connected.isEmpty()) {
-                eligibleSince = 0L;
+            List<Target> targets = snapshotTargets(engine.connections);
+            if (targets.isEmpty()) {
                 if (CONNECTION_WAIT_LOGGED.compareAndSet(false, true)) {
-                    log("WAIT", "no fully-connected player with a valid onlineID");
+                    log("WAIT", "no fully-connected player is available");
                 }
                 return;
             }
 
             logVoiceStateOnce();
-            if (disabled) return;
-            if (!RakVoice.GetServerVOIPEnable()) {
+            if (disabled || !RakVoice.GetServerVOIPEnable()) {
                 if (VOICE_DISABLED_LOGGED.compareAndSet(false, true)) {
-                    log("WAIT", "server VOIP is disabled; direct probe is paused");
+                    log("WAIT", "server VOIP is disabled; synthetic probe paused");
                 }
                 return;
             }
 
+            validateSyntheticId(targets);
+            if (disabled) return;
+
             long now = System.currentTimeMillis();
-            if (eligibleSince == 0L) eligibleSince = now;
-
-            Target source = connected.get(0);
-            Target recipient = connected.size() >= 2 ? connected.get(1) : source;
-
-            if (now - eligibleSince < TEST_DELAY_MS) return;
-            if (!PROBE_STARTED.compareAndSet(false, true)) return;
-
-            if (TARGET_LOGGED.compareAndSet(false, true)) {
-                boolean selfTarget = source.guid == recipient.guid;
-                log("TARGET", "sourceGuid=" + source.guid
-                        + "; sourceOnlineId=" + source.playerId
-                        + "; recipientGuid=" + recipient.guid
-                        + "; connectedTargets=" + connected.size()
-                        + "; mode=" + (selfTarget ? "self-target" : "cross-client")
-                        + "; selfSuppressionPossible=" + selfTarget);
+            Set<Long> connectedGuids = new HashSet<>();
+            for (Target target : targets) {
+                connectedGuids.add(target.guid);
+                RecipientState state = RECIPIENTS.computeIfAbsent(
+                        target.guid,
+                        guid -> new RecipientState(now));
+                if (!state.failed) advanceRecipient(target, state, now);
             }
-
-            Thread worker = new Thread(
-                    () -> sendTone(source, recipient),
-                    "LCC-InternetRadio-DirectProbe");
-            worker.setDaemon(true);
-            worker.setUncaughtExceptionHandler(
-                    (thread, error) -> fail("WORKER", error));
-            worker.start();
+            RECIPIENTS.keySet().removeIf(guid -> !connectedGuids.contains(guid));
         } catch (Throwable error) {
             fail("MONITOR_POLL", error);
-        }
-    }
-
-    private static void sleepMonitorPeriod() {
-        try {
-            Thread.sleep(MONITOR_PERIOD_MS);
-        } catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
-            disabled = true;
-            log("MONITOR", "interrupted; probe disabled");
         }
     }
 
@@ -145,223 +136,202 @@ public final class ServerToneBridge {
         if (connections == null) return result;
 
         Object[] snapshot = connections.toArray();
-        List<UdpConnection> fullyConnected = new ArrayList<>();
         for (Object value : snapshot) {
             if (!(value instanceof UdpConnection)) continue;
             UdpConnection connection = (UdpConnection) value;
             if (!connection.isFullyConnected()) continue;
-            fullyConnected.add(connection);
-        }
 
-        boolean allowGlobalFallback = fullyConnected.size() == 1;
-        for (UdpConnection connection : fullyConnected) {
-            ResolvedPlayer resolved = resolvePlayerId(
-                    connection, allowGlobalFallback);
-            short playerId = resolved.playerId;
-            if (playerId < 0) continue;
+            IsoPlayer player = firstPlayer(connection.players);
+            if (player == null) continue;
             long guid = connection.getConnectedGUID();
-            if (guid == 0L) continue;
-            if (TARGET_RESOLUTION_LOGGED.compareAndSet(false, true)) {
-                log("TARGET_RESOLVE", "strategy=" + resolved.strategy
-                        + "; onlineId=" + playerId
-                        + "; connectedCount=" + fullyConnected.size());
-            }
-            result.add(new Target(guid, playerId));
-        }
-
-        if (result.isEmpty() && !fullyConnected.isEmpty()
-                && TARGET_RESOLUTION_FAILURE_LOGGED.compareAndSet(false, true)) {
-            UdpConnection connection = fullyConnected.get(0);
-            log("TARGET_RESOLVE", "unresolved; connectionClass="
-                    + connection.getClass().getName()
-                    + "; fields=" + describeFields(connection.getClass()));
+            if (guid == 0L || guid == -1L) continue;
+            result.add(new Target(connection, player, guid));
         }
         return result;
     }
 
-    private static ResolvedPlayer resolvePlayerId(
-            UdpConnection connection, boolean allowGlobalFallback) {
-        short playerId = firstOnlineId(readField(connection, "players"));
-        if (playerId >= 0) {
-            return new ResolvedPlayer(playerId, "connection.players");
-        }
-
-        playerId = firstNumericId(readField(connection, "playerIDs"));
-        if (playerId >= 0) {
-            return new ResolvedPlayer(playerId, "connection.playerIDs");
-        }
-
-        if (allowGlobalFallback) {
-            playerId = firstOnlineId(readStaticField(GameServer.class, "Players"));
-            if (playerId >= 0) {
-                return new ResolvedPlayer(playerId, "GameServer.Players-single-connection");
-            }
-
-            playerId = firstOnlineId(
-                    readStaticField(GameServer.class, "IDToPlayerMap"));
-            if (playerId >= 0) {
-                return new ResolvedPlayer(
-                        playerId, "GameServer.IDToPlayerMap-single-connection");
-            }
-        }
-
-        return ResolvedPlayer.NONE;
-    }
-
-    private static Object readField(Object target, String fieldName) {
-        if (target == null) return null;
-        Field field = findField(target.getClass(), fieldName);
-        if (field == null) return null;
-        try {
-            field.setAccessible(true);
-            return field.get(target);
-        } catch (Throwable ignored) {
-            return null;
-        }
-    }
-
-    private static Object readStaticField(Class<?> owner, String fieldName) {
-        Field field = findField(owner, fieldName);
-        if (field == null) return null;
-        try {
-            field.setAccessible(true);
-            return field.get(null);
-        } catch (Throwable ignored) {
-            return null;
-        }
-    }
-
-    private static Field findField(Class<?> type, String fieldName) {
-        for (Class<?> current = type; current != null;
-                current = current.getSuperclass()) {
-            try {
-                return current.getDeclaredField(fieldName);
-            } catch (NoSuchFieldException ignored) {
-                // Continue through the runtime hierarchy.
-            }
+    private static IsoPlayer firstPlayer(IsoPlayer[] players) {
+        if (players == null) return null;
+        for (IsoPlayer player : players) {
+            if (player != null && player.getOnlineID() >= 0) return player;
         }
         return null;
     }
 
-    private static short firstOnlineId(Object value) {
-        if (value == null) return -1;
-        if (value instanceof Map<?, ?>) {
-            for (Object entryValue : ((Map<?, ?>) value).values()) {
-                short id = firstOnlineId(entryValue);
-                if (id >= 0) return id;
+    private static void validateSyntheticId(List<Target> targets) {
+        if (SYNTHETIC_ID_VALIDATED.get()) return;
+        for (Target target : targets) {
+            if (target.player.getOnlineID() == SYNTHETIC_ONLINE_ID) {
+                fail("SYNTHETIC_ID", new IllegalStateException(
+                        "reserved onlineID collides with a connected player: "
+                                + SYNTHETIC_ONLINE_ID));
+                return;
             }
-            return -1;
         }
-        if (value instanceof Iterable<?>) {
-            for (Object element : (Iterable<?>) value) {
-                short id = firstOnlineId(element);
-                if (id >= 0) return id;
-            }
-            return -1;
+        if (GameServer.IDToPlayerMap != null
+                && GameServer.IDToPlayerMap.containsKey(SYNTHETIC_ONLINE_ID)) {
+            fail("SYNTHETIC_ID", new IllegalStateException(
+                    "reserved onlineID already exists in GameServer.IDToPlayerMap: "
+                            + SYNTHETIC_ONLINE_ID));
+            return;
         }
-        if (value.getClass().isArray()) {
-            int length = Array.getLength(value);
-            for (int index = 0; index < length; index++) {
-                short id = firstOnlineId(Array.get(value, index));
-                if (id >= 0) return id;
-            }
-            return -1;
+        if (SYNTHETIC_ID_VALIDATED.compareAndSet(false, true)) {
+            log("SYNTHETIC_ID", "reserved onlineId=" + SYNTHETIC_ONLINE_ID
+                    + "; collision=false");
         }
-
-        Object result = invokeNoArg(value, "getOnlineID");
-        return result instanceof Number
-                ? validShort(((Number) result).longValue()) : -1;
     }
 
-    private static short firstNumericId(Object value) {
-        if (value == null) return -1;
-        if (value instanceof Number) {
-            return validShort(((Number) value).longValue());
-        }
-        if (value instanceof Iterable<?>) {
-            for (Object element : (Iterable<?>) value) {
-                short id = firstNumericId(element);
-                if (id >= 0) return id;
-            }
-            return -1;
-        }
-        if (value.getClass().isArray()) {
-            int length = Array.getLength(value);
-            for (int index = 0; index < length; index++) {
-                short id = firstNumericId(Array.get(value, index));
-                if (id >= 0) return id;
-            }
-            return -1;
+    private static void advanceRecipient(
+            Target target, RecipientState state, long now) {
+        if (!state.identityAnnounced) {
+            if (now - state.connectedAt < CLIENT_SETTLE_MS) return;
+            announceSyntheticIdentity(target, state);
+            return;
         }
 
-        Object sizeValue = invokeNoArg(value, "size");
-        if (!(sizeValue instanceof Number)) return -1;
-        int size = ((Number) sizeValue).intValue();
-        for (int index = 0; index < size; index++) {
-            Object element = invokeIntArg(value, "get", index);
-            short id = firstNumericId(element);
-            if (id >= 0) return id;
-        }
-        return -1;
+        if (now - state.identityAnnouncedAt < IDENTITY_SETTLE_MS) return;
+        if (state.sending.get()) return;
+        if (state.lastToneStartedAt != 0L
+                && now - state.lastToneStartedAt < TONE_INTERVAL_MS) return;
+        if (!state.sending.compareAndSet(false, true)) return;
+
+        state.lastToneStartedAt = now;
+        Thread worker = new Thread(
+                () -> sendTone(target, state),
+                "LCC-RadioSender-" + target.guid);
+        worker.setDaemon(true);
+        worker.setUncaughtExceptionHandler((thread, error) -> {
+            state.sending.set(false);
+            failRecipient(target.guid, "WORKER", error);
+        });
+        worker.start();
     }
 
-    private static Object invokeNoArg(Object target, String methodName) {
-        Method method = findMethod(target.getClass(), methodName);
-        if (method == null) return null;
+    private static void announceSyntheticIdentity(
+            Target target, RecipientState state) {
         try {
-            method.setAccessible(true);
-            return method.invoke(target);
-        } catch (Throwable ignored) {
-            return null;
-        }
-    }
-
-    private static Object invokeIntArg(
-            Object target, String methodName, int argument) {
-        Method method = findMethod(target.getClass(), methodName, int.class);
-        if (method == null) return null;
-        try {
-            method.setAccessible(true);
-            return method.invoke(target, argument);
-        } catch (Throwable ignored) {
-            return null;
-        }
-    }
-
-    private static Method findMethod(
-            Class<?> type, String methodName, Class<?>... parameterTypes) {
-        try {
-            return type.getMethod(methodName, parameterTypes);
-        } catch (NoSuchMethodException ignored) {
-            // Check non-public runtime declarations as a compatibility fallback.
-        }
-        for (Class<?> current = type; current != null;
-                current = current.getSuperclass()) {
-            try {
-                return current.getDeclaredMethod(methodName, parameterTypes);
-            } catch (NoSuchMethodException ignored) {
-                // Continue through the runtime hierarchy.
+            IsoCell cell = IsoCell.getInstance();
+            if (cell == null) {
+                logRecipient(target.guid, "WAIT", "IsoCell is not initialized");
+                return;
             }
+
+            IsoPlayer ghost = new IsoPlayer(cell);
+            ghost.onlineId = SYNTHETIC_ONLINE_ID;
+            ghost.remote = true;
+            ghost.username = SYNTHETIC_USERNAME;
+            ghost.setX(target.player.getX());
+            ghost.setY(target.player.getY());
+            ghost.setZ(target.player.getZ());
+
+            logRecipient(target.guid, "IDENTITY_ENTER",
+                    "onlineId=" + SYNTHETIC_ONLINE_ID
+                            + "; username=" + SYNTHETIC_USERNAME
+                            + "; x=" + ghost.getX()
+                            + "; y=" + ghost.getY());
+            GameServer.sendPlayerConnected(ghost, target.connection);
+            logRecipient(target.guid, "IDENTITY_RETURN",
+                    "GameServer.sendPlayerConnected returned");
+
+            sendRadioData(target, ghost);
+            state.ghost = ghost;
+            state.identityAnnounced = true;
+            state.identityAnnouncedAt = System.currentTimeMillis();
+            logRecipient(target.guid, "IDENTITY_READY",
+                    "synthetic sender announced; frequency="
+                            + formatFrequency(RADIO_FREQUENCY));
+        } catch (Throwable error) {
+            failRecipient(target.guid, "IDENTITY", error);
         }
-        return null;
     }
 
-    private static short validShort(long value) {
-        return value >= 0L && value <= Short.MAX_VALUE ? (short) value : -1;
+    private static void sendRadioData(Target target, IsoPlayer ghost) {
+        logRecipient(target.guid, "RADIO_ROUTE_ENTER",
+                "onlineId=" + SYNTHETIC_ONLINE_ID
+                        + "; frequency=" + RADIO_FREQUENCY
+                        + "; range=" + RADIO_RANGE);
+        ByteBufferWriter writer = target.connection.startPacket();
+        PacketTypes.PacketType.SyncRadioData.doPacket(writer);
+        writer.putShort(SYNTHETIC_ONLINE_ID);
+        writer.putBoolean(false);
+        writer.putInt(4);
+        writer.putInt(RADIO_FREQUENCY);
+        writer.putInt(RADIO_RANGE);
+        writer.putInt((int) ghost.getX());
+        writer.putInt((int) ghost.getY());
+        PacketTypes.PacketType.SyncRadioData.send(target.connection);
+        logRecipient(target.guid, "RADIO_ROUTE_RETURN",
+                "SyncRadioData sent; values=4");
     }
 
-    private static String describeFields(Class<?> type) {
-        List<String> descriptions = new ArrayList<>();
-        for (Class<?> current = type; current != null;
-                current = current.getSuperclass()) {
-            for (Field field : current.getDeclaredFields()) {
-                descriptions.add(field.getName() + ":"
-                        + field.getType().getTypeName());
+    private static void sendTone(Target target, RecipientState state) {
+        try {
+            if (state.ghost == null) {
+                throw new IllegalStateException("synthetic identity is missing");
             }
+            state.ghost.setX(target.player.getX());
+            state.ghost.setY(target.player.getY());
+            state.ghost.setZ(target.player.getZ());
+            sendRadioData(target, state.ghost);
+
+            int sampleRate = RakVoice.GetSampleRate();
+            int frameBytes = RakVoice.GetBufferSizeBytes();
+            int framePeriodMs = RakVoice.GetSendFramePeriod();
+            if (sampleRate <= 0 || frameBytes < 2 || framePeriodMs <= 0) {
+                throw new IllegalStateException("invalid voice format: sampleRate="
+                        + sampleRate + "; frameBytes=" + frameBytes
+                        + "; periodMs=" + framePeriodMs);
+            }
+
+            byte[] frame = new byte[frameBytes];
+            int framesToSend = Math.max(1,
+                    (int) Math.ceil((double) TONE_DURATION_MS / framePeriodMs));
+
+            logRecipient(target.guid, "SYNTHETIC_TEST",
+                    "recipientGuid=" + target.guid
+                            + "; syntheticOnlineId=" + SYNTHETIC_ONLINE_ID
+                            + "; source=" + TEST_SOURCE.description()
+                            + "; bytes=" + frameBytes
+                            + "; frames=" + framesToSend
+                            + "; durationMs=" + TONE_DURATION_MS
+                            + "; expectedFrequency="
+                            + formatFrequency(RADIO_FREQUENCY));
+
+            int sent = 0;
+            long nextFrameAt = System.nanoTime();
+            for (int frameIndex = 0;
+                    frameIndex < framesToSend && !disabled;
+                    frameIndex++) {
+                TEST_SOURCE.fill(frame, sampleRate);
+                if (frameIndex == 0) {
+                    logRecipient(target.guid, "SEND_ENTER",
+                            "guid=" + target.guid
+                                    + "; onlineId=" + SYNTHETIC_ONLINE_ID
+                                    + "; bytes=" + frame.length);
+                }
+                RakVoice.SendFrame(
+                        target.guid,
+                        SYNTHETIC_ONLINE_ID,
+                        frame,
+                        frame.length);
+                if (frameIndex == 0) {
+                    logRecipient(target.guid, "SEND_RETURN",
+                            "first synthetic frame returned without exception");
+                }
+                sent++;
+                nextFrameAt += framePeriodMs * 1_000_000L;
+                sleepUntil(nextFrameAt);
+            }
+
+            logRecipient(target.guid, "SYNTHETIC_RESULT",
+                    "sendFrameReturned=true; framesSent=" + sent
+                            + "; listenOn=" + formatFrequency(RADIO_FREQUENCY)
+                            + "; retryAfterMs=" + TONE_INTERVAL_MS);
+        } catch (Throwable error) {
+            failRecipient(target.guid, "SYNTHETIC_TEST", error);
+        } finally {
+            state.sending.set(false);
         }
-        Collections.sort(descriptions);
-        String joined = String.join(",", descriptions);
-        return joined.length() <= 1_000 ? joined : joined.substring(0, 1_000) + "...";
     }
 
     private static void logVoiceStateOnce() {
@@ -380,76 +350,6 @@ public final class ServerToneBridge {
         }
     }
 
-    private static void sendTone(Target source, Target recipient) {
-        try {
-            boolean selfTarget = source.guid == recipient.guid;
-            int sampleRate = RakVoice.GetSampleRate();
-            int frameBytes = RakVoice.GetBufferSizeBytes();
-            int framePeriodMs = RakVoice.GetSendFramePeriod();
-            if (sampleRate <= 0 || frameBytes < 2 || framePeriodMs <= 0) {
-                log("DIRECT_TEST", "FAIL invalid voice format"
-                        + "; sampleRate=" + sampleRate
-                        + "; frameBytes=" + frameBytes
-                        + "; framePeriodMs=" + framePeriodMs);
-                return;
-            }
-
-            byte[] frame = new byte[frameBytes];
-            int samplesPerFrame = frameBytes / 2;
-            int framesToSend = Math.max(1,
-                    (int) Math.ceil((double) TONE_DURATION_MS / framePeriodMs));
-            double phase = 0.0;
-            double phaseStep = 2.0 * Math.PI * TONE_HZ / sampleRate;
-
-            log("DIRECT_TEST", "guid=" + recipient.guid
-                    + "; onlineId=" + source.playerId
-                    + "; bytes=" + frameBytes
-                    + "; frames=" + framesToSend
-                    + "; durationMs=" + TONE_DURATION_MS
-                    + "; toneHz=" + TONE_HZ
-                    + "; mode=" + (selfTarget ? "self-target" : "cross-client"));
-
-            int sent = 0;
-            long nextFrameAt = System.nanoTime();
-            for (int frameIndex = 0; frameIndex < framesToSend && !disabled;
-                    frameIndex++) {
-                for (int sampleIndex = 0; sampleIndex < samplesPerFrame;
-                        sampleIndex++) {
-                    short sample = (short) Math.round(
-                            Math.sin(phase) * Short.MAX_VALUE * AMPLITUDE);
-                    int byteIndex = sampleIndex * 2;
-                    frame[byteIndex] = (byte) (sample & 0xff);
-                    frame[byteIndex + 1] = (byte) ((sample >>> 8) & 0xff);
-                    phase += phaseStep;
-                    if (phase >= 2.0 * Math.PI) phase -= 2.0 * Math.PI;
-                }
-
-                if (frameIndex == 0) {
-                    log("SEND_ENTER", "guid=" + recipient.guid
-                            + "; onlineId=" + source.playerId
-                            + "; bytes=" + frame.length);
-                }
-                RakVoice.SendFrame(
-                        recipient.guid, source.playerId, frame, frame.length);
-                if (frameIndex == 0) {
-                    log("SEND_RETURN", "first frame returned without Java/native exception");
-                }
-                sent++;
-                nextFrameAt += framePeriodMs * 1_000_000L;
-                sleepUntil(nextFrameAt);
-            }
-
-            log("DIRECT_RESULT", "sendFrameReturned=true; framesSent=" + sent
-                    + "; audibleResult=" + (selfTarget
-                            ? "inconclusive-if-silent-self-voice-may-be-suppressed"
-                            : "must-be-confirmed-in-game")
-                    + "; sourceOnlineId=" + source.playerId
-                    + "; recipientGuid=" + recipient.guid);
-        } catch (Throwable error) {
-            fail("DIRECT_TEST", error);
-        }
-    }
-
     private static void sleepUntil(long deadlineNanos) {
         long remaining;
         while ((remaining = deadlineNanos - System.nanoTime()) > 0L) {
@@ -459,18 +359,44 @@ public final class ServerToneBridge {
                 Thread.sleep(millis, nanos);
             } catch (InterruptedException interrupted) {
                 Thread.currentThread().interrupt();
-                disabled = true;
                 return;
             }
         }
     }
 
+    private static void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            disabled = true;
+        }
+    }
+
+    private static String formatFrequency(int frequency) {
+        return String.format("%.1f", frequency / 1_000.0);
+    }
+
     private static void fail(String area, Throwable error) {
         disabled = true;
+        log(area, "FAIL; bridge disabled; " + describe(error));
+    }
+
+    private static void failRecipient(long guid, String area, Throwable error) {
+        RecipientState state = RECIPIENTS.get(guid);
+        if (state != null) state.failed = true;
+        logRecipient(guid, area, "FAIL; recipient disabled; " + describe(error));
+    }
+
+    private static String describe(Throwable error) {
         Throwable root = error;
         while (root.getCause() != null) root = root.getCause();
-        log(area, "FAIL; probe disabled; " + root.getClass().getName()
-                + (root.getMessage() == null ? "" : ": " + root.getMessage()));
+        return root.getClass().getName()
+                + (root.getMessage() == null ? "" : ": " + root.getMessage());
+    }
+
+    private static void logRecipient(long guid, String area, String message) {
+        log(area, "recipientGuid=" + guid + "; " + message);
     }
 
     private static void log(String area, String message) {
@@ -478,25 +404,28 @@ public final class ServerToneBridge {
     }
 
     private static final class Target {
+        private final UdpConnection connection;
+        private final IsoPlayer player;
         private final long guid;
-        private final short playerId;
 
-        private Target(long guid, short playerId) {
+        private Target(UdpConnection connection, IsoPlayer player, long guid) {
+            this.connection = connection;
+            this.player = player;
             this.guid = guid;
-            this.playerId = playerId;
         }
     }
 
-    private static final class ResolvedPlayer {
-        private static final ResolvedPlayer NONE =
-                new ResolvedPlayer((short) -1, "none");
+    private static final class RecipientState {
+        private final long connectedAt;
+        private final AtomicBoolean sending = new AtomicBoolean();
+        private volatile boolean identityAnnounced;
+        private volatile boolean failed;
+        private volatile long identityAnnouncedAt;
+        private volatile long lastToneStartedAt;
+        private volatile IsoPlayer ghost;
 
-        private final short playerId;
-        private final String strategy;
-
-        private ResolvedPlayer(short playerId, String strategy) {
-            this.playerId = playerId;
-            this.strategy = strategy;
+        private RecipientState(long connectedAt) {
+            this.connectedAt = connectedAt;
         }
     }
 }
