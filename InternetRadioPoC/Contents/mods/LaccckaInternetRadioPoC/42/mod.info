@@ -1,6 +1,6 @@
 name=Internet Vehicle Radio - WIVK-FM PoC
 id=LaccckaInternetRadioPoC
 author=Lacccka
-description=Build 42 Workshop-only registered GameSound and vehicle-emitter probe. Press F9-F11 in game; no recurring tick handler.
-modversion=0.5.1
+description=Build 42 Workshop-only automatic WAV download, dynamic GameSound, and vehicle-emitter probe. Press F8-F11 in game; no recurring tick handler.
+modversion=0.6.0
 versionMin=42.20.0
