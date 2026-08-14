@@ -21,6 +21,7 @@ public final class ServerToneBridge {
     private static final AtomicBoolean HOOK_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean ENGINE_WAIT_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean CONNECTION_WAIT_LOGGED = new AtomicBoolean();
+    private static final AtomicBoolean SECOND_CONNECTION_WAIT_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean VOICE_STATE_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean VOICE_DISABLED_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean TARGET_LOGGED = new AtomicBoolean();
@@ -66,6 +67,15 @@ public final class ServerToneBridge {
                 return;
             }
 
+            if (connected.size() < 2) {
+                eligibleSince = 0L;
+                if (SECOND_CONNECTION_WAIT_LOGGED.compareAndSet(false, true)) {
+                    log("WAIT", "one fully-connected player found; two clients"
+                            + " are required for the cross-client probe");
+                }
+                return;
+            }
+
             logVoiceStateOnce();
             if (!RakVoice.GetServerVOIPEnable()) {
                 if (VOICE_DISABLED_LOGGED.compareAndSet(false, true)) {
@@ -78,15 +88,13 @@ public final class ServerToneBridge {
             if (eligibleSince == 0L) eligibleSince = now;
 
             Target source = connected.get(0);
-            Target recipient = connected.size() >= 2 ? connected.get(1) : source;
+            Target recipient = connected.get(1);
             if (TARGET_LOGGED.compareAndSet(false, true)) {
                 log("TARGET", "sourceGuid=" + source.guid
                         + "; sourceOnlineId=" + source.playerId
                         + "; recipientGuid=" + recipient.guid
                         + "; connectedTargets=" + connected.size()
-                        + "; mode=" + (source.guid == recipient.guid
-                                ? "self-target (two clients recommended)"
-                                : "cross-client"));
+                        + "; mode=cross-client");
             }
 
             if (now - eligibleSince < TEST_DELAY_MS) return;

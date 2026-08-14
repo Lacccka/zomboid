@@ -37,13 +37,14 @@ RakVoice server state
   -> ordinary Project Zomboid client
 ```
 
-The probe waits five seconds after finding an eligible connection, sends a
-four-second tone once, and never retries during the same server process.
+The probe waits for two fully connected clients, then waits another five
+seconds, sends a four-second tone once, and never retries during the same
+server process.
 
-With two connected clients, the first connection provides the temporary source
-onlineID and the second is the recipient. This is the preferred test because a
-single client may suppress audio attributed to its own player. With only one
-client the probe still runs, but logs `self-target (two clients recommended)`.
+The first connection provides the temporary source onlineID and the second is
+the recipient. Two clients are required because a single client may suppress
+audio attributed to its own player. With only one client the probe remains in
+`WAIT` and does not consume its single attempt.
 
 `SEND_RETURN` proves only that the Java/native call returned without an
 exception. Audible delivery must still be confirmed in game.
@@ -54,6 +55,7 @@ exception. Audible delivery must still be confirmed in game.
 [InternetRadioBridge][BOOT] version=0.8.3; ...
 [InternetRadioBridge][SERVER_HOOK_OK] ServerMap.preupdate; ...
 [InternetRadioBridge][WAIT] no fully-connected player ...
+[InternetRadioBridge][WAIT] one fully-connected player found; two clients ...
 [InternetRadioBridge][VOICE_STATE] serverEnabled=true; sampleRate=...; ...
 [InternetRadioBridge][TARGET] sourceGuid=...; sourceOnlineId=...; ...
 [InternetRadioBridge][DIRECT_TEST] guid=...; onlineId=...; bytes=...; ...
@@ -105,7 +107,7 @@ For a standard Dedicated Server installation, load the exact JAR before `-cp`:
 1. Update Workshop item `3783046891` and fully restart the server.
 2. Confirm Leaf reports `lcc-internet-radio-server-bridge 0.8.3`.
 3. Confirm `[BOOT]` and `[SERVER_HOOK_OK]` appear.
-4. Preferably connect two ordinary clients with VOIP enabled.
+4. Connect two ordinary clients with VOIP enabled.
 5. Wait at least ten seconds after both clients finish loading.
 6. Record whether the second client hears a four-second 440 Hz tone.
 7. Save both client logs and the server log.
