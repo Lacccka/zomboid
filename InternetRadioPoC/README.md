@@ -49,9 +49,9 @@ per-mod production path:
 `Contents/mods/LaccckaInternetRadioPoC/leaf/mods/LaccckaInternetRadioBridge.jar`
 
 The dedicated server still enables the ordinary PZ mod/Workshop item, but does
-not need to load the client audio bridge. Follow the current Leaf installer
-instructions from `https://github.com/aoqia194/Leaf` and restart the game after
-installation.
+not need to load the client audio bridge. Follow the current installer and
+releases at `https://github.com/aoqia194/leaf-installer` and restart the game
+after installation.
 
 ## Two-client test
 
