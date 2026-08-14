@@ -1,27 +1,32 @@
-# Internet Vehicle Radio — WIVK-FM PoC 0.2.0
+# Internet Vehicle Radio — WIVK-FM PoC 0.3.0
 
-Project Zomboid Build 42 proof of concept for a real internet stream attached to
-vehicle sound emitters. It is a separate mod and does not change
-`LaccckaCompatibilityPatch` or subscribed Workshop mods.
+Project Zomboid Build 42 multiplayer proof of concept for a real internet
+stream attached to vehicle radios.
 
-## Why version 0.2 uses a bridge
+## Installation contract
 
-B42's public Lua emitter API treats an HTTPS URL as a `GameSound` name. The
-0.1.x runtime logs confirmed that no network stream or playable handle is
-created. Version 0.2 therefore removes every `playSound(URL)` call.
+This is a normal Workshop-only mod. Clients install it through the server's
+existing `WorkshopItems` / `Mods` list. It requires no Leaf, ZombieBuddy,
+executable, copied class, altered game file, or Steam launch option.
 
-The included client-only Leaf mixin adds six narrowly named methods to the
-current game's `FMODSoundEmitter`. It calls PZ's bundled `javafmod` wrapper to:
+Workshop ID: `3783046891`  
+Mod ID: `LaccckaInternetRadioPoC`
 
-- create the HTTPS AAC stream with `FMOD_CREATESTREAM`;
-- play it as a 3D channel at the vehicle emitter position;
-- update position and radio volume;
-- query playback state; and
-- stop the channel and release its FMOD sound.
+## Audio path
 
-It does **not** replace `FMODSoundEmitter.class`. That matters on frequently
-updated B42 clients: a full class copied from another game build can overwrite
-vanilla changes and collide with unrelated Java mods.
+B42 Lua provides `luajava`, which can bind public classes already bundled with
+the game. The client script binds `fmod.javafmod` and invokes the native FMOD
+wrapper directly:
+
+1. `FMOD_System_CreateSound(URL, FMOD_CREATESTREAM)`
+2. `FMOD_System_PlaySound(sound, paused=true)`
+3. configure the channel as 3D and set its vehicle position/range/volume
+4. unpause, update it while the vehicle moves, and periodically verify playback
+5. stop the channel and release the sound when it is no longer needed
+
+This differs from the failed 0.1 path. `emitter:playSound(URL)` treated the URL
+as a `GameSound` name. Version 0.3 bypasses `GameSound` resolution but does not
+load any external Java code: `fmod.javafmod` is part of Project Zomboid itself.
 
 ## Station and multiplayer state
 
@@ -30,54 +35,32 @@ vanilla changes and collide with unrelated Java mods.
 - UUID: `dea0ad58-9bd8-4a2c-b4e5-ca6f3714ae7e`
 - Stream: `https://playerservices.streamtheworld.com/api/livestream-redirect/WIVKFMAAC.aac`
 
-Vanilla vehicle `DeviceData` remains authoritative for power, frequency and
-volume. Each nearby client opens the stream directly; the dedicated server
-does not download, decode or relay audio.
+Vanilla vehicle `DeviceData` remains authoritative for radio power, frequency
+and volume. Each client within 60 tiles opens the live stream directly. The
+dedicated server synchronizes normal vehicle state and never carries audio.
 
-The Lua controller scans the loaded cell through B42's concrete Java
-`ArrayList` API (`size()` / `get()`). This replaces the previous generic
-collection probing that produced nil-call errors. Every loaded vehicle within
-60 tiles is handled, so a player does not need to enter a vehicle before hearing
-its radio.
-
-## Required client setup
-
-Leaf Loader must be installed once on **every client that should hear internet
-radio**. The Workshop package already places the compiled bridge JAR at Leaf's
-per-mod production path:
-
-`Contents/mods/LaccckaInternetRadioPoC/leaf/mods/LaccckaInternetRadioBridge.jar`
-
-The dedicated server still enables the ordinary PZ mod/Workshop item, but does
-not need to load the client audio bridge. Follow the current installer and
-releases at `https://github.com/aoqia194/leaf-installer` and restart the game
-after installation.
+Loaded vehicles are enumerated using B42's concrete Java `ArrayList`
+`size()` / `get()` interface. This avoids the generic collection probing that
+caused the earlier nil-call errors and lets a client hear nearby cars without
+entering them first.
 
 ## Two-client test
 
-1. Update Workshop item `3783046891` from this directory.
-2. Install Leaf Loader on both clients and fully restart both games.
-3. Join the B42.20.2 server; tune one vehicle radio to `104.6 MHz` and turn it on.
-4. In each client `console.txt`, confirm:
-   - `[LCC Internet Radio PoC] detected audio bridge 0.2.0`
-   - `[LCC Internet Radio Bridge] javafmod API initialized`
-   - `[LCC Internet Radio Bridge] stream started on FMOD channel ...`
-5. Confirm players inside and near the car hear it, attenuation works, and the
-   source follows a moving vehicle.
-6. Tune away, mute, switch the radio off, walk beyond 60 tiles, and unload the
-   vehicle; each case must produce one stop line and no lingering sound.
+1. Publish/update Workshop item `3783046891` from this directory.
+2. Let the dedicated server distribute the update normally; do not install any
+   external loader on either client.
+3. Fully restart both clients and join the B42.20.2 server.
+4. Confirm each client log contains:
+   - `pure Workshop mode; no Leaf, Java mod loader, or manual client installation`
+   - `bound built-in fmod.javafmod; pure Workshop streaming path is ready`
+5. Turn on one vehicle radio and tune it to `104.6 MHz`.
+6. Confirm both clients log `started WIVK-FM for vehicle ...` and hear the same
+   live broadcast near the car.
+7. Drive the car and verify positional movement and attenuation.
+8. Tune away, mute, turn off, walk beyond 60 tiles, and unload the vehicle.
+   Each action must stop the relevant client channel without lingering audio.
 
-If the bridge is absent, Lua logs one clear installation message and does not
-attempt a nil method call. If FMOD rejects the AAC URL, the bridge returns zero
-and writes the root Java/FMOD error without throwing into `Events.OnTick`.
-
-## Rebuilding the bridge JAR
-
-The bridge source and compile-only Mixin annotation stubs live in `leaf-src`.
-Run `leaf-src/build.sh` with a JDK 17+ runtime. The stubs are not packaged; at
-runtime Leaf supplies the real Mixin classes. The script writes the JAR directly
-to the Workshop mod's `leaf/mods` directory.
-
-This remains a PoC until the above checks pass on two B42.20.2 clients. Stream
-pooling and the station discovery API belong in the next stage, after the bridge
-has proved AAC playback and lifecycle cleanup.
+If class binding succeeds but stream creation returns zero, the remaining issue
+is the B42.20.2 FMOD build's handling of this HTTPS/AAC endpoint—not mod loading.
+That result would require changing the station transport/codec or accepting a
+local-audio Workshop radio instead of requiring a client installer.

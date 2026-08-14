@@ -1,8 +1,0 @@
-{
-    "required": true,
-    "package": "lcc.internetradio.mixin",
-    "compatibilityLevel": "JAVA_17",
-    "mixins": ["FMODSoundEmitterMixin"],
-    "injectors": {"defaultRequire": 1},
-    "overwrites": {"requireAnnotations": true}
-}

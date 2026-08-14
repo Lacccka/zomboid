@@ -1,6 +1,6 @@
 name=Internet Vehicle Radio - WIVK-FM PoC
 id=LaccckaInternetRadioPoC
 author=Lacccka
-description=Build 42 positional WIVK-FM internet stream on 104.6 MHz using a client-only Leaf/FMOD bridge.
-modversion=0.2.0
+description=Build 42 positional WIVK-FM internet stream on 104.6 MHz using the built-in javafmod API. Workshop-only; no external loader.
+modversion=0.3.0
 versionMin=42.20.0

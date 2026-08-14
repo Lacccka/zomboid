@@ -1,6 +1,6 @@
 version=1
 id=3783046891
 title=Internet Vehicle Radio - WIVK-FM PoC
-description=Build 42 multiplayer internet radio PoC with a client-only Leaf/FMOD bridge and positional vehicle audio.
+description=Build 42 multiplayer internet-radio PoC using built-in FMOD through Lua. No external client installation.
 tags=Build 42;Multiplayer
 visibility=unlisted

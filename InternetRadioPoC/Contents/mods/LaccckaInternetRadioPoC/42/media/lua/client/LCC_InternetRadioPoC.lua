@@ -1,8 +1,11 @@
 -- Internet Vehicle Radio - WIVK-FM proof of concept for Project Zomboid B42.
--- Vanilla DeviceData owns power/channel/volume. A client-only Leaf mixin adds
--- URL-stream methods to FMODSoundEmitter. The server never relays audio.
+-- Pure Workshop implementation: Lua binds PZ's already-loaded javafmod class.
+-- No external loader, copied class, executable, or server-side audio transport.
 
 local MOD_TAG = "[LCC Internet Radio PoC]"
+local FMOD_CREATESTREAM = 128
+local FMOD_3D = 16
+
 local CONFIG = {
     stationUuid = "dea0ad58-9bd8-4a2c-b4e5-ca6f3714ae7e",
     stationName = "WIVK-FM",
@@ -15,14 +18,37 @@ local CONFIG = {
     retryAfterTicks = 1800,
 }
 
+local javafmod = nil
+local fmodBindingChecked = false
+local fmodBindingAvailable = false
 local activeStreams = {}
 local retryAt = {}
 local tickNumber = 0
-local bridgeVersion = nil
-local bridgeMissingLogged = false
 
 local function log(message)
     print(MOD_TAG .. " " .. tostring(message))
+end
+
+local function initializeFmodBinding()
+    if fmodBindingChecked then return fmodBindingAvailable end
+    fmodBindingChecked = true
+
+    if not luajava or not luajava.bindClass then
+        log("luajava is unavailable; this B42 client cannot expose the built-in FMOD wrapper")
+        return false
+    end
+
+    -- fmod.javafmod ships with Project Zomboid. Binding a game class does not
+    -- load external code and requires no files outside this Workshop mod.
+    javafmod = luajava.bindClass("fmod.javafmod")
+    if not javafmod then
+        log("could not bind the built-in fmod.javafmod class")
+        return false
+    end
+
+    fmodBindingAvailable = true
+    log("bound built-in fmod.javafmod; pure Workshop streaming path is ready")
+    return true
 end
 
 local function vehicleKey(vehicle)
@@ -50,7 +76,6 @@ local function ensureStationPreset(deviceData)
     end
 
     if entryCount >= presets:getMaxPresets() then
-        -- Preserve existing presets. Vanilla SetChannel synchronizes the choice.
         presets:setMaxPresets(entryCount + 1)
     end
     presets:addPreset(CONFIG.stationName, CONFIG.frequency)
@@ -64,81 +89,82 @@ local function distanceSquared(player, vehicle)
     return dx * dx + dy * dy + dz * dz
 end
 
-local function emitterHasBridge(emitter)
-    if not emitter or emitter.lccInternetRadioBridgeVersion == nil then
-        if not bridgeMissingLogged then
-            bridgeMissingLogged = true
-            log("audio bridge is missing; install Leaf Loader and restart the client")
-        end
-        return false
+local function setChannelPosition(channel, vehicle)
+    javafmod.FMOD_Channel_Set3DAttributes(
+        channel,
+        vehicle:getX(),
+        vehicle:getY(),
+        vehicle:getZ() * 3,
+        0, 0, 0
+    )
+end
+
+local function releaseSound(sound)
+    if sound and sound ~= 0 then
+        javafmod.FMOD_Sound_Release(sound)
     end
-    if not bridgeVersion then
-        bridgeVersion = tostring(emitter:lccInternetRadioBridgeVersion())
-        log("detected audio bridge " .. bridgeVersion)
-    end
-    return true
 end
 
 local function stopStream(key, reason)
     local state = activeStreams[key]
     if not state then return end
-    if state.emitter and state.emitter.lccStopInternetStream ~= nil then
-        state.emitter:lccStopInternetStream(state.handle)
-    end
-    activeStreams[key] = nil
-    if reason then log("stopped vehicle " .. key .. " (" .. reason .. ")") end
-end
 
-local function bridgeError(emitter)
-    if emitter and emitter.lccInternetRadioBridgeLastError ~= nil then
-        return tostring(emitter:lccInternetRadioBridgeLastError())
+    if state.channel and state.channel ~= 0 then
+        javafmod.FMOD_Channel_Stop(state.channel)
     end
-    return "unknown bridge error"
+    releaseSound(state.sound)
+    activeStreams[key] = nil
+
+    if reason then log("stopped vehicle " .. key .. " (" .. reason .. ")") end
 end
 
 local function startStream(vehicle, deviceData, key)
     if retryAt[key] and tickNumber < retryAt[key] then return end
-
-    local emitter = vehicle:getEmitter()
-    if not emitterHasBridge(emitter) then
+    if not initializeFmodBinding() then
         retryAt[key] = tickNumber + CONFIG.retryAfterTicks
         return
     end
 
-    local handle = emitter:lccPlayInternetStream(
-        CONFIG.streamUrl,
-        CONFIG.minDistance,
-        CONFIG.maxDistance,
-        deviceData:getDeviceVolume()
-    )
-    if not handle or handle == 0 then
+    local sound = javafmod.FMOD_System_CreateSound(CONFIG.streamUrl, FMOD_CREATESTREAM)
+    if not sound or sound == 0 then
         retryAt[key] = tickNumber + CONFIG.retryAfterTicks
-        log("stream start failed for vehicle " .. key .. ": " .. bridgeError(emitter))
+        log("FMOD_System_CreateSound returned no stream for vehicle " .. key)
         return
     end
+
+    local channel = javafmod.FMOD_System_PlaySound(sound, true)
+    if not channel or channel == 0 then
+        releaseSound(sound)
+        retryAt[key] = tickNumber + CONFIG.retryAfterTicks
+        log("FMOD_System_PlaySound returned no channel for vehicle " .. key)
+        return
+    end
+
+    javafmod.FMOD_Channel_SetMode(channel, FMOD_3D)
+    setChannelPosition(channel, vehicle)
+    javafmod.FMOD_Channel_Set3DMinMaxDistance(channel, CONFIG.minDistance, CONFIG.maxDistance)
+    javafmod.FMOD_Channel_SetVolume(channel, deviceData:getDeviceVolume())
+    javafmod.FMOD_Channel_SetPaused(channel, false)
 
     activeStreams[key] = {
-        emitter = emitter,
-        handle = handle,
+        channel = channel,
+        sound = sound,
         lastVerifiedAt = tickNumber,
     }
     retryAt[key] = nil
-    log("started WIVK-FM for vehicle " .. key .. " (channel " .. tostring(handle) .. ")")
+    log("started WIVK-FM for vehicle " .. key .. " (FMOD channel " .. tostring(channel) .. ")")
 end
 
-local function updateActiveStream(deviceData, key)
+local function updateActiveStream(vehicle, deviceData, key)
     local state = activeStreams[key]
     if not state then return end
 
-    if not state.emitter:lccUpdateInternetStream(state.handle, deviceData:getDeviceVolume()) then
-        stopStream(key, "FMOD channel update failed")
-        retryAt[key] = tickNumber + CONFIG.retryAfterTicks
-        return
-    end
+    setChannelPosition(state.channel, vehicle)
+    javafmod.FMOD_Channel_SetVolume(state.channel, deviceData:getDeviceVolume())
 
     if tickNumber - state.lastVerifiedAt < CONFIG.verifyEveryTicks then return end
     state.lastVerifiedAt = tickNumber
-    if not state.emitter:lccIsInternetStreamPlaying(state.handle) then
+    if not javafmod.FMOD_Channel_IsPlaying(state.channel) then
         stopStream(key, "FMOD channel ended")
         retryAt[key] = tickNumber + CONFIG.retryAfterTicks
     end
@@ -167,7 +193,7 @@ local function updateVehicle(player, vehicle, seen)
     end
 
     if activeStreams[key] then
-        updateActiveStream(deviceData, key)
+        updateActiveStream(vehicle, deviceData, key)
     else
         startStream(vehicle, deviceData, key)
     end
@@ -182,8 +208,6 @@ local function update()
     local vehicles = cell and cell:getVehicles() or nil
     if not player or not vehicles then return end
 
-    -- B42 exposes a Java ArrayList here. Use only its concrete size()/get() API;
-    -- the removed generic collection probing caused the earlier nil-call errors.
     local seen = {}
     for index = 0, vehicles:size() - 1 do
         local vehicle = vehicles:get(index)
@@ -205,7 +229,8 @@ end
 
 Events.OnGameStart.Add(function()
     log("loaded; WIVK-FM=104.6 MHz, UUID=" .. CONFIG.stationUuid)
-    log("client FMOD bridge mode; server carries only vanilla vehicle-radio state")
+    log("pure Workshop mode; no Leaf, Java mod loader, or manual client installation")
+    initializeFmodBinding()
 end)
 Events.OnTick.Add(update)
 if Events.OnGameExit then Events.OnGameExit.Add(stopAll) end
