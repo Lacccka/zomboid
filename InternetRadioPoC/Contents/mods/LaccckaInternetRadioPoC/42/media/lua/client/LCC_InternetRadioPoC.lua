@@ -217,7 +217,7 @@ local function onKeyPressed(key)
 end
 
 Events.OnGameStart.Add(function()
-    log("0.9.1 server-native synthetic radio sender control loaded")
+    log("0.9.2 safe server bridge loaded; direct native injection disabled")
     log("F8=report HTTP availability only; F9=packaged clip in vehicle")
     log("F10=packaged world; F11=packaged vehicle")
     attempt("GameSounds.isKnownSound(" .. SOUND_NAME .. ")", function()

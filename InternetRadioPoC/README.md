@@ -1,4 +1,4 @@
-# Internet Vehicle Radio — Synthetic Radio Sender 0.9.1
+# Internet Vehicle Radio — Safe Server Bridge 0.9.2
 
 Server-only transport proof of concept for Project Zomboid Build 42.20.2.
 
@@ -7,24 +7,24 @@ Mod ID: `LaccckaInternetRadioPoC`
 
 ## Current milestone
 
-Version 0.9.1 tests the lightest architecture compatible with an unmodified
-Project Zomboid client:
+Version 0.9.2 is a stability release. The 0.9.1 runtime test proved that direct
+server injection is unsafe in Project Zomboid B42.20.2:
 
 ```text
-server-generated PCM
-  -> synthetic remote onlineID
-  -> vanilla SyncRadioData on 104.6 MHz
-  -> RakVoice.SendFrame(recipientGuid, syntheticOnlineID, PCM)
-  -> ordinary client tuned to 104.6 MHz
+IDENTITY_RETURN
+  -> RADIO_ROUTE_RETURN
+  -> SEND_ENTER
+  -> native server process termination
 ```
 
-No Steam-authenticated Virtual Client is created in this phase. The synthetic
-identity does not open its own network connection and does not consume a
-normal player slot.
+There was no Java exception and no `SEND_RETURN`, so the failure occurred
+inside the native RakVoice call. Version 0.9.2 physically removes the
+`RakVoice.SendFrame` call from the bridge and logs `DIRECT_TEST_BLOCKED`
+instead. It is safe to keep loaded while the next transport is implemented.
 
-The test source is still a deterministic 440 Hz tone. HLS, AAC and the WIVK-FM
-API are intentionally behind the `PcmSource` boundary and are not enabled
-until this transport reaches the normal client.
+The next transport is a server-managed RadioBot running in a genuine client
+RakVoice context. It remains server-only: ordinary players will not install
+Leaf, Java, a decoder, or a custom launcher.
 
 ## Why 0.9.1 differs from 0.8.7
 
@@ -38,7 +38,7 @@ Inspection of the actual B42.20.2 `projectzomboid.jar` established that:
   players known to `GameClient`;
 - one-client self injection is therefore expected to be suppressed or ignored.
 
-Version 0.9.1 announces a minimal remote `IsoPlayer` with reserved online ID
+Version 0.9.1 announced a minimal remote `IsoPlayer` with reserved online ID
 `3000`, sends radio metadata for that ID, and then injects PCM using the same
 ID. This makes the one-client test meaningful without requiring a full bot
 login.
@@ -81,18 +81,10 @@ The bridge queries sample rate, frame period and PCM buffer size from
 ## Expected server log
 
 ```text
-[InternetRadioBridge][BOOT] version=0.9.1; transport=synthetic-radio-sender; frequency=104.6; onlineId=3000
+[InternetRadioBridge][BOOT] version=0.9.2; transport=synthetic-radio-sender; frequency=104.6; onlineId=3000
 [InternetRadioBridge][MONITOR_OK] ...
 [InternetRadioBridge][VOICE_STATE] serverEnabled=true; ...
-[InternetRadioBridge][SYNTHETIC_ID] reserved onlineId=3000; collision=false
-[InternetRadioBridge][IDENTITY_ENTER] ...
-[InternetRadioBridge][IDENTITY_RETURN] GameServer.sendPlayerConnected returned
-[InternetRadioBridge][RADIO_ROUTE_RETURN] SyncRadioData sent; values=4
-[InternetRadioBridge][IDENTITY_READY] ... frequency=104.6
-[InternetRadioBridge][SYNTHETIC_TEST] ... bytes=960; bytesSource=derived-pcm16-mono; expectedFrequency=104.6
-[InternetRadioBridge][SEND_ENTER] ... onlineId=3000; ...
-[InternetRadioBridge][SEND_RETURN] first synthetic frame returned without exception
-[InternetRadioBridge][SYNTHETIC_RESULT] ... listenOn=104.6
+[InternetRadioBridge][DIRECT_TEST_BLOCKED] ... nextTransport=server-radio-bot
 ```
 
 Interpretation:
@@ -107,14 +99,10 @@ Interpretation:
 ## Test procedure
 
 1. Publish/update Workshop item `3783046891` and fully restart the server.
-2. Confirm Leaf loads `lcc-internet-radio-server-bridge 0.9.1`.
-3. Join with the single ordinary client and enable VOIP.
-4. Sit in a vehicle with a working radio.
-5. Turn the radio on and tune it to exactly `104.6 MHz`.
-6. Set radio volume above zero and make sure no cassette/media is playing.
-7. Wait up to 40 seconds. The six-second tone repeats every 30 seconds.
-8. Also test a nearby powered handheld radio on `104.6` if available.
-9. Save both the client and server logs.
+2. Confirm Leaf loads `lcc-internet-radio-server-bridge 0.9.2`.
+3. Join with the ordinary client.
+4. Confirm `VOICE_STATE` and `DIRECT_TEST_BLOCKED` appear.
+5. Leave the server running for several minutes and confirm it remains stable.
 
 F9/F10/F11 remain local packaged-audio controls and are independent of the
 server radio test.
@@ -152,11 +140,10 @@ set "BRIDGE_TARGET=%~dp0.leaf\runtime-mods\LaccckaInternetRadioServerBridge.jar"
 
 ## Next step after the test
 
-- If the tone is heard: keep the synthetic sender and implement
-  `HlsPcmSource`, listener-driven station sessions and additional frequencies.
-- If identity and send calls succeed but no tone is received: retain the same
-  `PcmSource` and station manager interfaces, replacing only the transport with
-  a minimal connected RadioBot.
+- Implement a minimal connected RadioBot launched automatically on the server.
+- Prove `440 Hz -> client RakVoice -> server -> radio 104.6`.
+- Only after that succeeds, attach `HlsPcmSource`, listener-driven station
+  sessions and additional frequencies.
 
 ## Build
 

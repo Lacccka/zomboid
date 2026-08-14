@@ -26,7 +26,7 @@ import zombie.network.PacketTypes;
  * sufficient.</p>
  */
 public final class ServerToneBridge {
-    public static final String VERSION = "0.9.1";
+    public static final String VERSION = "0.9.2";
 
     private static final int RADIO_FREQUENCY = 104_600;
     private static final int RADIO_RANGE = 30_000;
@@ -45,6 +45,7 @@ public final class ServerToneBridge {
     private static final AtomicBoolean CONNECTION_WAIT_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean VOICE_STATE_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean VOICE_DISABLED_LOGGED = new AtomicBoolean();
+    private static final AtomicBoolean DIRECT_ROUTE_BLOCKED_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean SYNTHETIC_ID_VALIDATED = new AtomicBoolean();
 
     private static final ConcurrentMap<Long, RecipientState> RECIPIENTS =
@@ -113,19 +114,13 @@ public final class ServerToneBridge {
                 return;
             }
 
-            validateSyntheticId(targets);
-            if (disabled) return;
-
-            long now = System.currentTimeMillis();
-            Set<Long> connectedGuids = new HashSet<>();
-            for (Target target : targets) {
-                connectedGuids.add(target.guid);
-                RecipientState state = RECIPIENTS.computeIfAbsent(
-                        target.guid,
-                        guid -> new RecipientState(now));
-                if (!state.failed) advanceRecipient(target, state, now);
+            if (DIRECT_ROUTE_BLOCKED_LOGGED.compareAndSet(false, true)) {
+                log("DIRECT_TEST_BLOCKED",
+                        "RakVoice.SendFrame is disabled in dedicated-server "
+                                + "context; B42.20.2 terminates the native "
+                                + "server process; nextTransport=server-radio-bot");
             }
-            RECIPIENTS.keySet().removeIf(guid -> !connectedGuids.contains(guid));
+            return;
         } catch (Throwable error) {
             fail("MONITOR_POLL", error);
         }
@@ -266,72 +261,9 @@ public final class ServerToneBridge {
 
     private static void sendTone(Target target, RecipientState state) {
         try {
-            if (state.ghost == null) {
-                throw new IllegalStateException("synthetic identity is missing");
-            }
-            state.ghost.setX(target.player.getX());
-            state.ghost.setY(target.player.getY());
-            state.ghost.setZ(target.player.getZ());
-            sendRadioData(target, state.ghost);
-
-            int sampleRate = RakVoice.GetSampleRate();
-            int framePeriodMs = RakVoice.GetSendFramePeriod();
-            int nativeFrameBytes = RakVoice.GetBufferSizeBytes();
-            int frameBytes = nativeFrameBytes > 0
-                    ? nativeFrameBytes
-                    : calculatePcmFrameBytes(sampleRate, framePeriodMs);
-            if (sampleRate <= 0 || frameBytes < 2 || framePeriodMs <= 0) {
-                throw new IllegalStateException("invalid voice format: sampleRate="
-                        + sampleRate + "; frameBytes=" + frameBytes
-                        + "; periodMs=" + framePeriodMs);
-            }
-
-            byte[] frame = new byte[frameBytes];
-            int framesToSend = Math.max(1,
-                    (int) Math.ceil((double) TONE_DURATION_MS / framePeriodMs));
-
-            logRecipient(target.guid, "SYNTHETIC_TEST",
-                    "recipientGuid=" + target.guid
-                            + "; syntheticOnlineId=" + SYNTHETIC_ONLINE_ID
-                            + "; source=" + TEST_SOURCE.description()
-                            + "; bytes=" + frameBytes
-                            + "; bytesSource="
-                            + (nativeFrameBytes > 0 ? "native" : "derived-pcm16-mono")
-                            + "; frames=" + framesToSend
-                            + "; durationMs=" + TONE_DURATION_MS
-                            + "; expectedFrequency="
-                            + formatFrequency(RADIO_FREQUENCY));
-
-            int sent = 0;
-            long nextFrameAt = System.nanoTime();
-            for (int frameIndex = 0;
-                    frameIndex < framesToSend && !disabled;
-                    frameIndex++) {
-                TEST_SOURCE.fill(frame, sampleRate);
-                if (frameIndex == 0) {
-                    logRecipient(target.guid, "SEND_ENTER",
-                            "guid=" + target.guid
-                                    + "; onlineId=" + SYNTHETIC_ONLINE_ID
-                                    + "; bytes=" + frame.length);
-                }
-                RakVoice.SendFrame(
-                        target.guid,
-                        SYNTHETIC_ONLINE_ID,
-                        frame,
-                        frame.length);
-                if (frameIndex == 0) {
-                    logRecipient(target.guid, "SEND_RETURN",
-                            "first synthetic frame returned without exception");
-                }
-                sent++;
-                nextFrameAt += framePeriodMs * 1_000_000L;
-                sleepUntil(nextFrameAt);
-            }
-
-            logRecipient(target.guid, "SYNTHETIC_RESULT",
-                    "sendFrameReturned=true; framesSent=" + sent
-                            + "; listenOn=" + formatFrequency(RADIO_FREQUENCY)
-                            + "; retryAfterMs=" + TONE_INTERVAL_MS);
+            state.failed = true;
+            logRecipient(target.guid, "DIRECT_TEST_BLOCKED",
+                    "native SendFrame removed; nextTransport=server-radio-bot");
         } catch (Throwable error) {
             failRecipient(target.guid, "SYNTHETIC_TEST", error);
         } finally {
