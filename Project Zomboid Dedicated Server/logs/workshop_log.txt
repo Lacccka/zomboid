@@ -663,3 +663,23 @@
 [2026-08-14 23:05:31] [AppID 108600] Workshop depot not defined, using AppID itself
 [2026-08-14 23:05:31] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
 [2026-08-14 23:05:32] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 23:35:56] Client version: no bootstrapper found
+[2026-08-14 23:35:56] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 23:35:57] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 23:35:57] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 23:35:57] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 23:35:57] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 23:35:57] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 1672355460653793222
+[2026-08-14 23:35:57] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 23:36:01] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 23:36:01] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 23:36:01] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 23:39:06] Client version: no bootstrapper found
+[2026-08-14 23:39:06] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 23:39:07] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 23:39:07] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 23:39:08] [AppID 108600] Updating workshop item details failed with Access Denied
