@@ -54,7 +54,7 @@ function NMHeadphoneSlotTimedAction:perform()
     if self.window then
         self.window._nmHeadphoneSlotTimedProgress = nil
         local pendingEjectFullType = tostring(self.window._nmPendingHeadphoneSlotFullType or "")
-        local ok = self.window:dispatch(self.actionName, self.args or {})
+        local ok = self.window:dispatchSlotAction(self.actionName, self.args or {})
         if ok == true then
             self.window._nmPendingHeadphoneSlotFullType = nil
             if self.actionName == "eject_headphones"
@@ -63,7 +63,11 @@ function NMHeadphoneSlotTimedAction:perform()
                 and NMSlotHostLifecycle.markAwaitingAuthoritativeSlotEject then
                 NMSlotHostLifecycle.markAwaitingAuthoritativeSlotEject(self.window, "headphones", pendingEjectFullType)
             end
-            playSlotUISound(self.window, "NM_ButtonClick", 0.8)
+            if self.actionName == "insert_headphones" then
+                playPortableUiSoundEvent(self.window, "slot_headphone_insert_success")
+            elseif self.actionName == "eject_headphones" then
+                playPortableUiSoundEvent(self.window, "slot_headphone_eject_success")
+            end
         end
         if self.actionName == "eject_headphones" and self.window._nmSlotRemoveInFlightByType then
             self.window._nmSlotRemoveInFlightByType.headphones = nil

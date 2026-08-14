@@ -62,7 +62,7 @@ local function clampNumber(value, minValue, maxValue)
 end
 
 local values = {
-    buildContentToken = "2026.08.08.1",
+    buildContentToken = "2026.08.14.1",
     worldTrackingCap = 1500,
     registryStaleTicks = 7200,
     registryHeartbeatIntervalTicks = 120,
@@ -86,36 +86,32 @@ local values = {
     trackEndPendingFalseChecks = 3,
     trackEndPendingWindowMsByDeviceType = {},
     trackEndPendingFalseChecksByDeviceType = {},
-    debugMasterEnabled = false,
     zombieLiveVisualStrategySP = "sp_runtime_attach",
     zombieLiveVisualStrategyMP = "mp_assignment_flow",
-    -- Debug defaults stay quiet. Automatic debugging is enabled by setting
-    -- `bootDebugPreset` to a named preset in `NMRuntimeDebugConfig.lua`.
-    debugKnobs = {
+    -- Keep boot defaults quiet; targeted subsystem probes can be enabled
+    -- explicitly when validating a focused runtime path.
+    debugSubsystems = {
         core = false,
         intent = false,
         state = false,
-        emitter = false,
-        memoryProbe = false,
-        runtimeProbe = false,
-        progressionProbe = false,
-        vehicleRebindTrace = false,
-        transitionProbe = false,
-        items = false,
-        net = false,
+        runtime = false,
+        memory = false,
+        playback_progression = false,
+        playback_transition = false,
+        vehicle = false,
+        zombie_assignment = false,
+        zombie_corpse = false,
+        zombie_visual = false,
+        zombie_attraction = false,
+        network = false,
         registry = false,
-        lootDiagnostics = false,
-        zombieDiagnostics = false,
-        vehicleDiagnostics = false,
-        vehicleTruthProbe = false,
-        uiPerfProbe = false,
-        uiAutoCloseProbe = false,
-        portableUiProbe = false,
-        slotAuthorityProbe = false
+        loot = false,
+        loot_probe = false,
+        ui_render = false,
+        ui_auto_close = false,
+        ui_lifecycle = false,
+        slot = false
     },
-    -- Resting posture is quiet. For automatic boot-time debugging, set this
-    -- to a named preset such as `vehicle_personal_playback_investigation`.
-    bootDebugPreset = "quiet",
     enableVehicleEmitterDiagnostics = true,
     vehicleEmitterJumpWarnDistance = 12,
     vehicleEmitterJumpRebindHintDistance = 48,
@@ -149,10 +145,6 @@ function NMRuntimeConfig.get(key, defaultValue)
         return defaultValue
     end
     return v
-end
-
-function NMRuntimeConfig.getBootDebugPreset()
-    return tostring(values.bootDebugPreset or "")
 end
 
 function NMRuntimeConfig.getBuildContentToken()
@@ -309,8 +301,8 @@ function NMRuntimeConfig.getTrackEndPendingFalseChecksForDeviceType(deviceType)
 end
 
 function NMRuntimeConfig.enableVehicleEmitterDiagnostics()
-    if NMRuntimeConfig.getDebugKnob then
-        return NMRuntimeConfig.getDebugKnob("vehicleDiagnostics") == true
+    if NMRuntimeConfig.isSubsystemDebugEnabled then
+        return NMRuntimeConfig.isSubsystemDebugEnabled("vehicle") == true
     end
     return values.enableVehicleEmitterDiagnostics == true
 end
@@ -363,6 +355,14 @@ function NMRuntimeConfig.getAudioMaxRadius()
         return math.max(9, math.min(100, math.floor(fromSandbox + 0.5)))
     end
     return 35
+end
+
+function NMRuntimeConfig.getZombieAttractionRadius()
+    local fromSandbox = clampNumber(resolveSandboxNumber("ZombieAttractionRadius"), 9, 200)
+    if fromSandbox ~= nil then
+        return math.max(9, math.min(200, math.floor(fromSandbox + 0.5)))
+    end
+    return 105
 end
 
 function NMRuntimeConfig.getDisassemblyEnabled()

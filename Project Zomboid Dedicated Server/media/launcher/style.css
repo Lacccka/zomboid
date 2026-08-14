@@ -1,0 +1,120 @@
+/*
+Theme Name: 	Project Zomboid
+Theme URI: 		http://thisismodular.co.uk/
+Description: 	A theme based on Starkers 4.0 - http://viewportindustries.com/products/starkers
+Version: 		1.0.0
+Author: 		Justin Norton and Leroy Kirby
+Author URI: 	http://thisismodular.co.uk/
+*/
+
+@import "static/css/global.css";
+
+/*images*/
+/*.boxListIntro > .featured img{
+    height: 173px;
+    width: 256px;
+}
+
+.boxListArticle img{
+    height: 293px;
+    width: 438px;
+}
+
+.boxSquare img{
+    height: 291px;
+    width: 288px;
+}
+
+.boxArticleHeadingImage img{
+	height: 462px;
+	width: 712px;
+}
+
+.boxBlog img{
+    height: 291px;
+    width: 435px;
+}
+
+.boxBlogWide img{
+    height: 291px;
+    width: 585px;
+}
+
+.boxPromoItems img{
+	height: 446px;
+	width: 660px;
+}
+
+.boxPromoNavItem img{
+	height: 140px;
+	width: 200px;
+}
+*/
+.boxArticleContent .content img{
+	border-color:black;
+	border-style:double;
+	border-width:4px 5px 5px 5px;
+	-moz-border-image:url("./static/images/borderCarousel.png") 4 5 5 5 repeat;
+	-webkit-border-image:url("./static/images/borderCarousel.png") 4 5 5 5 repeat;
+	border-image:url("./static/images/borderCarousel.png") 4 5 5 5 repeat;
+	margin: 0 auto;
+	display: block;
+}
+
+.comictext.title .background{
+	/*opacity: 0.85 !important;*/
+}
+
+.boxListIntro.stub{
+	height: 182px;
+}
+
+/* ACCESSIBILITY */
+.screen-reader-text {
+	position:absolute!important;
+	clip:rect(1px 1px 1px 1px);
+/* IE6, IE7 */
+	clip:rect(1px,1px,1px,1px);
+	padding:0!important;
+	border:0!important;
+	height:1px!important;
+	width:1px!important;
+	overflow:hidden;
+}
+
+/**
+ * 	Site update 30 / 10 / 2013
+ */
+.single .blogArticle .content ul, .single .blogArticle .content ol {
+	font-family: arial, verdana, sans-serif;
+	font-size: 16px;
+	line-height: 20px;
+	letter-spacing: 0px;
+	padding-left: 5px;
+	margin-left: 40px;
+	padding: 10px 0px 10px 5px;
+}
+.single .blogArticle .content li {
+	margin-bottom: 3px;
+}
+.single .blogArticle .content ul {
+	list-style: disc;
+	
+}
+.single .blogArticle .content ol {
+	list-style: decimal;
+}
+.single .blogArticle .content ul li {
+	
+}
+.single .blogArticle .content ol li {
+	
+}
+.single .blogArticle .content ul ul {
+	margin-left: 20px;
+	padding: 3px 0px 3px 5px;
+}
+.single .blogArticle .content ol ol {
+	margin-left: 20px;
+	padding: 3px 0px 3px 5px;
+}

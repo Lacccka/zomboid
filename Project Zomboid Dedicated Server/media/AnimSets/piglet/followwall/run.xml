@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="default.xml">
+	<m_Name>run</m_Name>
+	<m_AnimName>Piglet_Run</m_AnimName>
+	<m_Conditions x_name="7374d871-4dd5-4462-bfb0-e6fc1cccda38">
+		<m_Name>animalRunning</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Events x_name="6d09f87e-80c3-41d6-a734-5d7fbd88dc74">
+		<m_TimePc>0.13</m_TimePc>
+		<m_ParameterValue>run</m_ParameterValue>
+	</m_Events>
+	<m_Events x_name="7564e993-d418-4d32-ac3c-3d494910ed48">
+		<m_EventName></m_EventName>
+		<m_Time>Start</m_Time>
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+</animNode>

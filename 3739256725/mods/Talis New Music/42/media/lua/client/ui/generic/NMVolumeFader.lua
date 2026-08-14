@@ -244,7 +244,7 @@ local function applyDetent(panel, idx)
 end
 
 local function flushVolumeDispatch(panel, force)
-    if not (panel and panel.window and panel.window.dispatch) then
+    if not (panel and panel.window and panel.window.executeUiControl) then
         return
     end
     local pending = tonumber(panel._nmPendingDispatchVolume)
@@ -256,7 +256,7 @@ local function flushVolumeDispatch(panel, force)
     if force ~= true and (now - last) < DRAG_DISPATCH_MIN_MS then
         return
     end
-    panel.window:dispatch("set_volume", { volume = pending })
+    panel.window:executeUiControl("set_volume", { volume = pending })
     panel._nmLastVolumeDispatchMs = now
     panel._nmLastDispatchedVolume = pending
     panel._nmPendingDispatchVolume = nil

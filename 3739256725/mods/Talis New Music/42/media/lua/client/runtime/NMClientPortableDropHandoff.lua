@@ -18,8 +18,8 @@ local function nowMs()
 end
 
 local function logRuntime(tag, detail)
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
-        NMCore.logChannel("runtimeProbe", tag, detail)
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+        NMCore.logChannel("runtime", tag, detail)
     end
 end
 

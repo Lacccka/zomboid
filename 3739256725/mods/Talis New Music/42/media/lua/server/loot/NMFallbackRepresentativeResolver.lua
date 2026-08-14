@@ -1,5 +1,6 @@
-require "helpers/NMWorldItemVisuals"
+require "slot/NMWorldItemVisuals"
 require "loot/NMManagedSpawnCatalog"
+require "loot/NMLootDebugHelpers"
 
 NMFallbackRepresentativeResolver = NMFallbackRepresentativeResolver or {}
 
@@ -67,83 +68,10 @@ local function toLower(value)
     return string.lower(tostring(value or ""))
 end
 
-local skippedContainerLogs = {}
-
 local function logLoot(tag, detail)
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("lootDiagnostics") == true then
-        NMCore.logChannel("lootDiagnostics", tostring(tag or "fallback"), tostring(detail or ""))
+    if NMLootDebugHelpers and NMLootDebugHelpers.logLoot then
+        NMLootDebugHelpers.logLoot(tag or "fallback", detail or "")
     end
-end
-
-local function isKnownNonMutableContainerShape(container)
-    local text = tostring(container or "")
-    if text == "" then
-        return false
-    end
-    return string.find(text, "ItemPickerJava$ItemPickerContainer@", 1, true) ~= nil
-end
-
-local function logSkippedContainer(container, reason)
-    local shape = tostring(container or "nil")
-    local key = tostring(reason or "unknown") .. "|" .. shape
-    if skippedContainerLogs[key] then
-        return
-    end
-    skippedContainerLogs[key] = true
-    logLoot("fallback.skip_container", string.format("reason=%s shape=%s", tostring(reason or "unknown"), shape))
-end
-
-local function safeCallMethod(target, methodName, ...)
-    if target == nil then
-        return nil
-    end
-    local args = { ... }
-    local ok, result = pcall(function()
-        local method = target[methodName]
-        if type(method) ~= "function" then
-            return nil
-        end
-        return method(target, unpack(args))
-    end)
-    if ok then
-        return result
-    end
-    return nil
-end
-
-local function resolveMutableContainer(container)
-    if isKnownNonMutableContainerShape(container) then
-        logSkippedContainer(container, "item_picker_container")
-        return nil, nil
-    end
-
-    local items = safeCallMethod(container, "getItems")
-    if items and items.size and items.get then
-        return container, items
-    end
-
-    local unwrapMethods = {
-        "getActualContainer",
-        "getContainer",
-        "getInventory",
-        "getItemContainer",
-        "getActual"
-    }
-    for i = 1, #unwrapMethods do
-        local resolved = safeCallMethod(container, unwrapMethods[i])
-        if resolved ~= nil and resolved ~= container then
-            if isKnownNonMutableContainerShape(resolved) then
-                logSkippedContainer(resolved, "item_picker_container_unwrapped")
-            else
-            items = safeCallMethod(resolved, "getItems")
-            if items and items.size and items.get then
-                return resolved, items
-            end
-            end
-        end
-    end
-
-    return nil, nil
 end
 
 local function newState()
@@ -473,18 +401,31 @@ local function logReplacementSession(container, selectionSession)
     for i = 1, #MEDIA_CATEGORY_ORDER do
         local category = MEDIA_CATEGORY_ORDER[i]
         local localCategory = selectionSession.byCategory[category]
-        if localCategory and (tonumber(localCategory.placeholders) or 0) > 0 then
-            logLoot(
-                "fallback.replace_container",
-                string.format(
-                    "category=%s placeholders=%s unique=%s repeats=%s shape=%s",
-                    tostring(category),
-                    tostring(tonumber(localCategory.placeholders) or 0),
-                    tostring(tonumber(localCategory.uniquePicks) or 0),
-                    tostring(tonumber(localCategory.repeatPicks) or 0),
-                    containerShape
-                )
+        if category == "vinyl" and localCategory and (tonumber(localCategory.placeholders) or 0) > 0 then
+            local detail = string.format(
+                "category=%s placeholders=%s unique=%s repeats=%s shape=%s",
+                tostring(category),
+                tostring(tonumber(localCategory.placeholders) or 0),
+                tostring(tonumber(localCategory.uniquePicks) or 0),
+                tostring(tonumber(localCategory.repeatPicks) or 0),
+                containerShape
             )
+            if NMLootDebugHelpers and NMLootDebugHelpers.logLootThrottled then
+                NMLootDebugHelpers.logLootThrottled(
+                    "fallback.replace_container",
+                    string.format(
+                        "%s|%s|%s|%s",
+                        tostring(category),
+                        tostring(tonumber(localCategory.placeholders) or 0),
+                        tostring(tonumber(localCategory.uniquePicks) or 0),
+                        containerShape
+                    ),
+                    "fallback.replace_container",
+                    detail
+                )
+            else
+                logLoot("fallback.replace_container", detail)
+            end
         end
     end
 end
@@ -606,7 +547,7 @@ function resolver.replaceRepresentativesInContainer(container)
         return 0
     end
 
-    local resolvedContainer, items = resolveMutableContainer(container)
+    local resolvedContainer, items = NMLootDebugHelpers.resolveMutableContainer(container, "fallback.skip_container")
     if not (resolvedContainer and items and items.size and items.get) then
         return 0
     end

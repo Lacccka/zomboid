@@ -1,73 +1,30 @@
 NMClientTrackFinishedDispatch = NMClientTrackFinishedDispatch or {}
 
-local function resolveTrackCountFromMedia(state)
-    if not state or not state.mediaFullType or not NMMusic or not NMMusic.resolveTracks then
-        return 0
-    end
-    local ok, resolved = pcall(NMMusic.resolveTracks, state.mediaFullType)
-    if not ok or type(resolved) ~= "table" or type(resolved.tracks) ~= "table" then
-        return 0
-    end
-    return #resolved.tracks
-end
-
 local function buildTrackFinishedArgs(state, playbackMode, endedToken)
-    local trackCount = resolveTrackCountFromMedia(state)
-    local contract = NMTrackProgressionContract.resolve(state, {
-        context = tostring(playbackMode or state and state.playbackMode or "world"),
-        worldAuthoritative = tostring(playbackMode or state and state.playbackMode or "world") == "world"
-    })
-    local token = contract and contract.token or {}
     local observedDurationMs = tonumber(endedToken and endedToken.observedDurationMs) or 0
-    return {
-        playbackMode = tostring(playbackMode or state and state.playbackMode or "world"),
-        trackCount = trackCount,
-        hasTrack = trackCount > 0,
-        expectedRevision = tonumber(token.revision) or 0,
-        expectedPlaybackEpoch = tonumber(token.playbackEpoch) or 0,
-        expectedTrackIndex = tonumber(token.trackIndex) or 0,
-        observedDurationMs = observedDurationMs > 0 and math.floor(observedDurationMs + 0.5) or nil
-    }
+    return NMClientTrackProgressionDispatch.buildTrackFinishedArgs(state, playbackMode, observedDurationMs)
 end
 
 local function logTrackFinishedDispatch(kind, uuid, detail)
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("progressionProbe") then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_progression") then
         NMCore.logChannel(
-            "progressionProbe",
+            "playback_progression",
             "track_finished_dispatch",
             string.format("kind=%s uuid=%s %s", tostring(kind), tostring(uuid), tostring(detail or ""))
         )
     end
 end
 
-local function shouldLogTrackFinishedConsume(uuid, sourceKind, state, consumed)
-    if not (NMCore and NMCore.shouldLogEvery) then
-        return consumed == true
-    end
-    if consumed == true then
-        return true
-    end
-    local epoch = tonumber(state and state.playbackEpoch) or -1
-    local track = tonumber(state and state.trackIndex) or -1
-    local key = string.format(
-        "progressionProbe.track_finished_consume.%s.%s.%s.%s",
-        tostring(uuid or ""),
-        tostring(sourceKind or "unknown"),
-        tostring(epoch),
-        tostring(track)
-    )
-    local nowMs = (getTimestampMs and tonumber(getTimestampMs()))
-        or ((getTimestamp and tonumber(getTimestamp()) or 0) * 1000)
-        or 0
-    return NMCore.shouldLogEvery(key, nowMs, 1500)
+local function shouldLogTrackFinishedConsume(consumed)
+    return consumed == true
 end
 
 local function logTrackFinishedArgs(kind, uuid, state, args)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("progressionProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_progression")) then
         return
     end
     NMCore.logChannel(
-        "progressionProbe",
+        "playback_progression",
         "track_finished_args",
         string.format(
             "kind=%s uuid=%s media=%s mode=%s stateTrack=%s payloadTrackCount=%s observedDurationMs=%s expectedEpoch=%s expectedTrack=%s",
@@ -131,9 +88,9 @@ local function applyDetachedTrackFinishedLocalSP(uuid, profile, state, entry)
         if worldContext and (state.isOn == true or state.isPlaying == true or state.desiredIsOn == true or state.desiredIsPlaying == true) then
             state.playbackMode = "world"
             keep = true
-            if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("progressionProbe") then
+            if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_progression") then
                 NMCore.logChannel(
-                    "progressionProbe",
+                    "playback_progression",
                     "detached_sp_keep_override",
                     string.format(
                         "uuid=%s reason=world_context_active ctx=%s isOn=%s isPlaying=%s",
@@ -256,10 +213,10 @@ end
 function NMClientTrackFinishedDispatch.consumeAndDispatchTrackFinished(player, profile, state, entry, item, sourceKind, uuid)
     local endedToken = NMPlaybackRuntime.consumeTrackEndedToken(uuid)
     if not endedToken then
-        if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("progressionProbe")
-            and shouldLogTrackFinishedConsume(uuid, sourceKind, state, false) then
+        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_progression")
+            and shouldLogTrackFinishedConsume(false) then
             NMCore.logChannel(
-                "progressionProbe",
+                "playback_progression",
                 "track_finished_consume",
                 string.format(
                     "uuid=%s sourceKind=%s consumed=false media=%s epoch=%s track=%s",
@@ -273,10 +230,10 @@ function NMClientTrackFinishedDispatch.consumeAndDispatchTrackFinished(player, p
         end
         return
     end
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("progressionProbe")
-        and shouldLogTrackFinishedConsume(uuid, sourceKind, state, true) then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_progression")
+        and shouldLogTrackFinishedConsume(true) then
         NMCore.logChannel(
-            "progressionProbe",
+            "playback_progression",
             "track_finished_consume",
             string.format(
                 "uuid=%s sourceKind=%s consumed=true observedDurationMs=%s media=%s epoch=%s track=%s",

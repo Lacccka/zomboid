@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="BentDouble.xml">
+	<m_Name>Bent_Double_2H</m_Name>
+	<m_AnimName>Bob_Emote_Bent_Double_Sat_2H</m_AnimName>
+	<m_Conditions x_name="8f026d70-a3f3-4754-8679-9282c5dc3872">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="ba85bc22-cc31-45ba-9ea7-9da218786755">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="d2267b9f-ba15-4dae-b0e1-76be05cba3ac">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>BentDouble</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="a4597b40-02ee-4a2c-b0d0-22101231e474">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+</animNode>

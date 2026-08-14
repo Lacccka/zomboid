@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transitions>
+	<transition>
+		<transitionTo>onground</transitionTo>
+		<conditions>
+			<eventOccurred>ActiveAnimFinishing</eventOccurred>
+		</conditions>
+	</transition>
+	<transition>
+		<transitionTo>onground</transitionTo>
+		<conditions>
+			<lessEqual a="stateEventDelayTimer" b="0.0000" />
+		</conditions>
+	</transition>
+</transitions>

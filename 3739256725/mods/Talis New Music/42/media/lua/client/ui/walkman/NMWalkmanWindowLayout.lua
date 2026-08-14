@@ -285,97 +285,22 @@ function WalkmanWindow:clampWindowX(value)
 end
 
 function WalkmanWindow:snapToState(collapsed)
-    self.isCollapsed = (collapsed == true)
-    self.isAnimating = false
-    self.animStartY = nil
-    self.animTargetY = nil
-    self.animStartTime = nil
-    self:setX(self:clampWindowX(self:getX()))
-    self._nmExpandedY = self:getExpandedY()
-    self:setY(self:getStateY(self.isCollapsed))
-    if self.target then
-        persistWindowState(self, true)
-    end
+    NMFancyWindowChrome.snapToState(self, collapsed, persistWindowState)
 end
 
 function WalkmanWindow:startCollapseAnimation(collapsed)
-    local targetY = self:getStateY(collapsed)
-    local currentY = tonumber(self:getY()) or targetY
-    if collapsed ~= true then
-        self._nmExpandedY = self:getExpandedY()
-        targetY = self:getExpandedY()
-    end
-    self.isCollapsed = (collapsed == true)
-    if self.target then
-        persistWindowState(self, true)
-    end
-    if currentY == targetY then
-        self.isAnimating = false
-        self:setY(targetY)
-        return
-    end
-    self.isAnimating = true
-    self.animStartY = currentY
-    self.animTargetY = targetY
-    self.animStartTime = getNowMs()
+    NMFancyWindowChrome.startCollapseAnimation(self, collapsed, persistWindowState)
 end
 
 function WalkmanWindow:toggleCollapsed()
-    self:startCollapseAnimation(not self.isCollapsed)
+    NMFancyWindowChrome.toggleCollapsed(self, persistWindowState)
 end
 
 function WalkmanWindow:finishHeaderInteraction()
-    self.headerPressed = false
-    self.headerPressStartedCollapsed = nil
-    self.headerDragMode = nil
-    self.draggingHeader = false
-    self.headerPressX = nil
-    self.headerPressY = nil
-    self.dragStartWindowX = nil
-    self.dragStartWindowY = nil
-    self.interactionSuppressedToggle = false
+    NMFancyWindowChrome.finishHeaderInteraction(self)
 end
 
 function WalkmanWindow:updateHeaderDrag()
-    if self.headerPressed ~= true then
-        return false
-    end
-
-    local mouseX = getMouseX and getMouseX() or 0
-    local mouseY = getMouseY and getMouseY() or 0
-    local deltaX = mouseX - (tonumber(self.headerPressX) or mouseX)
-    local deltaY = mouseY - (tonumber(self.headerPressY) or mouseY)
-    if self.draggingHeader ~= true and (math.abs(deltaX) >= DRAG_THRESHOLD_X or math.abs(deltaY) >= DRAG_THRESHOLD_X) then
-        local startedCollapsed = self.headerPressStartedCollapsed == true
-        self.draggingHeader = true
-        self.headerDragMode = startedCollapsed and "collapsed" or "expanded"
-        self.interactionSuppressedToggle = true
-        self.isAnimating = false
-        if startedCollapsed then
-            self:setY(self:getCollapsedY())
-        else
-            self.isCollapsed = false
-            self._nmExpandedY = self:getExpandedY()
-            self:setY(self:getExpandedY())
-        end
-    end
-
-    if self.draggingHeader ~= true then
-        return false
-    end
-
-    local dragStartX = tonumber(self.dragStartWindowX) or tonumber(self:getX()) or 0
-    self:setX(self:clampWindowX(dragStartX + deltaX))
-    if self.headerDragMode == "collapsed" then
-        self:setY(self:getCollapsedY())
-    else
-        local dragStartY = tonumber(self.dragStartWindowY) or tonumber(self:getY()) or self:getExpandedY()
-        self._nmExpandedY = self:clampWindowY(dragStartY + deltaY)
-        self:setY(self._nmExpandedY)
-    end
-    if self.target then
-        persistWindowState(self, false)
-    end
-    return true
+    return NMFancyWindowChrome.updateHeaderDrag(self, DRAG_THRESHOLD_X, persistWindowState)
 end
 

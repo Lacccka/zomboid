@@ -231,17 +231,17 @@ local function joinCandidates(candidates, maxCount)
 end
 
 local function logTransitionProbe(msg, detail)
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("transitionProbe") then
-        NMCore.logChannel("transitionProbe", msg, detail)
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_transition") then
+        NMCore.logChannel("playback_transition", msg, detail)
     end
 end
 
 local function logPortableTrackProgression(uuid, detail)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("progressionProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_progression")) then
         return
     end
     NMCore.logChannel(
-        "progressionProbe",
+        "playback_progression",
         "portable_track_progression",
         string.format("uuid=%s %s", tostring(uuid or ""), tostring(detail or ""))
     )
@@ -252,7 +252,7 @@ local function isCorpseRecoveredState(state)
 end
 
 local function logCorpseAudio(uuid, tag, detail)
-    if not (NMCore and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("zombieDiagnostics")) then
+    if not (NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("zombie_corpse")) then
         return
     end
     local key = tostring(uuid or "") .. "|" .. tostring(tag or "")
@@ -262,7 +262,7 @@ local function logCorpseAudio(uuid, tag, detail)
     end
     NMPlaybackRuntime._corpseAudioSeen[key] = sig
     if NMCore and NMCore.logChannel then
-        NMCore.logChannel("zombieDiagnostics", tostring(tag or "corpse_audio"), tostring(detail or ""))
+        NMCore.logChannel("zombie_corpse", tostring(tag or "corpse_audio"), tostring(detail or ""))
     end
 end
 
@@ -365,7 +365,7 @@ local function setChannelPos(channel, source)
         channel.lastX = newX
         channel.lastY = newY
         channel.lastZ = newZ
-        if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
             local dx = (newX or 0) - (oldX or (newX or 0))
             local dy = (newY or 0) - (oldY or (newY or 0))
             local dz = (newZ or 0) - (oldZ or (newZ or 0))
@@ -375,7 +375,7 @@ local function setChannelPos(channel, source)
             if dist >= 1.0 or (nowMs - lastMs) >= 60000 then
                 channel._lastPosLogMs = nowMs
                 NMCore.logChannel(
-                    "runtimeProbe",
+                    "runtime",
                     "emitter_pos_update",
                     string.format(
                         "channel=%s old=%.2f,%.2f,%.2f new=%.2f,%.2f,%.2f dist=%.2f",
@@ -527,7 +527,7 @@ local function classifyDualAudibleRoute(routeWorld, routePersonal)
 end
 
 local function logVehicleRouteProbe(player, state, source, sig, detail)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
         return
     end
     local uuid = tostring(state and state.deviceUUID or "")
@@ -545,7 +545,7 @@ local function logVehicleRouteProbe(player, state, source, sig, detail)
     end
     routeProbeSigByUuid[uuid] = stableSig
     routeProbeMsByUuid[uuid] = now
-    NMCore.logChannel("runtimeProbe", "vehicle_route_truth", line)
+    NMCore.logChannel("runtime", "vehicle_route_truth", line)
 end
 
 function NMPlaybackRuntime.computeLocalListenerAudibility(player, profile, state, source)
@@ -685,11 +685,11 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
         return
     end
     if NMAuthorityContract and NMAuthorityContract.canMutateDurableStateAtRuntime and (not NMAuthorityContract.canMutateDurableStateAtRuntime()) then
-        if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") and NMCore.shouldLogEvery then
+        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") and NMCore.shouldLogEvery then
             local skipKey = "runtimeProbe.clientBatterySkip." .. tostring(uuid)
             if NMCore.shouldLogEvery(skipKey, tonumber(tickCount) or 0, 600) then
                 NMCore.logChannel(
-                    "runtimeProbe",
+                    "runtime",
                     "client_battery_drain_skipped_authority",
                     string.format("uuid=%s playbackMode=%s", tostring(uuid), tostring(state.playbackMode or "nil"))
                 )
@@ -721,11 +721,11 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
     local useDualRender = useDualVehicle or (portablePolicy and portablePolicy.dualRender == true)
     local vehicleResolved = not (context == "vehicle" and source and source._vehicleResolved == false)
 
-    if NMCore and NMCore.logChannel and NMCore.shouldLogEvery and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+    if NMCore and NMCore.logChannel and NMCore.shouldLogEvery and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
         local routeKey = "runtimeProbe.route." .. uuid
         if NMCore.shouldLogEvery(routeKey, tonumber(tickCount) or 0, 60) then
             NMCore.logChannel(
-                "runtimeProbe",
+                "runtime",
                 "route",
                 string.format(
                     "uuid=%s context=%s output=%s worldOut=%s shouldPlay=%s isOn=%s isPlaying=%s muted=%s volume=%.2f effective=%.2f media=%s",
@@ -761,11 +761,11 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                 )
             )
         end
-        if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") and NMCore.shouldLogEvery then
+        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") and NMCore.shouldLogEvery then
             local key = "runtimeProbe.personal_world_block." .. tostring(uuid)
             if NMCore.shouldLogEvery(key, tonumber(tickCount) or 0, 300) then
                 NMCore.logChannel(
-                    "runtimeProbe",
+                    "runtime",
                     "personal_world_blocked",
                     string.format(
                         "uuid=%s context=%s owner=%s localOnlineId=%s localUsername=%s",
@@ -803,9 +803,9 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                 )
             )
         end
-        if state.isPlaying == true and NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+        if state.isPlaying == true and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
             NMCore.logChannel(
-                "runtimeProbe",
+                "runtime",
                 "route_blocked",
                 string.format(
                     "uuid=%s context=%s output=%s isMuted=%s media=%s",
@@ -835,11 +835,11 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
         if awaitingEpoch ~= stateEpoch or awaitingTrack ~= stateTrack then
             NMPlaybackRuntime.TrackEndAwaitingAdvance[uuid] = nil
         else
-            if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("progressionProbe") and NMCore.shouldLogEvery then
+            if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_progression") and NMCore.shouldLogEvery then
                 local holdKey = "progressionProbe.world.await_hold." .. tostring(uuid) .. ":" .. tostring(stateEpoch) .. ":" .. tostring(stateTrack)
                 if NMCore.shouldLogEvery(holdKey, tonumber(tickCount) or 0, 240) then
                     NMCore.logChannel(
-                        "progressionProbe",
+                        "playback_progression",
                         "progression_world_replay_hold",
                         string.format("uuid=%s epoch=%s track=%s context=%s", tostring(uuid), tostring(stateEpoch), tostring(stateTrack), tostring(context))
                     )
@@ -892,12 +892,13 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
         end
         trackEndActive = monitor and {
             emitter = monitor.emitter,
-            soundId = monitor.soundId
+            soundId = monitor.soundId,
+            startedAtMs = tonumber(monitor.startedAtMs) or tonumber(active.startedAtMs) or 0
         } or nil
     end
 
     if active
-        and NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("progressionProbe")
+        and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_progression")
         and NMDeviceProfiles and NMDeviceProfiles.isPortableTrackedContext
         and NMDeviceProfiles.isPortableTrackedContext(profile, context) == true
         and NMCore.shouldLogEvery then
@@ -947,9 +948,9 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                     tostring(state and state.trackIndex or -1)
                 )
             )
-            if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("progressionProbe") then
+            if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_progression") then
                 NMCore.logChannel(
-                    "progressionProbe",
+                    "playback_progression",
                     "client_track_end_token_set",
                     string.format(
                         "uuid=%s context=%s token=%s:%s",
@@ -962,7 +963,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
             end
             stopEntry(uuid, "track_end")
             return
-        elseif NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("progressionProbe")
+        elseif NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_progression")
             and NMDeviceProfiles and NMDeviceProfiles.isPortableTrackedContext
             and NMDeviceProfiles.isPortableTrackedContext(profile, context) == true
             and NMCore.shouldLogEvery then
@@ -1025,7 +1026,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
         end
 
         local candidates = buildSoundCandidates(track, state)
-        if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("emitter") then
+        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("emitter") then
             NMCore.logChannel(
                 "emitter",
                 "start_attempt",
@@ -1096,9 +1097,15 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                 lastZ = source and tonumber(source.z) or nil,
                 lastGainRoute = nil
             }
+            if active.world then
+                active.world.startedAtMs = active.startedAtMs
+            end
+            if active.personal then
+                active.personal.startedAtMs = active.startedAtMs
+            end
             updateDualCompatFields(active)
             NMPlaybackRuntime.Active[uuid] = active
-            if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+            if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
                 local listenerSeat, listenerVehicleId, listenerVehicleSqlId = getPlayerSeatDescriptor(player)
                 local detail = string.format(
                     "uuid=%s mode=dual context=%s originalOutput=%s output=%s token=%s:%s sourceGen=%s dualReason=%s listenerSeat=%s listenerVehicleId=%s listenerVehicleSqlId=%s sourceVehicleId=%s sourceVehicleSqlId=%s worldAlive=%s personalAlive=%s worldIsWorld=%s personalIsWorld=%s worldSound=%s personalSound=%s",
@@ -1123,7 +1130,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                     tostring(personalChan and personalChan.sound or "nil")
                 )
                 if shouldLogLifecycleProbe("emitter_create", uuid, detail, 3000) then
-                    NMCore.logChannel("runtimeProbe", "emitter_create", detail)
+                    NMCore.logChannel("runtime", "emitter_create", detail)
                 end
             end
 
@@ -1267,7 +1274,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
             if runtimeDiag and runtimeDiag.countEvent then
                 runtimeDiag.countEvent(NMPlaybackRuntime, "emitter_starts", 1)
             end
-            if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+            if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
                 local detail = string.format(
                     "uuid=%s mode=single context=%s output=%s token=%s:%s sourceGen=%s world=%s sound=%s",
                     tostring(uuid),
@@ -1280,7 +1287,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                     tostring(active.sound or "nil")
                 )
                 if shouldLogLifecycleProbe("emitter_create", uuid, detail, 3000) then
-                    NMCore.logChannel("runtimeProbe", "emitter_create", detail)
+                    NMCore.logChannel("runtime", "emitter_create", detail)
                 end
             end
         end
@@ -1349,10 +1356,10 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
             active.lastDualGainLogMs = nowMsForDualGain
         end
         active.lastGainRoute = routeSig
-        if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe")
+        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")
             and NMCore.shouldLogEvery and NMCore.shouldLogEvery("runtimeProbe.vehicleChannelHealth." .. uuid, tonumber(tickCount) or 0, 300) then
             NMCore.logChannel(
-                "runtimeProbe",
+                "runtime",
                 "dual_channel_health",
                 string.format(
                     "uuid=%s output=%s resolved=%s worldPlaying=%s personalPlaying=%s routeWorld=%.3f routePersonal=%.3f",
@@ -1372,7 +1379,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
             and worldPlaying
             and personalPlaying
             and NMCore and NMCore.logChannel
-            and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("transitionProbe")
+            and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_transition")
             and NMCore.shouldLogEvery and NMCore.shouldLogEvery("transitionProbe.vehicleBothAudible." .. uuid, tonumber(tickCount) or 0, 120) then
             logTransitionProbe(
                 "vehicle_both_channels_audible",
@@ -1390,7 +1397,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
             )
         end
         if context == "vehicle" and routedOutputMode == "world" and routeWorld <= 0.001
-            and NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe")
+            and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")
             and NMCore.shouldLogEvery and NMCore.shouldLogEvery("runtimeProbe.vehicleSilentWorld." .. uuid, tonumber(tickCount) or 0, 60) then
             local px = player and player.getX and tonumber(player:getX()) or 0
             local py = player and player.getY and tonumber(player:getY()) or 0
@@ -1400,7 +1407,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
             local dy = py - sy
             local dist = math.sqrt((dx * dx) + (dy * dy))
             NMCore.logChannel(
-                "runtimeProbe",
+                "runtime",
                 "vehicle_world_silent",
                 string.format(
                     "uuid=%s output=%s dist=%.2f px=%.2f py=%.2f sx=%.2f sy=%.2f sourceVehicleId=%s",
@@ -1532,9 +1539,9 @@ function NMPlaybackRuntime.resetPowerTick(uuid, reason)
         return false
     end
     NMPlaybackRuntime.PowerTick[key] = nil
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
         NMCore.logChannel(
-            "runtimeProbe",
+            "runtime",
             "battery_powertick_reset",
             string.format("uuid=%s reason=%s", tostring(key), tostring(reason or "unspecified"))
         )

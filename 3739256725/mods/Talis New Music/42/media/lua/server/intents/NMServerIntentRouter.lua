@@ -22,7 +22,7 @@ local function broadcastDebugSync(enabled, scope)
         if p then
             sendServerCommand(p, NMCore.NetModule, "debug_sync", {
                 enabled = enabled == true,
-                scope = tostring(scope or "all")
+                subsystem = tostring(scope or "")
             })
         end
     end
@@ -93,9 +93,9 @@ local function sendInventoryStateSnapshot(player)
                 end
                 if NMDeviceState and NMDeviceState.isZombieDormant and NMDeviceState.isZombieDormant(state) then
                     skippedZombieDormant = skippedZombieDormant + 1
-                    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+                    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
                         NMCore.logChannel(
-                            "runtimeProbe",
+                            "runtime",
                             "server_inventory_sync_skip_zombie_dormant",
                             string.format(
                                 "player=%s itemId=%s uuid=%s item=%s",
@@ -119,9 +119,9 @@ local function sendInventoryStateSnapshot(player)
             end
         end
     end
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
         NMCore.logChannel(
-            "runtimeProbe",
+            "runtime",
             "server_inventory_sync_sent",
             string.format(
                 "player=%s count=%d skippedZombieDormant=%d",
@@ -147,9 +147,9 @@ function NMServerIntentRouter.onClientCommand(module, command, player, args)
         return true
     end
     if command == "media_flip" then
-        if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
             NMCore.logChannel(
-                "runtimeProbe",
+                "runtime",
                 "flip_server_receive",
                 string.format(
                     "player=%s itemId=%s",
@@ -169,22 +169,22 @@ function NMServerIntentRouter.onClientCommand(module, command, player, args)
             return true
         end
         local enabled = args and args.enabled == true
-        local scope = tostring(args and args.scope or "all")
-        NMCore.setDebug(enabled, scope)
+        local subsystem = tostring(args and args.subsystem or "")
+        NMCore.setSubsystemDebugEnabled(subsystem, enabled)
         if NMCore and NMCore.logChannel then
             NMCore.logChannel(
-                "zombieDiagnostics",
+                "core",
                 "server_debug_set",
                 string.format(
-                    "player=%s enabled=%s scope=%s authority=%s",
+                    "player=%s enabled=%s subsystem=%s authority=%s",
                     tostring(player and player.getUsername and player:getUsername() or "unknown"),
                     tostring(enabled),
-                    tostring(scope),
+                    tostring(subsystem),
                     tostring(NMCore.getRuntimeAuthorityMode and NMCore.getRuntimeAuthorityMode() or "unknown")
                 )
             )
         end
-        broadcastDebugSync(enabled, scope)
+        broadcastDebugSync(enabled, subsystem)
         return true
     end
     if command ~= "intent" or not args or not args.action then

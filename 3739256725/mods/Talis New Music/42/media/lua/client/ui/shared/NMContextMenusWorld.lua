@@ -260,11 +260,7 @@ function NMContextMenus.onFillWorldObjectContextMenu(playerNum, context, worldOb
         local sub = ISContextMenu:getNew(context)
         context:addSubMenu(option, sub)
 
-        local openOption = sub:addOption(NMTranslations.ui("Open", "Open"), player, function(p, target)
-            local playerNumLocal = p and p.getPlayerNum and p:getPlayerNum() or 0
-            NMDeviceUI.openForItem(playerNumLocal, target.item)
-        end, c)
-        setOptionIcon(openOption, NMContextMenus.resolveMenuIconTexture(c.item, c.profile, c.state))
+        addDeviceUiLifecycleOption(sub, player, c.item, c.profile, c.state)
 
         if canShowDeviceDisassemble(player, c.item, c.profile) then
             local disOption = sub:addOption(NMTranslations.ui("DismantleElectronicDevice", "Dismantle Electronic Device"), player, function(p, target)

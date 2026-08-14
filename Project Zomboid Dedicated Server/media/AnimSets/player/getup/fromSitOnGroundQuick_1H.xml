@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="fromSitOnGroundQuick.xml">
+	<m_Name>fromSitOnGroundQuick_1H</m_Name>
+	<m_Conditions x_name="90f7edf3-1641-4472-bff1-9854460daf8d">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>1handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="98d436f1-3aa7-4204-bb30-e2b5b962d4e4">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="421bb56d-bf64-4fa0-aa74-1a28135dbafd">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="56c3c7a7-70bd-49e7-982d-f54e68bee26a">
+		<m_Name>getUpQuick</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="937cf529-91a2-40f5-b0d9-d5a894dca0ca">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>knife</m_Value>
+	</m_Conditions>
+	<m_Events x_name="e34660b2-a2d0-420a-b8dc-acc1b10d0755">
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+</animNode>

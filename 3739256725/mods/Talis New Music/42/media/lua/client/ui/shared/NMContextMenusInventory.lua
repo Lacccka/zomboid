@@ -2,18 +2,12 @@ local env = _G.NMContextMenusEnv
 setfenv(1, env)
 
 function addRootDeviceOption(context, player, item, profile, state)
-    local function openDeviceUI(_player, targetItem)
-        local playerNum = _player and _player.getPlayerNum and _player:getPlayerNum() or 0
-        NMDeviceUI.openForItem(playerNum, targetItem)
-    end
-
     local root = context:addOption(resolveDeviceMenuLabel(item, profile), player, nil)
     setOptionIcon(root, NMContextMenus.resolveMenuIconTexture(item, profile, state))
     local sub = ISContextMenu:getNew(context)
     context:addSubMenu(root, sub)
 
-    local openOption = sub:addOption(NMTranslations.ui("Open", "Open"), player, openDeviceUI, item)
-    setOptionIcon(openOption, NMContextMenus.resolveMenuIconTexture(item, profile, state))
+    addDeviceUiLifecycleOption(sub, player, item, profile, state)
 
     if canShowDeviceDisassemble(player, item, profile) then
         local disOption = sub:addOption(NMTranslations.ui("DismantleElectronicDevice", "Dismantle Electronic Device"), player, function(p, targetItem)

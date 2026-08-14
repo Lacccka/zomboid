@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transitions>
+	<transition>
+		<transitionTo>sitonground-sitting-warmhands</transitionTo>
+		<conditions>
+			<compare op="==" a="SitGroundAnim" b="rubhands" />
+		</conditions>
+	</transition>
+	<transition>
+		<transitionTo>sitonground-sitting-warmhands</transitionTo>
+		<conditions>
+			<compare op="==" a="SitGroundAnim" b="WarmHands" />
+		</conditions>
+	</transition>
+</transitions>

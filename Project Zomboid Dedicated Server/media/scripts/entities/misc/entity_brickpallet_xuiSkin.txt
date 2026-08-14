@@ -1,0 +1,11 @@
+module Base
+{
+    xuiSkin default
+    {
+        entity ES_BrickPallet
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Brick Pallet,
+        }
+    }
+}

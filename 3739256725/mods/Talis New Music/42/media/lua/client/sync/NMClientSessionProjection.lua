@@ -18,7 +18,7 @@ local function normalizeToken(value)
 end
 
 local function logRuntime(tag, detail)
-    NMRuntimeProbeAdapter.emit("runtimeProbe", "runtimeProbe", tag, detail or "")
+    NMRuntimeProbeAdapter.emit("runtime", "runtime", tag, detail or "")
 end
 
 local function purgePortableOwnerDetachedGhosts(reason)

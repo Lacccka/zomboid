@@ -1,0 +1,20 @@
+module Base
+{
+    sound WaterDispenserAddBottle
+    {
+        category = Object,
+        clip
+        {
+            event = Object/WaterDispenser/Add,
+        }
+    }
+
+    sound WaterDispenserRemoveBottle
+    {
+        category = Object,
+        clip
+        {
+            event = Object/WaterDispenser/Remove,
+        }
+    }
+}

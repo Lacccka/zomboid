@@ -3,9 +3,9 @@ require "zombies/NMZombieAttachedDefinitions"
 require "zombies/NMZombieAudioVisualSupport"
 require "zombies/NMZombieVisualTargetContract"
 require "zombies/NMZombieVisualTargetLedger"
-require "audio/NMZombieAttraction"
+require "zombies/NMZombieAttraction"
 require "death/NMServerZombieCorpseCarry"
-require "zombies/NMServerMPZombieVisualAttach"
+require "NMServerSandboxLootController"
 require "zombies/NMServerMPZombieAssignmentFlow"
 require "zombies/NMServerZombieVisualTargetPublisher"
 require "zombies/NMServerSPZombieAssignmentFlow"
@@ -23,32 +23,16 @@ local function canRunAuthoritativeWorldMutation()
     return true
 end
 
-local function applyBootDebugPreset()
-    if not (NMRuntimeConfig and NMRuntimeConfig.applyDebugPreset) then
-        return
-    end
-    local preset = NMRuntimeConfig.getBootDebugPreset and tostring(NMRuntimeConfig.getBootDebugPreset() or "") or ""
-    if preset ~= "" then
-        NMRuntimeConfig.applyDebugPreset(preset)
-        return
-    end
-    NMRuntimeConfig.applyDebugPreset("quiet")
-end
-
 local function logServerDebugBootstrap(stage)
-    local preset = NMRuntimeConfig and NMRuntimeConfig.getBootDebugPreset and tostring(NMRuntimeConfig.getBootDebugPreset() or "") or ""
-    local master = NMRuntimeConfig and NMRuntimeConfig.getDebugMasterEnabled and NMRuntimeConfig.getDebugMasterEnabled() == true or false
-    if not master then
+    if not (NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("core")) then
         return
     end
-    local knobs = NMRuntimeConfig and NMRuntimeConfig.getDebugKnobsSnapshot and NMRuntimeConfig.getDebugKnobsSnapshot() or {}
-    local knobSummary = NMRuntimeConfig and NMRuntimeConfig.formatDebugKnobSummary and NMRuntimeConfig.formatDebugKnobSummary(knobs) or ""
+    local subsystems = NMRuntimeConfig and NMRuntimeConfig.getSubsystemDebugSnapshot and NMRuntimeConfig.getSubsystemDebugSnapshot() or {}
+    local subsystemSummary = NMRuntimeConfig and NMRuntimeConfig.formatSubsystemDebugSummary and NMRuntimeConfig.formatSubsystemDebugSummary(subsystems) or ""
     print(string.format(
-        "[NewMusic] [DebugBootstrap] side=server stage=%s preset=%s master=%s knobs=%s",
+        "[NewMusic] [DebugBootstrap] side=server stage=%s subsystems=%s",
         tostring(stage or "unknown"),
-        tostring(preset ~= "" and preset or "quiet"),
-        tostring(master),
-        tostring(knobSummary)
+        tostring(subsystemSummary)
     ))
 end
 
@@ -60,9 +44,6 @@ local function getActiveZombieExecutor()
     local strategy = NMZombieLiveStrategy and NMZombieLiveStrategy.getLiveVisualStrategy and NMZombieLiveStrategy.getLiveVisualStrategy() or ""
     if strategy == "sp_runtime_attach" then
         return NMServerSPZombieAssignmentFlow
-    end
-    if strategy == "mp_runtime_attach_with_support" then
-        return NMServerMPZombieVisualAttach
     end
     if strategy == "mp_assignment_flow" then
         return NMServerMPZombieAssignmentFlow
@@ -130,28 +111,36 @@ local function onEveryOneMinute()
 end
 
 local function shouldLogProofVerbose()
-    return NMCore and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("zombieDiagnostics") == true
+    return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("zombie_assignment") == true
+end
+
+local function shouldLogCorpseVerbose()
+    return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("zombie_corpse") == true
 end
 
 if NMCore and NMCore.logChannel then
-    applyBootDebugPreset()
     if NMCore.logBuildVersionLine then
         NMCore.logBuildVersionLine("server")
     end
     logServerDebugBootstrap("bootstrap")
     NMCore.logChannel(
-        "zombieDiagnostics",
+        "zombie_assignment",
         "server_boot",
         string.format(
-            "authority=%s canMutate=%s preset=%s liveStrategy=%s",
+            "authority=%s canMutate=%s liveStrategy=%s",
             tostring(NMCore.getRuntimeAuthorityMode and NMCore.getRuntimeAuthorityMode() or "unknown"),
             tostring(canRunAuthoritativeWorldMutation()),
-            tostring(NMRuntimeConfig and NMRuntimeConfig.getBootDebugPreset and NMRuntimeConfig.getBootDebugPreset() or ""),
             tostring(NMZombieLiveStrategy and NMZombieLiveStrategy.getLiveVisualStrategy and NMZombieLiveStrategy.getLiveVisualStrategy() or "unknown")
         )
     )
     if NMServerBootReset and NMServerBootReset.initSession then
         NMServerBootReset.initSession()
+    end
+    if NMServerSandboxLootController and NMServerSandboxLootController.registerEventHooks then
+        NMServerSandboxLootController.registerEventHooks()
+    end
+    if NMServerSandboxLootController and NMServerSandboxLootController.ensureInitialized then
+        NMServerSandboxLootController.ensureInitialized()
     end
 end
 
@@ -168,16 +157,16 @@ if Events then
     if Events.OnZombieDead and Events.OnZombieDead.Add and canRunAuthoritativeWorldMutation() then
         if NMServerZombieCorpseCarry and NMServerZombieCorpseCarry.onZombieDead then
             Events.OnZombieDead.Add(NMServerZombieCorpseCarry.onZombieDead)
-            if NMCore and NMCore.logChannel and shouldLogProofVerbose() then
-                NMCore.logChannel("zombieDiagnostics", "hook_on_zombie_dead_registered", "handler=NMServerZombieCorpseCarry.onZombieDead")
+            if NMCore and NMCore.logChannel and shouldLogCorpseVerbose() then
+                NMCore.logChannel("zombie_corpse", "hook_on_zombie_dead_registered", "handler=NMServerZombieCorpseCarry.onZombieDead")
             end
         end
     end
     if Events.OnDeadBodySpawn and Events.OnDeadBodySpawn.Add and canRunAuthoritativeWorldMutation() then
         if NMServerZombieCorpseCarry and NMServerZombieCorpseCarry.onDeadBodySpawn then
             Events.OnDeadBodySpawn.Add(NMServerZombieCorpseCarry.onDeadBodySpawn)
-            if NMCore and NMCore.logChannel and shouldLogProofVerbose() then
-                NMCore.logChannel("zombieDiagnostics", "hook_on_dead_body_spawn_registered", "handler=NMServerZombieCorpseCarry.onDeadBodySpawn")
+            if NMCore and NMCore.logChannel and shouldLogCorpseVerbose() then
+                NMCore.logChannel("zombie_corpse", "hook_on_dead_body_spawn_registered", "handler=NMServerZombieCorpseCarry.onDeadBodySpawn")
             end
         end
     end
@@ -191,17 +180,17 @@ if Events then
         if registeredAny then
             if NMCore and NMCore.logChannel then
                 NMCore.logChannel(
-                    "zombieDiagnostics",
+                    "zombie_assignment",
                     "hook_registered",
                     "event=OnZombieUpdate strategy=" .. tostring(NMZombieLiveStrategy and NMZombieLiveStrategy.getLiveVisualStrategy and NMZombieLiveStrategy.getLiveVisualStrategy() or "unknown")
                 )
             end
         elseif NMCore and NMCore.logChannel and shouldLogProofVerbose() then
-            NMCore.logChannel("zombieDiagnostics", "hook_missing", "event=OnZombieUpdate")
+            NMCore.logChannel("zombie_assignment", "hook_missing", "event=OnZombieUpdate")
         end
     elseif canRunAuthoritativeWorldMutation() then
         if NMCore and NMCore.logChannel and shouldLogProofVerbose() then
-            NMCore.logChannel("zombieDiagnostics", "hook_missing", "event=OnZombieUpdate")
+            NMCore.logChannel("zombie_assignment", "hook_missing", "event=OnZombieUpdate")
         end
     end
 end

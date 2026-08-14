@@ -64,7 +64,9 @@ function WalkmanWindow:setVolumePreviewFromMouseY(mouseY)
 end
 
 function WalkmanWindow:updateCassetteSpoolAngles(nowMs)
-    local transport = self:buildTransportState()
+    local transport = NMDeviceUiHost.resolveTransportState(self, {
+        renderModel = self._nmRenderModel,
+    })
     local now = tonumber(nowMs) or getNowMs()
     local last = tonumber(self._nmSpoolLastUpdateMs)
 
@@ -96,7 +98,7 @@ function WalkmanWindow:flushVolumeWheelDispatch(force)
         return
     end
     local normalized = clamp01(pending)
-    local ok = self:dispatch("set_volume", { volume = normalized })
+    local ok = self:executeUiControl("set_volume", { volume = normalized })
     if ok == true then
         self._nmWheelLastDispatchMs = now
         self._nmWheelLastDispatchedVolume = normalized

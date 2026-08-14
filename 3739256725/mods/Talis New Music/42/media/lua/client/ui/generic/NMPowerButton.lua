@@ -1,4 +1,5 @@
 require "ISUI/ISButton"
+require "ui/shared/slots/NMPortableUiSoundContract"
 NMPowerButton = NMPowerButton or {}
 
 local UI_TEXTURE_ROOT = "media/textures/UI/"
@@ -12,55 +13,18 @@ local POWER_TEXTURES = {
 local powerTextureCache = {}
 
 local function powerProbeEnabled()
-    return NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("portableUiProbe") == true
+    return NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("portable_ui") == true
 end
 
 local function logPowerProbe(tag, detail)
     if not powerProbeEnabled() then
         return
     end
-    NMCore.logChannel("portableUiProbe", tostring(tag or "power_control"), tostring(detail or ""))
+    NMCore.logChannel("portable_ui", tostring(tag or "power_control"), tostring(detail or ""))
 end
 
 local function playPowerClick(window, isTurningOn)
-    local soundName = isTurningOn and "NM_ButtonClick" or "NM_ButtonClick2"
-    local playerObj = window and window.resolveContextCached and window:resolveContextCached()
-        or (window and window.resolveContext and window:resolveContext() or nil)
-    playerObj = playerObj and playerObj.player or nil
-    local function isValidSoundId(soundId)
-        if soundId == nil then return false end
-        local n = tonumber(soundId)
-        if n and n == 0 then return false end
-        return true
-    end
-    if playerObj and playerObj.getEmitter then
-        local okEmitter, emitter = pcall(playerObj.getEmitter, playerObj)
-        if okEmitter and emitter then
-            local okPlay, soundId = false, nil
-            if emitter.playSoundImpl then
-                okPlay, soundId = pcall(emitter.playSoundImpl, emitter, soundName, nil)
-            end
-            if (not okPlay or not isValidSoundId(soundId)) and emitter.playSound then
-                okPlay, soundId = pcall(emitter.playSound, emitter, soundName)
-            end
-            if okPlay and isValidSoundId(soundId) then
-                if emitter.setVolume then
-                    pcall(emitter.setVolume, emitter, soundId, 0.8)
-                end
-                return
-            end
-        end
-    end
-    if playerObj and playerObj.playSoundLocal then
-        local ok = pcall(playerObj.playSoundLocal, playerObj, soundName)
-        if ok then return end
-    end
-    local sm = getSoundManager and getSoundManager() or nil
-    if sm and sm.playUISound then
-        local ok = pcall(sm.playUISound, sm, soundName)
-        if ok then return end
-        pcall(sm.playUISound, sm, "UISelectListItem")
-    end
+    NMPortableUiSoundContract.playPowerPress(window, isTurningOn == true)
 end
 
 local function getUiTexture(fileName)
@@ -190,10 +154,10 @@ function NMPowerButton.attach(window, x, y, size)
             local resolved = win and win.resolveContextCached and win:resolveContextCached()
                 or (win and win.resolveContext and win:resolveContext() or nil)
             local currentIsOn = resolved and resolved.state and resolved.state.isOn == true
-            local nextIsOn = not currentIsOn
             if win then
-                win:dispatch("toggle_power", { isOn = nextIsOn })
-                playPowerClick(win, nextIsOn)
+                local action = currentIsOn and "power_off" or "power_on"
+                win:executeUiControl(action, {})
+                playPowerClick(win, currentIsOn ~= true)
             end
         end
         return true

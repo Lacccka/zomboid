@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="WipeTorso.xml">
+	<m_Name>Wipe_Torso_Handgun</m_Name>
+	<m_Conditions x_name="c26c4e61-0716-426a-a2fd-b6802c2426cd">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>handgun</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="2a37cd4e-717f-41fc-a013-ca6621e975a5">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="fcb3b103-6288-4b11-aef8-3cc5d82e2b27">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>WipeTorso1</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="e41b349b-55b1-4a1e-b811-76b5243643e9">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>knife</m_Value>
+	</m_Conditions>
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights>
+		<weight>0.00</weight>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+</animNode>

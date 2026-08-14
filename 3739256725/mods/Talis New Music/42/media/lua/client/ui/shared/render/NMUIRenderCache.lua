@@ -1,4 +1,4 @@
--- Lightweight UI render/data cache helpers for frame-stable widgets.
+-- Canonical shared ui_render cache surface for frame-stable widget state.
 NMUIRenderCache = NMUIRenderCache or {}
 
 local function ensureStore(owner)

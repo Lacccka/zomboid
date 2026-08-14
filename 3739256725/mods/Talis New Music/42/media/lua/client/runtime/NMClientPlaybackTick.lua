@@ -1,19 +1,24 @@
+require "runtime/NMClientDetachedPlaybackPass"
+require "runtime/NMClientOwnershipConflictPolicy"
+require "runtime/NMClientPlaybackInventoryCollector"
+
 -- Client playback tick orchestration for inventory devices and detached cached sources.
 NMClientPlaybackTick = NMClientPlaybackTick or {}
 NMClientPlaybackTick.tick = NMClientPlaybackTick.tick or 0
 NMClientPlaybackTick.lastInventoryByUuid = NMClientPlaybackTick.lastInventoryByUuid or {}
 NMClientPlaybackTick.vehiclePowerTickMs = NMClientPlaybackTick.vehiclePowerTickMs or {}
-NMClientPlaybackTick.zombiePulseMs = NMClientPlaybackTick.zombiePulseMs or {}
-NMClientPlaybackTick.zombiePulsePos = NMClientPlaybackTick.zombiePulsePos or {}
+NMClientPlaybackTick.zombieAttractionPulseState = NMClientPlaybackTick.zombieAttractionPulseState or {}
 NMClientPlaybackTick.ownershipConflictState = NMClientPlaybackTick.ownershipConflictState or {}
 NMClientPlaybackTick.detachedRemoveLogMs = NMClientPlaybackTick.detachedRemoveLogMs or {}
+NMClientPlaybackTick.detachedSyncSigSeen = NMClientPlaybackTick.detachedSyncSigSeen or {}
+NMClientPlaybackTick.detachedSyncHeartbeatMs = NMClientPlaybackTick.detachedSyncHeartbeatMs or {}
 NMClientPlaybackTick.modeResolutionSigSeen = NMClientPlaybackTick.modeResolutionSigSeen or {}
 NMClientPlaybackTick.modeResolutionHeartbeatMs = NMClientPlaybackTick.modeResolutionHeartbeatMs or {}
 NMClientPlaybackTick.corpseInventoryReboundSeen = NMClientPlaybackTick.corpseInventoryReboundSeen or {}
 
 local function logTransitionProbe(msg, detail)
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("transitionProbe") then
-        NMCore.logChannel("transitionProbe", msg, detail)
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_transition") then
+        NMCore.logChannel("playback_transition", msg, detail)
     end
 end
 
@@ -56,6 +61,31 @@ local function shouldLogModeResolution(uuid, signature, changed)
     if previousSig ~= currentSig or (nowMs - previousMs) >= 20000 then
         NMClientPlaybackTick.modeResolutionSigSeen[key] = currentSig
         NMClientPlaybackTick.modeResolutionHeartbeatMs[key] = nowMs
+        return true
+    end
+    return false
+end
+
+local function shouldLogDetachedSync(uuid, state, src)
+    local key = tostring(uuid or "")
+    if key == "" then
+        return false
+    end
+    local sig = table.concat({
+        tostring(src and src.context or "nil"),
+        tostring(state and state.isOn == true),
+        tostring(state and state.isPlaying == true),
+        tostring(state and state.mediaFullType or "nil"),
+        tostring(math.floor((tonumber(src and src.x) or 0) * 10 + 0.5) / 10),
+        tostring(math.floor((tonumber(src and src.y) or 0) * 10 + 0.5) / 10),
+        tostring(math.floor((tonumber(src and src.z) or 0) * 10 + 0.5) / 10)
+    }, "|")
+    local nowMs = nowRealMs()
+    local lastSig = tostring(NMClientPlaybackTick.detachedSyncSigSeen[key] or "")
+    local lastMs = tonumber(NMClientPlaybackTick.detachedSyncHeartbeatMs[key]) or 0
+    if lastSig ~= sig or (nowMs - lastMs) >= 60000 then
+        NMClientPlaybackTick.detachedSyncSigSeen[key] = sig
+        NMClientPlaybackTick.detachedSyncHeartbeatMs[key] = nowMs
         return true
     end
     return false
@@ -116,40 +146,14 @@ local setVehicleIdentityState = continuity.setVehicleIdentityState or _fallbackS
 local resolveVehicleCanonicalGeneration = continuity.resolveVehicleCanonicalGeneration or _fallbackResolveVehicleCanonicalGeneration
 local persistVehicleCanonicalGeneration = continuity.persistVehicleCanonicalGeneration or _fallbackPersistVehicleCanonicalGeneration
 
-if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
     if not continuity.setVehicleIdentityState then
-        NMCore.logChannel("runtimeProbe", "module_fallback_active", "module=NMClientVehicleContinuity")
+        NMCore.logChannel("runtime", "module_fallback_active", "module=NMClientVehicleContinuity")
     end
     if not detachedOrchestration.buildConflictStateKey then
-        NMCore.logChannel("runtimeProbe", "module_fallback_active", "module=NMClientDetachedOrchestration")
+        NMCore.logChannel("runtime", "module_fallback_active", "module=NMClientDetachedOrchestration")
     end
 end
-
-
-local function collectInventoryManaged(player, out)
-    local allItems = {}
-    NMInventoryHelpers.collectItemsRecursive(player:getInventory(), allItems)
-    for i = 1, #allItems do
-        local item = allItems[i]
-        local profile = NMDeviceProfiles.getForItem(item)
-        if profile then
-            local state = NMDeviceState.ensure(item, profile)
-            if state and state.deviceUUID then
-                local itemMd = item and item.getModData and item:getModData() or nil
-                if itemMd and itemMd.nmCorpseRecovered == true then
-                    state._nmCorpseRecovered = true
-                end
-                out[#out + 1] = {
-                    item = item,
-                    profile = profile,
-                    state = state,
-                    uuid = tostring(state.deviceUUID)
-                }
-            end
-        end
-    end
-end
-
 local function consumeAndDispatchTrackFinished(player, profile, state, entry, item, sourceKind, uuid)
     NMClientTrackFinishedDispatch.consumeAndDispatchTrackFinished(player, profile, state, entry, item, sourceKind, uuid)
 end
@@ -168,54 +172,6 @@ local function reconcileDroppedInventoryToPlacedSP(player, currentInventoryByUui
         previousInventoryByUuid = NMClientPlaybackTick.lastInventoryByUuid,
         logTransitionProbe = logTransitionProbe
     }) or (currentInventoryByUuid or {})
-end
-
-local function normalizeCorpseRecoveredInventoryState(profile, state, uuid)
-    if NMCore and NMCore.isMPClientRuntime and NMCore.isMPClientRuntime() then
-        return false
-    end
-    if not (profile and state and uuid and uuid ~= "") then
-        return false
-    end
-    if not (NMDeviceProfiles and NMDeviceProfiles.isPortableTrackedProfile and NMDeviceProfiles.isPortableTrackedProfile(profile) == true) then
-        return false
-    end
-    if tostring(state.lastStopReason or "") ~= "corpse_reconcile" then
-        return false
-    end
-    if NMClientPlaybackTick.corpseInventoryReboundSeen[uuid] == true then
-        return false
-    end
-
-    NMClientPlaybackTick.corpseInventoryReboundSeen[uuid] = true
-    state.authoritativeMode = "off"
-    state.sourceKind = "inventory"
-    state.sourceOwner = nil
-    state.sourceX = nil
-    state.sourceY = nil
-    state.sourceZ = nil
-    state.sourceGeneration = 0
-    state.playbackMode = "inventory"
-    state.zombieDormant = false
-    state.zombieDormantReason = nil
-    state.zombieDormantStrategy = nil
-
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
-        NMCore.logChannel(
-            "runtimeProbe",
-            "corpse_inventory_rebind",
-            string.format(
-                "uuid=%s playbackMode=%s media=%s headphones=%s sourceKind=%s sourceGeneration=%s",
-                tostring(uuid),
-                tostring(state.playbackMode or ""),
-                tostring(state.mediaFullType or "nil"),
-                tostring(state.headphoneItemFullType or "nil"),
-                tostring(state.sourceKind or ""),
-                tostring(state.sourceGeneration or 0)
-            )
-        )
-    end
-    return true
 end
 
 function NMClientPlaybackTick.onTick(player)
@@ -237,7 +193,7 @@ function NMClientPlaybackTick.onTick(player)
 
     local inventory = {}
     local inventoryCollectStartedMs = nowRealMs()
-    collectInventoryManaged(player, inventory)
+    NMClientPlaybackInventoryCollector.collectManaged(player, inventory)
     local inventoryCollectElapsedMs = math.max(0, nowRealMs() - inventoryCollectStartedMs)
     observeMemoryDuration("inventory_collect_ms", inventoryCollectElapsedMs)
     local inventorySyncCount = 0
@@ -245,7 +201,14 @@ function NMClientPlaybackTick.onTick(player)
 
     for i = 1, #inventory do
         local e = inventory[i]
-        normalizeCorpseRecoveredInventoryState(e.profile, e.state, e.uuid)
+        NMClientPlaybackInventoryCollector.normalizeCorpseRecoveredInventoryState(e.profile, e.state, e.uuid, {
+            corpseInventoryReboundSeen = NMClientPlaybackTick.corpseInventoryReboundSeen,
+            logRuntime = function(tag, detail)
+                if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+                    NMCore.logChannel("runtime", tag, detail)
+                end
+            end
+        })
         local mode = NMClientModeReconcile.resolveModeForItem(player, e.item, e.profile, e.state)
         local resolvedOutputForMode = NMDeviceProfiles.resolveOutputMode(e.profile, e.state, mode, false)
         local modeChanged = NMClientModeReconcile.applyResolvedMode(e.uuid, e.state, mode)
@@ -254,6 +217,8 @@ function NMClientPlaybackTick.onTick(player)
             and NMDeviceProfiles.isPortableTrackedProfile
             and NMDeviceProfiles.isPortableTrackedProfile(e.profile) == true
             and NMDeviceUI
+            and NMDeviceUI.canAutoOpenForAttachedTransition
+            and NMDeviceUI.canAutoOpenForAttachedTransition(player:getPlayerNum(), e.item) == true
             and NMDeviceUI.openForItemIfNeeded then
             local openedWindow = NMDeviceUI.openForItemIfNeeded(player:getPlayerNum(), e.item) ~= nil
             logTransitionProbe(
@@ -355,227 +320,40 @@ function NMClientPlaybackTick.onTick(player)
     end
 
     reconcileDroppedInventoryToPlacedSP(player, currentInventoryByUuid)
-
-    if NMClientPortableDropHandoff and NMClientPortableDropHandoff.collectPendingPlayback then
-        local pendingPlayback = {}
-        NMClientPortableDropHandoff.collectPendingPlayback(player, currentInventoryByUuid, pendingPlayback)
-        for i = 1, #pendingPlayback do
-            local p = pendingPlayback[i]
-            if p and p.uuid and p.profile and p.state and p.source then
-                p.state.playbackMode = "world"
-                local pendingSyncStartedMs = nowRealMs()
-                NMPlaybackRuntime.syncDevice(player, p.profile, p.state, p.source, tickCount * 60)
-                if NMClientVanillaMusicSuppressor and NMClientVanillaMusicSuppressor.observeAudibility then
-                    NMClientVanillaMusicSuppressor.observeAudibility(player, p.profile, p.state, p.source)
-                end
-                observeMemoryDuration("sync_device_ms", math.max(0, nowRealMs() - pendingSyncStartedMs))
-                detachedSyncCount = detachedSyncCount + 1
-                consumeAndDispatchTrackFinished(player, p.profile, p.state, nil, p.item, "drop_pending", p.uuid)
-                valid[p.uuid] = true
-                if tostring(p.source.context or "") == "placed"
-                    and not spPulseCandidates[p.uuid]
-                    and p.source.x and p.source.y and p.source.z then
-                    spPulseCandidates[p.uuid] = {
-                        profile = p.profile,
-                        state = p.state,
-                        source = p.source
-                    }
-                end
-            end
-        end
+    if NMDeviceUI and NMDeviceUI.endSessionStartAutoOpenSuppression then
+        NMDeviceUI.endSessionStartAutoOpenSuppression(player:getPlayerNum(), "first_inventory_reconciliation_complete")
     end
 
-    local detached = {}
-    local detachedCollectStartedMs = nowRealMs()
-    NMClientWorldSourceCache.collectInRange(player, detached)
-    local detachedCollectElapsedMs = math.max(0, nowRealMs() - detachedCollectStartedMs)
-    observeMemoryDuration("detached_collect_ms", detachedCollectElapsedMs)
-    for i = 1, #detached do
-        local d = detached[i]
-        local entry = d.entry
-        local state = entry and entry.stateSnapshot or nil
-        local profile = d.profile
-        if state and profile and state.deviceUUID then
-            local uuid = tostring(state.deviceUUID)
-            local liveEntry = NMClientWorldSourceCache.get and NMClientWorldSourceCache.get(uuid) or nil
-            local src = entry and entry.source or nil
-            local detachedContext = tostring(src and src.context or "unknown")
-            local hasInventoryOwner = inventoryOwners[uuid] == true
-            local allowDetachedSync = true
-            local previousConflictState = NMClientPlaybackTick.ownershipConflictState[uuid]
-            local nowMs = nowRealMs()
-            local detachedLogKey = tostring(uuid) .. "|inventory_owner"
-            local lastDetachedRemoveMs = tonumber(NMClientPlaybackTick.detachedRemoveLogMs[detachedLogKey]) or 0
-            local ownershipGate = detachedOrchestration.applyInventoryOwnershipGate
-                and detachedOrchestration.applyInventoryOwnershipGate({
-                    hasInventoryOwner = hasInventoryOwner,
-                    detachedContext = detachedContext,
-                    previousConflictState = previousConflictState,
-                    nowMsValue = nowMs,
-                    lastDetachedRemoveMs = lastDetachedRemoveMs,
-                    detachedRemoveIntervalMs = 5000
-                })
-                or nil
-            local conflictStateKey = ownershipGate and ownershipGate.conflictStateKey
-                or (tostring(hasInventoryOwner == true) .. ":" .. tostring(detachedContext or "unknown"))
-            local conflictChanged = ownershipGate and ownershipGate.conflictChanged == true
-                or (previousConflictState ~= conflictStateKey)
-            NMClientPlaybackTick.ownershipConflictState[uuid] = conflictStateKey
-
-            if hasInventoryOwner then
-                local portableOwnedDetached = NMDeviceProfiles
-                    and NMDeviceProfiles.isPortableTrackedProfile
-                    and NMDeviceProfiles.isPortableTrackedProfile(profile) == true
-                if conflictChanged then
-                    logTransitionProbe(
-                        "ownership_conflict_detected",
-                        string.format("uuid=%s inventory=true detachedCtx=%s", uuid, detachedContext)
-                    )
-                end
-
-                local shouldPrune = portableOwnedDetached or (ownershipGate and ownershipGate.shouldPrune == true
-                    or (detachedOrchestration.shouldPruneDetachedForInventoryOwner
-                        and detachedOrchestration.shouldPruneDetachedForInventoryOwner(hasInventoryOwner, detachedContext))
-                    or (hasInventoryOwner == true and tostring(detachedContext or "") ~= "vehicle"))
-                if shouldPrune then
-                    if conflictChanged then
-                        logTransitionProbe(
-                            "detached_skip_inventory_owner",
-                            string.format(
-                                "uuid=%s detachedCtx=%s portable=%s",
-                                uuid,
-                                detachedContext,
-                                tostring(portableOwnedDetached == true)
-                            )
-                        )
-                    end
-                    NMClientWorldSourceCache.remove(uuid)
-                    if conflictChanged and NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
-                        local shouldEmitDetachedRemove = ownershipGate and ownershipGate.shouldEmitDetachedRemove == true
-                            or (detachedOrchestration.shouldEmitDetachedRemove
-                                and detachedOrchestration.shouldEmitDetachedRemove(nowMs, lastDetachedRemoveMs, 5000))
-                            or ((nowMs - lastDetachedRemoveMs) >= 5000)
-                        if shouldEmitDetachedRemove then
-                            NMClientPlaybackTick.detachedRemoveLogMs[detachedLogKey] = nowMs
-                            NMCore.logChannel(
-                                "runtimeProbe",
-                                "detached_track_remove",
-                                string.format("uuid=%s reason=inventory_owner", uuid)
-                            )
-                        end
-                    end
-                    if conflictChanged then
-                        logTransitionProbe(
-                            "detached_pruned_inventory_owner",
-                            string.format(
-                                "uuid=%s detachedCtx=%s portable=%s",
-                                uuid,
-                                detachedContext,
-                                tostring(portableOwnedDetached == true)
-                            )
-                        )
-                        logTransitionProbe(
-                            "ownership_conflict_resolved",
-                            string.format(
-                                "uuid=%s winner=inventory detachedCtx=%s portable=%s",
-                                uuid,
-                                detachedContext,
-                                tostring(portableOwnedDetached == true)
-                            )
-                        )
-                    end
-                    allowDetachedSync = false
-                else
-                    if conflictChanged then
-                        logTransitionProbe(
-                            "ownership_conflict_resolved",
-                            string.format("uuid=%s winner=vehicle detachedCtx=%s", uuid, detachedContext)
-                        )
-                    end
-                end
-            end
-
-            if allowDetachedSync then
-                if detachedContext == "vehicle" then
-                    local continuityResult = continuity.applyDetachedVehicleContinuity
-                        and continuity.applyDetachedVehicleContinuity({
-                            uuid = uuid,
-                            entry = entry,
-                            liveEntry = liveEntry,
-                            state = state,
-                            src = src,
-                            detachedContext = detachedContext,
-                            nowMs = nowRealMs(),
-                            resolveVehicleCanonicalGeneration = resolveVehicleCanonicalGeneration,
-                            persistVehicleCanonicalGeneration = persistVehicleCanonicalGeneration,
-                            setVehicleIdentityState = setVehicleIdentityState
-                        })
-                        or nil
-                    if continuityResult then
-                        entry = continuityResult.entry or entry
-                        liveEntry = continuityResult.liveEntry or liveEntry
-                        state = continuityResult.state or state
-                        src = continuityResult.src or src
-                        detachedContext = tostring(continuityResult.detachedContext or detachedContext)
-                    end
-                end
-            end
-
-            if allowDetachedSync then
-                if detachedContext == "vehicle" then
-                    applySPLocalVehiclePowerGuard(profile, state, src, uuid)
-                end
-                if NMCore and NMCore.logChannel and NMCore.shouldLogEvery and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
-                    local key = detachedOrchestration.makeDetachedSyncLogKey
-                        and detachedOrchestration.makeDetachedSyncLogKey(state.deviceUUID)
-                        or ("runtimeProbe.detached." .. tostring(state.deviceUUID))
-                    if NMCore.shouldLogEvery(key, NMClientPlaybackTick.tick, 2400) then
-                        NMCore.logChannel(
-                            "runtimeProbe",
-                            "detached_sync",
-                            detachedOrchestration.buildDetachedSyncDetail
-                                and detachedOrchestration.buildDetachedSyncDetail(state, src)
-                                or string.format(
-                                    "uuid=%s ctx=%s x=%.2f y=%.2f z=%.2f isOn=%s isPlaying=%s media=%s",
-                                    tostring(state.deviceUUID),
-                                    tostring(src and src.context or "nil"),
-                                    tonumber(src and src.x or 0) or 0,
-                                    tonumber(src and src.y or 0) or 0,
-                                    tonumber(src and src.z or 0) or 0,
-                                    tostring(state.isOn == true),
-                                    tostring(state.isPlaying == true),
-                                    tostring(state.mediaFullType or "nil")
-                                )
-                        )
-                    end
-                end
-                local detachedSyncStartedMs = nowRealMs()
-                NMPlaybackRuntime.syncDevice(player, profile, state, entry.source, tickCount * 60)
-                if NMClientVanillaMusicSuppressor and NMClientVanillaMusicSuppressor.observeAudibility then
-                    NMClientVanillaMusicSuppressor.observeAudibility(player, profile, state, entry.source)
-                end
-                observeMemoryDuration("sync_device_ms", math.max(0, nowRealMs() - detachedSyncStartedMs))
-                detachedSyncCount = detachedSyncCount + 1
-                local sourceKind = detachedContext == "vehicle" and "vehicle" or "detached_item"
-                consumeAndDispatchTrackFinished(player, profile, state, entry, nil, sourceKind, uuid)
-                valid[tostring(state.deviceUUID)] = true
-                if not spPulseCandidates[uuid] then
-                    local detachedSource = entry and entry.source or nil
-                    if detachedSource and detachedSource.x and detachedSource.y and detachedSource.z then
-                        spPulseCandidates[uuid] = {
-                            profile = profile,
-                            state = state,
-                            source = detachedSource
-                        }
-                    end
-                end
+    local detachedResult = NMClientDetachedPlaybackPass.run(player, {
+        valid = valid,
+        inventoryOwners = inventoryOwners,
+        currentInventoryByUuid = currentInventoryByUuid,
+        spPulseCandidates = spPulseCandidates,
+        tickCount = tickCount,
+        nowRealMs = nowRealMs,
+        observeMemoryDuration = observeMemoryDuration,
+        consumeAndDispatchTrackFinished = consumeAndDispatchTrackFinished,
+        shouldLogDetachedSync = shouldLogDetachedSync,
+        applySPLocalVehiclePowerGuard = applySPLocalVehiclePowerGuard,
+        resolveVehicleCanonicalGeneration = resolveVehicleCanonicalGeneration,
+        persistVehicleCanonicalGeneration = persistVehicleCanonicalGeneration,
+        setVehicleIdentityState = setVehicleIdentityState,
+        detachedOrchestration = detachedOrchestration,
+        continuity = continuity,
+        ownershipConflictState = NMClientPlaybackTick.ownershipConflictState,
+        detachedRemoveLogMs = NMClientPlaybackTick.detachedRemoveLogMs,
+        logTransitionProbe = logTransitionProbe,
+        logRuntime = function(tag, detail)
+            if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+                NMCore.logChannel("runtime", tag, detail)
             end
         end
-    end
+    })
+    local detached = detachedResult.detached or {}
+    detachedSyncCount = detachedSyncCount + (tonumber(detachedResult.detachedSyncCount) or 0)
 
     NMClientSPLocalRuntime.emitZombiePulses(player, spPulseCandidates, {
-        zombiePulseMs = NMClientPlaybackTick.zombiePulseMs,
-        zombiePulsePos = NMClientPlaybackTick.zombiePulsePos,
+        zombieAttractionPulseState = NMClientPlaybackTick.zombieAttractionPulseState,
         nowMs = nowRealMs
     })
 

@@ -11,8 +11,25 @@ local function logBatteryExtractEvent(eventName, window, drag, extra)
     end
 end
 
+local function resolveWindowContext(window)
+    if not window then
+        return nil
+    end
+    if window.resolveContextCached then
+        return window:resolveContextCached()
+    end
+    return window.resolveContext and window:resolveContext() or nil
+end
+
+local function resolveDraggedItems(window)
+    if NMSlotHostLifecycle and NMSlotHostLifecycle.resolveDraggedItemsSnapshot then
+        return NMSlotHostLifecycle.resolveDraggedItemsSnapshot(window)
+    end
+    return getDraggedInventoryItems()
+end
+
 function beginBatteryExtractDrag(window, fullType)
-    local resolved = window and window.resolveContext and window:resolveContext() or nil
+    local resolved = resolveWindowContext(window)
     local playerObj = resolved and resolved.player or nil
     local playerNum = playerObj and playerObj.getPlayerNum and playerObj:getPlayerNum() or 0
     local invPage = getPlayerInventory and getPlayerInventory(playerNum) or nil
@@ -62,7 +79,7 @@ function collapsePinnedInventory(window, resolvedPlayer)
     if window and window._nmBatteryDragPinnedInventory then
         local playerObj = resolvedPlayer
         if not playerObj then
-            local resolved = window and window.resolveContext and window:resolveContext() or nil
+            local resolved = resolveWindowContext(window)
             playerObj = resolved and resolved.player or nil
         end
         local playerNum = playerObj and playerObj.getPlayerNum and playerObj:getPlayerNum() or 0
@@ -212,10 +229,32 @@ local function consumeBatteryRelease(window, drag, releaseOutcome, entrypoint)
     return consume
 end
 
+local function performBatteryDragInsert(targetWindow, items)
+    if not (targetWindow and type(items) == "table" and #items > 0) then
+        return false
+    end
+    if not isCompatibleBatteryDrag(items) then return false end
+    local batteryItem = pickFirstBattery(items)
+    if not batteryItem then return false end
+    local liveItem = normalizeBatteryIngressItem(targetWindow, batteryItem)
+    if not liveItem then
+        targetWindow._nmPendingBatterySlotFullType = nil
+        return false
+    end
+    targetWindow._nmPendingBatterySlotFullType = BATTERY_FULL_TYPE
+    if queueBatterySlotAction(targetWindow, "insert_battery", { batteryItemId = NMCore.itemId(liveItem) }) ~= true then
+        targetWindow._nmPendingBatterySlotFullType = nil
+        return false
+    end
+    return true
+end
+
 function NMBatterySlot.attach(window, x, y, size)
     local slotBtn = ISButton:new(x, y, size, size, "", window, function() end)
     slotBtn:initialise()
     slotBtn:instantiate()
+    slotBtn.ownerWindow = window
+    slotBtn.slotType = "battery"
     window:addChild(slotBtn)
 
     local function swallowBatterySlotDoubleClick()
@@ -253,10 +292,10 @@ function NMBatterySlot.attach(window, x, y, size)
     end
     window:addChild(barPanel)
 
-    function onBatterySlotMouseDown()
-        local resolved = window and window.resolveContext and window:resolveContext() or nil
+    local function onBatterySlotMouseDown()
+        local resolved = resolveWindowContext(window)
         local state = resolved and resolved.state or nil
-        local items, ok = getDraggedInventoryItems()
+        local items, ok = resolveDraggedItems(window)
         if ok ~= true then return true end
         if type(items) == "table" and #items > 0 then return true end
         local fullType = resolveBatterySlotFullType(window, state)
@@ -266,7 +305,7 @@ function NMBatterySlot.attach(window, x, y, size)
         return true
     end
 
-    function onBatterySlot()
+    local function onBatterySlot()
         logBatteryExtractEvent("slot_extract_mouseup_slot", window, window and window._nmBatteryExtractDrag or nil, {
             sourceZone = "slot",
             entrypoint = "slot.onMouseUp"
@@ -278,35 +317,30 @@ function NMBatterySlot.attach(window, x, y, size)
             end
         end
 
-        local resolved = window and window.resolveContext and window:resolveContext() or nil
+        local resolved = resolveWindowContext(window)
         local state = resolved and resolved.state or nil
         local fullType = resolveBatterySlotFullType(window, state)
         if fullType ~= "" then
             return false
         end
 
-        local items, ok = getDraggedInventoryItems()
+        local items, ok = resolveDraggedItems(window)
         if ok ~= true or type(items) ~= "table" or #items <= 0 then return false end
-        if not isCompatibleBatteryDrag(items) then return false end
-        local batteryItem = pickFirstBattery(items)
-        if not batteryItem then return false end
-
-        local liveItem = normalizeBatteryIngressItem(window, batteryItem)
-        if not liveItem then
-            window._nmPendingBatterySlotFullType = nil
-            return false
+        if NMPortableSlotHoverResolver and NMPortableSlotHoverResolver.resolveHoveredBatterySlotWindow then
+            local resolvedPlayer = resolved and resolved.player or nil
+            local playerNum = resolvedPlayer and resolvedPlayer.getPlayerNum and resolvedPlayer:getPlayerNum() or (window and window.playerNum) or 0
+            local winner = NMPortableSlotHoverResolver.resolveHoveredBatterySlotWindow(playerNum, items)
+            local targetWindow = winner and winner.window or nil
+            if performBatteryDragInsert(targetWindow, items) == true then
+                clearMouseDragState()
+                return true
+            end
         end
-        window._nmPendingBatterySlotFullType = BATTERY_FULL_TYPE
-        if queueBatterySlotAction(window, "insert_battery", { batteryItemId = NMCore.itemId(liveItem) }) ~= true then
-            window._nmPendingBatterySlotFullType = nil
-            return false
-        end
-        clearMouseDragState()
-        return true
+        return false
     end
 
-    function onBatterySlotRightClick(btn, xArg, yArg)
-        local resolved = window and window.resolveContext and window:resolveContext() or nil
+    local function onBatterySlotRightClick(btn, xArg, yArg)
+        local resolved = resolveWindowContext(window)
         local state = resolved and resolved.state or nil
         local fullType = resolveBatterySlotFullType(window, state)
         if fullType ~= "" then

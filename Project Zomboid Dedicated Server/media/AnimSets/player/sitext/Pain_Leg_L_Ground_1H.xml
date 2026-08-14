@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="PainLegL_Ground.xml">
+	<m_Name>Pain_Leg_L_Ground_1H</m_Name>
+	<m_Conditions x_name="39e91c88-fb83-4452-b401-319a4598e967">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>1handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="86cc9652-6ed0-4859-a922-884af60dc06b">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="07683237-c7ec-4c09-8bb0-edb14a0dca28">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainLegL</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="32bd8791-6c33-49e8-86b2-c738c20b9f38">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>handgun</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="5a63aab5-fb36-4e92-bd4d-f210351ad99f">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="343097c5-364b-4c4f-8df5-d6215998e392">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="65b08439-f620-4800-bb0d-67dfa14c6880">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainLegL</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="3558aef3-ff55-4baf-bed0-040c5da037d5">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>heavy</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="0b914922-34fa-4470-ab58-12c12028340c">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="e30372df-b897-44b9-b838-43973445b5c4">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="a6068d80-bf0c-4e53-8118-12a4559f477f">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainLegL</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="a75b3fa5-93e5-404d-91d7-87ca8084e8a6">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>knife</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="052d03e4-80dc-4056-bbfb-da2fad5e30f9">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+</animNode>

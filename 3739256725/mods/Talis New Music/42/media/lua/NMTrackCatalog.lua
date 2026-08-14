@@ -1,1 +1,2 @@
--- Legacy root require shim.
+-- Compatibility-only root shim for older loaders expecting NMTrackCatalog.
+return require "music/NMTrackCatalog"

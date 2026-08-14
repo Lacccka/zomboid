@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="fromSitOnGround.xml">
+	<m_Name>fromSitOnGround_Rifle</m_Name>
+	<m_AnimName>Bob_SitGround_Out_Rifle</m_AnimName>
+	<m_Conditions x_name="4b953c0f-b01e-46b9-bb96-5682650677e3">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+	<m_Events x_name="e34660b2-a2d0-420a-b8dc-acc1b10d0755">
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+</animNode>

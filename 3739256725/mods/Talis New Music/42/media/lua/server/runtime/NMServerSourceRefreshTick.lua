@@ -1,3 +1,6 @@
+require "runtime/NMServerPlayerLookupSnapshot"
+require "runtime/NMServerVehicleSqlIndexCache"
+
 -- Server authoritative source refresh pass for moving world-active registry entries.
 NMServerSourceRefreshTick = NMServerSourceRefreshTick or {}
 local SourceRefreshDiagnostics = NMServerSourceRefreshDiagnostics
@@ -27,381 +30,8 @@ local function nowRealMs()
     return 0
 end
 
-local function safeCall(fn)
-    if type(pcall) ~= "function" then
-        return false, nil
-    end
-    return pcall(fn)
-end
-
-local function readVehiclesSize(vehicles)
-    if not vehicles then
-        return 0
-    end
-    local okA, countA = safeCall(function()
-        return vehicles.size and vehicles:size() or nil
-    end)
-    if okA and tonumber(countA) then
-        return math.max(0, math.floor(tonumber(countA) or 0))
-    end
-    local okB, countB = safeCall(function()
-        return vehicles.size and vehicles.size(vehicles) or nil
-    end)
-    if okB and tonumber(countB) then
-        return math.max(0, math.floor(tonumber(countB) or 0))
-    end
-    return 0
-end
-
-local function readVehiclesAtMode(vehicles, idx, mode)
-    if mode == "raw_index" then
-        return safeCall(function()
-            return vehicles[idx]
-        end)
-    end
-    return false, nil
-end
-
-local ATTEMPT_PRIORITY = {
-    iterator = 1,
-    to_array = 2
-}
-
-local function readClassName(obj)
-    if not obj then
-        return "nil"
-    end
-    local okClassText, classText = safeCall(function()
-        local cls = obj:getClass()
-        return cls and tostring(cls) or nil
-    end)
-    if okClassText and tostring(classText or "") ~= "" then
-        return tostring(classText)
-    end
-    local okString, asString = safeCall(function()
-        return tostring(obj)
-    end)
-    if okString and tostring(asString or "") ~= "" then
-        return tostring(asString)
-    end
-    return "unknown"
-end
-
-local function makeAttempt(name, sizeRef)
-    return {
-        attemptName = tostring(name),
-        nonNil = 0,
-        sizeRef = tonumber(sizeRef) or 0,
-        errors = 0,
-        sampleSqlIds = {},
-        sampleVehicleIds = {},
-        pairs = {},
-        iterated = 0,
-        nilSlots = 0,
-        indexBase = "none"
-    }
-end
-
-local function captureVehicle(attempt, vehicle)
-    if not vehicle then
-        attempt.nilSlots = attempt.nilSlots + 1
-        return
-    end
-    attempt.nonNil = attempt.nonNil + 1
-    local sqlId = NMVehicleHelpers and NMVehicleHelpers.getVehicleSqlIdString and NMVehicleHelpers.getVehicleSqlIdString(vehicle) or ""
-    local vehicleId = NMVehicleHelpers and NMVehicleHelpers.getVehicleIdString and NMVehicleHelpers.getVehicleIdString(vehicle) or ""
-    if sqlId ~= "" and vehicleId ~= "" then
-        attempt.pairs[#attempt.pairs + 1] = { sql = tostring(sqlId), id = tostring(vehicleId) }
-    end
-    if #attempt.sampleSqlIds < 5 then
-        attempt.sampleSqlIds[#attempt.sampleSqlIds + 1] = tostring(sqlId ~= "" and sqlId or "nil")
-    end
-    if #attempt.sampleVehicleIds < 5 then
-        attempt.sampleVehicleIds[#attempt.sampleVehicleIds + 1] = tostring(vehicleId ~= "" and vehicleId or "nil")
-    end
-end
-
-local function collectFromVehiclesSource(label, vehicles, outMap)
-    local report = {
-        label = tostring(label or "unknown"),
-        sizeReported = 0,
-        iteratedSlots = 0,
-        nonNilVehicles = 0,
-        nilSlots = 0,
-        getErrors = 0,
-        readModeUsed = "none",
-        indexBaseUsed = "none",
-        sampleSqlIds = {},
-        sampleVehicleIds = {},
-        attemptSummary = "",
-        attempts = {},
-        vehiclesClass = "nil"
-    }
-    if not vehicles then
-        return report
-    end
-
-    report.vehiclesClass = readClassName(vehicles)
-    local size = readVehiclesSize(vehicles)
-    report.sizeReported = size
-    if size <= 0 then
-        return report
-    end
-
-    local best = nil
-    local function considerBest(candidate)
-        if not best then
-            best = candidate
-            return
-        end
-        if candidate.nonNil > best.nonNil then
-            best = candidate
-            return
-        end
-        if candidate.nonNil == best.nonNil and candidate.errors < best.errors then
-            best = candidate
-            return
-        end
-        if candidate.nonNil == best.nonNil and candidate.errors == best.errors then
-            local pa = ATTEMPT_PRIORITY[candidate.attemptName] or 999
-            local pb = ATTEMPT_PRIORITY[best.attemptName] or 999
-            if pa < pb then
-                best = candidate
-            end
-        end
-    end
-
-    -- Iterator traversal.
-    do
-        local a = makeAttempt("iterator", size)
-        local okIt, it = safeCall(function()
-            return vehicles.iterator and vehicles:iterator() or nil
-        end)
-        if not okIt or not it then
-            a.errors = a.errors + 1
-        else
-            while true do
-                local okHasNext, hasNext = safeCall(function()
-                    return it.hasNext and it:hasNext() or false
-                end)
-                if not okHasNext then
-                    a.errors = a.errors + 1
-                    break
-                end
-                if hasNext ~= true then
-                    break
-                end
-                a.iterated = a.iterated + 1
-                local okNext, vehicle = safeCall(function()
-                    return it.next and it:next() or nil
-                end)
-                if not okNext then
-                    a.errors = a.errors + 1
-                end
-                captureVehicle(a, vehicle)
-                if a.iterated > 1024 then
-                    break
-                end
-            end
-        end
-        report.attempts[#report.attempts + 1] = a
-        considerBest(a)
-    end
-
-    -- toArray traversal.
-    do
-        local a = makeAttempt("to_array", size)
-        local okArr, arr = safeCall(function()
-            return vehicles.toArray and vehicles:toArray() or nil
-        end)
-        if not okArr or not arr then
-            a.errors = a.errors + 1
-        else
-            local arrSize = 0
-            local okArrSizeA, cA = safeCall(function()
-                return arr.size and arr:size() or nil
-            end)
-            if okArrSizeA and tonumber(cA) then
-                arrSize = math.max(0, math.floor(tonumber(cA) or 0))
-            else
-                local okArrSizeB, cB = safeCall(function()
-                    return arr.length
-                end)
-                if okArrSizeB and tonumber(cB) then
-                    arrSize = math.max(0, math.floor(tonumber(cB) or 0))
-                else
-                    arrSize = size
-                end
-            end
-            a.sizeRef = arrSize
-            for idx = 0, math.max(0, arrSize - 1) do
-                a.iterated = a.iterated + 1
-                local okAt, vehicle = readVehiclesAtMode(arr, idx, "raw_index")
-                if not okAt then
-                    a.errors = a.errors + 1
-                end
-                captureVehicle(a, vehicle)
-            end
-        end
-        report.attempts[#report.attempts + 1] = a
-        considerBest(a)
-    end
-
-    best = best or makeAttempt("none", size)
-    report.nonNilVehicles = math.max(0, best.nonNil or 0)
-    report.iteratedSlots = tonumber(best.iterated) or 0
-    report.nilSlots = tonumber(best.nilSlots) or 0
-    report.getErrors = tonumber(best.errors) or 0
-    report.readModeUsed = tostring(best.attemptName or "none")
-    report.indexBaseUsed = (best.attemptName == "iterator") and "iterator" or "array"
-    report.sampleSqlIds = best.sampleSqlIds or {}
-    report.sampleVehicleIds = best.sampleVehicleIds or {}
-
-    local attempts = {}
-    for i = 1, #report.attempts do
-        local a = report.attempts[i]
-        attempts[#attempts + 1] = string.format(
-            "%s@%s=%s/%s e%s",
-            tostring(a.attemptName or "none"),
-            tostring(a.indexBase or "none"),
-            tostring(a.nonNil or 0),
-            tostring(a.sizeRef or size),
-            tostring(a.errors or 0)
-        )
-    end
-    report.attemptSummary = table.concat(attempts, ",")
-
-    for i = 1, #(best.pairs or {}) do
-        local pair = best.pairs[i]
-        outMap[pair.sql] = pair.id
-    end
-    return report
-end
-
 local function refreshVehicleSqlIndex()
-    NMServerRegistryState.vehicleRuntimeIdBySqlId = NMServerRegistryState.vehicleRuntimeIdBySqlId or {}
-    local nowMs = nowRealMs()
-    local lastMs = tonumber(NMServerRegistryState.vehicleSqlIndexLastRefreshMs) or 0
-    if (nowMs - lastMs) < 1500 then
-        return
-    end
-
-    local nextMap = {}
-    local sourceReports = {}
-    local cell = getCell and getCell() or nil
-    local world = getWorld and getWorld() or nil
-    local worldCell = world and world.getCell and world:getCell() or nil
-    local cellClass = readClassName(cell)
-    local worldCellClass = readClassName(worldCell)
-
-    local vehiclesA = nil
-    local okVehiclesA = false
-    if cell then
-        okVehiclesA, vehiclesA = safeCall(function()
-            return cell:getVehicles()
-        end)
-    end
-    if okVehiclesA and vehiclesA then
-        sourceReports[#sourceReports + 1] = collectFromVehiclesSource("cell.getVehicles", vehiclesA, nextMap)
-    else
-        sourceReports[#sourceReports + 1] = {
-            label = "cell.getVehicles",
-            sizeReported = 0,
-            iteratedSlots = 0,
-            nonNilVehicles = 0,
-            nilSlots = 0,
-            getErrors = okVehiclesA and 0 or 1,
-            readModeUsed = "none",
-            indexBaseUsed = "none",
-            sampleSqlIds = {},
-            sampleVehicleIds = {},
-            attemptSummary = "none",
-            vehiclesClass = "nil"
-        }
-    end
-
-    local sameCell = (worldCell ~= nil and worldCell == cell)
-    if not sameCell and worldCell then
-        local okVehiclesB, vehiclesB = safeCall(function()
-            return worldCell:getVehicles()
-        end)
-        if okVehiclesB and vehiclesB then
-            sourceReports[#sourceReports + 1] = collectFromVehiclesSource("world.cell.getVehicles", vehiclesB, nextMap)
-        else
-            sourceReports[#sourceReports + 1] = {
-                label = "world.cell.getVehicles",
-                sizeReported = 0,
-                iteratedSlots = 0,
-                nonNilVehicles = 0,
-                nilSlots = 0,
-                getErrors = okVehiclesB and 0 or 1,
-                readModeUsed = "none",
-                indexBaseUsed = "none",
-                sampleSqlIds = {},
-                sampleVehicleIds = {},
-                attemptSummary = "none",
-                vehiclesClass = "nil"
-            }
-        end
-    else
-        sourceReports[#sourceReports + 1] = {
-            label = "world.cell.getVehicles",
-            sizeReported = 0,
-            iteratedSlots = 0,
-            nonNilVehicles = 0,
-            nilSlots = 0,
-            getErrors = 0,
-            readModeUsed = "same_as_cell",
-            indexBaseUsed = "none",
-            sampleSqlIds = {},
-            sampleVehicleIds = {},
-            attemptSummary = "none",
-            vehiclesClass = readClassName(vehiclesA)
-        }
-    end
-
-    NMServerRegistryState.vehicleRuntimeIdBySqlId = nextMap
-    NMServerRegistryState.vehicleSqlIndexLastRefreshMs = nowMs
-
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleDiagnostics") and NMCore.shouldLogEvery then
-        if NMCore.shouldLogEvery("vehicleDiagnostics.server_sql_index_state", nowMs, 60000) then
-            local count = 0
-            for _, __ in pairs(nextMap) do
-                count = count + 1
-            end
-            local sourceSummary = {}
-            for i = 1, #sourceReports do
-                local r = sourceReports[i]
-                sourceSummary[#sourceSummary + 1] = string.format(
-                    "src%d=%s:%s/%s mode=%s base=%s nil=%s err=%s vclass=%s sql=%s vid=%s attempts=%s",
-                    i - 1,
-                    tostring(r.label or "unknown"),
-                    tostring(r.nonNilVehicles or 0),
-                    tostring(r.sizeReported or 0),
-                    tostring(r.readModeUsed or "none"),
-                    tostring(r.indexBaseUsed or "none"),
-                    tostring(r.nilSlots or 0),
-                    tostring(r.getErrors or 0),
-                    tostring(r.vehiclesClass or "nil"),
-                    tostring((r.sampleSqlIds and table.concat(r.sampleSqlIds, ",")) or "none"),
-                    tostring((r.sampleVehicleIds and table.concat(r.sampleVehicleIds, ",")) or "none"),
-                    tostring(r.attemptSummary or "none")
-                )
-            end
-            NMCore.logChannel(
-                "vehicleDiagnostics",
-                "server_vehicle_sql_index_state",
-                string.format(
-                    "entries=%s refreshedMs=%s cellClass=%s worldCellClass=%s %s",
-                    tostring(count),
-                    tostring(nowMs),
-                    tostring(cellClass),
-                    tostring(worldCellClass),
-                    table.concat(sourceSummary, " ")
-                )
-            )
-        end
-    end
+    NMServerVehicleSqlIndexCache.refresh()
 end
 
 local function normalizeSourceMode(entry, profile, state)
@@ -422,26 +52,7 @@ local function normalizeSourceMode(entry, profile, state)
 end
 
 local function buildPlayerMaps()
-    local byId = {}
-    local byName = {}
-    local players = getOnlinePlayers and getOnlinePlayers() or nil
-    if not players then
-        return byId, byName
-    end
-    for i = 0, players:size() - 1 do
-        local p = players:get(i)
-        if p then
-            local id = p.getOnlineID and tostring(p:getOnlineID() or "") or ""
-            local name = p.getUsername and tostring(p:getUsername() or "") or ""
-            if id ~= "" then
-                byId[id] = p
-            end
-            if name ~= "" then
-                byName[string.lower(name)] = p
-            end
-        end
-    end
-    return byId, byName
+    return NMServerPlayerLookupSnapshot.build()
 end
 
 local function resolvePlayerFromOwner(entry, state, playersById, playersByName)
@@ -472,8 +83,8 @@ local function setVehicleIdentityState(entry, uuid, nextState, reason)
     end
     entry._vehicleIdentityState = targetState
     NMRuntimeProbeAdapter.emit(
-        "runtimeProbe",
-        "runtimeProbe",
+        "runtime",
+        "runtime",
         "vehicle_identity_state_transition",
         string.format("uuid=%s from=%s to=%s reason=%s", tostring(uuid), tostring(currentState ~= "" and currentState or "nil"), tostring(targetState), tostring(reason or "none"))
     )
@@ -621,7 +232,7 @@ local function resolveVehicleIdentity(entry, state, playersById, playersByName)
 end
 
 local function logVehicleResolveAttempt(uuid, entry, result)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleDiagnostics")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     if not result then
@@ -640,7 +251,7 @@ local function logVehicleResolveAttempt(uuid, entry, result)
         entry._vehicleResolveAttemptSignature = signature
     end
     NMCore.logChannel(
-        "vehicleDiagnostics",
+        "vehicle",
         "server_vehicle_resolve_attempt",
         string.format(
             "uuid=%s resolved=%s path=%s reason=%s reasonStage=%s preScan=%s cachedVehicleId=%s resolvedVehicleId=%s owner=%s ownerVehicleId=%s cachedVehicleSqlId=%s resolvedVehicleSqlId=%s ownerVehicleSqlId=%s authorityVehicleSqlId=%s cachedPartUuid=%s ownerPartUuid=%s poolSource=%s totalReported=%s nonNilVehicles=%s indexBaseUsed=%s indexBaseTried=%s iteratedSlots=%s nilSlots=%s getErrors=%s matrix=%s anchor=%s",
@@ -705,7 +316,7 @@ local function resolveVehicleSnapshotFields(vehicle)
 end
 
 local function logVehicleIdentitySnapshot(entry, uuid, stage, result)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleDiagnostics")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     if not entry then
@@ -750,7 +361,7 @@ local function logVehicleIdentitySnapshot(entry, uuid, stage, result)
     entry._vehicleIdentitySnapshotMs = now
 
     NMCore.logChannel(
-        "vehicleDiagnostics",
+        "vehicle",
         "vehicle_identity_snapshot",
         string.format(
             "uuid=%s stage=%s resolved=%s reasonStage=%s reason=%s resolvedVehicleId=%s resolvedVehicleSqlId=%s resolvedScript=%s resolvedX=%s resolvedY=%s resolvedZ=%s cachedVehicleId=%s cachedVehicleSqlId=%s cachedScript=%s cachedX=%s cachedY=%s cachedZ=%s sourceGen=%s",
@@ -898,7 +509,7 @@ local function shouldLogRefreshChange(uuid, signature)
 end
 
 local function logRefresh(uuid, mode, oldX, oldY, oldZ, newX, newY, newZ, resolvedKind)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleDiagnostics")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     local signature = table.concat({
@@ -912,7 +523,7 @@ local function logRefresh(uuid, mode, oldX, oldY, oldZ, newX, newY, newZ, resolv
         return
     end
     NMCore.logChannel(
-        "vehicleDiagnostics",
+        "vehicle",
         "server_source_refresh",
         string.format(
             "uuid=%s mode=%s resolved=%s old=%.2f,%.2f,%.2f new=%.2f,%.2f,%.2f",
@@ -930,36 +541,36 @@ local function logRefresh(uuid, mode, oldX, oldY, oldZ, newX, newY, newZ, resolv
 end
 
 local function logUnresolved(uuid, mode, reason, key)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleDiagnostics")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     if NMCore.shouldLogEvery and not NMCore.shouldLogEvery("vehicleDiagnostics.source_refresh_unresolved." .. tostring(uuid), nowRealMs(), 15000) then
         return
     end
     NMCore.logChannel(
-        "vehicleDiagnostics",
+        "vehicle",
         "server_source_refresh_unresolved",
         string.format("uuid=%s mode=%s reason=%s key=%s", tostring(uuid), tostring(mode), tostring(reason), tostring(key or ""))
     )
 end
 
 local function logInvalidCoordinates(uuid, mode)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleDiagnostics")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     NMCore.logChannel(
-        "vehicleDiagnostics",
+        "vehicle",
         "server_source_refresh_invalid",
         string.format("uuid=%s mode=%s reason=world_active_invalid_coordinates", tostring(uuid), tostring(mode))
     )
 end
 
 local function logVehicleRebindBroadcast(uuid, reason, entry)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleDiagnostics")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     NMCore.logChannel(
-        "vehicleDiagnostics",
+        "vehicle",
         "server_vehicle_rebind_broadcast",
         string.format(
             "uuid=%s reason=%s vehicleId=%s partId=%s sourceMode=%s sourceEpoch=%s",
@@ -1033,9 +644,9 @@ local function retireVehicleEntry(uuid, entry, reason)
     end
     NMServerRegistryState.worldRegistry[tostring(uuid)] = nil
     clearRemovedEntryState(tostring(uuid), entry)
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
         NMCore.logChannel(
-            "runtimeProbe",
+            "runtime",
             "server_vehicle_registry_retired",
             string.format(
                 "uuid=%s vehicleId=%s vehicleSqlId=%s reason=%s",
@@ -1100,9 +711,9 @@ function NMServerSourceRefreshTick.onTick()
                     local enteringUnresolved = entry._vehicleUnresolvedSinceMs == nil
                     local unresolvedSinceMs = tonumber(entry._vehicleUnresolvedSinceMs) or nowRealMs()
                     entry._vehicleUnresolvedSinceMs = unresolvedSinceMs
-                    if enteringUnresolved and NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+                    if enteringUnresolved and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
                         NMCore.logChannel(
-                            "runtimeProbe",
+                            "runtime",
                             "server_vehicle_unresolved_enter",
                             string.format("uuid=%s vehicleId=%s", tostring(uuid), tostring(entry and entry.vehicleId or ""))
                         )
@@ -1120,15 +731,15 @@ function NMServerSourceRefreshTick.onTick()
                 if sourceMode == "vehicle" then
                     entry._vehicleResolved = true
                     setVehicleIdentityState(entry, uuid, "LIVE_RESOLVED", resolvedKind)
-                    if entry._vehicleContinuityMode ~= "LIVE_RESOLVED" and NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
-                        NMCore.logChannel("runtimeProbe", "vehicle_continuity_mode_exit", string.format("uuid=%s mode=%s reason=resolved", tostring(uuid), tostring(entry._vehicleContinuityMode or "DETACHED_CONTINUITY")))
+                    if entry._vehicleContinuityMode ~= "LIVE_RESOLVED" and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+                        NMCore.logChannel("runtime", "vehicle_continuity_mode_exit", string.format("uuid=%s mode=%s reason=resolved", tostring(uuid), tostring(entry._vehicleContinuityMode or "DETACHED_CONTINUITY")))
                     end
                     entry._vehicleContinuityMode = "LIVE_RESOLVED"
                     local rebindTransition = (resolvedKind == "vehicle_rebind")
                     local recoveredTransition = hadUnresolved and (prevVehicleResolved == false)
-                    if hadUnresolved and NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+                    if hadUnresolved and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
                         NMCore.logChannel(
-                            "runtimeProbe",
+                            "runtime",
                             "server_vehicle_unresolved_recovered",
                             string.format("uuid=%s vehicleId=%s", tostring(uuid), tostring(entry and entry.vehicleId or ""))
                         )

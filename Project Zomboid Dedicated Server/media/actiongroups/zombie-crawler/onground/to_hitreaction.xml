@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transition>
+	<transitionTo>hitreaction</transitionTo>
+	<conditionPriority>1</conditionPriority>
+	<conditions>
+		<isTrue>hashitreaction</isTrue>
+		<isFalse>bDead</isFalse>
+	</conditions>
+</transition>

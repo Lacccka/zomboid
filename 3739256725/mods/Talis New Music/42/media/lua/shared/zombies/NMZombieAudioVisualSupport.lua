@@ -46,7 +46,7 @@ local function transmitIfPossible(holder)
 end
 
 local function shouldLogZombieProof()
-    return NMCore and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("zombieDiagnostics") == true
+    return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("zombie_assignment") == true
 end
 
 function NMZombieAudioVisualSupport.getProofModData(holder)

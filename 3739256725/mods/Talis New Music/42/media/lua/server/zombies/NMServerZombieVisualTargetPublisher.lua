@@ -10,7 +10,7 @@ NMServerZombieVisualTargetPublisher._diag = NMServerZombieVisualTargetPublisher.
 }
 
 local function shouldLog()
-    return NMCore and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("zombieDiagnostics") == true
+    return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("zombie_visual") == true
 end
 
 local function logSummary(tag, detail)
@@ -71,7 +71,31 @@ local function collectPlayers()
     return out
 end
 
-local function makeZombieDistanceCheck(player)
+local function getNearbyRadiusSq()
+    return (tonumber(NMZombieVisualTargetContract and NMZombieVisualTargetContract.NearbyRadius) or 30) ^ 2
+end
+
+local function getPublishIntervalTicks()
+    return tonumber(NMZombieVisualTargetContract and NMZombieVisualTargetContract.PublishIntervalTicks) or 90
+end
+
+local function getRepublishIntervalTicks()
+    return tonumber(NMZombieVisualTargetContract and NMZombieVisualTargetContract.RepublishIntervalTicks) or 180
+end
+
+local function getClientCacheTtlTicks()
+    return tonumber(NMZombieVisualTargetContract and NMZombieVisualTargetContract.ClientCacheTtlTicks) or 0
+end
+
+local function getMaxTargetsPerPlayer()
+    return tonumber(NMZombieVisualTargetContract and NMZombieVisualTargetContract.MaxTargetsPerPlayer) or 96
+end
+
+local function getActiveVisualStrategy()
+    return NMZombieLiveStrategy and NMZombieLiveStrategy.getLiveVisualStrategy and NMZombieLiveStrategy.getLiveVisualStrategy() or "mp_assignment_flow"
+end
+
+local function makeNearbyZombieCheck(player)
     local square = player and player.getSquare and player:getSquare() or nil
     if not square then
         return nil
@@ -79,7 +103,7 @@ local function makeZombieDistanceCheck(player)
     local px = (tonumber(square:getX()) or 0) + 0.5
     local py = (tonumber(square:getY()) or 0) + 0.5
     local pz = tonumber(square:getZ()) or 0
-    local radiusSq = (tonumber(NMZombieVisualTargetContract and NMZombieVisualTargetContract.NearbyRadius) or 30) ^ 2
+    local radiusSq = getNearbyRadiusSq()
     return function(zombie)
         if not (zombie and zombie.getX and zombie.getY) then
             return false
@@ -94,8 +118,33 @@ local function makeZombieDistanceCheck(player)
     end
 end
 
-local function collectTargetRecordsForPlayer(player)
-    local allowZombie = makeZombieDistanceCheck(player)
+local function buildTargetSnapshotRecord(zombie, activeStrategy)
+    local zombieId = NMZombieVisualTargetContract and NMZombieVisualTargetContract.getZombieId and NMZombieVisualTargetContract.getZombieId(zombie) or tostring(zombie or "")
+    if zombieId == "" then
+        return nil
+    end
+    local selection = NMZombieVisualTargetLedger and NMZombieVisualTargetLedger.getOrAssignZombieSelection and NMZombieVisualTargetLedger.getOrAssignZombieSelection(zombie, activeStrategy) or nil
+    if not (selection and NMZombieDeviceVariantCatalog and NMZombieDeviceVariantCatalog.shouldRealizeSelection) then
+        return nil
+    end
+    if NMZombieDeviceVariantCatalog.shouldRealizeSelection(selection) ~= true then
+        return nil
+    end
+    local spec = NMZombieDeviceVariantCatalog.resolveRealization and NMZombieDeviceVariantCatalog.resolveRealization(selection, zombieId) or nil
+    if not spec then
+        return nil
+    end
+    return {
+        zombieId = zombieId,
+        variantId = tostring(spec.variantId or ""),
+        fullType = tostring(spec.fullType or ""),
+        attachmentLocation = tostring(spec.attachmentLocation or ""),
+        modelAttachmentName = tostring(spec.modelAttachmentName or "")
+    }
+end
+
+local function collectTargetSnapshotForPlayer(player, zombies, activeStrategy)
+    local allowZombie = makeNearbyZombieCheck(player)
     local result = {
         records = {},
         targetCandidates = 0,
@@ -104,36 +153,22 @@ local function collectTargetRecordsForPlayer(player)
     if not allowZombie then
         return result
     end
-    local zombies = getCell() and getCell():getZombieList() or nil
     if not (zombies and zombies.size) then
         return result
     end
     local seen = {}
-    local maxTargets = tonumber(NMZombieVisualTargetContract and NMZombieVisualTargetContract.MaxTargetsPerPlayer) or 96
+    local maxTargets = getMaxTargetsPerPlayer()
     for i = 0, zombies:size() - 1 do
         local zombie = zombies:get(i)
         if isAliveZombie(zombie) and allowZombie(zombie) then
-            local zombieId = NMZombieVisualTargetContract.getZombieId(zombie)
+            local zombieId = NMZombieVisualTargetContract and NMZombieVisualTargetContract.getZombieId and NMZombieVisualTargetContract.getZombieId(zombie) or tostring(zombie or "")
             if not seen[zombieId] then
                 seen[zombieId] = true
                 result.targetCandidates = result.targetCandidates + 1
-                local activeStrategy = NMZombieLiveStrategy and NMZombieLiveStrategy.getLiveVisualStrategy and NMZombieLiveStrategy.getLiveVisualStrategy() or "mp_assignment_flow"
-                local selection = NMZombieVisualTargetLedger and NMZombieVisualTargetLedger.getOrAssignZombieSelection and NMZombieVisualTargetLedger.getOrAssignZombieSelection(zombie, activeStrategy) or nil
-                if selection
-                    and NMZombieDeviceVariantCatalog
-                    and NMZombieDeviceVariantCatalog.shouldRealizeSelection
-                    and NMZombieDeviceVariantCatalog.shouldRealizeSelection(selection) == true then
-                    local spec = NMZombieDeviceVariantCatalog.resolveRealization and NMZombieDeviceVariantCatalog.resolveRealization(selection, zombieId) or nil
-                    if spec then
-                        result.targetPublished = result.targetPublished + 1
-                        result.records[#result.records + 1] = {
-                            zombieId = zombieId,
-                            variantId = tostring(spec.variantId or ""),
-                            fullType = tostring(spec.fullType or ""),
-                            attachmentLocation = tostring(spec.attachmentLocation or ""),
-                            modelAttachmentName = tostring(spec.modelAttachmentName or "")
-                        }
-                    end
+                local snapshotRecord = buildTargetSnapshotRecord(zombie, activeStrategy)
+                if snapshotRecord then
+                    result.targetPublished = result.targetPublished + 1
+                    result.records[#result.records + 1] = snapshotRecord
                     if #result.records >= maxTargets then
                         break
                     end
@@ -147,17 +182,18 @@ local function collectTargetRecordsForPlayer(player)
     return result
 end
 
+local function shouldRepublishSnapshot(state, publishSignature)
+    local republishInterval = getRepublishIntervalTicks()
+    local ticksSinceSend = (tonumber(NMServerZombieVisualTargetPublisher._tick) or 0) - (tonumber(state.lastSentTick) or 0)
+    return publishSignature ~= state.signature or ticksSinceSend >= republishInterval
+end
+
 local function publishSnapshot(player, state, snapshot)
     state.revision = (tonumber(state.revision) or 0) + 1
     state.lastSentTick = tonumber(NMServerZombieVisualTargetPublisher._tick) or 0
-    local targetIds = {}
-    for i = 1, #(snapshot.records or {}) do
-        targetIds[#targetIds + 1] = tostring(snapshot.records[i] and snapshot.records[i].zombieId or "")
-    end
     sendServerCommand(player, NMCore.NetModule, NMZombieVisualTargetContract.NetCommand, {
         revision = state.revision,
-        ttlTicks = tonumber(NMZombieVisualTargetContract.ClientCacheTtlTicks) or 0,
-        targetIds = targetIds,
+        ttlTicks = getClientCacheTtlTicks(),
         targetRecords = snapshot.records,
         targetCandidates = snapshot.targetCandidates,
         targetPublished = snapshot.targetPublished
@@ -170,10 +206,12 @@ function NMServerZombieVisualTargetPublisher.onTick()
         return
     end
     NMServerZombieVisualTargetPublisher._tick = (tonumber(NMServerZombieVisualTargetPublisher._tick) or 0) + 1
-    if (NMServerZombieVisualTargetPublisher._tick % (tonumber(NMZombieVisualTargetContract.PublishIntervalTicks) or 90)) ~= 0 then
+    if (NMServerZombieVisualTargetPublisher._tick % getPublishIntervalTicks()) ~= 0 then
         return
     end
     local players = collectPlayers()
+    local zombies = getCell() and getCell():getZombieList() or nil
+    local activeStrategy = getActiveVisualStrategy()
     local activePlayers = {}
     NMServerZombieVisualTargetPublisher._diag.publishCalls = (NMServerZombieVisualTargetPublisher._diag.publishCalls or 0) + 1
     for i = 1, #players do
@@ -182,13 +220,11 @@ function NMServerZombieVisualTargetPublisher.onTick()
         if playerId ~= "" then
             activePlayers[playerId] = true
             local state = NMServerZombieVisualTargetPublisher._playerState[playerId] or { revision = 0, signature = nil, lastSentTick = 0 }
-            local snapshot = collectTargetRecordsForPlayer(player)
-            local signature = NMZombieVisualTargetContract and NMZombieVisualTargetContract.getRecordSignature and NMZombieVisualTargetContract.getRecordSignature(snapshot.records) or ""
+            local snapshot = collectTargetSnapshotForPlayer(player, zombies, activeStrategy)
+            local signature = NMZombieVisualTargetContract and NMZombieVisualTargetContract.getTargetSnapshotSignature and NMZombieVisualTargetContract.getTargetSnapshotSignature(snapshot.records) or ""
             NMServerZombieVisualTargetPublisher._diag.targetCandidates = (NMServerZombieVisualTargetPublisher._diag.targetCandidates or 0) + snapshot.targetCandidates
             NMServerZombieVisualTargetPublisher._diag.targetPublished = (NMServerZombieVisualTargetPublisher._diag.targetPublished or 0) + snapshot.targetPublished
-            local republishInterval = tonumber(NMZombieVisualTargetContract.RepublishIntervalTicks) or 180
-            local ticksSinceSend = (tonumber(NMServerZombieVisualTargetPublisher._tick) or 0) - (tonumber(state.lastSentTick) or 0)
-            if signature ~= state.signature or ticksSinceSend >= republishInterval then
+            if shouldRepublishSnapshot(state, signature) then
                 publishSnapshot(player, state, snapshot)
                 state.signature = signature
             end

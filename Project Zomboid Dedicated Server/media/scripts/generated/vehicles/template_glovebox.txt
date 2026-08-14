@@ -1,0 +1,26 @@
+module Base
+{
+    template vehicle GloveBox
+    {
+        part GloveBox
+        {
+            mechanicArea = Interior,
+            area = SeatFrontRight,
+            itemType = Base.GloveBox,
+            mechanicRequireKey = true,
+            durability = 3,
+            container
+            {
+                test = Vehicles.ContainerAccess.GloveBox,
+                soundMap = ContainerClose VehicleGloveboxClose,
+                soundMap = ContainerOpen VehicleGloveboxOpen,
+                soundMap = ContainerPut VehicleGloveboxTransferItem,
+                soundMap = ContainerTake VehicleGloveboxTransferItem,
+            }
+            lua
+            {
+                create = Vehicles.Create.Default,
+            }
+        }
+    }
+}

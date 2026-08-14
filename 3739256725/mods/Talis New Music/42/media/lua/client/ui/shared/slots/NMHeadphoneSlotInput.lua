@@ -11,8 +11,45 @@ local function logHeadphoneExtractEvent(eventName, window, drag, extra)
     end
 end
 
+local function resolveWindowContext(window)
+    if NMHeadphoneSlotContext and NMHeadphoneSlotContext.resolveWindowContext then
+        return NMHeadphoneSlotContext.resolveWindowContext(window)
+    end
+    if not window then
+        return nil
+    end
+    if window.resolveContextCached then
+        return window:resolveContextCached()
+    end
+    return window.resolveContext and window:resolveContext() or nil
+end
+
+local function resolveDraggedItems(window)
+    if NMHeadphoneSlotContext and NMHeadphoneSlotContext.resolveDraggedItems then
+        return NMHeadphoneSlotContext.resolveDraggedItems(window)
+    end
+    if NMSlotHostLifecycle and NMSlotHostLifecycle.resolveDraggedItemsSnapshot then
+        return NMSlotHostLifecycle.resolveDraggedItemsSnapshot(window)
+    end
+    return getDraggedInventoryItems()
+end
+
+local function clearHeadphoneTransientState(window)
+    if NMHeadphoneSlotAuthority and NMHeadphoneSlotAuthority.clearHeadphoneTransientState then
+        NMHeadphoneSlotAuthority.clearHeadphoneTransientState(window, nil, true)
+        return
+    end
+    if not window then
+        return
+    end
+    window._nmHeadphoneWearSyncInFlight = false
+    window._nmPendingHeadphoneSlotFullType = nil
+    window._nmSlotRemoveInFlightByType = window._nmSlotRemoveInFlightByType or {}
+    window._nmSlotRemoveInFlightByType.headphones = nil
+end
+
 function beginHeadphoneExtractDrag(window, fullType)
-    local resolved = window and window.resolveContext and window:resolveContext() or nil
+    local resolved = resolveWindowContext(window)
     local playerObj = resolved and resolved.player or nil
     local playerNum = playerObj and playerObj.getPlayerNum and playerObj:getPlayerNum() or 0
     local invPage = getPlayerInventory and getPlayerInventory(playerNum) or nil
@@ -57,7 +94,7 @@ function collapsePinnedInventory(window, resolvedPlayer)
     if window and window._nmHeadphoneDragPinnedInventory then
         local playerObj = resolvedPlayer
         if not playerObj then
-            local resolved = window and window.resolveContext and window:resolveContext() or nil
+            local resolved = resolveWindowContext(window)
             playerObj = resolved and resolved.player or nil
         end
         local playerNum = playerObj and playerObj.getPlayerNum and playerObj:getPlayerNum() or 0
@@ -201,10 +238,34 @@ local function consumeHeadphoneRelease(window, drag, releaseOutcome, entrypoint)
     return consume
 end
 
+local function performHeadphoneDragInsert(targetWindow, items)
+    if not (targetWindow and type(items) == "table" and #items > 0) then
+        return false
+    end
+    local resolved = resolveWindowContext(targetWindow)
+    local state = resolved and resolved.state or nil
+    if not isCompatibleHeadphoneDrag(targetWindow, items, resolved, state) then return false end
+    local hpItem = pickFirstCompatibleHeadphone(targetWindow, items, resolved, state)
+    if not hpItem then return false end
+    local liveItem = normalizeHeadphoneIngressItem(targetWindow, hpItem)
+    if not liveItem then
+        clearHeadphoneTransientState(targetWindow)
+        return false
+    end
+    targetWindow._nmPendingHeadphoneSlotFullType = tostring(liveItem:getFullType() or "")
+    if queueHeadphoneSlotAction(targetWindow, "insert_headphones", { headphoneItemId = NMCore.itemId(liveItem) }) ~= true then
+        clearHeadphoneTransientState(targetWindow)
+        return false
+    end
+    return true
+end
+
 function NMHeadphoneSlot.attach(window, x, y, size)
     local slotBtn = ISButton:new(x, y, size, size, "", window, function() end)
     slotBtn:initialise()
     slotBtn:instantiate()
+    slotBtn.ownerWindow = window
+    slotBtn.slotType = "headphones"
     window:addChild(slotBtn)
 
     local function swallowHeadphoneSlotDoubleClick()
@@ -215,14 +276,14 @@ function NMHeadphoneSlot.attach(window, x, y, size)
         return true
     end
 
-    function onHeadphoneSlotMouseDown()
-        local resolved = window and window.resolveContext and window:resolveContext() or nil
+    local function onHeadphoneSlotMouseDown()
+        local resolved = resolveWindowContext(window)
         local profile = resolved and resolved.profile or nil
         if not (profile and NMDeviceProfiles.supportsHeadphones(profile)) then
             return true
         end
         local state = resolved and resolved.state or nil
-        local items, ok = getDraggedInventoryItems()
+        local items, ok = resolveDraggedItems(window)
         if ok ~= true then return true end
         if type(items) == "table" and #items > 0 then return true end
         local fullType = resolveHeadphoneSlotFullType(window, state)
@@ -232,7 +293,7 @@ function NMHeadphoneSlot.attach(window, x, y, size)
         return true
     end
 
-    function onHeadphoneSlot()
+    local function onHeadphoneSlot()
         logHeadphoneExtractEvent("slot_extract_mouseup_slot", window, window and window._nmHeadphoneExtractDrag or nil, {
             sourceZone = "slot",
             entrypoint = "slot.onMouseUp"
@@ -243,7 +304,7 @@ function NMHeadphoneSlot.attach(window, x, y, size)
                 return consumeHeadphoneRelease(window, window and window._nmHeadphoneExtractDrag or nil, releaseOutcome, "slot.onMouseUp")
             end
         end
-        local resolved = window and window.resolveContext and window:resolveContext() or nil
+        local resolved = resolveWindowContext(window)
         local profile = resolved and resolved.profile or nil
         if not (profile and NMDeviceProfiles.supportsHeadphones(profile)) then
             return false
@@ -253,33 +314,23 @@ function NMHeadphoneSlot.attach(window, x, y, size)
         if fullType ~= "" then
             return false
         end
-        local items, ok = getDraggedInventoryItems()
+        local items, ok = resolveDraggedItems(window)
         if ok ~= true or type(items) ~= "table" or #items <= 0 then return false end
-        if not isCompatibleHeadphoneDrag(window, items, resolved, state) then return false end
-        local hpItem = pickFirstCompatibleHeadphone(window, items, resolved, state)
-        if not hpItem then return false end
-        local liveItem = normalizeHeadphoneIngressItem(window, hpItem)
-        if not liveItem then
-            window._nmHeadphoneWearSyncInFlight = false
-            window._nmPendingHeadphoneSlotFullType = nil
-            window._nmSlotRemoveInFlightByType = window._nmSlotRemoveInFlightByType or {}
-            window._nmSlotRemoveInFlightByType.headphones = nil
-            return false
+        if NMPortableSlotHoverResolver and NMPortableSlotHoverResolver.resolveHoveredHeadphoneSlotWindow then
+            local player = resolved and resolved.player or nil
+            local playerNum = player and player.getPlayerNum and player:getPlayerNum() or (window and window.playerNum) or 0
+            local winner = NMPortableSlotHoverResolver.resolveHoveredHeadphoneSlotWindow(playerNum, items)
+            local targetWindow = winner and winner.window or nil
+            if performHeadphoneDragInsert(targetWindow, items) == true then
+                clearMouseDragState()
+                return true
+            end
         end
-        window._nmPendingHeadphoneSlotFullType = tostring(liveItem:getFullType() or "")
-        if queueHeadphoneSlotAction(window, "insert_headphones", { headphoneItemId = NMCore.itemId(liveItem) }) ~= true then
-            window._nmPendingHeadphoneSlotFullType = nil
-            window._nmHeadphoneWearSyncInFlight = false
-            window._nmSlotRemoveInFlightByType = window._nmSlotRemoveInFlightByType or {}
-            window._nmSlotRemoveInFlightByType.headphones = nil
-            return false
-        end
-        clearMouseDragState()
-        return true
+        return false
     end
 
-    function onHeadphoneSlotRightClick(btn, xArg, yArg)
-        local resolved = window and window.resolveContext and window:resolveContext() or nil
+    local function onHeadphoneSlotRightClick(btn, xArg, yArg)
+        local resolved = resolveWindowContext(window)
         local profile = resolved and resolved.profile or nil
         if not (profile and NMDeviceProfiles.supportsHeadphones(profile)) then
             return true
@@ -294,8 +345,7 @@ function NMHeadphoneSlot.attach(window, x, y, size)
             window._nmSlotRemoveInFlightByType.headphones = true
             window._nmPendingHeadphoneSlotFullType = tostring(fullType or "")
             if queueHeadphoneSlotAction(window, "eject_headphones", {}) ~= true then
-                window._nmPendingHeadphoneSlotFullType = nil
-                window._nmSlotRemoveInFlightByType.headphones = nil
+                clearHeadphoneTransientState(window)
             end
             return true
         end
@@ -321,18 +371,12 @@ function NMHeadphoneSlot.attach(window, x, y, size)
             local option = sub:addOption(label, window, function(targetWin, targetItem)
                 local liveItem = normalizeHeadphoneIngressItem(targetWin, targetItem)
                 if not liveItem then
-                    targetWin._nmHeadphoneWearSyncInFlight = false
-                    targetWin._nmPendingHeadphoneSlotFullType = nil
-                    targetWin._nmSlotRemoveInFlightByType = targetWin._nmSlotRemoveInFlightByType or {}
-                    targetWin._nmSlotRemoveInFlightByType.headphones = nil
+                    clearHeadphoneTransientState(targetWin)
                     return
                 end
                 targetWin._nmPendingHeadphoneSlotFullType = tostring(liveItem and liveItem.getFullType and liveItem:getFullType() or "")
                 if queueHeadphoneSlotAction(targetWin, "insert_headphones", { headphoneItemId = NMCore.itemId(liveItem) }) ~= true then
-                    targetWin._nmPendingHeadphoneSlotFullType = nil
-                    targetWin._nmHeadphoneWearSyncInFlight = false
-                    targetWin._nmSlotRemoveInFlightByType = targetWin._nmSlotRemoveInFlightByType or {}
-                    targetWin._nmSlotRemoveInFlightByType.headphones = nil
+                    clearHeadphoneTransientState(targetWin)
                 end
             end, item)
             option.itemForTexture = item

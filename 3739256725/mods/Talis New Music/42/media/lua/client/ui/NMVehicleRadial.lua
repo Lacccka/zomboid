@@ -8,14 +8,14 @@ NMVehicleRadial.baseShowRadialMenu = NMVehicleRadial.baseShowRadialMenu or nil
 NMVehicleRadial.installations = NMVehicleRadial.installations or 0
 
 local function radialProbeEnabled()
-    return NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("portableUiProbe") == true
+    return NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("portable_ui") == true
 end
 
 local function logRadialProbe(tag, detail)
     if not radialProbeEnabled() then
         return
     end
-    NMCore.logChannel("portableUiProbe", tostring(tag or "vehicle_radial"), tostring(detail or ""))
+    NMCore.logChannel("portable_ui", tostring(tag or "vehicle_radial"), tostring(detail or ""))
 end
 
 local function nowMs()

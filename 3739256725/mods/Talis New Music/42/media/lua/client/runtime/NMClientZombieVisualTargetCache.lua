@@ -10,7 +10,7 @@ NMClientZombieVisualTargetCache._staleLoggedAge = NMClientZombieVisualTargetCach
 NMClientZombieVisualTargetCache._targets = NMClientZombieVisualTargetCache._targets or {}
 
 local function shouldLog()
-    return NMCore and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("zombieDiagnostics") == true
+    return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("zombie_visual") == true
 end
 
 local function logSummary(tag, detail)
@@ -25,12 +25,21 @@ local function clearTargets()
     NMClientZombieVisualTargetCache._targetCount = 0
 end
 
+local function resetStaleSnapshotLogging()
+    NMClientZombieVisualTargetCache._staleLoggedRevision = 0
+    NMClientZombieVisualTargetCache._staleLoggedAge = 0
+end
+
 local function isMPClientRuntime()
     return NMCore and NMCore.isMPClientRuntime and NMCore.isMPClientRuntime() == true
 end
 
 local function isSPLocalRuntime()
     return NMCore and NMCore.getRuntimeAuthorityMode and NMCore.getRuntimeAuthorityMode() == "sp_local"
+end
+
+local function hasAuthoritativeSnapshot()
+    return (tonumber(NMClientZombieVisualTargetCache._revision) or 0) > 0 and NMClientZombieVisualTargetCache._hasSnapshot == true
 end
 
 local function getStampedProofModData(zombie)
@@ -68,12 +77,53 @@ local function getSPStampedDecision(zombie)
         selected = selected,
         state = selected and "selected" or "excluded",
         source = "sp_stamp",
+        selectionEpoch = tonumber(md.selectionEpoch) or 0,
         zombieId = zombieId,
         variantId = tostring(md.variantId or ""),
         fullType = tostring(md.fullType or ""),
         attachmentLocation = tostring(md.attachmentLocation or ""),
         modelAttachmentName = tostring(md.modelAttachmentName or "")
     }
+end
+
+local function buildMPSnapshotDecision(zombie)
+    local zombieId = NMZombieVisualTargetContract and NMZombieVisualTargetContract.getZombieId and NMZombieVisualTargetContract.getZombieId(zombie) or tostring(zombie or "")
+    local snapshotRecord = NMClientZombieVisualTargetCache._targets[tostring(zombieId or "")]
+    local selected = type(snapshotRecord) == "table"
+    return {
+        authoritative = hasAuthoritativeSnapshot(),
+        selected = selected,
+        state = selected and "selected" or "excluded",
+        source = "mp_snapshot",
+        zombieId = tostring(zombieId or ""),
+        variantId = tostring(snapshotRecord and snapshotRecord.variantId or ""),
+        fullType = tostring(snapshotRecord and snapshotRecord.fullType or ""),
+        attachmentLocation = tostring(snapshotRecord and snapshotRecord.attachmentLocation or ""),
+        modelAttachmentName = tostring(snapshotRecord and snapshotRecord.modelAttachmentName or "")
+    }
+end
+
+local function buildUnknownDecision(zombie)
+    return {
+        authoritative = false,
+        selected = false,
+        state = isSPLocalRuntime() and "pending" or "unknown",
+        source = "none",
+        zombieId = tostring(NMZombieVisualTargetContract and NMZombieVisualTargetContract.getZombieId and NMZombieVisualTargetContract.getZombieId(zombie) or zombie or "")
+    }
+end
+
+local function receiveTargetSnapshot(args)
+    NMClientZombieVisualTargetCache._ttlTicks = tonumber(args and args.ttlTicks) or tonumber(NMZombieVisualTargetContract and NMZombieVisualTargetContract.ClientCacheTtlTicks) or 0
+    NMClientZombieVisualTargetCache._receivedTick = tonumber(NMClientZombieVisualTargetCache._tick) or 0
+    NMClientZombieVisualTargetCache._hasSnapshot = true
+    resetStaleSnapshotLogging()
+    clearTargets()
+    local records = args and args.targetRecords or nil
+    NMClientZombieVisualTargetCache._targets = NMZombieVisualTargetContract and NMZombieVisualTargetContract.buildTargetSnapshotLookup and NMZombieVisualTargetContract.buildTargetSnapshotLookup(records) or {}
+    for _ in pairs(NMClientZombieVisualTargetCache._targets) do
+        NMClientZombieVisualTargetCache._targetCount = (tonumber(NMClientZombieVisualTargetCache._targetCount) or 0) + 1
+    end
 end
 
 function NMClientZombieVisualTargetCache.onServerCommand(command, args)
@@ -85,34 +135,7 @@ function NMClientZombieVisualTargetCache.onServerCommand(command, args)
         return true
     end
     NMClientZombieVisualTargetCache._revision = revision
-    NMClientZombieVisualTargetCache._ttlTicks = tonumber(args and args.ttlTicks) or tonumber(NMZombieVisualTargetContract and NMZombieVisualTargetContract.ClientCacheTtlTicks) or 0
-    NMClientZombieVisualTargetCache._receivedTick = tonumber(NMClientZombieVisualTargetCache._tick) or 0
-    NMClientZombieVisualTargetCache._hasSnapshot = true
-    NMClientZombieVisualTargetCache._staleLoggedRevision = 0
-    NMClientZombieVisualTargetCache._staleLoggedAge = 0
-    clearTargets()
-    local records = args and args.targetRecords or nil
-    if type(records) == "table" then
-        NMClientZombieVisualTargetCache._targets = NMZombieVisualTargetContract and NMZombieVisualTargetContract.buildRecordLookup and NMZombieVisualTargetContract.buildRecordLookup(records) or {}
-        for _ in pairs(NMClientZombieVisualTargetCache._targets) do
-            NMClientZombieVisualTargetCache._targetCount = (tonumber(NMClientZombieVisualTargetCache._targetCount) or 0) + 1
-        end
-    else
-        local targets = args and args.targetIds or nil
-        if type(targets) == "table" then
-            for i = 1, #targets do
-                local zombieId = tostring(targets[i] or "")
-                if zombieId ~= "" then
-                    if type(NMClientZombieVisualTargetCache._targets[zombieId]) ~= "table" then
-                        NMClientZombieVisualTargetCache._targetCount = (tonumber(NMClientZombieVisualTargetCache._targetCount) or 0) + 1
-                    end
-                    NMClientZombieVisualTargetCache._targets[zombieId] = {
-                        zombieId = zombieId
-                    }
-                end
-            end
-        end
-    end
+    receiveTargetSnapshot(args)
     logSummary(
         "target_cache_update",
         string.format(
@@ -165,41 +188,15 @@ function NMClientZombieVisualTargetCache.onTick()
     )
 end
 
-function NMClientZombieVisualTargetCache.hasAuthoritativeTargets()
-    if isMPClientRuntime() then
-        return (tonumber(NMClientZombieVisualTargetCache._revision) or 0) > 0 and NMClientZombieVisualTargetCache._hasSnapshot == true
-    end
-    return isSPLocalRuntime()
-end
-
 function NMClientZombieVisualTargetCache.getZombieDecision(zombie)
     if isMPClientRuntime() then
-        local zombieId = NMZombieVisualTargetContract and NMZombieVisualTargetContract.getZombieId and NMZombieVisualTargetContract.getZombieId(zombie) or tostring(zombie or "")
-        local record = NMClientZombieVisualTargetCache._targets[tostring(zombieId or "")]
-        local selected = type(record) == "table"
-        return {
-            authoritative = NMClientZombieVisualTargetCache.hasAuthoritativeTargets() == true,
-            selected = selected,
-            state = selected and "selected" or "excluded",
-            source = "mp_snapshot",
-            zombieId = tostring(zombieId or ""),
-            variantId = tostring(record and record.variantId or ""),
-            fullType = tostring(record and record.fullType or ""),
-            attachmentLocation = tostring(record and record.attachmentLocation or ""),
-            modelAttachmentName = tostring(record and record.modelAttachmentName or "")
-        }
+        return buildMPSnapshotDecision(zombie)
     end
     local stampedDecision = getSPStampedDecision(zombie)
     if stampedDecision then
         return stampedDecision
     end
-    return {
-        authoritative = false,
-        selected = false,
-        state = isSPLocalRuntime() and "pending" or "unknown",
-        source = "none",
-        zombieId = tostring(NMZombieVisualTargetContract and NMZombieVisualTargetContract.getZombieId and NMZombieVisualTargetContract.getZombieId(zombie) or zombie or "")
-    }
+    return buildUnknownDecision(zombie)
 end
 
 function NMClientZombieVisualTargetCache.shouldRenderZombie(zombie)
@@ -220,7 +217,7 @@ end
 
 function NMClientZombieVisualTargetCache.isAuthorityDrivenRuntime()
     if isMPClientRuntime() then
-        return NMClientZombieVisualTargetCache.hasAuthoritativeTargets() == true
+        return hasAuthoritativeSnapshot()
     end
     return isSPLocalRuntime()
 end
@@ -228,6 +225,10 @@ end
 function NMClientZombieVisualTargetCache.getZombieId(zombie)
     local zombieId = NMZombieVisualTargetContract and NMZombieVisualTargetContract.getZombieId and NMZombieVisualTargetContract.getZombieId(zombie) or tostring(zombie or "")
     return tostring(zombieId or "")
+end
+
+function NMClientZombieVisualTargetCache.getRevision()
+    return tonumber(NMClientZombieVisualTargetCache._revision) or 0
 end
 
 return NMClientZombieVisualTargetCache

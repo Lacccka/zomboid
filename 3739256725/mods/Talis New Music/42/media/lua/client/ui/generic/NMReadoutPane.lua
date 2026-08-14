@@ -1,4 +1,8 @@
 require "ISUI/ISPanel"
+require "ui/shared/NMReadoutLabelState"
+require "ui/shared/NMReadoutTextResolver"
+require "ui/shared/render/NMUIRenderCache"
+-- Canonical generic ui_render widget: builds readout render state and draws the widget.
 NMReadoutPane = NMReadoutPane or {}
 
 local PANE_W = 300
@@ -64,17 +68,21 @@ function NMReadoutPane.attach(window, x, y)
         local renderState = window and window.getRenderState and window:getRenderState("readout") or nil
         local fullText = renderState and renderState.fullText or NMTranslations.ui("NoMediaNoSong", "No Media | No Song")
         local nowMs = renderState and renderState.nowMs or 0
-        local contentW = renderState and renderState.contentW or math.max(1, innerW - (TEXT_PAD * 2))
-        local text = NMReadoutOverflowPager and NMReadoutOverflowPager.resolvePagedText
-            and NMReadoutOverflowPager.resolvePagedText(self, fullText, contentW, nowMs)
-            or fullText
+        local textState = NMReadoutLabelState.build(window, {
+            fullText = fullText,
+            contentW = renderState and renderState.contentW or math.max(1, innerW - (TEXT_PAD * 2)),
+            nowMs = nowMs,
+            pagerHost = self,
+            x = innerX + TEXT_PAD,
+            color = TEXT,
+        })
         local tm = getTextManager and getTextManager() or nil
         local textH = tm and tm.MeasureStringY and tm:MeasureStringY(UIFont.Small, "Ag") or 10
         local textY = innerY + math.floor(((innerH - textH) * 0.5) + 0.5)
         if textY < (innerY + TEXT_PAD) then
             textY = innerY + TEXT_PAD
         end
-        self:drawText(tostring(text or ""), innerX + TEXT_PAD, textY, TEXT.r, TEXT.g, TEXT.b, TEXT.a, UIFont.Small)
+        self:drawText(tostring(textState and textState.text or ""), innerX + TEXT_PAD, textY, TEXT.r, TEXT.g, TEXT.b, TEXT.a, UIFont.Small)
         if NMUIRenderProbe and NMUIRenderProbe.endWindow then
             NMUIRenderProbe.endWindow(window, "widget.readout.render", perfStart)
         end

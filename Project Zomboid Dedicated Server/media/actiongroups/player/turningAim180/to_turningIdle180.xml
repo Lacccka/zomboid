@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transition>
+	<transitionTo>turningIdle180</transitionTo>
+	<conditions>
+		<isFalse>isMoving</isFalse>
+		<isFalse>aim</isFalse>
+	</conditions>
+</transition>

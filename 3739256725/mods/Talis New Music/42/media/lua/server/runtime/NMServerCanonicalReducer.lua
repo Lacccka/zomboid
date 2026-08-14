@@ -1,3 +1,7 @@
+if not NMServerTrackTimeline then
+    pcall(require, "server/helpers/NMServerTrackTimeline")
+end
+
 -- Canonical server reducer entrypoint for authoritative item/vehicle mutations.
 NMServerCanonicalReducer = NMServerCanonicalReducer or {}
 
@@ -6,7 +10,6 @@ NMServerCanonicalReducer.Event = {
     INTENT_STOP = "INTENT_STOP",
     INTENT_NEXT = "INTENT_NEXT",
     INTENT_PREV = "INTENT_PREV",
-    INTENT_TOGGLE = "INTENT_TOGGLE",
     TICK_PROGRESS = "TICK_PROGRESS",
     TICK_BATTERY = "TICK_BATTERY",
     NO_LISTENER_FREEZE = "NO_LISTENER_FREEZE",
@@ -19,19 +22,16 @@ NMServerCanonicalReducer.Event = {
 
 local function mapEventToAction(eventType)
     if eventType == NMServerCanonicalReducer.Event.INTENT_STOP then
-        return "stop_playback"
+        return "stop"
     end
     if eventType == NMServerCanonicalReducer.Event.INTENT_START then
-        return "start_playback"
+        return "play"
     end
     if eventType == NMServerCanonicalReducer.Event.INTENT_NEXT then
         return "next_track"
     end
     if eventType == NMServerCanonicalReducer.Event.INTENT_PREV then
         return "prev_track"
-    end
-    if eventType == NMServerCanonicalReducer.Event.INTENT_TOGGLE then
-        return "toggle_play"
     end
     if eventType == NMServerCanonicalReducer.Event.HINT_TRACK_FINISHED then
         return "track_finished"
@@ -55,9 +55,24 @@ local function nowRealMs()
     return 0
 end
 
+local function rearmTrackTimeline(state, startedAtMs)
+    if type(state) ~= "table" then
+        return false
+    end
+    local rearmAtMs = math.max(0, math.floor(tonumber(startedAtMs) or 0))
+    if NMServerTrackTimeline and NMServerTrackTimeline.arm then
+        return NMServerTrackTimeline.arm(nil, state, rearmAtMs, "world") ~= nil
+    end
+    state.serverTrackStartedAtMs = rearmAtMs
+    state.serverTrackDurationMs = nil
+    state.serverTrackDueAtMs = nil
+    state._serverTrackTimingMode = "unknown_open"
+    return true
+end
+
 local function ensureTimelineOnTransportStart(state, action)
     local name = tostring(action or "")
-    if not (name == "start_playback" or name == "toggle_play") then
+    if name ~= "play" then
         return false
     end
     if not state or state.isOn ~= true or state.isPlaying ~= true then
@@ -71,10 +86,7 @@ local function ensureTimelineOnTransportStart(state, action)
         return false
     end
     local startedAtMs = nowRealMs()
-    state.serverTrackStartedAtMs = startedAtMs
-    state.serverTrackDurationMs = nil
-    state.serverTrackDueAtMs = nil
-    state._serverTrackTimingMode = "unknown_open"
+    rearmTrackTimeline(state, startedAtMs)
     state._tmBootResetRestartPending = nil
     return true
 end
@@ -125,10 +137,7 @@ local function applyOwnerPresenceEvent(payload)
         state.isPlaying = true
         state.desiredIsPlaying = true
         state.lastStopReason = nil
-        state.serverTrackStartedAtMs = newStartedAtMs
-        state.serverTrackDurationMs = nil
-        state.serverTrackDueAtMs = nil
-        state._serverTrackTimingMode = "unknown_open"
+        rearmTrackTimeline(state, newStartedAtMs)
         return true, "owner_online_resume_applied", nil
     end
     return false, "unsupported_owner_event", nil
@@ -160,10 +169,7 @@ local function applyNoListenerEvent(payload)
         state.isPlaying = true
         state.desiredIsPlaying = true
         state.lastStopReason = nil
-        state.serverTrackStartedAtMs = nowMs
-        state.serverTrackDurationMs = nil
-        state.serverTrackDueAtMs = nil
-        state._serverTrackTimingMode = "unknown_open"
+        rearmTrackTimeline(state, nowMs)
         return true, "no_listener_resume_restart_applied", nil
     end
     return false, "unsupported_no_listener_event", nil

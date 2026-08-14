@@ -2,12 +2,12 @@ NMZombieLiveStrategy = NMZombieLiveStrategy or {}
 
 local VALID_STRATEGIES = {
     sp_runtime_attach = true,
-    mp_runtime_attach_with_support = true,
-    mp_assignment_flow = true,
-    mp_legacy_assignment_flow = true
+    mp_assignment_flow = true
 }
 
 local STRATEGY_ALIASES = {
+    -- Compatibility-only aliases for persisted config or stale diagnostics.
+    mp_runtime_attach_with_support = "mp_assignment_flow",
     mp_legacy_assignment_flow = "mp_assignment_flow"
 }
 
@@ -37,11 +37,6 @@ end
 
 function NMZombieLiveStrategy.shouldRunSPRuntimeAttach()
     return NMZombieLiveStrategy.getLiveVisualStrategy() == "sp_runtime_attach"
-        and not (NMCore and NMCore.isMPClientRuntime and NMCore.isMPClientRuntime() == true)
-end
-
-function NMZombieLiveStrategy.shouldRunMPRuntimeAttachWithSupport()
-    return NMZombieLiveStrategy.getLiveVisualStrategy() == "mp_runtime_attach_with_support"
         and not (NMCore and NMCore.isMPClientRuntime and NMCore.isMPClientRuntime() == true)
 end
 

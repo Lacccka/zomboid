@@ -1,3 +1,6 @@
+require "ui/shared/host/NMDeviceUiTime"
+require "ui/shared/slots/NMPortableUiSoundContract"
+
 local env = _G.NMCDPlayerWindowEnv
 setfenv(1, env)
 
@@ -56,9 +59,7 @@ function getPlayer(playerNum)
 end
 
 function getNowMs()
-    return (getTimestampMs and tonumber(getTimestampMs()))
-        or (getTimeInMillis and tonumber(getTimeInMillis()))
-        or 0
+    return NMDeviceUiTime.nowMs()
 end
 
 function getPlayerModData(player)
@@ -275,10 +276,7 @@ function playCDPlayerButtonSound(window, soundName)
     if name == "" then
         return
     end
-    local sm = getSoundManager and getSoundManager() or nil
-    if sm and sm.playUISound then
-        pcall(sm.playUISound, sm, name)
-    end
+    NMPortableUiSoundContract.playNamedSound(window, name)
 end
 
 local CDPLAYER_BEEP_SOUNDS = {
@@ -320,6 +318,10 @@ function playCDPlayerTransportSound(window, isPoweringOff)
     playCDPlayerRandomBeep(window)
 end
 
+function playCDPlayerManualPlaySound(window)
+    NMPortableUiSoundContract.playCDManualPlay(window)
+end
+
 function playCDPlayerVolumeClick(window)
     playCDPlayerRandomBeep(window)
 end
@@ -330,6 +332,15 @@ function playCDPlayerGenericClick(window, useAlternate)
         return
     end
     playCDPlayerButtonSound(window, "NM_ButtonClick")
+end
+
+function playCDPlayerLidSound(window, isOpening)
+    NMPortableUiSoundContract.playLid(window, isOpening == true)
+end
+
+function playCDPlayerMediaSlotSound(window, isInsert)
+    local eventName = isInsert == true and "slot_media_insert_success" or "slot_media_eject_success"
+    NMPortableUiSoundContract.playEvent(window, eventName)
 end
 
 local function setChildInteractiveVisible(child, visible, interactive)

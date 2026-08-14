@@ -1,6 +1,16 @@
 local env = _G.NMCDPlayerWindowEnv
 setfenv(1, env)
 
+local function ensureTextureValue(cache, key, path)
+    if cache[key] == nil and getTexture then
+        cache[key] = path and (getTexture(path) or false) or false
+    end
+    if cache[key] == false then
+        return nil
+    end
+    return cache[key]
+end
+
 local FRONT_VARIANTS = {
     CDPlayerBlack = "Black",
     CDPlayerBlue = "Blue",
@@ -36,16 +46,6 @@ local function ensureLidTextureCache()
     return UI_TEXTURES.lidByVariant
 end
 
-local function ensureDisplayIconTextureCache()
-    UI_TEXTURES.displayIconByPolicy = UI_TEXTURES.displayIconByPolicy or {}
-    return UI_TEXTURES.displayIconByPolicy
-end
-
-local function ensureDisplayBatteryTextureCache()
-    UI_TEXTURES.displayBatteryByStage = UI_TEXTURES.displayBatteryByStage or {}
-    return UI_TEXTURES.displayBatteryByStage
-end
-
 local function getDisplayTexture(window)
     local cacheKey = "displayOff"
     local texturePath = DISPLAY_TEXTURE_PATH
@@ -54,107 +54,12 @@ local function getDisplayTexture(window)
         texturePath = DISPLAY_TEXTURE_ON_PATH
     end
     UI_TEXTURES.displayByState = UI_TEXTURES.displayByState or {}
-    local cache = UI_TEXTURES.displayByState
-    if cache[cacheKey] == nil and getTexture then
-        cache[cacheKey] = getTexture(texturePath) or false
-    end
-    if cache[cacheKey] == false then
-        return nil
-    end
-    return cache[cacheKey]
+    return ensureTextureValue(UI_TEXTURES.displayByState, cacheKey, texturePath)
 end
 
 local function getAuxIngressTexture()
-    if UI_TEXTURES.auxIngress == nil and getTexture then
-        UI_TEXTURES.auxIngress = getTexture(AUX_INGRESS_TEXTURE_PATH) or false
-    end
-    if UI_TEXTURES.auxIngress == false then
-        return nil
-    end
-    return UI_TEXTURES.auxIngress
-end
-
-local function getDisplayModeIconTexture(policy)
-    local key = tostring(policy or "autoplay")
-    local texturePath = DISPLAY_MODE_ICON_AUTOPLAY_TEXTURE_PATH
-    if key == "loop_song" then
-        texturePath = DISPLAY_MODE_ICON_LOOP_SONG_TEXTURE_PATH
-    elseif key == "loop_album" then
-        texturePath = DISPLAY_MODE_ICON_LOOP_ALBUM_TEXTURE_PATH
-    elseif key == "shuffle" then
-        texturePath = DISPLAY_MODE_ICON_SHUFFLE_TEXTURE_PATH
-    end
-    local cache = ensureDisplayIconTextureCache()
-    if cache[key] == nil and getTexture then
-        cache[key] = getTexture(texturePath) or false
-    end
-    if cache[key] == false then
-        return nil
-    end
-    return cache[key]
-end
-
-local function getDisplayBatteryTexture(stageKey)
-    local key = tostring(stageKey or "00")
-    local cache = ensureDisplayBatteryTextureCache()
-    if cache[key] == nil and getTexture then
-        cache[key] = getTexture("media/textures/UI/CDPlayer/NM_UI_CDPlayer_Display_Battery_" .. key .. ".png") or false
-    end
-    if cache[key] == false then
-        return nil
-    end
-    return cache[key]
-end
-
-local function formatDisplayClockText()
-    local gameTime = getGameTime and getGameTime() or nil
-    if not gameTime then
-        return nil
-    end
-
-    local hour = nil
-    if gameTime.getHour then
-        hour = tonumber(gameTime:getHour())
-    elseif gameTime.getHours then
-        hour = tonumber(gameTime:getHours())
-    end
-
-    local minute = nil
-    if gameTime.getMinutes then
-        minute = tonumber(gameTime:getMinutes())
-    elseif gameTime.getMinute then
-        minute = tonumber(gameTime:getMinute())
-    end
-
-    if minute == nil and gameTime.getTimeOfDay then
-        local timeOfDay = tonumber(gameTime:getTimeOfDay())
-        if timeOfDay then
-            local wholeHour = math.floor(timeOfDay)
-            hour = hour or wholeHour
-            minute = math.floor((timeOfDay - wholeHour) * 60 + 0.5)
-        end
-    end
-
-    hour = math.floor(tonumber(hour) or 0)
-    minute = math.floor(tonumber(minute) or 0)
-
-    if hour < 0 then
-        hour = 0
-    elseif hour >= 24 then
-        hour = hour % 24
-    end
-    if minute < 0 then
-        minute = 0
-    elseif minute >= 60 then
-        minute = minute % 60
-    end
-
-    local meridiem = hour >= 12 and "PM" or "AM"
-    local hour12 = hour % 12
-    if hour12 == 0 then
-        hour12 = 12
-    end
-    return string.format("%d:%02d %s", hour12, minute, meridiem)
+    UI_TEXTURES.auxIngress = UI_TEXTURES.auxIngress or nil
+    return ensureTextureValue(UI_TEXTURES, "auxIngress", AUX_INGRESS_TEXTURE_PATH)
 end
 
 local function getRectCenterForOddSizedTexture(rect)
@@ -168,13 +73,7 @@ end
 local function getSideTexture(key, path)
     local cache = ensureSideTextureCache()
     local cacheKey = tostring(key or "") .. "|" .. tostring(path or "")
-    if cache[cacheKey] == nil and getTexture then
-        cache[cacheKey] = getTexture(path) or false
-    end
-    if cache[cacheKey] == false then
-        return nil
-    end
-    return cache[cacheKey]
+    return ensureTextureValue(cache, cacheKey, path)
 end
 
 local function resolveFrontVariantFromFullType(fullType)
@@ -189,27 +88,15 @@ end
 local function getFrontTexture(variant)
     local resolvedVariant = tostring(variant or FRONT_TEXTURE_FALLBACK_VARIANT or "Cyan")
     local cache = ensureFrontTextureCache()
-    if cache[resolvedVariant] == nil and getTexture then
-        local path = tostring(FRONT_TEXTURE_PATH_PREFIX or "") .. resolvedVariant .. ".png"
-        cache[resolvedVariant] = getTexture(path) or false
-    end
-    if cache[resolvedVariant] == false then
-        return nil
-    end
-    return cache[resolvedVariant]
+    local path = tostring(FRONT_TEXTURE_PATH_PREFIX or "") .. resolvedVariant .. ".png"
+    return ensureTextureValue(cache, resolvedVariant, path)
 end
 
 local function getLidTexture(variant)
     local resolvedVariant = tostring(variant or FRONT_TEXTURE_FALLBACK_VARIANT or "Cyan")
     local cache = ensureLidTextureCache()
-    if cache[resolvedVariant] == nil and getTexture then
-        local path = tostring(LID_TEXTURE_PATH_PREFIX or "") .. resolvedVariant .. ".png"
-        cache[resolvedVariant] = getTexture(path) or false
-    end
-    if cache[resolvedVariant] == false then
-        return nil
-    end
-    return cache[resolvedVariant]
+    local path = tostring(LID_TEXTURE_PATH_PREFIX or "") .. resolvedVariant .. ".png"
+    return ensureTextureValue(cache, resolvedVariant, path)
 end
 
 local function resolveCloseTintForVariant(variant)
@@ -272,13 +159,28 @@ function CDPlayerWindow:getButtonTexture(kind)
     local cache = ensureButtonTextureCache()
     local path = self:getButtonTexturePath(kind)
     local cacheKey = tostring(kind or "") .. "|" .. tostring(path or "")
-    if cache[cacheKey] == nil and getTexture then
-        cache[cacheKey] = path and (getTexture(path) or false) or false
-    end
-    if cache[cacheKey] == false then
-        return nil
-    end
-    return cache[cacheKey]
+    return ensureTextureValue(cache, cacheKey, path)
+end
+
+local function getCDPlayerChromeTextures(window, model)
+    UI_TEXTURES.base = UI_TEXTURES.base or nil
+    UI_TEXTURES.close = UI_TEXTURES.close or nil
+    return {
+        base = ensureTextureValue(UI_TEXTURES, "base", BASE_TEXTURE_PATH),
+        close = ensureTextureValue(UI_TEXTURES, "close", CLOSE_TEXTURE_PATH),
+        front = getFrontTexture(model and model.frontVariant or nil),
+        lid = getLidTexture(model and model.frontVariant or nil),
+        auxIngress = getAuxIngressTexture(),
+        display = getDisplayTexture(window),
+        sideButtonBg = window:getSideButtonBgTexture(),
+        sideButtonFg = window:getSideButtonTexture(),
+        indicator = window:getPowerIndicatorTexture(),
+        hold = window:getHoldButtonTexture(),
+        open = window:getOpenButtonTexture(),
+        modeLabel = window:getModeLabelTexture(),
+        holdLabel = window:getHoldLabelTexture(),
+        powerLabel = window:getPowerLabelTexture(),
+    }
 end
 
 function CDPlayerWindow:getSideButtonTexture()
@@ -332,218 +234,63 @@ function CDPlayerWindow:getPowerLabelTexture()
     return getSideTexture("label_power", POWER_LABEL_TEXTURE_PATH)
 end
 
-function CDPlayerWindow:getDisplaySongLabelRenderState()
-    if self:isDisplayPoweredOn() ~= true then
-        return nil
-    end
-
-    local resolved = self:resolveContextCached()
-    local state = resolved and resolved.state or nil
-    local fullText = NMReadoutTextResolver and NMReadoutTextResolver.resolveReadoutText
-        and NMReadoutTextResolver.resolveReadoutText(state)
-        or ""
-    fullText = tostring(fullText or "")
-    if fullText == "" then
-        return nil
-    end
-
-    local viewport = self:getDisplayViewportRect()
-    local contentW = math.max(1, viewport.w - DISPLAY_TEXT_PAD_LEFT - DISPLAY_TEXT_PAD_RIGHT)
-    local nowMs = tonumber(self._nmFrameNowMs) or getNowMs()
-    local text = NMReadoutOverflowPager and NMReadoutOverflowPager.resolvePagedText
-        and NMReadoutOverflowPager.resolvePagedText(self, fullText, contentW, nowMs)
-        or fullText
-    local tm = getTextManager and getTextManager() or nil
-    local textH = tm and tm.MeasureStringY and tm:MeasureStringY(UIFont.Small, "Ag") or 10
-    local textY = viewport.y + viewport.h - DISPLAY_TEXT_PAD_BOTTOM - textH
-    local absWindowY = self.getAbsoluteY and self:getAbsoluteY() or self.getY and self:getY() or 0
-    local _, screenH = getScreenSize()
-    local maxAbsTextY = math.max(0, (tonumber(screenH) or 0) - textH - 2)
-    local absTextY = absWindowY + textY
-    if absTextY > maxAbsTextY then
-        textY = textY - (absTextY - maxAbsTextY)
-    end
-    local minTextY = viewport.y + DISPLAY_TEXT_PAD_TOP
-    if textY < minTextY then
-        textY = minTextY
-    end
-    return {
-        text = tostring(text or ""),
-        x = viewport.x + DISPLAY_TEXT_PAD_LEFT,
-        y = textY,
-        fullText = fullText,
-        contentW = contentW,
-        color = DISPLAY_TEXT_COLOR,
-    }
-end
-
-function CDPlayerWindow:getDisplayModeIconRenderState()
-    if self:isDisplayPoweredOn() ~= true then
-        return nil
-    end
-
-    local transport = self:buildTransportState()
-    local texture = getDisplayModeIconTexture(transport.playbackPolicy)
-    if not texture then
-        return nil
-    end
-
-    local viewport = self:getDisplayViewportRect()
-    return {
-        texture = texture,
-        x = viewport.x + DISPLAY_MODE_ICON_PAD_LEFT,
-        y = viewport.y + DISPLAY_MODE_ICON_PAD_TOP,
-        w = DISPLAY_MODE_ICON_TARGET_W,
-        h = DISPLAY_MODE_ICON_TARGET_H,
-        alpha = DISPLAY_MODE_ICON_ALPHA,
-    }
-end
-
-function CDPlayerWindow:getDisplayBatteryStageKey()
-    if self:isDisplayPoweredOn() ~= true then
-        return nil
-    end
-
-    local resolved = self:resolveContextCached()
-    local state = resolved and resolved.state or nil
-    local profile = resolved and resolved.profile or nil
-    if not (profile and profile.supportsBattery == true) then
-        return nil
-    end
-    if not (state and state.batteryPresent == true) then
-        return nil
-    end
-
-    local charge = clamp01(tonumber(state.batteryCharge) or 0.0)
-    if charge < DISPLAY_BATTERY_FLASH_THRESHOLD then
-        local nowMs = tonumber(self._nmFrameNowMs) or getNowMs()
-        local phase = math.floor(nowMs / DISPLAY_BATTERY_FLASH_INTERVAL_MS) % 2
-        if phase == 0 then
-            return "20"
-        end
-        return "00"
-    end
-    if charge > 0.80 then
-        return "100"
-    end
-    if charge > 0.60 then
-        return "80"
-    end
-    if charge > 0.40 then
-        return "60"
-    end
-    if charge > 0.20 then
-        return "40"
-    end
-    return "20"
-end
-
-function CDPlayerWindow:getDisplayBatteryIndicatorRenderState()
-    local stageKey = self:getDisplayBatteryStageKey()
-    if not stageKey then
-        return nil
-    end
-
-    local texture = getDisplayBatteryTexture(stageKey)
-    if not texture then
-        return nil
-    end
-
-    local viewport = self:getDisplayViewportRect()
-    return {
-        texture = texture,
-        x = viewport.x + viewport.w - DISPLAY_BATTERY_PAD_RIGHT - DISPLAY_BATTERY_W,
-        y = viewport.y + DISPLAY_BATTERY_PAD_TOP,
-        w = DISPLAY_BATTERY_W,
-        h = DISPLAY_BATTERY_H,
-    }
-end
-
-function CDPlayerWindow:getDisplayClockRenderState()
-    if self:isDisplayPoweredOn() ~= true then
-        return nil
-    end
-
-    local text = formatDisplayClockText()
-    if not text or text == "" then
-        return nil
-    end
-
-    local viewport = self:getDisplayViewportRect()
-    local tm = getTextManager and getTextManager() or nil
-    local textW = tm and tm.MeasureStringX and tm:MeasureStringX(UIFont.Small, text) or (#text * 6)
-    return {
-        text = text,
-        x = viewport.x + math.floor((viewport.w - textW) * 0.5 + 0.5) + DISPLAY_CLOCK_OFFSET_X,
-        y = viewport.y + DISPLAY_CLOCK_PAD_TOP,
-        color = DISPLAY_TEXT_COLOR,
-    }
-end
-
-function CDPlayerWindow:shouldSpinInsertedCD()
+function CDPlayerWindow:shouldSpinInsertedCD(transport)
     local timed = self._nmMediaSlotTimedProgress
     if timed and timed.active == true then
         return false
     end
-    local transport = self:buildTransportState()
-    return transport.isPlaying == true and self:hasInsertedMedia() == true
+    local transportState = NMDeviceUiHost.resolveTransportState(self, {
+        transport = transport,
+        renderModel = self._nmRenderModel,
+    })
+    return transportState and transportState.isPlaying == true and self:hasInsertedMedia() == true or false
 end
 
 function CDPlayerWindow:prerender()
+    local perfStart = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(self) or nil
     self:beginFrameEpoch("prerender")
+    local model = self:getRenderModel()
     local resolved = self:resolveContextCached()
     local nowMs = getNowMs()
-    local lastHeadphoneSyncMs = tonumber(self._nmLastHeadphoneWearSyncMs) or 0
-    if (nowMs - lastHeadphoneSyncMs) >= 250 then
-        self._nmLastHeadphoneWearSyncMs = nowMs
-        if self:shouldShowClosedLidSlots() == true
-            and NMHeadphoneSlot
-            and NMHeadphoneSlot.tickWearSync
-            and self.headphoneSlot
-            and self.headphoneSlot.button then
-            self._nmHeadphoneWearSyncActive = (NMHeadphoneSlot.tickWearSync(self, resolved) == true)
-        else
-            self._nmHeadphoneWearSyncActive = false
-        end
+    if NMHeadphoneSlot and NMHeadphoneSlot.tickWearSyncWindow then
+        NMHeadphoneSlot.tickWearSyncWindow(self, {
+            nowMs = nowMs,
+            resolved = resolved,
+            visible = self:shouldShowClosedLidSlots() == true and self.headphoneSlot and self.headphoneSlot.button ~= nil,
+            idlePollMs = 1000,
+            activePollMs = 250,
+        })
+    else
+        self._nmHeadphoneWearSyncActive = false
     end
     NMSlotHostLifecycle.refreshSlotVisibility(self)
     ISPanel.prerender(self)
     self:syncHoldButtonAnimation(false)
+    local chromeTextures = getCDPlayerChromeTextures(self, model)
     if self.backgroundColor then
         self:drawRect(0, 0, self.width, self.height, self.backgroundColor.a, self.backgroundColor.r, self.backgroundColor.g, self.backgroundColor.b)
     end
-    if not UI_TEXTURES.base and getTexture then
-        UI_TEXTURES.base = getTexture(BASE_TEXTURE_PATH)
+    if chromeTextures.base then
+        self:drawTextureScaled(chromeTextures.base, 0, 0, self.width, self.height, 1.0, 1.0, 1.0, 1.0)
     end
-    if UI_TEXTURES.base then
-        self:drawTextureScaled(UI_TEXTURES.base, 0, 0, self.width, self.height, 1.0, 1.0, 1.0, 1.0)
-    end
-    local frontTexture = getFrontTexture(self:getFrontVariant())
-    if frontTexture then
+    if chromeTextures.front then
         local frontRect = self:getFrontRect()
-        self:drawTextureScaled(frontTexture, frontRect.x, frontRect.y, frontRect.w, frontRect.h, 1.0, 1.0, 1.0, 1.0)
+        self:drawTextureScaled(chromeTextures.front, frontRect.x, frontRect.y, frontRect.w, frontRect.h, 1.0, 1.0, 1.0, 1.0)
     end
-    local lidTexture = getLidTexture(self:getFrontVariant())
-    if self:shouldShowAuxIngressHighlight() == true then
-        local auxIngressTexture = getAuxIngressTexture()
-        if auxIngressTexture then
-            self:drawTextureScaled(auxIngressTexture, 0, 0, self.width, self.height, 1.0, 1.0, 1.0, 1.0)
-        end
+    if self:shouldShowAuxIngressHighlight() == true and chromeTextures.auxIngress then
+        self:drawTextureScaled(chromeTextures.auxIngress, 0, 0, self.width, self.height, 1.0, 1.0, 1.0, 1.0)
     end
-    local displayTexture = getDisplayTexture(self)
-    if displayTexture then
+    if chromeTextures.display then
         local displayRect = self:getDisplayRect()
-        self:drawTextureScaled(displayTexture, displayRect.x, displayRect.y, displayRect.w, displayRect.h, 1.0, 1.0, 1.0, 1.0)
+        self:drawTextureScaled(chromeTextures.display, displayRect.x, displayRect.y, displayRect.w, displayRect.h, 1.0, 1.0, 1.0, 1.0)
     end
-    local sideBgTexture = self:getSideButtonBgTexture()
-    if sideBgTexture then
+    if chromeTextures.sideButtonBg then
         local modeBgRect = self:getSideButtonBgRect("mode")
         local powerBgRect = self:getSideButtonBgRect("power")
-        self:drawTextureScaled(sideBgTexture, modeBgRect.x, modeBgRect.y, modeBgRect.w, modeBgRect.h, 1.0, 1.0, 1.0, 1.0)
-        self:drawTextureScaled(sideBgTexture, powerBgRect.x, powerBgRect.y, powerBgRect.w, powerBgRect.h, 1.0, 1.0, 1.0, 1.0)
+        self:drawTextureScaled(chromeTextures.sideButtonBg, modeBgRect.x, modeBgRect.y, modeBgRect.w, modeBgRect.h, 1.0, 1.0, 1.0, 1.0)
+        self:drawTextureScaled(chromeTextures.sideButtonBg, powerBgRect.x, powerBgRect.y, powerBgRect.w, powerBgRect.h, 1.0, 1.0, 1.0, 1.0)
     end
-    local sideFgTexture = self:getSideButtonTexture()
-    if sideFgTexture then
+    if chromeTextures.sideButtonFg then
         local sideRenderOrder = { "mode", "power" }
         for i = 1, #sideRenderOrder do
             local kind = sideRenderOrder[i]
@@ -557,27 +304,24 @@ function CDPlayerWindow:prerender()
                     g = BUTTON_PRESSED_TINT_G
                     b = BUTTON_PRESSED_TINT_B
                 end
-                self:drawTextureScaled(sideFgTexture, rect.x, rect.y, rect.w, rect.h, 1.0, r, g, b)
+                self:drawTextureScaled(chromeTextures.sideButtonFg, rect.x, rect.y, rect.w, rect.h, 1.0, r, g, b)
             end
         end
     end
-    local indicatorTexture = self:getPowerIndicatorTexture()
-    if indicatorTexture then
+    if chromeTextures.indicator then
         local indicatorRect = self:getPowerIndicatorRect()
-        self:drawTextureScaled(indicatorTexture, indicatorRect.x, indicatorRect.y, indicatorRect.w, indicatorRect.h, 1.0, 1.0, 1.0, 1.0)
+        self:drawTextureScaled(chromeTextures.indicator, indicatorRect.x, indicatorRect.y, indicatorRect.w, indicatorRect.h, 1.0, 1.0, 1.0, 1.0)
     end
-    local holdTexture = self:getHoldButtonTexture()
-    if holdTexture then
+    if chromeTextures.hold then
         local holdRect = self:getHoldButtonRect()
         self:DrawTextureAngle(
-            holdTexture,
+            chromeTextures.hold,
             holdRect.x + (holdRect.w / 2),
             holdRect.y + (holdRect.h / 2),
             tonumber(self._nmHoldButtonAngle) or HOLD_BUTTON_ANGLE_UPRIGHT
         )
     end
-    local openTexture = self:getOpenButtonTexture()
-    if openTexture then
+    if chromeTextures.open then
         local openRect = self:getOpenButtonRect()
         local r = 1.0
         local g = 1.0
@@ -587,24 +331,21 @@ function CDPlayerWindow:prerender()
             g = BUTTON_PRESSED_TINT_G
             b = BUTTON_PRESSED_TINT_B
         end
-        self:drawTextureScaled(openTexture, openRect.x, openRect.y, openRect.w, openRect.h, 1.0, r, g, b)
+        self:drawTextureScaled(chromeTextures.open, openRect.x, openRect.y, openRect.w, openRect.h, 1.0, r, g, b)
     end
-    local modeLabelTexture = self:getModeLabelTexture()
-    if modeLabelTexture then
+    if chromeTextures.modeLabel then
         local rect = self:getModeLabelRect()
-        self:drawTextureScaled(modeLabelTexture, rect.x, rect.y, rect.w, rect.h, 1.0, 1.0, 1.0, 1.0)
+        self:drawTextureScaled(chromeTextures.modeLabel, rect.x, rect.y, rect.w, rect.h, 1.0, 1.0, 1.0, 1.0)
     end
-    local holdLabelTexture = self:getHoldLabelTexture()
-    if holdLabelTexture then
+    if chromeTextures.holdLabel then
         local rect = self:getHoldLabelRect()
-        self:drawTextureScaled(holdLabelTexture, rect.x, rect.y, rect.w, rect.h, 1.0, 1.0, 1.0, 1.0)
+        self:drawTextureScaled(chromeTextures.holdLabel, rect.x, rect.y, rect.w, rect.h, 1.0, 1.0, 1.0, 1.0)
     end
-    local powerLabelTexture = self:getPowerLabelTexture()
-    if powerLabelTexture then
+    if chromeTextures.powerLabel then
         local rect = self:getPowerLabelRect()
-        self:drawTextureScaled(powerLabelTexture, rect.x, rect.y, rect.w, rect.h, 1.0, 1.0, 1.0, 1.0)
+        self:drawTextureScaled(chromeTextures.powerLabel, rect.x, rect.y, rect.w, rect.h, 1.0, 1.0, 1.0, 1.0)
     end
-    local timedCDState = self:getTimedCDAnimationState()
+    local timedCDState = model and model.timedCDState or nil
     if timedCDState and timedCDState.visible == true and timedCDState.texture then
         self:drawTextureScaled(
             timedCDState.texture,
@@ -618,25 +359,26 @@ function CDPlayerWindow:prerender()
             1.0
         )
     else
-        local insertedCDTexture = self:getInsertedCDWorldTexture()
+        local insertedCDState = model and model.insertedCDState or nil
+        local insertedCDTexture = insertedCDState and insertedCDState.texture or nil
         if insertedCDTexture then
-            local cdRect = self:getWorldCDRect()
-            if self:shouldSpinInsertedCD() == true then
+            local cdRect = insertedCDState.rect
+            if insertedCDState.spin == true then
                 local centerX, centerY = getRectCenterForOddSizedTexture(cdRect)
                 self:DrawTextureAngle(
                     insertedCDTexture,
                     centerX,
                     centerY,
-                    tonumber(self._nmWorldCDSpinAngle) or 0.0
+                    tonumber(insertedCDState.angle) or 0.0
                 )
             else
                 self:drawTextureScaled(insertedCDTexture, cdRect.x, cdRect.y, cdRect.w, cdRect.h, 1.0, 1.0, 1.0, 1.0)
             end
         end
     end
-    if lidTexture then
-        local lidState = self:getLidRenderState()
-        self:drawTextureScaled(lidTexture, lidState.x, lidState.y, lidState.w, lidState.h, 1.0, 1.0, 1.0, 1.0)
+    if chromeTextures.lid and model and model.lidState then
+        local lidState = model.lidState
+        self:drawTextureScaled(chromeTextures.lid, lidState.x, lidState.y, lidState.w, lidState.h, 1.0, 1.0, 1.0, 1.0)
     end
     local renderOrder = { "vol_up", "prev", "next", "vol_down", "play_stop" }
     for i = 1, #renderOrder do
@@ -655,14 +397,18 @@ function CDPlayerWindow:prerender()
             self:drawTextureScaled(texture, rect.x, rect.y, rect.w, rect.h, 1.0, r, g, b)
         end
     end
+    if NMUIRenderProbe and NMUIRenderProbe.endWindow then
+        NMUIRenderProbe.endWindow(self, "device.prerender", perfStart)
+    end
 end
 
 function CDPlayerWindow:render()
-    if not UI_TEXTURES.close and getTexture then
-        UI_TEXTURES.close = getTexture(CLOSE_TEXTURE_PATH)
-    end
+    local perfFrame = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(self) or nil
+    local perfRender = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(self) or nil
+    local model = self:getRenderModel()
+    local chromeTextures = getCDPlayerChromeTextures(self, model)
     ISPanel.render(self)
-    local displayBattery = self:getDisplayBatteryIndicatorRenderState()
+    local displayBattery = model and model.displayBatteryState or nil
     if displayBattery then
         self:drawTextureScaled(
             displayBattery.texture,
@@ -676,7 +422,7 @@ function CDPlayerWindow:render()
             1.0
         )
     end
-    local displayModeIcon = self:getDisplayModeIconRenderState()
+    local displayModeIcon = model and model.displayModeIconState or nil
     if displayModeIcon then
         self:drawTextureScaled(
             displayModeIcon.texture,
@@ -690,11 +436,11 @@ function CDPlayerWindow:render()
             1.0
         )
     end
-    if UI_TEXTURES.close then
+    if chromeTextures.close then
         local closeRect = self:getCloseRect()
-        local closeAlpha, closeR, closeG, closeB = resolveCloseTintForVariant(self:getFrontVariant())
+        local closeAlpha, closeR, closeG, closeB = resolveCloseTintForVariant(model and model.frontVariant or nil)
         self:drawTextureScaled(
-            UI_TEXTURES.close,
+            chromeTextures.close,
             closeRect.x,
             closeRect.y,
             closeRect.w,
@@ -704,5 +450,15 @@ function CDPlayerWindow:render()
             closeG,
             closeB
         )
+    end
+    if self.logFrameDiagnostics then
+        self:logFrameDiagnostics()
+    end
+    if NMUIRenderProbe and NMUIRenderProbe.endWindow then
+        NMUIRenderProbe.endWindow(self, "device.render", perfRender)
+        NMUIRenderProbe.endWindow(self, "device.frame", perfFrame)
+    end
+    if NMUIRenderProbe and NMUIRenderProbe.flush then
+        NMUIRenderProbe.flush(self)
     end
 end

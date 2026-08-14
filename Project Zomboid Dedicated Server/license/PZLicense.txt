@@ -1,0 +1,9 @@
+Restrictions. Licensee may not without expressed permission from The Indie Stone, and may not permit others to:
+
+(a) reverse engineer, decompile, decode, decrypt, disassemble, or in any way derive source code from, the Software;
+
+(b) modify, translate, adapt, alter, or create derivative works from the Software using decompiled source code;
+
+(c) copy (other than one back-up copy), distribute, publicly display, transmit, sell, rent, lease or otherwise exploit the Software; or
+
+(d) distribute, sublicense, rent, lease, loan [or grant any third party access to or use of] the Software to any third party.

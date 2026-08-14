@@ -2,7 +2,12 @@ require "ISUI/ISButton"
 require "ISUI/ISPanel"
 require "TimedActions/ISBaseTimedAction"
 require "TimedActions/ISTimedActionQueue"
+require "ui/shared/render/NMVectorDraw"
+require "ui/shared/render/NMBatterySlotVectors"
+require "ui/shared/NMSlotButtonStyles"
 require "ui/shared/slots/NMSlotHostLifecycle"
+require "ui/shared/slots/NMPortableSlotHoverResolver"
+require "ui/shared/slots/NMPortableUiSoundContract"
 
 _G.NMBatterySlot = _G.NMBatterySlot or {}
 _G.NMBatterySlotEnv = _G.NMBatterySlotEnv or {}
@@ -12,6 +17,9 @@ if getmetatable(env) == nil then
 end
 
 env.NMBatterySlot = _G.NMBatterySlot
+env.playPortableUiSoundEvent = env.playPortableUiSoundEvent or function(...)
+    return NMPortableUiSoundContract and NMPortableUiSoundContract.playEvent and NMPortableUiSoundContract.playEvent(...)
+end
 env.playSlotUISound = env.playSlotUISound or function(...)
     return NMSlotActionCommon and NMSlotActionCommon.playSlotUISound and NMSlotActionCommon.playSlotUISound(...)
 end

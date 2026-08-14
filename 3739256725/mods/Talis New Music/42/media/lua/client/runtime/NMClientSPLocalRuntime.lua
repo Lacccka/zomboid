@@ -1,5 +1,9 @@
 NMClientSPLocalRuntime = NMClientSPLocalRuntime or {}
 
+local mathAbs = math.abs
+local mathFloor = math.floor
+local mathMax = math.max
+
 local function nearestPlayerDistanceSq(player, x, y, z, floorsLimit)
     if not player or not player.getSquare then
         return nil
@@ -8,38 +12,36 @@ local function nearestPlayerDistanceSq(player, x, y, z, floorsLimit)
     if not sq then
         return nil
     end
-    local dz = math.abs((sq:getZ() or 0) - (tonumber(z) or 0))
-    if dz > math.max(0, tonumber(floorsLimit) or 0) then
+    local sourceZ = tonumber(z) or 0
+    local dz = mathAbs((sq:getZ() or 0) - sourceZ)
+    if dz > mathMax(0, tonumber(floorsLimit) or 0) then
         return nil
     end
-    local dx = (sq:getX() or 0) - (tonumber(x) or 0)
-    local dy = (sq:getY() or 0) - (tonumber(y) or 0)
+    local sourceX = tonumber(x) or 0
+    local sourceY = tonumber(y) or 0
+    local dx = (sq:getX() or 0) - sourceX
+    local dy = (sq:getY() or 0) - sourceY
     return (dx * dx) + (dy * dy)
 end
 
-local function shouldEmitPulse(nowMs, lastMs, intervalMs, lastPos, x, y)
-    local elapsed = nowMs - (tonumber(lastMs) or -1000000000)
-    local interval = math.max(100, tonumber(intervalMs) or 1000)
-    if elapsed >= interval then
-        return true
-    end
-    local minMoveRepulseMs = 2500
-    if elapsed < minMoveRepulseMs or type(lastPos) ~= "table" then
-        return false
-    end
-    local dx = (tonumber(x) or 0) - (tonumber(lastPos.x) or 0)
-    local dy = (tonumber(y) or 0) - (tonumber(lastPos.y) or 0)
-    return ((dx * dx) + (dy * dy)) >= 4.0
-end
-
 function NMClientSPLocalRuntime.emitZombiePulses(player, pulseCandidates, state)
-    if not player or not pulseCandidates or NMCore.isMultiplayerMode() or not addSound then
+    local core = NMCore
+    if not player or not pulseCandidates or core.isMultiplayerMode() or not addSound then
         return
     end
     local nowMs = state and state.nowMs and state.nowMs() or 0
-    local pulseMs = state and state.zombiePulseMs or {}
-    local pulsePos = state and state.zombiePulsePos or {}
+    local pulseState = state and state.zombieAttractionPulseState or {}
     local gateMultiplier = NMRuntimeConfig and NMRuntimeConfig.getServerZombiePlayerGateMultiplier and NMRuntimeConfig.getServerZombiePlayerGateMultiplier() or 1.5
+    local buildSourceSnapshot = NMZombieAttraction.buildSourceSnapshot
+    local computePulseContract = NMZombieAttraction.computePulseContract
+    local resolveEmitDecision = NMZombieAttraction.resolveEmitDecision
+    local capturePulseEmitState = NMZombieAttraction.capturePulseEmitState
+    local getWorldTrackingFloors = NMDeviceProfiles.getWorldTrackingFloors
+    local debugEnabled = core.isSubsystemDebugEnabled and core.isSubsystemDebugEnabled("zombie_attraction")
+    local pulseDecisionOptionsByWindowSupport = {
+        [true] = { allowWindowStateRepulse = true },
+        [false] = { allowWindowStateRepulse = false }
+    }
 
     for uuid, candidate in pairs(pulseCandidates) do
         local profile = candidate and candidate.profile or nil
@@ -47,32 +49,34 @@ function NMClientSPLocalRuntime.emitZombiePulses(player, pulseCandidates, state)
         local source = candidate and candidate.source or nil
         if profile and runtimeState and source and source.x and source.y and source.z then
             local sourceContext = tostring(source.context or source.mode or "placed")
-            if NMZombieAttraction.shouldAttract(profile, runtimeState, sourceContext) then
-                local pulse = NMZombieAttraction.computePulse(profile, runtimeState, sourceContext, source.windowsOpen)
-                if pulse then
-                    local floors = NMDeviceProfiles.getWorldTrackingFloors(profile)
-                    local nearestD2 = nearestPlayerDistanceSq(player, source.x, source.y, source.z, floors)
-                    local gateRange = NMZombieAttraction.computeGateRange(profile, pulse, gateMultiplier)
-                    if NMZombieAttraction.shouldEmitForNearestPlayer(nearestD2, gateRange) then
-                        local key = tostring(uuid or "")
-                        local lastMs = tonumber(pulseMs[key]) or -1000000000
-                        local lastPos = pulsePos[key]
-                        if shouldEmitPulse(nowMs, lastMs, pulse.intervalMs, lastPos, source.x, source.y) then
-                            pulseMs[key] = nowMs
-                            pulsePos[key] = { x = tonumber(source.x) or 0, y = tonumber(source.y) or 0, z = tonumber(source.z) or 0 }
-                            addSound(nil, tonumber(source.x) or 0, tonumber(source.y) or 0, tonumber(source.z) or 0, math.floor(pulse.range), pulse.loudness)
-                            if NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
-                                NMCore.logChannel(
-                                    "runtimeProbe",
-                                    "zombie_pulse_sp",
-                                    string.format(
-                                        "uuid=%s ctx=%s x=%.2f y=%.2f z=%.2f range=%d loudness=%d windowsOpen=%s",
-                                        key, sourceContext, tonumber(source.x) or 0, tonumber(source.y) or 0, tonumber(source.z) or 0,
-                                        math.floor(pulse.range), math.floor(tonumber(pulse.loudness) or 0), tostring(source.windowsOpen == true)
-                                    )
-                                )
-                            end
-                        end
+            local sourceSnapshot = buildSourceSnapshot(source)
+            local pulseContract = computePulseContract(profile, runtimeState, sourceContext, sourceSnapshot.windowsOpen)
+            if pulseContract then
+                local key = type(uuid) == "string" and uuid or tostring(uuid or "")
+                local floors = getWorldTrackingFloors(profile)
+                local nearestD2 = nearestPlayerDistanceSq(player, sourceSnapshot.x, sourceSnapshot.y, sourceSnapshot.z, floors)
+                local emitPulse, emitReason, gateRange = resolveEmitDecision(
+                    nowMs,
+                    pulseState[key],
+                    pulseContract,
+                    sourceSnapshot,
+                    nearestD2,
+                    gateMultiplier,
+                    pulseDecisionOptionsByWindowSupport[sourceSnapshot.windowsOpen ~= nil]
+                )
+                if emitPulse then
+                    pulseState[key] = capturePulseEmitState(nowMs, sourceSnapshot)
+                    addSound(nil, sourceSnapshot.x, sourceSnapshot.y, sourceSnapshot.z, pulseContract.emitRange or mathFloor(pulseContract.range), pulseContract.loudness)
+                    if debugEnabled then
+                        core.logChannel(
+                            "zombie_attraction",
+                            "sp_local_pulse_emit",
+                            string.format(
+                                "uuid=%s ctx=%s emitDecision=%s x=%.2f y=%.2f z=%.2f range=%d loudness=%d gateRange=%d windowsOpen=%s",
+                                key, sourceContext, tostring(emitReason or "unknown"), sourceSnapshot.x, sourceSnapshot.y, sourceSnapshot.z,
+                                pulseContract.emitRange or mathFloor(pulseContract.range), pulseContract.loudness or mathFloor(tonumber(pulseContract.loudness) or 0), mathFloor(tonumber(gateRange) or 0), tostring(sourceSnapshot.windowsOpen == true)
+                            )
+                        )
                     end
                 end
             end
@@ -168,7 +172,7 @@ function NMClientSPLocalRuntime.applyVehiclePowerGuard(profile, runtimeState, so
         vehiclePowerTickMs[key] = nowMsValue
         return
     end
-    local deltaSeconds = math.max(0, (nowMsValue - prev) / 1000.0)
+    local deltaSeconds = mathMax(0, (nowMsValue - prev) / 1000.0)
     vehiclePowerTickMs[key] = nowMsValue
     if deltaSeconds <= 0 then
         return
@@ -188,15 +192,15 @@ function NMClientSPLocalRuntime.applyVehiclePowerGuard(profile, runtimeState, so
     if nextValue ~= current and batteryItem.setUsedDelta then
         batteryItem:setUsedDelta(nextValue)
     end
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") and NMCore.shouldLogEvery then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") and NMCore.shouldLogEvery then
         local logKey = "runtimeProbe.batteryDrain.vehicle.sp." .. tostring(key)
         if NMCore.shouldLogEvery(logKey, nowMsValue, 5000) then
             NMCore.logChannel(
-                "runtimeProbe",
+                "runtime",
                 "battery_drain_tick",
                 string.format(
                     "uuid=%s type=vehicle engineOn=false deltaMs=%d old=%.3f new=%.3f targetSeconds=%.0f",
-                    tostring(key), math.floor(math.max(0, nowMsValue - prev)), current, nextValue, drainSeconds
+                    tostring(key), mathFloor(mathMax(0, nowMsValue - prev)), current, nextValue, drainSeconds
                 )
             )
         end

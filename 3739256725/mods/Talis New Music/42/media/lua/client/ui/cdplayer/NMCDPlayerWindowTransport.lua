@@ -1,3 +1,5 @@
+require "ui/shared/host/NMFancyWindowTooltipHost"
+
 local env = _G.NMCDPlayerWindowEnv
 setfenv(1, env)
 
@@ -8,6 +10,21 @@ local BUTTON_KINDS = {
     "vol_down",
     "play_stop",
 }
+
+local function getTransportState(window, transport, resolved)
+    return NMDeviceUiHost.resolveTransportState(window, {
+        transport = transport,
+        resolved = resolved,
+        renderModel = window and window._nmRenderModel or nil,
+    })
+end
+
+local function getControlTransportState(window, transport, resolved)
+    return NMDeviceUiHost.resolveControlTransportState(window, {
+        transport = transport,
+        resolved = resolved,
+    })
+end
 
 function CDPlayerWindow:getButtonKindAt(x, y)
     for i = 1, #BUTTON_KINDS do
@@ -90,17 +107,17 @@ function CDPlayerWindow:buildTransportState(resolved)
     }
 end
 
-function CDPlayerWindow:getHoldTooltip()
-    local transport = self:buildTransportState()
-    if transport.isHold == true then
+function CDPlayerWindow:getHoldTooltip(transport)
+    local transportState = getTransportState(self, transport)
+    if transportState and transportState.isHold == true then
         return NMTranslations.ui("HoldOn", "Hold: ON")
     end
     return NMTranslations.ui("HoldOff", "Hold: OFF")
 end
 
-function CDPlayerWindow:getModeTooltip()
-    local transport = self:buildTransportState()
-    local policy = transport.playbackPolicy
+function CDPlayerWindow:getModeTooltip(transport)
+    local transportState = getTransportState(self, transport)
+    local policy = transportState and transportState.playbackPolicy or "autoplay"
     if policy == "loop_song" then
         return NMTranslations.ui("ModeLoopSong", "Mode: Loop Song")
     end
@@ -113,12 +130,12 @@ function CDPlayerWindow:getModeTooltip()
     return NMTranslations.ui("ModeAutoOff", "Mode: Auto-Off")
 end
 
-function CDPlayerWindow:getPowerTooltip()
-    local transport = self:buildTransportState()
-    if transport.isOn == true and transport.hasUsablePower == true then
+function CDPlayerWindow:getPowerTooltip(transport)
+    local transportState = getTransportState(self, transport)
+    if transportState and transportState.isOn == true and transportState.hasUsablePower == true then
         return NMTranslations.ui("PowerOn", "Power: ON")
     end
-    if transport.isOn == true then
+    if transportState and transportState.isOn == true then
         return NMTranslations.ui("PowerOnNoPower", "Power: ON (No Power)")
     end
     return NMTranslations.ui("PowerOff", "Power: OFF")
@@ -128,20 +145,25 @@ function CDPlayerWindow:getOpenTooltip()
     return NMTranslations.ui("Open", "Open")
 end
 
-function CDPlayerWindow:getPowerIndicatorState()
-    local transport = self:buildTransportState()
-    if transport.isStandby == true and transport.isOn == true and transport.hasUsablePower == true then
+function CDPlayerWindow:getPowerIndicatorState(transport)
+    local transportState = getTransportState(self, transport)
+    if transportState and transportState.isStandby == true and transportState.isOn == true and transportState.hasUsablePower == true then
         return "standby"
     end
-    if transport.isOn == true and transport.hasUsablePower == true then
+    if transportState and transportState.isOn == true and transportState.hasUsablePower == true then
         return "on"
     end
     return "off"
 end
 
-function CDPlayerWindow:isDisplayPoweredOn()
-    local transport = self:buildTransportState()
-    return transport.isOn == true and transport.hasUsablePower == true
+function CDPlayerWindow:isDisplayPoweredOn(transport)
+    local transportState = getTransportState(self, transport)
+    return transportState and transportState.isOn == true and transportState.hasUsablePower == true or false
+end
+
+function CDPlayerWindow:shouldPlayPoweredButtonSound(transport)
+    local state = transport or self:buildTransportState()
+    return state.isOn == true and state.hasUsablePower == true
 end
 
 function CDPlayerWindow:getInsertedMediaFullType()
@@ -271,15 +293,15 @@ end
 
 function CDPlayerWindow:beginClosedSlotMediaExtract()
     local mediaEnv = rawget(_G, "NMMediaSlotEnv") or nil
-    local beginExtractDragFn = mediaEnv and (mediaEnv.beginExtractDrag or mediaEnv.beginMediaExtractDrag) or nil
-    if not beginExtractDragFn then
+    local beginMediaExtractDragFn = mediaEnv and mediaEnv.beginMediaExtractDrag or nil
+    if not beginMediaExtractDragFn then
         return false
     end
     local fullType = self:getInsertedMediaFullType()
     if fullType == "" then
         return false
     end
-    beginExtractDragFn(self, fullType, "slot")
+    beginMediaExtractDragFn(self, fullType, "slot")
     return true
 end
 
@@ -309,9 +331,9 @@ function CDPlayerWindow:ejectOpenLidMediaViaAux(sourceTag)
     return queueMediaSlotEjectFn(self, sourceTag or "cdplayer_aux", "aux") == true
 end
 
-function CDPlayerWindow:getPlayStopTooltip()
-    local transport = self:buildTransportState()
-    if transport.isPlaying == true then
+function CDPlayerWindow:getPlayStopTooltip(transport)
+    local transportState = getTransportState(self, transport)
+    if transportState and transportState.isPlaying == true then
         return NMTranslations.ui("StopSong", "Stop Song")
     end
     return NMTranslations.ui("PlaySong", "Play Song")
@@ -353,8 +375,8 @@ function CDPlayerWindow:isUiControlLockedByHold(kind)
     if key == "" or key == "hold" or key == "open" then
         return false
     end
-    local transport = self:buildTransportState()
-    return transport.isHold == true
+    local transport = getControlTransportState(self)
+    return transport and transport.isHold == true or false
 end
 
 function CDPlayerWindow:canAcceptDraggedMediaViaLid()
@@ -392,6 +414,10 @@ function CDPlayerWindow:queueContextMediaInsert(liveItem, payload, args)
     if not (liveItem and payload and args) then
         return false
     end
+    self._nmDeferAutoInsertLidCloseSound = true
+    if self.isLidOpen ~= true then
+        self._nmSuppressNextLidOpenSound = true
+    end
     self._nmPendingContextMediaInsert = {
         args = args
     }
@@ -403,14 +429,8 @@ function CDPlayerWindow:queueContextMediaInsert(liveItem, payload, args)
 end
 
 function CDPlayerWindow:handleOpenButtonActivate()
-    playCDPlayerGenericClick(self, false)
-    if self.isLidOpen == true then
-        self.isLidManuallyOpen = false
-        self:syncLidFromMedia(false)
-    else
-        self.isLidManuallyOpen = true
-        self:syncLidFromMedia(false)
-    end
+    local action = self.isLidOpen == true and "close_lid" or "open_lid"
+    self:executeUiControl(action, {})
     return true
 end
 
@@ -438,49 +458,30 @@ function CDPlayerWindow:handleLidZoneActivate(zoneKind)
 end
 
 function CDPlayerWindow:updateHoverTooltip()
-    local absX = self.getAbsoluteX and self:getAbsoluteX() or 0
-    local absY = self.getAbsoluteY and self:getAbsoluteY() or 0
-    local localX = (getMouseX and getMouseX() or 0) - absX
-    local localY = (getMouseY and getMouseY() or 0) - absY
-    if localX < 0 or localY < 0 or localX >= self.width or localY >= self.height then
-        self.tooltip = nil
-        return
-    end
-    self.tooltip = self:getHoverTooltipAt(localX, localY)
+    return NMFancyWindowTooltipHost.updateHoverTooltip(self)
+end
+
+function CDPlayerWindow:getTooltipUiOptions()
+    return {
+        maxLineWidth = 300,
+        offsetY = 24,
+        cacheText = true,
+    }
 end
 
 function CDPlayerWindow:updateTooltipUI()
-    local text = tostring(self.tooltip or "")
-    if text ~= "" then
-        if not self.tooltipUI then
-            self.tooltipUI = ISToolTip:new()
-            self.tooltipUI:initialise()
-            self.tooltipUI:instantiate()
-            self.tooltipUI:setOwner(self)
-            self.tooltipUI:setVisible(false)
-            self.tooltipUI:setAlwaysOnTop(true)
-            self.tooltipUI.followMouse = false
-        end
-        if not self.tooltipUI:getIsVisible() then
-            self.tooltipUI.maxLineWidth = 300
-            self.tooltipUI:addToUIManager()
-            self.tooltipUI:setVisible(true)
-        end
-        self.tooltipUI.description = text
-        self.tooltipUI:setDesiredPosition(getMouseX and getMouseX() or 0, (getMouseY and getMouseY() or 0) + 24)
-    elseif self.tooltipUI and self.tooltipUI:getIsVisible() then
-        self.tooltipUI:setVisible(false)
-        self.tooltipUI:removeFromUIManager()
-    end
+    return NMFancyWindowTooltipHost.updateTooltipUi(self)
 end
 
 function CDPlayerWindow:canUseTransportButtons()
-    local transport = self:buildTransportState()
-    return transport.hasMedia == true
+    local transport = getControlTransportState(self)
+    return transport and transport.hasMedia == true or false
 end
 
 function CDPlayerWindow:playTransportNoMediaFeedback()
-    playCDPlayerTransportSound(self, false)
+    if self:shouldPlayPoweredButtonSound() then
+        playCDPlayerTransportSound(self, false)
+    end
 end
 
 function CDPlayerWindow:handlePlayStopActivate()
@@ -488,16 +489,16 @@ function CDPlayerWindow:handlePlayStopActivate()
         self:playTransportNoMediaFeedback()
         return true
     end
-    local transport = self:buildTransportState()
-    if transport.isOn ~= true then
+    local transport = getControlTransportState(self)
+    if not (transport and transport.isOn == true) then
         return true
     end
     if transport.isPlaying == true then
-        self:dispatch("stop_playback", { isPlaying = false, trackCount = transport.trackCount })
+        self:executeUiControl("stop", { trackCount = tonumber(transport.trackCount) or 0 })
         playCDPlayerTransportSound(self, true)
     else
-        self:dispatch("start_playback", { isPlaying = true, trackCount = transport.trackCount })
-        playCDPlayerTransportSound(self, false)
+        self:executeUiControl("play", { trackCount = tonumber(transport.trackCount) or 0 })
+        playCDPlayerManualPlaySound(self)
     end
     return true
 end
@@ -507,9 +508,9 @@ function CDPlayerWindow:handlePrevButtonActivate()
         self:playTransportNoMediaFeedback()
         return true
     end
-    local transport = self:buildTransportState()
-    local ok = self:dispatch("prev_track", { trackCount = transport.trackCount })
-    if ok == true then
+    local transport = getControlTransportState(self)
+    local ok = self:executeUiControl("prev_track", { trackCount = tonumber(transport and transport.trackCount) or 0 })
+    if ok == true and self:shouldPlayPoweredButtonSound(transport) then
         playCDPlayerTransportSound(self, false)
     end
     return true
@@ -520,27 +521,28 @@ function CDPlayerWindow:handleNextButtonActivate()
         self:playTransportNoMediaFeedback()
         return true
     end
-    local transport = self:buildTransportState()
-    local ok = self:dispatch("next_track", { trackCount = transport.trackCount })
-    if ok == true then
+    local transport = getControlTransportState(self)
+    local ok = self:executeUiControl("next_track", { trackCount = tonumber(transport and transport.trackCount) or 0 })
+    if ok == true and self:shouldPlayPoweredButtonSound(transport) then
         playCDPlayerTransportSound(self, false)
     end
     return true
 end
 
 function CDPlayerWindow:adjustVolumeByStep(stepPct)
-    local transport = self:buildTransportState()
-    local currentPct = volumeToPercent(transport.volume)
+    local transport = getControlTransportState(self)
+    local currentPct = volumeToPercent(transport and transport.volume or 1.0)
     local nextPct = math.max(0, math.min(100, currentPct + math.floor(tonumber(stepPct) or 0)))
+    local shouldPlaySound = self:shouldPlayPoweredButtonSound(transport)
     if nextPct == currentPct then
-        playCDPlayerVolumeClick(self)
+        if shouldPlaySound then
+            playCDPlayerVolumeClick(self)
+        end
         return true
     end
     local nextVolume = clamp01(nextPct / 100.0)
-    local ok = self:dispatch("set_volume", { volume = nextVolume })
-    if ok == true then
-        playCDPlayerVolumeClick(self)
-    else
+    local ok = self:executeUiControl("set_volume", { volume = nextVolume })
+    if ok == true and shouldPlaySound then
         playCDPlayerVolumeClick(self)
     end
     return true
@@ -566,24 +568,29 @@ function CDPlayerWindow:handleClusterButtonActivate(kind)
         return self:handlePlayStopActivate()
     end
     if kind == "mode" then
-        local nextPolicy = getNextLoopPolicy(self:buildTransportState().playbackPolicy)
-        local ok = self:dispatch("set_playback_policy", { playbackPolicy = nextPolicy })
-        if ok == true then
+        local transport = getControlTransportState(self)
+        local ok = self:executeUiControl("cycle_mode", {})
+        if ok == true and self:shouldPlayPoweredButtonSound(transport) then
             playCDPlayerRandomBeep(self)
         end
         return true
     end
     if kind == "power" then
-        local transport = self:buildTransportState()
-        local ok = self:dispatch("toggle_power", { isOn = not transport.isOn })
-        if ok == true then
+        local transport = getControlTransportState(self)
+        local action = transport and transport.isOn == true and "power_off" or "power_on"
+        local ok = self:executeUiControl(action, {})
+        local shouldPlaySound = self:shouldPlayPoweredButtonSound(transport)
+            or (action == "power_on" and transport and transport.hasUsablePower == true)
+        if ok == true and shouldPlaySound then
             playCDPlayerRandomBeep(self)
         end
         return true
     end
     if kind == "hold" then
-        local currentlyHeld = self:buildTransportState().isHold == true
-        local ok = self:dispatch("toggle_hold", {})
+        local transport = getControlTransportState(self)
+        local currentlyHeld = transport and transport.isHold == true
+        local action = currentlyHeld and "hold_off" or "hold_on"
+        local ok = self:executeUiControl(action, {})
         if ok == true then
             self:syncHoldButtonAnimation(false)
             playCDPlayerGenericClick(self, currentlyHeld == true)
@@ -597,8 +604,8 @@ function CDPlayerWindow:handleClusterButtonActivate(kind)
 end
 
 function CDPlayerWindow:getHoldRotationTargetAngle()
-    local transport = self:buildTransportState()
-    if transport.isHold == true then
+    local transport = getControlTransportState(self)
+    if transport and transport.isHold == true then
         return HOLD_BUTTON_ANGLE_HELD
     end
     return HOLD_BUTTON_ANGLE_UPRIGHT

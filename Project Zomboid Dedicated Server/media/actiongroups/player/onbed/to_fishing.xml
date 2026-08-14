@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transition>
+	<transitionTo>fishing</transitionTo>
+	<asSubstate>true</asSubstate>
+	<conditionPriority>1</conditionPriority>
+	<conditions>
+		<eventOccurred>EventFishing</eventOccurred>
+	</conditions>
+</transition>

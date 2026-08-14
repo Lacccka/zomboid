@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="PainTorso_Ground.xml">
+	<m_Name>Pain_Torso_Ground_2H</m_Name>
+	<m_AnimName>Bob_Emote_Pain_Sat_Torso_2H</m_AnimName>
+	<m_Conditions x_name="21bbdf09-0cdd-4f00-a58b-23feff891ed1">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="94c4af5d-d59c-41f1-b8f3-deb4b9637582">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="f52e98c4-e8d3-4753-b99a-4e15fb671af7">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainTorso</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="e7f4732d-e295-43e3-a068-cce221ee900b">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="33be6d34-18bb-4d7a-bc99-c303b437730b">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="ffe50fce-5e78-43cd-b3f3-390f0a0ee205">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="09736b7c-3e9b-4d6c-9e20-8bda6fd4482c">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainTorso</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="f3f5b2c9-7af8-4c89-b11d-f766b77b8677">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="561b0958-c2a4-479e-94c5-bee8799cac6f">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+</animNode>

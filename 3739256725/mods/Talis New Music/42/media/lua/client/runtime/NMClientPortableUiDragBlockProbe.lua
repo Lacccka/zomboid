@@ -6,16 +6,21 @@ probe._tick = probe._tick or 0
 probe._lastSignature = probe._lastSignature or nil
 probe._lastWindowSignature = probe._lastWindowSignature or nil
 probe._lastLeftDown = probe._lastLeftDown or false
+probe._lastDragActive = probe._lastDragActive or false
+probe._lastNmDragActive = probe._lastNmDragActive or false
+probe._lastWinner = probe._lastWinner or nil
+
+local DRAG_HEARTBEAT_TICKS = 180
 
 local function enabled()
-    return NMCore and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("portableUiProbe") == true
+    return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("ui_lifecycle") == true
 end
 
 local function log(tag, detail)
     if not (enabled() and NMCore and NMCore.logChannel) then
         return
     end
-    NMCore.logChannel("portableUiProbe", tostring(tag or "portable_ui"), tostring(detail or ""))
+    NMCore.logChannel("ui_lifecycle", tostring(tag or "ui_lifecycle"), tostring(detail or ""))
 end
 
 local function toBool(value)
@@ -123,6 +128,17 @@ local function describeWindow(family, window)
         tooltip,
         tostring(window.tooltipUI and window.tooltipUI.getIsVisible and window.tooltipUI:getIsVisible() == true or false)
     )
+end
+
+local function buildWindowSignature(walkmanWindow, cdWindow, genericWindow)
+    return table.concat({
+        tostring(walkmanWindow ~= nil),
+        describeWindow("walkman", walkmanWindow),
+        tostring(cdWindow ~= nil),
+        describeWindow("cdplayer", cdWindow),
+        tostring(genericWindow ~= nil),
+        describeWindow("generic", genericWindow),
+    }, " || ")
 end
 
 local function identifyUi(ui, walkmanWindow, cdWindow, genericWindow)
@@ -247,8 +263,7 @@ function probe.onGameStart()
     if not enabled() then
         return
     end
-    local preset = NMRuntimeConfig and NMRuntimeConfig.getBootDebugPreset and NMRuntimeConfig.getBootDebugPreset() or ""
-    log("walkman_drag_probe_ready", "preset=" .. safeString(preset))
+    log("walkman_drag_probe_ready", "subsystem=ui_lifecycle")
 end
 
 function probe.onTick()
@@ -268,29 +283,55 @@ function probe.onTick()
     local leftDown = isMouseButtonDown and isMouseButtonDown(0) == true or false
 
     if not walkmanOpen and not cdOpen and not genericOpen and not dragActive and not nmDragActive then
+        probe._lastDragActive = false
+        probe._lastNmDragActive = false
+        probe._lastWinner = nil
         return
     end
 
-    local windowSignature = table.concat({
-        tostring(walkmanOpen),
-        describeWindow("walkman", walkmanWindow),
-        tostring(cdOpen),
-        describeWindow("cdplayer", cdWindow),
-        tostring(genericOpen),
-        describeWindow("generic", genericWindow),
-    }, " || ")
+    local hadActiveDrag = probe._lastDragActive == true or probe._lastNmDragActive == true
+    local dragTransition = dragActive ~= (probe._lastDragActive == true) or nmDragActive ~= (probe._lastNmDragActive == true)
+    local mouseTransition = leftDown ~= (probe._lastLeftDown == true)
+    local shouldLogWindowState = not hadActiveDrag or dragTransition or mouseTransition
 
-    if windowSignature ~= probe._lastWindowSignature then
-        probe._lastWindowSignature = windowSignature
-        log("portable_ui_window_state", windowSignature)
+    if shouldLogWindowState then
+        local windowSignature = buildWindowSignature(walkmanWindow, cdWindow, genericWindow)
+        if windowSignature ~= probe._lastWindowSignature then
+            probe._lastWindowSignature = windowSignature
+            log("ui_lifecycle_window_state", windowSignature)
+        end
     end
 
     if not dragActive and not nmDragActive then
+        probe._lastDragActive = false
+        probe._lastNmDragActive = false
+        probe._lastWinner = nil
         probe._lastLeftDown = leftDown
         return
     end
 
-    local winner, scan = findDragBlockingUi(walkmanWindow, cdWindow, genericWindow)
+    local heartbeatDue = (probe._tick % DRAG_HEARTBEAT_TICKS) == 1
+    local shouldScan = dragTransition or mouseTransition or heartbeatDue
+    local winner = nil
+    local scan = nil
+
+    if shouldScan then
+        winner, scan = findDragBlockingUi(walkmanWindow, cdWindow, genericWindow)
+    end
+
+    local winnerChanged = shouldScan and safeString(winner or "none") ~= safeString(probe._lastWinner or "none")
+    local shouldEmitDetail = dragTransition or mouseTransition or winnerChanged or heartbeatDue
+    if not shouldEmitDetail then
+        probe._lastDragActive = dragActive == true
+        probe._lastNmDragActive = nmDragActive == true
+        probe._lastLeftDown = leftDown
+        return
+    end
+
+    if shouldScan then
+        probe._lastWinner = winner
+    end
+
     local signature = string.format(
         "drag=true nmDrag=%s inventoryDrag=%s leftDown=%s mouse=%s,%s winner=%s walkmanOpen=%s cdOpen=%s genericOpen=%s",
         tostring(nmDragActive),
@@ -298,26 +339,32 @@ function probe.onTick()
         tostring(leftDown),
         safeNumber(getMouseX and getMouseX() or nil),
         safeNumber(getMouseY and getMouseY() or nil),
-        safeString(winner or "none"),
+        safeString((shouldScan and winner) or probe._lastWinner or "none"),
         tostring(walkmanOpen),
         tostring(cdOpen),
         tostring(genericOpen)
     )
 
-    if signature ~= probe._lastSignature or (probe._tick % 30) == 1 then
+    if signature ~= probe._lastSignature or dragTransition or mouseTransition or winnerChanged or heartbeatDue then
         probe._lastSignature = signature
-        log("portable_ui_drag_gate", signature)
-        log("portable_ui_drag_scan", scan)
-        log("portable_ui_drag_state", describeInventoryDrag() .. " " .. describeActiveNmDrag(nmDragWindow, nmDrag))
+        log("ui_lifecycle_drag_gate", signature)
+        log("ui_lifecycle_drag_state", describeInventoryDrag() .. " " .. describeActiveNmDrag(nmDragWindow, nmDrag))
+        if shouldScan then
+            log("ui_lifecycle_drag_scan", scan)
+        end
     end
 
     if probe._lastLeftDown == true and leftDown ~= true then
+        if not shouldScan then
+            winner, scan = findDragBlockingUi(walkmanWindow, cdWindow, genericWindow)
+            probe._lastWinner = winner
+        end
         local vanillaOwnsRelease = dragActive == true
         log(
-            "portable_ui_release_snapshot",
+            "ui_lifecycle_release_snapshot",
             table.concat({
                 "winner=" .. safeString(winner or "none"),
-                "scan=" .. safeString(scan),
+                "scan=" .. safeString(scan or "scan_skipped"),
                 describeInventoryDrag(),
                 describeActiveNmDrag(nmDragWindow, nmDrag),
                 "vanillaOwnsRelease=" .. tostring(vanillaOwnsRelease),
@@ -327,6 +374,8 @@ function probe.onTick()
         )
     end
 
+    probe._lastDragActive = dragActive == true
+    probe._lastNmDragActive = nmDragActive == true
     probe._lastLeftDown = leftDown
 end
 

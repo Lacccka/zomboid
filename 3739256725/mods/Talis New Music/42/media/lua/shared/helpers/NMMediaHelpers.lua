@@ -1,17 +1,47 @@
 -- Shared media payload resolver for insert/eject transitions.
 NMMediaHelpers = NMMediaHelpers or {}
 
-function NMMediaHelpers.resolveMediaInsertPayload(media)
+function NMMediaHelpers.isInsertableMediaItem(media)
     if not media or not media.getFullType or not media.getType then
-        return nil
+        return false
     end
 
-    -- Never treat playback devices as insertable media.
+    local fullType = tostring(media:getFullType() or "")
+    if fullType == "" then
+        return false
+    end
+
     if NMDeviceProfiles and NMDeviceProfiles.getForItem then
         local profile = NMDeviceProfiles.getForItem(media)
-        if profile and profile.isMediaContainerOnly ~= true then
-            return nil
+        if profile then
+            return false
         end
+    end
+
+    if NMMediaContract and NMMediaContract.resolveContainerMediaBinding then
+        local boundMedia = tostring(NMMediaContract.resolveContainerMediaBinding(fullType) or "")
+        if boundMedia ~= "" then
+            return false
+        end
+    end
+
+    local itemType = tostring(media:getType() or "")
+    local carrier = NMMediaContract
+        and NMMediaContract.resolveMediaCarrier
+        and NMMediaContract.resolveMediaCarrier(fullType)
+        or nil
+    if not carrier then
+        carrier = GlobalMusic and GlobalMusic[itemType] or nil
+    end
+    if carrier and NMMediaContract and NMMediaContract.normalizeCarrierToken then
+        carrier = NMMediaContract.normalizeCarrierToken(carrier)
+    end
+    return carrier ~= nil and tostring(carrier) ~= ""
+end
+
+function NMMediaHelpers.resolveMediaInsertPayload(media)
+    if NMMediaHelpers.isInsertableMediaItem(media) ~= true then
+        return nil
     end
 
     local fullType = tostring(media:getFullType() or "")

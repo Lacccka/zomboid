@@ -1,9 +1,26 @@
+require "ui/shared/host/NMFancyWindowTooltipHost"
+
 local env = _G.NMWalkmanWindowEnv
 setfenv(1, env)
 
-function WalkmanWindow:getLoopIconTexture()
-    local resolved = self:resolveContextCached()
-    local policy = getLoopPolicy(resolved and resolved.state or nil)
+local function getTransportState(window, transport, resolved)
+    return NMDeviceUiHost.resolveTransportState(window, {
+        transport = transport,
+        resolved = resolved,
+        renderModel = window and window._nmRenderModel or nil,
+    })
+end
+
+local function getControlTransportState(window, transport, resolved)
+    return NMDeviceUiHost.resolveControlTransportState(window, {
+        transport = transport,
+        resolved = resolved,
+    })
+end
+
+function WalkmanWindow:getLoopIconTexture(resolved)
+    local ctx = resolved or self:resolveContextCached()
+    local policy = getLoopPolicy(ctx and ctx.state or nil)
     if policy == "loop_song" then
         return UI_TEXTURES.loopIconSong
     end
@@ -13,9 +30,9 @@ function WalkmanWindow:getLoopIconTexture()
     return UI_TEXTURES.loopIconNone
 end
 
-function WalkmanWindow:getLoopIconRect()
+function WalkmanWindow:getLoopIconRect(texture)
     local loopRect = self:getLoopButtonRect()
-    local tex = self:getLoopIconTexture()
+    local tex = texture or self:getLoopIconTexture()
     local w = tex and tex.getWidthOrig and tex:getWidthOrig() or 39
     local h = tex and tex.getHeightOrig and tex:getHeightOrig() or 29
     local y = loopRect.y + math.floor(((loopRect.h - h) * 0.5) + 0.5)
@@ -42,9 +59,9 @@ function WalkmanWindow:getLoopModeTooltip()
     return NMTranslations.ui("ModeAutoOff", "Mode: Auto-Off")
 end
 
-function WalkmanWindow:getPlayButtonTooltip()
-    local transport = self:buildTransportState()
-    if transport.isPlaying == true then
+function WalkmanWindow:getPlayButtonTooltip(transport)
+    local transportState = getTransportState(self, transport)
+    if transportState and transportState.isPlaying == true then
         return NMTranslations.ui("WalkmanStopPowerOff", "Stop / Power Off")
     end
     return NMTranslations.ui("WalkmanPlayPowerOn", "Play / Power ON")
@@ -67,51 +84,23 @@ function WalkmanWindow:getHoverTooltipAt(x, y)
 end
 
 function WalkmanWindow:updateHoverTooltip()
-    local absX = self.getAbsoluteX and self:getAbsoluteX() or 0
-    local absY = self.getAbsoluteY and self:getAbsoluteY() or 0
-    local localX = (getMouseX and getMouseX() or 0) - absX
-    local localY = (getMouseY and getMouseY() or 0) - absY
-    if localX < 0 or localY < 0 or localX >= self.width or localY >= self.height then
-        self.tooltip = nil
-        return
+    return NMFancyWindowTooltipHost.updateHoverTooltip(self)
+end
+
+function WalkmanWindow:getTooltipUiOptions(text)
+    local maxLineWidth = 300
+    if string.contains and string.contains(tostring(text or ""), "\n") then
+        maxLineWidth = 1000
     end
-    self.tooltip = self:getHoverTooltipAt(localX, localY)
+    return {
+        maxLineWidth = maxLineWidth,
+        offsetY = 24,
+        cacheText = true,
+    }
 end
 
 function WalkmanWindow:updateTooltipUI()
-    local text = tostring(self.tooltip or "")
-    if text ~= "" then
-        if not self.tooltipUI then
-            self.tooltipUI = ISToolTip:new()
-            self.tooltipUI:initialise()
-            self.tooltipUI:instantiate()
-            self.tooltipUI:setOwner(self)
-            self.tooltipUI:setVisible(false)
-            self.tooltipUI:setAlwaysOnTop(true)
-            self.tooltipUI.followMouse = false
-        end
-        local maxLineWidth = 300
-        if string.contains and string.contains(text, "\n") then
-            maxLineWidth = 1000
-        end
-        if not self.tooltipUI:getIsVisible() then
-            self.tooltipUI.maxLineWidth = maxLineWidth
-            self.tooltipUI:addToUIManager()
-            self.tooltipUI:setVisible(true)
-        end
-        if tostring(self._nmTooltipLastText or "") ~= text then
-            self.tooltipUI.description = text
-            self._nmTooltipLastText = text
-        end
-        if tonumber(self.tooltipUI.maxLineWidth) ~= maxLineWidth then
-            self.tooltipUI.maxLineWidth = maxLineWidth
-        end
-        self.tooltipUI:setDesiredPosition(getMouseX and getMouseX() or 0, (getMouseY and getMouseY() or 0) + 24)
-    elseif self.tooltipUI and self.tooltipUI:getIsVisible() then
-        self.tooltipUI:setVisible(false)
-        self.tooltipUI:removeFromUIManager()
-        self._nmTooltipLastText = nil
-    end
+    return NMFancyWindowTooltipHost.updateTooltipUi(self)
 end
 
 function WalkmanWindow:startPlayButtonAnimation(down)
@@ -154,20 +143,14 @@ function WalkmanWindow:handlePlayButtonActivate()
         self:startPlayButtonTap()
         return true
     end
-    local transport = self:buildTransportState()
-    if transport.isPlaying == true then
-        self:dispatch("toggle_power", { isOn = false })
-    else
-        local canStartPlayback = true
-        if transport.isOn ~= true then
-            local poweredOn = self:dispatch("toggle_power", { isOn = true })
-            canStartPlayback = (poweredOn == true)
-        end
-        if canStartPlayback == true then
-            self:dispatch("start_playback", { isPlaying = true, trackCount = transport.trackCount })
-        end
+    local transport = getControlTransportState(self)
+    local action = transport and transport.isPlaying == true and "stop" or "play"
+    local ok = self:executeUiControl(action, {
+        trackCount = tonumber(transport and transport.trackCount) or 0
+    })
+    if ok == true then
+        self:syncPlayButtonFromTransport(nil, true, false)
     end
-    self:syncPlayButtonFromTransport(nil, true, false)
     return true
 end
 
@@ -177,8 +160,8 @@ function WalkmanWindow:handlePrevButtonActivate()
         self:startPrevButtonPress()
         return true
     end
-    local transport = self:buildTransportState()
-    local ok = self:dispatch("prev_track", { trackCount = transport.trackCount })
+    local transport = getControlTransportState(self)
+    local ok = self:executeUiControl("prev_track", { trackCount = tonumber(transport and transport.trackCount) or 0 })
     if ok == true then
         playWalkmanTransportSound(self, false)
         self:startPrevButtonPress()
@@ -192,8 +175,8 @@ function WalkmanWindow:handleNextButtonActivate()
         self:startNextButtonPress()
         return true
     end
-    local transport = self:buildTransportState()
-    local ok = self:dispatch("next_track", { trackCount = transport.trackCount })
+    local transport = getControlTransportState(self)
+    local ok = self:executeUiControl("next_track", { trackCount = tonumber(transport and transport.trackCount) or 0 })
     if ok == true then
         playWalkmanTransportSound(self, false)
         self:startNextButtonPress()
@@ -213,9 +196,17 @@ function WalkmanWindow:buildTransportState(resolved)
     }
 end
 
-function WalkmanWindow:syncPlayButtonFromTransport(resolved, playSound, snap)
-    local transport = self:buildTransportState(resolved)
-    local shouldBeDown = transport.isPlaying == true
+function WalkmanWindow:syncPlayButtonFromTransport(resolved, transportOrPlaySound, playSoundOrSnap, snap)
+    local explicitTransport = nil
+    local playSound = playSoundOrSnap
+    if type(transportOrPlaySound) == "table" then
+        explicitTransport = transportOrPlaySound
+    else
+        playSound = transportOrPlaySound
+        snap = playSoundOrSnap
+    end
+    local transportState = getControlTransportState(self, explicitTransport, resolved)
+    local shouldBeDown = transportState and transportState.isPlaying == true
     local hasObserved = self._nmHasObservedPlayState == true
     local previous = self._nmAuthoritativePlayDown == true
 
@@ -229,7 +220,7 @@ function WalkmanWindow:syncPlayButtonFromTransport(resolved, playSound, snap)
         self.playButtonAnimTargetY = nil
         self.playButtonAnimStartTime = nil
         self.playButtonCurrentY = self:getPlayButtonY(shouldBeDown)
-        return transport
+        return transportState
     end
 
     if previous ~= shouldBeDown then
@@ -242,7 +233,7 @@ function WalkmanWindow:syncPlayButtonFromTransport(resolved, playSound, snap)
         self.playButtonCurrentY = self:getPlayButtonY(shouldBeDown)
     end
 
-    return transport
+    return transportState
 end
 
 function WalkmanWindow:startPrevButtonPress()

@@ -1,360 +1,155 @@
--- Debug master/knob configuration API layered onto NMRuntimeConfig.
+-- Canonical subsystem debug configuration layered onto NMRuntimeConfig.
 NMRuntimeConfig = NMRuntimeConfig or {}
 
 local values = NMRuntimeConfig._values or {}
 
-local debugKnobNames = {
+local subsystemNames = {
     "core",
     "intent",
     "state",
-    "emitter",
-    "memoryProbe",
-    "runtimeProbe",
-    "progressionProbe",
-    "vehicleRebindTrace",
-    "transitionProbe",
-    "items",
-    "net",
+    "runtime",
+    "memory",
+    "playback_progression",
+    "playback_transition",
+    "vehicle",
+    "zombie_assignment",
+    "zombie_corpse",
+    "zombie_visual",
+    "zombie_attraction",
+    "network",
     "registry",
-    "lootDiagnostics",
-    "zombieDiagnostics",
-    "vehicleDiagnostics",
-    "vehicleTruthProbe",
-    "uiPerfProbe",
-    "uiAutoCloseProbe",
-    "portableUiProbe",
-    "slotAuthorityProbe"
+    "loot",
+    "loot_probe",
+    "ui_render",
+    "ui_auto_close",
+    "ui_lifecycle",
+    "slot"
 }
 
-local function ensureDebugDefaults()
-    values.debugKnobs = values.debugKnobs or {}
-    for i = 1, #debugKnobNames do
-        local key = debugKnobNames[i]
-        if values.debugKnobs[key] == nil then
-            values.debugKnobs[key] = false
+local ZOMBIE_SUBSYSTEMS = {
+    "zombie_assignment",
+    "zombie_corpse",
+    "zombie_visual",
+    "zombie_attraction"
+}
+
+local legacySubsystemMap = {
+    core = { "core" },
+    intent = { "intent" },
+    state = { "state" },
+    emitter = { "runtime" },
+    memoryProbe = { "memory" },
+    runtimeProbe = { "runtime" },
+    progressionProbe = { "playback_progression" },
+    vehicleRebindTrace = { "vehicle" },
+    transitionProbe = { "playback_transition" },
+    items = { "runtime" },
+    net = { "network" },
+    registry = { "registry" },
+    lootDiagnostics = { "loot" },
+    lootProbe = { "loot_probe" },
+    zombie = ZOMBIE_SUBSYSTEMS,
+    zombieDiagnostics = ZOMBIE_SUBSYSTEMS,
+    vehicleDiagnostics = { "vehicle" },
+    vehicleTruthProbe = { "vehicle" },
+    uiPerfProbe = { "ui_render" },
+    uiAutoCloseProbe = { "ui_auto_close" },
+    portableUiProbe = { "ui_lifecycle" },
+    portable_ui = { "ui_lifecycle" },
+    uiLifecycleProbe = { "ui_lifecycle" },
+    cycleModeProbe = { "vehicle" },
+    slotAuthorityProbe = { "slot" },
+    playback = { "runtime" }
+}
+
+local function ensureSubsystemDefaults()
+    values.debugSubsystems = values.debugSubsystems or {}
+    for i = 1, #subsystemNames do
+        local key = subsystemNames[i]
+        if values.debugSubsystems[key] == nil then
+            values.debugSubsystems[key] = false
         end
     end
-    if values.debugMasterEnabled == nil then
-        values.debugMasterEnabled = false
+end
+
+local function resolveSubsystemNames(name)
+    local key = tostring(name or "")
+    if key == "" then
+        return nil
     end
+    if legacySubsystemMap[key] then
+        local resolved = legacySubsystemMap[key]
+        local out = {}
+        for i = 1, #resolved do
+            out[i] = resolved[i]
+        end
+        return out
+    end
+    for i = 1, #subsystemNames do
+        if subsystemNames[i] == key then
+            return { key }
+        end
+    end
+    return nil
 end
 
-local function hasDebugKnob(name)
-    local knobs = values.debugKnobs
-    return type(knobs) == "table" and knobs[tostring(name or "")] ~= nil
+ensureSubsystemDefaults()
+
+function NMRuntimeConfig.resolveSubsystemDebugName(name)
+    local keys = resolveSubsystemNames(name)
+    return keys and keys[1] or nil
 end
 
-ensureDebugDefaults()
-
-function NMRuntimeConfig.getActiveDebugPreset()
-    return tostring(values.activeDebugPreset or "")
-end
-
-function NMRuntimeConfig.getDebugMasterEnabled()
-    return values.debugMasterEnabled == true
-end
-
-function NMRuntimeConfig.setDebugMasterEnabled(enabled)
-    values.debugMasterEnabled = enabled == true
-    return true
-end
-
-function NMRuntimeConfig.getDebugKnob(name)
-    if not hasDebugKnob(name) then
+function NMRuntimeConfig.isSubsystemDebugEnabled(name)
+    local keys = resolveSubsystemNames(name)
+    if not keys then
         return false
     end
-    return values.debugKnobs[tostring(name)] == true
-end
-
-function NMRuntimeConfig.setDebugKnob(name, enabled)
-    if not hasDebugKnob(name) then
-        return false
-    end
-    values.debugKnobs[tostring(name)] = enabled == true
-    return true
-end
-
-function NMRuntimeConfig.getDebugKnobNames()
-    local out = {}
-    for i = 1, #debugKnobNames do
-        out[i] = debugKnobNames[i]
-    end
-    return out
-end
-
-function NMRuntimeConfig.getDebugKnobsSnapshot()
-    local out = {}
-    local knobs = values.debugKnobs or {}
-    for i = 1, #debugKnobNames do
-        local key = debugKnobNames[i]
-        out[key] = knobs[key] == true
-    end
-    return out
-end
-
-function NMRuntimeConfig.formatDebugKnobSummary(snapshot)
-    local knobs = snapshot or NMRuntimeConfig.getDebugKnobsSnapshot()
-    local parts = {}
-    for i = 1, #debugKnobNames do
-        local key = debugKnobNames[i]
-        parts[#parts + 1] = tostring(key) .. ":" .. tostring(knobs[key] == true)
-    end
-    return table.concat(parts, ",")
-end
-
--- Presets are intended for automatic boot-time debugging via
--- `NMRuntimeConfig.bootDebugPreset`. Keep `quiet` as the resting default and
--- use focused incident presets only while actively reproducing a problem.
-function NMRuntimeConfig.applyDebugPreset(name)
-    local preset = tostring(name or "quiet")
-    values.activeDebugPreset = preset
-    if preset == "quiet" then
-        values.debugMasterEnabled = false
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
+    for i = 1, #keys do
+        if values.debugSubsystems[keys[i]] == true then
+            return true
         end
-        return true
-    end
-    if preset == "memory_sp_client" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.memoryProbe = true
-        return true
-    end
-    if preset == "dev" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.state = true
-        values.debugKnobs.net = true
-        values.debugKnobs.registry = true
-        values.debugKnobs.emitter = true
-        values.debugKnobs.lootDiagnostics = true
-        values.debugKnobs.vehicleDiagnostics = true
-        return true
-    end
-    if preset == "loot" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.registry = true
-        values.debugKnobs.lootDiagnostics = true
-        return true
-    end
-    if preset == "loot_sp_investigation" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.lootDiagnostics = true
-        return true
-    end
-    if preset == "zombie_mp_validation" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.intent = true
-        values.debugKnobs.state = true
-        values.debugKnobs.runtimeProbe = true
-        values.debugKnobs.transitionProbe = true
-        values.debugKnobs.net = true
-        values.debugKnobs.registry = true
-        values.debugKnobs.lootDiagnostics = true
-        values.debugKnobs.zombieDiagnostics = true
-        return true
-    end
-    if preset == "trace" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = true
-        end
-        return true
-    end
-    if preset == "rescue" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.runtimeProbe = true
-        values.debugKnobs.progressionProbe = true
-        values.debugKnobs.vehicleTruthProbe = true
-        return true
-    end
-    if preset == "track_end" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.runtimeProbe = true
-        values.debugKnobs.progressionProbe = true
-        values.debugKnobs.transitionProbe = true
-        return true
-    end
-    if preset == "vehicle_audit" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.runtimeProbe = true
-        values.debugKnobs.vehicleTruthProbe = true
-        values.debugKnobs.vehicleDiagnostics = true
-        return true
-    end
-    if preset == "vehicle_audit_progression" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.runtimeProbe = true
-        values.debugKnobs.progressionProbe = true
-        values.debugKnobs.vehicleTruthProbe = true
-        values.debugKnobs.vehicleDiagnostics = true
-        return true
-    end
-    if preset == "vehicle_radio_investigation_quiet" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.emitter = true
-        values.debugKnobs.runtimeProbe = true
-        values.debugKnobs.progressionProbe = true
-        return true
-    end
-    -- Focused vehicle local-listener routing preset. This remains intentionally
-    -- available for automatic boot repros because the useful probes are hard-won,
-    -- but it should not be the default resting posture.
-    if preset == "vehicle_personal_playback_investigation" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.emitter = true
-        values.debugKnobs.runtimeProbe = true
-        values.debugKnobs.transitionProbe = true
-        values.debugKnobs.vehicleDiagnostics = true
-        values.debugKnobs.vehicleTruthProbe = true
-        return true
-    end
-    if preset == "portable_mp_validation" or preset == "portable_mp_leak" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.emitter = true
-        values.debugKnobs.runtimeProbe = true
-        values.debugKnobs.transitionProbe = true
-        return true
-    end
-    if preset == "portable_ui_investigation" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.intent = true
-        values.debugKnobs.runtimeProbe = true
-        values.debugKnobs.portableUiProbe = true
-        return true
-    end
-    if preset == "walkman_drag_investigation" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.runtimeProbe = true
-        values.debugKnobs.portableUiProbe = true
-        return true
-    end
-    if preset == "walkman_portable_investigation" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.emitter = true
-        values.debugKnobs.runtimeProbe = true
-        values.debugKnobs.transitionProbe = true
-        values.debugKnobs.portableUiProbe = true
-        return true
-    end
-    if preset == "slot_authority_investigation" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.portableUiProbe = true
-        values.debugKnobs.slotAuthorityProbe = true
-        return true
-    end
-    if preset == "slot_contract_investigation" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.intent = true
-        values.debugKnobs.runtimeProbe = true
-        values.debugKnobs.portableUiProbe = true
-        values.debugKnobs.slotAuthorityProbe = true
-        return true
-    end
-    if preset == "slot_drag_handoff_investigation" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.runtimeProbe = true
-        values.debugKnobs.portableUiProbe = true
-        values.debugKnobs.slotAuthorityProbe = true
-        return true
-    end
-    if preset == "boombox_mp_progression" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.emitter = true
-        values.debugKnobs.runtimeProbe = true
-        values.debugKnobs.progressionProbe = true
-        return true
-    end
-    if preset == "corpse_sp_audio" then
-        values.debugMasterEnabled = true
-        for i = 1, #debugKnobNames do
-            values.debugKnobs[debugKnobNames[i]] = false
-        end
-        values.debugKnobs.core = true
-        values.debugKnobs.intent = true
-        values.debugKnobs.state = true
-        values.debugKnobs.emitter = true
-        values.debugKnobs.runtimeProbe = true
-        values.debugKnobs.transitionProbe = true
-        values.debugKnobs.zombieDiagnostics = true
-        return true
     end
     return false
 end
 
-return NMRuntimeConfig
+function NMRuntimeConfig.setSubsystemDebugEnabled(name, enabled)
+    local keys = resolveSubsystemNames(name)
+    if not keys then
+        return false
+    end
+    for i = 1, #keys do
+        values.debugSubsystems[keys[i]] = enabled == true
+    end
+    return true
+end
 
+function NMRuntimeConfig.getSubsystemDebugNames()
+    local out = {}
+    for i = 1, #subsystemNames do
+        out[i] = subsystemNames[i]
+    end
+    return out
+end
+
+function NMRuntimeConfig.getSubsystemDebugSnapshot()
+    local out = {}
+    local subsystems = values.debugSubsystems or {}
+    for i = 1, #subsystemNames do
+        local key = subsystemNames[i]
+        out[key] = subsystems[key] == true
+    end
+    return out
+end
+
+function NMRuntimeConfig.formatSubsystemDebugSummary(snapshot)
+    local subsystems = snapshot or NMRuntimeConfig.getSubsystemDebugSnapshot()
+    local parts = {}
+    for i = 1, #subsystemNames do
+        local key = subsystemNames[i]
+        parts[#parts + 1] = tostring(key) .. ":" .. tostring(subsystems[key] == true)
+    end
+    return table.concat(parts, ",")
+end
+
+return NMRuntimeConfig

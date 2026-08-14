@@ -2,10 +2,10 @@
 NMPlaybackRuntimeCommon = NMPlaybackRuntimeCommon or {}
 
 local function logTrackEndProbe(tag, detail)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("progressionProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_progression")) then
         return
     end
-    NMCore.logChannel("progressionProbe", tostring(tag or "track_end_probe"), tostring(detail or ""))
+    NMCore.logChannel("playback_progression", tostring(tag or "track_end_probe"), tostring(detail or ""))
 end
 
 function NMPlaybackRuntimeCommon.getNowRealMs()
@@ -70,11 +70,11 @@ function NMPlaybackRuntimeCommon.applyPowerDrain(powerTickMap, profile, state, t
 
     state.batteryCharge = NMCore.clamp(charge - (deltaSeconds / drainSeconds), 0.0, 1.0)
     powerTickMap[key] = nowMs
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") and NMCore.shouldLogEvery then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") and NMCore.shouldLogEvery then
         local logKey = "runtimeProbe.batteryDrain.portable." .. tostring(key)
         if NMCore.shouldLogEvery(logKey, nowMs, 5000) then
             NMCore.logChannel(
-                "runtimeProbe",
+                "runtime",
                 "battery_drain_tick",
                 string.format(
                     "uuid=%s type=portable deltaMs=%d old=%.3f new=%.3f targetSeconds=%.0f",

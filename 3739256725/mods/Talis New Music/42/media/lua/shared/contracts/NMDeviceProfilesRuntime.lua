@@ -38,8 +38,8 @@ end
 local function resolveEffectiveZombieMaxRange(profile)
     if usesSandboxAudioRadius(profile) then
         local minRange = tonumber(profile and profile.zombieMinRange) or 0
-        local audioMax = resolveEffectiveWorldMaxRange(profile)
-        local derivedMax = math.min(audioMax * 3, 200)
+        local configuredMax = tonumber(NMRuntimeConfig and NMRuntimeConfig.getZombieAttractionRadius and NMRuntimeConfig.getZombieAttractionRadius() or 105) or 105
+        local derivedMax = math.min(configuredMax, 200)
         if derivedMax < minRange then
             derivedMax = minRange
         end

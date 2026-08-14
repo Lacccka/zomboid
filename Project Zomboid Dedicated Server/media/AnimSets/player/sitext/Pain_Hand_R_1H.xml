@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="PainHandR.xml">
+	<m_Name>Pain_Hand_R_1H</m_Name>
+	<m_Conditions x_name="eab416db-2031-42ea-8038-2c9c4b8bf7a8">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>1handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="f45e8d47-86ca-416f-98dc-8494fe77585b">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="a0f1b06b-35b9-426b-a229-46e50f9cbd97">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainHandR</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="cba64532-2649-4133-bcce-3bbd77bcc801">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>handgun</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="2e13b951-41a3-4456-8185-dba44980e702">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="1e9d2c61-d81a-4538-adfd-158b2e8c6f9c">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainHandR</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="22b722de-2440-4182-b385-1942605117de">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>heavy</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="63764a3c-aff3-4020-9241-884775800c18">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="4c8983f4-e909-4fba-85ea-1f3b7cc15b0c">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainHandR</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="579d5c45-f830-4834-a544-954aa6b10109">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>knife</m_Value>
+	</m_Conditions>
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights>
+		<weight>0.50</weight>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights>
+		<weight>0.50</weight>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+</animNode>

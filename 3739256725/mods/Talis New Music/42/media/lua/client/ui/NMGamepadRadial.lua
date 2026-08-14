@@ -1,4 +1,5 @@
 NMGamepadRadial = NMGamepadRadial or {}
+require "ui/shared/slots/NMPortableUiSoundContract"
 NMGamepadRadial.hookInstalled = NMGamepadRadial.hookInstalled or false
 NMGamepadRadial.baseOnDisplayDown = NMGamepadRadial.baseOnDisplayDown or nil
 NMGamepadRadial.wrapperFn = NMGamepadRadial.wrapperFn or nil
@@ -98,6 +99,16 @@ local function getResolvedContext(window)
     return window.resolveContext and window:resolveContext() or nil
 end
 
+local function getFreshResolvedContext(window)
+    if not window then
+        return nil
+    end
+    if window.resolveContextFresh then
+        return window:resolveContextFresh()
+    end
+    return getResolvedContext(window)
+end
+
 local function resolveTrackCount(state)
     if not state or not state.mediaFullType or not NMMusic or not NMMusic.resolveTracks then
         return 0
@@ -109,53 +120,12 @@ local function resolveTrackCount(state)
     return #resolved.tracks
 end
 
-local function playButtonClickFallback(window, soundName)
-    local resolved = getResolvedContext(window)
-    local playerObj = resolved and resolved.player or nil
-    local name = tostring(soundName or "NM_ButtonClick")
-    local function isValidSoundId(soundId)
-        if soundId == nil then
-            return false
-        end
-        local n = tonumber(soundId)
-        return not (n and n == 0)
-    end
-    if playerObj and playerObj.getEmitter then
-        local okEmitter, emitter = pcall(playerObj.getEmitter, playerObj)
-        if okEmitter and emitter then
-            local okPlay, soundId = false, nil
-            if emitter.playSoundImpl then
-                okPlay, soundId = pcall(emitter.playSoundImpl, emitter, name, nil)
-            end
-            if (not okPlay or not isValidSoundId(soundId)) and emitter.playSound then
-                okPlay, soundId = pcall(emitter.playSound, emitter, name)
-            end
-            if okPlay and isValidSoundId(soundId) then
-                if emitter.setVolume then
-                    pcall(emitter.setVolume, emitter, soundId, 0.8)
-                end
-                return
-            end
-        end
-    end
-    if playerObj and playerObj.playSoundLocal then
-        local ok = pcall(playerObj.playSoundLocal, playerObj, name)
-        if ok then
-            return
-        end
-    end
-    local sm = getSoundManager and getSoundManager() or nil
-    if sm and sm.playUISound then
-        pcall(sm.playUISound, sm, name)
-    end
-end
-
 local function playGenericButtonClick(window)
     if NMTransportButtonRow and NMTransportButtonRow.playButtonClick then
         NMTransportButtonRow.playButtonClick(window)
         return
     end
-    playButtonClickFallback(window, "NM_ButtonClick")
+    NMPortableUiSoundContract.playTransportPress(window)
 end
 
 local function playGenericPowerClick(window, isTurningOn)
@@ -163,7 +133,7 @@ local function playGenericPowerClick(window, isTurningOn)
         NMPowerButton.playPowerClick(window, isTurningOn == true)
         return
     end
-    playButtonClickFallback(window, isTurningOn == true and "NM_ButtonClick" or "NM_ButtonClick2")
+    NMPortableUiSoundContract.playPowerPress(window, isTurningOn == true)
 end
 
 local function getWalkmanModeIcon(policy)
@@ -205,14 +175,19 @@ local function getModeLabel(policy, allowShuffle)
     return radialLabel("ModeAutoOff", "Mode: Auto-Off")
 end
 
-local function getGenericTrackState(window)
-    local transport = window and window.getRenderState and window:getRenderState("transport") or nil
-    local state = transport and transport.state or nil
-    if state then
-        return state
+local function getGenericControlState(window)
+    local resolved = getFreshResolvedContext(window)
+    return resolved and resolved.state or nil, resolved
+end
+
+local function getControlTransportState(window)
+    if not window then
+        return nil
     end
-    local resolved = getResolvedContext(window)
-    return resolved and resolved.state or nil
+    local resolved = getFreshResolvedContext(window)
+    return NMDeviceUiHost and NMDeviceUiHost.resolveControlTransportState and NMDeviceUiHost.resolveControlTransportState(window, {
+        resolved = resolved,
+    }) or (window.buildTransportState and window:buildTransportState(resolved) or nil)
 end
 
 local function getMediaSlotButton(window)
@@ -231,7 +206,10 @@ local function activeWindowHasMedia(entry)
     if family == "cdplayer" then
         return window.hasInsertedMedia and window:hasInsertedMedia() == true or false
     end
-    local state = getGenericTrackState(window)
+    if family == "boombox" then
+        return window.hasInsertedCassette and window:hasInsertedCassette() == true or false
+    end
+    local state = getGenericControlState(window)
     return tostring(state and (state.mediaEjectFullType or state.mediaFullType) or "") ~= ""
 end
 
@@ -251,11 +229,11 @@ local function isPlaybackActive(entry)
     if not window then
         return false
     end
-    if family == "walkman" or family == "cdplayer" then
-        local transport = window.buildTransportState and window:buildTransportState() or nil
+    if family == "walkman" or family == "cdplayer" or family == "boombox" then
+        local transport = getControlTransportState(window)
         return transport and transport.isPlaying == true or false
     end
-    local state = getGenericTrackState(window)
+    local state = getGenericControlState(window)
     return state and state.isPlaying == true or false
 end
 
@@ -291,7 +269,7 @@ local function handleWalkmanMode(window)
     else
         nextPolicy = "autoplay"
     end
-    local ok = window:dispatch("set_playback_policy", { playbackPolicy = nextPolicy })
+    local ok = window:executeUiControl("cycle_mode", { playbackPolicy = nextPolicy })
     if ok == true then
         if playWalkmanTransportSound then
             playWalkmanTransportSound(window, false)
@@ -347,15 +325,15 @@ local function handleWalkmanAction(window, action)
 end
 
 local function handleCDPlayerPlayStop(window)
-    local transport = window:buildTransportState()
+    local transport = getControlTransportState(window)
     local trackCount = tonumber(transport.trackCount) or 0
     if transport.isPlaying == true then
-        local stopped = window:dispatch("stop_playback", { isPlaying = false, trackCount = trackCount })
+        local stopped = window:executeUiControl("stop", { trackCount = trackCount })
         if stopped == true and playCDPlayerTransportSound then
             playCDPlayerTransportSound(window, true)
         end
         if transport.isOn == true then
-            local poweredOff = window:dispatch("toggle_power", { isOn = false })
+            local poweredOff = window:executeUiControl("power_off", {})
             if poweredOff == true and playCDPlayerRandomBeep then
                 playCDPlayerRandomBeep(window)
             end
@@ -363,14 +341,14 @@ local function handleCDPlayerPlayStop(window)
         return stopped == true
     end
     if transport.isOn ~= true then
-        local poweredOn = window:dispatch("toggle_power", { isOn = true })
+        local poweredOn = window:executeUiControl("power_on", {})
         if poweredOn == true and playCDPlayerRandomBeep then
             playCDPlayerRandomBeep(window)
         end
     end
-    local started = window:dispatch("start_playback", { isPlaying = true, trackCount = trackCount })
-    if started == true and playCDPlayerTransportSound then
-        playCDPlayerTransportSound(window, false)
+    local started = window:executeUiControl("play", { trackCount = trackCount })
+    if started == true and playCDPlayerManualPlaySound then
+        playCDPlayerManualPlaySound(window)
     end
     return started == true
 end
@@ -447,6 +425,50 @@ local function handleCDPlayerAction(window, action)
     return false
 end
 
+local function handleBoomboxAction(window, action)
+    if action == NM_RADIAL_ACTION.volume_up then
+        return window.adjustVolumeByStep and window:adjustVolumeByStep(VOLUME_STEP_PCT) == true or false
+    end
+    if action == NM_RADIAL_ACTION.volume_down then
+        return window.adjustVolumeByStep and window:adjustVolumeByStep(-VOLUME_STEP_PCT) == true or false
+    end
+    if action == NM_RADIAL_ACTION.play_stop then
+        local transport = getControlTransportState(window)
+        if transport and transport.isPlaying == true then
+            return window.handleStopTrigger and window:handleStopTrigger(false) == true or false
+        end
+        return window.handleManualPlayTrigger and window:handleManualPlayTrigger(false) == true or false
+    end
+    if action == NM_RADIAL_ACTION.next then
+        return window.handleNextTrigger and window:handleNextTrigger(false) == true or false
+    end
+    if action == NM_RADIAL_ACTION.prev then
+        return window.handlePrevTrigger and window:handlePrevTrigger(false) == true or false
+    end
+    if action == NM_RADIAL_ACTION.mode then
+        local selected = window.getSelectedModeIndex and window:getSelectedModeIndex() or nil
+        local nextIndex = (tonumber(selected) or 0) + 1
+        if nextIndex > 3 then
+            nextIndex = 1
+        end
+        return window.handleModeTrigger and window:handleModeTrigger(nextIndex) == true or false
+    end
+    if action == NM_RADIAL_ACTION.eject then
+        return window.handleEjectTrigger and window:handleEjectTrigger() == true or false
+    end
+    if action == NM_RADIAL_ACTION.insert then
+        return showInsertMenu(window)
+    end
+    if action == NM_RADIAL_ACTION.close then
+        if window.close then
+            window:close()
+            return true
+        end
+        return false
+    end
+    return false
+end
+
 local function flickGenericButton(window, index)
     local buttons = window and window.transportRow and window.transportRow.buttons or nil
     local btn = buttons and buttons[index] or nil
@@ -456,16 +478,16 @@ local function flickGenericButton(window, index)
 end
 
 local function handleGenericPlayStop(window)
-    local state = getGenericTrackState(window)
+    local state = getGenericControlState(window)
     local trackCount = resolveTrackCount(state)
     local isPlaying = state and state.isPlaying == true
     local isOn = state and state.isOn == true
     if isPlaying == true then
-        local stopped = window:dispatch("stop_playback", { isPlaying = false, trackCount = trackCount })
+        local stopped = window:executeUiControl("stop", { trackCount = trackCount })
         if stopped == true then
             playGenericButtonClick(window)
             if isOn == true then
-                local poweredOff = window:dispatch("toggle_power", { isOn = false })
+                local poweredOff = window:executeUiControl("power_off", {})
                 if poweredOff == true then
                     playGenericPowerClick(window, false)
                 end
@@ -474,12 +496,12 @@ local function handleGenericPlayStop(window)
         return stopped == true
     end
     if isOn ~= true then
-        local poweredOn = window:dispatch("toggle_power", { isOn = true })
+        local poweredOn = window:executeUiControl("power_on", {})
         if poweredOn == true then
             playGenericPowerClick(window, true)
         end
     end
-    local started = window:dispatch("start_playback", { isPlaying = true, trackCount = trackCount })
+    local started = window:executeUiControl("play", { trackCount = trackCount })
     if started == true then
         playGenericButtonClick(window)
     end
@@ -487,7 +509,7 @@ local function handleGenericPlayStop(window)
 end
 
 local function handleGenericMode(window)
-    local state = getGenericTrackState(window)
+    local state = getGenericControlState(window)
     local current = tostring(state and state.playbackPolicy or "autoplay")
     local nextPolicy = "autoplay"
     if current == "autoplay" then
@@ -499,7 +521,7 @@ local function handleGenericMode(window)
     else
         nextPolicy = "autoplay"
     end
-    local ok = window:dispatch("set_playback_policy", { playbackPolicy = nextPolicy })
+    local ok = window:executeUiControl("cycle_mode", { playbackPolicy = nextPolicy })
     if ok == true then
         playGenericButtonClick(window)
         flickGenericButton(window, 1)
@@ -508,11 +530,11 @@ local function handleGenericMode(window)
 end
 
 local function handleGenericVolume(window, stepPct)
-    local state = getGenericTrackState(window)
+    local state = getGenericControlState(window)
     local currentPct = math.floor(((tonumber(state and state.volume) or 1.0) * 100) + 0.5)
     local nextPct = math.max(0, math.min(100, currentPct + math.floor(tonumber(stepPct) or 0)))
     local nextVolume = math.max(0.0, math.min(1.0, nextPct / 100.0))
-    local ok = window:dispatch("set_volume", { volume = nextVolume })
+    local ok = window:executeUiControl("set_volume", { volume = nextVolume })
     if ok == true then
         playGenericButtonClick(window)
     end
@@ -530,8 +552,8 @@ local function handleGenericAction(window, action)
         return handleGenericPlayStop(window)
     end
     if action == NM_RADIAL_ACTION.next then
-        local state = getGenericTrackState(window)
-        local ok = window:dispatch("next_track", { trackCount = resolveTrackCount(state) })
+        local state = getGenericControlState(window)
+        local ok = window:executeUiControl("next_track", { trackCount = resolveTrackCount(state) })
         if ok == true then
             playGenericButtonClick(window)
             flickGenericButton(window, 5)
@@ -539,8 +561,8 @@ local function handleGenericAction(window, action)
         return ok == true
     end
     if action == NM_RADIAL_ACTION.prev then
-        local state = getGenericTrackState(window)
-        local ok = window:dispatch("prev_track", { trackCount = resolveTrackCount(state) })
+        local state = getGenericControlState(window)
+        local ok = window:executeUiControl("prev_track", { trackCount = resolveTrackCount(state) })
         if ok == true then
             playGenericButtonClick(window)
             flickGenericButton(window, 4)
@@ -588,6 +610,10 @@ local function onRadialAction(action, playerNum, family, window)
         handleCDPlayerAction(window, action)
         return
     end
+    if family == "boombox" then
+        handleBoomboxAction(window, action)
+        return
+    end
     if family == "generic" then
         handleGenericAction(window, action)
     end
@@ -600,20 +626,27 @@ local function buildModeSlice(menu, entry)
         return
     end
     if family == "walkman" then
-        local transport = window.buildTransportState and window:buildTransportState() or nil
+        local transport = getControlTransportState(window)
         local policy = transport and transport.playbackPolicy or "autoplay"
         local icon = getWalkmanModeIcon(transport and transport.playbackPolicy or "autoplay")
         menu:addSlice(getModeLabel(policy, false), icon, onRadialAction, NM_RADIAL_ACTION.mode, window.playerNum, family, window)
         return
     end
     if family == "cdplayer" then
-        local transport = window.buildTransportState and window:buildTransportState() or nil
+        local transport = getControlTransportState(window)
         local policy = transport and transport.playbackPolicy or "autoplay"
         local icon = getModeIcon(policy, true)
         menu:addSlice(getModeLabel(policy, true), icon, onRadialAction, NM_RADIAL_ACTION.mode, window.playerNum, family, window)
         return
     end
-    local state = getGenericTrackState(window)
+    if family == "boombox" then
+        local transport = getControlTransportState(window)
+        local policy = transport and transport.playbackPolicy or "autoplay"
+        local icon = getModeIcon(policy, true)
+        menu:addSlice(getModeLabel(policy, true), icon, onRadialAction, NM_RADIAL_ACTION.mode, window.playerNum, family, window)
+        return
+    end
+    local state = getGenericControlState(window)
     local policy = state and state.playbackPolicy or "autoplay"
     local icon = getModeIcon(policy, true)
     menu:addSlice(getModeLabel(policy, true), icon, onRadialAction, NM_RADIAL_ACTION.mode, window.playerNum, family, window)
@@ -644,7 +677,7 @@ local function installTapCollapseHandler(menu, entry)
             local collapseEntry = self._nmTapCollapseEntry
             local family = tostring(collapseEntry and collapseEntry.family or "")
             local window = collapseEntry and collapseEntry.window or nil
-            if (family == "walkman" or family == "cdplayer")
+            if (family == "walkman" or family == "cdplayer" or family == "boombox")
                 and window
                 and isWindowVisible(window)
                 and window.toggleCollapsed then

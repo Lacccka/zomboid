@@ -6,7 +6,6 @@ function NMServerNoListenerPolicy.handleNoListenerPresence(entry, state, nowMsVa
     end
     deps = type(deps) == "table" and deps or {}
     local resolveProfileForEntry = deps.resolveProfileForEntry
-    local resolveCurrentTrackDurationMs = deps.resolveCurrentTrackDurationMs
     local clearServerTrackTimeline = deps.clearServerTrackTimeline
     local applyRestartResume = deps.applyRestartResume
     local bumpAndSyncAuthoritativeState = deps.bumpAndSyncAuthoritativeState
@@ -64,9 +63,9 @@ function NMServerNoListenerPolicy.handleNoListenerPresence(entry, state, nowMsVa
                     if NMServerItemPowerTick and NMServerItemPowerTick.lastDrainMs then
                         NMServerItemPowerTick.lastDrainMs[tostring(entry.uuid or "")] = nowMsValue
                     end
-                    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+                    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
                         NMCore.logChannel(
-                            "runtimeProbe",
+                            "runtime",
                             "no_listener_freeze_applied",
                             string.format(
                                 "uuid=%s mode=%s playbackEpoch=%s trackIndex=%s",
@@ -99,7 +98,6 @@ function NMServerNoListenerPolicy.handleNoListenerPresence(entry, state, nowMsVa
         local hasBattery = state.batteryPresent ~= true or (tonumber(state.batteryCharge) or 0) > 0
         local shouldResume = entry._noListenerRestartPending == true and state.isOn == true and hasBattery
         if shouldResume then
-            local durationMs = type(resolveCurrentTrackDurationMs) == "function" and math.max(1000, resolveCurrentTrackDurationMs(state)) or 210000
             local resumeSig = string.format(
                 "%s|%s|%s",
                 tostring(entry._noListenerFreezeToken or ""),
@@ -112,24 +110,24 @@ function NMServerNoListenerPolicy.handleNoListenerPresence(entry, state, nowMsVa
                     and NMServerCanonicalReducer.dispatch({
                         eventType = NMServerCanonicalReducer.Event and NMServerCanonicalReducer.Event.NO_LISTENER_RESUME_RESTART or "NO_LISTENER_RESUME_RESTART",
                         state = state,
-                        nowMs = nowMsValue,
-                        durationMs = durationMs
+                        nowMs = nowMsValue
                     }) == true
                 if changed then
                     entry._batteryDrainSkipNoListener = nil
-                    local newDueAtMs = type(applyRestartResume) == "function"
-                        and applyRestartResume(entry, state, nowMsValue, durationMs, "restart_no_listener_resume")
-                        or 0
+                    local timingMode, newDueAtMs = "unknown_open", 0
+                    if type(applyRestartResume) == "function" then
+                        timingMode, newDueAtMs = applyRestartResume(entry, state, nowMsValue, "restart_no_listener_resume")
+                    end
                     entry._noListenerResumeSig = resumeSig
-                    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+                    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
                         NMCore.logChannel(
-                            "runtimeProbe",
+                            "runtime",
                             "no_listener_resume_restart_applied",
                             string.format(
-                                "uuid=%s mode=%s durationMs=%s dueAtMs=%s playbackEpoch=%s trackIndex=%s",
+                                "uuid=%s mode=%s timingMode=%s dueAtMs=%s playbackEpoch=%s trackIndex=%s",
                                 tostring(entry.uuid or ""),
                                 tostring(mode),
-                                tostring(math.floor(durationMs)),
+                                tostring(timingMode),
                                 tostring(math.floor(newDueAtMs)),
                                 tostring(tonumber(state.playbackEpoch) or 0),
                                 tostring(tonumber(state.trackIndex) or 0)

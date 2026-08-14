@@ -32,18 +32,7 @@ function CDPlayerWindow:onMouseDown(x, y)
     end
 
     if self:isHeaderHit(x, y) then
-        if self.isAnimating == true then
-            self:snapToState(self.isCollapsed)
-        end
-        self.headerPressed = true
-        self.headerPressStartedCollapsed = (self.isCollapsed == true)
-        self.headerDragMode = nil
-        self.draggingHeader = false
-        self.headerPressX = getMouseX and getMouseX() or 0
-        self.headerPressY = getMouseY and getMouseY() or 0
-        self.dragStartWindowX = self:getX()
-        self.dragStartWindowY = self:getY()
-        self.interactionSuppressedToggle = false
+        NMFancyWindowChrome.beginHeaderPress(self)
         return true
     end
 
@@ -92,14 +81,7 @@ function CDPlayerWindow:onMouseUp(x, y)
         return true
     end
 
-    local shouldToggle = self.headerPressed == true
-        and self.draggingHeader ~= true
-        and self.interactionSuppressedToggle ~= true
-        and self:isHeaderHit(x, y)
-    self:finishHeaderInteraction()
-    if shouldToggle then
-        self:toggleCollapsed()
-    end
+    NMFancyWindowChrome.releaseHeaderInteraction(self, x, y)
     return true
 end
 
@@ -113,7 +95,7 @@ function CDPlayerWindow:onMouseUpOutside(x, y)
     self._nmLidZonePressed = nil
     self._nmPressedButtonKind = nil
     self._nmClosePressed = false
-    self:finishHeaderInteraction()
+    NMFancyWindowChrome.cancelHeaderInteraction(self)
     return true
 end
 

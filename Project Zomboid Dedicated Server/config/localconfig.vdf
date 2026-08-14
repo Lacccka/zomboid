@@ -1,0 +1,32 @@
+"UserLocalConfigStore"
+{
+	"depots"
+	{
+		"108600"
+		{
+			"CDN"
+			{
+				"edgenext.cdn.steampipe.steamcontent.com"
+				{
+					"token"		""
+					"Expires"		"1786738819"
+				}
+				"steampipe.akamaized.net"
+				{
+					"token"		""
+					"Expires"		"1786737234"
+				}
+				"fastly.cdn.steampipe.steamcontent.com"
+				{
+					"token"		""
+					"Expires"		"1786734354"
+				}
+				"alibaba.cdn.steampipe.steamcontent.com"
+				{
+					"token"		""
+					"Expires"		"1786716494"
+				}
+			}
+		}
+	}
+}

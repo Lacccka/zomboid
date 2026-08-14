@@ -1,8 +1,38 @@
 -- Client intent dispatch for SP-local apply and MP network send.
 -- Dependencies are loaded by module bootstrap/order.
+if not NMSourceDescriptorSummary then
+    pcall(require, "registry/NMSourceDescriptorSummary")
+end
+if not NMTrackCountResolver then
+    pcall(require, "playback_progression/NMTrackCountResolver")
+end
+if not NMIntentAuthority then
+    pcall(require, "intent/NMIntentAuthority")
+end
+if not NMIntentInventoryOps then
+    pcall(require, "intent/NMIntentInventoryOps")
+end
+if not NMIntentPayloadBuilder then
+    pcall(require, "intent/NMIntentPayloadBuilder")
+end
 
 NMClientIntentDispatch = NMClientIntentDispatch or {}
 NMClientIntentDispatch._corpseAudioSeen = NMClientIntentDispatch._corpseAudioSeen or {}
+
+local function doesActionAdvancePlaybackContinuity(action)
+    if NMPlaybackContinuityPolicy and NMPlaybackContinuityPolicy.doesActionAdvancePlaybackContinuity then
+        return NMPlaybackContinuityPolicy.doesActionAdvancePlaybackContinuity(action) == true
+    end
+    local name = tostring(action or "")
+    return name == "play"
+        or name == "stop"
+        or name == "next_track"
+        or name == "prev_track"
+        or name == "power_on"
+        or name == "power_off"
+        or name == "track_finished"
+        or name == "track_finished_world"
+end
 
 local function isCorpseRecoveredItemState(item, state)
     local itemMd = item and item.getModData and item:getModData() or nil
@@ -11,7 +41,7 @@ local function isCorpseRecoveredItemState(item, state)
 end
 
 local function logCorpseAudio(tag, uuid, detail)
-    if not (NMCore and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("zombieDiagnostics")) then
+    if not (NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("zombie_corpse")) then
         return
     end
     local key = tostring(uuid or "")
@@ -22,15 +52,15 @@ local function logCorpseAudio(tag, uuid, detail)
     end
     NMClientIntentDispatch._corpseAudioSeen[seenKey] = sig
     if NMCore and NMCore.logChannel then
-        NMCore.logChannel("zombieDiagnostics", tostring(tag or "corpse_audio"), tostring(detail or ""))
+        NMCore.logChannel("zombie_corpse", tostring(tag or "corpse_audio"), tostring(detail or ""))
     end
 end
 
 local function logSlotAuthority(tag, detail)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("slotAuthorityProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("slot")) then
         return
     end
-    NMCore.logChannel("slotAuthorityProbe", tostring(tag or "slot_authority"), tostring(detail or ""))
+    NMCore.logChannel("slot", tostring(tag or "slot_authority"), tostring(detail or ""))
 end
 
 local function logVehicleSlotTrace(stage, detail)
@@ -65,7 +95,7 @@ local function logIntent(tag, detail, options)
     end
     local opts = type(options) == "table" and options or nil
     if opts and opts.debugKnob then
-        if not (NMCore.isDebugKnobOn and NMCore.isDebugKnobOn(opts.debugKnob)) then
+        if not (NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled(opts.debugKnob)) then
             return
         end
     end
@@ -79,26 +109,48 @@ local function logIntent(tag, detail, options)
     NMCore.logChannel("intent", tostring(tag or "intent"), tostring(detail or ""))
 end
 
-local function describeSourceDescriptorArgs(args, prefix)
-    local readFn = NMInventoryHelpers and NMInventoryHelpers.readSourceDescriptorFromArgs or nil
-    local descriptor = readFn and readFn(args, prefix or "mediaSource") or nil
-    if type(descriptor) ~= "table" then
-        return "none"
+local function logCycleModeProbe(scope, stateBefore, stateAfter, payload)
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
+        return
     end
-    return string.format(
-        "kind=%s itemId=%s itemUuid=%s vehicleId=%s partId=%s parentItemId=%s square=%s,%s,%s objectIndex=%s deadBodyIndex=%s",
-        tostring(descriptor.kind or ""),
-        tostring(descriptor.itemId or ""),
-        tostring(descriptor.itemUuid or ""),
-        tostring(descriptor.vehicleId or ""),
-        tostring(descriptor.partId or ""),
-        tostring(descriptor.parentItemId or ""),
-        tostring(descriptor.squareX or ""),
-        tostring(descriptor.squareY or ""),
-        tostring(descriptor.squareZ or ""),
-        tostring(descriptor.objectIndex or ""),
-        tostring(descriptor.deadBodyIndex or "")
+    local beforePolicy = tostring(stateBefore and stateBefore.playbackPolicy or "autoplay")
+    local afterPolicy = tostring(stateAfter and stateAfter.playbackPolicy or "autoplay")
+    local beforeEpoch = tonumber(stateBefore and stateBefore.playbackEpoch) or 0
+    local afterEpoch = tonumber(stateAfter and stateAfter.playbackEpoch) or 0
+    local beforePlaying = tostring(stateBefore and stateBefore.isPlaying == true)
+    local afterPlaying = tostring(stateAfter and stateAfter.isPlaying == true)
+    local requestedPolicy = tostring(payload and payload.playbackPolicy or "")
+    local uuid = tostring(stateAfter and stateAfter.deviceUUID or stateBefore and stateBefore.deviceUUID or "")
+    local throttleKey = string.format(
+        "cycleModeProbe.cycleMode.%s.%s.%s.%s",
+        tostring(scope or "item"),
+        tostring(uuid),
+        tostring(beforePolicy),
+        tostring(afterPolicy)
     )
+    if NMCore.shouldLogEvery and not NMCore.shouldLogEvery(throttleKey, nowIntentLogMs(), 500) then
+        return
+    end
+    NMCore.logChannel(
+        "vehicle",
+        "cycle_mode_apply",
+        string.format(
+            "scope=%s uuid=%s requested=%s beforePolicy=%s afterPolicy=%s beforeEpoch=%s afterEpoch=%s beforePlaying=%s afterPlaying=%s",
+            tostring(scope or "item"),
+            tostring(uuid),
+            tostring(requestedPolicy),
+            tostring(beforePolicy),
+            tostring(afterPolicy),
+            tostring(beforeEpoch),
+            tostring(afterEpoch),
+            beforePlaying,
+            afterPlaying
+        )
+    )
+end
+
+local describeSourceDescriptorArgs = NMSourceDescriptorSummary and NMSourceDescriptorSummary.describeArgs or function()
+    return "none"
 end
 
 local function validateNonRootMediaSourceDescriptor(descriptor)
@@ -130,44 +182,13 @@ local function validateNonRootMediaSourceDescriptor(descriptor)
     return true, nil
 end
 
-local function resolveTrackCountFromMedia(state)
-    if not state or not state.mediaFullType or not NMMusic or not NMMusic.resolveTracks then
-        return 0
-    end
-    local ok, resolved = pcall(NMMusic.resolveTracks, state.mediaFullType)
-    if not ok or type(resolved) ~= "table" or type(resolved.tracks) ~= "table" then
-        return 0
-    end
-    return #resolved.tracks
-end
-
-local function resolveSourceOwnerIdentity(player)
-    if not player then
-        return nil
-    end
-    local onlineId = player.getOnlineID and tostring(player:getOnlineID() or "") or ""
-    if onlineId ~= "" then
-        return onlineId
-    end
-    local username = player.getUsername and tostring(player:getUsername() or "") or ""
-    if username ~= "" then
-        return username
-    end
-    return nil
-end
-
-local function applyVehicleAuthority(player, vehicle, state)
-    local authority = NMAuthorityV4 or NMAuthorityV3
-    if not (authority and authority.applyIntent and state) then
-        return
-    end
-    local sourceOwner = resolveSourceOwnerIdentity(player)
-    authority.applyIntent(state, "request_vehicle", {
+local function buildVehicleAuthorityContext(player, vehicle)
+    return {
         sourceX = vehicle and tonumber(vehicle:getX()) or nil,
         sourceY = vehicle and tonumber(vehicle:getY()) or nil,
         sourceZ = vehicle and tonumber(vehicle:getZ()) or nil,
-        sourceOwner = sourceOwner
-    })
+        sourceOwner = NMIntentAuthority.resolveSourceOwnerIdentity(player)
+    }
 end
 
 local function updateSPWorldSourceCache(player, item, profile, state, action, options)
@@ -195,14 +216,14 @@ local function updateSPWorldSourceCache(player, item, profile, state, action, op
     local isWorldActive = NMRegistryPolicy.isWorldSyncStateActive and NMRegistryPolicy.isWorldSyncStateActive(state) or false
     local keepWorldSource = isWorldMode and shouldCacheNow and isWorldActive
     local opts = type(options) == "table" and options or nil
-    local isLevelOnlyAction = action == "set_volume" or action == "toggle_mute" or action == "set_mute"
+    local isLevelOnlyAction = action == "set_volume" or action == "mute_on" or action == "mute_off"
     if isLevelOnlyAction
         and opts
         and opts.prevKeepWorldSource == false
         and keepWorldSource == false then
-        if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
             NMCore.logChannel(
-                "runtimeProbe",
+                "runtime",
                 "sp_cache_skip_noop",
                 string.format(
                     "uuid=%s action=%s prevKeep=%s keep=%s",
@@ -216,9 +237,9 @@ local function updateSPWorldSourceCache(player, item, profile, state, action, op
     if not keepWorldSource then
         NMClientWorldSourceCache.remove(uuid)
         NMWorldRegistrySnapshot.removeSP(uuid)
-        if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
             NMCore.logChannel(
-                "runtimeProbe",
+                "runtime",
                 "sp_cache_remove",
                 string.format(
                     "uuid=%s action=%s mode=%s keep=false worldMode=%s shouldCacheNow=%s worldActive=%s muted=%s isOn=%s isPlaying=%s playbackMode=%s",
@@ -290,9 +311,9 @@ local function updateSPWorldSourceCache(player, item, profile, state, action, op
         revision = tonumber(state.revision) or 0,
         playbackEpoch = tonumber(state.playbackEpoch) or 0
     })
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
         NMCore.logChannel(
-            "runtimeProbe",
+            "runtime",
             "sp_cache_upsert",
             string.format(
                 "uuid=%s action=%s mode=%s source=%s x=%.2f y=%.2f z=%.2f isOn=%s isPlaying=%s media=%s",
@@ -311,124 +332,12 @@ local function updateSPWorldSourceCache(player, item, profile, state, action, op
     end
 end
 
-local function buildPayload(player, item, profile, state, args)
-    args = args or {}
-    local trackCount = tonumber(args.trackCount) or 0
-    local payload = {
-        isOn = args.isOn,
-        isPlaying = args.isPlaying,
-        volume = args.volume,
-        playbackMode = args.playbackMode,
-        playbackPolicy = args.playbackPolicy,
-        observedDurationMs = args.observedDurationMs,
-        mediaItemId = args.mediaItemId,
-        headphoneItemId = args.headphoneItemId,
-        batteryItemId = args.batteryItemId,
-        mediaFullType = nil,
-        mediaCarrier = nil,
-        mediaEjectFullType = nil,
-        mediaCanonicalFullType = nil,
-        mediaRecordedMediaIndex = nil,
-        mediaDisplayName = nil,
-        headphoneItemFullType = nil,
-        batteryCharge = nil,
-        externalPowerAvailable = NMInventoryHelpers.resolveExternalPowerAvailable(player, item, profile),
-        trackCount = trackCount,
-        hasTrack = trackCount > 0
-    }
-
-    local inv = player and player.getInventory and player:getInventory() or nil
-    if inv and args.mediaItemId and NMInventoryHelpers and NMInventoryHelpers.resolveItemByIdOrUuid then
-        local media = NMInventoryHelpers.resolveItemByIdOrUuid(inv, args.mediaItemId, args.mediaItemUuid)
-        local mediaPayload = NMMediaHelpers.resolveMediaInsertPayload(media)
-        if mediaPayload then
-            payload.mediaFullType = mediaPayload.mediaFullType
-            payload.mediaItemFullType = mediaPayload.mediaEjectFullType or mediaPayload.mediaFullType
-            payload.mediaCarrier = mediaPayload.mediaCarrier
-            payload.mediaEjectFullType = mediaPayload.mediaEjectFullType
-            payload.mediaCanonicalFullType = mediaPayload.mediaCanonicalFullType
-            payload.mediaRecordedMediaIndex = mediaPayload.mediaRecordedMediaIndex
-            payload.mediaDisplayName = mediaPayload.mediaDisplayName
-        end
-    end
-    payload.requiredMediaFullType = NMMediaContract
-        and NMMediaContract.resolveContainerMediaBinding
-        and NMMediaContract.resolveContainerMediaBinding(item and item.getFullType and item:getFullType() or nil)
-        or nil
-
-    if inv and args.headphoneItemId then
-        local hp = NMInventoryHelpers.findItemById(inv, args.headphoneItemId)
-        if hp and hp.getFullType then
-            payload.headphoneItemFullType = hp:getFullType()
-        end
-    end
-
-    if inv and args.batteryItemId then
-        local bat = NMInventoryHelpers.findItemById(inv, args.batteryItemId)
-        payload.batteryCharge = NMCore.readDrainableFraction(bat, 0.0)
-    end
-
-    return payload
-end
-
-local function removeItemById(inventory, itemId)
-    local id = tostring(itemId or "")
-    if not inventory or id == "" then
-        return false, "invalid_remove_args", nil, nil
-    end
-    local item = NMInventoryHelpers.findItemById(inventory, id)
-    if not item then
-        return false, "source_item_not_found", nil, nil
-    end
-    local container = item.getContainer and item:getContainer() or nil
-    if container and container.DoRemoveItem then
-        container:DoRemoveItem(item)
-        return true, nil, container, item
-    end
-    if inventory.Remove then
-        inventory:Remove(item)
-        return true, nil, inventory, item
-    end
-    return false, "source_remove_failed", nil, nil
-end
-
 local function resolveOwningContainer(item, fallbackInventory)
     local container = item and item.getContainer and item:getContainer() or nil
     if container and container.DoRemoveItem and container.AddItem then
         return container
     end
     return fallbackInventory
-end
-
-local function addItemByFullType(inventory, fullType)
-    if not inventory or not inventory.AddItem then
-        return nil, "missing_inventory_add", nil
-    end
-    local typeName = tostring(fullType or "")
-    if typeName == "" then
-        return nil, "missing_item_type", nil
-    end
-    local item, err = NMWorldItemVisuals.addItemWithVisual(inventory, typeName)
-    if not item then
-        return nil, err or "add_item_failed", nil
-    end
-    return item, nil, inventory
-end
-
-local function setRecordedMediaIndex(item, index)
-    local value = tonumber(index)
-    if not item or value == nil or value < 0 then
-        return false
-    end
-    if item.setRecordedMediaIndex then
-        local ok = pcall(item.setRecordedMediaIndex, item, value)
-        if ok then return true end
-    end
-    if item.setRecordedMediaIndexInteger then
-        local ok = pcall(item.setRecordedMediaIndexInteger, item, value)
-        if ok then return true end
-    end
-    return false
 end
 
 local function normalizeIngressArgsToMainInventory(player, action, args)
@@ -577,84 +486,6 @@ local function reconcileHeadphoneWearState(player, profile, state, actionName, s
     return false
 end
 
-local function applyTransitionOpsLocal(player, inventory, ops)
-    if not ops then
-        return false, nil
-    end
-    local applied = false
-    local failures = {}
-
-    if ops.wearHeadphoneItemId then
-        local ok, err = false, "wear_helper_missing"
-        if NMAttachmentHelpers.equipHeadphonesByItemId then
-            ok, err = NMAttachmentHelpers.equipHeadphonesByItemId(player, ops.wearHeadphoneItemId)
-        end
-        if ok then
-            applied = true
-        else
-            failures[#failures + 1] = "wear_headphones:" .. tostring(err)
-        end
-    end
-    if ops.unequipHeadphones then
-        local ok, err = false, "unequip_helper_missing"
-        if NMAttachmentHelpers.unequipWornHeadphones then
-            ok, err = NMAttachmentHelpers.unequipWornHeadphones(player)
-        end
-        if ok then
-            applied = true
-        else
-            failures[#failures + 1] = "unequip_headphones:" .. tostring(err)
-        end
-    end
-
-    if ops.consumeMediaItemId then
-        local ok, err = removeItemById(inventory, ops.consumeMediaItemId)
-        if ok then applied = true else failures[#failures + 1] = "consume_media:" .. tostring(err) end
-    end
-    if ops.consumeHeadphoneItemId then
-        local ok, err = removeItemById(inventory, ops.consumeHeadphoneItemId)
-        if ok then applied = true else failures[#failures + 1] = "consume_headphones:" .. tostring(err) end
-    end
-    if ops.consumeBatteryItemId then
-        local ok, err = removeItemById(inventory, ops.consumeBatteryItemId)
-        if ok then applied = true else failures[#failures + 1] = "consume_battery:" .. tostring(err) end
-    end
-
-    if ops.produceMediaFullType then
-        local out, err = addItemByFullType(inventory, ops.produceMediaFullType)
-        if out then
-            setRecordedMediaIndex(out, ops.produceMediaRecordedMediaIndex)
-            applied = true
-        else
-            failures[#failures + 1] = "produce_media:" .. tostring(err)
-        end
-    end
-    if ops.produceHeadphoneFullType then
-        local out, err = addItemByFullType(inventory, ops.produceHeadphoneFullType)
-        if out then
-            applied = true
-        else
-            failures[#failures + 1] = "produce_headphones:" .. tostring(err)
-        end
-    end
-    if ops.produceBatteryCharge ~= nil then
-        local out, err = addItemByFullType(inventory, "Base.Battery")
-        if out then
-            if out.setUsedDelta then
-                pcall(out.setUsedDelta, out, NMCore.clamp(tonumber(ops.produceBatteryCharge) or 0.0, 0.0, 1.0))
-            end
-            applied = true
-        else
-            failures[#failures + 1] = "produce_battery:" .. tostring(err)
-        end
-    end
-
-    if #failures > 0 then
-        return applied, table.concat(failures, ";")
-    end
-    return applied, nil
-end
-
 local function maybeSwapContainerVisualVariantLocal(player, item, profile, state)
     if not (player and item and profile and state and profile.isMediaContainerOnly == true) then
         return item, profile, state, false, nil
@@ -680,12 +511,12 @@ local function maybeSwapContainerVisualVariantLocal(player, item, profile, state
     end
 
     local exportedState = NMDeviceState.export(state)
-    local removed, removeErr = removeItemById(ownerContainer, NMCore.itemId(item))
+    local removed, removeErr = NMIntentInventoryOps.removeItemById(ownerContainer, NMCore.itemId(item))
     if not removed then
         return item, profile, state, false, "container_swap_remove_failed:" .. tostring(removeErr or "unknown")
     end
 
-    local swappedItem, addErr = addItemByFullType(ownerContainer, targetFullType)
+    local swappedItem, addErr = NMIntentInventoryOps.addItemByFullType(ownerContainer, targetFullType)
     if not swappedItem then
         return item, profile, state, false, "container_swap_add_failed:" .. tostring(addErr or "unknown")
     end
@@ -742,11 +573,11 @@ function NMClientIntentDispatch.applyIntentLocal(player, item, action, args)
     local preReconcileChanged = reconcileHeadphoneWearState(player, profile, state, action, prevMode)
     local wasPlaying = state and state.isPlaying == true
     local hadHeadphones = state and state.headphoneItemFullType ~= nil
-    local payload = buildPayload(player, item, profile, state, args)
+    local payload = NMIntentPayloadBuilder.buildItemPayload(player, item, profile, args)
     if isCorpseRecoveredItemState(item, state) then
         state._nmCorpseRecovered = true
     end
-    if isCorpseRecoveredItemState(item, state) and (action == "toggle_play" or action == "start_playback" or action == "power_on" or action == "toggle_power") then
+    if isCorpseRecoveredItemState(item, state) and (action == "play" or action == "power_on") then
         logCorpseAudio(
             "intent_attempt",
             state.deviceUUID,
@@ -861,8 +692,8 @@ function NMClientIntentDispatch.applyIntentLocal(player, item, action, args)
             )
         )
     end
-    if (action == "set_mute" or action == "toggle_mute" or action == "set_volume")
-        and NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("intent") then
+    if (action == "mute_on" or action == "mute_off" or action == "set_volume")
+        and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("intent") then
         NMCore.logChannel(
             "intent",
             "level_change_applied",
@@ -878,7 +709,7 @@ function NMClientIntentDispatch.applyIntentLocal(player, item, action, args)
         )
     end
     if (action == "insert_headphones" or action == "eject_headphones")
-        and NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("intent") then
+        and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("intent") then
         local mode = NMClientModeReconcile.resolveModeForItem(player, item, profile, state)
         local output = NMDeviceProfiles.resolveOutputMode(profile, state, mode, false)
         NMCore.logChannel(
@@ -899,7 +730,7 @@ function NMClientIntentDispatch.applyIntentLocal(player, item, action, args)
     end
 
     local inv = player and player.getInventory and player:getInventory() or nil
-    local _, opsError = applyTransitionOpsLocal(player, inv, ops)
+    local _, opsError = NMIntentInventoryOps.applyTransitionOps(player, inv, ops)
     if opsError and NMCore and NMCore.logChannel then
         logIntent(
             "apply_local_ops_failed",
@@ -922,11 +753,23 @@ function NMClientIntentDispatch.applyIntentLocal(player, item, action, args)
     local nextMode = NMClientModeReconcile.resolveModeForItem(player, item, profile, state)
     local postReconcileChanged = reconcileHeadphoneWearState(player, profile, state, action, nextMode)
 
-    if action == "toggle_play" or action == "start_playback" or action == "stop_playback"
-        or action == "next_track" or action == "prev_track" or action == "set_playback_mode"
-        or action == "power_on" or action == "power_off" or action == "toggle_power"
-        or action == "track_finished" or action == "track_finished_world" then
+    local playbackEpochBefore = tonumber(state and state.playbackEpoch) or 0
+
+    if doesActionAdvancePlaybackContinuity(action) then
         NMDeviceState.bumpPlaybackEpoch(state)
+    end
+    if action == "cycle_mode" then
+        logCycleModeProbe(
+            "item",
+            {
+                deviceUUID = state and state.deviceUUID,
+                playbackPolicy = stateBeforeIntent and stateBeforeIntent.playbackPolicy,
+                playbackEpoch = playbackEpochBefore,
+                isPlaying = stateBeforeIntent and stateBeforeIntent.isPlaying,
+            },
+            state,
+            payload
+        )
     end
     local nowIsOn = state and state.isOn == true
     if prevIsOn and (not nowIsOn) and NMPlaybackRuntime and NMPlaybackRuntime.resetPowerTick then
@@ -945,153 +788,15 @@ function NMClientIntentDispatch.applyIntentLocal(player, item, action, args)
     return true, nil
 end
 
-function NMClientIntentDispatch.performIntent(player, item, action, args)
-    args = args or {}
-    args.itemId = NMCore.itemId(item)
-    args.action = tostring(action or "")
-    if item and item.getFullType and args.itemFullType == nil then
-        args.itemFullType = tostring(item:getFullType() or "")
-    end
-    if args.uuid == nil then
-        local profile = NMDeviceProfiles.getForItem(item)
-        local state = profile and NMDeviceState.ensure(item, profile) or nil
-        if state and state.deviceUUID then
-            args.uuid = tostring(state.deviceUUID)
-        end
-    end
-
-    local normalizedOk, normalizedErr = normalizeIngressArgsToMainInventory(player, args.action, args)
-    if not normalizedOk then
-        logSlotAuthority(
-            "client_item_dispatch_reject",
-            string.format(
-                "action=%s itemId=%s mediaItemId=%s mediaItemUuid=%s slotTraceId=%s reason=%s descriptor=%s",
-                tostring(args.action or ""),
-                tostring(NMCore.itemId(item) or ""),
-                tostring(args and args.mediaItemId or ""),
-                tostring(args and args.mediaItemUuid or ""),
-                tostring(args and args.slotTraceId or ""),
-                tostring(normalizedErr or ""),
-                describeSourceDescriptorArgs(args, "mediaSource")
-            )
-        )
-        return false, "normalize_failed:" .. tostring(normalizedErr or "unknown")
-    end
-
-    if NMCore.isMPClientRuntime() and sendClientCommand then
-        logSlotAuthority(
-            "client_item_dispatch_send",
-            string.format(
-                "action=%s itemId=%s mediaItemId=%s mediaItemUuid=%s slotTraceId=%s descriptor=%s",
-                tostring(args.action or ""),
-                tostring(NMCore.itemId(item) or ""),
-                tostring(args and args.mediaItemId or ""),
-                tostring(args and args.mediaItemUuid or ""),
-                tostring(args and args.slotTraceId or ""),
-                describeSourceDescriptorArgs(args, "mediaSource")
-            )
-        )
-        sendClientCommand(player, NMCore.NetModule, "intent", args)
-        return true, nil
-    end
-
-    return NMClientIntentDispatch.applyIntentLocal(player, item, args.action, args)
-end
-
 local function isPowerOnRequest(localAction, localArgs, localState)
     local name = tostring(localAction or "")
     if name == "power_on" then
         return true
     end
-    if name == "toggle_power" then
-        if localArgs and localArgs.isOn ~= nil then
-            return localArgs.isOn == true
-        end
-        return not (localState and localState.isOn == true)
-    end
     return false
 end
 
-function NMClientIntentDispatch.performVehicleIntent(player, vehicle, part, action, args)
-    args = args or {}
-    args.action = tostring(action or "")
-    args.vehicleId = vehicle and tostring(vehicle:getId()) or nil
-    args.partId = part and tostring(part:getId()) or "Radio"
-    args.playbackMode = "world"
-    logVehicleSlotTrace(
-        "vehicle_slot_client_dispatch_begin",
-        string.format(
-            "trace=%s host=vehicle ui=vehicle action=%s stage=client_dispatch_begin result=ok vehicleId=%s partId=%s mediaItemId=%s mediaItemUuid=%s descriptor=%s",
-            tostring(args.slotTraceId or ""),
-            tostring(args.action or ""),
-            tostring(args.vehicleId or ""),
-            tostring(args.partId or ""),
-            tostring(args.mediaItemId or ""),
-            tostring(args.mediaItemUuid or ""),
-            describeSourceDescriptorArgs(args, "mediaSource")
-        )
-    )
-
-    local normalizedOk, normalizedErr = normalizeIngressArgsToMainInventory(player, args.action, args)
-    if not normalizedOk then
-        logVehicleSlotTrace(
-            "vehicle_slot_client_dispatch_result",
-            string.format(
-                "trace=%s host=vehicle ui=vehicle action=%s stage=client_dispatch_result result=reject vehicleId=%s partId=%s reason=%s",
-                tostring(args.slotTraceId or ""),
-                tostring(args.action or ""),
-                tostring(args.vehicleId or ""),
-                tostring(args.partId or ""),
-                tostring(normalizedErr or "")
-            )
-        )
-        logSlotAuthority(
-            "client_vehicle_dispatch_reject",
-            string.format(
-                "action=%s vehicleId=%s partId=%s mediaItemId=%s mediaItemUuid=%s slotTraceId=%s reason=%s descriptor=%s",
-                tostring(args.action or ""),
-                tostring(args.vehicleId or ""),
-                tostring(args.partId or ""),
-                tostring(args.mediaItemId or ""),
-                tostring(args.mediaItemUuid or ""),
-                tostring(args.slotTraceId or ""),
-                tostring(normalizedErr or ""),
-                describeSourceDescriptorArgs(args, "mediaSource")
-            )
-        )
-        return false, "normalize_failed:" .. tostring(normalizedErr or "unknown")
-    end
-
-    if NMCore.isMPClientRuntime() and sendClientCommand then
-        logVehicleSlotTrace(
-            "vehicle_slot_client_dispatch_result",
-            string.format(
-                "trace=%s host=vehicle ui=vehicle action=%s stage=client_dispatch_result result=ok vehicleId=%s partId=%s mediaItemId=%s mediaItemUuid=%s",
-                tostring(args.slotTraceId or ""),
-                tostring(args.action or ""),
-                tostring(args.vehicleId or ""),
-                tostring(args.partId or ""),
-                tostring(args.mediaItemId or ""),
-                tostring(args.mediaItemUuid or "")
-            )
-        )
-        logSlotAuthority(
-            "client_vehicle_dispatch_send",
-            string.format(
-                "action=%s vehicleId=%s partId=%s mediaItemId=%s mediaItemUuid=%s slotTraceId=%s descriptor=%s",
-                tostring(args.action or ""),
-                tostring(args.vehicleId or ""),
-                tostring(args.partId or ""),
-                tostring(args.mediaItemId or ""),
-                tostring(args.mediaItemUuid or ""),
-                tostring(args.slotTraceId or ""),
-                describeSourceDescriptorArgs(args, "mediaSource")
-            )
-        )
-        sendClientCommand(player, NMCore.NetModule, "intent", args)
-        return true, nil
-    end
-
+local function applyVehicleIntentLocal(player, vehicle, part, action, args)
     local profile = part and NMDeviceProfiles.getVehicleProfile(part) or nil
     if not profile then
         return false, "vehicle_profile_missing"
@@ -1100,45 +805,18 @@ function NMClientIntentDispatch.performVehicleIntent(player, vehicle, part, acti
     local state = NMDeviceState.ensure(part, profile)
     local stateBeforeIntent = NMDeviceState.export(state)
     local prevIsOn = state and state.isOn == true
-    local trackCount = tonumber(args.trackCount) or 0
-    if trackCount < 1 then
-        trackCount = resolveTrackCountFromMedia(state)
-    end
     local inv = player and player.getInventory and player:getInventory() or nil
-    local mediaPayload = nil
-    if inv and args.mediaItemId and NMInventoryHelpers and NMInventoryHelpers.resolveItemByIdOrUuid then
-        local mediaItem = NMInventoryHelpers.resolveItemByIdOrUuid(inv, args.mediaItemId, args.mediaItemUuid)
-        mediaPayload = NMMediaHelpers.resolveMediaInsertPayload(mediaItem)
-    end
-    local payload = {
-        isOn = args.isOn,
-        isPlaying = args.isPlaying,
-        volume = args.volume,
-        playbackMode = "world",
-        playbackPolicy = args.playbackPolicy,
-        observedDurationMs = args.observedDurationMs,
-        mediaItemId = args.mediaItemId,
-        mediaFullType = mediaPayload and mediaPayload.mediaFullType or args.mediaFullType,
-        mediaItemFullType = mediaPayload and (mediaPayload.mediaEjectFullType or mediaPayload.mediaFullType) or args.mediaEjectFullType or args.mediaFullType,
-        mediaCarrier = mediaPayload and mediaPayload.mediaCarrier or args.mediaCarrier,
-        mediaEjectFullType = mediaPayload and mediaPayload.mediaEjectFullType or args.mediaEjectFullType,
-        mediaCanonicalFullType = mediaPayload and mediaPayload.mediaCanonicalFullType or args.mediaCanonicalFullType,
-        mediaRecordedMediaIndex = mediaPayload and mediaPayload.mediaRecordedMediaIndex or args.mediaRecordedMediaIndex,
-        mediaDisplayName = mediaPayload and mediaPayload.mediaDisplayName or args.mediaDisplayName,
-        externalPowerAvailable = NMVehicleHelpers.vehicleHasUsableBatteryPower and NMVehicleHelpers.vehicleHasUsableBatteryPower(vehicle, part) or NMVehicleHelpers.vehicleHasPower(vehicle, part),
-        trackCount = trackCount,
-        hasTrack = trackCount > 0
-    }
-    if isPowerOnRequest(args.action, args, state) and payload.externalPowerAvailable ~= true then
+    local payload, trackCount = NMIntentPayloadBuilder.buildVehiclePayload(player, vehicle, part, state, args)
+    if isPowerOnRequest(action, args, state) and payload.externalPowerAvailable ~= true then
         return false, "vehicle_battery_unavailable"
     end
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("intent") then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("intent") then
         NMCore.logChannel(
             "intent",
             "vehicle_intent_attempt",
             string.format(
                 "action=%s vehicle=%s part=%s media=%s isOn=%s isPlaying=%s trackCount=%d hasTrack=%s",
-                tostring(args.action or action),
+                tostring(action),
                 tostring(vehicle and vehicle.getId and vehicle:getId() or "unknown"),
                 tostring(part and part.getId and part:getId() or "unknown"),
                 tostring(state and state.mediaFullType or "nil"),
@@ -1149,7 +827,7 @@ function NMClientIntentDispatch.performVehicleIntent(player, vehicle, part, acti
             )
         )
     end
-    local changed, reason, ops = NMDeviceTransitions.apply(profile, state, args.action, payload)
+    local changed, reason, ops = NMDeviceTransitions.apply(profile, state, action, payload)
     if part and profile.vehicleUsesCarBattery and state.isOn and (not NMVehicleHelpers.vehicleHasPower(vehicle, part)) then
         state.isOn = false
         state.desiredIsOn = false
@@ -1160,13 +838,13 @@ function NMClientIntentDispatch.performVehicleIntent(player, vehicle, part, acti
     end
 
     if not changed then
-        if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("intent") then
+        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("intent") then
             NMCore.logChannel(
                 "intent",
                 "vehicle_intent_rejected",
                 string.format(
                     "action=%s reason=%s vehicle=%s part=%s media=%s isOn=%s isPlaying=%s trackCount=%d",
-                    tostring(args.action or action),
+                    tostring(action),
                     tostring(reason or "none"),
                     tostring(vehicle and vehicle.getId and vehicle:getId() or "unknown"),
                     tostring(part and part.getId and part:getId() or "unknown"),
@@ -1180,13 +858,13 @@ function NMClientIntentDispatch.performVehicleIntent(player, vehicle, part, acti
         return false, reason
     end
 
-    local _, opsError = applyTransitionOpsLocal(player, inv, ops)
+    local _, opsError = NMIntentInventoryOps.applyTransitionOps(player, inv, ops)
     if opsError and NMCore and NMCore.logChannel then
         logIntent(
             "vehicle_apply_local_ops_failed",
             string.format(
                 "action=%s mediaItemId=%s resolvedMedia=%s opsError=%s",
-                tostring(args.action or action),
+                tostring(action),
                 tostring(args.mediaItemId or ""),
                 tostring(payload.mediaFullType or ""),
                 tostring(opsError)
@@ -1194,7 +872,7 @@ function NMClientIntentDispatch.performVehicleIntent(player, vehicle, part, acti
             {
                 throttleKey = string.format(
                     "vehicle_apply_local_ops_failed.%s.%s.%s",
-                    tostring(args.action or action),
+                    tostring(action),
                     tostring(state and state.deviceUUID or ""),
                     tostring(args.partId or "")
                 ),
@@ -1206,13 +884,13 @@ function NMClientIntentDispatch.performVehicleIntent(player, vehicle, part, acti
         end
         return false, "ops_failed:" .. tostring(opsError)
     end
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("intent") then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("intent") then
         NMCore.logChannel(
             "intent",
             "vehicle_intent_applied",
             string.format(
                 "action=%s vehicle=%s part=%s media=%s isOn=%s isPlaying=%s trackCount=%d",
-                tostring(args.action or action),
+                tostring(action),
                 tostring(vehicle and vehicle.getId and vehicle:getId() or "unknown"),
                 tostring(part and part.getId and part:getId() or "unknown"),
                 tostring(state and state.mediaFullType or "nil"),
@@ -1223,11 +901,23 @@ function NMClientIntentDispatch.performVehicleIntent(player, vehicle, part, acti
         )
     end
 
-    if args.action == "toggle_play" or args.action == "start_playback" or args.action == "stop_playback"
-        or args.action == "next_track" or args.action == "prev_track"
-        or args.action == "set_playback_mode" or args.action == "power_on" or args.action == "power_off"
-        or args.action == "toggle_power" or args.action == "track_finished" then
+    local playbackEpochBefore = tonumber(state and state.playbackEpoch) or 0
+
+    if doesActionAdvancePlaybackContinuity(action) then
         NMDeviceState.bumpPlaybackEpoch(state)
+    end
+    if action == "cycle_mode" then
+        logCycleModeProbe(
+            "vehicle",
+            {
+                deviceUUID = state and state.deviceUUID,
+                playbackPolicy = stateBeforeIntent and stateBeforeIntent.playbackPolicy,
+                playbackEpoch = playbackEpochBefore,
+                isPlaying = stateBeforeIntent and stateBeforeIntent.isPlaying,
+            },
+            state,
+            payload
+        )
     end
     local nowIsOn = state and state.isOn == true
     if prevIsOn and (not nowIsOn) and NMPlaybackRuntime and NMPlaybackRuntime.resetPowerTick then
@@ -1239,7 +929,7 @@ function NMClientIntentDispatch.performVehicleIntent(player, vehicle, part, acti
     if prevIsOn and (not nowIsOn) and NMPlaybackRuntime and NMPlaybackRuntime.forceStop then
         NMPlaybackRuntime.forceStop(player, state and state.deviceUUID, "intent_power_off_immediate")
     end
-    applyVehicleAuthority(player, vehicle, state)
+    NMIntentAuthority.applyIntent(state, "request_vehicle", buildVehicleAuthorityContext(player, vehicle))
     NMDeviceState.bumpRevision(state)
 
     local keep = NMRegistryPolicy.shouldKeepWorldSourceState(state)
@@ -1285,14 +975,17 @@ function NMClientIntentDispatch.performVehicleIntent(player, vehicle, part, acti
             revision = tonumber(state.revision) or 0,
             playbackEpoch = tonumber(state.playbackEpoch) or 0
         })
-        if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
-            NMCore.logChannel("runtimeProbe", "vehicle_cache_upsert", "uuid=" .. tostring(uuid) .. " vehicleId=" .. tostring(vehicle and vehicle.getId and vehicle:getId() or "unknown"))
+        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+            local cacheLogKey = "runtimeProbe.vehicle_cache_upsert." .. tostring(uuid)
+            if not NMCore.shouldLogEvery or NMCore.shouldLogEvery(cacheLogKey, nowIntentLogMs(), 60000) then
+                NMCore.logChannel("runtime", "vehicle_cache_upsert", "uuid=" .. tostring(uuid) .. " vehicleId=" .. tostring(vehicle and vehicle.getId and vehicle:getId() or "unknown"))
+            end
         end
     elseif uuid ~= "" then
         NMClientWorldSourceCache.remove(uuid)
         NMWorldRegistrySnapshot.removeSP(uuid)
-        if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
-            NMCore.logChannel("runtimeProbe", "vehicle_cache_remove", "uuid=" .. tostring(uuid) .. " vehicleId=" .. tostring(vehicle and vehicle.getId and vehicle:getId() or "unknown"))
+        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+            NMCore.logChannel("runtime", "vehicle_cache_remove", "uuid=" .. tostring(uuid) .. " vehicleId=" .. tostring(vehicle and vehicle.getId and vehicle:getId() or "unknown"))
         end
     end
 
@@ -1302,4 +995,194 @@ function NMClientIntentDispatch.performVehicleIntent(player, vehicle, part, acti
     end
 
     return true, nil
+end
+
+local function populateItemIntentArgs(item, action, args)
+    args = args or {}
+    args.itemId = NMCore.itemId(item)
+    args.action = tostring(action or "")
+    if item and item.getFullType and args.itemFullType == nil then
+        args.itemFullType = tostring(item:getFullType() or "")
+    end
+    if args.uuid == nil then
+        local profile = NMDeviceProfiles.getForItem(item)
+        local state = profile and NMDeviceState.ensure(item, profile) or nil
+        if state and state.deviceUUID then
+            args.uuid = tostring(state.deviceUUID)
+        end
+    end
+    return args
+end
+
+local function populateVehicleIntentArgs(vehicle, part, action, args)
+    args = args or {}
+    args.action = tostring(action or "")
+    args.vehicleId = vehicle and tostring(vehicle:getId()) or nil
+    args.partId = part and tostring(part:getId()) or "Radio"
+    args.playbackMode = "world"
+    return args
+end
+
+local function logVehicleClientDispatch(stage, args, result, reason)
+    local action = tostring(args and args.action or "")
+    local vehicleId = tostring(args and args.vehicleId or "")
+    local partId = tostring(args and args.partId or "")
+    local traceId = tostring(args and args.slotTraceId or "")
+    if stage == "begin" then
+        logVehicleSlotTrace(
+            "vehicle_slot_client_dispatch_begin",
+            string.format(
+                "trace=%s host=vehicle ui=vehicle action=%s stage=client_dispatch_begin result=ok vehicleId=%s partId=%s mediaItemId=%s mediaItemUuid=%s descriptor=%s",
+                traceId,
+                action,
+                vehicleId,
+                partId,
+                tostring(args and args.mediaItemId or ""),
+                tostring(args and args.mediaItemUuid or ""),
+                describeSourceDescriptorArgs(args, "mediaSource")
+            )
+        )
+        return
+    end
+    logVehicleSlotTrace(
+        "vehicle_slot_client_dispatch_result",
+        string.format(
+            "trace=%s host=vehicle ui=vehicle action=%s stage=client_dispatch_result result=%s vehicleId=%s partId=%s reason=%s",
+            traceId,
+            action,
+            tostring(result or "reject"),
+            vehicleId,
+            partId,
+            tostring(reason or "")
+        )
+    )
+end
+
+local function logClientDispatchNormalizationReject(kind, item, args, normalizedErr)
+    if kind == "vehicle" then
+        logVehicleClientDispatch("result", args, "reject", normalizedErr)
+        logSlotAuthority(
+            "client_vehicle_dispatch_reject",
+            string.format(
+                "action=%s vehicleId=%s partId=%s mediaItemId=%s mediaItemUuid=%s slotTraceId=%s reason=%s descriptor=%s",
+                tostring(args.action or ""),
+                tostring(args.vehicleId or ""),
+                tostring(args.partId or ""),
+                tostring(args.mediaItemId or ""),
+                tostring(args.mediaItemUuid or ""),
+                tostring(args.slotTraceId or ""),
+                tostring(normalizedErr or ""),
+                describeSourceDescriptorArgs(args, "mediaSource")
+            )
+        )
+        return
+    end
+    logSlotAuthority(
+        "client_item_dispatch_reject",
+        string.format(
+            "action=%s itemId=%s mediaItemId=%s mediaItemUuid=%s slotTraceId=%s reason=%s descriptor=%s",
+            tostring(args.action or ""),
+            tostring(NMCore.itemId(item) or ""),
+            tostring(args.mediaItemId or ""),
+            tostring(args.mediaItemUuid or ""),
+            tostring(args.slotTraceId or ""),
+            tostring(normalizedErr or ""),
+            describeSourceDescriptorArgs(args, "mediaSource")
+        )
+    )
+end
+
+local function logClientDispatchSend(kind, item, args)
+    if kind == "vehicle" then
+        logVehicleClientDispatch("result", args, "ok", nil)
+        logSlotAuthority(
+            "client_vehicle_dispatch_send",
+            string.format(
+                "action=%s vehicleId=%s partId=%s mediaItemId=%s mediaItemUuid=%s slotTraceId=%s descriptor=%s",
+                tostring(args.action or ""),
+                tostring(args.vehicleId or ""),
+                tostring(args.partId or ""),
+                tostring(args.mediaItemId or ""),
+                tostring(args.mediaItemUuid or ""),
+                tostring(args.slotTraceId or ""),
+                describeSourceDescriptorArgs(args, "mediaSource")
+            )
+        )
+        return
+    end
+    logSlotAuthority(
+        "client_item_dispatch_send",
+        string.format(
+            "action=%s itemId=%s mediaItemId=%s mediaItemUuid=%s slotTraceId=%s descriptor=%s",
+            tostring(args.action or ""),
+            tostring(NMCore.itemId(item) or ""),
+            tostring(args.mediaItemId or ""),
+            tostring(args.mediaItemUuid or ""),
+            tostring(args.slotTraceId or ""),
+            describeSourceDescriptorArgs(args, "mediaSource")
+        )
+    )
+end
+
+local function performClientIntentDispatch(player, args, options)
+    local opts = type(options) == "table" and options or {}
+    local onBegin = opts.onBegin
+    local onNormalizeReject = opts.onNormalizeReject
+    local onSend = opts.onSend
+    local applyLocal = opts.applyLocal
+    if onBegin then
+        onBegin(args)
+    end
+
+    local normalizedOk, normalizedErr = normalizeIngressArgsToMainInventory(player, args.action, args)
+    if not normalizedOk then
+        if onNormalizeReject then
+            onNormalizeReject(args, normalizedErr)
+        end
+        return false, "normalize_failed:" .. tostring(normalizedErr or "unknown")
+    end
+
+    local isMpRuntime = NMCore.isMPClientRuntime and NMCore.isMPClientRuntime()
+    if isMpRuntime and sendClientCommand then
+        if onSend then
+            onSend(args)
+        end
+        sendClientCommand(player, NMCore.NetModule, "intent", args)
+        return true, nil
+    end
+
+    return applyLocal and applyLocal(player, args) or false, "dispatch_apply_missing"
+end
+
+function NMClientIntentDispatch.performIntent(player, item, action, args)
+    args = populateItemIntentArgs(item, action, args)
+    return performClientIntentDispatch(player, args, {
+        onNormalizeReject = function(localArgs, normalizedErr)
+            logClientDispatchNormalizationReject("item", item, localArgs, normalizedErr)
+        end,
+        onSend = function(localArgs)
+            logClientDispatchSend("item", item, localArgs)
+        end,
+        applyLocal = function(localPlayer, localArgs)
+            return NMClientIntentDispatch.applyIntentLocal(localPlayer, item, localArgs.action, localArgs)
+        end
+    })
+end
+
+function NMClientIntentDispatch.performVehicleIntent(player, vehicle, part, action, args)
+    args = populateVehicleIntentArgs(vehicle, part, action, args)
+    return performClientIntentDispatch(player, args, {
+        onBegin = function(localArgs)
+            logVehicleClientDispatch("begin", localArgs)
+        end,
+        onNormalizeReject = function(localArgs, normalizedErr)
+            logClientDispatchNormalizationReject("vehicle", nil, localArgs, normalizedErr)
+        end,
+        onSend = function(localArgs)
+            logClientDispatchSend("vehicle", nil, localArgs)
+        end,
+        applyLocal = function(localPlayer, localArgs)
+            return applyVehicleIntentLocal(localPlayer, vehicle, part, localArgs.action, localArgs)
+        end
+    })
 end

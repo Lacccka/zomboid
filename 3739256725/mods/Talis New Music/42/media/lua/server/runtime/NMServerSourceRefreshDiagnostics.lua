@@ -95,7 +95,7 @@ local function shouldLogRefreshChange(uuid, signature)
 end
 
 function NMServerSourceRefreshDiagnostics.logVehicleResolveAttempt(uuid, entry, result)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleDiagnostics")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     if not result then
@@ -114,7 +114,7 @@ function NMServerSourceRefreshDiagnostics.logVehicleResolveAttempt(uuid, entry, 
         entry._vehicleResolveAttemptSignature = signature
     end
     NMCore.logChannel(
-        "vehicleDiagnostics",
+        "vehicle",
         "server_vehicle_resolve_attempt",
         string.format(
             "uuid=%s resolved=%s path=%s reason=%s reasonStage=%s preScan=%s cachedVehicleId=%s resolvedVehicleId=%s owner=%s ownerVehicleId=%s cachedVehicleSqlId=%s resolvedVehicleSqlId=%s ownerVehicleSqlId=%s authorityVehicleSqlId=%s cachedPartUuid=%s ownerPartUuid=%s poolSource=%s totalReported=%s nonNilVehicles=%s indexBaseUsed=%s indexBaseTried=%s iteratedSlots=%s nilSlots=%s getErrors=%s matrix=%s anchor=%s",
@@ -149,7 +149,7 @@ function NMServerSourceRefreshDiagnostics.logVehicleResolveAttempt(uuid, entry, 
 end
 
 function NMServerSourceRefreshDiagnostics.logVehicleIdentitySnapshot(entry, uuid, stage, result)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleDiagnostics")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     if not entry then
@@ -195,7 +195,7 @@ function NMServerSourceRefreshDiagnostics.logVehicleIdentitySnapshot(entry, uuid
     entry._vehicleIdentitySnapshotMs = now
 
     NMCore.logChannel(
-        "vehicleDiagnostics",
+        "vehicle",
         "vehicle_identity_snapshot",
         string.format(
             "uuid=%s stage=%s resolved=%s reasonStage=%s reason=%s resolvedVehicleId=%s resolvedVehicleSqlId=%s resolvedScript=%s resolvedX=%s resolvedY=%s resolvedZ=%s cachedVehicleId=%s cachedVehicleSqlId=%s cachedScript=%s cachedX=%s cachedY=%s cachedZ=%s sourceGen=%s",
@@ -222,7 +222,7 @@ function NMServerSourceRefreshDiagnostics.logVehicleIdentitySnapshot(entry, uuid
 end
 
 function NMServerSourceRefreshDiagnostics.logRefresh(uuid, mode, oldX, oldY, oldZ, newX, newY, newZ, resolvedKind)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleDiagnostics")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     local signature = table.concat({
@@ -236,7 +236,7 @@ function NMServerSourceRefreshDiagnostics.logRefresh(uuid, mode, oldX, oldY, old
         return
     end
     NMCore.logChannel(
-        "vehicleDiagnostics",
+        "vehicle",
         "server_source_refresh",
         string.format(
             "uuid=%s mode=%s resolved=%s old=%.2f,%.2f,%.2f new=%.2f,%.2f,%.2f",
@@ -254,36 +254,36 @@ function NMServerSourceRefreshDiagnostics.logRefresh(uuid, mode, oldX, oldY, old
 end
 
 function NMServerSourceRefreshDiagnostics.logUnresolved(uuid, mode, reason, key)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleDiagnostics")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     if NMCore.shouldLogEvery and not NMCore.shouldLogEvery("vehicleDiagnostics.source_refresh_unresolved." .. tostring(uuid), nowRealMs(), NMRuntimeProbeAdapter.shortHeartbeatMs()) then
         return
     end
     NMCore.logChannel(
-        "vehicleDiagnostics",
+        "vehicle",
         "server_source_refresh_unresolved",
         string.format("uuid=%s mode=%s reason=%s key=%s", tostring(uuid), tostring(mode), tostring(reason), tostring(key or ""))
     )
 end
 
 function NMServerSourceRefreshDiagnostics.logInvalidCoordinates(uuid, mode)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleDiagnostics")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     NMCore.logChannel(
-        "vehicleDiagnostics",
+        "vehicle",
         "server_source_refresh_invalid",
         string.format("uuid=%s mode=%s reason=world_active_invalid_coordinates", tostring(uuid), tostring(mode))
     )
 end
 
 function NMServerSourceRefreshDiagnostics.logVehicleRebindBroadcast(uuid, reason, entry)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleDiagnostics")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     NMCore.logChannel(
-        "vehicleDiagnostics",
+        "vehicle",
         "server_vehicle_rebind_broadcast",
         string.format(
             "uuid=%s reason=%s vehicleId=%s partId=%s sourceMode=%s sourceEpoch=%s",

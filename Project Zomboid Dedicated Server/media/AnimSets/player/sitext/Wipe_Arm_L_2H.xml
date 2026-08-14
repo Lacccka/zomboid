@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="WipeArmL.xml">
+	<m_Name>Wipe_Arm_L_2H</m_Name>
+	<m_AnimName>Bob_Emote_Wipe_Sat_Arm_L_2H</m_AnimName>
+	<m_Conditions x_name="2e6aa45f-89bb-4072-9dfb-cd9011028f5d">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="817c70f3-f9d4-4f73-b9ce-d2132684d474">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="92cc54fc-2574-42e5-bd30-67815ecd684d">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>WipeArmL</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="051844b0-7fe6-4feb-8111-cf3918218c71">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="93a9d1a4-a516-4291-8ce1-16e0172e584a">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="b7d76514-6853-4133-9e49-840953762cca">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>WipeArmL</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="d5a00128-d65d-4bfe-ad61-26f6a47282da">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+</animNode>

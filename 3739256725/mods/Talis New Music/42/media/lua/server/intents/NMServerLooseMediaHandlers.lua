@@ -3,8 +3,8 @@
 NMServerLooseMediaHandlers = NMServerLooseMediaHandlers or {}
 
 local function traceFlip(tag, detail)
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
-        NMCore.logChannel("runtimeProbe", tostring(tag or "flip_trace"), tostring(detail or ""))
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+        NMCore.logChannel("runtime", tostring(tag or "flip_trace"), tostring(detail or ""))
     end
 end
 

@@ -3,6 +3,8 @@ require "zombies/NMZombieAudioVisualSupport"
 require "zombies/NMZombieDeviceVariantCatalog"
 require "zombies/NMZombieMediaPayloadResolver"
 require "zombies/NMZombieMediaPayloadRuntime"
+require "death/NMServerZombieCorpseTransferRecord"
+require "death/NMServerZombieCorpseMutationSupport"
 
 local KNOWN_SPECS = NMZombieDeviceVariantCatalog and NMZombieDeviceVariantCatalog.getAllRealizationSpecs and NMZombieDeviceVariantCatalog.getAllRealizationSpecs() or {}
 
@@ -35,7 +37,7 @@ local function canRunAuthoritativeMutation()
 end
 
 local function shouldLogProofVerbose()
-    return NMCore and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("zombieDiagnostics") == true
+    return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("zombie_corpse") == true
 end
 
 local function logProof(tag, detail, force)
@@ -46,7 +48,7 @@ local function logProof(tag, detail, force)
 end
 
 local function shouldLogCorpseRuntimeIdentity()
-    return (NMCore and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") == true)
+    return (NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") == true)
         or shouldLogProofVerbose()
 end
 
@@ -74,8 +76,8 @@ local function logCorpseRuntimeIdentity(stage, item, profile, state, record)
         tostring(state and state.playbackMode or ""),
         tostring(state and state.zombieDormant == true)
     )
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") == true then
-        NMCore.logChannel("runtimeProbe", "corpse_item_identity", detail)
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") == true then
+        NMCore.logChannel("runtime", "corpse_item_identity", detail)
     end
     if shouldLogProofVerbose() then
         logProof("corpse_item_identity", detail, true)
@@ -127,35 +129,6 @@ local function getRootModData(holder)
     return holder and holder.getModData and holder:getModData() or nil
 end
 
-local function getCorpseLooseLootFullTypes(holder)
-    local contract = NMZombieAudioVisualSupport.resolveCompanionCaseContract and NMZombieAudioVisualSupport.resolveCompanionCaseContract(getModData(holder)) or nil
-    if contract and contract.mode == "media_only" and tostring(contract.fullType or "") ~= "" then
-        return { tostring(contract.fullType) }
-    end
-    local root = getRootModData(holder)
-    local zombieLoot = root and root.nmZombieLoot or nil
-    local fullTypes = zombieLoot and zombieLoot.corpseLooseLootFullTypes or nil
-    if type(fullTypes) ~= "table" then
-        return {}
-    end
-    local out = {}
-    for i = 1, #fullTypes do
-        local fullType = tostring(fullTypes[i] or "")
-        if fullType ~= "" then
-            out[#out + 1] = fullType
-        end
-    end
-    return out
-end
-
-local function getCompanionCaseContract(holder)
-    return NMZombieAudioVisualSupport.resolveCompanionCaseContract and NMZombieAudioVisualSupport.resolveCompanionCaseContract(getModData(holder)) or nil
-end
-
-local function getCompanionCaseRegistrationState(holder)
-    return NMZombieAudioVisualSupport.getCompanionCaseRegistrationState and NMZombieAudioVisualSupport.getCompanionCaseRegistrationState(holder) or nil
-end
-
 local function getSquareKey(x, y, z)
     return table.concat({ tostring(x or 0), tostring(y or 0), tostring(z or 0) }, ":")
 end
@@ -175,120 +148,25 @@ local function getSpecForVariantId(variantId)
     return NMZombieDeviceVariantCatalog and NMZombieDeviceVariantCatalog.getSpec and NMZombieDeviceVariantCatalog.getSpec(variantId) or nil
 end
 
-local function findAnyKnownProofItem(container)
-    local items = container and container.getItems and container:getItems() or nil
-    if not (items and items.size) then
-        return nil, nil
-    end
-    for i = 0, items:size() - 1 do
-        local item = items:get(i)
-        local fullType = item and item.getFullType and tostring(item:getFullType() or "") or ""
-        local spec = NMZombieDeviceVariantCatalog and NMZombieDeviceVariantCatalog.findSpecByFullType and NMZombieDeviceVariantCatalog.findSpecByFullType(fullType) or nil
-        if spec then
-            return item, spec
-        end
-    end
-    return nil, nil
-end
+local transferRecordSupport = NMServerZombieCorpseTransferRecord.new({
+    knownSpecs = KNOWN_SPECS,
+    getModData = getModData,
+    getRootModData = getRootModData
+})
 
-local function findAttachedProofRecord(zombie)
-    local md = getModData(zombie)
-    local registration = getCompanionCaseRegistrationState(zombie)
-    local spec = NMZombieDeviceVariantCatalog and NMZombieDeviceVariantCatalog.resolveStoredSpec and NMZombieDeviceVariantCatalog.resolveStoredSpec(md) or nil
-    local payload = NMZombieMediaPayloadResolver and NMZombieMediaPayloadResolver.resolveStoredPayload and NMZombieMediaPayloadResolver.resolveStoredPayload(md) or nil
-    if not spec then
-        for i = 1, #KNOWN_SPECS do
-            local candidate = KNOWN_SPECS[i]
-            if NMZombieAudioVisualSupport.findAttachedProofItem(zombie, candidate) then
-                spec = candidate
-                break
-            end
-        end
-    end
-    if not spec then
-        return nil
-    end
-    local attachedItem = NMZombieAudioVisualSupport.findAttachedProofItem(zombie, spec)
-    if attachedItem then
-        local state = attachedItem and NMDeviceState and NMDeviceState.peek and NMDeviceState.peek(attachedItem) or nil
-        local exported = state and NMDeviceState and NMDeviceState.export and NMDeviceState.export(state) or nil
-        if exported then
-            exported.isOn = false
-            exported.desiredIsOn = false
-            exported.isPlaying = false
-            exported.desiredIsPlaying = false
-            exported.lastStopReason = "corpse_reconcile"
-        end
-        return {
-            fullType = tostring(spec.fullType or ""),
-            attachmentLocation = tostring(spec.attachmentLocation or ""),
-            modelAttachmentName = tostring(spec.modelAttachmentName or ""),
-            deviceUUID = tostring(exported and exported.deviceUUID or ""),
-            strategy = tostring(md and (md.strategy or md.liveVisualStrategy) or ""),
-            variantId = tostring(spec.variantId or ""),
-            state = exported,
-            payload = payload,
-            companionCaseContract = getCompanionCaseContract(zombie),
-            spawnAtDeathCompanionAttempted = tostring(registration and registration.deviceUUID or ""),
-            spawnAtDeathCompanionRegistered = registration and registration.registered == true or false,
-            spawnAtDeathCompanionRoute = tostring(registration and registration.createRoute or ""),
-            corpseLooseLootFullTypes = getCorpseLooseLootFullTypes(zombie)
-        }
-    end
+local mutationSupport = NMServerZombieCorpseMutationSupport.new({
+    logProof = logProof,
+    logCorpseRuntimeIdentity = logCorpseRuntimeIdentity,
+    getModData = getModData,
+    getRootModData = getRootModData,
+    isIsoDeadBody = isIsoDeadBody
+})
 
-    local wantedUuid = tostring(md and md.deviceUUID or "")
-    local status = tostring(md and md.status or "")
-    if status == "attached" and wantedUuid ~= "" then
-        local item = NMZombieAudioVisualSupport.findInventoryProofItem(zombie, spec, wantedUuid)
-        if item then
-            local state = item and NMDeviceState and NMDeviceState.peek and NMDeviceState.peek(item) or nil
-            local exported = state and NMDeviceState and NMDeviceState.export and NMDeviceState.export(state) or nil
-            if exported then
-                exported.isOn = false
-                exported.desiredIsOn = false
-                exported.isPlaying = false
-                exported.desiredIsPlaying = false
-                exported.lastStopReason = "corpse_reconcile"
-                NMServerZombieCorpseCarry._diag.corpseCaptureInventoryFallback = (NMServerZombieCorpseCarry._diag.corpseCaptureInventoryFallback or 0) + 1
-                return {
-                    fullType = tostring(spec.fullType or ""),
-                    attachmentLocation = tostring(spec.attachmentLocation or ""),
-                    modelAttachmentName = tostring(spec.modelAttachmentName or ""),
-                    deviceUUID = tostring(exported.deviceUUID or ""),
-                    strategy = tostring(md and (md.strategy or md.liveVisualStrategy) or ""),
-                    variantId = tostring(spec.variantId or ""),
-                    state = exported,
-                    payload = payload,
-                    companionCaseContract = getCompanionCaseContract(zombie),
-                    spawnAtDeathCompanionAttempted = tostring(registration and registration.deviceUUID or ""),
-                    spawnAtDeathCompanionRegistered = registration and registration.registered == true or false,
-                    spawnAtDeathCompanionRoute = tostring(registration and registration.createRoute or ""),
-                    corpseLooseLootFullTypes = getCorpseLooseLootFullTypes(zombie)
-                }
-            end
-        end
-    end
-
-    if payload and tostring(payload.mediaMode or "") == "media_only" and tostring(payload.caseFullType or "") ~= "" then
-        return {
-            fullType = "",
-            attachmentLocation = "",
-            modelAttachmentName = "",
-            deviceUUID = "",
-            strategy = tostring(md and (md.strategy or md.liveVisualStrategy) or ""),
-            variantId = tostring(md and md.variantId or ""),
-            state = nil,
-            payload = payload,
-            companionCaseContract = getCompanionCaseContract(zombie),
-            spawnAtDeathCompanionAttempted = tostring(registration and registration.deviceUUID or ""),
-            spawnAtDeathCompanionRegistered = registration and registration.registered == true or false,
-            spawnAtDeathCompanionRoute = tostring(registration and registration.createRoute or ""),
-            corpseLooseLootFullTypes = getCorpseLooseLootFullTypes(zombie)
-        }
-    end
-
-    return nil
-end
+-- Corpse flow source of truth:
+-- 1. transfer record capture
+-- 2. corpse pending queue
+-- 3. body match/reconcile
+-- 4. corpse settlement stamping
 
 local function shouldCarryCorpseProof(zombie, record, selection)
     if type(selection) == "table" then
@@ -349,7 +227,9 @@ local function logLiveCaptureProbe(zombie, record)
     end
     local supportWorn = verifyWornItem(zombie, "Base.Belt2") ~= nil
     local square = getEntitySquare(zombie)
-    local selection = NMZombieVisualTargetLedger and NMZombieVisualTargetLedger.getOrAssignZombieSelection and NMZombieVisualTargetLedger.getOrAssignZombieSelection(zombie, tostring(record and record.strategy or "")) or nil
+    local selection = type(record) == "table" and record.selection
+        or NMZombieVisualTargetLedger and NMZombieVisualTargetLedger.getOrAssignZombieSelection and NMZombieVisualTargetLedger.getOrAssignZombieSelection(zombie, tostring(record and record.strategy or ""))
+        or nil
     logProof(
         "live_capture_probe",
         string.format(
@@ -418,539 +298,41 @@ local function logCorpseSpawnPath(tag, body, detail)
     )
 end
 
-local function addItemToContainer(container, fullType)
-    if not (container and container.AddItem) then
-        return nil
+local function getSelectionZombieId(selection)
+    if type(selection) ~= "table" then
+        return ""
     end
-    local item = container:AddItem(fullType)
-    logProof("corpse_add_item", "fullType=" .. tostring(fullType or ""), true)
-    if item and sendAddItemToContainer then
-        pcall(sendAddItemToContainer, container, item)
-    end
-    return item
+    return tostring(selection.zombieId or "")
 end
 
-local function countItemsByFullType(container, fullType)
-    local wanted = tostring(fullType or "")
-    if wanted == "" then
-        return 0
-    end
-    local items = container and container.getItems and container:getItems() or nil
-    if not (items and items.size) then
-        return 0
-    end
-    local count = 0
-    for i = 0, items:size() - 1 do
-        local item = items:get(i)
-        local itemFullType = item and item.getFullType and tostring(item:getFullType() or "") or ""
-        if itemFullType == wanted then
-            count = count + 1
-        end
-    end
-    return count
-end
-
-local function collectItemsByFullType(container, fullType, limit)
-    local wanted = tostring(fullType or "")
-    local out = {}
-    if wanted == "" then
-        return out
-    end
-    local items = container and container.getItems and container:getItems() or nil
-    if not (items and items.size) then
-        return out
-    end
-    local maxCount = math.max(0, math.floor(tonumber(limit) or 0))
-    for i = 0, items:size() - 1 do
-        if #out >= maxCount then
-            break
-        end
-        local item = items:get(i)
-        local itemFullType = item and item.getFullType and tostring(item:getFullType() or "") or ""
-        if itemFullType == wanted then
-            out[#out + 1] = item
-        end
-    end
-    return out
-end
-
-local function containerHasManagedCompanionCase(container, fullType, deviceUUID)
-    local wantedType = tostring(fullType or "")
-    local wantedUuid = tostring(deviceUUID or "")
-    if wantedType == "" then
-        return false
-    end
-    local items = container and container.getItems and container:getItems() or nil
-    if not (items and items.size) then
-        return false
-    end
-    local sawFullType = false
-    for i = 0, items:size() - 1 do
-        local item = items:get(i)
-        local itemFullType = item and item.getFullType and tostring(item:getFullType() or "") or ""
-        if itemFullType == wantedType then
-            sawFullType = true
-            local md = item and item.getModData and item:getModData() or nil
-            local marked = md and md.nmZombieManagedCompanionCase == true
-            local markedUuid = tostring(md and md.nmZombieManagedCompanionCaseDeviceUUID or "")
-            if marked and (wantedUuid == "" or markedUuid == wantedUuid) then
-                return true
-            end
-        end
-    end
-    return sawFullType
-end
-
-local function syncMediaOnlyCorpseLooseLoot(container, record)
-    if not (container and record) then
-        return
-    end
-    local explicitLooseLoot = type(record.corpseLooseLootFullTypes) == "table" and record.corpseLooseLootFullTypes or {}
-    local companionContract = type(record.companionCaseContract) == "table" and record.companionCaseContract or nil
-    local candidates = {}
-
-    local function addCandidate(fullType)
-        local key = tostring(fullType or "")
-        if key ~= "" then
-            candidates[key] = true
-        end
-    end
-
-    if #explicitLooseLoot > 0 then
-        for i = 1, #explicitLooseLoot do
-            addCandidate(explicitLooseLoot[i])
-        end
-    elseif companionContract and companionContract.mode == "media_only" and tostring(companionContract.fullType or "") ~= "" then
-        addCandidate(companionContract.fullType)
-    elseif record.payload then
-        addCandidate(record.payload.caseFullType)
-    end
-
-    for fullType in pairs(candidates) do
-        local wantedCount = 0
-        for i = 1, #explicitLooseLoot do
-            if fullType == tostring(explicitLooseLoot[i] or "") then
-                wantedCount = wantedCount + 1
-            end
-        end
-        if wantedCount == 0 and companionContract and companionContract.mode == "media_only" and fullType == tostring(companionContract.fullType or "") then
-            wantedCount = 1
-        end
-        if wantedCount == 0 and record.payload and companionContract == nil then
-            local wantedFull = tostring(record.payload.mediaMode or "") == "media_only" and tostring(record.payload.caseFullType or "") or ""
-            if fullType == wantedFull then
-                wantedCount = 1
-            end
-        end
-        local currentCount = countItemsByFullType(container, fullType)
-        if currentCount > wantedCount then
-            local removals = collectItemsByFullType(container, fullType, currentCount - wantedCount)
-            for i = 1, #removals do
-                removeItemFromContainer(container, removals[i])
-            end
-        elseif currentCount < wantedCount then
-            for _ = currentCount + 1, wantedCount do
-                addItemToContainer(container, fullType)
-            end
-        end
-    end
-end
-
-local containerHasMatchingRecord
-
-local function logCompanionCaseOutcome(record, outcome)
-    local contract = type(record and record.companionCaseContract) == "table" and record.companionCaseContract or nil
-    local expectedUuid = tostring(contract and contract.deviceUUID or "")
-    local expectedCase = tostring(contract and contract.fullType or "")
-    logProof(
-        "corpse_case_spawn_at_death_outcome",
-        "uuid=" .. expectedUuid .. " caseFullType=" .. expectedCase .. " outcome=" .. tostring(outcome or "neither") .. " registered=" .. tostring(record and record.spawnAtDeathCompanionRegistered == true) .. " route=" .. tostring(record and record.spawnAtDeathCompanionRoute or ""),
-        true
-    )
-end
-
-local function validateInheritedCompanionLoot(container, record)
-    local companionContract = type(record and record.companionCaseContract) == "table" and record.companionCaseContract or nil
-    if not companionContract then
-        return true
-    end
-    local expectedUuid = tostring(companionContract.deviceUUID or "")
-    local expectedCase = tostring(companionContract.fullType or "")
-    local hasDevice = expectedUuid ~= "" and containerHasMatchingRecord(container, record) or false
-    local hasCase = expectedCase ~= "" and containerHasManagedCompanionCase(container, expectedCase, expectedUuid) or false
-    local outcome = "neither"
-    if hasDevice and hasCase then
-        outcome = "both"
-    elseif hasCase then
-        outcome = "inventory_only"
-    elseif hasDevice and tostring(record.spawnAtDeathCompanionAttempted or "") ~= "" then
-        outcome = "visual_only"
-    end
-    logCompanionCaseOutcome(record, outcome)
-    if expectedUuid ~= "" and not hasDevice then
-        logProof("corpse_companion_failed", "reason=missing_expected_device uuid=" .. expectedUuid, true)
-        return false
-    end
-    if expectedCase ~= "" and not hasCase then
-        logProof(
-            "corpse_companion_failed",
-            "reason=missing_inherited_case fullType=" .. expectedCase .. " uuid=" .. expectedUuid,
-            true
-        )
-        return false
-    end
-    logProof(
-        "corpse_companion_realized",
-        "device=" .. tostring(record.fullType or "") .. " case=" .. expectedCase .. " mode=inherited",
-        true
-    )
-    return true
-end
-
-local function ensureImmediateCompanionLoot(container, record)
-    if not (container and record) then
-        return true
-    end
-    local companionContract = type(record.companionCaseContract) == "table" and record.companionCaseContract or nil
-    if companionContract and companionContract.mode == "device_with_media" then
-        return validateInheritedCompanionLoot(container, record)
-    end
-    syncMediaOnlyCorpseLooseLoot(container, record)
-    logProof(
-        "corpse_companion_realized",
-        "device=" .. tostring(record.fullType or "") .. " case=" .. tostring(companionContract and companionContract.fullType or ""),
-        true
-    )
-    return true
-end
-
-local function removeItemFromContainer(container, item)
-    local owner = container and container.getParent and container:getParent() or nil
-    local removed = NMZombieAudioVisualSupport.removeInventoryItem(container, item)
-    if removed and isIsoDeadBody(owner) and sendRemoveItemFromContainer then
-        pcall(sendRemoveItemFromContainer, container, item)
-    end
-    return removed
-end
-
-local function removeMatchingRecordItems(container, record)
-    local items = container and container.getItems and container:getItems() or nil
-    if not (items and items.size and record) then
-        return 0
-    end
-    local wantedUuid = tostring(record.deviceUUID or "")
-    local wantedType = tostring(record.fullType or "")
-    local removals = {}
-    for i = 0, items:size() - 1 do
-        local item = items:get(i)
-        local fullType = item and item.getFullType and tostring(item:getFullType() or "") or ""
-        local state = item and NMDeviceState and NMDeviceState.peek and NMDeviceState.peek(item) or nil
-        local uuid = tostring(state and state.deviceUUID or "")
-        if (wantedUuid ~= "" and uuid == wantedUuid) or (wantedUuid == "" and fullType == wantedType) then
-            removals[#removals + 1] = item
-        end
-    end
-    for i = 1, #removals do
-        removeItemFromContainer(container, removals[i])
-    end
-    return #removals
-end
-
-containerHasMatchingRecord = function(container, record)
-    local items = container and container.getItems and container:getItems() or nil
-    if not (items and items.size) then
-        return false
-    end
-    local wantedUuid = tostring(record and record.deviceUUID or "")
-    local wantedType = tostring(record and record.fullType or "")
-    for i = 0, items:size() - 1 do
-        local item = items:get(i)
-        local fullType = item and item.getFullType and tostring(item:getFullType() or "") or ""
-        local state = item and NMDeviceState and NMDeviceState.peek and NMDeviceState.peek(item) or nil
-        local uuid = tostring(state and state.deviceUUID or "")
-        if wantedUuid ~= "" and uuid == wantedUuid then
-            return true
-        end
-        if wantedUuid == "" and fullType == wantedType then
-            return true
-        end
-    end
-    return false
-end
-
-local function applyStateToCorpseItem(item, record)
-    local profile = NMDeviceProfiles and NMDeviceProfiles.getForItem and NMDeviceProfiles.getForItem(item) or nil
-    local state = profile and NMDeviceState and NMDeviceState.ensureInitialized and NMDeviceState.ensureInitialized(item, profile, "explicit_init") or nil
-    local itemMd = item and item.getModData and item:getModData() or nil
-    if not (profile and state) then
-        return false, "device_state_init_failed"
-    end
-    if NMDeviceState and NMDeviceState.import then
-        NMDeviceState.import(state, record.state or {})
-    end
-    if record and record.payload and NMZombieMediaPayloadRuntime and NMZombieMediaPayloadRuntime.applyPayloadToState then
-        NMZombieMediaPayloadRuntime.applyPayloadToState(state, record.payload)
-    end
-    if NMDeviceState and NMDeviceState.setZombieDormant then
-        NMDeviceState.setZombieDormant(state, false, nil, nil)
-    end
-    local portableTracked = NMDeviceProfiles and NMDeviceProfiles.isPortableTrackedProfile and NMDeviceProfiles.isPortableTrackedProfile(profile) == true
-    state.authoritativeMode = "off"
-    state.sourceKind = "inventory"
-    state.sourceOwner = nil
-    state.sourceX = nil
-    state.sourceY = nil
-    state.sourceZ = nil
-    if portableTracked then
-        state.sourceGeneration = 0
-        state.playbackMode = tostring(profile.defaultPlaybackMode or "inventory")
-    end
-    state._nmCorpseRecovered = true
-    if itemMd then
-        itemMd.nmCorpseRecovered = true
-        itemMd.nmCorpseRecoveredFullType = tostring(item and item.getFullType and item:getFullType() or record and record.fullType or "")
-        itemMd.nmCorpseRecoveredDeviceUUID = tostring(state.deviceUUID or "")
-    end
-    state.isOn = false
-    state.desiredIsOn = false
-    state.isPlaying = false
-    state.desiredIsPlaying = false
-    state.lastStopReason = "corpse_reconcile"
-    if NMDeviceState and NMDeviceState.bumpRevision then
-        NMDeviceState.bumpRevision(state)
-    end
-    logCorpseRuntimeIdentity("rehydrated", item, profile, state, record)
-    return true, tostring(state.deviceUUID or "")
-end
-
-local function findSingleProofItemByType(container, fullType)
-    local items = container and container.getItems and container:getItems() or nil
-    if not (items and items.size) then
-        return nil
-    end
-    local found = nil
-    for i = 0, items:size() - 1 do
-        local item = items:get(i)
-        local itemType = item and item.getFullType and tostring(item:getFullType() or "") or ""
-        if itemType == tostring(fullType or "") then
-            if found then
-                return nil
-            end
-            found = item
-        end
-    end
-    return found
-end
-
-local function findMatchingRecordItem(container, record)
-    local items = container and container.getItems and container:getItems() or nil
-    if not (items and items.size) then
-        return nil
-    end
-    local wantedUuid = tostring(record and record.deviceUUID or "")
-    local wantedType = tostring(record and record.fullType or "")
-    local typeMatch = nil
-    for i = 0, items:size() - 1 do
-        local item = items:get(i)
-        local fullType = item and item.getFullType and tostring(item:getFullType() or "") or ""
-        local state = item and NMDeviceState and NMDeviceState.peek and NMDeviceState.peek(item) or nil
-        local uuid = tostring(state and state.deviceUUID or "")
-        if wantedUuid ~= "" and uuid == wantedUuid then
-            return item
-        end
-        if not typeMatch and wantedType ~= "" and fullType == wantedType then
-            typeMatch = item
-        end
-    end
-    return typeMatch
-end
-
-local function pruneExtraProofItems(container, keepItem)
-    local items = container and container.getItems and container:getItems() or nil
-    if not (items and items.size) then
-        return 0
-    end
-    local removals = {}
-    for i = 0, items:size() - 1 do
-        local item = items:get(i)
-        if item and item ~= keepItem then
-            local fullType = item.getFullType and tostring(item:getFullType() or "") or ""
-            if NMZombieDeviceVariantCatalog and NMZombieDeviceVariantCatalog.findSpecByFullType and NMZombieDeviceVariantCatalog.findSpecByFullType(fullType) then
-                removals[#removals + 1] = item
-            end
-        end
-    end
-    for i = 1, #removals do
-        removeItemFromContainer(container, removals[i])
-    end
-    return #removals
-end
-
-local function enforceSingleCorpseProofItem(container, record, preferredItem)
-    local keeper = preferredItem
-    if not keeper then
-        keeper = findMatchingRecordItem(container, record)
-    end
-    if not keeper and record and tostring(record.fullType or "") ~= "" then
-        keeper = findSingleProofItemByType(container, record.fullType)
-    end
-    if not keeper then
-        return 0, nil
-    end
-    return pruneExtraProofItems(container, keeper), keeper
-end
-
-local function applyCorpseRecord(container, record)
-    if tostring(record and record.fullType or "") == "" then
-        syncMediaOnlyCorpseLooseLoot(container, record)
-        return true, ""
-    end
-    local existing = findSingleProofItemByType(container, record.fullType)
-    if existing then
-        local ok, detail = applyStateToCorpseItem(existing, record)
-        if ok then
-            pruneExtraProofItems(container, existing)
-            syncMediaOnlyCorpseLooseLoot(container, record)
-        end
-        return ok, detail
-    end
-    local item = addItemToContainer(container, record.fullType)
-    if not item then
-        return false, "item_add_failed"
-    end
-    local ok, detail = applyStateToCorpseItem(item, record)
-    if ok then
-        pruneExtraProofItems(container, item)
-        syncMediaOnlyCorpseLooseLoot(container, record)
-        return true, detail
-    end
-    removeItemFromContainer(container, item)
-    return false, detail
-end
-
-local function markCorpseSettled(body, record, deviceUUID, carried)
+local function resolveBodyPendingIdentity(body)
+    local selection = NMZombieVisualTargetLedger and NMZombieVisualTargetLedger.getStampedSelection
+        and NMZombieVisualTargetLedger.getStampedSelection(body)
+        or nil
+    local bodyZombieId = getSelectionZombieId(selection)
     local md = getModData(body)
-    if not md then
-        return
-    end
-    md.corpseSettled = true
-    md.corpseHadProof = carried == true
-    md.fullType = tostring(record and record.fullType or "")
-    md.attachmentLocation = tostring(record and record.attachmentLocation or "")
-    md.modelAttachmentName = tostring(record and record.modelAttachmentName or "")
-    md.deviceUUID = tostring(deviceUUID or record and record.deviceUUID or "")
-    md.strategy = tostring(record and record.strategy or "")
-    local root = getRootModData(body)
-    if root then
-        root.nmZombieLoot = root.nmZombieLoot or {}
-        root.nmZombieLoot.corpseLooseLootFullTypes = {}
-        local looseLoot = type(record and record.corpseLooseLootFullTypes) == "table" and record.corpseLooseLootFullTypes or {}
-        for i = 1, #looseLoot do
-            root.nmZombieLoot.corpseLooseLootFullTypes[#root.nmZombieLoot.corpseLooseLootFullTypes + 1] = looseLoot[i]
-        end
-    end
-    local settledStatus = carried == true and "attached" or "excluded"
-    if record and record.payload and tostring(record.payload.mediaMode or "") == "media_only" then
-        settledStatus = carried == true and "media_only" or settledStatus
-    end
-    md.status = settledStatus
-    if record and record.payload then
-        md.mediaCategory = tostring(record.payload.mediaCategory or "")
-        md.deviceEnabled = record.payload.deviceEnabled == true
-        md.mediaEnabled = record.payload.mediaEnabled == true
-        md.mediaMode = tostring(record.payload.mediaMode or "none")
-        md.mediaFullType = tostring(record.payload.insertedMediaFullType or "") ~= "" and tostring(record.payload.insertedMediaFullType) or nil
-        md.mediaEjectFullType = tostring(record.payload.mediaEjectFullType or "") ~= "" and tostring(record.payload.mediaEjectFullType) or nil
-        md.mediaRecordedMediaIndex = tonumber(record.payload.mediaRecordedMediaIndex) or nil
-        md.caseFullType = tostring(record.payload.caseFullType or "") ~= "" and tostring(record.payload.caseFullType) or nil
-        md.caseEmptyType = tostring(record.payload.caseEmptyType or "") ~= "" and tostring(record.payload.caseEmptyType) or nil
-        md.headphoneItemFullType = tostring(record.payload.headphoneItemFullType or "") ~= "" and tostring(record.payload.headphoneItemFullType) or nil
-        md.batteryPresent = record.payload.batteryPresent == true
-        md.batteryCharge = tonumber(record.payload.batteryCharge) or 0.0
-    end
-    local companionContract = type(record and record.companionCaseContract) == "table" and record.companionCaseContract or nil
-    md.corpseCompanionMode = companionContract and tostring(companionContract.mode or "") or nil
-    md.corpseCompanionFullType = companionContract and tostring(companionContract.fullType or "") or nil
-    md.corpseCompanionDeviceUUID = companionContract and tostring(companionContract.deviceUUID or "") or nil
-    if NMZombieVisualTargetLedger and NMZombieVisualTargetLedger.stampCorpseSelection then
-        local ledgerRecord = record and record.selection or nil
-        if ledgerRecord then
-            NMZombieVisualTargetLedger.stampCorpseSelection(body, ledgerRecord, carried == true)
-            md = getModData(body) or md
-            md.fullType = tostring(record and record.fullType or "")
-            md.attachmentLocation = tostring(record and record.attachmentLocation or "")
-            md.modelAttachmentName = tostring(record and record.modelAttachmentName or "")
-            md.deviceUUID = tostring(deviceUUID or record and record.deviceUUID or "")
-            md.strategy = tostring(record and record.strategy or "")
-            md.status = settledStatus
-            if record and record.payload then
-                md.mediaCategory = tostring(record.payload.mediaCategory or "")
-                md.deviceEnabled = record.payload.deviceEnabled == true
-                md.mediaEnabled = record.payload.mediaEnabled == true
-                md.mediaMode = tostring(record.payload.mediaMode or "none")
-                md.mediaFullType = tostring(record.payload.insertedMediaFullType or "") ~= "" and tostring(record.payload.insertedMediaFullType) or nil
-                md.mediaEjectFullType = tostring(record.payload.mediaEjectFullType or "") ~= "" and tostring(record.payload.mediaEjectFullType) or nil
-                md.mediaRecordedMediaIndex = tonumber(record.payload.mediaRecordedMediaIndex) or nil
-                md.caseFullType = tostring(record.payload.caseFullType or "") ~= "" and tostring(record.payload.caseFullType) or nil
-                md.caseEmptyType = tostring(record.payload.caseEmptyType or "") ~= "" and tostring(record.payload.caseEmptyType) or nil
-                md.headphoneItemFullType = tostring(record.payload.headphoneItemFullType or "") ~= "" and tostring(record.payload.headphoneItemFullType) or nil
-                md.batteryPresent = record.payload.batteryPresent == true
-                md.batteryCharge = tonumber(record.payload.batteryCharge) or 0.0
-            end
-            md.corpseCompanionMode = companionContract and tostring(companionContract.mode or "") or nil
-            md.corpseCompanionFullType = companionContract and tostring(companionContract.fullType or "") or nil
-            md.corpseCompanionDeviceUUID = companionContract and tostring(companionContract.deviceUUID or "") or nil
-            return
-        end
-    end
-    if body and body.transmitModData then
-        pcall(body.transmitModData, body)
-    end
+    return {
+        zombieId = bodyZombieId,
+        deviceUUID = tostring(md and md.deviceUUID or "")
+    }
 end
 
-local function getBodySelection(body)
-    if not body then
-        return nil
+local function pendingTransferMatchesBodyIdentity(pendingTransfer, identity)
+    if type(pendingTransfer) ~= "table" or type(identity) ~= "table" then
+        return false
     end
-    if NMZombieVisualTargetLedger and NMZombieVisualTargetLedger.getStampedSelection then
-        local stamped = NMZombieVisualTargetLedger.getStampedSelection(body)
-        if stamped then
-            return stamped
-        end
+    local bodyZombieId = tostring(identity.zombieId or "")
+    if bodyZombieId ~= "" then
+        return getSelectionZombieId(pendingTransfer.selection or pendingTransfer.record and pendingTransfer.record.selection) == bodyZombieId
     end
-    return nil
+    local bodyDeviceUUID = tostring(identity.deviceUUID or "")
+    local pendingDeviceUUID = tostring(pendingTransfer.record and pendingTransfer.record.deviceUUID or "")
+    return bodyDeviceUUID ~= "" and pendingDeviceUUID ~= "" and pendingDeviceUUID == bodyDeviceUUID
 end
 
-local function getBodyStoredPayload(body)
-    local md = getModData(body)
-    return NMZombieMediaPayloadResolver and NMZombieMediaPayloadResolver.resolveStoredPayload and NMZombieMediaPayloadResolver.resolveStoredPayload(md) or nil
-end
-
-local function containerHasAnyProof(container)
-    local item = findAnyKnownProofItem(container)
-    return item ~= nil
-end
-
-local function removeProofItemsByType(container)
-    local items = container and container.getItems and container:getItems() or nil
-    if not (items and items.size) then
-        return 0
-    end
-    local removals = {}
-    for i = 0, items:size() - 1 do
-        local item = items:get(i)
-        local fullType = item and item.getFullType and tostring(item:getFullType() or "") or ""
-        if NMZombieDeviceVariantCatalog and NMZombieDeviceVariantCatalog.findSpecByFullType and NMZombieDeviceVariantCatalog.findSpecByFullType(fullType) then
-            removals[#removals + 1] = item
-        end
-    end
-    for i = 1, #removals do
-        removeItemFromContainer(container, removals[i])
-    end
-    return #removals
-end
-
-local function findBestPendingForBody(body)
+local function findBestPendingTransferForBody(body)
+    -- Body match phase:
+    -- prefer exact finalized identity, then nearest corpse pending queue transfer record.
     local square = getEntitySquare(body)
     if not square then
         return nil, nil
@@ -960,9 +342,13 @@ local function findBestPendingForBody(body)
     local squareX = square:getX()
     local squareY = square:getY()
     local squareZ = square:getZ()
+    local identity = resolveBodyPendingIdentity(body)
     local bestKey = nil
     local bestIndex = nil
     local bestDistance = nil
+    local exactKey = nil
+    local exactIndex = nil
+    local exactDistance = nil
 
     for dx = -1, 1 do
         for dy = -1, 1 do
@@ -970,12 +356,18 @@ local function findBestPendingForBody(body)
             local queue = NMServerZombieCorpseCarry._pendingBySquare and NMServerZombieCorpseCarry._pendingBySquare[key] or nil
             if type(queue) == "table" then
                 for i = 1, #queue do
-                    local pending = queue[i]
-                    if pending then
-                        local ddx = (tonumber(pending.sourceX) or 0) - bodyX
-                        local ddy = (tonumber(pending.sourceY) or 0) - bodyY
+                    local pendingTransfer = queue[i]
+                    if pendingTransfer then
+                        local ddx = (tonumber(pendingTransfer.sourceX) or 0) - bodyX
+                        local ddy = (tonumber(pendingTransfer.sourceY) or 0) - bodyY
                         local distance = (ddx * ddx) + (ddy * ddy)
-                        if bestDistance == nil or distance < bestDistance then
+                        if pendingTransferMatchesBodyIdentity(pendingTransfer, identity) then
+                            if exactDistance == nil or distance < exactDistance then
+                                exactKey = key
+                                exactIndex = i
+                                exactDistance = distance
+                            end
+                        elseif bestDistance == nil or distance < bestDistance then
                             bestKey = key
                             bestIndex = i
                             bestDistance = distance
@@ -986,6 +378,11 @@ local function findBestPendingForBody(body)
         end
     end
 
+    if exactKey and exactIndex then
+        local exactQueue = NMServerZombieCorpseCarry._pendingBySquare[exactKey]
+        return exactQueue and exactQueue[exactIndex] or nil, { key = exactKey, index = exactIndex }
+    end
+
     if not bestKey or not bestIndex then
         return nil, nil
     end
@@ -993,7 +390,7 @@ local function findBestPendingForBody(body)
     return queue and queue[bestIndex] or nil, { key = bestKey, index = bestIndex }
 end
 
-local function removePending(handle)
+local function removePendingTransfer(handle)
     if not handle then
         return
     end
@@ -1005,15 +402,108 @@ local function removePending(handle)
     if #queue == 0 then
         NMServerZombieCorpseCarry._pendingBySquare[handle.key] = nil
     end
+    NMServerZombieCorpseCarry._pendingCount = math.max(0, (NMServerZombieCorpseCarry._pendingCount or 0) - 1)
+    if (NMServerZombieCorpseCarry._pendingCount or 0) == 0 then
+        NMServerZombieCorpseCarry._pendingBySquare = {}
+    end
 end
 
-local function processCorpseBody(body)
+local function buildExcludedBodySettlementTransferRecord(bodySelection)
+    local bodySpec = getSpecForVariantId(bodySelection and bodySelection.variantId)
+    return {
+        fullType = tostring(bodySpec and bodySpec.fullType or ""),
+        attachmentLocation = tostring(bodySpec and bodySpec.attachmentLocation or ""),
+        modelAttachmentName = tostring(bodySpec and bodySpec.modelAttachmentName or ""),
+        deviceUUID = "",
+        strategy = tostring(bodySelection and bodySelection.strategy or ""),
+        selection = bodySelection
+    }
+end
+
+local function reconcileCompatibilityBodyWithoutPending(body, container)
+    -- Compatibility and fallback reconcile only:
+    -- canonical corpse carry should arrive through a queued transfer record.
+    logCorpseSpawnPath("corpse_spawn_no_pending", body, "no_pending_match")
+    local bodySelection = NMZombieVisualTargetLedger and NMZombieVisualTargetLedger.getStampedSelection and NMZombieVisualTargetLedger.getStampedSelection(body) or nil
+    local hasAnyProof = mutationSupport.containerHasAnyProof(container)
+    local _, bodyProofSpec = transferRecordSupport.findAnyKnownProofItem(container)
+    -- Compatibility path:
+    -- an already-correct body can still be settled without a queued transfer record.
+    if bodySelection and (bodySelection.selected == true or bodySelection.musicSelected == true) and hasAnyProof then
+        local bodyTransferRecord = transferRecordSupport.buildExistingBodyTransferRecord(body, bodySelection, bodyProofSpec)
+        bodyTransferRecord.selection = bodySelection
+        logCorpseLooseLoot("corpse_spawn_existing", body, bodyTransferRecord)
+        mutationSupport.ensureImmediateCompanionLoot(container, bodyTransferRecord)
+        mutationSupport.markCorpseSettled(body, bodyTransferRecord, nil, true)
+        NMServerZombieCorpseCarry._diag.corpseAlreadyPresent = (NMServerZombieCorpseCarry._diag.corpseAlreadyPresent or 0) + 1
+        return true
+    end
+    -- Fallback path:
+    -- prune contradictory proof items only when the body selection is explicitly not selected.
+    if bodySelection and bodySelection.selected ~= true and bodySelection.musicSelected ~= true and hasAnyProof then
+        logCorpseSpawnPath("corpse_spawn_prune", body, "selection_not_selected_but_has_proof")
+        local pruned = mutationSupport.removeProofItemsByType(container)
+        if pruned > 0 then
+            NMServerZombieCorpseCarry._diag.corpsePruned = (NMServerZombieCorpseCarry._diag.corpsePruned or 0) + pruned
+        end
+        mutationSupport.markCorpseSettled(body, buildExcludedBodySettlementTransferRecord(bodySelection), nil, false)
+        return true
+    end
+    logCorpseSpawnPath("corpse_spawn_skip", body, "no_pending_no_existing_path")
+    NMServerZombieCorpseCarry._diag.corpseSpawnSkip = (NMServerZombieCorpseCarry._diag.corpseSpawnSkip or 0) + 1
+    return false
+end
+
+local function reconcilePendingTransferRecord(body, container, pendingTransfer, handle)
+    -- Canonical reconcile entry for queued corpse transfer records.
+    logCorpseSpawnPath("corpse_spawn_match", body, "pending_match")
+    if pendingTransfer.shouldCarry ~= true then
+        logCorpseSpawnPath("corpse_spawn_reject", body, "pending_shouldCarry_false")
+        local pruned = mutationSupport.removeMatchingRecordItems(container, pendingTransfer.record)
+        if pruned > 0 then
+            NMServerZombieCorpseCarry._diag.corpsePruned = (NMServerZombieCorpseCarry._diag.corpsePruned or 0) + pruned
+        end
+        mutationSupport.markCorpseSettled(body, pendingTransfer.record, nil, false)
+        removePendingTransfer(handle)
+        return true
+    end
+
+    logCorpseLooseLoot("corpse_spawn_pending", body, pendingTransfer.record)
+    local hadMatchingRecord = mutationSupport.containerHasMatchingRecord(container, pendingTransfer.record)
+    local ok, detail = mutationSupport.applyCorpseRecord(container, pendingTransfer.record)
+    if ok then
+        local keeper = mutationSupport.findMatchingRecordItem(container, pendingTransfer.record)
+        local pruned = mutationSupport.enforceSingleCorpseProofItem(container, pendingTransfer.record, keeper)
+        if tonumber(pruned) and pruned > 0 then
+            NMServerZombieCorpseCarry._diag.corpsePruned = (NMServerZombieCorpseCarry._diag.corpsePruned or 0) + pruned
+        end
+        mutationSupport.ensureImmediateCompanionLoot(container, pendingTransfer.record)
+        logCorpseSpawnPath(hadMatchingRecord and "corpse_spawn_match_existing" or "corpse_spawn_apply_ok", body, tostring(detail or "ok"))
+        mutationSupport.markCorpseSettled(body, pendingTransfer.record, detail, true)
+        if hadMatchingRecord then
+            NMServerZombieCorpseCarry._diag.corpseAlreadyPresent = (NMServerZombieCorpseCarry._diag.corpseAlreadyPresent or 0) + 1
+        else
+            NMServerZombieCorpseCarry._diag.corpseCarrySuccess = (NMServerZombieCorpseCarry._diag.corpseCarrySuccess or 0) + 1
+        end
+        removePendingTransfer(handle)
+        return true
+    end
+
+    logCorpseSpawnPath("corpse_spawn_apply_failed", body, tostring(detail or "unknown"))
+    NMServerZombieCorpseCarry._diag.corpseCarryFailed = (NMServerZombieCorpseCarry._diag.corpseCarryFailed or 0) + 1
+    logProof("corpse_carry_failed", "reason=" .. tostring(detail or "unknown"), true)
+    return false
+end
+
+local function reconcileCorpseBody(body)
     if not canRunAuthoritativeMutation() then
         return false
     end
     if not isIsoDeadBody(body) then
         return false
     end
+    -- Reconcile phase:
+    -- corpse carry mutates only from explicit transfer records plus fenced compatibility paths.
     logCorpseSpawnPath("corpse_spawn_enter", body, "enter")
     local container = body.getContainer and body:getContainer() or nil
     if not container then
@@ -1029,112 +519,52 @@ local function processCorpseBody(body)
         return false
     end
 
-    local pending, handle = findBestPendingForBody(body)
-    if not pending then
-        logCorpseSpawnPath("corpse_spawn_no_pending", body, "no_pending_match")
-        local bodySelection = getBodySelection(body)
-        local bodySpec = getSpecForVariantId(bodySelection and bodySelection.variantId or "")
-        local _, bodyProofSpec = findAnyKnownProofItem(container)
-        if bodySelection and (bodySelection.selected == true or bodySelection.musicSelected == true) and containerHasAnyProof(container) then
-            local bodyRecord = {
-                fullType = tostring(bodyProofSpec and bodyProofSpec.fullType or bodySpec and bodySpec.fullType or ""),
-                attachmentLocation = tostring(bodyProofSpec and bodyProofSpec.attachmentLocation or bodySpec and bodySpec.attachmentLocation or ""),
-                modelAttachmentName = tostring(bodyProofSpec and bodyProofSpec.modelAttachmentName or bodySpec and bodySpec.modelAttachmentName or ""),
-                deviceUUID = "",
-                strategy = tostring(bodySelection.strategy or ""),
-                selection = bodySelection,
-                payload = getBodyStoredPayload(body),
-                companionCaseContract = getCompanionCaseContract(body),
-                spawnAtDeathCompanionAttempted = tostring(md and md.spawnAtDeathCompanionCaseDeviceUUID or ""),
-                spawnAtDeathCompanionRegistered = md and md.spawnAtDeathCompanionRegistered == true or false,
-                spawnAtDeathCompanionRoute = tostring(md and md.spawnAtDeathCompanionCreateRoute or ""),
-                corpseLooseLootFullTypes = getCorpseLooseLootFullTypes(body)
-            }
-            logCorpseLooseLoot("corpse_spawn_existing", body, bodyRecord)
-            ensureImmediateCompanionLoot(container, bodyRecord)
-            markCorpseSettled(body, bodyRecord, nil, true)
-            NMServerZombieCorpseCarry._diag.corpseAlreadyPresent = (NMServerZombieCorpseCarry._diag.corpseAlreadyPresent or 0) + 1
-            return true
-        end
-        if bodySelection and bodySelection.selected ~= true and bodySelection.musicSelected ~= true and containerHasAnyProof(container) then
-            logCorpseSpawnPath("corpse_spawn_prune", body, "selection_not_selected_but_has_proof")
-            local pruned = removeProofItemsByType(container)
-            if pruned > 0 then
-                NMServerZombieCorpseCarry._diag.corpsePruned = (NMServerZombieCorpseCarry._diag.corpsePruned or 0) + pruned
-            end
-            markCorpseSettled(body, {
-                fullType = tostring(bodySpec and bodySpec.fullType or ""),
-                attachmentLocation = tostring(bodySpec and bodySpec.attachmentLocation or ""),
-                modelAttachmentName = tostring(bodySpec and bodySpec.modelAttachmentName or ""),
-                deviceUUID = "",
-                strategy = tostring(bodySelection.strategy or ""),
-                selection = bodySelection
-            }, nil, false)
-            return true
-        end
-        logCorpseSpawnPath("corpse_spawn_skip", body, "no_pending_no_existing_path")
-        NMServerZombieCorpseCarry._diag.corpseSpawnSkip = (NMServerZombieCorpseCarry._diag.corpseSpawnSkip or 0) + 1
-        return false
+    local pendingTransfer, handle = findBestPendingTransferForBody(body)
+    if not pendingTransfer then
+        return reconcileCompatibilityBodyWithoutPending(body, container)
     end
 
-    logCorpseSpawnPath("corpse_spawn_match", body, "pending_match")
-    if pending.shouldCarry ~= true then
-        logCorpseSpawnPath("corpse_spawn_reject", body, "pending_shouldCarry_false")
-        local pruned = removeMatchingRecordItems(container, pending.record)
-        if pruned > 0 then
-            NMServerZombieCorpseCarry._diag.corpsePruned = (NMServerZombieCorpseCarry._diag.corpsePruned or 0) + pruned
-        end
-        markCorpseSettled(body, pending.record, nil, false)
-        removePending(handle)
-        return true
-    end
+    return reconcilePendingTransferRecord(body, container, pendingTransfer, handle)
+end
 
-    logCorpseLooseLoot("corpse_spawn_pending", body, pending.record)
-    if containerHasMatchingRecord(container, pending.record) then
-        logCorpseSpawnPath("corpse_spawn_match_existing", body, "container_already_has_record")
-        local existing = findMatchingRecordItem(container, pending.record)
-        if existing then
-            local ok, detail = applyStateToCorpseItem(existing, pending.record)
-            if not ok then
-                logCorpseSpawnPath("corpse_spawn_match_existing_reconcile_failed", body, tostring(detail or "unknown"))
-                NMServerZombieCorpseCarry._diag.corpseCarryFailed = (NMServerZombieCorpseCarry._diag.corpseCarryFailed or 0) + 1
-                logProof("corpse_carry_failed", "reason=" .. tostring(detail or "existing_reconcile_failed"), true)
-                return false
-            end
-            pending.record.deviceUUID = tostring(detail or pending.record.deviceUUID or "")
-            local pruned = enforceSingleCorpseProofItem(container, pending.record, existing)
-            if tonumber(pruned) and pruned > 0 then
-                NMServerZombieCorpseCarry._diag.corpsePruned = (NMServerZombieCorpseCarry._diag.corpsePruned or 0) + pruned
-            end
-        else
-            logCorpseSpawnPath("corpse_spawn_match_existing_missing_item", body, "match_detected_but_item_not_found")
-        end
-        ensureImmediateCompanionLoot(container, pending.record)
-        markCorpseSettled(body, pending.record, pending.record.deviceUUID, true)
-        NMServerZombieCorpseCarry._diag.corpseAlreadyPresent = (NMServerZombieCorpseCarry._diag.corpseAlreadyPresent or 0) + 1
-        removePending(handle)
-        return true
+local function noteCorpseCaptureStrategy(record)
+    if tostring(record and record.strategy or "") == "sp_runtime_attach" then
+        NMServerZombieCorpseCarry._diag.corpseCaptureSPRuntime = (NMServerZombieCorpseCarry._diag.corpseCaptureSPRuntime or 0) + 1
+    elseif tostring(record and record.strategy or "") == "mp_runtime_attach_with_support" then
+        NMServerZombieCorpseCarry._diag.corpseCaptureMPRuntimeSupport = (NMServerZombieCorpseCarry._diag.corpseCaptureMPRuntimeSupport or 0) + 1
+    elseif tostring(record and record.strategy or "") == "mp_assignment_flow" then
+        NMServerZombieCorpseCarry._diag.corpseCaptureMPAssignment = (NMServerZombieCorpseCarry._diag.corpseCaptureMPAssignment or 0) + 1
     end
+end
 
-    local ok, detail = applyCorpseRecord(container, pending.record)
-    if ok then
-        local keeper = findMatchingRecordItem(container, pending.record)
-        local pruned = enforceSingleCorpseProofItem(container, pending.record, keeper)
-        if tonumber(pruned) and pruned > 0 then
-            NMServerZombieCorpseCarry._diag.corpsePruned = (NMServerZombieCorpseCarry._diag.corpsePruned or 0) + pruned
-        end
-        ensureImmediateCompanionLoot(container, pending.record)
-        logCorpseSpawnPath("corpse_spawn_apply_ok", body, tostring(detail or "ok"))
-        markCorpseSettled(body, pending.record, detail, true)
-        NMServerZombieCorpseCarry._diag.corpseCarrySuccess = (NMServerZombieCorpseCarry._diag.corpseCarrySuccess or 0) + 1
-        removePending(handle)
-        return true
+local function enqueueCorpsePendingTransferRecord(square, zombie, transferRecord)
+    -- Pending enqueue phase:
+    -- queue the captured zombie-to-corpse transfer record until a body can be reconciled.
+    local key = getSquareKey(square:getX(), square:getY(), square:getZ())
+    NMServerZombieCorpseCarry._pendingBySquare = NMServerZombieCorpseCarry._pendingBySquare or {}
+    local queue = NMServerZombieCorpseCarry._pendingBySquare[key]
+    if type(queue) ~= "table" then
+        queue = {}
+        NMServerZombieCorpseCarry._pendingBySquare[key] = queue
     end
-
-    logCorpseSpawnPath("corpse_spawn_apply_failed", body, tostring(detail or "unknown"))
-    NMServerZombieCorpseCarry._diag.corpseCarryFailed = (NMServerZombieCorpseCarry._diag.corpseCarryFailed or 0) + 1
-    logProof("corpse_carry_failed", "reason=" .. tostring(detail or "unknown"), true)
-    return false
+    local pendingTransfer = {
+        record = transferRecord,
+        selection = transferRecord.selection,
+        sourceX = zombie and zombie.getX and tonumber(zombie:getX()) or square:getX() + 0.5,
+        sourceY = zombie and zombie.getY and tonumber(zombie:getY()) or square:getY() + 0.5,
+        sourceZ = zombie and zombie.getZ and tonumber(zombie:getZ()) or square:getZ()
+    }
+    pendingTransfer.shouldCarry = shouldCarryCorpseProof(zombie, transferRecord, pendingTransfer.selection) == true
+    queue[#queue + 1] = pendingTransfer
+    NMServerZombieCorpseCarry._pendingCount = (NMServerZombieCorpseCarry._pendingCount or 0) + 1
+    NMServerZombieCorpseCarry._diag.corpseCaptureQueued = (NMServerZombieCorpseCarry._diag.corpseCaptureQueued or 0) + 1
+    if pendingTransfer.shouldCarry ~= true then
+        NMServerZombieCorpseCarry._diag.corpseCaptureRejected = (NMServerZombieCorpseCarry._diag.corpseCaptureRejected or 0) + 1
+    end
+    noteCorpseCaptureStrategy(transferRecord)
+    if ((NMServerZombieCorpseCarry._diag.corpseCaptureQueued or 0) % 10) == 0 then
+        logCorpseSummary("corpse_capture_summary")
+    end
 end
 
 function NMServerZombieCorpseCarry.onZombieDead(zombie)
@@ -1145,51 +575,27 @@ function NMServerZombieCorpseCarry.onZombieDead(zombie)
         return
     end
     local square = getEntitySquare(zombie)
-    local record = findAttachedProofRecord(zombie)
-    if not (square and record) then
+    -- Capture phase:
+    -- export the zombie-to-corpse transfer record exactly once at death time.
+    local transferRecord = transferRecordSupport.buildCorpseTransferRecord(zombie, NMServerZombieCorpseCarry._diag)
+    if not (square and transferRecord) then
         NMServerZombieCorpseCarry._diag.corpseCaptureSkip = (NMServerZombieCorpseCarry._diag.corpseCaptureSkip or 0) + 1
         return
     end
-    logLiveCaptureProbe(zombie, record)
-    logCorpseLooseLoot("corpse_capture", zombie, record)
-    NMServerZombieCorpseCarry._pendingBySquare = NMServerZombieCorpseCarry._pendingBySquare or {}
-    local key = getSquareKey(square:getX(), square:getY(), square:getZ())
-    local queue = NMServerZombieCorpseCarry._pendingBySquare[key]
-    if type(queue) ~= "table" then
-        queue = {}
-        NMServerZombieCorpseCarry._pendingBySquare[key] = queue
-    end
-    queue[#queue + 1] = {
-        record = record,
-        selection = NMZombieVisualTargetLedger and NMZombieVisualTargetLedger.getOrAssignZombieSelection and NMZombieVisualTargetLedger.getOrAssignZombieSelection(zombie, tostring(record and record.strategy or "")) or nil,
-        sourceX = zombie and zombie.getX and tonumber(zombie:getX()) or square:getX() + 0.5,
-        sourceY = zombie and zombie.getY and tonumber(zombie:getY()) or square:getY() + 0.5,
-        sourceZ = zombie and zombie.getZ and tonumber(zombie:getZ()) or square:getZ()
-    }
-    NMServerZombieCorpseCarry._diag.corpseCaptureQueued = (NMServerZombieCorpseCarry._diag.corpseCaptureQueued or 0) + 1
-    queue[#queue].record.selection = queue[#queue].selection
-    queue[#queue].shouldCarry = shouldCarryCorpseProof(zombie, record, queue[#queue].selection) == true
-    if queue[#queue].shouldCarry ~= true then
-        NMServerZombieCorpseCarry._diag.corpseCaptureRejected = (NMServerZombieCorpseCarry._diag.corpseCaptureRejected or 0) + 1
-    end
-    if tostring(record and record.strategy or "") == "sp_runtime_attach" then
-        NMServerZombieCorpseCarry._diag.corpseCaptureSPRuntime = (NMServerZombieCorpseCarry._diag.corpseCaptureSPRuntime or 0) + 1
-    elseif tostring(record and record.strategy or "") == "mp_runtime_attach_with_support" then
-        NMServerZombieCorpseCarry._diag.corpseCaptureMPRuntimeSupport = (NMServerZombieCorpseCarry._diag.corpseCaptureMPRuntimeSupport or 0) + 1
-    elseif tostring(record and record.strategy or "") == "mp_assignment_flow"
-        or tostring(record and record.strategy or "") == "mp_legacy_assignment_flow" then
-        NMServerZombieCorpseCarry._diag.corpseCaptureMPAssignment = (NMServerZombieCorpseCarry._diag.corpseCaptureMPAssignment or 0) + 1
-    end
-    if ((NMServerZombieCorpseCarry._diag.corpseCaptureQueued or 0) % 10) == 0 then
-        logCorpseSummary("corpse_capture_summary")
-    end
+    transferRecord.selection = NMZombieVisualTargetLedger and NMZombieVisualTargetLedger.getOrAssignZombieSelection and NMZombieVisualTargetLedger.getOrAssignZombieSelection(zombie, tostring(transferRecord.strategy or "")) or nil
+    logLiveCaptureProbe(zombie, transferRecord)
+    logCorpseLooseLoot("corpse_capture", zombie, transferRecord)
+    enqueueCorpsePendingTransferRecord(square, zombie, transferRecord)
 end
 
 function NMServerZombieCorpseCarry.onDeadBodySpawn(body)
-    processCorpseBody(body)
+    reconcileCorpseBody(body)
 end
 
 local function reconcilePendingCorpseSquares()
+    if (NMServerZombieCorpseCarry._pendingCount or 0) <= 0 then
+        return 0
+    end
     local pendingBySquare = NMServerZombieCorpseCarry._pendingBySquare or nil
     if type(pendingBySquare) ~= "table" then
         return 0
@@ -1210,7 +616,7 @@ local function reconcilePendingCorpseSquares()
                         if bodies and bodies.size then
                             for i = 0, bodies:size() - 1 do
                                 local body = bodies:get(i)
-                                if isIsoDeadBody(body) and processCorpseBody(body) then
+                                if isIsoDeadBody(body) and reconcileCorpseBody(body) then
                                     reconciled = reconciled + 1
                                 end
                             end
@@ -1224,6 +630,9 @@ local function reconcilePendingCorpseSquares()
 end
 
 function NMServerZombieCorpseCarry.onTick()
+    if (NMServerZombieCorpseCarry._pendingCount or 0) <= 0 then
+        return
+    end
     NMServerZombieCorpseCarry._tickCounter = (tonumber(NMServerZombieCorpseCarry._tickCounter) or 0) + 1
     if (NMServerZombieCorpseCarry._tickCounter % TICK_RECONCILE_INTERVAL) ~= 0 then
         return

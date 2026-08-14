@@ -124,7 +124,7 @@ local function claimMutationPath(seenMap, key, path)
     end
     local existing = seenMap[uuid]
     if existing then
-        if existing ~= path and NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+        if existing ~= path and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
             local nowMsValue = nowRealMs()
             local shouldLog = true
             if NMCore.shouldLogEvery then
@@ -132,7 +132,7 @@ local function claimMutationPath(seenMap, key, path)
             end
             if shouldLog then
                 NMCore.logChannel(
-                    "runtimeProbe",
+                    "runtime",
                     "server_battery_path_skip_duplicate",
                     string.format("uuid=%s existing=%s skipped=%s", tostring(uuid), tostring(existing), tostring(path))
                 )
@@ -187,11 +187,11 @@ local function processWorldRegistry(nowMsValue, drainSeconds, seenUuids)
                 local noListenerFreeze = listenerEval and listenerEval.shouldFreezeForNoListener == true
                 if noListenerFreeze then
                     NMServerItemPowerTick.lastDrainMs[key] = nowMsValue
-                    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") and NMCore.shouldLogEvery then
+                    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") and NMCore.shouldLogEvery then
                         local logKey = "runtimeProbe.batterySkipNoListener." .. tostring(key)
                         if NMCore.shouldLogEvery(logKey, nowMsValue, 5000) then
                             NMCore.logChannel(
-                                "runtimeProbe",
+                                "runtime",
                                 "battery_tick_skipped_no_listener",
                                 string.format("uuid=%s mode=%s", tostring(key), tostring(state.authoritativeMode or "unknown"))
                             )
@@ -199,11 +199,11 @@ local function processWorldRegistry(nowMsValue, drainSeconds, seenUuids)
                     end
                 elseif entry._batteryDrainSkipUntilResume == true then
                     NMServerItemPowerTick.lastDrainMs[key] = nowMsValue
-                    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") and NMCore.shouldLogEvery then
+                    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") and NMCore.shouldLogEvery then
                         local logKey = "runtimeProbe.batterySkipOffline." .. tostring(key)
                         if NMCore.shouldLogEvery(logKey, nowMsValue, 5000) then
                             NMCore.logChannel(
-                                "runtimeProbe",
+                                "runtime",
                                 "battery_tick_skipped_offline_pause",
                                 string.format("uuid=%s mode=%s", tostring(key), tostring(state.authoritativeMode or "unknown"))
                             )

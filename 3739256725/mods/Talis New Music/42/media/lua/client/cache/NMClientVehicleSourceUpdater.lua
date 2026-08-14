@@ -70,7 +70,7 @@ local function traceToken(entry)
 end
 
 local function logBindingLifecycle(entry, action, oldRuntimeId, newRuntimeId, sqlId, reason)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleTruthProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     local now = nowMs()
@@ -92,7 +92,7 @@ local function logBindingLifecycle(entry, action, oldRuntimeId, newRuntimeId, sq
     entry._bindingLifecycleMs = now
     local state = entry and entry.stateSnapshot or nil
     NMCore.logChannel(
-        "vehicleTruthProbe",
+        "vehicle",
         "vehicle_truth_binding_lifecycle",
         string.format(
             "traceToken=%s action=%s uuid=%s playbackEpoch=%s trackIndex=%s oldRuntimeId=%s newRuntimeId=%s sqlId=%s reason=%s",
@@ -110,7 +110,7 @@ local function logBindingLifecycle(entry, action, oldRuntimeId, newRuntimeId, sq
 end
 
 local function logAttachDecision(entry, status, reason, runtimeId, degraded)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
         return
     end
     local now = nowMs()
@@ -131,7 +131,7 @@ local function logAttachDecision(entry, status, reason, runtimeId, degraded)
     entry._vehicleAttachDecisionSig = sig
     entry._vehicleAttachDecisionMs = now
     NMCore.logChannel(
-        "runtimeProbe",
+        "runtime",
         "vehicle_attach_decision",
         string.format(
             "uuid=%s status=%s reason=%s runtimeId=%s degraded=%s sourceGen=%s",
@@ -146,11 +146,11 @@ local function logAttachDecision(entry, status, reason, runtimeId, degraded)
 end
 
 local function logAttachSwitchApplied(entry, oldRuntimeId, newRuntimeId, reason)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
         return
     end
     NMCore.logChannel(
-        "runtimeProbe",
+        "runtime",
         "vehicle_attach_switch_applied",
         string.format(
             "uuid=%s oldRuntimeId=%s newRuntimeId=%s reason=%s sourceGen=%s",
@@ -216,7 +216,7 @@ local function getListenerVehicleTruth()
 end
 
 local function logListenerVehicleTruth(entry, source, status, reason)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleTruthProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     local now = nowMs()
@@ -249,14 +249,14 @@ local function logListenerVehicleTruth(entry, source, status, reason)
     local lastSig = tostring(entry and entry._listenerVehicleTruthSig or "")
     local lastMs = tonumber(entry and entry._listenerVehicleTruthMs) or 0
     local changed = sig ~= lastSig
-    local heartbeat = (now - lastMs) >= 20000
+    local heartbeat = (now - lastMs) >= 60000
     if not (changed or heartbeat) then
         return
     end
     entry._listenerVehicleTruthSig = sig
     entry._listenerVehicleTruthMs = now
     NMCore.logChannel(
-        "vehicleTruthProbe",
+        "vehicle",
         "vehicle_listener_truth",
         string.format(
             "traceToken=%s status=%s reason=%s uuid=%s listenerSeat=%s listenerVehicleId=%s listenerVehicleSqlId=%s sourceVehicleId=%s sourceVehicleSqlId=%s owner=%s personalOwnerAllowed=%s playbackEpoch=%s trackIndex=%s",

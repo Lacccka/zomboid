@@ -27,7 +27,7 @@ function NMServerBatteryAuthority.forceStateOff(state, reason)
 end
 
 function NMServerBatteryAuthority.logBatteryTick(kind, key, nowMsValue, prevMs, oldCharge, nextCharge, drainSeconds, extra)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") and NMCore.shouldLogEvery) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") and NMCore.shouldLogEvery) then
         return
     end
     local logKey = "runtimeProbe.serverBattery." .. tostring(kind or "unknown") .. "." .. tostring(key or "")
@@ -35,7 +35,7 @@ function NMServerBatteryAuthority.logBatteryTick(kind, key, nowMsValue, prevMs, 
         return
     end
     NMCore.logChannel(
-        "runtimeProbe",
+        "runtime",
         "server_battery_tick",
         string.format(
             "uuid=%s kind=%s deltaMs=%d old=%.3f new=%.3f targetSeconds=%.0f %s",
@@ -51,11 +51,11 @@ function NMServerBatteryAuthority.logBatteryTick(kind, key, nowMsValue, prevMs, 
 end
 
 function NMServerBatteryAuthority.logEmptyStop(kind, key, reason, token)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
         return
     end
     NMCore.logChannel(
-        "runtimeProbe",
+        "runtime",
         "server_battery_empty_stop_applied",
         string.format(
             "uuid=%s kind=%s reason=%s token=%s",

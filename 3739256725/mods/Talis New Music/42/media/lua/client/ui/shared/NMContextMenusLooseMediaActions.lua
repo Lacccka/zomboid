@@ -9,17 +9,17 @@ local function isFancyUIEnabled()
 end
 
 local function logPortableUiProbe(tag, detail)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("portableUiProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("portable_ui")) then
         return
     end
-    NMCore.logChannel("portableUiProbe", tostring(tag or "portable_ui"), tostring(detail or ""))
+    NMCore.logChannel("portable_ui", tostring(tag or "portable_ui"), tostring(detail or ""))
 end
 
 local function logLooseMediaCompat(tag, detail)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
         return
     end
-    NMCore.logChannel("runtimeProbe", tostring(tag or "loose_media_compat"), tostring(detail or ""))
+    NMCore.logChannel("runtime", tostring(tag or "loose_media_compat"), tostring(detail or ""))
 end
 
 local function buildLooseMediaSourceKey(item, itemIdHint)
@@ -90,7 +90,7 @@ local function markLooseMediaFlipPending(sourceKey, requestId)
 end
 
 function traceLooseMediaClick(player, tag, item)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
         return
     end
     local inv = player and player.getInventory and player:getInventory() or nil
@@ -102,7 +102,7 @@ function traceLooseMediaClick(player, tag, item)
         inInv = NMInventoryHelpers.findItemById(inv, itemId) ~= nil
     end
     NMCore.logChannel(
-        "runtimeProbe",
+        "runtime",
         tostring(tag or "loose_media_click"),
         string.format(
             "itemId=%s fullType=%s hasContainer=%s inRootInventory=%s",
@@ -114,7 +114,30 @@ function traceLooseMediaClick(player, tag, item)
     )
 end
 
-function tryQueueOpenWalkmanMediaAction(p, targetItem, actionName, args)
+local function resolveFancyPortableWindowApi(deviceType)
+    if deviceType == "walkman" then
+        return NMWalkmanWindow
+    end
+    if deviceType == "cdplayer" then
+        return NMCDPlayerWindow
+    end
+    if deviceType == "boombox" then
+        return NMBoomboxWindow
+    end
+    return nil
+end
+
+local function resolveFancyPortableLooseMediaLogTag(deviceType)
+    if deviceType == "cdplayer" then
+        return "loose_media_cdplayer_queue"
+    end
+    if deviceType == "boombox" then
+        return "loose_media_boombox_queue"
+    end
+    return "loose_media_walkman_queue"
+end
+
+function tryQueueOpenFancyPortableMediaAction(p, targetItem, actionName, args)
     if not isFancyUIEnabled() then
         return false
     end
@@ -123,17 +146,12 @@ function tryQueueOpenWalkmanMediaAction(p, targetItem, actionName, args)
     end
     local profile = NMDeviceProfiles and NMDeviceProfiles.getForItem and NMDeviceProfiles.getForItem(targetItem) or nil
     local deviceType = tostring(profile and profile.deviceType or "")
-    if deviceType ~= "walkman" and deviceType ~= "cdplayer" then
+    if deviceType ~= "walkman" and deviceType ~= "cdplayer" and deviceType ~= "boombox" then
         return false
     end
     local playerNum = p.getPlayerNum and p:getPlayerNum() or 0
     local win = nil
-    local windowApi = nil
-    if deviceType == "walkman" then
-        windowApi = NMWalkmanWindow
-    else
-        windowApi = NMCDPlayerWindow
-    end
+    local windowApi = resolveFancyPortableWindowApi(deviceType)
     if not windowApi then
         return false
     end
@@ -182,7 +200,7 @@ function tryQueueOpenWalkmanMediaAction(p, targetItem, actionName, args)
         win:syncLidFromMedia(false)
     end
     logPortableUiProbe(
-        deviceType == "cdplayer" and "loose_media_cdplayer_queue" or "loose_media_walkman_queue",
+        resolveFancyPortableLooseMediaLogTag(deviceType),
         string.format(
             "player=%s action=%s targetItemId=%s targetUuid=%s mediaItemId=%s mediaFullType=%s slotTraceId=%s",
             tostring(playerNum or 0),
@@ -197,8 +215,12 @@ function tryQueueOpenWalkmanMediaAction(p, targetItem, actionName, args)
     return sharedQueue(win, action, payload) == true
 end
 
+function tryQueueOpenWalkmanMediaAction(p, targetItem, actionName, args)
+    return tryQueueOpenFancyPortableMediaAction(p, targetItem, actionName, args)
+end
+
 function tryQueueOpenWalkmanInsert(p, targetItem, args)
-    return tryQueueOpenWalkmanMediaAction(p, targetItem, "insert_media", args)
+    return tryQueueOpenFancyPortableMediaAction(p, targetItem, "insert_media", args)
 end
 
 function addLooseMediaFlipAction(subMenu, player, mediaItem, capturedItemId)
@@ -221,9 +243,9 @@ function addLooseMediaFlipAction(subMenu, player, mediaItem, capturedItemId)
                 if sourceKey == "" or not markLooseMediaFlipPending(sourceKey, aliasOnlyId) then
                     return
                 end
-                if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+                if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
                     NMCore.logChannel(
-                        "runtimeProbe",
+                        "runtime",
                         "flip_click_client_alias_only",
                         string.format(
                             "capturedItemId=%s resolvedItemId=%s target=%s",
@@ -233,7 +255,7 @@ function addLooseMediaFlipAction(subMenu, player, mediaItem, capturedItemId)
                         )
                     )
                     NMCore.logChannel(
-                        "runtimeProbe",
+                        "runtime",
                         "flip_request_client",
                         string.format(
                             "itemId=%s fullType=%s target=%s mp=true aliasOnly=true",
@@ -248,8 +270,8 @@ function addLooseMediaFlipAction(subMenu, player, mediaItem, capturedItemId)
                 })
                 return
             end
-            if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
-                NMCore.logChannel("runtimeProbe", "flip_click_client_no_live_item", "capturedItemId=" .. tostring(capturedItemId or ""))
+            if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+                NMCore.logChannel("runtime", "flip_click_client_no_live_item", "capturedItemId=" .. tostring(capturedItemId or ""))
             end
             return
         end
@@ -283,9 +305,9 @@ function addLooseMediaFlipAction(subMenu, player, mediaItem, capturedItemId)
             if not markLooseMediaFlipPending(sourceKey, requestId) then
                 return
             end
-            if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+            if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
                 NMCore.logChannel(
-                    "runtimeProbe",
+                    "runtime",
                     "flip_request_client",
                     string.format(
                         "itemId=%s fullType=%s target=%s mp=true",
@@ -348,8 +370,8 @@ function addLooseMediaInsertActions(subMenu, player, mediaItem, capturedItemId)
             local liveItem, liveId = resolveLiveItemByIdOrAlias(p, capturedItemId)
             traceLooseMediaClick(p, "insert_click_client", liveItem or mediaItem)
             if not liveId or tostring(liveId) == "" then
-                if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
-                    NMCore.logChannel("runtimeProbe", "insert_click_client_no_live_item", "capturedItemId=" .. tostring(capturedItemId or ""))
+                if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+                    NMCore.logChannel("runtime", "insert_click_client_no_live_item", "capturedItemId=" .. tostring(capturedItemId or ""))
                 end
                 return
             end
@@ -369,14 +391,17 @@ function addLooseMediaInsertActions(subMenu, player, mediaItem, capturedItemId)
             )
             if target.category == "window" then
                 local zone = target.zone
-                if zone and zone.performInsertFromDrag and args then
-                    if zone.performInsertFromDrag({ liveItem }, "context_menu") == true then
+                local targetWin = zone and zone.window or nil
+                local mediaEnv = rawget(_G, "NMMediaSlotEnv") or nil
+                local queueDraggedMediaInsertFn = mediaEnv and mediaEnv.queueDraggedMediaInsert or nil
+                if targetWin and queueDraggedMediaInsertFn and args then
+                    if queueDraggedMediaInsertFn(targetWin, { liveItem }, "context_menu") == true then
                         return
                     end
                 end
                 return
             end
-            if args and tryQueueOpenWalkmanMediaAction(p, target.item, "insert_media", args) == true then
+            if args and tryQueueOpenFancyPortableMediaAction(p, target.item, "insert_media", args) == true then
                 return
             end
             NMClientIntentDispatch.performIntent(p, target.item, "insert_media", args or {
@@ -400,9 +425,9 @@ function NMContextMenus.onMediaFlipResult(player, args)
         if failedOldId ~= "" then
             clearLooseMediaFlipPending(failedOldId)
         end
-        if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
             NMCore.logChannel(
-                "runtimeProbe",
+                "runtime",
                 "flip_ack_client_fail",
                 string.format(
                     "ok=%s oldItemId=%s newItemId=%s reason=%s",
@@ -415,9 +440,9 @@ function NMContextMenus.onMediaFlipResult(player, args)
         end
         return false
     end
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
         NMCore.logChannel(
-            "runtimeProbe",
+            "runtime",
             "flip_ack_client_ok",
             string.format(
                 "oldItemId=%s newItemId=%s target=%s recIdx=%s",

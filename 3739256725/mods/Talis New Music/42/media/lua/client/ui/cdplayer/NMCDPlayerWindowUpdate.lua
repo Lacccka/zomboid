@@ -1,9 +1,7 @@
+local NMUiAutoClose = require "ui/shared/host/NMUiAutoClose"
+
 local env = _G.NMCDPlayerWindowEnv
 setfenv(1, env)
-
-local function autoCloseThresholdSq()
-    return NMDeviceUIRange.getWorldInteractionRangeSq and NMDeviceUIRange.getWorldInteractionRangeSq() or (2.8 * 2.8)
-end
 
 local function updateWorldCDSpin(self, nowMs)
     local lastMs = tonumber(self._nmWorldCDSpinLastMs)
@@ -48,12 +46,13 @@ local function updateLidAnimation(self, nowMs)
     self.lidCurrentY = startY + ((targetY - startY) * eased)
     self.lidCurrentH = startH + ((targetH - startH) * eased)
     if t >= 1.0 then
-        local wasOpening = self.isLidOpen == true
         self.isLidAnimating = false
         self.lidCurrentY = targetY
         self.lidCurrentH = targetH
-        if wasOpening ~= true then
-            playCDPlayerGenericClick(self, false)
+        if self.isLidOpen ~= true and self._nmPlayDeferredLidCloseSoundOnAnimationComplete == true then
+            self._nmPlayDeferredLidCloseSoundOnAnimationComplete = nil
+            self._nmDeferAutoInsertLidCloseSound = nil
+            playCDPlayerLidSound(self, false)
         end
     end
 end
@@ -76,6 +75,8 @@ local function updatePendingContextMediaInsert(self)
     if not queueMediaSlotActionFn then
         self._nmPendingMediaSlotFullType = nil
         self._nmCloseLidAfterContextInsert = false
+        self._nmDeferAutoInsertLidCloseSound = nil
+        self._nmPlayDeferredLidCloseSoundOnAnimationComplete = nil
         self.isLidManuallyOpen = false
         self:syncLidFromMedia(false)
         return
@@ -87,6 +88,8 @@ local function updatePendingContextMediaInsert(self)
     end
     self._nmPendingMediaSlotFullType = nil
     self._nmCloseLidAfterContextInsert = false
+    self._nmDeferAutoInsertLidCloseSound = nil
+    self._nmPlayDeferredLidCloseSoundOnAnimationComplete = nil
     self.isLidManuallyOpen = false
     self:syncLidFromMedia(false)
 end
@@ -110,6 +113,7 @@ local function updateContextInsertCloseState(self)
     end
     if self.isLidManuallyOpen ~= true then
         self._nmCloseLidAfterContextInsert = false
+        self._nmDeferAutoInsertLidCloseSound = nil
     end
 end
 
@@ -149,61 +153,29 @@ local function updateHoldButtonRotation(self, nowMs)
     end
 end
 
-function CDPlayerWindow:shouldAutoCloseForDistance()
-    local player = getPlayer(self.playerNum)
-    if not (player and player.DistToSquared) then
-        return false
-    end
-
-    local target = self.target
-    if target and target.kind == "item" then
-        local item = target.itemRef
-        local location = NMDeviceUIRange.resolvePortableTargetLocation and NMDeviceUIRange.resolvePortableTargetLocation(target, item) or nil
-        if location and location.mode == "detached_placed" then
-            local distSqDetached = tonumber(player:DistToSquared(location.x, location.y)) or 0
-            return distSqDetached > autoCloseThresholdSq()
-        end
-        if location and location.mode == "placed_world" then
-            local distSqFast = tonumber(player:DistToSquared(location.x, location.y)) or 0
-            return distSqFast > autoCloseThresholdSq()
-        end
-        if location and location.mode == "inventory" then
-            return false
-        end
-    end
-
-    local resolved = self:resolveContext()
-    if not resolved then
-        return true
-    end
-    local location = NMDeviceUIRange.resolvePortableTargetLocation and NMDeviceUIRange.resolvePortableTargetLocation(target, resolved.item) or nil
-    if location and location.mode == "inventory" then
-        return false
-    end
-    if not location or not location.requiresDistanceCheck then
-        return false
-    end
-    local distSq = tonumber(player:DistToSquared(location.x, location.y)) or 0
-    return distSq > autoCloseThresholdSq()
-end
-
 function CDPlayerWindow:update()
+    local perfStart = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(self) or nil
+    local function finishUpdate()
+        if NMUIRenderProbe and NMUIRenderProbe.endWindow then
+            NMUIRenderProbe.endWindow(self, "device.update", perfStart)
+        end
+    end
     ISPanel.update(self)
 
-    local nowMs = getNowMs()
+    local nowMs = NMUiAutoClose.getNowMs()
     updateWorldCDSpin(self, nowMs)
     updateHoldButtonRotation(self, nowMs)
     updateLidAnimation(self, nowMs)
     updatePendingContextMediaInsert(self)
     updateContextInsertCloseState(self)
     NMSlotHostLifecycle.refreshSlotVisibility(self)
-    local lastDistanceCheckMs = tonumber(self._nmLastDistanceCheckMs) or 0
-    if (nowMs - lastDistanceCheckMs) >= 250 then
-        self._nmLastDistanceCheckMs = nowMs
-        if self:shouldAutoCloseForDistance() then
-            self:close()
-            return
-        end
+    local closed = NMUiAutoClose.tickWindowAutoClose(self, {
+        nowMs = nowMs,
+        pollMs = 250,
+    })
+    if closed then
+        finishUpdate()
+        return
     end
 
     self:updateHoverTooltip()
@@ -216,6 +188,7 @@ function CDPlayerWindow:update()
         else
             self:setY(self:getExpandedY())
         end
+        finishUpdate()
         return
     end
 
@@ -231,9 +204,11 @@ function CDPlayerWindow:update()
             self.isAnimating = false
             self:setY(targetY)
         end
+        finishUpdate()
         return
     end
 
     self._nmExpandedY = self:getExpandedY()
     self:setY(self:getStateY(self.isCollapsed))
+    finishUpdate()
 end

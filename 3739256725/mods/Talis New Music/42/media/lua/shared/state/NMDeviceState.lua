@@ -322,7 +322,7 @@ function NMDeviceState.canMutateIdentity(context)
 end
 
 function NMDeviceState.logIdentityWriteBlocked(context, path, detail)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
         return
     end
     local key = table.concat({
@@ -335,7 +335,7 @@ function NMDeviceState.logIdentityWriteBlocked(context, path, detail)
     end
     NMDeviceState._identityWriteBlockedSeen[key] = true
     NMCore.logChannel(
-        "runtimeProbe",
+        "runtime",
         "identity_write_blocked",
         string.format("context=%s path=%s detail=%s", tostring(context or ""), tostring(path or ""), tostring(detail or ""))
     )

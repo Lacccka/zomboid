@@ -1,10 +1,12 @@
 require "ISUI/ISButton"
+require "ui/shared/slots/NMPortableUiSoundContract"
 NMTransportButtonRow = NMTransportButtonRow or {}
 
 local BTN_W = 39
 local BTN_H = 29
 local BTN_GAP = 13
 local FLICK_MS = 250
+local FLICK_FLASH_ALPHA = 0.22
 local ORDER = { "repeat", "stop", "play", "prev", "next", "mute" }
 local UI_TEXTURE_ROOT = "media/textures/UI/"
 
@@ -50,6 +52,18 @@ local function drawButtonTexture(button, tex)
     return true
 end
 
+local function drawButtonFlash(button, alpha)
+    if not (button and button.drawRect) then
+        return false
+    end
+    local resolvedAlpha = tonumber(alpha) or 0
+    if resolvedAlpha <= 0 then
+        return false
+    end
+    button:drawRect(0, 0, BTN_W, BTN_H, resolvedAlpha, 0.0, 0.0, 0.0)
+    return true
+end
+
 local function getResolvedContext(window)
     if not window then
         return nil
@@ -58,6 +72,36 @@ local function getResolvedContext(window)
         return window:resolveContextCached()
     end
     return window.resolveContext and window:resolveContext() or nil
+end
+
+local function getFreshResolvedContext(window)
+    if not window then
+        return nil
+    end
+    if window.resolveContextFresh then
+        return window:resolveContextFresh()
+    end
+    return getResolvedContext(window)
+end
+
+local function getTransportState(window, frame)
+    return NMDeviceUiHost and NMDeviceUiHost.resolveTransportState and NMDeviceUiHost.resolveTransportState(window, {
+        frame = frame,
+        renderModel = frame == nil and window and window.getRenderModel and window:getRenderModel() or nil,
+        resolved = frame and frame.resolved or nil,
+    }) or nil
+end
+
+local function getControlTransportState(window, resolved, transport)
+    return NMDeviceUiHost and NMDeviceUiHost.resolveControlTransportState and NMDeviceUiHost.resolveControlTransportState(window, {
+        resolved = resolved,
+        transport = transport,
+    }) or nil
+end
+
+local function getControlState(window)
+    local resolved = getFreshResolvedContext(window)
+    return resolved and resolved.state or nil, resolved
 end
 
 local function resolveTrackCount(state)
@@ -79,9 +123,10 @@ local function nowMs(window)
 end
 
 function NMTransportButtonRow.buildRenderState(window, frame)
+    local transport = getTransportState(window, frame)
     local resolved = frame and frame.resolved or getResolvedContext(window)
     local state = resolved and resolved.state or nil
-    local policy = tostring(state and state.playbackPolicy or "autoplay")
+    local policy = tostring(transport and transport.playbackPolicy or state and state.playbackPolicy or "autoplay")
     local repeatIcon = "repeat_none"
     if policy == "loop_song" then
         repeatIcon = "repeat_song"
@@ -91,7 +136,7 @@ function NMTransportButtonRow.buildRenderState(window, frame)
         repeatIcon = "repeat_shuffle"
     end
     local muted = state and state.isMuted == true
-    local playing = state and state.isPlaying == true
+    local playing = transport and transport.isPlaying == true or state and state.isPlaying == true
     local buttons = {}
     local currentNowMs = frame and frame.nowMs or nowMs(window)
     for i = 1, #ORDER do
@@ -135,9 +180,7 @@ function NMTransportButtonRow.buildRenderState(window, frame)
         local btn = window and window.transportRow and window.transportRow.buttons and window.transportRow.buttons[i] or nil
         local flickActive = btn and tonumber(btn._nmFlickUntil or 0) > currentNowMs or false
         local style = baseState
-        if (role == "repeat" or role == "prev" or role == "next") and flickActive then
-            style = "in"
-        end
+        local flashActive = (role == "repeat" or role == "prev" or role == "next") and flickActive
         buttons[role] = {
             role = role,
             baseState = baseState,
@@ -147,10 +190,12 @@ function NMTransportButtonRow.buildRenderState(window, frame)
             baseTexture = BASE_TEXTURES[style] or BASE_TEXTURES.out,
             iconTexture = ICON_TEXTURES[iconKey],
             flickActive = flickActive,
+            flashActive = flashActive,
         }
     end
     return {
         state = state,
+        transport = transport,
         muted = muted,
         playing = playing,
         repeatIcon = repeatIcon,
@@ -159,58 +204,15 @@ function NMTransportButtonRow.buildRenderState(window, frame)
 end
 
 local function dispatch(window, action, args)
-    if not (window and window.dispatch) then
+    if not (window and window.executeUiControl) then
         return false
     end
-    local ok = window:dispatch(action, args or {})
+    local ok = window:executeUiControl(action, args or {})
     return ok == true
 end
 
 local function playButtonClick(window)
-    local soundName = "NM_ButtonClick"
-    local vol = 0.8
-    local resolved = getResolvedContext(window)
-    local playerObj = resolved and resolved.player or nil
-
-    local function isValidSoundId(soundId)
-        if soundId == nil then
-            return false
-        end
-        local n = tonumber(soundId)
-        if n and n == 0 then
-            return false
-        end
-        return true
-    end
-
-    if playerObj and playerObj.getEmitter then
-        local okEmitter, emitter = pcall(playerObj.getEmitter, playerObj)
-        if okEmitter and emitter then
-            local okPlay, soundId = false, nil
-            if emitter.playSoundImpl then
-                okPlay, soundId = pcall(emitter.playSoundImpl, emitter, soundName, nil)
-            end
-            if (not okPlay or not isValidSoundId(soundId)) and emitter.playSound then
-                okPlay, soundId = pcall(emitter.playSound, emitter, soundName)
-            end
-            if okPlay and isValidSoundId(soundId) then
-                if emitter.setVolume then
-                    pcall(emitter.setVolume, emitter, soundId, vol)
-                end
-                return
-            end
-        end
-    end
-    if playerObj and playerObj.playSoundLocal then
-        local ok = pcall(playerObj.playSoundLocal, playerObj, soundName)
-        if ok then
-            return
-        end
-    end
-    local sm = getSoundManager and getSoundManager() or nil
-    if sm and sm.playUISound then
-        pcall(sm.playUISound, sm, soundName)
-    end
+    NMPortableUiSoundContract.playTransportPress(window)
 end
 
 local function makeButton(window, x, y, role)
@@ -220,8 +222,10 @@ local function makeButton(window, x, y, role)
     btn.borderColor = { r = 0, g = 0, b = 0, a = 0 }
     btn.backgroundColor = { r = 0, g = 0, b = 0, a = 0 }
     btn.backgroundColorMouseOver = { r = 0, g = 0, b = 0, a = 0 }
+    btn.backgroundColorPressed = { r = 0, g = 0, b = 0, a = 0 }
     btn.backgroundColorEnabled = { r = 0, g = 0, b = 0, a = 0 }
     btn.enable = true
+    btn.pressed = false
     btn._nmRole = role
     btn._nmFlickUntil = 0
     window:addChild(btn)
@@ -242,7 +246,7 @@ local function handlePress(window, role)
         else
             nextPolicy = "autoplay"
         end
-        return dispatch(window, "set_playback_policy", { playbackPolicy = nextPolicy })
+        return dispatch(window, "cycle_mode", { playbackPolicy = nextPolicy })
     end
     local state = renderState and renderState.state or nil
     if role == "prev" then
@@ -255,17 +259,17 @@ local function handlePress(window, role)
 end
 
 local function handleHold(window, role)
-    local renderState = window and window.getRenderState and window:getRenderState("transport") or nil
-    local state = renderState and renderState.state or nil
+    local state, resolved = getControlState(window)
+    local transport = getControlTransportState(window, resolved)
     if role == "play" then
-        return dispatch(window, "start_playback", { isPlaying = true, trackCount = resolveTrackCount(state) })
+        return dispatch(window, "play", { trackCount = resolveTrackCount(state) })
     end
     if role == "stop" then
-        return dispatch(window, "stop_playback", { isPlaying = false, trackCount = resolveTrackCount(state) })
+        return dispatch(window, "stop", { trackCount = resolveTrackCount(state) })
     end
     if role == "mute" then
-        local muted = state and state.isMuted == true
-        return dispatch(window, "toggle_mute", { isMuted = not muted, muteReason = "manual" })
+        local muted = transport and transport.isMuted == true or state and state.isMuted == true
+        return dispatch(window, muted and "mute_off" or "mute_on", { muteReason = "manual" })
     end
     return false
 end
@@ -281,6 +285,9 @@ local function bindRender(window, btn)
         local iconTex = getUiTexture(buttonState and buttonState.iconTexture or ICON_TEXTURES[role])
         drawButtonTexture(self, baseTex)
         drawButtonTexture(self, iconTex)
+        if buttonState and buttonState.flashActive then
+            drawButtonFlash(self, FLICK_FLASH_ALPHA)
+        end
 
         self.tooltip = buttonState and buttonState.tooltip or ""
         if NMUIRenderProbe and NMUIRenderProbe.endWindow then
@@ -292,9 +299,15 @@ end
 local function bindInput(window, btn)
     local role = btn._nmRole
     btn.onMouseDown = function(self, x, y)
+        self.pressed = true
         return true
     end
     btn.onMouseUp = function(self, x, y)
+        local process = self.pressed == true
+        self.pressed = false
+        if not process then
+            return true
+        end
         local ok = false
         if role == "repeat" or role == "prev" or role == "next" then
             self._nmFlickUntil = nowMs(window) + FLICK_MS
@@ -303,6 +316,10 @@ local function bindInput(window, btn)
             ok = handleHold(window, role)
         end
         playButtonClick(window)
+        return true
+    end
+    btn.onMouseUpOutside = function(self, x, y)
+        self.pressed = false
         return true
     end
 end

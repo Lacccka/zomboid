@@ -64,8 +64,8 @@ end
 local function shouldLogFormatTemplateResolution(fullKey)
     return NMCore
         and NMCore.logChannel
-        and NMCore.isDebugKnobOn
-        and NMCore.isDebugKnobOn("core") == true
+        and NMCore.isSubsystemDebugEnabled
+        and NMCore.isSubsystemDebugEnabled("core") == true
         and NMCore.shouldLogEvery
         and NMCore.shouldLogEvery("core.translation_format." .. tostring(fullKey or ""), nowLogMs(), 15000)
 end

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="sit_loop.xml">
+	<m_Name>sit_loop_Hgun</m_Name>
+	<m_AnimName>Bob_SitGround_Idle_hgun</m_AnimName>
+	<m_BlendOutTime>-1.00</m_BlendOutTime>
+	<m_Conditions x_name="ca164731-5128-41f2-8f96-68eb88ce7710">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>handgun</m_Value>
+	</m_Conditions>
+	<m_Events x_name="4f95d328-4ba7-41cc-a5ee-4cb498576dcb">
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+	<m_Transitions />
+	<m_Transitions>
+		<m_Target>sit_ext_hgun</m_Target>
+	</m_Transitions>
+</animNode>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="Shiver_Ground.xml">
+	<m_Name>Shiver_Ground_1H</m_Name>
+	<m_Conditions x_name="9b82d4a9-8a08-45d4-9681-0926707a2fc2">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>1handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="58326db5-cbfd-40de-8aa7-e997129b0e5f">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="90b42cba-7919-453e-98fd-e0f3dc64885a">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>Shiver</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="c99a6342-a78d-472f-a633-12eb56a40021">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>handgun</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="82318a42-9a64-4072-8b51-d928f5818dab">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="43c302f4-98fd-404a-a8e7-17eedc3efa16">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="aa7cbb6b-56cd-49a7-ac6d-92647160bda7">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>Shiver</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="5ab30c09-33aa-4505-89bd-f247c8d68385">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>knife</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="0c0e0d5c-1867-4951-910b-5e4cfd4b094a">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+</animNode>

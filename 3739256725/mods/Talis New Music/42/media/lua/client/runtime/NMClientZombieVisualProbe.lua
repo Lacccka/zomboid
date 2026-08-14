@@ -1,17 +1,19 @@
 NMClientZombieVisualProbe = NMClientZombieVisualProbe or {}
 NMClientZombieVisualProbe.tick = NMClientZombieVisualProbe.tick or 0
-NMClientZombieVisualProbe._forcedProofVisuals = NMClientZombieVisualProbe._forcedProofVisuals or {}
+NMClientZombieVisualProbe._clientVisualStateByZombieId = NMClientZombieVisualProbe._clientVisualStateByZombieId or {}
 require "zombies/NMZombieDeviceVariantCatalog"
 
 local MOD_DATA_KEY = "nmZombieWalkmanProof"
 local SUPPORT_FULL_TYPE = "Base.Belt2"
 local PROBE_INTERVAL_TICKS = 120
 local PROBE_RADIUS = 30
-local PROBE_MAX_SAMPLES = 3
+local PROBE_RADIUS_SQ = PROBE_RADIUS * PROBE_RADIUS
+local AUTHORITY_RECHECK_TICKS = 600
+local FALLBACK_RECHECK_TICKS = 240
 local KNOWN_SPECS = NMZombieDeviceVariantCatalog and NMZombieDeviceVariantCatalog.getAllRealizationSpecs and NMZombieDeviceVariantCatalog.getAllRealizationSpecs() or {}
 
 local function shouldLog()
-    return NMCore and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("zombieDiagnostics") == true
+    return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("zombie_visual") == true
 end
 
 local function logProof(tag, detail)
@@ -91,6 +93,31 @@ local function getDecisionSpec(decision)
         or nil
 end
 
+local function inspectAttachedItemsState(zombie)
+    local attached = zombie and zombie.getAttachedItems and zombie:getAttachedItems() or nil
+    local state = {
+        attachedCount = safeSize(attached),
+        countsByFullType = {},
+        slotsByKey = {}
+    }
+    if state.attachedCount <= 0 then
+        return state
+    end
+    for i = 0, state.attachedCount - 1 do
+        local entry = attached:get(i)
+        local location = entry and entry.getLocation and tostring(entry:getLocation() or "") or ""
+        local item = entry and entry.getItem and entry:getItem() or nil
+        local fullType = item and item.getFullType and tostring(item:getFullType() or "") or ""
+        if fullType ~= "" then
+            state.countsByFullType[fullType] = (tonumber(state.countsByFullType[fullType]) or 0) + 1
+        end
+        if location ~= "" and fullType ~= "" then
+            state.slotsByKey[location .. "|" .. fullType] = true
+        end
+    end
+    return state
+end
+
 local function getZombieVariantSpec(zombie, decision, allowDefaultFallback)
     local decisionSpec = getDecisionSpec(decision)
     if decisionSpec then
@@ -107,62 +134,36 @@ local function getZombieVariantSpec(zombie, decision, allowDefaultFallback)
     return NMZombieDeviceVariantCatalog and NMZombieDeviceVariantCatalog.getDefaultSpec and NMZombieDeviceVariantCatalog.getDefaultSpec() or nil
 end
 
-local function hasAttachedProof(zombie, spec, decision)
+local function hasAttachedProof(zombie, spec, decision, attachedItemsState)
     local resolved = type(spec) == "table" and spec or getZombieVariantSpec(zombie, decision)
     if not resolved then
         return false
     end
-    local attached = zombie and zombie.getAttachedItems and zombie:getAttachedItems() or nil
-    if safeSize(attached) <= 0 then
+    local state = attachedItemsState or inspectAttachedItemsState(zombie)
+    if (tonumber(state.attachedCount) or 0) <= 0 then
         return false
     end
-    for i = 0, safeSize(attached) - 1 do
-        local entry = attached:get(i)
-        local location = entry and entry.getLocation and tostring(entry:getLocation() or "") or ""
-        local item = entry and entry.getItem and entry:getItem() or nil
-        local fullType = item and item.getFullType and tostring(item:getFullType() or "") or ""
-        if location == tostring(resolved.attachmentLocation or "") and fullType == tostring(resolved.fullType or "") then
-            return true
-        end
-    end
-    return false
+    local key = tostring(resolved.attachmentLocation or "") .. "|" .. tostring(resolved.fullType or "")
+    return state.slotsByKey[key] == true
 end
 
-local function hasAttachedSlot(zombie, slotLocation, wantedFullType)
-    local attached = zombie and zombie.getAttachedItems and zombie:getAttachedItems() or nil
+local function hasAttachedSlot(slotLocation, wantedFullType, attachedItemsState)
     local wantedLocation = tostring(slotLocation or "")
     local wantedType = tostring(wantedFullType or "")
-    if wantedLocation == "" or wantedType == "" or safeSize(attached) <= 0 then
+    if wantedLocation == "" or wantedType == "" then
         return false
     end
-    for i = 0, safeSize(attached) - 1 do
-        local entry = attached:get(i)
-        local location = entry and entry.getLocation and tostring(entry:getLocation() or "") or ""
-        local item = entry and entry.getItem and entry:getItem() or nil
-        local fullType = item and item.getFullType and tostring(item:getFullType() or "") or ""
-        if location == wantedLocation and fullType == wantedType then
-            return true
-        end
-    end
-    return false
+    local state = attachedItemsState or { slotsByKey = {} }
+    return state.slotsByKey[wantedLocation .. "|" .. wantedType] == true
 end
 
-local function countMatchingAttachedSlots(zombie, wantedFullType)
-    local attached = zombie and zombie.getAttachedItems and zombie:getAttachedItems() or nil
+local function countMatchingAttachedSlots(wantedFullType, attachedItemsState)
     local wantedType = tostring(wantedFullType or "")
-    if wantedType == "" or safeSize(attached) <= 0 then
+    if wantedType == "" then
         return 0
     end
-    local count = 0
-    for i = 0, safeSize(attached) - 1 do
-        local entry = attached:get(i)
-        local item = entry and entry.getItem and entry:getItem() or nil
-        local fullType = item and item.getFullType and tostring(item:getFullType() or "") or ""
-        if fullType == wantedType then
-            count = count + 1
-        end
-    end
-    return count
+    local state = attachedItemsState or { countsByFullType = {} }
+    return tonumber(state.countsByFullType[wantedType]) or 0
 end
 
 local function getModelProbe(zombie)
@@ -263,7 +264,7 @@ local function clearClientProofSlot(zombie, spec)
     return true
 end
 
-local function ensureClientProofVisual(zombie, decision)
+local function ensureClientProofVisual(zombie, decision, attachedItemsState)
     local zid = getZombieId(zombie)
     local beforeProbe = getModelProbe(zombie)
     local allowDefaultFallback = not (type(decision) == "table" and decision.authoritative == true)
@@ -274,10 +275,11 @@ local function ensureClientProofVisual(zombie, decision)
         end
         return nil
     end
-    local attachedBefore = countMatchingAttachedSlots(zombie, tostring(spec.fullType or ""))
+    local initialAttachedItemsState = attachedItemsState or inspectAttachedItemsState(zombie)
+    local attachedBefore = countMatchingAttachedSlots(tostring(spec.fullType or ""), initialAttachedItemsState)
     local slot = tostring(spec.attachmentLocation or "")
     local madeAttach = false
-    if not hasAttachedSlot(zombie, slot, tostring(spec.fullType or "")) then
+    if not hasAttachedSlot(slot, tostring(spec.fullType or ""), initialAttachedItemsState) then
         local ok, reason, item = attachClientProofSlot(zombie, spec)
         if ok then
             madeAttach = true
@@ -309,18 +311,19 @@ local function ensureClientProofVisual(zombie, decision)
         afterProbe = forceBeltVisualRefresh(zombie) or afterProbe
     end
 
-    local attachedAfter = countMatchingAttachedSlots(zombie, tostring(spec.fullType or ""))
-    local supportedSlots = hasAttachedSlot(zombie, tostring(spec.attachmentLocation or ""), tostring(spec.fullType or "")) and 1 or 0
-    local state = NMClientZombieVisualProbe._forcedProofVisuals[zid] or {}
-    NMClientZombieVisualProbe._forcedProofVisuals[zid] = state
+    local finalAttachedItemsState = madeAttach and inspectAttachedItemsState(zombie) or initialAttachedItemsState
+    local attachedAfter = countMatchingAttachedSlots(tostring(spec.fullType or ""), finalAttachedItemsState)
+    local supportedSlots = hasAttachedSlot(tostring(spec.attachmentLocation or ""), tostring(spec.fullType or ""), finalAttachedItemsState) and 1 or 0
+    local visualState = NMClientZombieVisualProbe._clientVisualStateByZombieId[zid] or {}
+    NMClientZombieVisualProbe._clientVisualStateByZombieId[zid] = visualState
     if madeAttach then
-        state.clientProofAttached = true
-    elseif attachedAfter > 0 and state.clientProofAttached ~= false then
-        state.clientProofAttached = true
+        visualState.clientProofAttached = true
+    elseif attachedAfter > 0 and visualState.clientProofAttached ~= false then
+        visualState.clientProofAttached = true
     end
-    state.lastAttachedModelCount = afterProbe.attachedModelCount
-    state.lastHasModelSlot = afterProbe.hasModelSlot
-    state.lastScanTick = NMClientZombieVisualProbe.tick
+    visualState.lastAttachedModelCount = afterProbe.attachedModelCount
+    visualState.lastHasModelSlot = afterProbe.hasModelSlot
+    visualState.lastScanTick = NMClientZombieVisualProbe.tick
 
     return {
         attachedSlots = attachedAfter,
@@ -331,14 +334,15 @@ local function ensureClientProofVisual(zombie, decision)
     }
 end
 
-local function clearNonTargetClientProof(zombie)
+local function clearNonTargetClientProof(zombie, attachedItemsState)
     local zid = getZombieId(zombie)
-    local state = NMClientZombieVisualProbe._forcedProofVisuals[zid] or nil
+    local visualState = NMClientZombieVisualProbe._clientVisualStateByZombieId[zid] or nil
     local clearedAny = false
+    local currentAttachedItemsState = attachedItemsState or inspectAttachedItemsState(zombie)
     for i = 1, #KNOWN_SPECS do
         local spec = KNOWN_SPECS[i]
-        if hasAttachedSlot(zombie, tostring(spec.attachmentLocation or ""), tostring(spec.fullType or "")) then
-            if not state or state.clientProofAttached ~= false then
+        if hasAttachedSlot(tostring(spec.attachmentLocation or ""), tostring(spec.fullType or ""), currentAttachedItemsState) then
+            if not visualState or visualState.clientProofAttached ~= false then
                 local cleared, reason = clearClientProofSlot(zombie, spec)
                 if not cleared then
                     logProof(
@@ -347,16 +351,102 @@ local function clearNonTargetClientProof(zombie)
                     )
                 else
                     clearedAny = true
+                    currentAttachedItemsState = inspectAttachedItemsState(zombie)
                     logProof("client_detach", string.format("zombie=%s slot=%s", tostring(zid), tostring(spec.attachmentLocation or "")))
                 end
             end
         end
     end
-    if state then
-        state.clientProofAttached = false
-        state.lastScanTick = NMClientZombieVisualProbe.tick
+    if visualState then
+        visualState.clientProofAttached = false
+        visualState.lastScanTick = NMClientZombieVisualProbe.tick
     end
     return clearedAny
+end
+
+local function getDecisionRevision(decision)
+    if type(decision) ~= "table" then
+        return 0
+    end
+    if tostring(decision.source or "") == "mp_snapshot" then
+        return NMClientZombieVisualTargetCache and NMClientZombieVisualTargetCache.getRevision and NMClientZombieVisualTargetCache.getRevision() or 0
+    end
+    return tonumber(decision.selectionEpoch) or 0
+end
+
+local function getDecisionStateKey(decision)
+    if type(decision) ~= "table" then
+        return "none"
+    end
+    return table.concat({
+        tostring(decision.source or ""),
+        tostring(decision.state or ""),
+        tostring(decision.variantId or ""),
+        tostring(decision.fullType or ""),
+        tostring(decision.attachmentLocation or ""),
+        tostring(decision.modelAttachmentName or ""),
+        tostring(getDecisionRevision(decision))
+    }, "|")
+end
+
+local function shouldRealizeDecision(zombieId, decision, collectDiagnostics)
+    local visualState = NMClientZombieVisualProbe._clientVisualStateByZombieId[zombieId] or {}
+    NMClientZombieVisualProbe._clientVisualStateByZombieId[zombieId] = visualState
+    if collectDiagnostics then
+        return true, visualState
+    end
+    local currentTick = tonumber(NMClientZombieVisualProbe.tick) or 0
+    local decisionStateKey = getDecisionStateKey(decision)
+    local recheckTicks = type(decision) == "table" and decision.authoritative == true and AUTHORITY_RECHECK_TICKS or FALLBACK_RECHECK_TICKS
+    if visualState.lastDecisionStateKey ~= decisionStateKey then
+        return true, visualState
+    end
+    if (currentTick - (tonumber(visualState.lastDecisionTick) or 0)) >= recheckTicks then
+        return true, visualState
+    end
+    return false, visualState
+end
+
+local function clearNonTargetVisualDecision(zombie, counts, attachedItemsState)
+    if clearNonTargetClientProof(zombie, attachedItemsState) then
+        counts.clearedProof = counts.clearedProof + 1
+    end
+end
+
+local function applyAuthoritativeVisualDecision(zombie, decision, counts, attachedItemsState)
+    local decisionState = type(decision) == "table" and tostring(decision.state or "") or ""
+    if decisionState == "selected" then
+        counts.contractHits = counts.contractHits + 1
+        return ensureClientProofVisual(zombie, decision, attachedItemsState)
+    end
+    if decisionState == "excluded" then
+        counts.contractMisses = counts.contractMisses + 1
+    elseif decisionState == "pending" then
+        counts.pendingAuthority = counts.pendingAuthority + 1
+    end
+    clearNonTargetVisualDecision(zombie, counts, attachedItemsState)
+    return nil
+end
+
+local function applyClientVisualFallback(zombie, decision, counts, attachedItemsState)
+    counts.fallbackEligible = counts.fallbackEligible + 1
+    local forced = ensureClientProofVisual(zombie, decision, attachedItemsState)
+    if forced then
+        logProof("client_attach_fallback", string.format("zombie=%s reason=no_authoritative_record", tostring(getZombieId(zombie))))
+    end
+    return forced
+end
+
+local function realizeZombieVisualDecision(zombie, decision, authorityDrivenRuntime, counts, attachedItemsState)
+    local decisionState = type(decision) == "table" and tostring(decision.state or "") or ""
+    if decisionState == "selected" or decisionState == "excluded" or decisionState == "pending" then
+        return applyAuthoritativeVisualDecision(zombie, decision, counts, attachedItemsState)
+    end
+    if authorityDrivenRuntime == true then
+        clearNonTargetVisualDecision(zombie, counts, attachedItemsState)
+        return nil
+    end
+    return applyClientVisualFallback(zombie, decision, counts, attachedItemsState)
 end
 
 local function hasSupportWorn(zombie)
@@ -379,14 +469,41 @@ local function hasSupportWorn(zombie)
     return false
 end
 
-local function scanAroundPlayer(player)
+local function makeNearbyZombieCheck(player)
     local square = player and player.getCurrentSquare and player:getCurrentSquare() or nil
     if not square then
+        return nil
+    end
+    local px = (tonumber(square:getX()) or 0) + 0.5
+    local py = (tonumber(square:getY()) or 0) + 0.5
+    local pz = tonumber(square:getZ()) or 0
+    return function(zombie)
+        if not (zombie and zombie.getX and zombie.getY) then
+            return false
+        end
+        local zz = tonumber(zombie.getZ and zombie:getZ() or 0) or 0
+        if math.abs(zz - pz) > 2 then
+            return false
+        end
+        local dx = px - (tonumber(zombie:getX()) or 0)
+        local dy = py - (tonumber(zombie:getY()) or 0)
+        return ((dx * dx) + (dy * dy)) <= PROBE_RADIUS_SQ
+    end
+end
+
+local function scanAroundPlayer(player)
+    local allowZombie = makeNearbyZombieCheck(player)
+    if not allowZombie then
+        return
+    end
+    local zombies = getCell() and getCell():getZombieList() or nil
+    if not (zombies and zombies.size) then
         return
     end
     local authorityDrivenRuntime = NMClientZombieVisualTargetCache
         and NMClientZombieVisualTargetCache.isAuthorityDrivenRuntime
         and NMClientZombieVisualTargetCache.isAuthorityDrivenRuntime() == true
+    local collectDiagnostics = shouldLog()
     local counts = {
         nearby = 0,
         contractHits = 0,
@@ -402,76 +519,56 @@ local function scanAroundPlayer(player)
         clearedProof = 0,
         modelBuilt = 0
     }
-    local samples = 0
     local seen = {}
-    for x = square:getX() - PROBE_RADIUS, square:getX() + PROBE_RADIUS do
-        for y = square:getY() - PROBE_RADIUS, square:getY() + PROBE_RADIUS do
-            local gridSquare = getCell() and getCell():getGridSquare(x, y, square:getZ()) or nil
-            if gridSquare then
-                local moving = gridSquare:getMovingObjects()
-                for i = 0, moving:size() - 1 do
-                    local zombie = moving:get(i)
-                    local zid = getZombieId(zombie)
-                    if not seen[zid] and isAliveZombie(zombie) then
-                        seen[zid] = true
-                        counts.nearby = counts.nearby + 1
-                        local decision = NMClientZombieVisualTargetCache
-                            and NMClientZombieVisualTargetCache.getZombieDecision
-                            and NMClientZombieVisualTargetCache.getZombieDecision(zombie) or nil
-                        local decisionState = type(decision) == "table" and tostring(decision.state or "") or ""
-                        local shouldAttach = false
-                        local shouldFallback = false
-                        if decisionState == "selected" then
-                            counts.contractHits = counts.contractHits + 1
-                            shouldAttach = true
-                        elseif decisionState == "excluded" then
-                            counts.contractMisses = counts.contractMisses + 1
-                        elseif decisionState == "pending" then
-                            counts.pendingAuthority = counts.pendingAuthority + 1
-                        else
-                            if authorityDrivenRuntime ~= true then
-                                shouldAttach = true
-                                shouldFallback = true
-                                counts.fallbackEligible = counts.fallbackEligible + 1
-                            end
-                        end
-                        local forced = nil
-                        if shouldAttach then
-                            forced = ensureClientProofVisual(zombie, decision)
-                        elseif clearNonTargetClientProof(zombie) then
-                            counts.clearedProof = counts.clearedProof + 1
-                        end
-                        local md = getProofModData(zombie)
-                        local visible = hasAttachedProof(zombie, nil, decision)
-                        local support = hasSupportWorn(zombie)
-                        if md then
-                            counts.tagged = counts.tagged + 1
-                            if tostring(md.status or "") == "attached" then
-                                counts.taggedAttachedStatus = counts.taggedAttachedStatus + 1
-                            end
-                        end
-                        if visible then
-                            counts.visibleProof = counts.visibleProof + 1
-                        end
-                        if support then
-                            counts.supportWorn = counts.supportWorn + 1
-                        end
-                        if forced and forced.attachedSlots and forced.attachedSlots > 0 then
-                            counts.forceAttached = counts.forceAttached + 1
-                        end
-                        if forced and forced.afterProbe and forced.afterProbe.attachedModelCount and forced.afterProbe.attachedModelCount > 0 then
-                            counts.modelBuilt = counts.modelBuilt + 1
-                        end
-                        if shouldFallback and decisionState == "" then
-                            logProof("client_attach_fallback", string.format("zombie=%s reason=no_authoritative_record", tostring(zid)))
-                        end
-                        if md and visible then
-                            counts.visibleAndTagged = counts.visibleAndTagged + 1
-                        end
+    for i = 0, zombies:size() - 1 do
+        local zombie = zombies:get(i)
+        local zid = getZombieId(zombie)
+        if not seen[zid] and isAliveZombie(zombie) and allowZombie(zombie) then
+            seen[zid] = true
+            counts.nearby = counts.nearby + 1
+            local decision = NMClientZombieVisualTargetCache
+                and NMClientZombieVisualTargetCache.getZombieDecision
+                and NMClientZombieVisualTargetCache.getZombieDecision(zombie) or nil
+            local shouldRealize, visualState = shouldRealizeDecision(zid, decision, collectDiagnostics)
+            local attachedItemsState = nil
+            local realizeOutcome = nil
+            if shouldRealize then
+                attachedItemsState = inspectAttachedItemsState(zombie)
+                realizeOutcome = realizeZombieVisualDecision(zombie, decision, authorityDrivenRuntime, counts, attachedItemsState)
+                visualState.lastDecisionStateKey = getDecisionStateKey(decision)
+                visualState.lastDecisionTick = tonumber(NMClientZombieVisualProbe.tick) or 0
+            end
+            if collectDiagnostics then
+                local md = getProofModData(zombie)
+                attachedItemsState = attachedItemsState or inspectAttachedItemsState(zombie)
+                local visible = hasAttachedProof(zombie, nil, decision, attachedItemsState)
+                local support = hasSupportWorn(zombie)
+                if md then
+                    counts.tagged = counts.tagged + 1
+                    if tostring(md.status or "") == "attached" then
+                        counts.taggedAttachedStatus = counts.taggedAttachedStatus + 1
                     end
+                end
+                if visible then
+                    counts.visibleProof = counts.visibleProof + 1
+                end
+                if support then
+                    counts.supportWorn = counts.supportWorn + 1
+                end
+                if realizeOutcome and realizeOutcome.attachedSlots and realizeOutcome.attachedSlots > 0 then
+                    counts.forceAttached = counts.forceAttached + 1
+                end
+                if realizeOutcome and realizeOutcome.afterProbe and realizeOutcome.afterProbe.attachedModelCount and realizeOutcome.afterProbe.attachedModelCount > 0 then
+                    counts.modelBuilt = counts.modelBuilt + 1
+                end
+                if md and visible then
+                    counts.visibleAndTagged = counts.visibleAndTagged + 1
                 end
             end
         end
+    end
+    if not collectDiagnostics then
+        return
     end
     local summary = string.format(
         "nearby=%s authoritative=%s contractHits=%s contractMisses=%s pendingAuthority=%s fallbackEligible=%s clearedProof=%s tagged=%s taggedAttachedStatus=%s visibleProof=%s visibleAndTagged=%s supportWorn=%s forceAttached=%s modelBuilt=%s",

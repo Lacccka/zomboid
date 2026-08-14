@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transition>
+	<transitionOut>true</transitionOut>
+	<conditions>
+		<compare op="!=" a="hitreaction" b="BiteRIGHT" />
+		<compare op="!=" a="hitreaction" b="BiteLEFT" />
+		<compare op="!=" a="hitreaction" b="BiteDefended" />
+		<compare op="!=" a="hitreaction" b="Bite" />
+	</conditions>
+</transition>

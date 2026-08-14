@@ -1,3 +1,5 @@
+require "ui/shared/slots/NMPortableUiSoundContract"
+
 NMSlotActionCommon = NMSlotActionCommon or {}
 
 local SLOT_TRACE_SEQ = 0
@@ -10,48 +12,17 @@ local SLOT_RELEASE_NOT_OURS = "not_ours"
 function NMSlotActionCommon.playSlotUISound(window, soundName, volume)
     local name = tostring(soundName or "")
     if name == "" then return end
-    local vol = tonumber(volume) or 0.8
-    local isWalkmanWindow = window and window.getLidRect ~= nil and window.syncLidFromMedia ~= nil
-    local sm = getSoundManager and getSoundManager() or nil
-    if isWalkmanWindow then
-        if sm and sm.playUISound then
-            pcall(sm.playUISound, sm, name)
-        end
+    local legacyEvent = ({
+        NM_BatteryIn = "slot_battery_insert_success",
+        NM_BatteryOut = "slot_battery_eject_success",
+        NM_ButtonClick = "ui_activate",
+        NM_ButtonClick2 = "ui_activate_alt",
+    })[name]
+    if legacyEvent then
+        NMPortableUiSoundContract.playEvent(window, legacyEvent)
         return
     end
-    local resolved = window and window.resolveContext and window:resolveContext() or nil
-    local playerObj = resolved and resolved.player or nil
-    local function isValidSoundId(soundId)
-        if soundId == nil then return false end
-        local n = tonumber(soundId)
-        if n and n == 0 then return false end
-        return true
-    end
-    if playerObj and playerObj.getEmitter then
-        local okEmitter, emitter = pcall(playerObj.getEmitter, playerObj)
-        if okEmitter and emitter then
-            local okPlay, soundId = false, nil
-            if emitter.playSoundImpl then
-                okPlay, soundId = pcall(emitter.playSoundImpl, emitter, name, nil)
-            end
-            if (not okPlay or not isValidSoundId(soundId)) and emitter.playSound then
-                okPlay, soundId = pcall(emitter.playSound, emitter, name)
-            end
-            if okPlay and isValidSoundId(soundId) then
-                if emitter.setVolume then
-                    pcall(emitter.setVolume, emitter, soundId, vol)
-                end
-                return
-            end
-        end
-    end
-    if playerObj and playerObj.playSoundLocal then
-        local ok = pcall(playerObj.playSoundLocal, playerObj, name)
-        if ok then return end
-    end
-    if sm and sm.playUISound then
-        pcall(sm.playUISound, sm, name)
-    end
+    NMPortableUiSoundContract.playNamedSound(window, name)
 end
 
 function NMSlotActionCommon.safeDraggedPayload()
@@ -95,23 +66,24 @@ function NMSlotActionCommon.nextSlotTraceId()
 end
 
 local function slotProbeEnabled()
-    return NMCore
-        and NMCore.isDebugKnobOn
-        and (
-            NMCore.isDebugKnobOn("portableUiProbe") == true
-            or NMCore.isDebugKnobOn("slotAuthorityProbe") == true
-        )
+    if not (NMCore and NMCore.isSubsystemDebugEnabled) then
+        return false
+    end
+    if NMCore.isSubsystemDebugEnabled("slot") == true then
+        return true
+    end
+    return NMCore.isSubsystemDebugEnabled("portable_ui") == true
 end
 
 local function slotProbeLogChannel()
     if not (NMCore and NMCore.logChannel) then
         return nil
     end
-    if NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("portableUiProbe") == true then
-        return "portableUiProbe"
+    if NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("slot") == true then
+        return "slot"
     end
-    if NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("slotAuthorityProbe") == true then
-        return "slotAuthorityProbe"
+    if NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("portable_ui") == true then
+        return "portable_ui"
     end
     return nil
 end
@@ -128,6 +100,9 @@ function NMSlotActionCommon.resolveSlotHostFamily(window)
     end
     if window and window.getFrontVariant then
         return "cdplayer"
+    end
+    if window and window.getBoomboxVariant then
+        return "boombox"
     end
     if window and window.getLidRect and window.syncLidFromMedia then
         return "walkman"

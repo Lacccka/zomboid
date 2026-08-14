@@ -122,13 +122,19 @@ function resolveWalkmanCloseTintForVariant(variant)
     return 0.78, 0.78, 0.78
 end
 
-function WalkmanWindow:resolveWalkmanUIVariant()
-    local resolved = self:resolveContextCached()
-    local item = resolved and resolved.item or nil
+function WalkmanWindow:resolveWalkmanUIVariant(resolved)
+    local ctx = resolved or self:resolveContextCached()
+    local item = ctx and ctx.item or nil
     return resolveWalkmanVariantFromItem(item)
 end
 
-function WalkmanWindow:resolveWalkmanUITextures()
-    return getWalkmanUITexturesForVariant(self:resolveWalkmanUIVariant())
+function WalkmanWindow:resolveWalkmanUITextures(resolvedOrVariant)
+    local variant = nil
+    if type(resolvedOrVariant) == "string" then
+        variant = resolvedOrVariant
+    else
+        variant = self:resolveWalkmanUIVariant(resolvedOrVariant)
+    end
+    return getWalkmanUITexturesForVariant(variant)
 end
 

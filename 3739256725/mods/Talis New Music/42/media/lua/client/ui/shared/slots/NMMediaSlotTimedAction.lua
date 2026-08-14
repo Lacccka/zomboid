@@ -4,10 +4,10 @@ setfenv(1, env)
 NMMediaSlotTimedAction = NMMediaSlotTimedAction or ISBaseTimedAction:derive("NMMediaSlotTimedAction")
 
 local function logPortableUiProbe(tag, detail)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("portableUiProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("portable_ui")) then
         return
     end
-    NMCore.logChannel("portableUiProbe", tostring(tag or "portable_ui"), tostring(detail or ""))
+    NMCore.logChannel("portable_ui", tostring(tag or "portable_ui"), tostring(detail or ""))
 end
 
 local function resolveWindowFamily(window)
@@ -16,6 +16,9 @@ local function resolveWindowFamily(window)
     end
     if window and window.getFrontVariant then
         return "cdplayer"
+    end
+    if window and window.getBoomboxVariant then
+        return "boombox"
     end
     if window and window.getLidRect and window.syncLidFromMedia then
         return "walkman"
@@ -34,7 +37,7 @@ end
 function NMMediaSlotTimedAction:start()
     if self.window then
         local windowFamily = resolveWindowFamily(self.window)
-        local isLidWindow = windowFamily == "walkman" or windowFamily == "cdplayer"
+        local isLidWindow = windowFamily == "walkman" or windowFamily == "cdplayer" or windowFamily == "boombox"
         logPortableUiProbe(
             "timed_media_start",
             string.format(
@@ -52,13 +55,13 @@ function NMMediaSlotTimedAction:start()
             self.window:clearAwaitingAuthoritativeMediaInsert()
         end
         self.window._nmMediaEjectInterrupted = nil
+        if self.actionName == "insert_media" and windowFamily == "cdplayer" then
+            self.window._nmCdInsertLandingSoundPlayed = false
+        end
         self.window._nmMediaSlotTimedProgress = { active = true, delta = 0.0, action = self.actionName }
-        if windowFamily == "walkman" and self.actionName == "insert_media" then
-            local walkmanEnv = rawget(_G, "NMWalkmanWindowEnv")
+        if (windowFamily == "walkman" or windowFamily == "boombox") and self.actionName == "insert_media" then
             self.window._nmSuppressNextLidCloseSound = true
-            if walkmanEnv and walkmanEnv.playWalkmanLidSound then
-                walkmanEnv.playWalkmanLidSound(self.window, false)
-            end
+            playPortableUiSoundEvent(self.window, "lid_close")
         end
         if self.actionName == "eject_media" and isLidWindow then
             self.window.isLidManuallyOpen = true
@@ -76,11 +79,19 @@ function NMMediaSlotTimedAction:update()
         delta = tonumber(self.action:getJobDelta()) or 0.0
     end
     if self.window then
+        local clampedDelta = NMCore.clamp(delta, 0.0, 1.0)
         self.window._nmMediaSlotTimedProgress = {
             active = true,
-            delta = NMCore.clamp(delta, 0.0, 1.0),
+            delta = clampedDelta,
             action = self.actionName
         }
+        if self.actionName == "insert_media"
+            and resolveWindowFamily(self.window) == "cdplayer"
+            and self.window._nmCdInsertLandingSoundPlayed ~= true
+            and clampedDelta >= 0.985 then
+            playPortableUiSoundEvent(self.window, "slot_media_insert_success")
+            self.window._nmCdInsertLandingSoundPlayed = true
+        end
         NMSlotHostLifecycle.invalidateForTimedAction(self.window, { context = false })
     end
 end
@@ -108,6 +119,7 @@ function NMMediaSlotTimedAction:stop()
         end
         if self.actionName == "insert_media" then
             self.window._nmSuppressNextLidCloseSound = nil
+            self.window._nmCdInsertLandingSoundPlayed = nil
         end
         if self.actionName == "eject_media" and self.window._nmSlotRemoveInFlightByType then
             self.window._nmMediaEjectInterrupted = true
@@ -124,7 +136,8 @@ end
 function NMMediaSlotTimedAction:perform()
     if self.window then
         local windowFamily = resolveWindowFamily(self.window)
-        local suppressSlotSounds = windowFamily == "walkman" or windowFamily == "cdplayer"
+        local suppressSlotSounds = windowFamily == "walkman" or windowFamily == "boombox"
+            or (windowFamily == "cdplayer" and self.actionName == "insert_media")
         local pendingInsertFullType = tostring(self.window._nmPendingMediaSlotFullType or "")
         local pendingEjectFullType = tostring(self.window._nmPendingMediaSlotFullType or "")
         logPortableUiProbe(
@@ -144,7 +157,7 @@ function NMMediaSlotTimedAction:perform()
         if self.actionName == "eject_media" then
             self.window._nmMediaEjectInterrupted = nil
         end
-        local ok = self.window:dispatch(self.actionName, self.args or {})
+        local ok = self.window:dispatchSlotAction(self.actionName, self.args or {})
         logPortableUiProbe(
             "timed_media_perform_result",
             string.format(
@@ -179,9 +192,9 @@ function NMMediaSlotTimedAction:perform()
             end
             if not suppressSlotSounds then
                 if self.actionName == "insert_media" then
-                    playSlotUISound(self.window, "NM_ButtonClick", 0.8)
+                    playPortableUiSoundEvent(self.window, "slot_media_insert_success")
                 elseif self.actionName == "eject_media" then
-                    playSlotUISound(self.window, "NM_ButtonClick2", 0.8)
+                    playPortableUiSoundEvent(self.window, "slot_media_eject_success")
                 end
             end
         end
@@ -199,6 +212,7 @@ function NMMediaSlotTimedAction:perform()
                 self.window:clearAwaitingAuthoritativeMediaInsert()
             end
             self.window._nmPendingMediaSlotFullType = nil
+            self.window._nmCdInsertLandingSoundPlayed = nil
         end
         NMSlotHostLifecycle.invalidateForTimedAction(self.window, { context = true })
         if self.window.syncLidFromMedia then

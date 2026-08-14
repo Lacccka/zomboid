@@ -7,8 +7,8 @@ NMClientVanillaMusicSuppressor._lastKnownUserVolume = NMClientVanillaMusicSuppre
 NMClientVanillaMusicSuppressor._lastRefreshTick = NMClientVanillaMusicSuppressor._lastRefreshTick or 0
 
 local function logRuntimeProbe(tag, detail)
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
-        NMCore.logChannel("runtimeProbe", tag, detail)
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+        NMCore.logChannel("runtime", tag, detail)
     end
 end
 
@@ -118,19 +118,7 @@ function NMClientVanillaMusicSuppressor.endTick(tickCount)
             setMusicVolume(sm, 0)
         end
 
-        local tickNow = tonumber(tickCount) or 0
-        local lastRefreshTick = tonumber(NMClientVanillaMusicSuppressor._lastRefreshTick) or 0
-        if (tickNow - lastRefreshTick) >= 600 then
-            NMClientVanillaMusicSuppressor._lastRefreshTick = tickNow
-            logRuntimeProbe(
-                "vanilla_music_suppress_refresh",
-                string.format(
-                    "captured=%.3f current=%s",
-                    tonumber(NMClientVanillaMusicSuppressor._capturedVolume) or 0,
-                    tostring(currentVolume ~= nil and string.format("%.3f", currentVolume) or "nil")
-                )
-            )
-        end
+        NMClientVanillaMusicSuppressor._lastRefreshTick = tonumber(tickCount) or 0
         return
     end
 

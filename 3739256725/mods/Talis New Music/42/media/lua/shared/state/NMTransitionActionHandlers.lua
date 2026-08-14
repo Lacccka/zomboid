@@ -2,11 +2,11 @@
 NMTransitionActionHandlers = NMTransitionActionHandlers or {}
 
 local function logTrackFinishedTransition(state, outcome, policy, trackIndex, nextTrackIndex, trackCount, observedDurationMs)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("progressionProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_progression")) then
         return
     end
     NMCore.logChannel(
-        "progressionProbe",
+        "playback_progression",
         "track_finished_transition",
         string.format(
             "uuid=%s outcome=%s policy=%s track=%s next=%s count=%s observedDurationMs=%s isOn=%s isPlaying=%s stopReason=%s",
@@ -258,7 +258,7 @@ function NMTransitionActionHandlers.apply(profile, state, action, payload, ops)
         end
         changed = true
 
-    elseif action == "start_playback" then
+    elseif action == "play" then
         if state.isPlaying and state.desiredIsPlaying then
             return false, "already_playing"
         end
@@ -276,41 +276,15 @@ function NMTransitionActionHandlers.apply(profile, state, action, payload, ops)
         end
         changed = true
 
-    elseif action == "stop_playback" then
+    elseif action == "stop" then
         if not (state.isPlaying or state.desiredIsPlaying) then
             return false, "already_stopped"
         end
         NMTransitionCommon.setStopped(state, "manual_stop")
         changed = true
 
-    elseif action == "toggle_play" then
-        local want = payload.isPlaying == true
-        if want then
-            local ok, reason = NMTransitionCommon.canPlay(profile, state, payload.hasTrack == true, payload)
-            if not ok then
-                NMTransitionCommon.setStopped(state, reason)
-                return false, reason
-            end
-            state.desiredIsPlaying = true
-            state.isPlaying = true
-            state.lastStopReason = nil
-            if tostring(state.playbackPolicy or "autoplay") == "shuffle" then
-                local _, _, shuffleChanged = ensureShuffleState(state, tonumber(payload.trackCount) or tonumber(state.trackCount) or 0, false)
-                changed = shuffleChanged or changed
-            end
-            changed = true
-        elseif state.isPlaying or state.desiredIsPlaying then
-            NMTransitionCommon.setStopped(state, "manual_stop")
-            changed = true
-        end
-
-    elseif action == "power_on" or action == "power_off" or action == "toggle_power" then
-        local want = state.isOn
-        if action == "power_on" then want = true
-        elseif action == "power_off" then want = false
-        elseif payload.isOn ~= nil then want = payload.isOn == true
-        else want = not state.isOn end
-
+    elseif action == "power_on" or action == "power_off" then
+        local want = action == "power_on"
         -- Power can be toggled on even without live power so UI can express On(NoPower).
         -- Actual playback viability remains enforced by canPlay()/runtime policy.
         if state.isOn ~= want or state.desiredIsOn ~= want then
@@ -323,23 +297,15 @@ function NMTransitionActionHandlers.apply(profile, state, action, payload, ops)
             changed = true
         end
 
-    elseif action == "toggle_hold" or action == "set_hold" then
-        local want = state.isHold == true
-        if action == "set_hold" or payload.isHold ~= nil then
-            want = payload.isHold == true
-        else
-            want = not want
-        end
+    elseif action == "hold_on" or action == "hold_off" then
+        local want = action == "hold_on"
         if state.isHold ~= want then
             state.isHold = want
             changed = true
         end
 
-    elseif action == "set_mute" or action == "toggle_mute" then
-        local want = state.isMuted == true
-        if action == "set_mute" then want = payload.isMuted == true
-        elseif payload.isMuted ~= nil then want = payload.isMuted == true
-        else want = not want end
+    elseif action == "mute_on" or action == "mute_off" then
+        local want = action == "mute_on"
         local reason = want and tostring(payload.muteReason or "manual") or nil
         if state.isMuted ~= want or state.muteReason ~= reason then
             state.isMuted = want
@@ -364,7 +330,7 @@ function NMTransitionActionHandlers.apply(profile, state, action, payload, ops)
             if idx ~= state.trackIndex then state.trackIndex = idx; changed = true end
         end
 
-    elseif action == "set_playback_mode" then
+    elseif action == "set_output_mode" then
         local mode = tostring(payload.playbackMode or "")
         if mode ~= "inventory" and mode ~= "world" then return false, "invalid_mode" end
         if mode == "world" and not NMDeviceProfiles.canAnyWorldPlayback(profile) then return false, "mode_blocked" end
@@ -373,7 +339,7 @@ function NMTransitionActionHandlers.apply(profile, state, action, payload, ops)
         end
         if state.playbackMode ~= mode then state.playbackMode = mode; changed = true end
 
-    elseif action == "set_playback_policy" then
+    elseif action == "cycle_mode" then
         local policy = tostring(payload.playbackPolicy or "")
         if policy ~= "autoplay" and policy ~= "loop_album" and policy ~= "loop_song" and policy ~= "shuffle" then return false, "invalid_policy" end
         local previous = tostring(state.playbackPolicy or "autoplay")

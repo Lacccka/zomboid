@@ -18,9 +18,9 @@ function NMClientVehicleContinuity.setVehicleIdentityState(entry, liveEntry, uui
         return
     end
     mirrorVehicleFlag(entry, liveEntry, "_vehicleIdentityState", target)
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
         NMCore.logChannel(
-            "runtimeProbe",
+            "runtime",
             "vehicle_identity_state_transition",
             string.format(
                 "uuid=%s from=%s to=%s reason=%s",
@@ -111,10 +111,10 @@ function NMClientVehicleContinuity.setVehicleRestartRequired(entry, liveEntry, u
         mirrorVehicleFlag(entry, liveEntry, "_vehicleRestartRequired", true)
         mirrorVehicleFlag(entry, liveEntry, "_vehicleRestartRequiredReason", nextReason)
         mirrorVehicleFlag(entry, liveEntry, "_vehicleRestartRequiredGeneration", nextGen)
-        if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
             if (not wasRequired) or prevReason ~= nextReason or prevGen ~= nextGen then
                 NMCore.logChannel(
-                    "runtimeProbe",
+                    "runtime",
                     "vehicle_restart_required_set",
                     string.format("uuid=%s reason=%s gen=%s", tostring(uuid), tostring(nextReason ~= "" and nextReason or "none"), tostring(nextGen))
                 )
@@ -126,9 +126,9 @@ function NMClientVehicleContinuity.setVehicleRestartRequired(entry, liveEntry, u
     mirrorVehicleFlag(entry, liveEntry, "_vehicleRestartRequired", false)
     mirrorVehicleFlag(entry, liveEntry, "_vehicleRestartRequiredReason", nil)
     mirrorVehicleFlag(entry, liveEntry, "_vehicleRestartRequiredGeneration", nil)
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") and wasRequired then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") and wasRequired then
         NMCore.logChannel(
-            "runtimeProbe",
+            "runtime",
             "vehicle_restart_required_clear",
             string.format(
                 "uuid=%s reason=%s gen=%s",
@@ -185,9 +185,9 @@ function NMClientVehicleContinuity.applyDetachedVehicleContinuity(args)
             mirrorVehicleFlag(entry, liveEntry, "_vehicleWasUnresolved", true)
             mirrorVehicleFlag(entry, liveEntry, "_vehicleUnresolvedSinceMs", nowMsValue)
             mirrorVehicleFlag(entry, liveEntry, "_vehicleGraceStopped", false)
-            if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+            if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
                 NMCore.logChannel(
-                    "runtimeProbe",
+                    "runtime",
                     "vehicle_continuity_mode_enter",
                     string.format("uuid=%s mode=DETACHED_CONTINUITY reason=%s", tostring(uuid), tostring(resolutionMode))
                 )
@@ -204,9 +204,9 @@ function NMClientVehicleContinuity.applyDetachedVehicleContinuity(args)
         if setVehicleIdentityState then
             setVehicleIdentityState(entry, liveEntry, uuid, "LIVE_RESOLVED", "stream_authority_resolved")
         end
-        if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
             NMCore.logChannel(
-                "runtimeProbe",
+                "runtime",
                 "vehicle_continuity_mode_exit",
                 string.format("uuid=%s mode=DETACHED_CONTINUITY reason=resolved_continue", tostring(uuid))
             )

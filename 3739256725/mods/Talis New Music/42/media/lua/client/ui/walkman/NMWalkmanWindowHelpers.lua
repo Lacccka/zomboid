@@ -1,3 +1,6 @@
+require "ui/shared/host/NMDeviceUiTime"
+require "ui/shared/slots/NMPortableUiSoundContract"
+
 local env = _G.NMWalkmanWindowEnv
 setfenv(1, env)
 
@@ -6,9 +9,7 @@ function getPlayer(playerNum)
 end
 
 function getNowMs()
-    return (getTimestampMs and tonumber(getTimestampMs()))
-        or (getTimeInMillis and tonumber(getTimeInMillis()))
-        or 0
+    return NMDeviceUiTime.nowMs()
 end
 
 function getPlayerModData(player)
@@ -173,10 +174,7 @@ function playWalkmanButtonSound(window, soundName, volume)
     if name == "" then
         return
     end
-    local sm = getSoundManager and getSoundManager() or nil
-    if sm and sm.playUISound then
-        pcall(sm.playUISound, sm, name)
-    end
+    NMPortableUiSoundContract.playNamedSound(window, name)
 end
 
 function playWalkmanTransportSound(window, isPoweringOff)

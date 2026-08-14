@@ -1,3 +1,6 @@
+require "ui/shared/host/NMDeviceUiPresentationContract"
+require "ui/cdplayer/NMCDPlayerDisplayRenderState"
+
 local env = _G.NMCDPlayerWindowEnv
 setfenv(1, env)
 
@@ -45,12 +48,67 @@ function CDPlayerWindow:invalidateSlotFrameModel()
     NMSlotHostLifecycle.invalidateSlotFrameModel(self)
 end
 
+function CDPlayerWindow:invalidateRenderModel()
+    NMSlotHostLifecycle.invalidateRenderModel(self)
+end
+
 function CDPlayerWindow:buildSlotFrameModel()
     return NMSlotHostLifecycle.buildSlotFrameModel(self)
 end
 
 function CDPlayerWindow:getSlotRenderState(slotKey)
     return NMSlotHostLifecycle.getSlotRenderState(self, slotKey)
+end
+
+function CDPlayerWindow:buildRenderModel()
+    return NMDeviceUiHost.buildFamilyRenderModel(self, {
+        decorateModel = function(window, model, build)
+            local resolved = build.resolved
+            local transport = build.transport
+            local frontVariant = window:getFrontVariant()
+            local insertedCDTexture, insertedCDTexturePath = window:getInsertedCDWorldTexture()
+
+            model.frontVariant = frontVariant
+            model.lidState = window:getLidRenderState()
+            NMDeviceUiPresentationContract.setBackground(model, "cdplayer_backplate", { variant = frontVariant })
+            NMDeviceUiPresentationContract.setShell(model, "cdplayer_shell", { variant = frontVariant })
+            NMDeviceUiPresentationContract.setWorldItem(model, "cd", { variant = frontVariant })
+            NMDeviceUiPresentationContract.setLid(model, "hinged_lid", {
+                variant = frontVariant,
+                state = model.lidState,
+            })
+            NMDeviceUiPresentationContract.setVolumeControl(model, "button_step", {
+                variant = frontVariant,
+                stepPct = tonumber(BUTTON_VOLUME_STEP_PCT) or 0,
+            })
+            model.displayPoweredOn = window:isDisplayPoweredOn(transport)
+            model.powerIndicatorState = window:getPowerIndicatorState(transport)
+            model.displaySongLabelState = NMCDPlayerDisplayRenderState.buildSongLabelState(window, transport, resolved)
+            model.displayModeIconState = NMCDPlayerDisplayRenderState.buildModeIconState(window, transport)
+            model.displayBatteryState = NMCDPlayerDisplayRenderState.buildBatteryIndicatorState(window, transport, resolved)
+            model.displayClockState = NMCDPlayerDisplayRenderState.buildClockState(window, transport)
+            model.timedCDState = window:getTimedCDAnimationState()
+            model.insertedCDState = {
+                fullType = window:getInsertedMediaFullType(),
+                texture = insertedCDTexture,
+                texturePath = insertedCDTexturePath,
+                visible = insertedCDTexture ~= nil,
+                spin = window:shouldSpinInsertedCD(transport) == true,
+                angle = tonumber(window._nmWorldCDSpinAngle) or 0.0,
+                rect = window:getWorldCDRect(),
+            }
+            return model
+        end,
+    })
+end
+
+function CDPlayerWindow:getRenderModel()
+    return self:buildRenderModel()
+end
+
+function CDPlayerWindow:getRenderState(key)
+    local model = self:buildRenderModel()
+    return model and model[key] or nil
 end
 
 function CDPlayerWindow:resolveContextCached()
@@ -61,15 +119,20 @@ function CDPlayerWindow:resolveContextFresh()
     return NMSlotHostLifecycle.resolveContextFresh(self)
 end
 
+function CDPlayerWindow:dispatchUiControl(action, args)
+    return NMSlotHostLifecycle.dispatchUiControl(self, action, args, {
+        cause = "cdplayer_dispatch_ui_control",
+        visibility = false,
+    })
+end
+
+function CDPlayerWindow:dispatchSlotAction(action, args)
+    return NMSlotHostLifecycle.dispatchSlotAction(self, action, args, {
+        cause = "cdplayer_dispatch_slot_action",
+        visibility = false,
+    })
+end
+
 function CDPlayerWindow:dispatch(action, args)
-    local resolved = self:resolveContextFresh()
-    if not resolved then
-        return false, "missing_context"
-    end
-    local ok, reason = NMClientIntentDispatch.performIntent(resolved.player, resolved.item, action, args or {})
-    if ok == true then
-        self:invalidateContextCache()
-        self:invalidateSlotFrameModel()
-    end
-    return ok, reason
+    return self:dispatchSlotAction(action, args)
 end

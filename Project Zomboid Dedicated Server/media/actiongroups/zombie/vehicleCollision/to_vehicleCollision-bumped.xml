@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transition>
+	<transitionTo>vehicleCollision-bumped</transitionTo>
+	<conditions>
+		<isFalse>bKnockedDown</isFalse>
+		<isFalse>bstaggerback</isFalse>
+		<isFalse>bDead</isFalse>
+	</conditions>
+</transition>

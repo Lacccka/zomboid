@@ -1,6 +1,8 @@
 local env = _G.NMMediaSlotEnv
 setfenv(1, env)
 
+require "ui/shared/slots/NMDeviceUiSlotContract"
+
 local AUTHORITATIVE_INSERT_TIMEOUT_MS = 750
 local AUTHORITATIVE_EJECT_TIMEOUT_MS = 1000
 
@@ -10,12 +12,35 @@ local function logPortableUiProbe(tag, detail)
     end
 end
 
+local function resolveWindowContext(window)
+    if not window then
+        return nil
+    end
+    if window.resolveContextCached then
+        return window:resolveContextCached()
+    end
+    return window.resolveContext and window:resolveContext() or nil
+end
+
+local function resolveDraggedItems(window, frame)
+    if frame and frame.dragOk == true and type(frame.dragItems) == "table" then
+        return frame.dragItems, true
+    end
+    if NMSlotHostLifecycle and NMSlotHostLifecycle.resolveDraggedItemsSnapshot then
+        return NMSlotHostLifecycle.resolveDraggedItemsSnapshot(window)
+    end
+    return getDraggedInventoryItems()
+end
+
 local function resolveWindowFamily(window)
     if window and window.target and tostring(window.target.kind or "") == "vehicle" then
         return "vehicle"
     end
     if window and window.getFrontVariant then
         return "cdplayer"
+    end
+    if window and window.getBoomboxVariant then
+        return "boombox"
     end
     if window and window.getLidRect and window.syncLidFromMedia then
         return "walkman"
@@ -43,9 +68,9 @@ local function resolveNowMs(window)
     return 0
 end
 
-function resolveDeviceCarrier(window)
-    local resolved = window and window.resolveContext and window:resolveContext() or nil
-    local profile = resolved and resolved.profile or nil
+function resolveDeviceCarrier(window, resolved)
+    local ctx = resolved or resolveWindowContext(window)
+    local profile = ctx and ctx.profile or nil
     return tostring(profile and profile.supportedCarrier or "")
 end
 function queueMediaSlotAction(window, actionName, args)
@@ -66,10 +91,10 @@ function queueMediaSlotAction(window, actionName, args)
     if payload.slotTraceId == nil then
         payload.slotTraceId = nextSlotTraceId()
     end
-    local resolved = window.resolveContext and window:resolveContext() or nil
+    local resolved = resolveWindowContext(window)
     local playerObj = resolved and resolved.player or nil
     if not (playerObj and ISTimedActionQueue and NMMediaSlotTimedAction) then
-        return window:dispatch(actionName, payload)
+        return window:dispatchSlotAction(actionName, payload)
     end
     ISTimedActionQueue.add(NMMediaSlotTimedAction:new(playerObj, window, actionName, payload))
     return true
@@ -150,7 +175,7 @@ function resolveMediaSlotFullType(window, state)
                 "slot_insert_authority_timeout",
                 string.format(
                     "ui=%s targetItemId=%s targetUuid=%s awaiting=%s elapsedMs=%s",
-                    tostring(window and window.getLidRect and window.syncLidFromMedia and "walkman" or "generic"),
+                    tostring(resolveWindowFamily(window)),
                     tostring(window and window.target and window.target.itemId or ""),
                     tostring(window and window.target and window.target.uuid or ""),
                     tostring(awaitingInsertFullType),
@@ -262,8 +287,7 @@ end
 
 function isCompatibleMediaItem(window, item)
     if not (window and item and item.getFullType) then return false end
-    local profile = NMDeviceProfiles and NMDeviceProfiles.getForItem and NMDeviceProfiles.getForItem(item) or nil
-    if profile and profile.isMediaContainerOnly ~= true then
+    if not (NMMediaHelpers and NMMediaHelpers.isInsertableMediaItem and NMMediaHelpers.isInsertableMediaItem(item) == true) then
         return false
     end
     local requiredCarrier = resolveDeviceCarrier(window)
@@ -299,7 +323,7 @@ function pickFirstCompatibleMedia(window, items)
 end
 
 function normalizeMediaIngressItem(window, item)
-    local resolved = window and window.resolveContext and window:resolveContext() or nil
+    local resolved = resolveWindowContext(window)
     local player = resolved and resolved.player or nil
     local itemId = item and NMCore and NMCore.itemId and NMCore.itemId(item) or nil
     local uuid = item and NMInventoryHelpers and NMInventoryHelpers.getItemStateUuid and NMInventoryHelpers.getItemStateUuid(item) or nil
@@ -316,7 +340,7 @@ function normalizeMediaIngressItem(window, item)
 end
 
 function collectEligibleMediaItems(window)
-    local resolved = window and window.resolveContext and window:resolveContext() or nil
+    local resolved = resolveWindowContext(window)
     local player = resolved and resolved.player or nil
     if not (player and NMInventoryHelpers and NMInventoryHelpers.collectVisibleUiSourceInventories) then
         return {}
@@ -503,7 +527,7 @@ function resolveSlotStyle(window, button, resolved)
         if NMUIRenderProbe and NMUIRenderProbe.count then
             NMUIRenderProbe.count(window, "slot.drag_check", 1)
         end
-        local items, ok = getDraggedInventoryItems()
+        local items, ok = resolveDraggedItems(window)
         if ok and type(items) == "table" and #items > 0 and isCompatibleMediaDrag(window, items) then
             return "slot_drag"
         end
@@ -519,21 +543,10 @@ function resolveSlotStyle(window, button, resolved)
     return "slot"
 end
 
-function NMMediaSlot.buildRenderState(window, frame)
-    local resolved = frame and frame.resolved or (window and window.resolveContextCached and window:resolveContextCached()) or nil
+function NMMediaSlot.buildContentState(window, frame)
+    local resolved = frame and frame.resolved or resolveWindowContext(window)
     local state = resolved and resolved.state or nil
-    local button = window and window.mediaSlot and window.mediaSlot.button or nil
     local fullType = resolveMediaSlotFullType(window, state)
-    local mouseOver = isMouseOverButton(button)
-    local styleKey = "slot"
-    if mouseOver and frame and frame.dragOk and type(frame.dragItems) == "table" and #frame.dragItems > 0
-        and isCompatibleMediaDrag(window, frame.dragItems) then
-        styleKey = "slot_drag"
-    elseif fullType ~= "" then
-        styleKey = "slot_filled"
-    elseif mouseOver then
-        styleKey = "slot_hover"
-    end
     local timed = window and window._nmMediaSlotTimedProgress or nil
     local fillPct = nil
     if timed and timed.active == true and timed.delta then
@@ -547,12 +560,51 @@ function NMMediaSlot.buildRenderState(window, frame)
         placeholderKey = resolvePlaceholderKey(window)
         tooltip = resolveEmptyInsertTooltip(window)
     end
-    return {
-        styleKey = styleKey,
+    local acceptedCarriers = {}
+    local requiredCarrier = resolveDeviceCarrier(window, resolved)
+    if requiredCarrier ~= "" then
+        acceptedCarriers[1] = requiredCarrier
+    end
+    return NMDeviceUiSlotContract.buildContentState("media", {
         fullType = fullType,
         fillPct = fillPct,
         placeholderKey = placeholderKey,
         tooltip = tooltip,
-    }
+        acceptedCarriers = acceptedCarriers,
+        insertAction = "insert_media",
+        ejectAction = "eject_media",
+    })
+end
+
+function NMMediaSlot.buildInteractionState(window, frame, contentState)
+    local button = window and window.mediaSlot and window.mediaSlot.button or nil
+    local mouseOver = isMouseOverButton(button)
+    local styleKey = tostring(contentState and contentState.styleKey or "slot")
+    local canAcceptDrag = mouseOver and frame and frame.dragOk and type(frame.dragItems) == "table" and #frame.dragItems > 0
+        and isCompatibleMediaDrag(window, frame.dragItems) or false
+    if canAcceptDrag then
+        styleKey = "slot_drag"
+    elseif mouseOver and tostring(contentState and contentState.fullType or "") == "" then
+        styleKey = "slot_hover"
+    end
+    return NMDeviceUiSlotContract.buildInteractionState("media", {
+        styleKey = styleKey,
+        mouseOver = mouseOver == true,
+        dragActive = canAcceptDrag,
+        canAcceptDrag = canAcceptDrag,
+    })
+end
+
+function NMMediaSlot.buildRenderState(window, frame)
+    local contentState = NMMediaSlot.buildContentState(window, frame)
+    local interactionState = NMMediaSlot.buildInteractionState(window, frame, contentState)
+    local out = {}
+    for key, value in pairs(contentState or {}) do
+        out[key] = value
+    end
+    for key, value in pairs(interactionState or {}) do
+        out[key] = value
+    end
+    return out
 end
 

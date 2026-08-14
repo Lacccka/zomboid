@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="HitReaction.xml">
+	<m_Name>HitReactionFromBehind</m_Name>
+	<m_AnimName>Bob_HitReactBehind_01</m_AnimName>
+	<m_Conditions x_name="cbe8fbcd-9603-490e-8b65-ef9dc5655245">
+		<m_Value>true</m_Value>
+	</m_Conditions>
+</animNode>

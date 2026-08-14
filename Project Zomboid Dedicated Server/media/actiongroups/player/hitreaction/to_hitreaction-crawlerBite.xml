@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transitions>
+	<transition>
+		<transitionTo>hitreaction-crawlerBite</transitionTo>
+		<conditions>
+			<compare op="==" a="hitReaction" b="CrawlerBite" />
+		</conditions>
+	</transition>
+	<transition>
+		<transitionTo>hitreaction-crawlerBite</transitionTo>
+		<conditions>
+			<compare op="==" a="hitReaction" b="CrawlerBiteLEFT" />
+		</conditions>
+	</transition>
+	<transition>
+		<transitionTo>hitreaction-crawlerBite</transitionTo>
+		<conditions>
+			<compare op="==" a="hitReaction" b="CrawlerBiteRIGHT" />
+		</conditions>
+	</transition>
+</transitions>

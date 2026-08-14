@@ -1,12 +1,16 @@
 require "runtime/NMClientInventoryItemVisualSanitizer"
 require "runtime/NMClientModOptions"
 require "runtime/NMClientPortableUiDragBlockProbe"
+require "runtime/NMClientVehicleLootRefresh"
 require "runtime/NMClientVanillaMusicSuppressor"
 require "runtime/NMClientWorldItemVisualSanitizer"
 require "runtime/NMClientZombieVisualTargetCache"
 require "runtime/NMClientZombieVisualProbe"
-require "ui/NMGamepadWindowTracker"
+require "ui/shared/host/NMGamepadWindowTracker"
+require "ui/boombox/NMBoomboxWindowBootstrap"
+require "ui/cdplayer/NMCDPlayerWindowBootstrap"
 require "ui/NMGamepadRadial"
+require "ui/walkman/NMWalkmanWindowBootstrap"
 require "zombies/NMZombieVisualTargetContract"
 require "zombies/NMZombieAttachedDefinitions"
 require "zombies/NMZombieLiveStrategy"
@@ -50,6 +54,9 @@ local function onTick()
     if NMCDPlayerWindow and NMCDPlayerWindow.tickPersistedRestore then
         NMCDPlayerWindow.tickPersistedRestore()
     end
+    if NMBoomboxWindow and NMBoomboxWindow.tickPersistedRestore then
+        NMBoomboxWindow.tickPersistedRestore()
+    end
     if NMClientWorldItemVisualSanitizer and NMClientWorldItemVisualSanitizer.onTick then
         NMClientWorldItemVisualSanitizer.onTick(player)
     end
@@ -88,17 +95,17 @@ local function onServerCommand(module, command, args)
         end
         if command == "debug_sync" then
             local enabled = args and args.enabled == true
-            local scope = tostring(args and args.scope or "all")
-            NMCore.setDebug(enabled, scope)
+            local subsystem = tostring(args and args.subsystem or "")
+            NMCore.setSubsystemDebugEnabled(subsystem, enabled)
             if NMCore and NMCore.logChannel then
-                NMCore.logChannel("core", "debug_sync_applied", "enabled=" .. tostring(enabled) .. " scope=" .. tostring(scope))
+                NMCore.logChannel("core", "debug_sync_applied", "enabled=" .. tostring(enabled) .. " subsystem=" .. tostring(subsystem))
                 NMCore.logChannel(
-                    "zombieDiagnostics",
+                    "core",
                     "client_debug_sync",
                     string.format(
-                        "enabled=%s scope=%s authority=%s",
+                        "enabled=%s subsystem=%s authority=%s",
                         tostring(enabled),
-                        tostring(scope),
+                        tostring(subsystem),
                         tostring(NMCore.getRuntimeAuthorityMode and NMCore.getRuntimeAuthorityMode() or "unknown")
                     )
                 )
@@ -125,60 +132,42 @@ local function onServerCommand(module, command, args)
     end
 end
 
-local function applyBootDebugPreset()
-    if not (NMRuntimeConfig and NMRuntimeConfig.applyDebugPreset) then
-        return
-    end
-    local preset = NMRuntimeConfig.getBootDebugPreset and tostring(NMRuntimeConfig.getBootDebugPreset() or "") or ""
-    if preset ~= "" then
-        NMRuntimeConfig.applyDebugPreset(preset)
-        return
-    end
-    NMRuntimeConfig.applyDebugPreset("quiet")
-end
-
 local function logClientDebugBootstrap(stage)
-    local preset = NMRuntimeConfig and NMRuntimeConfig.getBootDebugPreset and tostring(NMRuntimeConfig.getBootDebugPreset() or "") or ""
-    local master = NMRuntimeConfig and NMRuntimeConfig.getDebugMasterEnabled and NMRuntimeConfig.getDebugMasterEnabled() == true or false
-    if not master then
+    if not (NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("core")) then
         return
     end
-    local knobs = NMRuntimeConfig and NMRuntimeConfig.getDebugKnobsSnapshot and NMRuntimeConfig.getDebugKnobsSnapshot() or {}
-    local knobSummary = NMRuntimeConfig and NMRuntimeConfig.formatDebugKnobSummary and NMRuntimeConfig.formatDebugKnobSummary(knobs) or ""
+    local subsystems = NMRuntimeConfig and NMRuntimeConfig.getSubsystemDebugSnapshot and NMRuntimeConfig.getSubsystemDebugSnapshot() or {}
+    local subsystemSummary = NMRuntimeConfig and NMRuntimeConfig.formatSubsystemDebugSummary and NMRuntimeConfig.formatSubsystemDebugSummary(subsystems) or ""
     print(string.format(
-        "[NewMusic] [DebugBootstrap] side=client stage=%s preset=%s master=%s knobs=%s",
+        "[NewMusic] [DebugBootstrap] side=client stage=%s subsystems=%s",
         tostring(stage or "unknown"),
-        tostring(preset ~= "" and preset or "quiet"),
-        tostring(master),
-        tostring(knobSummary)
+        tostring(subsystemSummary)
     ))
 end
 
-local function sendDebugSet(scope, enabled)
+local function sendDebugSet(subsystem, enabled)
     if sendClientCommand and NMCore and NMCore.NetModule then
-        sendClientCommand(NMCore.NetModule, "debug_set", { scope = tostring(scope or "all"), enabled = enabled == true })
+        sendClientCommand(NMCore.NetModule, "debug_set", { subsystem = tostring(subsystem or ""), enabled = enabled == true })
     end
 end
 
-local function setLocalDebug(scope, enabled)
-    if NMCore and NMCore.setDebug then
-        NMCore.setDebug(enabled == true, tostring(scope or "all"))
+local function setLocalDebug(subsystem, enabled)
+    if NMCore and NMCore.setSubsystemDebugEnabled then
+        NMCore.setSubsystemDebugEnabled(tostring(subsystem or ""), enabled == true)
     end
 end
 
 -- Console helpers for MP UI lag forensics.
 function NMDevicesClient.enableMemoryProbe()
-    setLocalDebug("all", false)
     setLocalDebug("core", true)
-    setLocalDebug("memoryProbe", true)
-    sendDebugSet("all", false)
+    setLocalDebug("memory", true)
     sendDebugSet("core", true)
-    sendDebugSet("memoryProbe", true)
+    sendDebugSet("memory", true)
 end
 
 function NMDevicesClient.disableMemoryProbe()
-    setLocalDebug("all", false)
-    sendDebugSet("all", false)
+    setLocalDebug("memory", false)
+    sendDebugSet("memory", false)
 end
 
 function NMDevicesClient.dumpMemoryProbeSnapshot()
@@ -192,74 +181,65 @@ end
 
 function NMDevicesClient.enableUiLagProbe()
     NMDevicesClient._uiLagProbeAutoEnable = true
-    -- Local toggles must land first so client UI probes still work when server sync is gated.
-    setLocalDebug("all", false)
     setLocalDebug("core", true)
-    setLocalDebug("runtimeProbe", true)
-    setLocalDebug("uiPerfProbe", true)
-
-    -- Mirror the same scope to the server when allowed.
-    sendDebugSet("all", false)
+    setLocalDebug("runtime", true)
+    setLocalDebug("ui_render", true)
     sendDebugSet("core", true)
-    sendDebugSet("runtimeProbe", true)
-    sendDebugSet("uiPerfProbe", true)
+    sendDebugSet("runtime", true)
+    sendDebugSet("ui_render", true)
 end
 
 function NMDevicesClient.disableUiLagProbe()
     NMDevicesClient._uiLagProbeAutoEnable = false
-    setLocalDebug("all", false)
-    sendDebugSet("all", false)
+    setLocalDebug("ui_render", false)
+    sendDebugSet("ui_render", false)
 end
 
 function NMDevicesClient.enableVehiclePersonalPlaybackProbe()
-    -- Boot presets are the intended incident workflow. This helper remains as a
-    -- live-session fallback and mirrors the same preset/knob shape explicitly.
-    if NMRuntimeConfig and NMRuntimeConfig.applyDebugPreset then
-        NMRuntimeConfig.applyDebugPreset("vehicle_personal_playback_investigation")
-    end
-    setLocalDebug("all", false)
     setLocalDebug("core", true)
-    setLocalDebug("emitter", true)
-    setLocalDebug("runtimeProbe", true)
-    setLocalDebug("transitionProbe", true)
-    setLocalDebug("vehicleDiagnostics", true)
-    setLocalDebug("vehicleTruthProbe", true)
-    sendDebugSet("all", false)
+    setLocalDebug("runtime", true)
+    setLocalDebug("playback_transition", true)
+    setLocalDebug("vehicle", true)
     sendDebugSet("core", true)
-    sendDebugSet("emitter", true)
-    sendDebugSet("runtimeProbe", true)
-    sendDebugSet("transitionProbe", true)
-    sendDebugSet("vehicleDiagnostics", true)
-    sendDebugSet("vehicleTruthProbe", true)
+    sendDebugSet("runtime", true)
+    sendDebugSet("playback_transition", true)
+    sendDebugSet("vehicle", true)
     logClientDebugBootstrap("vehicle_personal_playback_probe")
 end
 
 function NMDevicesClient.enableUiAutoCloseProbe()
-    setLocalDebug("all", false)
     setLocalDebug("core", true)
-    setLocalDebug("uiAutoCloseProbe", true)
+    setLocalDebug("ui_auto_close", true)
 end
 
 function NMDevicesClient.disableUiAutoCloseProbe()
-    setLocalDebug("all", false)
+    setLocalDebug("ui_auto_close", false)
+end
+
+function NMDevicesClient.enableLootProbe()
+    setLocalDebug("loot_probe", true)
+    sendDebugSet("loot_probe", true)
+end
+
+function NMDevicesClient.disableLootProbe()
+    setLocalDebug("loot_probe", false)
+    sendDebugSet("loot_probe", false)
 end
 
 local function onGameStart()
-    applyBootDebugPreset()
     if NMCore and NMCore.logBuildVersionLine then
         NMCore.logBuildVersionLine("client")
     end
     logClientDebugBootstrap("onGameStart")
     if NMCore and NMCore.logChannel then
         NMCore.logChannel(
-            "zombieDiagnostics",
+            "core",
             "client_boot",
             string.format(
-                "authority=%s isClient=%s isServer=%s preset=%s liveStrategy=%s",
+                "authority=%s isClient=%s isServer=%s liveStrategy=%s",
                 tostring(NMCore.getRuntimeAuthorityMode and NMCore.getRuntimeAuthorityMode() or "unknown"),
                 tostring(isClient and isClient() or false),
                 tostring(isServer and isServer() or false),
-                tostring(NMRuntimeConfig and NMRuntimeConfig.getBootDebugPreset and NMRuntimeConfig.getBootDebugPreset() or ""),
                 tostring(NMZombieLiveStrategy and NMZombieLiveStrategy.getLiveVisualStrategy and NMZombieLiveStrategy.getLiveVisualStrategy() or "unknown")
             )
         )
@@ -275,6 +255,9 @@ local function onGameStart()
     end
     if NMClientSessionProjection and NMClientSessionProjection.onGameStart then
         NMClientSessionProjection.onGameStart()
+    end
+    if NMDeviceUI and NMDeviceUI.beginSessionStartAutoOpenSuppression then
+        NMDeviceUI.beginSessionStartAutoOpenSuppression(0, "on_game_start")
     end
     NMClientRegistrySync.requestInitialSync()
     if not NMCore.isMPClientRuntime() then
@@ -307,7 +290,7 @@ local function onGameStart()
                 })
                 return true
             end)
-            if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("core") then
+            if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("core") then
                 NMCore.logChannel("core", "sp_snapshot_seed", "seeded=" .. tostring(seeded or 0))
             end
         end
@@ -315,18 +298,6 @@ local function onGameStart()
     NMVehicleRadial.installHook()
     if NMGamepadRadial and NMGamepadRadial.installHook then
         NMGamepadRadial.installHook()
-    end
-    if NMWalkmanWindow and NMWalkmanWindow.queuePersistedRestore then
-        NMWalkmanWindow.queuePersistedRestore(0)
-        if NMWalkmanWindow.restorePersistedStateForPlayer then
-            NMWalkmanWindow.restorePersistedStateForPlayer(0)
-        end
-    end
-    if NMCDPlayerWindow and NMCDPlayerWindow.queuePersistedRestore then
-        NMCDPlayerWindow.queuePersistedRestore(0)
-        if NMCDPlayerWindow.restorePersistedStateForPlayer then
-            NMCDPlayerWindow.restorePersistedStateForPlayer(0)
-        end
     end
     if NMDevicesClient.onGameStart then
         NMDevicesClient.onGameStart()

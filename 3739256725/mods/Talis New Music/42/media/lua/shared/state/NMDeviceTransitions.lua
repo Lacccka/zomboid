@@ -2,14 +2,11 @@
 NMDeviceTransitions = NMDeviceTransitions or {}
 
 local enforcePlayableByAction = {
-    toggle_play = true,
-    start_playback = true,
+    play = true,
     power_on = true,
     power_off = true,
-    toggle_power = true,
     eject_media = true,
     eject_battery = true,
-    set_playback_mode = true,
     track_finished = true
 }
 

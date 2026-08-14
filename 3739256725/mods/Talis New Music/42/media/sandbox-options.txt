@@ -40,6 +40,16 @@ option NewMusic.AudioMaxRadius
     translation = NewMusic_AudioMaxRadius,
 }
 
+option NewMusic.ZombieAttractionRadius
+{
+    type = integer,
+    min = 9,
+    max = 200,
+    default = 105,
+    page = NewMusic,
+    translation = NewMusic_ZombieAttractionRadius,
+}
+
 option NewMusic.FancyUI
 {
     type = boolean,

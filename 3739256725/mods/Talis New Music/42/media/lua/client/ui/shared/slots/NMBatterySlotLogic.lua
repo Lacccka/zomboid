@@ -1,7 +1,29 @@
 local env = _G.NMBatterySlotEnv
 setfenv(1, env)
 
+require "ui/shared/slots/NMDeviceUiSlotContract"
+
 local AUTHORITATIVE_EJECT_TIMEOUT_MS = 1000
+
+local function resolveWindowContext(window)
+    if not window then
+        return nil
+    end
+    if window.resolveContextCached then
+        return window:resolveContextCached()
+    end
+    return window.resolveContext and window:resolveContext() or nil
+end
+
+local function resolveDraggedItems(window, frame)
+    if frame and frame.dragOk == true and type(frame.dragItems) == "table" then
+        return frame.dragItems, true
+    end
+    if NMSlotHostLifecycle and NMSlotHostLifecycle.resolveDraggedItemsSnapshot then
+        return NMSlotHostLifecycle.resolveDraggedItemsSnapshot(window)
+    end
+    return getDraggedInventoryItems()
+end
 
 local function markAwaitingAuthoritativeBatteryEject(window, fullType)
     if NMSlotHostLifecycle and NMSlotHostLifecycle.markAwaitingAuthoritativeSlotEject then
@@ -56,10 +78,10 @@ function queueBatterySlotAction(window, actionName, args)
         payload.slotTraceId = nextSlotTraceId()
     end
     local pendingEjectFullType = tostring(window._nmPendingBatterySlotFullType or "")
-    local resolved = window.resolveContext and window:resolveContext() or nil
+    local resolved = resolveWindowContext(window)
     local playerObj = resolved and resolved.player or nil
     if not (playerObj and ISTimedActionQueue and NMBatterySlotTimedAction) then
-        local ok = window:dispatch(actionName, payload)
+        local ok = window:dispatchSlotAction(actionName, payload)
         if ok == true and actionName == "eject_battery" and pendingEjectFullType ~= "" then
             markAwaitingAuthoritativeBatteryEject(window, pendingEjectFullType)
         end
@@ -113,7 +135,7 @@ function pickFirstBattery(items)
 end
 
 function normalizeBatteryIngressItem(window, item)
-    local resolved = window and window.resolveContext and window:resolveContext() or nil
+    local resolved = resolveWindowContext(window)
     local player = resolved and resolved.player or nil
     local itemId = item and NMCore and NMCore.itemId and NMCore.itemId(item) or nil
     local uuid = item and NMInventoryHelpers and NMInventoryHelpers.getItemStateUuid and NMInventoryHelpers.getItemStateUuid(item) or nil
@@ -145,7 +167,8 @@ function batteryChargePercentText(chargeFraction)
     if pct < 0 then pct = 0 end
     if pct > 100 then pct = 100 end
 
-    return NMTranslations.uiStringFormat("BatteryRemainingFmt", "Battery: %d%% Remaining", tonumber(pct) or 0)
+    local label = (type(getItemNameFromFullType) == "function" and getItemNameFromFullType(BATTERY_FULL_TYPE)) or "Battery"
+    return tostring(label) .. ": " .. tostring(pct) .. "%"
 end
 
 function collectEligibleBatteryItems(player)
@@ -173,7 +196,7 @@ end
 
 function openEmptySlotContextMenu(window, button, x, y)
     if not ISContextMenu then return false end
-    local resolved = window and window.resolveContext and window:resolveContext() or nil
+    local resolved = resolveWindowContext(window)
     local player = resolved and resolved.player or nil
     local playerNum = player and player.getPlayerNum and tonumber(player:getPlayerNum()) or 0
     local cx, cy = getContextMenuPoint(button, x, y)
@@ -325,7 +348,7 @@ function resolveSlotStyle(window, button, resolved)
         if NMUIRenderProbe and NMUIRenderProbe.count then
             NMUIRenderProbe.count(window, "slot.drag_check", 1)
         end
-        local items, ok = getDraggedInventoryItems()
+        local items, ok = resolveDraggedItems(window)
         if ok and type(items) == "table" and #items > 0 and isCompatibleBatteryDrag(items) then
             return "slot_drag"
         end
@@ -343,21 +366,10 @@ function resolveBatteryTint(fullType)
     return { r = 1.0, g = 1.0, b = 1.0 }
 end
 
-function NMBatterySlot.buildRenderState(window, frame)
-    local resolved = frame and frame.resolved or (window and window.resolveContextCached and window:resolveContextCached()) or nil
+function NMBatterySlot.buildContentState(window, frame)
+    local resolved = frame and frame.resolved or resolveWindowContext(window)
     local state = resolved and resolved.state or nil
-    local button = window and window.batterySlot and window.batterySlot.button or nil
     local fullType = resolveBatterySlotFullType(window, state)
-    local mouseOver = isMouseOverButton(button)
-    local styleKey = "slot"
-    if fullType == "" and mouseOver and frame and frame.dragOk and type(frame.dragItems) == "table" and #frame.dragItems > 0
-        and isCompatibleBatteryDrag(frame.dragItems) then
-        styleKey = "slot_drag"
-    elseif fullType ~= "" then
-        styleKey = "slot_filled"
-    elseif mouseOver then
-        styleKey = "slot_hover"
-    end
     local timed = window and window._nmBatterySlotTimedProgress or nil
     local fillPct = nil
     if timed and timed.active == true and timed.delta then
@@ -368,12 +380,47 @@ function NMBatterySlot.buildRenderState(window, frame)
     if fullType ~= "" then
         tooltip = batteryChargePercentText(batteryPct)
     end
-    return {
-        styleKey = styleKey,
+    return NMDeviceUiSlotContract.buildContentState("battery", {
         fullType = fullType,
         fillPct = fillPct,
         tooltip = tooltip,
+        acceptedFullTypes = { [BATTERY_FULL_TYPE] = true },
+        insertAction = "insert_battery",
+        ejectAction = "eject_battery",
         batteryPct = batteryPct,
-    }
+    })
+end
+
+function NMBatterySlot.buildInteractionState(window, frame, contentState)
+    local button = window and window.batterySlot and window.batterySlot.button or nil
+    local mouseOver = isMouseOverButton(button)
+    local styleKey = tostring(contentState and contentState.styleKey or "slot")
+    local canAcceptDrag = tostring(contentState and contentState.fullType or "") == "" and mouseOver
+        and frame and frame.dragOk and type(frame.dragItems) == "table" and #frame.dragItems > 0
+        and isCompatibleBatteryDrag(frame.dragItems) or false
+    if canAcceptDrag then
+        styleKey = "slot_drag"
+    elseif mouseOver and tostring(contentState and contentState.fullType or "") == "" then
+        styleKey = "slot_hover"
+    end
+    return NMDeviceUiSlotContract.buildInteractionState("battery", {
+        styleKey = styleKey,
+        mouseOver = mouseOver == true,
+        dragActive = canAcceptDrag,
+        canAcceptDrag = canAcceptDrag,
+    })
+end
+
+function NMBatterySlot.buildRenderState(window, frame)
+    local contentState = NMBatterySlot.buildContentState(window, frame)
+    local interactionState = NMBatterySlot.buildInteractionState(window, frame, contentState)
+    local out = {}
+    for key, value in pairs(contentState or {}) do
+        out[key] = value
+    end
+    for key, value in pairs(interactionState or {}) do
+        out[key] = value
+    end
+    return out
 end
 

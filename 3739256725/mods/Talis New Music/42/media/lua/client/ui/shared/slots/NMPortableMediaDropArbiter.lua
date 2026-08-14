@@ -5,14 +5,14 @@ local arbiter = NMPortableMediaDropArbiter
 arbiter._zOrderSeq = arbiter._zOrderSeq or 0
 
 local function probeEnabled()
-    return NMCore and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("portableUiProbe") == true
+    return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("portable_ui") == true
 end
 
 local function logProbe(tag, detail)
     if not (probeEnabled() and NMCore and NMCore.logChannel) then
         return
     end
-    NMCore.logChannel("portableUiProbe", tostring(tag or "portable_ui"), tostring(detail or ""))
+    NMCore.logChannel("portable_ui", tostring(tag or "portable_ui"), tostring(detail or ""))
 end
 
 local function clampPlayerNum(playerNum)
@@ -105,11 +105,11 @@ local function sortZones(zones)
     return zones
 end
 
-local function collectImplementationZones(api, playerNum, dragItems)
-    if not (api and api.collectOpenMediaIngressZones) then
+local function collectImplementationZones(api, fnName, playerNum, dragItems)
+    if not (api and api[fnName]) then
         return {}
     end
-    local ok, zones = pcall(api.collectOpenMediaIngressZones, playerNum, dragItems)
+    local ok, zones = pcall(api[fnName], playerNum, dragItems)
     if not ok or type(zones) ~= "table" then
         return {}
     end
@@ -136,17 +136,25 @@ end
 function arbiter.collectZones(playerNum, dragItems)
     local resolvedPlayerNum = clampPlayerNum(playerNum)
     local zones = {}
-    local walkmanZones = collectImplementationZones(NMWalkmanWindow, resolvedPlayerNum, dragItems)
-    local cdplayerZones = collectImplementationZones(NMCDPlayerWindow, resolvedPlayerNum, dragItems)
-    local genericZones = collectImplementationZones(NMDeviceWindow, resolvedPlayerNum, dragItems)
-    for i = 1, #walkmanZones do
-        zones[#zones + 1] = walkmanZones[i]
-    end
-    for i = 1, #cdplayerZones do
-        zones[#zones + 1] = cdplayerZones[i]
-    end
-    for i = 1, #genericZones do
-        zones[#zones + 1] = genericZones[i]
+    local implementations = {
+        NMWalkmanWindow,
+        NMCDPlayerWindow,
+        NMBoomboxWindow,
+        NMDeviceWindow
+    }
+    local zoneFns = {
+        "collectOpenMediaIngressZones",
+        "collectOpenBatteryIngressZones",
+        "collectOpenHeadphoneIngressZones"
+    }
+    for implIndex = 1, #implementations do
+        local api = implementations[implIndex]
+        for fnIndex = 1, #zoneFns do
+            local collected = collectImplementationZones(api, zoneFns[fnIndex], resolvedPlayerNum, dragItems)
+            for zoneIndex = 1, #collected do
+                zones[#zones + 1] = collected[zoneIndex]
+            end
+        end
     end
     return zones
 end

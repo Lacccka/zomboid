@@ -109,7 +109,7 @@ local function resetWindow(probe)
 end
 
 local function memoryProbeEnabled()
-    return NMCore and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("memoryProbe") == true
+    return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("memory") == true
 end
 
 local function updatePeak(peaks, key, value)
@@ -269,7 +269,7 @@ function NMPlaybackRuntimeDiagnostics.sampleMemoryProbe(runtimeTable, sample)
     local shouldLogPlaybackStart = playbackActive == true and probe.lastPlaybackActive ~= true
 
     if probe.announcedReady ~= true then
-        NMCore.logChannel("memoryProbe", "memory_probe_ready", string.format(
+        NMCore.logChannel("memory", "memory_probe_ready", string.format(
             "sample_interval_ms=%d heap_jump_kb=%d tick_hot_ms=%d sync_hot_ms=%d",
             tonumber(heartbeatEveryMs) or 0,
             tonumber(heapJumpKb) or 0,
@@ -280,30 +280,30 @@ function NMPlaybackRuntimeDiagnostics.sampleMemoryProbe(runtimeTable, sample)
     end
 
     if heapDeltaKb >= heapJumpKb and NMPlaybackRuntimeDiagnostics.shouldLogLifecycleProbe(runtimeTable, "memory_probe_anomaly", "global", "heap_jump:" .. tostring(math.floor(heapDeltaKb + 0.5)), 1500) then
-        NMCore.logChannel("memoryProbe", "memory_probe_anomaly", "reason=heap_jump " .. NMPlaybackRuntimeDiagnostics.formatMemoryProbeSnapshot(snapshot))
+        NMCore.logChannel("memory", "memory_probe_anomaly", "reason=heap_jump " .. NMPlaybackRuntimeDiagnostics.formatMemoryProbeSnapshot(snapshot))
     end
     if snapshot.tickMsMax >= tickHotMs and NMPlaybackRuntimeDiagnostics.shouldLogLifecycleProbe(runtimeTable, "memory_probe_anomaly", "global", "tick_hot:" .. tostring(math.floor(snapshot.tickMsMax + 0.5)), 1500) then
-        NMCore.logChannel("memoryProbe", "memory_probe_anomaly", "reason=tick_hot " .. NMPlaybackRuntimeDiagnostics.formatMemoryProbeSnapshot(snapshot))
+        NMCore.logChannel("memory", "memory_probe_anomaly", "reason=tick_hot " .. NMPlaybackRuntimeDiagnostics.formatMemoryProbeSnapshot(snapshot))
     end
     if snapshot.syncMsMax >= syncHotMs and NMPlaybackRuntimeDiagnostics.shouldLogLifecycleProbe(runtimeTable, "memory_probe_anomaly", "global", "sync_hot:" .. tostring(math.floor(snapshot.syncMsMax + 0.5)), 1500) then
-        NMCore.logChannel("memoryProbe", "memory_probe_anomaly", "reason=sync_hot " .. NMPlaybackRuntimeDiagnostics.formatMemoryProbeSnapshot(snapshot))
+        NMCore.logChannel("memory", "memory_probe_anomaly", "reason=sync_hot " .. NMPlaybackRuntimeDiagnostics.formatMemoryProbeSnapshot(snapshot))
     end
     if trackEndPending > prevPendingPeak and trackEndPending > 0
         and NMPlaybackRuntimeDiagnostics.shouldLogLifecycleProbe(runtimeTable, "memory_probe_anomaly", "global", "pending_peak:" .. tostring(trackEndPending), 2500) then
-        NMCore.logChannel("memoryProbe", "memory_probe_anomaly", "reason=track_end_pending_peak " .. NMPlaybackRuntimeDiagnostics.formatMemoryProbeSnapshot(snapshot))
+        NMCore.logChannel("memory", "memory_probe_anomaly", "reason=track_end_pending_peak " .. NMPlaybackRuntimeDiagnostics.formatMemoryProbeSnapshot(snapshot))
     end
     if trackEndAwaiting > prevAwaitingPeak and trackEndAwaiting > 0
         and NMPlaybackRuntimeDiagnostics.shouldLogLifecycleProbe(runtimeTable, "memory_probe_anomaly", "global", "awaiting_peak:" .. tostring(trackEndAwaiting), 2500) then
-        NMCore.logChannel("memoryProbe", "memory_probe_anomaly", "reason=track_end_awaiting_peak " .. NMPlaybackRuntimeDiagnostics.formatMemoryProbeSnapshot(snapshot))
+        NMCore.logChannel("memory", "memory_probe_anomaly", "reason=track_end_awaiting_peak " .. NMPlaybackRuntimeDiagnostics.formatMemoryProbeSnapshot(snapshot))
     end
 
     if shouldLogPlaybackStart then
-        NMCore.logChannel("memoryProbe", "memory_probe_playback_start", NMPlaybackRuntimeDiagnostics.formatMemoryProbeSnapshot(snapshot))
+        NMCore.logChannel("memory", "memory_probe_playback_start", NMPlaybackRuntimeDiagnostics.formatMemoryProbeSnapshot(snapshot))
         probe.lastFlushMs = currentNowMs
         resetWindow(probe)
         probe.lastHeapKb = heapKb
     elseif shouldHeartbeat then
-        NMCore.logChannel("memoryProbe", "memory_probe_heartbeat", NMPlaybackRuntimeDiagnostics.formatMemoryProbeSnapshot(snapshot))
+        NMCore.logChannel("memory", "memory_probe_heartbeat", NMPlaybackRuntimeDiagnostics.formatMemoryProbeSnapshot(snapshot))
         probe.lastFlushMs = currentNowMs
         resetWindow(probe)
         probe.lastHeapKb = heapKb
@@ -336,7 +336,7 @@ function NMPlaybackRuntimeDiagnostics.shouldLogLifecycleProbe(runtimeTable, tag,
 end
 
 function NMPlaybackRuntimeDiagnostics.logEmitterTeardown(runtimeTable, uuid, reason, active)
-    if not (active and NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe")) then
+    if not (active and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
         return
     end
     local detail = string.format(
@@ -352,7 +352,7 @@ function NMPlaybackRuntimeDiagnostics.logEmitterTeardown(runtimeTable, uuid, rea
         tostring(active.personal and active.personal.alive == true)
     )
     if NMPlaybackRuntimeDiagnostics.shouldLogLifecycleProbe(runtimeTable, "emitter_teardown", uuid, detail, 3000) then
-        NMCore.logChannel("runtimeProbe", "emitter_teardown", detail)
+        NMCore.logChannel("runtime", "emitter_teardown", detail)
     end
 end
 
@@ -360,7 +360,7 @@ function NMPlaybackRuntimeDiagnostics.updateVehicleEmitter(runtimeTable, uuid, a
     if context ~= "vehicle" or not source then
         return
     end
-    if NMRuntimeConfig.getDebugKnob and NMRuntimeConfig.getDebugKnob("vehicleDiagnostics") ~= true then
+    if NMRuntimeConfig.isSubsystemDebugEnabled and NMRuntimeConfig.isSubsystemDebugEnabled("vehicle") ~= true then
         return
     end
     local x = tonumber(source.x)
@@ -396,7 +396,7 @@ function NMPlaybackRuntimeDiagnostics.updateVehicleEmitter(runtimeTable, uuid, a
             dz = dz,
             sourceGeneration = tonumber(active.sourceGeneration) or 0
         }
-        if NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("emitter") and NMCore.logChannel then
+        if NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("emitter") and NMCore.logChannel then
             NMCore.logChannel("emitter", "vehicle emitter jump", string.format("uuid=%s dist=%.2f", tostring(uuid), jumpDist))
         end
     end

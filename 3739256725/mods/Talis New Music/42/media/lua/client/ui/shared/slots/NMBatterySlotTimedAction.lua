@@ -53,7 +53,7 @@ function NMBatterySlotTimedAction:perform()
     if self.window then
         self.window._nmBatterySlotTimedProgress = nil
         local pendingEjectFullType = tostring(self.window._nmPendingBatterySlotFullType or "")
-        local ok = self.window:dispatch(self.actionName, self.args or {})
+        local ok = self.window:dispatchSlotAction(self.actionName, self.args or {})
         if ok == true then
             self.window._nmPendingBatterySlotFullType = nil
             if self.actionName == "eject_battery"
@@ -63,9 +63,9 @@ function NMBatterySlotTimedAction:perform()
                 NMSlotHostLifecycle.markAwaitingAuthoritativeSlotEject(self.window, "battery", pendingEjectFullType)
             end
             if self.actionName == "insert_battery" then
-                playSlotUISound(self.window, "NM_BatteryIn", 0.8)
+                playPortableUiSoundEvent(self.window, "slot_battery_insert_success")
             elseif self.actionName == "eject_battery" then
-                playSlotUISound(self.window, "NM_BatteryOut", 0.8)
+                playPortableUiSoundEvent(self.window, "slot_battery_eject_success")
             end
         end
         if self.actionName == "eject_battery" and self.window._nmSlotRemoveInFlightByType then

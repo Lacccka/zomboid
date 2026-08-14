@@ -2,7 +2,7 @@
 NMCore = NMCore or {}
 
 NMCore.ModId = "newmusic"
-NMCore.BuildMarker = "NM_BUILD_2026-08-05_release"
+NMCore.BuildMarker = "NM_BUILD_2026-08-13_1"
 NMCore.NetModule = "newmusic_device"
 NMCore.StateKey = "nm_device_state"
 NMCore.RegistryKey = "nm_device"
@@ -13,29 +13,6 @@ NMCore.DebugChannels = NMCore.DebugChannels or {}
 NMCore.DebugThrottle = NMCore.DebugThrottle or {}
 NMCore.SuppressVanillaWorldContext = true
 NMCore.BuildVersionLineBySide = NMCore.BuildVersionLineBySide or {}
-
-local knownKnobs = {
-    core = true,
-    intent = true,
-    state = true,
-    emitter = true,
-    memoryProbe = true,
-    runtimeProbe = true,
-    progressionProbe = true,
-    vehicleRebindTrace = true,
-    transitionProbe = true,
-    items = true,
-    net = true,
-    registry = true,
-    lootDiagnostics = true,
-    zombieDiagnostics = true,
-    vehicleDiagnostics = true,
-    vehicleTruthProbe = true,
-    uiPerfProbe = true,
-    uiAutoCloseProbe = true,
-    portableUiProbe = true,
-    slotAuthorityProbe = true
-}
 
 local function toBool(v)
     return v == true
@@ -52,12 +29,14 @@ local function mapLogSection(channel)
         core = "CoreProbe",
         registry = "RegistryProbe",
         lootDiagnostics = "LootProbe",
+        lootProbe = "LootProbe",
         zombieDiagnostics = "ZombieProof",
-        transitionProbe = "TransitionProbe"
-        ,
+        transitionProbe = "TransitionProbe",
         uiPerfProbe = "UiPerfProbe",
         uiAutoCloseProbe = "UiAutoCloseProbe",
-        portableUiProbe = "PortableUiProbe",
+        portableUiProbe = "UiLifecycleProbe",
+        uiLifecycleProbe = "UiLifecycleProbe",
+        cycleModeProbe = "CycleModeProbe",
         slotAuthorityProbe = "SlotAuthorityProbe"
     }
     if map[raw] then
@@ -103,28 +82,30 @@ local function derivePublicBuildVersion()
     return "vunknown"
 end
 
-local function mapScopeToKnob(scope)
-    local key = tostring(scope or "")
-    if key == "playback" then
-        return "emitter"
+local function resolveSubsystemName(name)
+    local runtime = type(NMRuntimeConfig) == "table" and NMRuntimeConfig or nil
+    if runtime and runtime.resolveSubsystemDebugName then
+        return runtime.resolveSubsystemDebugName(name)
     end
-    if key == "all" then
-        return "all"
-    end
-    if knownKnobs[key] then
-        return key
-    end
-    return nil
+    local key = tostring(name or "")
+    return key ~= "" and key or nil
 end
 
 local function syncLegacyDebugFields()
     local runtime = type(NMRuntimeConfig) == "table" and NMRuntimeConfig or nil
-    NMCore.Debug = runtime and runtime.getDebugMasterEnabled and runtime.getDebugMasterEnabled() == true or false
-    NMCore.DebugPlayback = runtime and runtime.getDebugKnob and runtime.getDebugKnob("emitter") == true or false
     NMCore.DebugChannels = NMCore.DebugChannels or {}
-    for knob, _ in pairs(knownKnobs) do
-        NMCore.DebugChannels[knob] = runtime and runtime.getDebugKnob and runtime.getDebugKnob(knob) == true or false
+    local names = runtime and runtime.getSubsystemDebugNames and runtime.getSubsystemDebugNames() or {}
+    local anyEnabled = false
+    for i = 1, #names do
+        local key = tostring(names[i])
+        local enabled = runtime and runtime.isSubsystemDebugEnabled and runtime.isSubsystemDebugEnabled(key) == true or false
+        NMCore.DebugChannels[key] = enabled
+        if enabled then
+            anyEnabled = true
+        end
     end
+    NMCore.Debug = anyEnabled
+    NMCore.DebugPlayback = runtime and runtime.isSubsystemDebugEnabled and runtime.isSubsystemDebugEnabled("runtime") == true or false
 end
 
 syncLegacyDebugFields()
@@ -168,106 +149,62 @@ function NMCore.readDrainableFraction(item, defaultValue)
     return NMCore.clamp(value, 0.0, 1.0)
 end
 
-
-function NMCore.isDebugEnabled()
-    local runtime = type(NMRuntimeConfig) == "table" and NMRuntimeConfig or nil
-    return runtime and runtime.getDebugMasterEnabled and runtime.getDebugMasterEnabled() == true or false
-end
-
-function NMCore.isDebugKnobOn(knob)
-    local key = mapScopeToKnob(knob)
-    if not key or key == "all" then
-        return false
-    end
-    if not NMCore.isDebugEnabled() then
+function NMCore.isSubsystemDebugEnabled(name)
+    local key = resolveSubsystemName(name)
+    if not key then
         return false
     end
     local runtime = type(NMRuntimeConfig) == "table" and NMRuntimeConfig or nil
-    if runtime and runtime.getDebugKnob then
-        return runtime.getDebugKnob(key) == true
+    if runtime and runtime.isSubsystemDebugEnabled then
+        return runtime.isSubsystemDebugEnabled(key) == true
     end
     return false
 end
 
-function NMCore.setDebugMaster(enabled)
-    local runtime = type(NMRuntimeConfig) == "table" and NMRuntimeConfig or nil
-    if runtime and runtime.setDebugMasterEnabled then
-        runtime.setDebugMasterEnabled(toBool(enabled))
-        syncLegacyDebugFields()
-        debugPrint("setDebugMaster enabled=" .. tostring(NMCore.isDebugEnabled()))
-        return true
-    end
-    debugPrint("setDebugMaster failed runtime_missing")
-    return false
-end
-
-function NMCore.setDebugKnob(knob, enabled)
-    local key = mapScopeToKnob(knob)
-    if not key or key == "all" then
+function NMCore.setSubsystemDebugEnabled(name, enabled)
+    local key = resolveSubsystemName(name)
+    if not key then
         return false
     end
     local runtime = type(NMRuntimeConfig) == "table" and NMRuntimeConfig or nil
-    if runtime and runtime.setDebugKnob then
-        local ok = runtime.setDebugKnob(key, toBool(enabled))
+    if runtime and runtime.setSubsystemDebugEnabled then
+        local ok = runtime.setSubsystemDebugEnabled(key, toBool(enabled))
         syncLegacyDebugFields()
-        debugPrint("setDebugKnob knob=" .. tostring(key) .. " enabled=" .. tostring(NMCore.isDebugKnobOn(key)))
+        debugPrint("setSubsystemDebugEnabled subsystem=" .. tostring(key) .. " enabled=" .. tostring(NMCore.isSubsystemDebugEnabled(key)))
         return ok == true
     end
-    debugPrint("setDebugKnob failed knob=" .. tostring(key) .. " runtime_missing")
+    debugPrint("setSubsystemDebugEnabled failed subsystem=" .. tostring(key) .. " runtime_missing")
     return false
 end
 
-function NMCore.setDebugPreset(name)
+function NMCore.getSubsystemDebugSnapshot()
     local runtime = type(NMRuntimeConfig) == "table" and NMRuntimeConfig or nil
-    if runtime and runtime.applyDebugPreset then
-        local ok = runtime.applyDebugPreset(name)
-        syncLegacyDebugFields()
-        debugPrint("setDebugPreset name=" .. tostring(name) .. " ok=" .. tostring(ok == true))
-        return ok == true
+    if runtime and runtime.getSubsystemDebugSnapshot then
+        return runtime.getSubsystemDebugSnapshot()
     end
-    debugPrint("setDebugPreset failed name=" .. tostring(name) .. " runtime_missing")
-    return false
+    return {}
+end
+
+function NMCore.getSubsystemDebugNames()
+    local runtime = type(NMRuntimeConfig) == "table" and NMRuntimeConfig or nil
+    if runtime and runtime.getSubsystemDebugNames then
+        return runtime.getSubsystemDebugNames()
+    end
+    return {}
 end
 
 function NMCore.dumpDebugState()
-    local runtime = type(NMRuntimeConfig) == "table" and NMRuntimeConfig or nil
-    local master = NMCore.isDebugEnabled()
-    local knobs = runtime and runtime.getDebugKnobNames and runtime.getDebugKnobNames() or {}
+    local names = NMCore.getSubsystemDebugNames()
     local parts = {}
-    for i = 1, #knobs do
-        local key = tostring(knobs[i])
-        local on = runtime and runtime.getDebugKnob and runtime.getDebugKnob(key) == true
-        parts[#parts + 1] = key .. "=" .. tostring(on)
+    for i = 1, #names do
+        local key = tostring(names[i])
+        parts[#parts + 1] = key .. "=" .. tostring(NMCore.isSubsystemDebugEnabled(key))
     end
-    debugPrint("state master=" .. tostring(master) .. " knobs={" .. table.concat(parts, ",") .. "}")
-end
-
-function NMCore.setDebug(enabled, scope)
-    local value = toBool(enabled)
-    local key = mapScopeToKnob(scope or "all")
-    if not scope or key == "all" then
-        NMCore.setDebugMaster(value)
-        local runtime = type(NMRuntimeConfig) == "table" and NMRuntimeConfig or nil
-        local knobs = runtime and runtime.getDebugKnobNames and runtime.getDebugKnobNames() or {}
-        for i = 1, #knobs do
-            if runtime and runtime.setDebugKnob then
-                runtime.setDebugKnob(knobs[i], value)
-            end
-        end
-        syncLegacyDebugFields()
-        return
-    end
-    if not key then
-        return
-    end
-    if value == true then
-        NMCore.setDebugMaster(true)
-    end
-    NMCore.setDebugKnob(key, value)
+    debugPrint("state subsystems={" .. table.concat(parts, ",") .. "}")
 end
 
 function NMCore.isDebugChannelEnabled(channel)
-    return NMCore.isDebugKnobOn(channel)
+    return NMCore.isSubsystemDebugEnabled(channel)
 end
 
 function NMCore.shouldLogEvery(key, nowValue, interval)
@@ -285,7 +222,7 @@ function NMCore.shouldLogEvery(key, nowValue, interval)
 end
 
 function NMCore.log(msg, detail)
-    if not NMCore.isDebugKnobOn("state") then
+    if not NMCore.isSubsystemDebugEnabled("state") then
         return
     end
     local line = tostring(msg)
@@ -296,7 +233,7 @@ function NMCore.log(msg, detail)
 end
 
 function NMCore.logChannel(channel, msg, detail)
-    if not NMCore.isDebugKnobOn(channel) then
+    if not NMCore.isSubsystemDebugEnabled(channel) then
         return
     end
     local line = tostring(msg)
@@ -340,7 +277,7 @@ function NMCore.getVehicleRebindTraceUUID()
 end
 
 function NMCore.isVehicleRebindTraceEnabled(uuid)
-    if not NMCore.isDebugKnobOn("vehicleRebindTrace") then
+    if not NMCore.isSubsystemDebugEnabled("vehicle") then
         return false
     end
     local filterUuid = NMCore.getVehicleRebindTraceUUID()
@@ -358,7 +295,7 @@ function NMCore.logVehicleRebindTrace(tag, uuid, detail)
     if detail ~= nil and tostring(detail) ~= "" then
         line = line .. " " .. tostring(detail)
     end
-    NMCore.logChannel("vehicleRebindTrace", tostring(tag or "trace"), line)
+    NMCore.logChannel("vehicle", tostring(tag or "trace"), line)
 end
 
 function NMCore.getRuntimeAuthorityMode()
@@ -393,7 +330,3 @@ function NMCore.isMPClientRuntime()
 end
 
 return NMCore
-
-
-
-

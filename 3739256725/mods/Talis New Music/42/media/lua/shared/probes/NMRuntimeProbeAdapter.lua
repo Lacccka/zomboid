@@ -74,10 +74,10 @@ function NMRuntimeProbeAdapter.shouldEmitTransitionOrHeartbeat(sigStore, msStore
 end
 
 function NMRuntimeProbeAdapter.emit(knob, channel, tag, detail)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn(knob)) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled(knob)) then
         return
     end
-    NMCore.logChannel(tostring(channel or "runtimeProbe"), tostring(tag or "probe"), tostring(detail or ""))
+    NMCore.logChannel(tostring(channel or "runtime"), tostring(tag or "probe"), tostring(detail or ""))
 end
 
 return NMRuntimeProbeAdapter

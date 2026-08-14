@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode>
+	<m_Name>sit_ext</m_Name>
+	<m_Priority>10</m_Priority>
+	<m_AnimName>Bob_SitGround_ActionIdle</m_AnimName>
+	<m_DeferredBoneName></m_DeferredBoneName>
+	<m_BlendTime>0.30</m_BlendTime>
+	<m_SpeedScale>0.30</m_SpeedScale>
+	<m_SyncTrackingEnabled>false</m_SyncTrackingEnabled>
+	<m_Conditions x_name="9376ca1d-44f4-4bea-8c87-4e26a94263d7">
+		<m_Name>ExtPlaying</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Transitions>
+		<m_Target>sit_loop</m_Target>
+		<m_AnimName>Bob_SitGround_ActionToSitIdle</m_AnimName>
+		<m_blendInTime>0.3</m_blendInTime>
+		<m_speedScale>1</m_speedScale>
+	</m_Transitions>
+</animNode>

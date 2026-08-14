@@ -30,12 +30,13 @@ local function clonePayload(payload)
 end
 
 local function logSqlAnchorLineage(uuid, entry, path, reason)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
         return
     end
     local nowStamp = nowMs()
     local state = entry and entry.stateSnapshot or nil
     local isPayloadPath = tostring(path or "") == "client_upsert_payload" and tostring(reason or "") == "payload"
+    local isVehicleRefreshPath = tostring(path or "") == "client_vehicle_source_refresh"
     if isPayloadPath then
         local payloadKey = table.concat({
             tostring(uuid or ""),
@@ -49,22 +50,25 @@ local function logSqlAnchorLineage(uuid, entry, path, reason)
         end
         payloadLineageSeen[payloadKey] = nowStamp
     end
-    local sig = table.concat({
+    local sigParts = {
         tostring(path or "unknown"),
         tostring(reason or "none"),
         tostring(entry and entry.sourceGeneration or 0),
-        tostring(state and state.revision or 0),
-        tostring(state and state.playbackEpoch or 0),
         tostring(entry and entry.vehicleSqlId or ""),
         tostring(entry and entry.vehicleSqlIdHint or ""),
         tostring(entry and entry.vehicleIdHint or "")
-    }, "|")
+    }
+    if not isVehicleRefreshPath then
+        sigParts[#sigParts + 1] = tostring(state and state.revision or 0)
+        sigParts[#sigParts + 1] = tostring(state and state.playbackEpoch or 0)
+    end
+    local sig = table.concat(sigParts, "|")
     local key = tostring(path or "unknown")
     entry._lineageSigByPath = entry._lineageSigByPath or {}
     entry._lineageMsByPath = entry._lineageMsByPath or {}
     local lastSig = tostring(entry._lineageSigByPath[key] or "")
     local lastMs = tonumber(entry._lineageMsByPath[key]) or 0
-    local cooldownMs = isPayloadPath and 120000 or 20000
+    local cooldownMs = isPayloadPath and 120000 or (isVehicleRefreshPath and 60000 or 20000)
     if lastSig == sig and (nowStamp - lastMs) < cooldownMs then
         return
     end
@@ -74,7 +78,7 @@ local function logSqlAnchorLineage(uuid, entry, path, reason)
     entry._lineageSigByPath[key] = sig
     entry._lineageMsByPath[key] = nowStamp
     NMCore.logChannel(
-        "runtimeProbe",
+        "runtime",
         "sql_anchor_lineage",
         string.format(
             "uuid=%s sourceGen=%s revision=%s playbackEpoch=%s vehicleSqlId=%s vehicleSqlIdHint=%s runtimeVehicleIdHint=%s path=%s reason=%s",
@@ -141,7 +145,7 @@ local function truthToken(entry)
 end
 
 local function logVehicleTruth(probeName, entry, reason, detail, extraSig, ttlMs)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleTruthProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     local token = truthToken(entry)
@@ -162,7 +166,7 @@ local function logVehicleTruth(probeName, entry, reason, detail, extraSig, ttlMs
         ttl,
         function()
             NMCore.logChannel(
-                "vehicleTruthProbe",
+                "vehicle",
                 tostring(probeName or "vehicle_truth"),
                 string.format(
                     "traceToken=%s sessionToken=%s reason=%s %s",
@@ -177,7 +181,7 @@ local function logVehicleTruth(probeName, entry, reason, detail, extraSig, ttlMs
 end
 
 local function logVehicleCapabilityMatrix(entry, update)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleTruthProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     local state = entry and entry.stateSnapshot or {}
@@ -206,7 +210,7 @@ local function logVehicleCapabilityMatrix(entry, update)
     capabilityMatrixSeen[key .. ".sig"] = sig
     capabilityMatrixSeen[key .. ".ms"] = now
     NMCore.logChannel(
-        "vehicleTruthProbe",
+        "vehicle",
         "vehicle_id_capability_matrix",
         string.format(
             "traceToken=%s sessionToken=%s uuid=%s sourceGen=%s revision=%s playbackEpoch=%s runtimeVehicleIdHint=%s attachedRuntimeId=%s partId=%s sourceX=%.2f sourceY=%.2f sourceZ=%.2f candidateRuntimeIds=%s candidateSqlIds=%s attachStatus=%s",
@@ -413,9 +417,9 @@ function NMClientWorldSourceCache.refreshVehicleSource(uuid)
         local prevState = tostring(entry._vehicleIdentityState or "")
         if prevState ~= nextState then
             entry._vehicleIdentityState = nextState
-            if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+            if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
                 NMCore.logChannel(
-                    "runtimeProbe",
+                    "runtime",
                     "vehicle_identity_state_transition",
                     string.format(
                         "uuid=%s from=%s to=%s reason=%s",
@@ -445,7 +449,7 @@ function NMClientWorldSourceCache.refreshVehicleSource(uuid)
         )
     end
 
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
         local resolvedVehicleId = tostring(update and update.attachedRuntimeId or source.vehicleId or entry.vehicleId or "nil")
         local attemptSig = string.format(
             "%s|%s|%s|%s",
@@ -457,7 +461,7 @@ function NMClientWorldSourceCache.refreshVehicleSource(uuid)
         if tostring(entry._vehicleResolveAttemptSig or "") ~= attemptSig then
             entry._vehicleResolveAttemptSig = attemptSig
             NMCore.logChannel(
-                "runtimeProbe",
+                "runtime",
                 "vehicle_resolve_attempt",
                 string.format(
                     "uuid=%s resolved=%s mode=%s reason=%s vehicleId=%s vehicleSqlId=%s sourceGen=%s degraded=%s attachStatus=%s candidateSource=%s partMatch=%s partUuid=%s",
@@ -478,11 +482,11 @@ function NMClientWorldSourceCache.refreshVehicleSource(uuid)
         end
     end
 
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
         local shouldLog = resolvedChanged or movedDist >= 1.0
         if shouldLog then
             NMCore.logChannel(
-                    "runtimeProbe",
+                    "runtime",
                     "vehicle_source_refresh",
                     string.format(
                     "uuid=%s resolved=%s mode=%s old=%.2f,%.2f,%.2f new=%.2f,%.2f,%.2f vehicleId=%s degraded=%s",
@@ -506,10 +510,10 @@ function NMClientWorldSourceCache.refreshVehicleSource(uuid)
             entry._probeMsStoreStatus,
             statusKey,
             statusSig,
-            20000
+            60000
         ) then
             NMCore.logChannel(
-                "runtimeProbe",
+                "runtime",
                 "vehicle_source_resolution_status",
                 string.format(
                     "uuid=%s status=%s mode=%s used_for_routing=false reason=%s",
@@ -553,7 +557,7 @@ function NMClientWorldSourceCache.refreshVehicleSource(uuid)
                 )
                 if shouldSnapshot then
                     NMCore.logChannel(
-                        "runtimeProbe",
+                        "runtime",
                         "sql_anchor_candidate_pool_snapshot",
                         string.format(
                             "uuid=%s sourceGen=%s playbackEpoch=%s wantedSql=%s reason=%s attachStatus=%s candidateCount=%d sourceSqlCell=%s sourceSqlWorldCell=%s sourceSqlSquare=%s sourceSqlFinal=%s candidates=%s",
@@ -596,10 +600,10 @@ function NMClientWorldSourceCache.refreshVehicleSource(uuid)
                     entry._probeMsStoreResolver,
                     snapshotStateKey,
                     snapshotSig,
-                    20000
+                    60000
                 ) then
                     NMCore.logChannel(
-                        "runtimeProbe",
+                        "runtime",
                         "resolver_snapshot_state",
                         string.format(
                             "uuid=%s builtAtMs=%s ageMs=%s entryCount=%s poolSource=%s cellCount=%s worldCellCount=%s squareScanCount=%s finalCount=%s sourceSqlCell=%s sourceSqlWorldCell=%s sourceSqlSquare=%s sourceSqlFinal=%s",
@@ -701,17 +705,17 @@ function NMClientWorldSourceCache.collectInRange(player, out)
                 end
             end
             if tostring(entry and entry.kind or "") == "vehicle"
-                and NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe")
+                and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")
                 and NMCore.shouldLogEvery then
                 local now = nowMs()
                 local gateKey = "runtimeProbe.vehicleGate." .. tostring(uuid)
                 local gateState = tostring(inRange) .. ":" .. tostring(inFloors)
                 local gateChanged = entry._lastVehicleGateState ~= gateState
                 entry._lastVehicleGateState = gateState
-                local shouldLogGate = gateChanged or NMCore.shouldLogEvery(gateKey, now, 15000)
+                local shouldLogGate = gateChanged or NMCore.shouldLogEvery(gateKey, now, 60000)
                 if shouldLogGate then
                     NMCore.logChannel(
-                        "runtimeProbe",
+                        "runtime",
                         "vehicle_tracking_gate",
                         string.format(
                             "uuid=%s inRange=%s inFloors=%s x=%.2f y=%.2f z=%.2f",
@@ -760,11 +764,11 @@ function NMClientWorldSourceCache.collectInRange(player, out)
     end
 
     local droppedWorld = #worldCandidates - keptWorld
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") and NMCore.shouldLogEvery then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") and NMCore.shouldLogEvery then
         local now = nowMs()
         if droppedWorld > 0 and NMCore.shouldLogEvery("runtimeProbe.detachedCapDrop", now, 5000) then
             NMCore.logChannel(
-                "runtimeProbe",
+                "runtime",
                 "detached_cap_drop",
                 string.format("kept=%d dropped=%d cap=%d", keptWorld, droppedWorld, maxWorld)
             )

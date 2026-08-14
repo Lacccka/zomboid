@@ -1,8 +1,12 @@
 require "ISUI/ISButton"
 require "TimedActions/ISBaseTimedAction"
 require "TimedActions/ISTimedActionQueue"
+require "ui/shared/render/NMVectorDraw"
+require "ui/shared/render/NMBatterySlotVectors"
+require "ui/shared/NMSlotButtonStyles"
 require "ui/shared/slots/NMPortableMediaInteraction"
 require "ui/shared/slots/NMSlotHostLifecycle"
+require "ui/shared/slots/NMPortableUiSoundContract"
 
 _G.NMMediaSlot = _G.NMMediaSlot or {}
 _G.NMMediaSlotEnv = _G.NMMediaSlotEnv or {}
@@ -12,6 +16,9 @@ if getmetatable(env) == nil then
 end
 
 env.NMMediaSlot = _G.NMMediaSlot
+env.playPortableUiSoundEvent = env.playPortableUiSoundEvent or function(...)
+    return NMPortableUiSoundContract and NMPortableUiSoundContract.playEvent and NMPortableUiSoundContract.playEvent(...)
+end
 env.playSlotUISound = env.playSlotUISound or function(...)
     return NMSlotActionCommon and NMSlotActionCommon.playSlotUISound and NMSlotActionCommon.playSlotUISound(...)
 end
@@ -44,31 +51,6 @@ env.canQueueSlotAction = env.canQueueSlotAction or function(...)
     end
     return false
 end
-env.handlePortableMediaSlotMouseDown = env.handlePortableMediaSlotMouseDown or function(...)
-    if NMPortableMediaInteraction and NMPortableMediaInteraction.handleMediaSlotMouseDown then
-        return NMPortableMediaInteraction.handleMediaSlotMouseDown(...)
-    end
-    return true
-end
-env.handlePortableMediaSlotMouseUp = env.handlePortableMediaSlotMouseUp or function(...)
-    if NMPortableMediaInteraction and NMPortableMediaInteraction.handleMediaSlotMouseUp then
-        return NMPortableMediaInteraction.handleMediaSlotMouseUp(...)
-    end
-    return true
-end
-env.handlePortableMediaSlotRightClick = env.handlePortableMediaSlotRightClick or function(...)
-    if NMPortableMediaInteraction and NMPortableMediaInteraction.handleMediaSlotRightClick then
-        return NMPortableMediaInteraction.handleMediaSlotRightClick(...)
-    end
-    return true
-end
-env.finalizePortableMediaExtract = env.finalizePortableMediaExtract or function(...)
-    if NMPortableMediaInteraction and NMPortableMediaInteraction.finalizePendingExtract then
-        return NMPortableMediaInteraction.finalizePendingExtract(...)
-    end
-    return false
-end
-
 env.DRAG_THRESHOLD = env.DRAG_THRESHOLD or 4
 env.MEDIA_TEXTURE_CACHE = env.MEDIA_TEXTURE_CACHE or {}
 env.SLOT_PROGRESS_FILL = env.SLOT_PROGRESS_FILL or { a = 0.60, r = 0.26, g = 0.78, b = 0.22 }

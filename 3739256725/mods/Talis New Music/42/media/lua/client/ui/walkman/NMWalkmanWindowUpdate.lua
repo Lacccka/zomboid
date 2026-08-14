@@ -1,12 +1,10 @@
+local NMUiAutoClose = require "ui/shared/host/NMUiAutoClose"
+
 local env = _G.NMWalkmanWindowEnv
 setfenv(1, env)
 
-local function autoCloseThresholdSq()
-    return NMDeviceUIRange.getWorldInteractionRangeSq and NMDeviceUIRange.getWorldInteractionRangeSq() or (2.8 * 2.8)
-end
-
 local function autoCloseProbeEnabled()
-    return NMCore and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("uiAutoCloseProbe") == true
+    return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("ui_auto_close") == true
 end
 
 local function autoCloseWindowKey(window)
@@ -33,134 +31,49 @@ local function autoCloseProbe(window, tag, detail, throttleMs)
     if not NMCore.shouldLogEvery(key, nowMs, throttleMs or 1000) then
         return
     end
-    NMCore.logChannel("uiAutoCloseProbe", tostring(tag or "autoclose"), tostring(detail or ""))
+    NMCore.logChannel("ui_auto_close", tostring(tag or "autoclose"), tostring(detail or ""))
 end
 
-function WalkmanWindow:shouldAutoCloseForDistance()
-    local player = getPlayer(self.playerNum)
-    if not (player and player.DistToSquared) then
-        autoCloseProbe(self, "autoclose_skip", "ui=walkman reason=no_player_or_dist", 1000)
-        return false
-    end
-
-    local target = self.target
-    if target and target.kind == "item" then
-        local item = target.itemRef
-        local location = NMDeviceUIRange.resolvePortableTargetLocation and NMDeviceUIRange.resolvePortableTargetLocation(target, item) or nil
-        if location and location.mode == "detached_placed" then
-            local distSqDetached = tonumber(player:DistToSquared(location.x, location.y)) or 0
-            local thresholdSq = autoCloseThresholdSq()
-            autoCloseProbe(
-                self,
-                "autoclose_detached",
-                string.format(
-                    "ui=walkman result=%s distSq=%.3f thresholdSq=%.3f x=%.2f y=%.2f",
-                    tostring(distSqDetached > thresholdSq),
-                    distSqDetached,
-                    thresholdSq,
-                    tonumber(location.x) or 0,
-                    tonumber(location.y) or 0
-                ),
-                750
-            )
-            return distSqDetached > thresholdSq
-        end
-        if location and location.mode == "placed_world" then
-            local distSqFast = tonumber(player:DistToSquared(location.x, location.y)) or 0
-            local thresholdSq = autoCloseThresholdSq()
-            autoCloseProbe(
-                self,
-                "autoclose_fast_item",
-                string.format(
-                    "ui=walkman result=%s distSq=%.3f thresholdSq=%.3f square=%d,%d,%d itemId=%s",
-                    tostring(distSqFast > thresholdSq),
-                    distSqFast,
-                    thresholdSq,
-                    location.square:getX(),
-                    location.square:getY(),
-                    location.square:getZ(),
-                    tostring(target.itemId or "")
-                ),
-                750
-            )
-            return distSqFast > thresholdSq
-        end
-        if location and location.mode == "inventory" then
-            autoCloseProbe(self, "autoclose_skip", "ui=walkman reason=item_in_inventory", 1000)
-            return false
-        end
-        if location and location.mode == "unresolved" then
-            autoCloseProbe(self, "autoclose_item_ref", "ui=walkman reason=item_ref_unresolved", 1000)
-        end
-    end
-
-    local resolved = self:resolveContext()
-    if not resolved then
-        autoCloseProbe(self, "autoclose_resolve", "ui=walkman result=true reason=resolved_nil", 750)
-        return true
-    end
-    local location = NMDeviceUIRange.resolvePortableTargetLocation and NMDeviceUIRange.resolvePortableTargetLocation(target, resolved.item) or nil
-    if location and location.mode == "inventory" then
-        autoCloseProbe(self, "autoclose_resolve", "ui=walkman result=false reason=resolved_inventory_item", 1000)
-        return false
-    end
-    if not location or not location.requiresDistanceCheck then
-        autoCloseProbe(self, "autoclose_resolve", "ui=walkman result=false reason=no_position", 1000)
-        return false
-    end
-    local distSq = tonumber(player:DistToSquared(location.x, location.y)) or 0
-    local thresholdSq = autoCloseThresholdSq()
-    autoCloseProbe(
-        self,
-        "autoclose_resolve",
-        string.format(
-            "ui=walkman result=%s mode=%s distSq=%.3f thresholdSq=%.3f x=%.2f y=%.2f",
-            tostring(distSq > thresholdSq),
-            tostring(location.mode or ""),
-            distSq,
-            thresholdSq,
-            tonumber(location.x) or 0,
-            tonumber(location.y) or 0
-        ),
-        750
-    )
-    return distSq > thresholdSq
+local function logAutoCloseResult(window, result)
+    local event = NMUiAutoClose.buildProbeEvent("walkman", window and window.target or nil, result)
+    autoCloseProbe(window, event.tag, event.detail, event.throttleMs)
 end
 
 function WalkmanWindow:update()
+    local perfStart = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(self) or nil
+    local function finishUpdate()
+        if NMUIRenderProbe and NMUIRenderProbe.endWindow then
+            NMUIRenderProbe.endWindow(self, "device.update", perfStart)
+        end
+    end
     ISPanel.update(self)
 
-    local nowMs = getNowMs()
-    local lastDistanceCheckMs = tonumber(self._nmLastDistanceCheckMs) or 0
-    if (nowMs - lastDistanceCheckMs) >= 250 then
-        self._nmLastDistanceCheckMs = nowMs
-        autoCloseProbe(
-            self,
-            "autoclose_tick",
-            string.format(
-                "ui=walkman polled=true nowMs=%s lastMs=%s delta=%s",
-                tostring(nowMs),
-                tostring(lastDistanceCheckMs),
-                tostring(nowMs - lastDistanceCheckMs)
-            ),
-            750
-        )
-        if self:shouldAutoCloseForDistance() then
-            self:close()
-            return
-        end
-    else
-        autoCloseProbe(
-            self,
-            "autoclose_tick",
-            string.format(
-                "ui=walkman polled=false nowMs=%s lastMs=%s delta=%s",
-                tostring(nowMs),
-                tostring(lastDistanceCheckMs),
-                tostring(nowMs - lastDistanceCheckMs)
-            ),
-            2000
-        )
+    local nowMs = NMUiAutoClose.getNowMs()
+    local closed = NMUiAutoClose.tickWindowAutoClose(self, {
+        nowMs = nowMs,
+        pollMs = 250,
+        reasonTag = "walkman",
+        probeFn = function(window, tick)
+            autoCloseProbe(
+                window,
+                "autoclose_tick",
+                string.format(
+                    "ui=walkman polled=%s nowMs=%s lastMs=%s delta=%s",
+                    tostring(tick.due == true),
+                    tostring(tick.nowMs),
+                    tostring(tick.lastCheckMs),
+                    tostring(tick.deltaMs)
+                ),
+                tick.due == true and 750 or 2000
+            )
+        end,
+        resultFn = function(window, result)
+            logAutoCloseResult(window, result)
+        end,
+    })
+    if closed then
+        finishUpdate()
+        return
     end
 
     self:updateHoverTooltip()
@@ -171,7 +84,7 @@ function WalkmanWindow:update()
     if self._nmWheelDragging ~= true then
         self:syncVolumeWheelFromState(false)
     end
-    self:syncPlayButtonFromTransport(nil, true, false)
+    self:syncPlayButtonFromTransport(nil, nil, true, false)
     self:syncLidFromMedia(false)
 
     if self.isLidAnimating == true then
@@ -303,6 +216,7 @@ function WalkmanWindow:update()
         else
             self:setY(self:getExpandedY())
         end
+        finishUpdate()
         return
     end
 
@@ -318,9 +232,11 @@ function WalkmanWindow:update()
             self.isAnimating = false
             self:setY(targetY)
         end
+        finishUpdate()
         return
     end
 
     self:setY(self:getStateY(self.isCollapsed))
+    finishUpdate()
 end
 

@@ -446,5 +446,39 @@ module NewMusic
             scale = 1.0,
         }
     }
+    model BoomboxOddbolt
+    {
+        mesh = WorldItems/NM_Boombox_Oddbolt,
+        texture = WorldItems/Boombox/World_NM_BoomboxOddbolt,
+        scale = 0.00115,
+        attachment world
+        {
+            offset = 0.0 0.0 -0.205,
+            rotate = 0.0 90.0 90.0,
+            scale = 1.0,
+        }
+        attachment Bip01_Prop1
+        {
+            offset = 0.0 0.0 0.0,
+            rotate = 0.0 0.0 0.0,
+        }
+        attachment Bip01_Prop2
+        {
+            offset = 0.0 0.04 0.0,
+            rotate = 0.0 0.0 180.0,
+        }
+        attachment big_w_back
+        {
+            offset = -0.03 0.11 -0.09,
+            rotate = 155.0 0.0 0.0,
+            scale = 1.0,
+        }
+        attachment big_w_back_bag
+        {
+            offset = 0.0 0.28 -0.12,
+            rotate = 90.0 0.0 0.0,
+            scale = 1.0,
+        }
+    }
 }
 

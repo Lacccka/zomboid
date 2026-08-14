@@ -52,11 +52,4 @@ function converter.getConfigurationSnapshot()
     }
 end
 
-function converter.convertContainer(_container)
-    if not isEnabled() then
-        return 0, 0
-    end
-    return 0, 0
-end
-
 return converter

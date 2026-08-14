@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="ShotBellyStep.xml">
+	<m_Name>ShotBellyStepFromBehind</m_Name>
+	<m_AnimName>Zombie_ShotBellyStepBehind</m_AnimName>
+	<m_BlendTime>0.10</m_BlendTime>
+	<m_BlendOutTime>0.20</m_BlendOutTime>
+	<m_Conditions x_name="77c2e867-af9a-4cb6-a564-ea8fb3e20006">
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="aabdfebd-f732-448b-bb32-981513bba210">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="d266a889-7fc1-4232-a28d-8278d5d72dd5">
+		<m_Name>hitreaction</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>ShotBellyStepBehind</m_Value>
+	</m_Conditions>
+</animNode>

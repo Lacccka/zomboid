@@ -2,6 +2,8 @@
 local env = _G.NMDeviceWindowEnv
 setfenv(1, env)
 
+local UiLifecycleItemWindows = require "ui/shared/host/NMUiLifecycleItemWindows"
+
 local function getButtonScreenRect(button)
     if not button then
         return nil
@@ -68,6 +70,40 @@ local function resolveVehicleDisplayName(vehicle)
     return NMTranslations.ui("Vehicle", "Vehicle")
 end
 
+local function collectPlayerWindows(playerNum)
+    return WindowRegistry and WindowRegistry.collectWindows and WindowRegistry.collectWindows(env, playerNum) or {}
+end
+
+local function registerWindow(window)
+    if WindowRegistry and WindowRegistry.registerWindow then
+        WindowRegistry.registerWindow(env, window)
+    end
+end
+
+local function logOpenTrace(tag, detail)
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("ui_lifecycle")) then
+        return
+    end
+    NMCore.logChannel("ui_lifecycle", tostring(tag or "generic_open"), tostring(detail or ""))
+end
+
+-- Safety net for pre-registry or stale-key windows during UI/session transitions.
+-- Safety net for pre-registry or stale-key vehicle windows during UI/session transitions.
+local function findFallbackOpenVehicleWindow(playerNum, vehicleId, partId)
+    local wins = collectPlayerWindows(playerNum)
+    for i = 1, #wins do
+        local candidate = wins[i]
+        local target = candidate and candidate.target or nil
+        if target
+            and target.kind == "vehicle"
+            and tostring(target.vehicleId or "") == vehicleId
+            and tostring(target.partId or "") == partId then
+            return candidate
+        end
+    end
+    return nil
+end
+
 function DeviceWindow:new(x, y, width, height)
     local o = ISCollapsableWindow.new(self, x, y, width, height)
     o.title = NMTranslations.uiStringFormat("WindowTitleFmt", "New Music - %s", NMTranslations.ui("Device", "Device"))
@@ -97,15 +133,14 @@ function DeviceWindow:new(x, y, width, height)
     o._nmLastDistanceCheckMs = 0
     o._nmLastHeadphoneWearSyncMs = 0
     o._nmHeadphoneWearSyncActive = false
+    o._nmUiPerfKind = "generic"
+    if NMDeviceUiHost and NMDeviceUiHost.initWindow then
+        NMDeviceUiHost.initWindow(o, "generic")
+    end
     return o
 end
 
 function getOrCreateWindow(playerNum)
-    local key = tostring(tonumber(playerNum) or 0)
-    local existing = windowsByPlayer[key]
-    if existing and existing.javaObject then
-        return existing
-    end
     local w, h = 450, 560
     local core = getCore and getCore() or nil
     local sw = core and core:getScreenWidth() or 1280
@@ -116,22 +151,54 @@ function getOrCreateWindow(playerNum)
     win.playerNum = tonumber(playerNum) or 0
     win:initialise()
     win:addToUIManager()
-    windowsByPlayer[key] = win
     return win
 end
 
-function NMDeviceWindow.openForItem(playerNum, item)
+function NMDeviceWindow.openForItemResolved(playerNum, item, resolvedContext)
     local player = getPlayer(playerNum)
     if not (player and item) then return nil end
-    local profile = NMDeviceProfiles.getForItem(item)
+    local resolved = type(resolvedContext) == "table" and resolvedContext or UiLifecycleItemWindows.resolveItemLifecycleContext(item)
+    local profile = resolved and resolved.profile or NMDeviceProfiles.getForItem(item)
     if not profile or profile.isMediaContainerOnly == true then return nil end
-    local state = NMDeviceState.ensure(item, profile)
+    local state = resolved and resolved.state or NMDeviceState.ensure(item, profile)
     if not state then return nil end
-    local win = getOrCreateWindow(playerNum)
+    local identity = resolved and resolved.itemId and resolved or UiLifecycleItemWindows.resolveItemWindowIdentity(item)
+    local itemUuid = tostring(identity.itemUuid or state.deviceUUID or "")
+    local itemId = tostring(identity.itemId or NMCore.itemId(item) or "")
+    local targetKey = tostring(identity.targetKey or "")
+    local win, lookup = UiLifecycleItemWindows.findOpenItemWindowByIdentity(env, playerNum, identity)
+    logOpenTrace(
+        "generic_open_lookup",
+        string.format(
+            "player=%s targetKind=item targetKey=%s registryHit=%s itemId=%s uuid=%s",
+            tostring(playerNum or 0),
+            tostring(targetKey or ""),
+            tostring(lookup and lookup.registryHit == true),
+            tostring(itemId or ""),
+            tostring(itemUuid or "")
+        )
+    )
+    if lookup and lookup.registryHit ~= true then
+        logOpenTrace(
+            "generic_open_fallback",
+            string.format(
+                "player=%s targetKind=item targetKey=%s fallbackHit=%s itemId=%s uuid=%s",
+                tostring(playerNum or 0),
+                tostring(targetKey or ""),
+                tostring(lookup and lookup.fallbackHit == true),
+                tostring(itemId or ""),
+                tostring(itemUuid or "")
+            )
+        )
+    end
+    local reusedExisting = win ~= nil
+    if not win then
+        win = getOrCreateWindow(playerNum)
+    end
     win.target = {
         kind = "item",
-        itemId = NMCore.itemId(item),
-        uuid = NMInventoryHelpers and NMInventoryHelpers.getItemStateUuid and NMInventoryHelpers.getItemStateUuid(item) or nil,
+        itemId = identity.itemId ~= "" and identity.itemId or NMCore.itemId(item),
+        uuid = itemUuid,
         itemRef = item
     }
     win:invalidateContextCache()
@@ -145,7 +212,24 @@ function NMDeviceWindow.openForItem(playerNum, item)
     if NMPortableMediaDropArbiter and NMPortableMediaDropArbiter.markWindowInteraction then
         NMPortableMediaDropArbiter.markWindowInteraction(win, "generic")
     end
+    registerWindow(win)
+    logOpenTrace(
+        "generic_open_result",
+        string.format(
+            "player=%s targetKind=item reused=%s targetKey=%s window=%s targetItemId=%s targetUuid=%s",
+            tostring(playerNum or 0),
+            tostring(reusedExisting),
+            tostring(targetKey or ""),
+            tostring(win),
+            tostring(win.target and win.target.itemId or ""),
+            tostring(win.target and win.target.uuid or "")
+        )
+    )
     return win
+end
+
+function NMDeviceWindow.openForItem(playerNum, item)
+    return NMDeviceWindow.openForItemResolved(playerNum, item, nil)
 end
 
 function NMDeviceWindow.openForVehicle(playerNum, vehicle, part)
@@ -155,7 +239,44 @@ function NMDeviceWindow.openForVehicle(playerNum, vehicle, part)
     if not profile then return nil end
     local state = NMDeviceState.ensure(part, profile)
     if not state then return nil end
-    local win = getOrCreateWindow(playerNum)
+    local targetKey = WindowRegistry and WindowRegistry.vehicleTargetKey
+        and WindowRegistry.vehicleTargetKey(
+            tostring(vehicle.getId and vehicle:getId() or ""),
+            tostring(part.getId and part:getId() or "Radio")
+        )
+        or ""
+    local win = targetKey ~= "" and WindowRegistry and WindowRegistry.findWindow and WindowRegistry.findWindow(env, playerNum, targetKey) or nil
+    logOpenTrace(
+        "generic_open_lookup",
+        string.format(
+            "player=%s targetKind=vehicle targetKey=%s registryHit=%s vehicleId=%s partId=%s",
+            tostring(playerNum or 0),
+            tostring(targetKey or ""),
+            tostring(win ~= nil),
+            tostring(vehicle.getId and vehicle:getId() or ""),
+            tostring(part.getId and part:getId() or "Radio")
+        )
+    )
+    if not win then
+        local vehicleId = tostring(vehicle.getId and vehicle:getId() or "")
+        local partId = tostring(part.getId and part:getId() or "Radio")
+        win = findFallbackOpenVehicleWindow(playerNum, vehicleId, partId)
+        logOpenTrace(
+            "generic_open_fallback",
+            string.format(
+                "player=%s targetKind=vehicle targetKey=%s fallbackHit=%s vehicleId=%s partId=%s",
+                tostring(playerNum or 0),
+                tostring(targetKey or ""),
+                tostring(win ~= nil),
+                tostring(vehicleId or ""),
+                tostring(partId or "")
+            )
+        )
+    end
+    local reusedExisting = win ~= nil
+    if not win then
+        win = getOrCreateWindow(playerNum)
+    end
     win.target = {
         kind = "vehicle",
         vehicleId = tostring(vehicle.getId and vehicle:getId() or ""),
@@ -174,23 +295,54 @@ function NMDeviceWindow.openForVehicle(playerNum, vehicle, part)
     if NMPortableMediaDropArbiter and NMPortableMediaDropArbiter.markWindowInteraction then
         NMPortableMediaDropArbiter.markWindowInteraction(win, "generic")
     end
+    registerWindow(win)
+    logOpenTrace(
+        "generic_open_result",
+        string.format(
+            "player=%s targetKind=vehicle reused=%s targetKey=%s window=%s vehicleId=%s partId=%s",
+            tostring(playerNum or 0),
+            tostring(reusedExisting),
+            tostring(targetKey or ""),
+            tostring(win),
+            tostring(win.target and win.target.vehicleId or ""),
+            tostring(win.target and win.target.partId or "")
+        )
+    )
     return win
 end
 
+function NMDeviceWindow.findOpenForItemResolved(playerNum, item, resolvedContext)
+    if not item then
+        return nil
+    end
+    local identity = type(resolvedContext) == "table" and resolvedContext or UiLifecycleItemWindows.resolveItemWindowIdentity(item)
+    local exact = UiLifecycleItemWindows.findOpenItemWindowByIdentity(env, playerNum, identity)
+    return exact
+end
+
+function NMDeviceWindow.findOpenForItem(playerNum, item)
+    return NMDeviceWindow.findOpenForItemResolved(playerNum, item, nil)
+end
+
+function NMDeviceWindow.findOpenForVehicle(playerNum, vehicle, part)
+    if not (vehicle and part) then
+        return nil
+    end
+    local vehicleId = tostring(vehicle.getId and vehicle:getId() or "")
+    local partId = tostring(part.getId and part:getId() or "Radio")
+    local targetKey = WindowRegistry and WindowRegistry.vehicleTargetKey
+        and WindowRegistry.vehicleTargetKey(vehicleId, partId)
+        or ""
+    if targetKey ~= "" and WindowRegistry and WindowRegistry.findWindow then
+        local exact = WindowRegistry.findWindow(env, playerNum, targetKey)
+        if exact then
+            return exact
+        end
+    end
+    return findFallbackOpenVehicleWindow(playerNum, vehicleId, partId)
+end
+
 function NMDeviceWindow.collectOpenMediaIngressZones(playerNum, dragItems)
-    local key = tostring(tonumber(playerNum) or 0)
-    local win = windowsByPlayer[key] or nil
-    if not isWindowVisible(win) then
-        return {}
-    end
-    if not supportsSharedMediaSlotTarget(win.target) then
-        return {}
-    end
-    local button = win.mediaSlot and win.mediaSlot.button or nil
-    local rect = getButtonScreenRect(button)
-    if not rect then
-        return {}
-    end
     local mediaEnv = getMediaSlotEnv()
     local isCompatibleMediaDragFn = mediaEnv and mediaEnv.isCompatibleMediaDrag or nil
     local resolveMediaSlotFullTypeFn = mediaEnv and mediaEnv.resolveMediaSlotFullType or nil
@@ -199,9 +351,17 @@ function NMDeviceWindow.collectOpenMediaIngressZones(playerNum, dragItems)
     if not (isCompatibleMediaDragFn and resolveMediaSlotFullTypeFn and queueDraggedMediaInsertFn and queueMediaSlotEjectFn) then
         return {}
     end
-    local resolved = win.resolveContextCached and win:resolveContextCached() or nil
-    local state = resolved and resolved.state or nil
-    local zone = NMSlotHostLifecycle.buildSharedMediaSlotZone({
+    local zones = {}
+    local wins = collectPlayerWindows(playerNum)
+    for i = 1, #wins do
+        local win = wins[i]
+        if isWindowVisible(win) and supportsSharedMediaSlotTarget(win.target) then
+            local button = win.mediaSlot and win.mediaSlot.button or nil
+            local rect = getButtonScreenRect(button)
+            if rect then
+                local resolved = win.resolveContextCached and win:resolveContextCached() or nil
+                local state = resolved and resolved.state or nil
+                local zone = NMSlotHostLifecycle.buildSharedMediaSlotZone({
         window = win,
         uiFamily = "generic",
         zoneKind = "slot",
@@ -221,61 +381,117 @@ function NMDeviceWindow.collectOpenMediaIngressZones(playerNum, dragItems)
         end,
         canStartExtractDrag = function()
             return resolveMediaSlotFullTypeFn(win, state) ~= ""
-        end,
-        performInsertFromDrag = function(items, sourceTag)
-            return queueDraggedMediaInsertFn(win, items, sourceTag or "arbiter") == true
-        end,
-        performBeginExtract = function()
-            local resolvedNow = win.resolveContext and win:resolveContext() or nil
-            local stateNow = resolvedNow and resolvedNow.state or nil
-            local fullTypeNow = resolveMediaSlotFullTypeFn(win, stateNow)
-            if fullTypeNow == "" then
-                return false
-            end
-            if mediaEnv and mediaEnv.beginMediaExtractDrag then
-                mediaEnv.beginMediaExtractDrag(win, fullTypeNow, "slot")
-                return true
-            end
-            return false
-        end,
-        performEject = function(sourceTag)
-            return queueMediaSlotEjectFn(win, sourceTag or "arbiter") == true
-        end,
-        performShowInsertContext = function(btn, xArg, yArg)
-            local mediaEnv = getMediaSlotEnv()
-            local showMediaInsertContextMenuFn = mediaEnv and mediaEnv.showMediaInsertContextMenu or nil
-            if not showMediaInsertContextMenuFn then
-                return false
-            end
-            return showMediaInsertContextMenuFn(win, btn, xArg, yArg) == true
-        end,
-        consumeDraggedMediaInsert = function(items, sourceDescriptor)
-            return queueDraggedMediaInsertFn(win, items, sourceDescriptor and sourceDescriptor.uiFamily or "handoff") == true
-        end,
-        beginMediaExtractDrag = function()
-            local resolvedNow = win.resolveContext and win:resolveContext() or nil
-            local stateNow = resolvedNow and resolvedNow.state or nil
-            local fullTypeNow = resolveMediaSlotFullTypeFn(win, stateNow)
-            if fullTypeNow == "" then
-                return false
-            end
-            if mediaEnv and mediaEnv.beginMediaExtractDrag then
-                mediaEnv.beginMediaExtractDrag(win, fullTypeNow, "slot")
-                return true
-            end
-            return false
-        end,
-        handleRightClick = function()
-            local resolvedNow = win.resolveContext and win:resolveContext() or nil
-            local stateNow = resolvedNow and resolvedNow.state or nil
-            local fullTypeNow = resolveMediaSlotFullTypeFn(win, stateNow)
-            if fullTypeNow ~= "" then
-                return queueMediaSlotEjectFn(win, "handoff") == true
-            end
-            return false
         end
-    })
-    return zone and { zone } or {}
+                })
+                if zone then
+                    zones[#zones + 1] = zone
+                end
+            end
+        end
+    end
+    return zones
+end
+
+function NMDeviceWindow.collectOpenBatteryIngressZones(playerNum, dragItems)
+    local batteryEnv = rawget(_G, "NMBatterySlotEnv") or nil
+    local resolveBatterySlotFullTypeFn = batteryEnv and batteryEnv.resolveBatterySlotFullType or nil
+    local isCompatibleBatteryDragFn = batteryEnv and batteryEnv.isCompatibleBatteryDrag or nil
+    local pickFirstBatteryFn = batteryEnv and batteryEnv.pickFirstBattery or nil
+    local normalizeBatteryIngressItemFn = batteryEnv and batteryEnv.normalizeBatteryIngressItem or nil
+    local queueBatterySlotActionFn = batteryEnv and batteryEnv.queueBatterySlotAction or nil
+    local beginBatteryExtractDragFn = batteryEnv and batteryEnv.beginBatteryExtractDrag or nil
+    if not (resolveBatterySlotFullTypeFn and isCompatibleBatteryDragFn and pickFirstBatteryFn and normalizeBatteryIngressItemFn and queueBatterySlotActionFn and beginBatteryExtractDragFn) then
+        return {}
+    end
+    local zones = {}
+    local wins = collectPlayerWindows(playerNum)
+    for i = 1, #wins do
+        local win = wins[i]
+        if isWindowVisible(win) and supportsSharedMediaSlotTarget(win.target) then
+            local button = win.batterySlot and win.batterySlot.button or nil
+            local rect = getButtonScreenRect(button)
+            if rect then
+                local resolved = win.resolveContextCached and win:resolveContextCached() or nil
+                local state = resolved and resolved.state or nil
+                local zone = NMSlotHostLifecycle.buildSharedPortableSlotZone({
+                    window = win,
+                    uiFamily = "generic",
+                    zoneKind = "battery",
+                    rect = rect,
+                    priority = 10,
+                    zOrder = NMPortableMediaDropArbiter and NMPortableMediaDropArbiter.getWindowZOrder and NMPortableMediaDropArbiter.getWindowZOrder(win) or 0,
+                    dragItems = dragItems,
+                    canAcceptDraggedMedia = function(items)
+                        return type(items) == "table"
+                            and #items > 0
+                            and isCompatibleBatteryDragFn(items)
+                            and resolveBatterySlotFullTypeFn(win, state) == ""
+                    end,
+                    canEjectMedia = function()
+                        return resolveBatterySlotFullTypeFn(win, state) ~= ""
+                    end,
+                    canStartExtractDrag = function()
+                        return resolveBatterySlotFullTypeFn(win, state) ~= ""
+                    end
+                })
+                if zone then
+                    zones[#zones + 1] = zone
+                end
+            end
+        end
+    end
+    return zones
+end
+
+function NMDeviceWindow.collectOpenHeadphoneIngressZones(playerNum, dragItems)
+    local headphoneEnv = rawget(_G, "NMHeadphoneSlotEnv") or nil
+    local resolveHeadphoneSlotFullTypeFn = headphoneEnv and headphoneEnv.resolveHeadphoneSlotFullType or nil
+    local isCompatibleHeadphoneDragFn = headphoneEnv and headphoneEnv.isCompatibleHeadphoneDrag or nil
+    local pickFirstCompatibleHeadphoneFn = headphoneEnv and headphoneEnv.pickFirstCompatibleHeadphone or nil
+    local normalizeHeadphoneIngressItemFn = headphoneEnv and headphoneEnv.normalizeHeadphoneIngressItem or nil
+    local queueHeadphoneSlotActionFn = headphoneEnv and headphoneEnv.queueHeadphoneSlotAction or nil
+    local beginHeadphoneExtractDragFn = headphoneEnv and headphoneEnv.beginHeadphoneExtractDrag or nil
+    if not (resolveHeadphoneSlotFullTypeFn and isCompatibleHeadphoneDragFn and pickFirstCompatibleHeadphoneFn and normalizeHeadphoneIngressItemFn and queueHeadphoneSlotActionFn and beginHeadphoneExtractDragFn) then
+        return {}
+    end
+    local zones = {}
+    local wins = collectPlayerWindows(playerNum)
+    for i = 1, #wins do
+        local win = wins[i]
+        if isWindowVisible(win) and supportsSharedMediaSlotTarget(win.target) then
+            local button = win.headphoneSlot and win.headphoneSlot.button or nil
+            local rect = getButtonScreenRect(button)
+            if rect then
+                local resolved = win.resolveContextCached and win:resolveContextCached() or nil
+                local state = resolved and resolved.state or nil
+                local zone = NMSlotHostLifecycle.buildSharedPortableSlotZone({
+                    window = win,
+                    uiFamily = "generic",
+                    zoneKind = "headphones",
+                    rect = rect,
+                    priority = 10,
+                    zOrder = NMPortableMediaDropArbiter and NMPortableMediaDropArbiter.getWindowZOrder and NMPortableMediaDropArbiter.getWindowZOrder(win) or 0,
+                    dragItems = dragItems,
+                    canAcceptDraggedMedia = function(items)
+                        return type(items) == "table"
+                            and #items > 0
+                            and isCompatibleHeadphoneDragFn(win, items, resolved, state)
+                            and resolveHeadphoneSlotFullTypeFn(win, state) == ""
+                    end,
+                    canEjectMedia = function()
+                        return resolveHeadphoneSlotFullTypeFn(win, state) ~= ""
+                    end,
+                    canStartExtractDrag = function()
+                        return resolveHeadphoneSlotFullTypeFn(win, state) ~= ""
+                    end
+                })
+                if zone then
+                    zones[#zones + 1] = zone
+                end
+            end
+        end
+    end
+    return zones
 end
 
 return NMDeviceWindow

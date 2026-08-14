@@ -91,7 +91,7 @@ end
 
 local function logCatalog(tag, detail)
     if NMCore and NMCore.logChannel then
-        NMCore.logChannel("lootDiagnostics", tostring(tag or "spawn.catalog"), tostring(detail or ""))
+        NMCore.logChannel("loot", tostring(tag or "spawn.catalog"), tostring(detail or ""))
     end
 end
 
@@ -481,7 +481,10 @@ local function resolveManagedDeviceUnit(fullType)
         spawnFullType = tostring(fullType or ""),
         deviceType = tostring(profile.deviceType or ""),
         supportedCarrier = tostring(profile.supportedCarrier or ""),
-        variantWeight = tostring(fullType or "") == "NewMusic.WalkmanLore" and 0.25 or 1.0
+        variantWeight = (
+            tostring(fullType or "") == "NewMusic.WalkmanLore"
+            or tostring(fullType or "") == "NewMusic.BoomboxOddbolt"
+        ) and 0.25 or 1.0
     }
 end
 
@@ -506,6 +509,19 @@ local function countUnitPool(unitMap, order)
         counts[category] = countItemsInMap(unitMap and unitMap[category] or nil)
     end
     return counts
+end
+
+local function mergeUnitMapsInto(targetMap, unitMap, order)
+    local useOrder = order or CATEGORY_ORDER
+    for i = 1, #useOrder do
+        local category = useOrder[i]
+        for _, unit in pairs(unitMap and unitMap[category] or {}) do
+            local spawnFullType = tostring(unit and unit.spawnFullType or "")
+            if spawnFullType ~= "" and targetMap[spawnFullType] == nil then
+                targetMap[spawnFullType] = category
+            end
+        end
+    end
 end
 
 local function orderedUnitsForCategory(unitMap, category)
@@ -740,8 +756,11 @@ function NMManagedSpawnCatalog.buildCatalog(allItems, options)
     }
 end
 
-function NMManagedSpawnCatalog.filterBaseZomboidOSTMedia(basePools)
-    if NMRuntimeConfig and NMRuntimeConfig.getZomboidOSTEnabled and NMRuntimeConfig.getZomboidOSTEnabled() == true then
+function NMManagedSpawnCatalog.filterBaseZomboidOSTMedia(basePools, ostEnabled)
+    if ostEnabled == nil and NMRuntimeConfig and NMRuntimeConfig.getZomboidOSTEnabled then
+        ostEnabled = NMRuntimeConfig.getZomboidOSTEnabled() == true
+    end
+    if ostEnabled == true then
         return 0
     end
 
@@ -759,6 +778,72 @@ function NMManagedSpawnCatalog.filterBaseZomboidOSTMedia(basePools)
         end
     end
     return removed
+end
+
+function NMManagedSpawnCatalog.buildManagedMediaFootprint(basePools, childPools, presenceIndex)
+    local managedMediaMap = {}
+    local managedLootMap = {}
+    mergeUnitMapsInto(managedMediaMap, basePools and basePools.media or nil, MEDIA_CATEGORY_ORDER)
+    mergeUnitMapsInto(managedLootMap, basePools and basePools.media or nil, MEDIA_CATEGORY_ORDER)
+    mergeUnitMapsInto(managedLootMap, basePools and basePools.devices or nil, DEVICE_CATEGORY_ORDER)
+    for _, pools in pairs(childPools or {}) do
+        mergeUnitMapsInto(managedMediaMap, pools and pools.media or nil, MEDIA_CATEGORY_ORDER)
+        mergeUnitMapsInto(managedLootMap, pools and pools.media or nil, MEDIA_CATEGORY_ORDER)
+        mergeUnitMapsInto(managedLootMap, pools and pools.devices or nil, DEVICE_CATEGORY_ORDER)
+    end
+
+    local managedMediaCounts = {}
+    local managedLootCounts = {}
+    local presentManagedCounts = {}
+    for i = 1, #MEDIA_CATEGORY_ORDER do
+        local category = MEDIA_CATEGORY_ORDER[i]
+        managedMediaCounts[category] = 0
+        presentManagedCounts[category] = 0
+    end
+    for i = 1, #CATEGORY_ORDER do
+        managedLootCounts[CATEGORY_ORDER[i]] = 0
+    end
+
+    local presentManagedMedia = 0
+    for fullType, category in pairs(managedMediaMap) do
+        managedMediaCounts[category] = (tonumber(managedMediaCounts[category]) or 0) + 1
+        local present = presenceIndex
+            and (
+                presenceIndex.procedural[fullType] == true
+                or presenceIndex.suburbs[fullType] == true
+                or presenceIndex.vehicle[fullType] == true
+            )
+        if present then
+            presentManagedCounts[category] = (tonumber(presentManagedCounts[category]) or 0) + 1
+            presentManagedMedia = presentManagedMedia + 1
+        end
+    end
+    for _, category in pairs(managedLootMap) do
+        managedLootCounts[category] = (tonumber(managedLootCounts[category]) or 0) + 1
+    end
+
+    local maxPresent = 0
+    local maxCategory = ""
+    for i = 1, #MEDIA_CATEGORY_ORDER do
+        local category = MEDIA_CATEGORY_ORDER[i]
+        local count = tonumber(presentManagedCounts[category]) or 0
+        if count > maxPresent then
+            maxPresent = count
+            maxCategory = category
+        end
+    end
+
+    return {
+        managedMediaMap = managedMediaMap,
+        managedLootMap = managedLootMap,
+        managedMediaCounts = managedMediaCounts,
+        managedLootCounts = managedLootCounts,
+        presentManagedCounts = presentManagedCounts,
+        uniqueManagedMedia = countItemsInMap(managedMediaMap),
+        presentManagedMedia = presentManagedMedia,
+        oversizedRiskCategory = maxCategory,
+        oversizedRiskCount = maxPresent
+    }
 end
 
 function NMManagedSpawnCatalog.newUnitPools()

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="Ext04_Ground.xml">
+	<m_Name>Ext04_Ground_2Handed</m_Name>
+	<m_Conditions x_name="df47c87a-7277-482c-9df2-cbe4778e8b51">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="2c032524-6c50-4889-a7f3-10d91772ca18">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="80fa5621-a227-48e2-a7ac-137b1f37ebe5">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>4</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="92622ce7-e4d6-4c54-9cd6-6eb1c4ce8c7d">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="8cd74d7c-0d74-499c-be7b-2ca3150f31c5">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="d0f7c161-c30a-4f96-b7d7-665ceeb7c84a">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="4c415856-5981-4be8-9275-63b0a14f86a9">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>4</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="a7adb9ef-fbe5-42e4-a675-ea17d45d24b4">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="b608e6c1-6998-43ca-a2d8-74c50363a91f">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+</animNode>

@@ -1,16 +1,17 @@
 NMPortableMediaInteraction = NMPortableMediaInteraction or {}
+require "ui/shared/slots/NMPortableSlotHoverResolver"
 
 local interaction = NMPortableMediaInteraction
 
 local function probeEnabled()
-    return NMCore and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("portableUiProbe") == true
+    return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("portable_ui") == true
 end
 
 local function logProbe(tag, detail)
     if not (probeEnabled() and NMCore and NMCore.logChannel) then
         return
     end
-    NMCore.logChannel("portableUiProbe", tostring(tag or "portable_ui"), tostring(detail or ""))
+    NMCore.logChannel("portable_ui", tostring(tag or "portable_ui"), tostring(detail or ""))
 end
 
 local function getMousePoint()
@@ -50,6 +51,57 @@ local function resolveZoneDescriptor(window, zoneKind, dragItems)
     }
 end
 
+local function resolveLocalMediaFullType(window)
+    local mediaEnv = rawget(_G, "NMMediaSlotEnv") or nil
+    local resolveMediaSlotFullTypeFn = mediaEnv and mediaEnv.resolveMediaSlotFullType or nil
+    if not resolveMediaSlotFullTypeFn then
+        return ""
+    end
+    local resolved = window and window.resolveContext and window:resolveContext() or nil
+    local state = resolved and resolved.state or nil
+    return tostring(resolveMediaSlotFullTypeFn(window, state) or "")
+end
+
+local function beginLocalExtract(window, zoneKind)
+    local mediaEnv = rawget(_G, "NMMediaSlotEnv") or nil
+    local beginMediaExtractDragFn = mediaEnv and mediaEnv.beginMediaExtractDrag or nil
+    if not (window and beginMediaExtractDragFn) then
+        return false
+    end
+    local fullType = resolveLocalMediaFullType(window)
+    if fullType == "" then
+        return false
+    end
+    beginMediaExtractDragFn(window, fullType, tostring(zoneKind or "slot"))
+    return true
+end
+
+local function handleLocalRightClick(window, zoneKind, btn, xArg, yArg)
+    local kind = tostring(zoneKind or "slot")
+    if not window then
+        return false
+    end
+    if kind == "aux" then
+        if window.ejectOpenLidMediaViaAux then
+            return window:ejectOpenLidMediaViaAux("local_aux") == true
+        end
+        if window.ejectMediaViaLid then
+            return window:ejectMediaViaLid() == true
+        end
+    end
+    local mediaEnv = rawget(_G, "NMMediaSlotEnv") or nil
+    local queueMediaSlotEjectFn = mediaEnv and mediaEnv.queueMediaSlotEject or nil
+    local showMediaInsertContextMenuFn = mediaEnv and mediaEnv.showMediaInsertContextMenu or nil
+    local fullType = resolveLocalMediaFullType(window)
+    if fullType ~= "" and queueMediaSlotEjectFn then
+        return queueMediaSlotEjectFn(window, "local_fallback", kind) == true
+    end
+    if showMediaInsertContextMenuFn then
+        return showMediaInsertContextMenuFn(window, btn, xArg, yArg) == true
+    end
+    return false
+end
+
 local function winnerSummary(zone)
     if not zone then
         return "none"
@@ -61,6 +113,18 @@ local function winnerSummary(zone)
         tostring(zone.itemId or ""),
         tostring(zone.uuid or "")
     )
+end
+
+local function performMediaDragInsert(targetWindow, items, sourceTag)
+    if not (targetWindow and type(items) == "table" and #items > 0) then
+        return false
+    end
+    local mediaEnv = rawget(_G, "NMMediaSlotEnv") or nil
+    local queueDraggedMediaInsertFn = mediaEnv and mediaEnv.queueDraggedMediaInsert or nil
+    if not queueDraggedMediaInsertFn then
+        return false
+    end
+    return queueDraggedMediaInsertFn(targetWindow, items, sourceTag) == true
 end
 
 local function slotReleaseOutcomes()
@@ -137,7 +201,7 @@ function interaction.finalizePendingExtract()
 end
 
 function interaction.handleMediaSlotMouseDown(window, zoneKind)
-    if not (window and NMPortableMediaDropArbiter and NMPortableMediaDropArbiter.resolveOwningZone) then
+    if not window then
         return true
     end
     local items = nil
@@ -150,16 +214,14 @@ function interaction.handleMediaSlotMouseDown(window, zoneKind)
     end
     local descriptor = resolveZoneDescriptor(window, zoneKind, nil)
     local mx, my = getMousePoint()
-    local playerNum = resolvePlayerNum(window)
-    local winner = NMPortableMediaDropArbiter.resolveOwningZone(playerNum, descriptor.zoneKind, mx, my)
-    local executed = winner and winner.performBeginExtract and winner.performBeginExtract("arbiter") == true or false
+    local executed = beginLocalExtract(window, descriptor.zoneKind) == true
     logProbe(
         "portable_media_interaction",
         string.format(
             "kind=begin_extract triggerUi=%s zone=%s winner=%s executed=%s mouse=%s,%s",
             tostring(descriptor.uiFamily),
             tostring(descriptor.zoneKind),
-            winnerSummary(winner),
+            winnerSummary(executed and { uiFamily = descriptor.uiFamily, zoneKind = descriptor.zoneKind, itemId = descriptor.itemId, uuid = descriptor.uuid } or nil),
             tostring(executed),
             tostring(mx),
             tostring(my)
@@ -202,10 +264,11 @@ function interaction.handleMediaSlotMouseUp(window, zoneKind)
     local descriptor = resolveZoneDescriptor(window, zoneKind, items)
     local mx, my = getMousePoint()
     local playerNum = resolvePlayerNum(window)
-    local winner = NMPortableMediaDropArbiter and NMPortableMediaDropArbiter.resolveWinningZone
-        and NMPortableMediaDropArbiter.resolveWinningZone(playerNum, items, mx, my)
+    local winner = NMPortableSlotHoverResolver and NMPortableSlotHoverResolver.resolveHoveredMediaSlotWindow
+        and NMPortableSlotHoverResolver.resolveHoveredMediaSlotWindow(playerNum, items, mx, my)
         or nil
-    local executed = winner and winner.performInsertFromDrag and winner.performInsertFromDrag(items, descriptor.uiFamily) == true or false
+    local targetWindow = winner and winner.window or nil
+    local executed = performMediaDragInsert(targetWindow, items, descriptor.uiFamily) == true
     logProbe(
         "portable_media_interaction",
         string.format(
@@ -225,42 +288,20 @@ function interaction.handleMediaSlotMouseUp(window, zoneKind)
 end
 
 function interaction.handleMediaSlotRightClick(window, zoneKind, btn, xArg, yArg)
-    if not (window and NMPortableMediaDropArbiter and NMPortableMediaDropArbiter.resolveOwningZone) then
+    if not window then
         return true
     end
     cancelPendingMediaExtract(window)
     local descriptor = resolveZoneDescriptor(window, zoneKind, nil)
     local mx, my = getMousePoint()
-    local playerNum = resolvePlayerNum(window)
-    local winner = NMPortableMediaDropArbiter.resolveOwningZone(playerNum, descriptor.zoneKind, mx, my)
-    local executed = false
-    if winner then
-        if winner.canEjectMedia and winner.canEjectMedia() == true and winner.performEject then
-            executed = winner.performEject("arbiter") == true
-        elseif winner.performShowInsertContext then
-            executed = winner.performShowInsertContext(btn, xArg, yArg, "arbiter") == true
-        end
-    elseif zoneKind == "slot" then
-        local mediaEnv = rawget(_G, "NMMediaSlotEnv") or nil
-        local resolveMediaSlotFullTypeFn = mediaEnv and mediaEnv.resolveMediaSlotFullType or nil
-        local queueMediaSlotEjectFn = mediaEnv and mediaEnv.queueMediaSlotEject or nil
-        local showMediaInsertContextMenuFn = mediaEnv and mediaEnv.showMediaInsertContextMenu or nil
-        local resolved = window.resolveContext and window:resolveContext() or nil
-        local state = resolved and resolved.state or nil
-        local fullType = resolveMediaSlotFullTypeFn and resolveMediaSlotFullTypeFn(window, state) or ""
-        if fullType ~= "" and queueMediaSlotEjectFn then
-            executed = queueMediaSlotEjectFn(window, "local_fallback", zoneKind) == true
-        elseif showMediaInsertContextMenuFn then
-            executed = showMediaInsertContextMenuFn(window, btn, xArg, yArg) == true
-        end
-    end
+    local executed = handleLocalRightClick(window, descriptor.zoneKind, btn, xArg, yArg) == true
     logProbe(
         "portable_media_interaction",
         string.format(
             "kind=right_click triggerUi=%s zone=%s winner=%s executed=%s mouse=%s,%s",
             tostring(descriptor.uiFamily),
             tostring(descriptor.zoneKind),
-            winnerSummary(winner),
+            winnerSummary(executed and { uiFamily = descriptor.uiFamily, zoneKind = descriptor.zoneKind, itemId = descriptor.itemId, uuid = descriptor.uuid } or nil),
             tostring(executed),
             tostring(mx),
             tostring(my)

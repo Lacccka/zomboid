@@ -156,12 +156,12 @@ function NMServerRegistryBroadcast.buildSignature(op, payload)
 end
 
 local function logSqlAnchorLineage(payload, path, reason)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
         return
     end
     local state = payload and payload.state or nil
     NMCore.logChannel(
-        "runtimeProbe",
+        "runtime",
         "sql_anchor_lineage",
         string.format(
             "uuid=%s sourceGen=%s revision=%s playbackEpoch=%s vehicleSqlId=%s vehicleSqlIdHint=%s runtimeVehicleIdHint=%s path=%s reason=%s",
@@ -179,7 +179,7 @@ local function logSqlAnchorLineage(payload, path, reason)
 end
 
 local function logVehicleTruthAuthorityCheckpoint(payload, op, sessionToken)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleTruthProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     if not payload or tostring(payload.kind or "") ~= "vehicle" then
@@ -193,7 +193,7 @@ local function logVehicleTruthAuthorityCheckpoint(payload, op, sessionToken)
         tostring(tonumber(state.playbackEpoch) or 0)
     }, "|")
     NMCore.logChannel(
-        "vehicleTruthProbe",
+        "vehicle",
         "vehicle_truth_authority_checkpoint",
         string.format(
             "traceToken=%s sessionToken=%s reasonContext=%s uuid=%s vehicleSqlId=%s runtimeVehicleIdHint=%s partId=%s sourceGen=%s revision=%s playbackEpoch=%s trackIndex=%s isOn=%s isPlaying=%s",
@@ -215,7 +215,7 @@ local function logVehicleTruthAuthorityCheckpoint(payload, op, sessionToken)
 end
 
 local function logVehicleIdCapabilityMatrix(payload, sessionToken)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleTruthProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
         return
     end
     if not payload or tostring(payload.kind or "") ~= "vehicle" then
@@ -250,7 +250,7 @@ local function logVehicleIdCapabilityMatrix(payload, sessionToken)
     NMServerRegistryBroadcast.VehicleCapabilitySeen[key .. ".sig"] = sig
     NMServerRegistryBroadcast.VehicleCapabilitySeen[key .. ".ms"] = now
     NMCore.logChannel(
-        "vehicleTruthProbe",
+        "vehicle",
         "vehicle_id_capability_matrix",
         string.format(
             "traceToken=%s sessionToken=%s uuid=%s sourceGen=%s revision=%s playbackEpoch=%s runtimeVehicleId=%s vehicleSqlId=%s partId=%s partUuid=%s stateDeviceUuid=%s x=%.2f y=%.2f z=%.2f",

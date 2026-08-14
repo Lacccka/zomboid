@@ -13,7 +13,7 @@ NMZombieVisualTargetLedger._diag = NMZombieVisualTargetLedger._diag or {
 }
 
 local function shouldLog()
-    return NMCore and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("zombieDiagnostics") == true
+    return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("zombie_visual") == true
 end
 
 local function logSummary(tag, detail)
@@ -27,7 +27,11 @@ local function getProofModData(holder)
     return NMZombieAudioVisualSupport and NMZombieAudioVisualSupport.getProofModData and NMZombieAudioVisualSupport.getProofModData(holder) or nil
 end
 
-local function copyRecord(record)
+local function getSelectionSource()
+    return tostring(NMZombieVisualTargetContract and NMZombieVisualTargetContract.SelectionSource or "server_ledger")
+end
+
+local function copyVisualSelectionRecord(record)
     if type(record) ~= "table" then
         return nil
     end
@@ -40,16 +44,16 @@ local function copyRecord(record)
         variantId = variantId,
         strategy = tostring(record.strategy or ""),
         selectionEpoch = tonumber(record.selectionEpoch) or 0,
-        selectionSource = tostring(record.selectionSource or "server_ledger")
+        selectionSource = tostring(record.selectionSource or getSelectionSource())
     }
 end
 
-local function readStampedRecord(holder, fallbackZombieId)
+local function readStampedVisualSelectionRecord(holder, fallbackZombieId)
     local md = getProofModData(holder)
     if type(md) ~= "table" then
         return nil
     end
-    if md.selectionSource ~= "server_ledger" then
+    if tostring(md.selectionSource or "") ~= getSelectionSource() then
         return nil
     end
     local zombieId = tostring(md.selectionZombieId or fallbackZombieId or "")
@@ -65,11 +69,11 @@ local function readStampedRecord(holder, fallbackZombieId)
         variantId = variantId,
         strategy = tostring(md.strategy or md.liveVisualStrategy or ""),
         selectionEpoch = tonumber(md.selectionEpoch) or 0,
-        selectionSource = tostring(md.selectionSource or "server_ledger")
+        selectionSource = tostring(md.selectionSource or getSelectionSource())
     }
 end
 
-local function writeStamp(holder, record, extraFields)
+local function writeVisualSelectionStamp(holder, record, extraFields)
     local md = getProofModData(holder)
     if type(md) ~= "table" then
         return false
@@ -78,7 +82,7 @@ local function writeStamp(holder, record, extraFields)
     md.musicSelected = record and (record.musicSelected == true or variantId ~= "none") or false
     md.selected = record and (record.selected == true or md.musicSelected == true) or false
     md.variantId = variantId
-    md.selectionSource = tostring(record and record.selectionSource or "server_ledger")
+    md.selectionSource = tostring(record and record.selectionSource or getSelectionSource())
     md.selectionEpoch = tonumber(record and record.selectionEpoch) or 0
     md.selectionZombieId = tostring(record and record.zombieId or "")
     if tostring(record and record.strategy or "") ~= "" then
@@ -95,49 +99,58 @@ local function writeStamp(holder, record, extraFields)
     return true
 end
 
+local function nextSelectionEpoch()
+    NMZombieVisualTargetLedger._selectionEpoch = (tonumber(NMZombieVisualTargetLedger._selectionEpoch) or 0) + 1
+    return NMZombieVisualTargetLedger._selectionEpoch
+end
+
+local function buildAssignedVisualSelectionRecord(zombieId, strategy)
+    local musicalRate = NMRuntimeConfig and NMRuntimeConfig.getMusicalZombiesSpawnRate and NMRuntimeConfig.getMusicalZombiesSpawnRate() or 0.6
+    local outcome = NMZombieSandboxRarity and NMZombieSandboxRarity.resolveMusicZombieOutcome and NMZombieSandboxRarity.resolveMusicZombieOutcome(zombieId, musicalRate) or nil
+    return {
+        zombieId = zombieId,
+        musicSelected = outcome and outcome.musicSelected == true or false,
+        selected = outcome and outcome.selected == true or false,
+        variantId = tostring(outcome and outcome.variantId or "none"),
+        strategy = tostring(strategy or ""),
+        selectionEpoch = nextSelectionEpoch(),
+        selectionSource = getSelectionSource()
+    }
+end
+
+local function rememberVisualSelectionRecord(record)
+    local copied = copyVisualSelectionRecord(record)
+    if not copied then
+        return nil
+    end
+    NMZombieVisualTargetLedger._recordsByZombieId[copied.zombieId] = copied
+    return copyVisualSelectionRecord(copied)
+end
+
 function NMZombieVisualTargetLedger.getZombieSelectionById(zombieId)
     local key = tostring(zombieId or "")
     if key == "" then
         return nil
     end
-    return copyRecord(NMZombieVisualTargetLedger._recordsByZombieId[key])
+    return copyVisualSelectionRecord(NMZombieVisualTargetLedger._recordsByZombieId[key])
 end
 
 function NMZombieVisualTargetLedger.stampZombieSelection(zombie, record)
     if not (zombie and record) then
         return false
     end
-    local stamped = writeStamp(zombie, record)
+    local stamped = writeVisualSelectionStamp(zombie, record)
     if stamped then
         NMZombieVisualTargetLedger._diag.zombieStamped = (NMZombieVisualTargetLedger._diag.zombieStamped or 0) + 1
     end
     return stamped
 end
 
-function NMZombieVisualTargetLedger.applySelectionToModData(modData, record, strategyName)
-    if NMZombieAudioVisualSupport and NMZombieAudioVisualSupport.applySelectionFields then
-        NMZombieAudioVisualSupport.applySelectionFields(modData, record, strategyName)
-        return
-    end
-    if type(modData) ~= "table" or type(record) ~= "table" then
-        return
-    end
-    modData.musicSelected = record.musicSelected == true
-    modData.selected = record.selected == true
-    modData.variantId = tostring(record.variantId or "none")
-    modData.selectionSource = tostring(record.selectionSource or "server_ledger")
-    modData.selectionEpoch = tonumber(record.selectionEpoch) or 0
-    modData.selectionZombieId = tostring(record.zombieId or "")
-    if tostring(strategyName or record.strategy or "") ~= "" then
-        modData.strategy = tostring(strategyName or record.strategy)
-    end
-end
-
 function NMZombieVisualTargetLedger.stampCorpseSelection(body, record, corpseHadProof)
     if not (body and record) then
         return false
     end
-    local stamped = writeStamp(body, record, {
+    local stamped = writeVisualSelectionStamp(body, record, {
         corpseHadProof = corpseHadProof == true,
         corpseSettled = true
     })
@@ -156,42 +169,30 @@ function NMZombieVisualTargetLedger.getOrAssignZombieSelection(zombie, strategy)
     if existing then
         NMZombieVisualTargetLedger._diag.reusedMemory = (NMZombieVisualTargetLedger._diag.reusedMemory or 0) + 1
         NMZombieVisualTargetLedger.stampZombieSelection(zombie, existing)
-        return copyRecord(existing)
+        return copyVisualSelectionRecord(existing)
     end
-    local stamped = readStampedRecord(zombie, zombieId)
+    local stamped = readStampedVisualSelectionRecord(zombie, zombieId)
     if stamped then
         if stamped.strategy == "" then
             stamped.strategy = tostring(strategy or "")
         end
         if stamped.selectionEpoch <= 0 then
-            NMZombieVisualTargetLedger._selectionEpoch = (tonumber(NMZombieVisualTargetLedger._selectionEpoch) or 0) + 1
-            stamped.selectionEpoch = NMZombieVisualTargetLedger._selectionEpoch
+            stamped.selectionEpoch = nextSelectionEpoch()
         end
-        NMZombieVisualTargetLedger._recordsByZombieId[zombieId] = copyRecord(stamped)
+        local remembered = rememberVisualSelectionRecord(stamped)
         NMZombieVisualTargetLedger._diag.reusedStamp = (NMZombieVisualTargetLedger._diag.reusedStamp or 0) + 1
         NMZombieVisualTargetLedger.stampZombieSelection(zombie, stamped)
-        return copyRecord(stamped)
+        return remembered
     end
-    NMZombieVisualTargetLedger._selectionEpoch = (tonumber(NMZombieVisualTargetLedger._selectionEpoch) or 0) + 1
-    local musicalRate = NMRuntimeConfig and NMRuntimeConfig.getMusicalZombiesSpawnRate and NMRuntimeConfig.getMusicalZombiesSpawnRate() or 0.6
-    local outcome = NMZombieSandboxRarity and NMZombieSandboxRarity.resolveMusicZombieOutcome and NMZombieSandboxRarity.resolveMusicZombieOutcome(zombieId, musicalRate) or nil
-    local record = {
-        zombieId = zombieId,
-        musicSelected = outcome and outcome.musicSelected == true or false,
-        selected = outcome and outcome.selected == true or false,
-        variantId = tostring(outcome and outcome.variantId or "none"),
-        strategy = tostring(strategy or ""),
-        selectionEpoch = NMZombieVisualTargetLedger._selectionEpoch,
-        selectionSource = "server_ledger"
-    }
-    NMZombieVisualTargetLedger._recordsByZombieId[zombieId] = copyRecord(record)
+    local record = buildAssignedVisualSelectionRecord(zombieId, strategy)
+    local remembered = rememberVisualSelectionRecord(record)
     NMZombieVisualTargetLedger._diag.assigned = (NMZombieVisualTargetLedger._diag.assigned or 0) + 1
     NMZombieVisualTargetLedger.stampZombieSelection(zombie, record)
-    return copyRecord(record)
+    return remembered
 end
 
 function NMZombieVisualTargetLedger.getStampedSelection(holder, fallbackZombieId)
-    return copyRecord(readStampedRecord(holder, fallbackZombieId))
+    return copyVisualSelectionRecord(readStampedVisualSelectionRecord(holder, fallbackZombieId))
 end
 
 function NMZombieVisualTargetLedger.logDiag(tag)

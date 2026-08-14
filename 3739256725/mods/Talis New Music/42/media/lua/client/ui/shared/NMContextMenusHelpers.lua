@@ -1,6 +1,8 @@
 local env = _G.NMContextMenusEnv
 setfenv(1, env)
 
+local UiLifecycleItemWindows = require "ui/shared/host/NMUiLifecycleItemWindows"
+
 function collectSelectedInventoryItems(items)
     local out = {}
     if not items then return out end
@@ -225,6 +227,42 @@ function addAction(menu, label, player, fn)
         return nil
     end
     return menu:addOption(label, player, fn)
+end
+
+function resolveDeviceUiLifecycleOptionSpec(player, item)
+    if not (player and item and NMDeviceUI) then
+        return nil
+    end
+    local playerNum = player.getPlayerNum and player:getPlayerNum() or 0
+    local openWindow = NMDeviceUI.findOpenForItem and NMDeviceUI.findOpenForItem(playerNum, item) or nil
+    if openWindow then
+        local identity = UiLifecycleItemWindows.resolveItemLifecycleContext(item)
+        return {
+            label = NMTranslations.ui("Close", "Close"),
+            handler = function(p, targetItem)
+                local targetPlayerNum = p and p.getPlayerNum and p:getPlayerNum() or playerNum
+                local targetIdentity = UiLifecycleItemWindows.resolveItemLifecycleContext(targetItem)
+                NMDeviceUI.closeForItem(targetPlayerNum, targetIdentity.itemId, targetIdentity.itemUuid)
+            end,
+        }
+    end
+    return {
+        label = NMTranslations.ui("Open", "Open"),
+        handler = function(p, targetItem)
+            local targetPlayerNum = p and p.getPlayerNum and p:getPlayerNum() or playerNum
+            NMDeviceUI.openForItem(targetPlayerNum, targetItem)
+        end,
+    }
+end
+
+function addDeviceUiLifecycleOption(menu, player, item, profile, state)
+    local spec = resolveDeviceUiLifecycleOptionSpec(player, item)
+    if not spec then
+        return nil
+    end
+    local option = menu:addOption(spec.label, player, spec.handler, item)
+    setOptionIcon(option, NMContextMenus.resolveMenuIconTexture(item, profile, state))
+    return option
 end
 
 function canShowDeviceDisassemble(player, item, profile)

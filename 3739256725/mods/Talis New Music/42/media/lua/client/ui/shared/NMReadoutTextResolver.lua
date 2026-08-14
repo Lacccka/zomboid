@@ -1,3 +1,4 @@
+-- Canonical shared ui_render helper for family-agnostic readout text selection.
 NMReadoutTextResolver = NMReadoutTextResolver or {}
 
 local function clampTrackIndex(idx, count)

@@ -233,4 +233,22 @@ module NewMusic
         WorldStaticModel = NewMusic.BoomboxPurple,
         UseWorldItem = TRUE,
     }
+
+    item BoomboxOddbolt
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 2.0,
+        Icon = NM_BoomboxOddbolt,
+        DisplayName = Boombox (Oddbolt),
+        ConditionMax = 100,
+        CanBeEquipped = BothHands,
+        AttachmentType = BigWeapon,
+        primaryAnimMask = holdingbagright,
+        secondaryAnimMask = holdingbagleft,
+        Tooltip = Tooltip_item_Boombox,
+        StaticModel = NewMusic.BoomboxOddbolt,
+        WorldStaticModel = NewMusic.BoomboxOddbolt,
+        UseWorldItem = TRUE,
+    }
 }

@@ -1,18 +1,56 @@
 local env = _G.NMMediaSlotEnv
 setfenv(1, env)
 
+local function resolvePortableMediaInteraction()
+    return rawget(_G, "NMPortableMediaInteraction") or nil
+end
+
+local function dispatchPortableMediaSlotMouseDown(window, zoneKind)
+    local interaction = resolvePortableMediaInteraction()
+    if interaction and interaction.handleMediaSlotMouseDown then
+        return interaction.handleMediaSlotMouseDown(window, zoneKind)
+    end
+    return true
+end
+
+local function dispatchPortableMediaSlotMouseUp(window, zoneKind)
+    local interaction = resolvePortableMediaInteraction()
+    if interaction and interaction.handleMediaSlotMouseUp then
+        return interaction.handleMediaSlotMouseUp(window, zoneKind)
+    end
+    return true
+end
+
+local function dispatchPortableMediaSlotRightClick(window, zoneKind, btn, xArg, yArg)
+    local interaction = resolvePortableMediaInteraction()
+    if interaction and interaction.handleMediaSlotRightClick then
+        return interaction.handleMediaSlotRightClick(window, zoneKind, btn, xArg, yArg)
+    end
+    return true
+end
+
 local function logPortableUiProbe(tag, detail)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("portableUiProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("portable_ui")) then
         return
     end
-    NMCore.logChannel("portableUiProbe", tostring(tag or "portable_ui"), tostring(detail or ""))
+    NMCore.logChannel("portable_ui", tostring(tag or "portable_ui"), tostring(detail or ""))
 end
 
 local function logVehicleSlotTrace(stage, detail)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("slotAuthorityProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("slot")) then
         return
     end
-    NMCore.logChannel("slotAuthorityProbe", tostring(stage or "vehicle_slot_trace"), tostring(detail or ""))
+    NMCore.logChannel("slot", tostring(stage or "vehicle_slot_trace"), tostring(detail or ""))
+end
+
+local function resolveWindowContext(window)
+    if not window then
+        return nil
+    end
+    if window.resolveContextCached then
+        return window:resolveContextCached()
+    end
+    return window.resolveContext and window:resolveContext() or nil
 end
 
 local function resolveWindowFamily(window)
@@ -64,7 +102,40 @@ local function logEjectQueueBlocked(window, fullType, sourceTag, zoneKind)
     )
 end
 
-local function validateVehicleLootSource(window, player, liveItem, args)
+local function resolveMediaIngressPlayer(window)
+    local resolved = resolveWindowContext(window)
+    return resolved and resolved.player or nil
+end
+
+local function primePendingMediaInsert(window, pendingFullType)
+    if not window then
+        return
+    end
+    window._nmPendingMediaSlotFullType = tostring(pendingFullType or "")
+    if window and window.getFrontVariant then
+        window.isLidManuallyOpen = false
+    else
+        window.isLidManuallyOpen = true
+    end
+    if window.syncLidFromMedia then
+        window:syncLidFromMedia(false)
+    end
+end
+
+local function buildMediaInsertArgs(liveItem, payload)
+    return {
+        mediaItemId = NMCore.itemId(liveItem),
+        mediaItemUuid = liveItem and NMInventoryHelpers and NMInventoryHelpers.getItemStateUuid and NMInventoryHelpers.getItemStateUuid(liveItem) or "",
+        mediaFullType = payload.mediaFullType,
+        mediaCarrier = payload.mediaCarrier,
+        mediaEjectFullType = payload.mediaEjectFullType,
+        mediaCanonicalFullType = payload.mediaCanonicalFullType,
+        mediaRecordedMediaIndex = payload.mediaRecordedMediaIndex,
+        mediaDisplayName = payload.mediaDisplayName
+    }
+end
+
+local function attachVehicleMediaSourceDescriptor(window, player, liveItem, args)
     if tostring(window and window.target and window.target.kind or "") ~= "vehicle" then
         return true
     end
@@ -86,7 +157,7 @@ local function validateVehicleLootSource(window, player, liveItem, args)
     if tostring(descriptor.kind or "") ~= "vehicle_part_container" then
         return true
     end
-    if not NMInventoryHelpers.isVehicleLootStaleReject or not NMInventoryHelpers.isVehicleLootStaleReject(descriptor) then
+    if not NMClientVehicleLootRefresh or not NMClientVehicleLootRefresh.isVehicleLootStaleReject or not NMClientVehicleLootRefresh.isVehicleLootStaleReject(descriptor) then
         return true
     end
     logVehicleSlotTrace(
@@ -102,14 +173,50 @@ local function validateVehicleLootSource(window, player, liveItem, args)
             tostring(descriptor.containerType or "")
         )
     )
-    if NMInventoryHelpers.refreshOpenVehicleLootPages then
-        NMInventoryHelpers.refreshOpenVehicleLootPages(player, descriptor.vehicleId, {
+    if NMClientVehicleLootRefresh and NMClientVehicleLootRefresh.refreshOpenVehicleLootPages then
+        NMClientVehicleLootRefresh.refreshOpenVehicleLootPages(player, descriptor.vehicleId, {
             slotTraceId = tostring(args and args.slotTraceId or ""),
             partId = tostring(window and window.target and window.target.partId or ""),
             sourcePartId = tostring(descriptor.partId or "")
         })
     end
     return false
+end
+
+local function validateMediaInsertSource(window, player, liveItem, args)
+    return attachVehicleMediaSourceDescriptor(window, player, liveItem, args)
+end
+
+local function queueResolvedMediaInsert(window, liveItem, payload, args, sourceTag, logTag)
+    if not (window and payload and args) then
+        return false
+    end
+    local player = resolveMediaIngressPlayer(window)
+    if not validateMediaInsertSource(window, player, liveItem, args) then
+        window._nmPendingMediaSlotFullType = nil
+        return false
+    end
+    if logTag then
+        logPortableUiProbe(
+            logTag,
+            string.format(
+                "ui=%s targetItemId=%s targetUuid=%s mediaItemId=%s mediaUuid=%s mediaFullType=%s slotTraceId=%s source=%s",
+                tostring(resolveWindowFamily(window)),
+                tostring(window and window.target and window.target.itemId or ""),
+                tostring(window and window.target and window.target.uuid or ""),
+                tostring(args.mediaItemId or ""),
+                tostring(liveItem and NMInventoryHelpers and NMInventoryHelpers.getItemStateUuid and NMInventoryHelpers.getItemStateUuid(liveItem) or ""),
+                tostring(args.mediaEjectFullType or args.mediaFullType or ""),
+                tostring(args.slotTraceId or ""),
+                tostring(sourceTag or "direct")
+            )
+        )
+    end
+    if queueMediaSlotAction(window, "insert_media", args) ~= true then
+        window._nmPendingMediaSlotFullType = nil
+        return false
+    end
+    return true
 end
 
 function queueDraggedMediaInsert(window, items, sourceTag)
@@ -133,48 +240,10 @@ function queueDraggedMediaInsert(window, items, sourceTag)
     if not payload then
         return false
     end
-    window._nmPendingMediaSlotFullType = tostring(payload.mediaEjectFullType or payload.mediaFullType or "")
-    if window and window.getFrontVariant then
-        window.isLidManuallyOpen = false
-    else
-        window.isLidManuallyOpen = true
-    end
-    if window.syncLidFromMedia then
-        window:syncLidFromMedia(false)
-    end
-    local args = {
-        mediaItemId = NMCore.itemId(liveItem),
-        mediaItemUuid = liveItem and NMInventoryHelpers and NMInventoryHelpers.getItemStateUuid and NMInventoryHelpers.getItemStateUuid(liveItem) or "",
-        mediaFullType = payload.mediaFullType,
-        mediaCarrier = payload.mediaCarrier,
-        mediaEjectFullType = payload.mediaEjectFullType,
-        mediaCanonicalFullType = payload.mediaCanonicalFullType,
-        mediaRecordedMediaIndex = payload.mediaRecordedMediaIndex,
-        mediaDisplayName = payload.mediaDisplayName
-    }
-    local resolved = window and window.resolveContext and window:resolveContext() or nil
-    local player = resolved and resolved.player or nil
-    if not validateVehicleLootSource(window, player, liveItem, args) then
-        window._nmPendingMediaSlotFullType = nil
+    primePendingMediaInsert(window, payload.mediaEjectFullType or payload.mediaFullType or "")
+    local args = buildMediaInsertArgs(liveItem, payload)
+    if queueResolvedMediaInsert(window, liveItem, payload, args, sourceTag, "slot_insert_drag_queue") ~= true then
         clearMouseDragState()
-        return false
-    end
-    logPortableUiProbe(
-        "slot_insert_drag_queue",
-        string.format(
-            "ui=%s targetItemId=%s targetUuid=%s mediaItemId=%s mediaUuid=%s mediaFullType=%s slotTraceId=%s source=%s",
-            tostring(resolveWindowFamily(window)),
-            tostring(window and window.target and window.target.itemId or ""),
-            tostring(window and window.target and window.target.uuid or ""),
-            tostring(args.mediaItemId or ""),
-            tostring(liveItem and NMInventoryHelpers and NMInventoryHelpers.getItemStateUuid and NMInventoryHelpers.getItemStateUuid(liveItem) or ""),
-            tostring(args.mediaEjectFullType or args.mediaFullType or ""),
-            tostring(args.slotTraceId or ""),
-            tostring(sourceTag or "direct")
-        )
-    )
-    if queueMediaSlotAction(window, "insert_media", args) ~= true then
-        window._nmPendingMediaSlotFullType = nil
         return false
     end
     clearMouseDragState()
@@ -185,7 +254,7 @@ function queueMediaSlotEject(window, sourceTag, zoneKind)
     if not window then
         return false
     end
-    local resolved = window and window.resolveContext and window:resolveContext() or nil
+    local resolved = resolveWindowContext(window)
     local state = resolved and resolved.state or nil
     local renderState = window and window.getSlotRenderState and window:getSlotRenderState("media") or nil
     local fullType = tostring(renderState and renderState.fullType or "")
@@ -233,7 +302,7 @@ function showMediaInsertContextMenu(window, btn, xArg, yArg, options)
     if not window then
         return false
     end
-    local resolvedCtx = window.resolveContext and window:resolveContext() or nil
+    local resolvedCtx = resolveWindowContext(window)
     local player = resolvedCtx and resolvedCtx.player or nil
     local playerNum = player and player.getPlayerNum and tonumber(player:getPlayerNum()) or 0
     local cx, cy = getContextMenuPoint(btn, xArg, yArg)
@@ -263,31 +332,8 @@ function showMediaInsertContextMenu(window, btn, xArg, yArg, options)
             end
             local payload = NMMediaHelpers.resolveMediaInsertPayload(liveItem)
             if not payload then return end
-            targetWin._nmPendingMediaSlotFullType = tostring(payload.mediaEjectFullType or payload.mediaFullType or "")
-            if targetWin and targetWin.getFrontVariant then
-                targetWin.isLidManuallyOpen = false
-            else
-                targetWin.isLidManuallyOpen = true
-            end
-            if targetWin.syncLidFromMedia then
-                targetWin:syncLidFromMedia(false)
-            end
-            local args = {
-                mediaItemId = NMCore.itemId(liveItem),
-                mediaItemUuid = liveItem and NMInventoryHelpers and NMInventoryHelpers.getItemStateUuid and NMInventoryHelpers.getItemStateUuid(liveItem) or "",
-                mediaFullType = payload.mediaFullType,
-                mediaCarrier = payload.mediaCarrier,
-                mediaEjectFullType = payload.mediaEjectFullType,
-                mediaCanonicalFullType = payload.mediaCanonicalFullType,
-                mediaRecordedMediaIndex = payload.mediaRecordedMediaIndex,
-                mediaDisplayName = payload.mediaDisplayName
-            }
-            local resolved = targetWin and targetWin.resolveContext and targetWin:resolveContext() or nil
-            local player = resolved and resolved.player or nil
-            if not validateVehicleLootSource(targetWin, player, liveItem, args) then
-                targetWin._nmPendingMediaSlotFullType = nil
-                return
-            end
+            primePendingMediaInsert(targetWin, payload.mediaEjectFullType or payload.mediaFullType or "")
+            local args = buildMediaInsertArgs(liveItem, payload)
             if targetWin.queueContextMediaInsert then
                 local handled = targetWin:queueContextMediaInsert(liveItem, payload, args)
                 if handled ~= true then
@@ -295,22 +341,7 @@ function showMediaInsertContextMenu(window, btn, xArg, yArg, options)
                 end
                 return
             end
-            logPortableUiProbe(
-                "slot_insert_context_queue",
-                string.format(
-                    "ui=%s targetItemId=%s targetUuid=%s mediaItemId=%s mediaUuid=%s mediaFullType=%s slotTraceId=%s",
-                    tostring(resolveWindowFamily(targetWin)),
-                    tostring(targetWin and targetWin.target and targetWin.target.itemId or ""),
-                    tostring(targetWin and targetWin.target and targetWin.target.uuid or ""),
-                    tostring(args.mediaItemId or ""),
-                    tostring(liveItem and NMInventoryHelpers and NMInventoryHelpers.getItemStateUuid and NMInventoryHelpers.getItemStateUuid(liveItem) or ""),
-                    tostring(args.mediaEjectFullType or args.mediaFullType or ""),
-                    tostring(args.slotTraceId or "")
-                )
-            )
-            if queueMediaSlotAction(targetWin, "insert_media", args) ~= true then
-                targetWin._nmPendingMediaSlotFullType = nil
-            end
+            queueResolvedMediaInsert(targetWin, liveItem, payload, args, "context", "slot_insert_context_queue")
         end, item)
         option.itemForTexture = item
     end
@@ -326,7 +357,7 @@ function showMediaInsertContextMenu(window, btn, xArg, yArg, options)
 end
 
 function beginMediaExtractDrag(window, fullType, sourceZoneKind)
-    local resolved = window and window.resolveContext and window:resolveContext() or nil
+    local resolved = resolveWindowContext(window)
     local playerObj = resolved and resolved.player or nil
     local playerNum = playerObj and playerObj.getPlayerNum and playerObj:getPlayerNum() or 0
     local invPage = getPlayerInventory and getPlayerInventory(playerNum) or nil
@@ -400,7 +431,7 @@ function collapsePinnedInventory(window, resolvedPlayer)
     if window and window._nmMediaDragPinnedInventory then
         local playerObj = resolvedPlayer
         if not playerObj then
-            local resolved = window and window.resolveContext and window:resolveContext() or nil
+            local resolved = resolveWindowContext(window)
             playerObj = resolved and resolved.player or nil
         end
         local playerNum = playerObj and playerObj.getPlayerNum and playerObj:getPlayerNum() or 0
@@ -456,7 +487,7 @@ function isMediaReleaseOverSourceZone(window, drag)
         return isMouseOverButton(slotButton)
     end
     if NMPortableMediaDropArbiter and NMPortableMediaDropArbiter.resolveOwningZone then
-        local resolved = window and window.resolveContext and window:resolveContext() or nil
+        local resolved = resolveWindowContext(window)
         local player = resolved and resolved.player or nil
         local playerNum = player and player.getPlayerNum and player:getPlayerNum() or window and window.playerNum or 0
         local winner = NMPortableMediaDropArbiter.resolveOwningZone(playerNum, zoneKind)
@@ -550,7 +581,7 @@ function NMMediaSlot.cancelExtractDrag(window)
     cancelMediaExtractDrag(window)
 end
 
-function NMMediaSlot.beginExtractDrag(window, fullType, sourceZoneKind)
+function NMMediaSlot.beginMediaExtractDrag(window, fullType, sourceZoneKind)
     beginMediaExtractDrag(window, fullType, sourceZoneKind)
 end
 
@@ -606,6 +637,9 @@ function NMMediaSlot.attach(window, x, y, size)
     local slotBtn = ISButton:new(x, y, size, size, "", window, function() end)
     slotBtn:initialise()
     slotBtn:instantiate()
+    slotBtn.ownerWindow = window
+    slotBtn.slotType = "media"
+    slotBtn.zoneKind = "slot"
     window:addChild(slotBtn)
 
     local function swallowMediaSlotDoubleClick()
@@ -616,17 +650,17 @@ function NMMediaSlot.attach(window, x, y, size)
         return true
     end
 
-    function onMediaSlotMouseDown()
-        handlePortableMediaSlotMouseDown(window, "slot")
+    local function onMediaSlotMouseDown()
+        dispatchPortableMediaSlotMouseDown(window, "slot")
         return true
     end
 
-    function onMediaSlot()
-        return handlePortableMediaSlotMouseUp(window, "slot")
+    local function onMediaSlot()
+        return dispatchPortableMediaSlotMouseUp(window, "slot")
     end
 
-    function onMediaSlotRightClick(btn, xArg, yArg)
-        return handlePortableMediaSlotRightClick(window, "slot", btn, xArg, yArg)
+    local function onMediaSlotRightClick(btn, xArg, yArg)
+        return dispatchPortableMediaSlotRightClick(window, "slot", btn, xArg, yArg)
     end
 
     slotBtn.onMouseDown = function(btn, xArg, yArg)
@@ -636,7 +670,7 @@ function NMMediaSlot.attach(window, x, y, size)
         return onMediaSlot()
     end
     slotBtn.onMouseUpOutside = function(btn, xArg, yArg)
-        return handlePortableMediaSlotMouseUp(window, "slot")
+        return dispatchPortableMediaSlotMouseUp(window, "slot")
     end
     slotBtn.onMouseDoubleClick = function()
         return swallowMediaSlotDoubleClick()

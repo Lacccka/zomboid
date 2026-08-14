@@ -219,6 +219,7 @@ function NMDeviceProfileCatalog.registerDefaults(register, mediaContract)
     register("NewMusic.BoomboxCyan", boomboxProfile)
     register("NewMusic.BoomboxMagenta", boomboxProfile)
     register("NewMusic.BoomboxPurple", boomboxProfile)
+    register("NewMusic.BoomboxOddbolt", boomboxProfile)
 
     register("NewMusic.VinylplayerEbony", vinylplayerProfile)
     register("NewMusic.VinylplayerOak", vinylplayerProfile)

@@ -3,6 +3,7 @@
 -- against a 600 RPM B42 reference rate and provide one central place to tune guns.
 -- A 600 entry records the engine-reference baseline where no legacy multiplier exists.
 -- For creating a new weapon, you should only add the new guntype name here and the designd RPM number in this chart
+-- Pistol is using different logic now, so set to global 930 to indicate current global RPM of 900
 AWCWF_ExactRPM = AWCWF_ExactRPM or {
     ["AA12_cat"] = 360,
     ["AEK971_cat"] = 900,
@@ -26,16 +27,16 @@ AWCWF_ExactRPM = AWCWF_ExactRPM or {
     ["AssaultRifle"] = 600,
     ["AssaultRifle_Drum"] = 600,
     ["BAR_cat"] = 600,
-    ["BerettaM93R_cat"] = 300,
-    ["BerettaM93R_cat_Drum"] = 300,
+    ["BerettaM93R_cat"] = 930,
+    ["BerettaM93R_cat_Drum"] = 930,
     ["Christine45_cat"] = 960,
     ["EMP_cat"] = 1140,
     ["FAL_cat"] = 660,
     ["FN_Evolys_cat"] = 780,
-    ["G18_cat"] = 300,
-    ["G18_cat_Drum"] = 300,
-    ["G34_cat"] = 300,
-    ["G34_cat_Drum"] = 300,
+    ["G18_cat"] = 930,
+    ["G18_cat_Drum"] = 930,
+    ["G34_cat"] = 930,
+    ["G34_cat_Drum"] = 930,
     ["Groza_cat"] = 1080,
     ["Groza_cat_Drum"] = 1080,
     ["HK416_cat"] = 960,
@@ -63,8 +64,8 @@ AWCWF_ExactRPM = AWCWF_ExactRPM or {
     ["MCX_cat"] = 960,
     ["MCX_cat_Drum"] = 960,
     ["MK18_cat"] = 960,
-    ["MP7_cat"] = 300,
-    ["MP7_cat_Drum"] = 300,
+    ["MP7_cat"] = 930,
+    ["MP7_cat_Drum"] = 930,
     ["NoveskeN4_cat"] = 900,
     ["NoveskeN4_cat_Drum"] = 900,
     ["PKM_cat"] = 720,
@@ -82,8 +83,8 @@ AWCWF_ExactRPM = AWCWF_ExactRPM or {
     ["SAI_GRY_cat_Drum"] = 960,
     ["SG553_cat"] = 900,
     ["SG553_cat_Drum"] = 900,
-    ["SIGP226_cat"] = 960,
-    ["SIGP226_cat_Drum"] = 960,
+    ["SIGP226_cat"] = 300,
+    ["SIGP226_cat_Drum"] = 300,
     ["SRM3_cat"] = 1020,
     ["SRM3_cat_Drum"] = 1020,
     ["Saiga12_cat"] = 360,
@@ -107,10 +108,9 @@ AWCWF_ExactRPM = AWCWF_ExactRPM or {
     ["mp5_cat"] = 1080,
     ["mp5_cat_Drum"] = 1080,
     ["origin12_cat"] = 360,
-    ["uzi_cat"] = 300,
-    ["uzi_cat_Drum"] = 300,
+    ["uzi_cat"] = 930,
+    ["uzi_cat_Drum"] = 930,
 }
-
 
 -- RC4-1: configured RPM remains the weapon-design source. The engine receives
 -- only one of the calibrated cyclic values below; never derive cyclic by scaling

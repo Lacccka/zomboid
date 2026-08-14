@@ -203,10 +203,10 @@ function WalkmanWindow:syncLidFromMedia(snap)
     end
 end
 
-function WalkmanWindow:getLidRenderState()
+function WalkmanWindow:getLidRenderState(textures)
     local currentY = tonumber(self.lidCurrentY) or (self.isLidOpen == true and LID_OPEN_Y or LID_Y)
     local currentH = tonumber(self.lidCurrentH) or (self.isLidOpen == true and LID_OPEN_H or LID_H)
-    local walkmanTextures = self:resolveWalkmanUITextures()
+    local walkmanTextures = textures or self:resolveWalkmanUITextures()
     return {
         texture = walkmanTextures and walkmanTextures.lid or nil,
         x = LID_X,
@@ -301,15 +301,15 @@ function WalkmanWindow:ejectMediaViaLid()
     return true
 end
 
-function WalkmanWindow:getLidEdgeRenderState()
-    local lidState = self:getLidRenderState()
-    local openRatio = clamp01((LID_H - (tonumber(lidState.h) or LID_H)) / LID_OPEN_SHRINK_H)
+function WalkmanWindow:getLidEdgeRenderState(lidState)
+    local state = lidState or self:getLidRenderState()
+    local openRatio = clamp01((LID_H - (tonumber(state.h) or LID_H)) / LID_OPEN_SHRINK_H)
     local edgeH = math.floor((LID_EDGE_H * openRatio) + 0.5)
     if edgeH <= 0 then
         return {
             texture = UI_TEXTURES.lidEdge,
-            x = lidState.x,
-            y = lidState.y,
+            x = state.x,
+            y = state.y,
             w = LID_EDGE_W,
             h = 0,
             visible = false
@@ -317,49 +317,10 @@ function WalkmanWindow:getLidEdgeRenderState()
     end
     return {
         texture = UI_TEXTURES.lidEdge,
-        x = lidState.x,
-        y = lidState.y - edgeH,
+        x = state.x,
+        y = state.y - edgeH,
         w = LID_EDGE_W,
         h = edgeH,
         visible = true
     }
 end
-
-function WalkmanWindow:getCassetteLabelRenderState()
-    local mediaState = self:getCassetteDisplayMediaState()
-    if mediaState.visible ~= true then
-        return nil
-    end
-
-    local resolved = self:resolveContextCached()
-    local state = resolved and resolved.state or nil
-    local fullText = NMReadoutTextResolver and NMReadoutTextResolver.resolveReadoutText
-        and NMReadoutTextResolver.resolveReadoutText(state)
-        or ""
-    fullText = tostring(fullText or "")
-    if fullText == "" then
-        return nil
-    end
-
-    local rect = self:getCassetteLabelRect()
-    if self.resolveWalkmanUIVariant and self:resolveWalkmanUIVariant() == "Lore" then
-        rect = {
-            x = rect.x,
-            y = rect.y + 65,
-            w = rect.w,
-            h = rect.h
-        }
-    end
-    local contentW = math.max(1, rect.w - (CASSETTE_LABEL_TEXT_PAD_X * 2))
-    local nowMs = tonumber(self._nmFrameNowMs) or getNowMs()
-    local text = NMReadoutOverflowPager and NMReadoutOverflowPager.resolvePagedText
-        and NMReadoutOverflowPager.resolvePagedText(self, fullText, contentW, nowMs)
-        or fullText
-    return {
-        rect = rect,
-        text = tostring(text or ""),
-        fullText = fullText,
-        contentW = contentW,
-    }
-end
-

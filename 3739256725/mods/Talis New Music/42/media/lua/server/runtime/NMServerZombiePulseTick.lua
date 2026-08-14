@@ -1,6 +1,10 @@
 -- Server authoritative zombie pulse emission from world registry sources.
 NMServerZombiePulseTick = NMServerZombiePulseTick or {}
 
+local mathAbs = math.abs
+local mathFloor = math.floor
+local mathMax = math.max
+
 local function nowRealMs()
     if getTimestampMs then
         local ms = tonumber(getTimestampMs())
@@ -14,6 +18,10 @@ local function nowRealMs()
 end
 
 local function nearestPlayerDistanceSq(x, y, z, floorsLimit)
+    local sourceX = tonumber(x) or 0
+    local sourceY = tonumber(y) or 0
+    local sourceZ = tonumber(z) or 0
+    local maxFloors = mathMax(0, tonumber(floorsLimit) or 0)
     local best = nil
     local players = getOnlinePlayers and getOnlinePlayers() or nil
     if not players then return nil end
@@ -21,10 +29,10 @@ local function nearestPlayerDistanceSq(x, y, z, floorsLimit)
         local p = players:get(i)
         local sq = p and p.getSquare and p:getSquare() or nil
         if sq then
-            local dz = math.abs((sq:getZ() or 0) - (tonumber(z) or 0))
-            if dz <= math.max(0, tonumber(floorsLimit) or 0) then
-                local dx = (sq:getX() or 0) - (tonumber(x) or 0)
-                local dy = (sq:getY() or 0) - (tonumber(y) or 0)
+            local dz = mathAbs((sq:getZ() or 0) - sourceZ)
+            if dz <= maxFloors then
+                local dx = (sq:getX() or 0) - sourceX
+                local dy = (sq:getY() or 0) - sourceY
                 local d2 = (dx * dx) + (dy * dy)
                 if best == nil or d2 < best then best = d2 end
             end
@@ -33,95 +41,71 @@ local function nearestPlayerDistanceSq(x, y, z, floorsLimit)
     return best
 end
 
-local function shouldEmitPulse(nowMs, lastMs, intervalMs, lastPos, x, y, z, lastWindowsOpen, windowsOpen)
-    local elapsed = nowMs - (tonumber(lastMs) or -1000000000)
-    local interval = math.max(100, tonumber(intervalMs) or 1000)
-    if elapsed >= interval then
-        return true, "stationary_timer"
-    end
-
-    if lastWindowsOpen ~= nil and (lastWindowsOpen ~= (windowsOpen == true)) and elapsed >= 500 then
-        return true, "window_state_change"
-    end
-
-    -- Movement-aware repulse: allow earlier refresh when source shifts by 2+ tiles.
-    local minMoveRepulseMs = 2500
-    if elapsed < minMoveRepulseMs or type(lastPos) ~= "table" then
-        return false, "blocked"
-    end
-    local dx = (tonumber(x) or 0) - (tonumber(lastPos.x) or 0)
-    local dy = (tonumber(y) or 0) - (tonumber(lastPos.y) or 0)
-    if ((dx * dx) + (dy * dy)) >= 4.0 then
-        return true, "movement"
-    end
-    return false, "blocked"
-end
-
 function NMServerZombiePulseTick.onTick()
-    if not NMCore.isMPServerAuthority() or not addSound then
+    local core = NMCore
+    if not core.isMPServerAuthority() or not addSound then
         return
     end
 
     local nowMs = nowRealMs()
     local gateMultiplier = NMRuntimeConfig and NMRuntimeConfig.getServerZombiePlayerGateMultiplier and NMRuntimeConfig.getServerZombiePlayerGateMultiplier() or 1.5
+    local pulseState = NMServerRegistryState.zombieAttractionPulseState
+    local worldRegistry = NMServerRegistryState.worldRegistry
+    local computePulseContract = NMZombieAttraction.computePulseContract
+    local buildSourceSnapshot = NMZombieAttraction.buildSourceSnapshot
+    local resolveEmitDecision = NMZombieAttraction.resolveEmitDecision
+    local capturePulseEmitState = NMZombieAttraction.capturePulseEmitState
+    local getProfile = NMDeviceProfiles.getForFullType
+    local getWorldTrackingFloors = NMDeviceProfiles.getWorldTrackingFloors
+    local pulseDecisionOptions = { allowWindowStateRepulse = true }
+    local debugEnabled = core and core.logChannel and core.isSubsystemDebugEnabled and core.isSubsystemDebugEnabled("zombie_attraction")
+    local shouldLogEvery = debugEnabled and core.shouldLogEvery or nil
 
-    for uuid, entry in pairs(NMServerRegistryState.worldRegistry) do
+    for uuid, entry in pairs(worldRegistry) do
         local state = entry and entry.stateSnapshot or nil
-        local profile = entry and entry.profileType and NMDeviceProfiles.getForFullType(entry.profileType) or nil
-        if state and profile and NMZombieAttraction.shouldAttract(profile, state, entry.sourceMode) then
-            local pulse = NMZombieAttraction.computePulse(profile, state, entry.sourceMode, entry.windowsOpen)
-            if pulse then
-                local floors = NMDeviceProfiles.getWorldTrackingFloors(profile)
-                local nearestD2 = nearestPlayerDistanceSq(entry.x, entry.y, entry.z, floors)
-                local gateRange = NMZombieAttraction.computeGateRange(profile, pulse, gateMultiplier)
-                if NMZombieAttraction.shouldEmitForNearestPlayer(nearestD2, gateRange) then
-                    local lastMs = tonumber(NMServerRegistryState.zombiePulse[uuid]) or -1000000000
-                    local lastPos = NMServerRegistryState.zombiePulsePos[uuid]
-                    local lastWindowsOpen = NMServerRegistryState.zombiePulseWindowsOpen and NMServerRegistryState.zombiePulseWindowsOpen[uuid]
-                    local emit, reason = shouldEmitPulse(
-                        nowMs,
-                        lastMs,
-                        pulse.intervalMs,
-                        lastPos,
-                        entry.x,
-                        entry.y,
-                        entry.z,
-                        lastWindowsOpen,
-                        entry.windowsOpen
-                    )
-                    if emit then
-                        NMServerRegistryState.zombiePulse[uuid] = nowMs
-                        NMServerRegistryState.zombiePulsePos[uuid] = {
-                            x = tonumber(entry.x) or 0,
-                            y = tonumber(entry.y) or 0,
-                            z = tonumber(entry.z) or 0
-                        }
-                        NMServerRegistryState.zombiePulseWindowsOpen = NMServerRegistryState.zombiePulseWindowsOpen or {}
-                        NMServerRegistryState.zombiePulseWindowsOpen[uuid] = entry.windowsOpen == true
-                        addSound(nil, tonumber(entry.x) or 0, tonumber(entry.y) or 0, tonumber(entry.z) or 0, math.floor(pulse.range), pulse.loudness)
-                        if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("vehicleDiagnostics") then
-                            local shouldLog = true
-                            if NMCore.shouldLogEvery then
-                                shouldLog = NMCore.shouldLogEvery("vehicleDiagnostics.server_zpulse_emit." .. tostring(uuid), nowMs, 15000)
-                            end
-                            if shouldLog then
-                                NMCore.logChannel(
-                                    "vehicleDiagnostics",
-                                    "server_zpulse_emit",
-                                    string.format(
-                                        "uuid=%s mode=%s reason=%s x=%.2f y=%.2f z=%.2f range=%d loudness=%d windowsOpen=%s",
-                                        tostring(uuid),
-                                        tostring(entry.sourceMode or "placed"),
-                                        tostring(reason or "unknown"),
-                                        tonumber(entry.x) or 0,
-                                        tonumber(entry.y) or 0,
-                                        tonumber(entry.z) or 0,
-                                        math.floor(tonumber(pulse.range) or 0),
-                                        math.floor(tonumber(pulse.loudness) or 0),
-                                        tostring(entry.windowsOpen == true)
-                                    )
+        local profile = entry and entry.profileType and getProfile(entry.profileType) or nil
+        if state and profile then
+            local sourceSnapshot = buildSourceSnapshot(entry)
+            local pulseContract = computePulseContract(profile, state, entry.sourceMode, sourceSnapshot.windowsOpen)
+            if pulseContract then
+                local key = type(uuid) == "string" and uuid or tostring(uuid or "")
+                local floors = getWorldTrackingFloors(profile)
+                local nearestD2 = nearestPlayerDistanceSq(sourceSnapshot.x, sourceSnapshot.y, sourceSnapshot.z, floors)
+                local emitPulse, emitReason, gateRange = resolveEmitDecision(
+                    nowMs,
+                    pulseState[key],
+                    pulseContract,
+                    sourceSnapshot,
+                    nearestD2,
+                    gateMultiplier,
+                    pulseDecisionOptions
+                )
+                if emitPulse then
+                    pulseState[key] = capturePulseEmitState(nowMs, sourceSnapshot)
+                    addSound(nil, sourceSnapshot.x, sourceSnapshot.y, sourceSnapshot.z, pulseContract.emitRange or mathFloor(pulseContract.range), pulseContract.loudness)
+                    if debugEnabled then
+                        local shouldLog = true
+                        if shouldLogEvery then
+                            shouldLog = shouldLogEvery("zombie_attraction.server_emit." .. key, nowMs, 15000)
+                        end
+                        if shouldLog then
+                            core.logChannel(
+                                "zombie_attraction",
+                                "authoritative_pulse_emit",
+                                string.format(
+                                    "uuid=%s mode=%s emitDecision=%s x=%.2f y=%.2f z=%.2f range=%d loudness=%d gateRange=%d windowsOpen=%s",
+                                    key,
+                                    tostring(entry.sourceMode or "placed"),
+                                    tostring(emitReason or "unknown"),
+                                    sourceSnapshot.x,
+                                    sourceSnapshot.y,
+                                    sourceSnapshot.z,
+                                    pulseContract.emitRange or mathFloor(tonumber(pulseContract.range) or 0),
+                                    pulseContract.loudness or mathFloor(tonumber(pulseContract.loudness) or 0),
+                                    mathFloor(tonumber(gateRange) or 0),
+                                    tostring(sourceSnapshot.windowsOpen == true)
                                 )
-                            end
+                            )
                         end
                     end
                 end

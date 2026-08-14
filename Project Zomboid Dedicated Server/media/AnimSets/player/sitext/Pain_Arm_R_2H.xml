@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="PainArmR.xml">
+	<m_Name>Pain_Arm_R_2H</m_Name>
+	<m_AnimName>Bob_Emote_Pain_Sat_Arm_R_2H</m_AnimName>
+	<m_Conditions x_name="ae8c3eb3-b5bd-4ca0-94c6-a7d9af93cc19">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="07e1f36f-1cdd-4f9d-aea6-1e9d1719c005">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="d7925d59-3531-450c-91cb-bcb538a968ae">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainArmR</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="8654c7ee-79c4-4342-84bd-a10e40c5c027">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="f4b08083-7640-435f-8242-a04d186f5ef3">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="6a71baf8-d3cc-444b-a94e-826a5dbdd3f5">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainArmR</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="83766e67-b683-42b8-a4e4-3cc5c3ebe791">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+</animNode>

@@ -1,66 +1,75 @@
 local env = _G.NMWalkmanWindowEnv
 setfenv(1, env)
 
+local function ensureTextureSlot(key, path)
+    UI_TEXTURES[key] = UI_TEXTURES[key] or nil
+    if UI_TEXTURES[key] == nil and getTexture then
+        UI_TEXTURES[key] = getTexture(path) or false
+    end
+    if UI_TEXTURES[key] == false then
+        return nil
+    end
+    return UI_TEXTURES[key]
+end
+
+local function getWalkmanChromeTextures()
+    return {
+        backplateBase = ensureTextureSlot("backplateBase", BACKPLATE_BASE_TEXTURE_PATH),
+        backplateSlotBg = ensureTextureSlot("backplateSlotBg", BACKPLATE_SLOT_BG_TEXTURE_PATH),
+        lidEdge = ensureTextureSlot("lidEdge", LID_EDGE_TEXTURE_PATH),
+        playButton = ensureTextureSlot("playButton", PLAY_BUTTON_TEXTURE_PATH),
+        prevButton = ensureTextureSlot("prevButton", PREV_BUTTON_TEXTURE_PATH),
+        nextButton = ensureTextureSlot("nextButton", NEXT_BUTTON_TEXTURE_PATH),
+        volumeWheel = ensureTextureSlot("volumeWheel", VOLUME_WHEEL_TEXTURE_PATH),
+        loopButton = ensureTextureSlot("loopButton", LOOP_BUTTON_TEXTURE_PATH),
+        spool = ensureTextureSlot("spool", SPOOL_TEXTURE_PATH),
+    }
+end
+
+local function getWalkmanOverlayTextures()
+    return {
+        close = ensureTextureSlot("close", CLOSE_TEXTURE_PATH),
+        stopButton = ensureTextureSlot("stopButton", STOP_BUTTON_TEXTURE_PATH),
+    }
+end
+
 function WalkmanWindow:prerender()
+    local perfStart = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(self) or nil
     self:beginFrameEpoch("prerender")
     local resolved = self:resolveContextCached()
+    local model = self:getRenderModel()
     self:syncPlayButtonFromTransport(resolved, true, false)
     local nowMs = getNowMs()
-    local lastHeadphoneSyncMs = tonumber(self._nmLastHeadphoneWearSyncMs) or 0
-    if (nowMs - lastHeadphoneSyncMs) >= 250 then
-        self._nmLastHeadphoneWearSyncMs = nowMs
-        if NMHeadphoneSlot and NMHeadphoneSlot.tickWearSync and self.headphoneSlot and self.headphoneSlot.button then
-            self._nmHeadphoneWearSyncActive = (NMHeadphoneSlot.tickWearSync(self, resolved) == true)
-        else
-            self._nmHeadphoneWearSyncActive = false
-        end
+    if NMHeadphoneSlot and NMHeadphoneSlot.tickWearSyncWindow then
+        NMHeadphoneSlot.tickWearSyncWindow(self, {
+            nowMs = nowMs,
+            resolved = resolved,
+            visible = self.headphoneSlot and self.headphoneSlot.button ~= nil,
+            idlePollMs = 1000,
+            activePollMs = 250,
+        })
+    else
+        self._nmHeadphoneWearSyncActive = false
     end
     ISPanel.prerender(self)
     if self.backgroundColor then
         self:drawRect(0, 0, self.width, self.height, self.backgroundColor.a, self.backgroundColor.r, self.backgroundColor.g, self.backgroundColor.b)
     end
-    if not UI_TEXTURES.backplateBase and getTexture then
-        UI_TEXTURES.backplateBase = getTexture(BACKPLATE_BASE_TEXTURE_PATH)
-    end
-    if not UI_TEXTURES.backplateSlotBg and getTexture then
-        UI_TEXTURES.backplateSlotBg = getTexture(BACKPLATE_SLOT_BG_TEXTURE_PATH)
-    end
-    if not UI_TEXTURES.lidEdge and getTexture then
-        UI_TEXTURES.lidEdge = getTexture(LID_EDGE_TEXTURE_PATH)
-    end
-    if not UI_TEXTURES.playButton and getTexture then
-        UI_TEXTURES.playButton = getTexture(PLAY_BUTTON_TEXTURE_PATH)
-    end
-    if not UI_TEXTURES.prevButton and getTexture then
-        UI_TEXTURES.prevButton = getTexture(PREV_BUTTON_TEXTURE_PATH)
-    end
-    if not UI_TEXTURES.nextButton and getTexture then
-        UI_TEXTURES.nextButton = getTexture(NEXT_BUTTON_TEXTURE_PATH)
-    end
-    if not UI_TEXTURES.volumeWheel and getTexture then
-        UI_TEXTURES.volumeWheel = getTexture(VOLUME_WHEEL_TEXTURE_PATH)
-    end
-    if not UI_TEXTURES.loopButton and getTexture then
-        UI_TEXTURES.loopButton = getTexture(LOOP_BUTTON_TEXTURE_PATH)
-    end
-    if not UI_TEXTURES.spool and getTexture then
-        UI_TEXTURES.spool = getTexture(SPOOL_TEXTURE_PATH)
-    end
-    if UI_TEXTURES.volumeWheel then
+    local chromeTextures = getWalkmanChromeTextures()
+    if chromeTextures.volumeWheel then
         local wheelRect = self:getVolumeWheelRect()
         local centerX = wheelRect.x + (wheelRect.w / 2)
         local centerY = wheelRect.y + (wheelRect.h / 2)
-        local effectiveVolume = self._nmWheelDragging == true and self._nmWheelPreviewVolume or self._nmWheelStableVolume
-        self:DrawTextureAngle(UI_TEXTURES.volumeWheel, centerX, centerY, self:getVolumeWheelAngle(effectiveVolume or 1.0))
+        self:DrawTextureAngle(chromeTextures.volumeWheel, centerX, centerY, tonumber(model and model.wheelAngle) or 0.0)
     end
-    if UI_TEXTURES.loopButton then
+    if chromeTextures.loopButton then
         local loopRect = self:getLoopButtonRect()
-        self:drawTextureScaled(UI_TEXTURES.loopButton, loopRect.x, loopRect.y, loopRect.w, loopRect.h, 1.0, 1.0, 1.0, 1.0)
+        self:drawTextureScaled(chromeTextures.loopButton, loopRect.x, loopRect.y, loopRect.w, loopRect.h, 1.0, 1.0, 1.0, 1.0)
     end
-    local walkmanTextures = self:resolveWalkmanUITextures()
-    local playButtonTexture = walkmanTextures and walkmanTextures.play or UI_TEXTURES.playButton
-    local prevButtonTexture = walkmanTextures and walkmanTextures.prev or UI_TEXTURES.prevButton
-    local nextButtonTexture = walkmanTextures and walkmanTextures.next or UI_TEXTURES.nextButton
+    local walkmanTextures = model and model.textures or nil
+    local playButtonTexture = walkmanTextures and walkmanTextures.play or chromeTextures.playButton
+    local prevButtonTexture = walkmanTextures and walkmanTextures.prev or chromeTextures.prevButton
+    local nextButtonTexture = walkmanTextures and walkmanTextures.next or chromeTextures.nextButton
     if playButtonTexture then
         local playRect = self:getPlayButtonRect()
         self:drawTextureScaled(playButtonTexture, playRect.x, playRect.y, playRect.w, playRect.h, 1.0, 1.0, 1.0, 1.0)
@@ -75,25 +84,25 @@ function WalkmanWindow:prerender()
     end
     if walkmanTextures and walkmanTextures.base then
         self:drawTextureScaled(walkmanTextures.base, 0, 0, self.width, self.height, 1.0, 1.0, 1.0, 1.0)
-    elseif UI_TEXTURES.backplateBase then
-        self:drawTextureScaled(UI_TEXTURES.backplateBase, 0, 0, self.width, self.height, 1.0, 1.0, 1.0, 1.0)
+    elseif chromeTextures.backplateBase then
+        self:drawTextureScaled(chromeTextures.backplateBase, 0, 0, self.width, self.height, 1.0, 1.0, 1.0, 1.0)
     end
     if walkmanTextures and walkmanTextures.side then
         local sideRect = self:getWalkmanSideRect()
         self:drawTextureScaled(walkmanTextures.side, sideRect.x, sideRect.y, sideRect.w, sideRect.h, 1.0, 1.0, 1.0, 1.0)
     end
-    if UI_TEXTURES.backplateSlotBg then
-        self:drawTextureScaled(UI_TEXTURES.backplateSlotBg, 0, 0, self.width, self.height, 1.0, 1.0, 1.0, 1.0)
+    if chromeTextures.backplateSlotBg then
+        self:drawTextureScaled(chromeTextures.backplateSlotBg, 0, 0, self.width, self.height, 1.0, 1.0, 1.0, 1.0)
     end
-    local timedCassetteState = self:getTimedCassetteAnimationState()
-    if timedCassetteState.visible == true and timedCassetteState.texture then
+    local timedCassetteState = model and model.timedCassetteState or nil
+    if timedCassetteState and timedCassetteState.visible == true and timedCassetteState.texture then
         self:drawTextureScaled(timedCassetteState.texture, timedCassetteState.x, timedCassetteState.y, timedCassetteState.w, timedCassetteState.h, timedCassetteState.alpha, 1.0, 1.0, 1.0)
     else
-        local cassetteMediaState = self:getCassetteDisplayMediaState()
-        if cassetteMediaState.visible == true and cassetteMediaState.texture then
+        local cassetteMediaState = model and model.cassetteMediaState or nil
+        if cassetteMediaState and cassetteMediaState.visible == true and cassetteMediaState.texture then
             local cassetteRect = self:getCassetteDisplayRect()
             self:drawTextureScaled(cassetteMediaState.texture, cassetteRect.x, cassetteRect.y, cassetteRect.w, cassetteRect.h, 1.0, 1.0, 1.0, 1.0)
-            local labelState = self:getCassetteLabelRenderState()
+            local labelState = model and model.cassetteLabelState or nil
             if labelState then
                 local labelRect = labelState.rect
                 self:drawRect(labelRect.x, labelRect.y, labelRect.w, labelRect.h, CASSETTE_LABEL_BG.a, CASSETTE_LABEL_BG.r, CASSETTE_LABEL_BG.g, CASSETTE_LABEL_BG.b)
@@ -102,67 +111,66 @@ function WalkmanWindow:prerender()
                 local textY = labelRect.y + math.floor(((labelRect.h - textH) * 0.5) + 0.5)
                 self:drawText(labelState.text, labelRect.x + CASSETTE_LABEL_TEXT_PAD_X, textY, CASSETTE_LABEL_TEXT_COLOR.r, CASSETTE_LABEL_TEXT_COLOR.g, CASSETTE_LABEL_TEXT_COLOR.b, CASSETTE_LABEL_TEXT_COLOR.a, UIFont.Small)
             end
-            if UI_TEXTURES.spool then
+            if chromeTextures.spool then
                 local leftRect = self:getCassetteSpoolRect(1)
                 local rightRect = self:getCassetteSpoolRect(2)
-                self:DrawTextureAngle(UI_TEXTURES.spool, leftRect.x + (leftRect.w / 2), leftRect.y + (leftRect.h / 2), tonumber(self._nmLeftSpoolAngle) or 0.0)
-                self:DrawTextureAngle(UI_TEXTURES.spool, rightRect.x + (rightRect.w / 2), rightRect.y + (rightRect.h / 2), tonumber(self._nmRightSpoolAngle) or 0.0)
+                self:DrawTextureAngle(chromeTextures.spool, leftRect.x + (leftRect.w / 2), leftRect.y + (leftRect.h / 2), tonumber(self._nmLeftSpoolAngle) or 0.0)
+                self:DrawTextureAngle(chromeTextures.spool, rightRect.x + (rightRect.w / 2), rightRect.y + (rightRect.h / 2), tonumber(self._nmRightSpoolAngle) or 0.0)
             end
         end
+    end
+    if NMUIRenderProbe and NMUIRenderProbe.endWindow then
+        NMUIRenderProbe.endWindow(self, "device.prerender", perfStart)
     end
 end
 
 function WalkmanWindow:render()
-    if not UI_TEXTURES.close and getTexture then
-        UI_TEXTURES.close = getTexture(CLOSE_TEXTURE_PATH)
-    end
-    if not UI_TEXTURES.stopButton and getTexture then
-        UI_TEXTURES.stopButton = getTexture(STOP_BUTTON_TEXTURE_PATH)
-    end
-    if not UI_TEXTURES.loopIconNone and getTexture then
-        UI_TEXTURES.loopIconNone = getTexture(LOOP_ICON_NONE_TEXTURE_PATH)
-    end
-    if not UI_TEXTURES.loopIconSong and getTexture then
-        UI_TEXTURES.loopIconSong = getTexture(LOOP_ICON_SONG_TEXTURE_PATH)
-    end
-    if not UI_TEXTURES.loopIconAlbum and getTexture then
-        UI_TEXTURES.loopIconAlbum = getTexture(LOOP_ICON_ALBUM_TEXTURE_PATH)
-    end
+    local perfFrame = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(self) or nil
+    local perfRender = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(self) or nil
+    local overlayTextures = getWalkmanOverlayTextures()
     ISPanel.render(self)
-    local walkmanTextures = self:resolveWalkmanUITextures()
-    local loopIconTexture = self:getLoopIconTexture()
-    if loopIconTexture and self:shouldShowLoopIcon() then
-        local loopIconRect = self:getLoopIconRect()
+    local model = self:getRenderModel()
+    local walkmanTextures = model and model.textures or nil
+    local loopIconTexture = model and model.loopIconTexture or nil
+    if loopIconTexture and model and model.loopVisible == true then
+        local loopIconRect = model.loopIconRect
         self:drawTextureScaled(loopIconTexture, loopIconRect.x, loopIconRect.y, loopIconRect.w, loopIconRect.h, LOOP_ICON_ALPHA, 1.0, 1.0, 1.0)
     end
-    local stopButtonTexture = walkmanTextures and walkmanTextures.stop or UI_TEXTURES.stopButton
+    local stopButtonTexture = walkmanTextures and walkmanTextures.stop or overlayTextures.stopButton
     if self.isPlayButtonDown == true and stopButtonTexture then
         local stopRect = self:getStopButtonRect()
         self:drawTextureScaled(stopButtonTexture, stopRect.x, stopRect.y, stopRect.w, stopRect.h, 1.0, 1.0, 1.0, 1.0)
     end
-    if UI_TEXTURES.close then
+    if overlayTextures.close then
         local closeRect = self:getCloseRect()
         local closeR, closeG, closeB = 0.78, 0.78, 0.78
-        if resolveWalkmanCloseTintForVariant then
-            closeR, closeG, closeB = resolveWalkmanCloseTintForVariant(self:resolveWalkmanUIVariant())
+        if model and type(model.closeTint) == "table" then
+            closeR, closeG, closeB = model.closeTint[1], model.closeTint[2], model.closeTint[3]
         end
-        self:drawTextureScaled(UI_TEXTURES.close, closeRect.x, closeRect.y, closeRect.w, closeRect.h, 1.0, closeR, closeG, closeB)
+        self:drawTextureScaled(overlayTextures.close, closeRect.x, closeRect.y, closeRect.w, closeRect.h, 1.0, closeR, closeG, closeB)
     end
-    if self:shouldShowVolumeLabel() then
-        local labelRect = self:getVolumeLabelRect()
-        self:drawText(self:getVolumeLabelText(), labelRect.x, labelRect.y, 1.0, 1.0, 1.0, 1.0, UIFont.Small)
+    if model and model.volumeLabelVisible == true then
+        local labelRect = model.volumeLabelRect
+        self:drawText(model.volumeLabelText, labelRect.x, labelRect.y, 1.0, 1.0, 1.0, 1.0, UIFont.Small)
     end
-    local lidEdgeState = self:getLidEdgeRenderState()
-    if lidEdgeState.texture and lidEdgeState.visible == true then
+    local lidEdgeState = model and model.lidEdgeState or nil
+    if lidEdgeState and lidEdgeState.texture and lidEdgeState.visible == true then
         self:drawTextureScaled(lidEdgeState.texture, lidEdgeState.x, lidEdgeState.y, lidEdgeState.w, lidEdgeState.h, 1.0, 1.0, 1.0, 1.0)
     end
-    if self:shouldShowLidIngressZone() then
+    if model and model.lidIngressVisible == true then
         local ingressRect = self:getLidIngressZoneRect()
         self:drawRectBorder(ingressRect.x, ingressRect.y, ingressRect.w, ingressRect.h, LID_INGRESS_BORDER.a, LID_INGRESS_BORDER.r, LID_INGRESS_BORDER.g, LID_INGRESS_BORDER.b)
     end
-    local lidState = self:getLidRenderState()
-    if lidState.texture then
+    local lidState = model and model.lidState or nil
+    if lidState and lidState.texture then
         self:drawTextureScaled(lidState.texture, lidState.x, lidState.y, lidState.w, lidState.h, 1.0, 1.0, 1.0, 1.0)
+    end
+    if NMUIRenderProbe and NMUIRenderProbe.endWindow then
+        NMUIRenderProbe.endWindow(self, "device.render", perfRender)
+        NMUIRenderProbe.endWindow(self, "device.frame", perfFrame)
+    end
+    if NMUIRenderProbe and NMUIRenderProbe.flush then
+        NMUIRenderProbe.flush(self)
     end
 end
 

@@ -2,6 +2,8 @@
 local env = _G.NMWalkmanWindowEnv
 setfenv(1, env)
 
+local UiLifecycleItemWindows = require "ui/shared/host/NMUiLifecycleItemWindows"
+
 local function getButtonScreenRect(button)
     if not button then
         return nil
@@ -59,13 +61,31 @@ local function isFancyUIEnabled()
     return true
 end
 
-function getOrCreateWindow(playerNum)
-    local key = tostring(tonumber(playerNum) or 0)
-    local existing = windowsByPlayer[key]
-    if existing and existing.javaObject then
-        return existing
-    end
+local function collectPlayerWindows(playerNum)
+    return WindowRegistry and WindowRegistry.collectWindows and WindowRegistry.collectWindows(env, playerNum) or {}
+end
 
+local function registerWindow(window)
+    if WindowRegistry and WindowRegistry.registerWindow then
+        WindowRegistry.registerWindow(env, window)
+    end
+end
+
+local function unregisterWindow(window)
+    if WindowRegistry and WindowRegistry.unregisterWindow then
+        WindowRegistry.unregisterWindow(env, window)
+    end
+end
+
+local function logOpenTrace(tag, detail)
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("ui_lifecycle")) then
+        return
+    end
+    NMCore.logChannel("ui_lifecycle", tostring(tag or "walkman_open"), tostring(detail or ""))
+end
+
+-- Safety net for pre-registry or stale-key windows during UI/session transitions.
+function getOrCreateWindow(playerNum)
     local screenW, screenH = getScreenSize()
     local x = math.max(0, screenW - PANEL_W - DEFAULT_RIGHT_MARGIN)
     local y = math.max(0, screenH - PANEL_H - EXPANDED_BOTTOM_MARGIN)
@@ -74,10 +94,9 @@ function getOrCreateWindow(playerNum)
     win:initialise()
     attachWalkmanSlots(win)
     win:addToUIManager()
-    windowsByPlayer[key] = win
     return win
 end
-function NMWalkmanWindow.openForItem(playerNum, item)
+function NMWalkmanWindow.openForItemResolved(playerNum, item, resolvedContext)
     if not isFancyUIEnabled() then
         return nil
     end
@@ -85,12 +104,43 @@ function NMWalkmanWindow.openForItem(playerNum, item)
     if not (player and item) then
         return nil
     end
-    local profile = NMDeviceProfiles and NMDeviceProfiles.getForItem and NMDeviceProfiles.getForItem(item) or nil
+    local resolved = type(resolvedContext) == "table" and resolvedContext or UiLifecycleItemWindows.resolveItemLifecycleContext(item)
+    local profile = resolved and resolved.profile or (NMDeviceProfiles and NMDeviceProfiles.getForItem and NMDeviceProfiles.getForItem(item) or nil)
     if not profile or tostring(profile.deviceType or "") ~= "walkman" then
         return nil
     end
-
-    local win = getOrCreateWindow(playerNum)
+    local identity = resolved and resolved.itemId and resolved or UiLifecycleItemWindows.resolveItemWindowIdentity(item)
+    local itemUuid = identity.itemUuid ~= "" and identity.itemUuid or nil
+    local targetKey = tostring(identity.targetKey or "")
+    local win, lookup = UiLifecycleItemWindows.findOpenItemWindowByIdentity(env, playerNum, identity)
+    logOpenTrace(
+        "walkman_open_lookup",
+        string.format(
+            "player=%s targetKey=%s registryHit=%s itemId=%s uuid=%s",
+            tostring(playerNum or 0),
+            tostring(targetKey or ""),
+            tostring(lookup and lookup.registryHit == true),
+            tostring(NMCore and NMCore.itemId and NMCore.itemId(item) or ""),
+            tostring(itemUuid or "")
+        )
+    )
+    if lookup and lookup.registryHit ~= true then
+        logOpenTrace(
+            "walkman_open_fallback",
+            string.format(
+                "player=%s targetKey=%s fallbackHit=%s itemId=%s uuid=%s",
+                tostring(playerNum or 0),
+                tostring(targetKey or ""),
+                tostring(lookup and lookup.fallbackHit == true),
+                tostring(NMCore and NMCore.itemId and NMCore.itemId(item) or ""),
+                tostring(itemUuid or "")
+            )
+        )
+    end
+    local reusedExisting = win ~= nil
+    if not win then
+        win = getOrCreateWindow(playerNum)
+    end
     local currentX = tonumber(win:getX())
     local currentY = tonumber(win._nmExpandedY)
     if not currentX then
@@ -156,7 +206,7 @@ function NMWalkmanWindow.openForItem(playerNum, item)
     win.target = {
         kind = "item",
         itemId = NMCore and NMCore.itemId and NMCore.itemId(item) or nil,
-        uuid = NMInventoryHelpers and NMInventoryHelpers.getItemStateUuid and NMInventoryHelpers.getItemStateUuid(item) or nil,
+        uuid = itemUuid,
         itemRef = item
     }
     win:invalidateContextCache()
@@ -181,138 +231,102 @@ function NMWalkmanWindow.openForItem(playerNum, item)
     if NMPortableMediaDropArbiter and NMPortableMediaDropArbiter.markWindowInteraction then
         NMPortableMediaDropArbiter.markWindowInteraction(win, "walkman")
     end
+    registerWindow(win)
+    logOpenTrace(
+        "walkman_open_result",
+        string.format(
+            "player=%s reused=%s targetKey=%s window=%s targetItemId=%s targetUuid=%s",
+            tostring(playerNum or 0),
+            tostring(reusedExisting),
+            tostring(targetKey or ""),
+            tostring(win),
+            tostring(win.target and win.target.itemId or ""),
+            tostring(win.target and win.target.uuid or "")
+        )
+    )
     persistWindowState(win, true)
     return win
 end
 
+function NMWalkmanWindow.openForItem(playerNum, item)
+    return NMWalkmanWindow.openForItemResolved(playerNum, item, nil)
+end
+
+function NMWalkmanWindow.findOpenForItemResolved(playerNum, item, resolvedContext)
+    local identity = type(resolvedContext) == "table" and resolvedContext or UiLifecycleItemWindows.resolveItemWindowIdentity(item)
+    local exact = UiLifecycleItemWindows.findOpenItemWindowByIdentity(env, playerNum, identity)
+    return exact
+end
+
 function NMWalkmanWindow.findOpenForItem(playerNum, item)
-    local itemId = tostring(NMCore and NMCore.itemId and NMCore.itemId(item) or "")
-    if itemId == "" then
-        return nil
-    end
-    local win = windowsByPlayer[tostring(playerNum or 0)] or nil
-    if not win then
-        return nil
-    end
-    local target = win.target or nil
-    local targetItemId = tostring(target and target.itemId or "")
-    if targetItemId ~= itemId then
-        return nil
-    end
-    return win
+    return NMWalkmanWindow.findOpenForItemResolved(playerNum, item, nil)
 end
 
 function NMWalkmanWindow.invalidateOpenItemWindow(itemId, uuid)
-    local incomingItemId = tostring(itemId or "")
-    local incomingUuid = tostring(uuid or "")
-    local invalidated = false
-    for key, win in pairs(windowsByPlayer) do
-        if win and win.javaObject and win.target and win.target.kind == "item" then
-            local targetItemId = tostring(win.target.itemId or "")
-            if incomingItemId ~= "" and targetItemId ~= "" and incomingItemId == targetItemId then
-                local resolved = win.resolveContextFresh and win:resolveContextFresh() or (win.resolveContext and win:resolveContext()) or nil
-                local state = resolved and resolved.state or nil
-                local targetUuid = tostring(state and state.deviceUUID or "")
-                if incomingUuid == "" or targetUuid == "" or incomingUuid == targetUuid then
-                    win:invalidateContextCache()
-                    win:invalidateSlotFrameModel()
-                    invalidated = true
-                end
+    return UiLifecycleItemWindows.applyOpenItemWindowChange(env, itemId, uuid, {
+        mode = "invalidate",
+        resolveWindowUuid = function(win)
+            local resolved = win.resolveContextFresh and win:resolveContextFresh() or (win.resolveContext and win:resolveContext()) or nil
+            local state = resolved and resolved.state or nil
+            return tostring(state and state.deviceUUID or "")
+        end,
+        deferInvalidate = function(win)
+            return NMSlotHostLifecycle.deferUiRefreshUntilDragEnd
+                and NMSlotHostLifecycle.deferUiRefreshUntilDragEnd(win, {
+                    cause = "walkman_open_item_window_invalidate_deferred",
+                    visibility = false,
+                }) == true
+        end,
+        invalidateWindow = function(win)
+            win:invalidateContextCache()
+            win:invalidateSlotFrameModel()
+            if win.invalidateRenderModel then
+                win:invalidateRenderModel()
             end
-        end
-    end
-    return invalidated
+        end,
+    })
 end
 
 function NMWalkmanWindow.rebindOpenPortableItemWindow(itemId, uuid)
-    local incomingItemId = tostring(itemId or "")
-    local incomingUuid = tostring(uuid or "")
-    if incomingItemId == "" and incomingUuid == "" then
-        return false
-    end
-    local rebound = false
-    for key, win in pairs(windowsByPlayer) do
-        if win and win.javaObject and win.target and win.target.kind == "item" then
-            local targetItemId = tostring(win.target.itemId or "")
-            local targetUuid = tostring(win.target.uuid or "")
-            if targetItemId == "" or incomingItemId == "" or targetItemId == incomingItemId or targetUuid == incomingUuid then
-                local player = getPlayer(win.playerNum)
-                if player then
-                    local item = resolveLiveItemByTarget(player, {
-                        itemId = incomingItemId ~= "" and incomingItemId or targetItemId,
-                        uuid = incomingUuid ~= "" and incomingUuid or targetUuid
-                    })
-                    if item then
-                        win.target.itemId = NMCore.itemId(item)
-                        win.target.uuid = NMInventoryHelpers and NMInventoryHelpers.getItemStateUuid and NMInventoryHelpers.getItemStateUuid(item) or incomingUuid
-                        win.target.itemRef = item
-                        win:invalidateContextCache()
-                        win:invalidateSlotFrameModel()
-                        rebound = true
-                    end
-                end
+    return UiLifecycleItemWindows.applyOpenItemWindowChange(env, itemId, uuid, {
+        mode = "rebind",
+        deferInvalidate = function(win)
+            return NMSlotHostLifecycle.deferUiRefreshUntilDragEnd
+                and NMSlotHostLifecycle.deferUiRefreshUntilDragEnd(win, {
+                    cause = "walkman_open_item_window_rebind_deferred",
+                    visibility = false,
+                }) == true
+        end,
+        invalidateWindow = function(win)
+            win:invalidateContextCache()
+            win:invalidateSlotFrameModel()
+            if win.invalidateRenderModel then
+                win:invalidateRenderModel()
             end
-        end
-    end
-    return rebound
+        end,
+    })
 end
 
 function NMWalkmanWindow.inspectOpenItemWindowTarget(playerNum)
-    local key = tostring(playerNum or 0)
-    local win = windowsByPlayer[key] or nil
-    if not (win and win.javaObject and win.target and win.target.kind == "item") then
-        return nil
-    end
-    return {
-        playerNum = tonumber(win.playerNum) or 0,
-        itemId = tostring(win.target.itemId or ""),
-        uuid = tostring(win.target.uuid or ""),
-        hasItemRef = win.target.itemRef ~= nil,
-        mediaTimedAction = tostring(win._nmMediaSlotTimedProgress and win._nmMediaSlotTimedProgress.action or ""),
-        pendingMediaFullType = tostring(win._nmPendingMediaSlotFullType or ""),
-        awaitingMediaInsert = win:isAwaitingAuthoritativeMediaInsert() == true,
-        awaitingMediaEject = win:isAwaitingAuthoritativeMediaEject() == true
-    }
+    return UiLifecycleItemWindows.inspectOpenItemWindowTarget(env, playerNum)
 end
 
 function NMWalkmanWindow.closeOpenForItemTarget(playerNum, itemId, uuid)
-    local win = windowsByPlayer[tostring(playerNum or 0)] or nil
-    if not (win and win.target and win.target.kind == "item") then
-        return false
-    end
-
-    local targetItemId = tostring(win.target.itemId or "")
-    local incomingItemId = tostring(itemId or "")
-    if incomingItemId == "" or incomingItemId ~= targetItemId then
-        return false
-    end
-
-    local targetUuid = tostring(win.target.uuid or "")
-    local incomingUuid = tostring(uuid or "")
-    if incomingUuid ~= "" and targetUuid ~= "" and incomingUuid ~= targetUuid then
-        return false
-    end
-
-    NMSlotHostLifecycle.cancelSharedSlotDrags(win)
-    if win.setVisible then
-        win:setVisible(false)
-    end
-    if win.removeFromUIManager then
-        win:removeFromUIManager()
-    end
-    windowsByPlayer[tostring(playerNum or 0)] = nil
-    return true
+    return UiLifecycleItemWindows.closeOpenForItemTarget(env, playerNum, itemId, uuid, {
+        closeWindow = function(win)
+            NMSlotHostLifecycle.cancelSharedSlotDrags(win)
+            if win.setVisible then
+                win:setVisible(false)
+            end
+            if win.removeFromUIManager then
+                win:removeFromUIManager()
+            end
+            unregisterWindow(win)
+        end,
+    })
 end
 
 function NMWalkmanWindow.collectOpenMediaIngressZones(playerNum, dragItems)
-    local key = tostring(tonumber(playerNum) or 0)
-    local win = windowsByPlayer[key] or nil
-    if not isWindowVisible(win) then
-        return {}
-    end
-    if not (win.target and win.target.kind == "item") then
-        return {}
-    end
     local mediaEnv = getMediaSlotEnv()
     local resolveMediaSlotFullTypeFn = mediaEnv and mediaEnv.resolveMediaSlotFullType or nil
     local queueDraggedMediaInsertFn = mediaEnv and mediaEnv.queueDraggedMediaInsert or nil
@@ -321,11 +335,15 @@ function NMWalkmanWindow.collectOpenMediaIngressZones(playerNum, dragItems)
         return {}
     end
     local zones = {}
-    local slotRect = getButtonScreenRect(win.mediaSlot and win.mediaSlot.button or nil)
-    if slotRect then
-        local resolved = win.resolveContextCached and win:resolveContextCached() or nil
-        local state = resolved and resolved.state or nil
-        local zone = NMSlotHostLifecycle.buildSharedMediaSlotZone({
+    local wins = collectPlayerWindows(playerNum)
+    for i = 1, #wins do
+        local win = wins[i]
+        if isWindowVisible(win) and win.target and win.target.kind == "item" then
+            local slotRect = getButtonScreenRect(win.mediaSlot and win.mediaSlot.button or nil)
+            if slotRect then
+                local resolved = win.resolveContextCached and win:resolveContextCached() or nil
+                local state = resolved and resolved.state or nil
+                local zone = NMSlotHostLifecycle.buildSharedMediaSlotZone({
             window = win,
             uiFamily = "walkman",
             zoneKind = "slot",
@@ -345,87 +363,136 @@ function NMWalkmanWindow.collectOpenMediaIngressZones(playerNum, dragItems)
             end,
             canStartExtractDrag = function()
                 return resolveMediaSlotFullTypeFn(win, state) ~= ""
-            end,
-            performInsertFromDrag = function(items, sourceTag)
-                return queueDraggedMediaInsertFn(win, items, sourceTag or "arbiter") == true
-            end,
-            performBeginExtract = function()
-                local resolvedNow = win.resolveContext and win:resolveContext() or nil
-                local stateNow = resolvedNow and resolvedNow.state or nil
-                local fullTypeNow = resolveMediaSlotFullTypeFn(win, stateNow)
-                if fullTypeNow == "" then
-                    return false
-                end
-                if queueDraggedMediaInsertFn and mediaEnv and mediaEnv.beginMediaExtractDrag then
-                    mediaEnv.beginMediaExtractDrag(win, fullTypeNow, "slot")
-                    return true
-                end
-                return false
-            end,
-            performEject = function(sourceTag)
-                return queueMediaSlotEjectFn(win, sourceTag or "arbiter") == true
-            end,
-            performShowInsertContext = function(btn, xArg, yArg)
-                return mediaEnv and mediaEnv.showMediaInsertContextMenu and mediaEnv.showMediaInsertContextMenu(win, btn, xArg, yArg) == true or false
-            end,
-            consumeDraggedMediaInsert = function(items, sourceDescriptor)
-                return queueDraggedMediaInsertFn(win, items, sourceDescriptor and sourceDescriptor.uiFamily or "handoff") == true
-            end,
-            beginMediaExtractDrag = function()
-                local resolvedNow = win.resolveContext and win:resolveContext() or nil
-                local stateNow = resolvedNow and resolvedNow.state or nil
-                local fullTypeNow = resolveMediaSlotFullTypeFn(win, stateNow)
-                if fullTypeNow == "" then
-                    return false
-                end
-                if queueDraggedMediaInsertFn and mediaEnv and mediaEnv.beginMediaExtractDrag then
-                    mediaEnv.beginMediaExtractDrag(win, fullTypeNow, "slot")
-                    return true
-                end
-                return false
-            end,
-            handleRightClick = function()
-                local resolvedNow = win.resolveContext and win:resolveContext() or nil
-                local stateNow = resolvedNow and resolvedNow.state or nil
-                local fullTypeNow = resolveMediaSlotFullTypeFn(win, stateNow)
-                if fullTypeNow ~= "" then
-                    return queueMediaSlotEjectFn(win, "handoff") == true
-                end
-                return false
             end
-        })
-        if zone then
-            zones[#zones + 1] = zone
+                })
+                if zone then
+                    zones[#zones + 1] = zone
+                end
+            end
+            local auxRect = win.getLidIngressZoneRect and getWindowScreenRect(win, win:getLidIngressZoneRect()) or nil
+            if auxRect then
+                zones[#zones + 1] = {
+                    uiFamily = "walkman",
+                    zoneKind = "aux",
+                    priority = 20,
+                    zOrder = NMPortableMediaDropArbiter and NMPortableMediaDropArbiter.getWindowZOrder and NMPortableMediaDropArbiter.getWindowZOrder(win) or 0,
+                    playerNum = tonumber(win.playerNum) or 0,
+                    itemId = win.target.itemId,
+                    uuid = win.target.uuid,
+                    window = win,
+                    rect = auxRect,
+                    visible = true,
+                    enabled = true,
+                    interactive = true,
+                    canAccept = win.canAcceptDraggedMediaViaLid and win:canAcceptDraggedMediaViaLid() == true,
+                    canAcceptDraggedMedia = function(items)
+                        return win.canAcceptDraggedMediaViaLid and win:canAcceptDraggedMediaViaLid() == true
+                            and type(items) == "table"
+                            and #items > 0
+                    end
+                }
+            end
         end
     end
-    local auxRect = win.getLidIngressZoneRect and getWindowScreenRect(win, win:getLidIngressZoneRect()) or nil
-    if auxRect then
-        zones[#zones + 1] = {
-            uiFamily = "walkman",
-            zoneKind = "aux",
-            priority = 20,
-            zOrder = NMPortableMediaDropArbiter and NMPortableMediaDropArbiter.getWindowZOrder and NMPortableMediaDropArbiter.getWindowZOrder(win) or 0,
-            playerNum = tonumber(win.playerNum) or 0,
-            itemId = win.target.itemId,
-            uuid = win.target.uuid,
-            window = win,
-            rect = auxRect,
-            visible = true,
-            enabled = true,
-            interactive = true,
-            canAccept = win.canAcceptDraggedMediaViaLid and win:canAcceptDraggedMediaViaLid() == true,
-            canAcceptDraggedMedia = function(items)
-                return win.canAcceptDraggedMediaViaLid and win:canAcceptDraggedMediaViaLid() == true
-                    and type(items) == "table"
-                    and #items > 0
-            end,
-            performInsertFromDrag = function(items, sourceTag)
-                return queueDraggedMediaInsertFn(win, items, sourceTag or "arbiter") == true
-            end,
-            consumeDraggedMediaInsert = function(items, sourceDescriptor)
-                return queueDraggedMediaInsertFn(win, items, sourceDescriptor and sourceDescriptor.uiFamily or "handoff") == true
+    return zones
+end
+
+function NMWalkmanWindow.collectOpenBatteryIngressZones(playerNum, dragItems)
+    local batteryEnv = rawget(_G, "NMBatterySlotEnv") or nil
+    local resolveBatterySlotFullTypeFn = batteryEnv and batteryEnv.resolveBatterySlotFullType or nil
+    local isCompatibleBatteryDragFn = batteryEnv and batteryEnv.isCompatibleBatteryDrag or nil
+    local pickFirstBatteryFn = batteryEnv and batteryEnv.pickFirstBattery or nil
+    local normalizeBatteryIngressItemFn = batteryEnv and batteryEnv.normalizeBatteryIngressItem or nil
+    local queueBatterySlotActionFn = batteryEnv and batteryEnv.queueBatterySlotAction or nil
+    local beginBatteryExtractDragFn = batteryEnv and batteryEnv.beginBatteryExtractDrag or nil
+    if not (resolveBatterySlotFullTypeFn and isCompatibleBatteryDragFn and pickFirstBatteryFn and normalizeBatteryIngressItemFn and queueBatterySlotActionFn and beginBatteryExtractDragFn) then
+        return {}
+    end
+    local zones = {}
+    local wins = collectPlayerWindows(playerNum)
+    for i = 1, #wins do
+        local win = wins[i]
+        if isWindowVisible(win) and win.target and win.target.kind == "item" then
+            local rect = getButtonScreenRect(win.batterySlot and win.batterySlot.button or nil)
+            if rect then
+                local resolved = win.resolveContextCached and win:resolveContextCached() or nil
+                local state = resolved and resolved.state or nil
+                local zone = NMSlotHostLifecycle.buildSharedPortableSlotZone({
+                    window = win,
+                    uiFamily = "walkman",
+                    zoneKind = "battery",
+                    rect = rect,
+                    priority = 10,
+                    zOrder = NMPortableMediaDropArbiter and NMPortableMediaDropArbiter.getWindowZOrder and NMPortableMediaDropArbiter.getWindowZOrder(win) or 0,
+                    dragItems = dragItems,
+                    canAcceptDraggedMedia = function(items)
+                        return type(items) == "table"
+                            and #items > 0
+                            and isCompatibleBatteryDragFn(items)
+                            and resolveBatterySlotFullTypeFn(win, state) == ""
+                    end,
+                    canEjectMedia = function()
+                        return resolveBatterySlotFullTypeFn(win, state) ~= ""
+                    end,
+                    canStartExtractDrag = function()
+                        return resolveBatterySlotFullTypeFn(win, state) ~= ""
+                    end
+                })
+                if zone then
+                    zones[#zones + 1] = zone
+                end
             end
-        }
+        end
+    end
+    return zones
+end
+
+function NMWalkmanWindow.collectOpenHeadphoneIngressZones(playerNum, dragItems)
+    local headphoneEnv = rawget(_G, "NMHeadphoneSlotEnv") or nil
+    local resolveHeadphoneSlotFullTypeFn = headphoneEnv and headphoneEnv.resolveHeadphoneSlotFullType or nil
+    local isCompatibleHeadphoneDragFn = headphoneEnv and headphoneEnv.isCompatibleHeadphoneDrag or nil
+    local pickFirstCompatibleHeadphoneFn = headphoneEnv and headphoneEnv.pickFirstCompatibleHeadphone or nil
+    local normalizeHeadphoneIngressItemFn = headphoneEnv and headphoneEnv.normalizeHeadphoneIngressItem or nil
+    local queueHeadphoneSlotActionFn = headphoneEnv and headphoneEnv.queueHeadphoneSlotAction or nil
+    local beginHeadphoneExtractDragFn = headphoneEnv and headphoneEnv.beginHeadphoneExtractDrag or nil
+    if not (resolveHeadphoneSlotFullTypeFn and isCompatibleHeadphoneDragFn and pickFirstCompatibleHeadphoneFn and normalizeHeadphoneIngressItemFn and queueHeadphoneSlotActionFn and beginHeadphoneExtractDragFn) then
+        return {}
+    end
+    local zones = {}
+    local wins = collectPlayerWindows(playerNum)
+    for i = 1, #wins do
+        local win = wins[i]
+        if isWindowVisible(win) and win.target and win.target.kind == "item" then
+            local rect = getButtonScreenRect(win.headphoneSlot and win.headphoneSlot.button or nil)
+            if rect then
+                local resolved = win.resolveContextCached and win:resolveContextCached() or nil
+                local state = resolved and resolved.state or nil
+                local zone = NMSlotHostLifecycle.buildSharedPortableSlotZone({
+                    window = win,
+                    uiFamily = "walkman",
+                    zoneKind = "headphones",
+                    rect = rect,
+                    priority = 10,
+                    zOrder = NMPortableMediaDropArbiter and NMPortableMediaDropArbiter.getWindowZOrder and NMPortableMediaDropArbiter.getWindowZOrder(win) or 0,
+                    dragItems = dragItems,
+                    canAcceptDraggedMedia = function(items)
+                        return type(items) == "table"
+                            and #items > 0
+                            and isCompatibleHeadphoneDragFn(win, items, resolved, state)
+                            and resolveHeadphoneSlotFullTypeFn(win, state) == ""
+                    end,
+                    canEjectMedia = function()
+                        return resolveHeadphoneSlotFullTypeFn(win, state) ~= ""
+                    end,
+                    canStartExtractDrag = function()
+                        return resolveHeadphoneSlotFullTypeFn(win, state) ~= ""
+                    end
+                })
+                if zone then
+                    zones[#zones + 1] = zone
+                end
+            end
+        end
     end
     return zones
 end
@@ -447,7 +514,7 @@ function WalkmanWindow:close()
     if NMGamepadWindowTracker and NMGamepadWindowTracker.unregisterWindow then
         NMGamepadWindowTracker.unregisterWindow(self)
     end
-    windowsByPlayer[tostring(self.playerNum or 0)] = nil
+    unregisterWindow(self)
 end
 
 function WalkmanWindow:new(x, y, width, height)
@@ -544,10 +611,13 @@ function WalkmanWindow:new(x, y, width, height)
     o._nmHeadphoneWearSyncActive = false
     o._nmFrameEpoch = 0
     o._nmFrameNowMs = 0
+    o._nmUiPerfKind = "walkman"
     o._nmContextCache = nil
     o._nmContextCacheTargetKey = nil
     o._nmSlotFrameModel = nil
     o._nmSlotFrameModelEpoch = nil
+    o._nmRenderModel = nil
+    o._nmRenderModelEpoch = nil
     o._nmPendingMediaSlotFullType = nil
     o._nmPendingHeadphoneSlotFullType = nil
     o._nmPendingBatterySlotFullType = nil
@@ -556,6 +626,9 @@ function WalkmanWindow:new(x, y, width, height)
     o._nmAwaitingAuthoritativeMediaEject = nil
     o._nmAwaitingAuthoritativeMediaInsert = nil
     o._nmSlotsAttached = false
+    if NMDeviceUiHost and NMDeviceUiHost.initWindow then
+        NMDeviceUiHost.initWindow(o, "walkman")
+    end
     return o
 end
 

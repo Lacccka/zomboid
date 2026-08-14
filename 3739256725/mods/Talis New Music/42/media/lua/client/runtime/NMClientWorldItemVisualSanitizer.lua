@@ -6,8 +6,8 @@ local SWEEP_RADIUS = 12
 local RETRY_TICKS = 60
 
 local function logRuntime(tag, detail)
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
-        NMCore.logChannel("runtimeProbe", tostring(tag or "world_item_visual"), tostring(detail or ""))
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+        NMCore.logChannel("runtime", tostring(tag or "world_item_visual"), tostring(detail or ""))
     end
 end
 

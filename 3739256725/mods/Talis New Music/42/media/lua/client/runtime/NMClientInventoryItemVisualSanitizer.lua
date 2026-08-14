@@ -3,8 +3,8 @@ NMClientInventoryItemVisualSanitizer = NMClientInventoryItemVisualSanitizer or {
 local SWEEP_INTERVAL_TICKS = 30
 
 local function logRuntime(tag, detail)
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
-        NMCore.logChannel("runtimeProbe", tostring(tag or "inventory_item_visual"), tostring(detail or ""))
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+        NMCore.logChannel("runtime", tostring(tag or "inventory_item_visual"), tostring(detail or ""))
     end
 end
 

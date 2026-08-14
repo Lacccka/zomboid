@@ -4,7 +4,6 @@ local identityReasonSeen = identityReasonSeen or {}
 local staleItemApplySeen = staleItemApplySeen or {}
 local rehydrateSummarySeen = rehydrateSummarySeen or {}
 local rehydrateAppliedSeen = rehydrateAppliedSeen or {}
-local rehydrateRefreshSeen = rehydrateRefreshSeen or {}
 local modeAckSeen = modeAckSeen or {}
 local modeAckSigSeen = modeAckSigSeen or {}
 local sqlAnchorDivergenceSeen = sqlAnchorDivergenceSeen or {}
@@ -13,18 +12,11 @@ local STALE_DROP_LOG_TTL_MS = NMRuntimeProbeAdapter.shortHeartbeatMs()
 local lineageSeen = lineageSeen or {}
 local payloadLineageSeen = payloadLineageSeen or {}
 
-local function logPortableUiProbe(tag, detail)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("portableUiProbe")) then
-        return
-    end
-    NMCore.logChannel("portableUiProbe", tostring(tag or "portable_ui"), tostring(detail or ""))
-end
-
 local function logVehicleSlotTrace(stage, detail)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("slotAuthorityProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("slot")) then
         return
     end
-    NMCore.logChannel("slotAuthorityProbe", tostring(stage or "vehicle_slot_trace"), tostring(detail or ""))
+    NMCore.logChannel("slot", tostring(stage or "vehicle_slot_trace"), tostring(detail or ""))
 end
 
 local function nowRealMs()
@@ -44,95 +36,25 @@ local function nowRealMs()
 end
 
 local function requestFreshRegistryAfterApply(args, state)
-    if not (NMClientRegistrySync and NMClientRegistrySync.requestNow and args and state) then
-        return
+    if NMClientStateApplyFollowUp and NMClientStateApplyFollowUp.requestFreshRegistryAfterApply then
+        NMClientStateApplyFollowUp.requestFreshRegistryAfterApply(args, state)
     end
-    local session = tostring(args.serverSessionToken or "")
-    if session == "" then
-        return
-    end
-    local uuid = tostring(args.uuid or state.deviceUUID or "")
-    if uuid == "" then
-        return
-    end
-    if not (args.sourceMode and (tostring(args.sourceMode) == "placed" or tostring(args.sourceMode) == "attached" or tostring(args.sourceMode) == "stowed" or tostring(args.sourceMode) == "vehicle")) then
-        return
-    end
-    local cacheEntry = NMClientWorldSourceCache and NMClientWorldSourceCache.get and NMClientWorldSourceCache.get(uuid) or nil
-    local cacheSession = NMClientWorldSourceCache and NMClientWorldSourceCache.getLastServerSessionToken and NMClientWorldSourceCache.getLastServerSessionToken() or ""
-    local incomingGen = tonumber(args.sourceGeneration) or tonumber(args.state and args.state.sourceGeneration) or 0
-    local cacheGen = math.max(
-        tonumber(cacheEntry and cacheEntry.sourceGeneration) or 0,
-        tonumber(cacheEntry and cacheEntry.stateSnapshot and cacheEntry.stateSnapshot.sourceGeneration) or 0
-    )
-    local missingCache = cacheEntry == nil
-    local sessionMismatch = cacheSession ~= "" and cacheSession ~= session
-    local generationGap = incomingGen > (cacheGen + 1)
-    if not (missingCache or sessionMismatch or generationGap) then
-        return
-    end
-    local sig = table.concat({ session, uuid }, "|")
-    local nowMs = nowRealMs()
-    local lastMs = tonumber(rehydrateRefreshSeen[sig]) or 0
-    if (nowMs - lastMs) < NMRuntimeProbeAdapter.shortHeartbeatMs() then
-        return
-    end
-    rehydrateRefreshSeen[sig] = nowMs
-    local playerObj = getPlayer and getPlayer() or getSpecificPlayer and getSpecificPlayer(0) or nil
-    NMClientRegistrySync.requestNow(playerObj, "rehydrate_state_apply")
 end
 
 local function refreshVehicleLootAfterApply(args)
-    if not (args and NMInventoryHelpers and NMInventoryHelpers.refreshOpenVehicleLootPages) then
-        return
+    if NMClientStateApplyFollowUp and NMClientStateApplyFollowUp.refreshVehicleLootAfterApply then
+        NMClientStateApplyFollowUp.refreshVehicleLootAfterApply(args)
     end
-    local action = tostring(args.transitionReason or "")
-    if action ~= "insert_media" and action ~= "eject_media" then
-        return
-    end
-    local playerObj = getPlayer and getPlayer() or getSpecificPlayer and getSpecificPlayer(0) or nil
-    if not playerObj then
-        return
-    end
-    NMInventoryHelpers.refreshOpenVehicleLootPages(playerObj, args.vehicleIdHint or args.vehicleId, {
-        slotTraceId = tostring(args.slotTraceId or ""),
-        partId = tostring(args.partId or "Radio")
-    })
 end
 
 function NMClientStateSync.onVehicleLootStaleReject(args)
-    if not (args and NMInventoryHelpers) then
-        return
-    end
-    local playerObj = getPlayer and getPlayer() or getSpecificPlayer and getSpecificPlayer(0) or nil
-    if NMInventoryHelpers.rememberVehicleLootStaleReject then
-        NMInventoryHelpers.rememberVehicleLootStaleReject(args)
-    end
-    logVehicleSlotTrace(
-        "vehicle_loot_authoritative_stale_reject",
-        string.format(
-            "trace=%s vehicleId=%s partId=%s sourcePartId=%s mediaItemId=%s mediaItemUuid=%s containerType=%s result=reject reason=%s",
-            tostring(args.slotTraceId or ""),
-            tostring(args.vehicleId or ""),
-            tostring(args.partId or ""),
-            tostring(args.sourcePartId or ""),
-            tostring(args.mediaItemId or ""),
-            tostring(args.mediaItemUuid or ""),
-            tostring(args.containerType or ""),
-            tostring(args.reason or "source_item_missing")
-        )
-    )
-    if playerObj and NMInventoryHelpers.refreshOpenVehicleLootPages then
-        NMInventoryHelpers.refreshOpenVehicleLootPages(playerObj, args.vehicleId, {
-            slotTraceId = tostring(args.slotTraceId or ""),
-            partId = tostring(args.partId or "Radio"),
-            sourcePartId = tostring(args.sourcePartId or "")
-        })
+    if NMClientStateApplyFollowUp and NMClientStateApplyFollowUp.onVehicleLootStaleReject then
+        NMClientStateApplyFollowUp.onVehicleLootStaleReject(args)
     end
 end
 
 local function logApplyResult(tag, detail)
-    NMRuntimeProbeAdapter.emit("runtimeProbe", "runtimeProbe", tag, detail or "")
+    NMRuntimeProbeAdapter.emit("runtime", "runtime", tag, detail or "")
 end
 
 local function logApplyOkDedup(kind, keySig, detail, cooldownMs)
@@ -148,12 +70,13 @@ local function logApplyOkDedup(kind, keySig, detail, cooldownMs)
 end
 
 local function logSqlAnchorLineage(uuid, entry, path, reason)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
         return
     end
     local nowMs = nowRealMs()
     local state = entry and entry.stateSnapshot or nil
     local isPayloadPath = tostring(path or "") == "client_upsert_payload" and tostring(reason or "") == "payload"
+    local isVehicleRefreshPath = tostring(path or "") == "client_vehicle_source_refresh"
     if isPayloadPath then
         local payloadKey = table.concat({
             tostring(uuid or ""),
@@ -167,25 +90,28 @@ local function logSqlAnchorLineage(uuid, entry, path, reason)
         end
         payloadLineageSeen[payloadKey] = nowMs
     end
-    local sig = table.concat({
+    local sigParts = {
         tostring(path or "unknown"),
         tostring(reason or "none"),
         tostring(entry and entry.sourceGeneration or 0),
-        tostring(state and state.revision or 0),
-        tostring(state and state.playbackEpoch or 0),
         tostring(entry and entry.vehicleSqlId or ""),
         tostring(entry and entry.vehicleSqlIdHint or ""),
         tostring(entry and entry.vehicleIdHint or "")
-    }, "|")
+    }
+    if not isVehicleRefreshPath then
+        sigParts[#sigParts + 1] = tostring(state and state.revision or 0)
+        sigParts[#sigParts + 1] = tostring(state and state.playbackEpoch or 0)
+    end
+    local sig = table.concat(sigParts, "|")
     local dedupeKey = table.concat({ tostring(uuid or ""), sig }, "|")
     local lastMs = tonumber(lineageSeen[dedupeKey]) or 0
-    local cooldownMs = isPayloadPath and 120000 or 20000
+    local cooldownMs = isPayloadPath and 120000 or (isVehicleRefreshPath and 60000 or 20000)
     if lastMs > 0 and (nowMs - lastMs) < cooldownMs then
         return
     end
     lineageSeen[dedupeKey] = nowMs
     NMCore.logChannel(
-        "runtimeProbe",
+        "runtime",
         "sql_anchor_lineage",
         string.format(
             "uuid=%s sourceGen=%s revision=%s playbackEpoch=%s vehicleSqlId=%s vehicleSqlIdHint=%s runtimeVehicleIdHint=%s path=%s reason=%s",
@@ -314,7 +240,7 @@ local function acknowledgeModeSyncIfPresent(args, sourceGeneration)
 end
 
 local function logRehydrateApplySummary(kind, status, args, state, incomingGen, incomingRev, localGen, localRev)
-    if not (NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
         return
     end
     local uuid = tostring(args and args.uuid or state and state.deviceUUID or "")
@@ -497,93 +423,9 @@ local function shouldSuppressIncompleteMediaHold(args, state)
 end
 
 local function updateVehicleCacheFromAuthority(args, state)
-    if not (NMClientWorldSourceCache and state) then
-        return
+    if NMClientStateApplyFollowUp and NMClientStateApplyFollowUp.updateVehicleCacheFromAuthority then
+        NMClientStateApplyFollowUp.updateVehicleCacheFromAuthority(args, state)
     end
-    local uuid = tostring(state.deviceUUID or args and args.uuid or "")
-    if uuid == "" then
-        return
-    end
-    local incomingGen = tonumber(args and args.sourceGeneration) or tonumber(state.sourceGeneration) or 0
-    local rebindReason = args and args.rebindReason ~= nil and tostring(args.rebindReason or "") or ""
-    local allowEqualGenIdentityOverwrite = rebindReason ~= ""
-    local entry = NMClientWorldSourceCache.get and NMClientWorldSourceCache.get(uuid) or nil
-    if not entry then
-        return
-    end
-    local acceptedGen = math.max(
-        tonumber(entry._acceptedSourceGeneration) or 0,
-        tonumber(entry.sourceEpoch) or 0
-    )
-    if incomingGen < acceptedGen then
-        return
-    end
-
-    local incomingVehicleId = tostring(args and args.vehicleId or "")
-    local incomingVehicleIdHint = tostring(args and args.vehicleIdHint or incomingVehicleId or "")
-    local incomingVehicleSqlId = tostring(args and args.vehicleSqlId or "")
-    local incomingVehicleSqlIdHint = tostring(args and args.vehicleSqlIdHint or incomingVehicleSqlId or "")
-    local incomingOwnerId = tostring(args and args.ownerId or "")
-    local currentVehicleId = tostring(entry.vehicleId or "")
-    local isResolvedLocally = entry._vehicleSourceResolved == true
-        or (entry.source and (entry.source._vehicleResolved == true or entry.source.vehicleResolved == true))
-    if incomingGen == acceptedGen
-        and isResolvedLocally
-        and incomingVehicleId ~= ""
-        and currentVehicleId ~= ""
-        and incomingVehicleId ~= currentVehicleId
-        and (not allowEqualGenIdentityOverwrite) then
-        logVehicleRebindTrace(
-            "authority_equal_gen_identity_guard",
-            uuid,
-            string.format(
-                "incomingVehicleId=%s cachedVehicleId=%s sourceGen=%s action=ignore_equal_generation_overwrite",
-                tostring(incomingVehicleId),
-                tostring(currentVehicleId),
-                tostring(incomingGen)
-            )
-        )
-        return
-    end
-
-    entry._acceptedSourceGeneration = math.max(acceptedGen, incomingGen)
-    entry.sourceEpoch = math.max(tonumber(entry.sourceEpoch) or 0, incomingGen)
-    entry.sourceGeneration = math.max(tonumber(entry.sourceGeneration) or 0, incomingGen)
-    if incomingVehicleIdHint ~= "" then
-        entry._authorityVehicleIdHint = incomingVehicleIdHint
-    end
-    if incomingOwnerId ~= "" then
-        entry._authorityOwnerIdHint = incomingOwnerId
-        entry.ownerId = incomingOwnerId
-    end
-    if incomingVehicleIdHint ~= "" then
-        entry.vehicleIdHint = incomingVehicleIdHint
-    end
-    if incomingVehicleSqlIdHint ~= "" then
-        entry.vehicleSqlIdHint = incomingVehicleSqlIdHint
-    end
-    entry._authorityPartIdHint = tostring(args and args.partId or entry.partId or "Radio")
-    entry.rebindReason = rebindReason ~= "" and rebindReason or nil
-    entry.source = entry.source or {}
-    entry.source.mode = "world"
-    entry.source.context = "vehicle"
-    entry.source.ownerId = incomingOwnerId ~= "" and incomingOwnerId or tostring(entry.source.ownerId or entry.ownerId or "")
-    if incomingVehicleIdHint ~= "" then
-        entry.source.vehicleIdHint = incomingVehicleIdHint
-    end
-    if incomingVehicleSqlIdHint ~= "" then
-        entry.source.vehicleSqlIdHint = incomingVehicleSqlIdHint
-    end
-    if (entry.source.vehicleId == nil or tostring(entry.source.vehicleId or "") == "") and incomingVehicleIdHint ~= "" then
-        entry.source.vehicleId = incomingVehicleIdHint ~= "" and incomingVehicleIdHint or incomingVehicleId or entry.vehicleId
-    end
-    if (entry.source.vehicleSqlId == nil or tostring(entry.source.vehicleSqlId or "") == "") and incomingVehicleSqlIdHint ~= "" then
-        entry.source.vehicleSqlId = incomingVehicleSqlIdHint ~= "" and incomingVehicleSqlIdHint or incomingVehicleSqlId or entry.vehicleSqlId
-    end
-    entry.source._vehicleResolved = false
-    entry.source.vehicleResolved = false
-    NMClientWorldSourceCache.entries[uuid] = entry
-    logSqlAnchorLineage(uuid, entry, "client_state_apply_cache_update", "authoritative_apply")
 end
 
 local function resolveItemTarget(player, args)
@@ -848,17 +690,8 @@ local function applyItemState(player, args)
         state.desiredIsOn = false
         state.isPlaying = false
         state.desiredIsPlaying = false
-        if NMDeviceUI and NMDeviceUI.invalidateOpenItemWindow then
-            logPortableUiProbe(
-                "state_apply_dormant_before",
-                string.format(
-                    "itemId=%s uuid=%s windows=%s",
-                    tostring(appliedItemId ~= "" and appliedItemId or "nil"),
-                    tostring(appliedUuid ~= "" and appliedUuid or "nil"),
-                    tostring(NMDeviceUI and NMDeviceUI.inspectOpenPortableWindows and #NMDeviceUI.inspectOpenPortableWindows(0) or 0)
-                )
-            )
-            NMDeviceUI.invalidateOpenItemWindow(appliedItemId, appliedUuid)
+        if NMClientStateApplyFollowUp and NMClientStateApplyFollowUp.invalidateDormantPortableWindow then
+            NMClientStateApplyFollowUp.invalidateDormantPortableWindow(appliedItemId, appliedUuid)
         end
         logApplyResult(
             "client_zombie_dormant_inventory_reject",
@@ -873,92 +706,17 @@ local function applyItemState(player, args)
         return
     end
     updateDetachedCacheFromState(item, args, state, profile)
-    local windowsBefore = NMDeviceUI and NMDeviceUI.inspectOpenPortableWindows and NMDeviceUI.inspectOpenPortableWindows(0) or {}
-    local reboundWindow = false
-    local invalidatedWindow = NMDeviceUI and NMDeviceUI.invalidateOpenItemWindow
-        and NMDeviceUI.invalidateOpenItemWindow(appliedItemId, appliedUuid) == true
-        or false
-    local portableTracked = NMDeviceProfiles
-        and NMDeviceProfiles.isPortableTrackedProfile
-        and NMDeviceProfiles.isPortableTrackedProfile(profile) == true
-    local pickupRebind = portableTracked
-        and (afterMode == "attached" or afterMode == "stowed")
-        and NMClientPortableDropHandoff
-        and NMClientPortableDropHandoff.consumePickupRebind
-        and NMClientPortableDropHandoff.consumePickupRebind(appliedUuid) == true
-    if portableTracked
-        and not dormantPortable
-        and (beforeMode == "placed" or pickupRebind)
-        and (afterMode == "attached" or afterMode == "stowed") then
-        reboundWindow = NMDeviceUI
-            and NMDeviceUI.rebindOpenPortableItemWindow
-            and NMDeviceUI.rebindOpenPortableItemWindow(appliedItemId, appliedUuid) == true
-            or false
-        if reboundWindow then
-            invalidatedWindow = true
-        end
-        logApplyResult(
-            "client_portable_ui_rebind",
-            "uuid="
-                .. tostring(appliedUuid ~= "" and appliedUuid or "nil")
-                .. " fromMode="
-                .. tostring(beforeMode)
-                .. " toMode="
-                .. tostring(afterMode)
-                .. " invalidated="
-                .. tostring(invalidatedWindow)
-                .. " rebound="
-                .. tostring(reboundWindow)
-        )
+    if NMClientStateApplyFollowUp and NMClientStateApplyFollowUp.refreshPortableItemWindow then
+        NMClientStateApplyFollowUp.refreshPortableItemWindow({
+            itemId = appliedItemId,
+            uuid = appliedUuid,
+            state = state,
+            profile = profile,
+            beforeMode = beforeMode,
+            afterMode = afterMode,
+            dormantPortable = dormantPortable
+        })
     end
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
-        NMCore.logChannel(
-            "runtimeProbe",
-            "client_item_state_ui_refresh",
-            string.format(
-                "itemId=%s uuid=%s invalidated=%s media=%s",
-                tostring(appliedItemId ~= "" and appliedItemId or "nil"),
-                tostring(appliedUuid ~= "" and appliedUuid or "nil"),
-                tostring(invalidatedWindow),
-                tostring(state and state.mediaFullType or "nil")
-            )
-        )
-    end
-    local windowsAfter = NMDeviceUI and NMDeviceUI.inspectOpenPortableWindows and NMDeviceUI.inspectOpenPortableWindows(0) or {}
-    local function snapshotsToLineLocal(snaps)
-        if type(snaps) ~= "table" or #snaps <= 0 then
-            return "none"
-        end
-        local parts = {}
-        for i = 1, #snaps do
-            local snap = snaps[i]
-            parts[#parts + 1] = string.format(
-                "%s[itemId=%s uuid=%s hasRef=%s timed=%s pending=%s awaitInsert=%s awaitEject=%s]",
-                tostring(snap.uiFamily or "unknown"),
-                tostring(snap.itemId or ""),
-                tostring(snap.uuid or ""),
-                tostring(snap.hasItemRef == true),
-                tostring(snap.mediaTimedAction or ""),
-                tostring(snap.pendingMediaFullType or ""),
-                tostring(snap.awaitingMediaInsert == true),
-                tostring(snap.awaitingMediaEject == true)
-            )
-        end
-        return table.concat(parts, " ")
-    end
-    logPortableUiProbe(
-        "state_apply_item_refresh",
-        string.format(
-            "itemId=%s uuid=%s media=%s invalidated=%s rebound=%s before=%s after=%s",
-            tostring(appliedItemId ~= "" and appliedItemId or "nil"),
-            tostring(appliedUuid ~= "" and appliedUuid or "nil"),
-            tostring(state and state.mediaFullType or "nil"),
-            tostring(invalidatedWindow),
-            tostring(reboundWindow),
-            snapshotsToLineLocal(windowsBefore),
-            snapshotsToLineLocal(windowsAfter)
-        )
-    )
     if beforeMode ~= afterMode then
         logApplyResult(
             "client_state_authority_delta",

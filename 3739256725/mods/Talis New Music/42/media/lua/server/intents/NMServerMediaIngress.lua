@@ -40,6 +40,12 @@ local function writeResolvedArgs(args, spec, liveItem)
     end
 end
 
+local function isResolvedInsertMediaItemValid(liveItem)
+    return NMMediaHelpers
+        and NMMediaHelpers.isInsertableMediaItem
+        and NMMediaHelpers.isInsertableMediaItem(liveItem) == true
+end
+
 local function logReject(opts, reason, args, descriptorText)
     local logger = resolveLogger(opts)
     if not logger then
@@ -140,6 +146,14 @@ function helper.normalizeInsertArgsToMainInventory(player, args, action, opts)
                 logReject(opts, "source_container_mismatch", args)
                 return false, "source_container_mismatch"
             end
+            if not isResolvedInsertMediaItemValid(liveItem) then
+                local traceLogger = resolveTraceLogger(opts)
+                if traceLogger then
+                    traceLogger(args, act, "invalid_media_item")
+                end
+                logReject(opts, "invalid_media_item", args, descriptorText)
+                return false, "invalid_media_item"
+            end
             writeResolvedArgs(args, spec, liveItem)
             if type(opts) == "table" and type(opts.replicateNormalizedItemMove) == "function" then
                 opts.replicateNormalizedItemMove(meta, liveItem)
@@ -171,6 +185,10 @@ function helper.normalizeInsertArgsToMainInventory(player, args, action, opts)
         if not liveItem then
             logReject(opts, "media_source_descriptor_missing", args)
             return false, "media_source_descriptor_missing"
+        end
+        if not isResolvedInsertMediaItemValid(liveItem) then
+            logReject(opts, "invalid_media_item", args)
+            return false, "invalid_media_item"
         end
         writeResolvedArgs(args, spec, liveItem)
         if logger then

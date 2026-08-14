@@ -1,5 +1,7 @@
 require "ISUI/ISCollapsableWindow"
 require "ui/shared/slots/NMSlotHostLifecycle"
+require "ui/shared/host/NMDeviceUiHost"
+local PortableWindowRegistry = require "ui/shared/host/NMPortableWindowRegistry"
 
 _G.NMDeviceWindow = _G.NMDeviceWindow or {}
 _G.NMDeviceWindowEnv = _G.NMDeviceWindowEnv or {}
@@ -11,6 +13,7 @@ end
 env.NMDeviceWindow = _G.NMDeviceWindow
 env.DeviceWindow = env.DeviceWindow or ISCollapsableWindow:derive("NMDeviceWindow")
 env.windowsByPlayer = env.windowsByPlayer or {}
+env.WindowRegistry = env.WindowRegistry or PortableWindowRegistry
 env.EDGE_PAD = env.EDGE_PAD or 20
 env.MODULE_GAP = env.MODULE_GAP or 16
 env.POWER_SIZE = env.POWER_SIZE or 56
@@ -55,5 +58,25 @@ env.UI_PREWARM_TEXTURE_PATHS = env.UI_PREWARM_TEXTURE_PATHS or {
     "media/textures/Item_Earbuds.png",
     "media/textures/WorldItems/Vinyl/World_NM_NoCover.png"
 }
+
+require "ui/generic/NMDeviceWindowRenderModel"
+require "ui/generic/NMNewMusicLogoDecoration"
+require "ui/generic/NMReadoutPane"
+require "ui/generic/NMCoverPane"
+require "ui/generic/NMPowerButton"
+require "ui/generic/NMTransportButtonRow"
+require "ui/generic/NMVolumeFader"
+
+if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("ui_lifecycle") == true then
+    NMCore.logChannel(
+        "ui_lifecycle",
+        "ui_lifecycle_registry_bind",
+        string.format(
+            "uiFamily=generic registryBound=%s registryTable=%s",
+            tostring(env.WindowRegistry ~= nil),
+            tostring(env.WindowRegistry)
+        )
+    )
+end
 
 return env

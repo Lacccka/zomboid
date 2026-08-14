@@ -117,9 +117,9 @@ function NMClientModeSync.emit(player, item, profile, state, mode)
     slot.attempts = (tonumber(slot.attempts) or 0) + 1
     local retryMs = math.min(5000, 500 * (2 ^ math.max(0, slot.attempts - 1)))
     slot.nextRetryMs = now + retryMs
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
         NMCore.logChannel(
-            "runtimeProbe",
+            "runtime",
             "mode_sync_emit",
             string.format(
                 "uuid=%s action=%s mode=%s attempt=%d retryMs=%d",
@@ -157,9 +157,9 @@ function NMClientModeSync.emitExplicit(player, item, state, action, sourceMode)
         expectedRevision = tonumber(state.revision) or 0,
         expectedPlaybackEpoch = tonumber(state.playbackEpoch) or 0
     })
-    if NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe") then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
         NMCore.logChannel(
-            "runtimeProbe",
+            "runtime",
             "mode_sync_emit",
             string.format("uuid=%s action=%s mode=%s explicit=true", tostring(uuid), tostring(act), tostring(sourceMode or ""))
         )

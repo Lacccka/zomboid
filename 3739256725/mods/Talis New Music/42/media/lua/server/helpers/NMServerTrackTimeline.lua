@@ -1,5 +1,12 @@
 NMServerTrackTimeline = NMServerTrackTimeline or {}
 
+local function ensureTrackProgressionContract()
+    if not NMTrackProgressionContract then
+        pcall(require, "playback_progression/NMTrackProgressionContract")
+    end
+    return NMTrackProgressionContract
+end
+
 local function normalizeContextKind(contextKind)
     local kind = tostring(contextKind or "world")
     if kind == "" then
@@ -41,7 +48,29 @@ local function writeArmToken(entry, state, token)
 end
 
 function NMServerTrackTimeline.resolveProgressionInfo(state, contextKind)
-    return NMTrackProgressionContract.resolve(state, {
+    local contract = ensureTrackProgressionContract()
+    if not contract then
+        return {
+            durationMs = resolveFallbackMs(),
+            authoredDurationMs = nil,
+            observedDurationMs = nil,
+            knownDuration = false,
+            timingMode = "unknown_open",
+            source = "fallback",
+            trackIndex = tonumber(state and state.trackIndex) or 1,
+            row = nil,
+            hintEligible = false,
+            context = normalizeContextKind(contextKind),
+            worldAuthoritative = true,
+            token = {
+                uuid = tostring(state and state.deviceUUID or ""),
+                revision = tonumber(state and state.revision) or 0,
+                playbackEpoch = tonumber(state and state.playbackEpoch) or 0,
+                trackIndex = tonumber(state and state.trackIndex) or 0
+            }
+        }
+    end
+    return contract.resolve(state, {
         fallbackMs = resolveFallbackMs(),
         context = normalizeContextKind(contextKind),
         worldAuthoritative = true
@@ -80,7 +109,8 @@ function NMServerTrackTimeline.arm(entry, state, nowMs, contextKind)
     local progression = NMServerTrackTimeline.resolveProgressionInfo(state, contextKind)
     local timingMode = tostring(progression and progression.timingMode or ((progression and progression.knownDuration == true) and "known_due" or "unknown_open"))
     local durationMs = math.max(1000, math.floor(tonumber(progression and progression.durationMs) or 0))
-    local dueAtMs = timingMode == "known_due" and (startedAtMs + durationMs) or 0
+    local contract = ensureTrackProgressionContract()
+    local dueAtMs = contract and contract.resolveAdvisoryDueAt(durationMs, startedAtMs, timingMode == "known_due") or 0
     local armToken = buildArmToken(state)
 
     state.serverTrackStartedAtMs = startedAtMs
@@ -105,7 +135,7 @@ function NMServerTrackTimeline.arm(entry, state, nowMs, contextKind)
         armToken = armToken,
         timingMode = timingMode,
         progression = progression,
-        cause = timingMode == "known_due" and (tostring(progression and progression.source or "") == "observed_hint" and "observed_hint_due" or "metadata_due") or "unknown_open"
+        cause = timingMode == "known_due" and "metadata_due" or "unknown_open"
     }
 end
 
@@ -151,7 +181,7 @@ function NMServerTrackTimeline.armForReason(entry, state, nowMs, contextKind, re
     local token = buildArmToken(state)
     local previousToken = readArmToken(entry, state)
     local valid, timeline = NMServerTrackTimeline.isValid(entry, state)
-    if armReason == "start_playback" and valid and previousToken ~= "" and previousToken == token then
+    if armReason == "play" and valid and previousToken ~= "" and previousToken == token then
         return {
             status = "skipped_duplicate",
             dueAtMs = tonumber(timeline and timeline.dueAtMs) or 0,
@@ -177,4 +207,6 @@ function NMServerTrackTimeline.armForReason(entry, state, nowMs, contextKind, re
         cause = armed.cause
     }
 end
+
+return NMServerTrackTimeline
 

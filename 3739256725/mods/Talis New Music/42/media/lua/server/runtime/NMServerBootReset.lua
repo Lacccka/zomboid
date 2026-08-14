@@ -19,7 +19,7 @@ local function nowToken()
 end
 
 local function shouldLog()
-    return NMCore and NMCore.logChannel and NMCore.isDebugKnobOn and NMCore.isDebugKnobOn("runtimeProbe")
+    return NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")
 end
 
 local function markSeen(kind, uuid)
@@ -75,7 +75,7 @@ function NMServerBootReset.normalizeState(state, kind, identifier)
         end
         if shouldLog() and markSeen("skipped", uuid) then
             NMCore.logChannel(
-                "runtimeProbe",
+                "runtime",
                 "server_boot_reset_skipped",
                 string.format("uuid=%s kind=%s reason=already_marked", tostring(uuid), tostring(kind or "unknown"))
             )
@@ -107,7 +107,7 @@ function NMServerBootReset.normalizeState(state, kind, identifier)
 
     if shouldLog() and markSeen("applied", uuid) then
         NMCore.logChannel(
-            "runtimeProbe",
+            "runtime",
             "server_boot_reset_applied",
             string.format(
                 "uuid=%s kind=%s reason=server_restart_reset",

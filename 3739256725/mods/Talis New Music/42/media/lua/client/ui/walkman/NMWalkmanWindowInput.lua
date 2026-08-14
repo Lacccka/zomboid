@@ -51,18 +51,7 @@ function WalkmanWindow:onMouseDown(x, y)
     end
 
     if self:isHeaderHit(x, y) then
-        if self.isAnimating == true then
-            self:snapToState(self.isCollapsed)
-        end
-        self.headerPressed = true
-        self.headerPressStartedCollapsed = (self.isCollapsed == true)
-        self.headerDragMode = nil
-        self.draggingHeader = false
-        self.headerPressX = getMouseX and getMouseX() or 0
-        self.headerPressY = getMouseY and getMouseY() or 0
-        self.dragStartWindowX = self:getX()
-        self.dragStartWindowY = self:getY()
-        self.interactionSuppressedToggle = false
+        NMFancyWindowChrome.beginHeaderPress(self)
         return true
     end
 
@@ -111,9 +100,7 @@ function WalkmanWindow:onMouseUp(x, y)
     local shouldPressLoop = self._nmLoopButtonPressed == true and pointInRect(x, y, self:getLoopButtonRect())
     self._nmLoopButtonPressed = false
     if shouldPressLoop then
-        local resolved = self:resolveContextCached()
-        local nextPolicy = getNextLoopPolicy(getLoopPolicy(resolved and resolved.state or nil))
-        local ok = self:dispatch("set_playback_policy", { playbackPolicy = nextPolicy })
+        local ok = self:executeUiControl("cycle_mode", {})
         if ok == true then
             playWalkmanTransportSound(self, false)
             self:startLoopButtonPress()
@@ -125,12 +112,14 @@ function WalkmanWindow:onMouseUp(x, y)
     local shouldPressLidArrow = self._nmLidArrowPressed == true and pointInRect(x, y, self:getLidArrowRect())
     self._nmLidArrowPressed = false
     if shouldPressLidArrow then
-        if self:hasInsertedCassette() == true then
-            self:ejectMediaViaLid()
-        else
-            self.isLidManuallyOpen = not (self.isLidManuallyOpen == true)
-            self:syncLidFromMedia(false)
+        if self.isLidManuallyOpen == true then
+            self:executeUiControl("close_lid", {})
+            return true
         end
+        if self:hasInsertedCassette() == true then
+            return self:ejectMediaViaLid() == true
+        end
+        self:executeUiControl("open_lid", {})
         return true
     end
 
@@ -140,13 +129,7 @@ function WalkmanWindow:onMouseUp(x, y)
         end
     end
 
-    local shouldToggle = self.headerPressed == true
-        and self.draggingHeader ~= true
-        and self.interactionSuppressedToggle ~= true
-        and self:isHeaderHit(x, y)
-    self:finishHeaderInteraction()
-    if shouldToggle then
-        self:toggleCollapsed()
+    if NMFancyWindowChrome.releaseHeaderInteraction(self, x, y) == true then
         return true
     end
     return false
@@ -171,9 +154,7 @@ function WalkmanWindow:onMouseUpOutside(x, y)
         self:updateVolumeLabelVisibility()
         return true
     end
-    local hadHeaderInteraction = self.headerPressed == true or self.draggingHeader == true
-    self:finishHeaderInteraction()
-    return hadHeaderInteraction
+    return NMFancyWindowChrome.cancelHeaderInteraction(self)
 end
 
 function WalkmanWindow:onMouseMove(dx, dy)

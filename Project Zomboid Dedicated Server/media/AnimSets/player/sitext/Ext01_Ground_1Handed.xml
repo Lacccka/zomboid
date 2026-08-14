@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="Ext01_Ground.xml">
+	<m_Name>Ext01_Ground_1Handed</m_Name>
+	<m_BlendTime>0.30</m_BlendTime>
+	<m_BlendOutTime>0.50</m_BlendOutTime>
+	<m_Conditions x_name="6af57624-d107-4811-9112-00df8a3dc504">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>1handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="a2aa10d4-f696-4fcd-974e-f8ab0e740c50">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="532a66ff-9da6-4d08-92a5-dfcef011a1e7">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>1</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="e99b5bac-0563-4812-b7f3-ecb82f013964">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>knife</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="856fa034-7b9a-47f8-94ef-1760bb61afad">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="d320b92e-f94d-4e73-a77b-dda46a690d00">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="ceefd0fb-71e5-4ae8-a2e4-b7da8aad6648">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>1</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="9b452ef5-ab83-446f-a022-24a1dd0d1036">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>handgun</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="ea7b83ad-7ccf-494f-8798-7b27a3203930">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="8a2a8dca-5cef-4ead-aa3e-b0cf1b3a330b">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="17a7b25c-a868-458f-ad52-1099e70c2255">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>1</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="1c7a846e-347d-4165-aebb-ad9dccaee623">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>heavy</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="bd95d5e7-e777-459a-ac24-11b295187046">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights>
+		<weight>0.10</weight>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights>
+		<weight>0.10</weight>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights>
+		<weight>0.10</weight>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights>
+		<weight>0.10</weight>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights>
+		<weight>0.50</weight>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights>
+		<weight>0.50</weight>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights>
+		<weight>0.00</weight>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights>
+		<weight>0.00</weight>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights>
+		<weight>0.00</weight>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+</animNode>
