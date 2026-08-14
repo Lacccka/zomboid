@@ -1,66 +1,48 @@
-# Internet Vehicle Radio — WIVK-FM PoC 0.3.0
+# Internet Vehicle Radio — WIVK-FM PoC 0.3.1
 
-Project Zomboid Build 42 multiplayer proof of concept for a real internet
-stream attached to vehicle radios.
+Compatibility proof of concept for Project Zomboid Build 42.20.2 multiplayer.
+
+## Result
+
+Real HTTP/HTTPS AAC radio cannot be implemented with the APIs exposed to a
+normal Workshop-only Lua mod in the tested client:
+
+- `vehicle:getEmitter():playSound(URL)` treats the URL as a local `GameSound`
+  name instead of a network media source;
+- the multiplayer client does not expose `luajava`, so Lua cannot bind the
+  game's internal `fmod.javafmod` wrapper;
+- therefore no client-side decoder can receive the WIVK-FM live stream without
+  code installed outside the ordinary Workshop Lua mod.
+
+The client log supplied for 0.3.0 confirms the decisive condition:
+
+```text
+[LCC Internet Radio PoC] luajava is unavailable; this B42 client cannot expose the built-in FMOD wrapper
+```
+
+## What 0.3.1 changes
+
+Version 0.3.0 incorrectly left its vehicle-scanning `OnTick` callback active
+after the FMOD binding had failed. It then called indexed `get()` on B42's
+vehicle collection and emitted a nil-call error every 15 ticks.
+
+Version 0.3.1 removes the tick callback and all unreachable streaming code. It
+loads once, writes two diagnostic lines, and remains inert. It does not play
+audio, change radio state, scan vehicles, or generate recurring errors.
 
 ## Installation contract
-
-This is a normal Workshop-only mod. Clients install it through the server's
-existing `WorkshopItems` / `Mods` list. It requires no Leaf, ZombieBuddy,
-executable, copied class, altered game file, or Steam launch option.
 
 Workshop ID: `3783046891`  
 Mod ID: `LaccckaInternetRadioPoC`
 
-## Audio path
+No Leaf, Java mod loader, executable, copied class, altered game file, or Steam
+launch option is required. This safety update can continue to be distributed by
+the server through the existing Workshop and mod lists.
 
-B42 Lua provides `luajava`, which can bind public classes already bundled with
-the game. The client script binds `fmod.javafmod` and invokes the native FMOD
-wrapper directly:
+## Viable Workshop-only direction
 
-1. `FMOD_System_CreateSound(URL, FMOD_CREATESTREAM)`
-2. `FMOD_System_PlaySound(sound, paused=true)`
-3. configure the channel as 3D and set its vehicle position/range/volume
-4. unpause, update it while the vehicle moves, and periodically verify playback
-5. stop the channel and release the sound when it is no longer needed
-
-This differs from the failed 0.1 path. `emitter:playSound(URL)` treated the URL
-as a `GameSound` name. Version 0.3 bypasses `GameSound` resolution but does not
-load any external Java code: `fmod.javafmod` is part of Project Zomboid itself.
-
-## Station and multiplayer state
-
-- Frequency: `104.6 MHz` (`104600` internally)
-- Name: `WIVK-FM`
-- UUID: `dea0ad58-9bd8-4a2c-b4e5-ca6f3714ae7e`
-- Stream: `https://playerservices.streamtheworld.com/api/livestream-redirect/WIVKFMAAC.aac`
-
-Vanilla vehicle `DeviceData` remains authoritative for radio power, frequency
-and volume. Each client within 60 tiles opens the live stream directly. The
-dedicated server synchronizes normal vehicle state and never carries audio.
-
-Loaded vehicles are enumerated using B42's concrete Java `ArrayList`
-`size()` / `get()` interface. This avoids the generic collection probing that
-caused the earlier nil-call errors and lets a client hear nearby cars without
-entering them first.
-
-## Two-client test
-
-1. Publish/update Workshop item `3783046891` from this directory.
-2. Let the dedicated server distribute the update normally; do not install any
-   external loader on either client.
-3. Fully restart both clients and join the B42.20.2 server.
-4. Confirm each client log contains:
-   - `pure Workshop mode; no Leaf, Java mod loader, or manual client installation`
-   - `bound built-in fmod.javafmod; pure Workshop streaming path is ready`
-5. Turn on one vehicle radio and tune it to `104.6 MHz`.
-6. Confirm both clients log `started WIVK-FM for vehicle ...` and hear the same
-   live broadcast near the car.
-7. Drive the car and verify positional movement and attenuation.
-8. Tune away, mute, turn off, walk beyond 60 tiles, and unload the vehicle.
-   Each action must stop the relevant client channel without lingering audio.
-
-If class binding succeeds but stream creation returns zero, the remaining issue
-is the B42.20.2 FMOD build's handling of this HTTPS/AAC endpoint—not mod loading.
-That result would require changing the station transport/codec or accepting a
-local-audio Workshop radio instead of requiring a client installer.
+The supported alternative is a conventional vehicle-radio mod whose audio is
+packaged locally with the Workshop item and registered as `GameSound` content.
+It can provide positional vehicle audio, attenuation, movement, multiplayer
+state, and automatic client distribution, but it cannot be the changing live
+WIVK-FM internet broadcast.
