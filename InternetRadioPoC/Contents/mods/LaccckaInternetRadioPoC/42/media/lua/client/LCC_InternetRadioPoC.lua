@@ -1,19 +1,17 @@
--- Local WAV playback probe for Project Zomboid B42.20.2.
--- No HTTP, vehicle scan, OnTick callback, luajava, or external loader.
+-- Registered GameSound and vehicle-emitter probe for Project Zomboid B42.20.2.
+-- No OnTick callback, vehicle scan, HTTP request, luajava, or external loader.
 
 local MOD_TAG = "[LCC Internet Radio PoC]"
 local MOD_ID = "LaccckaInternetRadioPoC"
 local VERSION_DIR = "42"
-local SOUND_NAME = "test"
+local SOUND_NAME = "LCCInternetRadioTest"
 local SOUND_RELATIVE_PATH = "media/sound/test.wav"
 
 -- LWJGL/PZ key codes. Numeric constants avoid depending on an exposed
 -- Keyboard Java class in the restricted multiplayer Lua environment.
-local KEY_DIRECT_WORLD = 66 -- F8
-local KEY_DIRECT_2D = 67 -- F9
+local KEY_RUNTIME_CLIP = 67 -- F9
 local KEY_NAMED_WORLD = 68 -- F10
 local KEY_VEHICLE_NAMED = 87 -- F11
-local KEY_VEHICLE_DIRECT = 88 -- F12
 
 local lastWorldAudio = nil
 local lastEmitter = nil
@@ -61,8 +59,6 @@ local function getAbsoluteWavPath()
         return modInfo:getDir()
     end)
     if not dirOk or not modDir then return nil end
-    -- getDir() returns .../mods/LaccckaInternetRadioPoC, while B42 versioned
-    -- content lives below the additional /42 directory.
     return tostring(modDir) .. "/" .. VERSION_DIR .. "/" .. SOUND_RELATIVE_PATH
 end
 
@@ -95,74 +91,62 @@ local function getPlayerAndSquare()
     return player, square
 end
 
-local function runDirectWorldTest()
-    log("WAV corrected absolute-path world test started")
-    local manager = getManager()
-    if not manager then return end
-    stopPrevious(manager)
-
-    local wavPath = getAbsoluteWavPath()
-    if not wavPath then
-        log("absolute-path world test stopped: mod WAV path could not be resolved")
-        return
-    end
-    log("file=" .. wavPath)
-
-    local _, square = getPlayerAndSquare()
-    if not square then
-        log("absolute-path world test stopped: no player square")
-        return
+local function getVehicleAndEmitter()
+    local player = getPlayerAndSquare()
+    if not player then
+        log("vehicle test stopped: no player")
+        return nil, nil
     end
 
-    attempt("CacheSound(absolute path)", function()
-        return manager:CacheSound(wavPath)
+    local vehicleOk, vehicle = attempt("player:getVehicle", function()
+        return player:getVehicle()
     end)
-    local playOk, audio = attempt("PlayWorldSoundWav(absolute path)", function()
-        return manager:PlayWorldSoundWav(wavPath, false, square, 0.0, 30.0, 1.0, false)
+    if not vehicleOk or not vehicle then
+        log("vehicle test stopped: sit inside a vehicle first")
+        return nil, nil
+    end
+
+    local emitterOk, emitter = attempt("vehicle:getEmitter", function()
+        return vehicle:getEmitter()
     end)
-    if playOk and audio then lastWorldAudio = audio end
-    log("WAV corrected absolute-path world test finished")
+    if not emitterOk or not emitter then
+        log("vehicle test stopped: vehicle has no emitter")
+        return nil, nil
+    end
+    return vehicle, emitter
 end
 
-local function runDirect2DTest()
-    log("WAV corrected absolute-path 2D test started")
-    local manager = getManager()
-    if not manager then return end
-    stopPrevious(manager)
-
-    local wavPath = getAbsoluteWavPath()
-    if not wavPath then
-        log("absolute-path 2D test stopped: mod WAV path could not be resolved")
+local function rememberEmitterPlayback(emitter, handle)
+    if not handle or handle == 0 then
+        log("vehicle playback failed: emitter returned handle 0")
         return
     end
-    log("file=" .. wavPath)
-
-    attempt("CacheSound(absolute path)", function()
-        return manager:CacheSound(wavPath)
+    attempt("vehicle emitter:set3D", function()
+        return emitter:set3D(handle, true)
     end)
-    local playOk, audio = attempt("PlaySoundWav(absolute path)", function()
-        return manager:PlaySoundWav(wavPath, false, 1.0)
+    attempt("vehicle emitter:setVolume", function()
+        return emitter:setVolume(handle, 1.0)
     end)
-    if playOk and audio then lastWorldAudio = audio end
-    log("WAV corrected absolute-path 2D test finished")
+    attempt("vehicle emitter:isPlaying", function()
+        return emitter:isPlaying(handle)
+    end)
+    lastEmitter = emitter
+    lastEmitterHandle = handle
 end
 
 local function runNamedWorldTest()
-    log("WAV named positional-world control test started")
+    log("registered GameSound world control started")
     local manager = getManager()
     if not manager then return end
     stopPrevious(manager)
 
     local _, square = getPlayerAndSquare()
     if not square then
-        log("named positional-world test stopped: no player square")
+        log("registered world control stopped: no player square")
         return
     end
 
-    attempt("CacheSound(relative path)", function()
-        return manager:CacheSound(SOUND_RELATIVE_PATH)
-    end)
-    local playOk, audio = attempt("PlayWorldSoundWav(name)", function()
+    local playOk, audio = attempt("PlayWorldSoundWav(registered name)", function()
         return manager:PlayWorldSoundWav(
             SOUND_NAME,
             false,
@@ -174,88 +158,92 @@ local function runNamedWorldTest()
         )
     end)
     if playOk and audio then lastWorldAudio = audio end
-    log("WAV named positional-world control test finished")
+    log("registered GameSound world control finished")
 end
 
-local function runVehicleEmitterTest(useAbsolutePath)
-    local testName = useAbsolutePath and "absolute-path" or "named-file"
-    log("WAV vehicle-emitter " .. testName .. " test started")
+local function runVehicleNamedTest()
+    log("registered GameSound vehicle-emitter control started")
     local manager = getManager()
     if not manager then return end
     stopPrevious(manager)
 
-    local player = getPlayerAndSquare()
-    if not player then
-        log("vehicle-emitter test stopped: no player")
+    local _, emitter = getVehicleAndEmitter()
+    if not emitter then return end
+
+    local playOk, handle = attempt("vehicle emitter:playSound(registered name)", function()
+        return emitter:playSound(SOUND_NAME)
+    end)
+    if playOk then rememberEmitterPlayback(emitter, handle) end
+    log("registered GameSound vehicle-emitter control finished")
+end
+
+local function runRuntimeClipTest()
+    log("runtime GameSoundClip remap vehicle test started")
+    local manager = getManager()
+    if not manager then return end
+    stopPrevious(manager)
+
+    local vehicle, emitter = getVehicleAndEmitter()
+    if not vehicle or not emitter then return end
+
+    local path = getAbsoluteWavPath()
+    if not path then
+        log("runtime clip test stopped: WAV path could not be resolved")
+        return
+    end
+    log("runtime clip target=" .. path)
+
+    local soundOk, gameSound = attempt("GameSounds.getSound", function()
+        return GameSounds.getSound(SOUND_NAME)
+    end)
+    if not soundOk or not gameSound then
+        log("runtime clip test stopped: registered GameSound is unavailable")
         return
     end
 
-    local vehicleOk, vehicle = attempt("player:getVehicle", function()
-        return player:getVehicle()
+    local clipOk, clip = attempt("gameSound:getRandomClip", function()
+        return gameSound:getRandomClip()
     end)
-    if not vehicleOk or not vehicle then
-        log("vehicle-emitter test stopped: sit inside a vehicle first")
+    if not clipOk or not clip then
+        log("runtime clip test stopped: GameSound has no clip")
         return
     end
 
-    local emitterOk, emitter = attempt("vehicle:getEmitter", function()
-        return vehicle:getEmitter()
+    attempt("clip:getFile(before remap)", function()
+        return clip:getFile()
     end)
-    if not emitterOk or not emitter then
-        log("vehicle-emitter test stopped: vehicle has no emitter")
+    local remapOk = attempt("clip.file = absolute path", function()
+        clip.file = path
+        return clip:getFile()
+    end)
+    if not remapOk then
+        log("runtime clip test stopped: clip file is not writable from Lua")
         return
     end
 
-    local sound = SOUND_NAME
-    if useAbsolutePath then
-        sound = getAbsoluteWavPath()
-        if not sound then
-            log("vehicle-emitter test stopped: mod WAV path could not be resolved")
-            return
-        end
-        attempt("CacheSound(absolute path)", function()
-            return manager:CacheSound(sound)
-        end)
-    end
-    log("emitter sound=" .. tostring(sound))
-
-    local playOk, handle = attempt("vehicle emitter:playSound", function()
-        return emitter:playSound(sound)
+    local playOk, handle = attempt("vehicle emitter:playClip(remapped clip)", function()
+        return emitter:playClip(clip, vehicle)
     end)
-    if playOk and handle and handle ~= 0 then
-        attempt("vehicle emitter:set3D", function()
-            return emitter:set3D(handle, true)
-        end)
-        attempt("vehicle emitter:setVolume", function()
-            return emitter:setVolume(handle, 1.0)
-        end)
-        attempt("vehicle emitter:isPlaying", function()
-            return emitter:isPlaying(handle)
-        end)
-        lastEmitter = emitter
-        lastEmitterHandle = handle
-    end
-    log("WAV vehicle-emitter " .. testName .. " test finished")
+    if playOk then rememberEmitterPlayback(emitter, handle) end
+    log("runtime GameSoundClip remap vehicle test finished")
 end
 
 local function onKeyPressed(key)
-    if key == KEY_DIRECT_WORLD then
-        runDirectWorldTest()
-    elseif key == KEY_DIRECT_2D then
-        runDirect2DTest()
+    if key == KEY_RUNTIME_CLIP then
+        runRuntimeClipTest()
     elseif key == KEY_NAMED_WORLD then
         runNamedWorldTest()
     elseif key == KEY_VEHICLE_NAMED then
-        runVehicleEmitterTest(false)
-    elseif key == KEY_VEHICLE_DIRECT then
-        runVehicleEmitterTest(true)
+        runVehicleNamedTest()
     end
 end
 
 Events.OnGameStart.Add(function()
-    log("0.4.1 local WAV and vehicle-emitter probe loaded")
-    log("F8=corrected absolute world; F9=corrected absolute 2D; F10=named world control")
-    log("F11=vehicle emitter by name; F12=vehicle emitter by absolute path")
+    log("0.5.0 registered GameSound and runtime-clip probe loaded")
+    log("F9=runtime clip remap in vehicle; F10=registered world; F11=registered vehicle")
+    attempt("GameSounds.isKnownSound(" .. SOUND_NAME .. ")", function()
+        return GameSounds.isKnownSound(SOUND_NAME)
+    end)
 end)
 Events.OnKeyPressed.Add(onKeyPressed)
 
