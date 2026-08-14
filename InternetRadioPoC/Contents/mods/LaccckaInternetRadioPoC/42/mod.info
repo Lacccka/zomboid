@@ -1,6 +1,6 @@
 name=Internet Vehicle Radio - WIVK-FM PoC
 id=LaccckaInternetRadioPoC
 author=Lacccka
-description=Build 42 Workshop-only registered GameSound, vehicle emitter, and runtime clip-remap probe. Press F9-F11 in game; no recurring tick handler.
-modversion=0.5.0
+description=Build 42 Workshop-only registered GameSound and vehicle-emitter probe. Press F9-F11 in game; no recurring tick handler.
+modversion=0.5.1
 versionMin=42.20.0
