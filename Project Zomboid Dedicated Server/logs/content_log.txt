@@ -2623,3 +2623,42 @@
 [2026-08-14 21:48:54] HTTPS (CDN,31) - fastly.cdn.steampipe.steamcontent.com (199.232.175.82:443 / 199.232.175.82:443, host: fastly.cdn.steampipe.steamcontent.com): Closing connection
 [2026-08-14 21:48:54] HTTPS (SteamCache,200) - cache2-sto2.steamcontent.com (155.133.252.5:443 / 155.133.252.5:443, host: cache2-sto2.steamcontent.com): Closing connection
 [2026-08-14 21:48:54] HTTP (CDN,29) - edgenext.cdn.steampipe.steamcontent.com (143.14.15.117:80 / 143.14.15.117:80, host: edgenext.cdn.steampipe.steamcontent.com): Closing connection
+
+
+[2026-08-14 22:58:08] Client version: no bootstrapper found
+[2026-08-14 22:58:08] AppID 108600 Workshop update changed : Running Update,
+[2026-08-14 22:58:08] AppID 108600 Workshop update changed : Running Update,Reconfiguring,
+[2026-08-14 22:58:09] Got 8 download sources and 0 caching proxies via ContentServerDirectoryService::BYieldingGetServersForSteamPipe (CellID 39 / Launcher 9)
+[2026-08-14 22:58:09] Moving to source priority class '2'
+[2026-08-14 22:58:09] Created download interface of type 'CDN' (2) to host edgenext.cdn.steampipe.steamcontent.com (edgenext.cdn.steampipe.steamcontent.com)
+[2026-08-14 22:58:09] Created download interface of type 'CDN' (2) to host alibaba.cdn.steampipe.steamcontent.com (alibaba.cdn.steampipe.steamcontent.com)
+[2026-08-14 22:58:09] Created download interface of type 'SteamCache' (7) to host cache2-sto2.steamcontent.com (cache2-sto2.steamcontent.com)
+[2026-08-14 22:58:09] HTTP (CDN,29) - edgenext.cdn.steampipe.steamcontent.com (0.0.0.0:0 / 0.0.0.0:0, host: edgenext.cdn.steampipe.steamcontent.com): AuthenticateDepotID (108600) - Success!
+[2026-08-14 22:58:09] HTTP/2 available
+[2026-08-14 22:58:09] Created ipv4-only http client
+[2026-08-14 22:58:10] HTTP (CDN,29) - edgenext.cdn.steampipe.steamcontent.com (143.14.15.100:80 / 143.14.15.100:80, host: edgenext.cdn.steampipe.steamcontent.com): edgenext.cdn.steampipe.steamcontent.com/depot/108600/manifest/156953435254229356/5/14995077209753612747 - received 200 (OK) HTTP response
+[2026-08-14 22:58:10] AppID 108600 Workshop update changed : Running Update,
+[2026-08-14 22:58:10] AppID 108600 Workshop update changed : Running Update,Verifying Installed,
+[2026-08-14 22:58:10] Validating active workshop item 3783046891 ...
+[2026-08-14 22:58:10] Validation: missing file "3783046891\mods\LaccckaInternetRadioPoC\42\media\lua\client\LCC_InternetRadioPoC.lua"
+[2026-08-14 22:58:10] Validation: missing file "3783046891\mods\LaccckaInternetRadioPoC\42\media\scripts\LCC_InternetRadio_Sounds.txt"
+[2026-08-14 22:58:10] Validation: missing file "3783046891\mods\LaccckaInternetRadioPoC\42\media\sound\test.wav"
+[2026-08-14 22:58:10] Validation: missing file "3783046891\mods\LaccckaInternetRadioPoC\42\mod.info"
+[2026-08-14 22:58:10] Validation: missing file "3783046891\mods\LaccckaInternetRadioPoC\leaf\mods\LaccckaInternetRadioServerBridge.jar"
+[2026-08-14 22:58:10] Validation: quick scan in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop/content/108600" found 5/5 mismatching files (0 seconds).
+[2026-08-14 22:58:10] AppID 108600 Workshop update changed : Running Update,
+[2026-08-14 22:58:10] AppID 108600 Workshop update changed : Running Update,Preallocating,
+[2026-08-14 22:58:10] AppID 108600 preallocated 1 files (1 MB) 
+[2026-08-14 22:58:10] AppID 108600 Workshop update changed : Running Update,
+[2026-08-14 22:58:10] AppID 108600 update started : download 0/1673632, store 0/0, reuse 0/0, delta 0/0, stage 0/1781580 
+[2026-08-14 22:58:10] AppID 108600 Workshop update changed : Running Update,Downloading,Staging,
+[2026-08-14 22:58:10] Downloading 6 chunks for depot 108600 (156953435254229356)
+[2026-08-14 22:58:10] HTTP (CDN,33) - alibaba.cdn.steampipe.steamcontent.com (0.0.0.0:0 / 0.0.0.0:0, host: alibaba.cdn.steampipe.steamcontent.com): AuthenticateDepotID (108600) - Success!
+[2026-08-14 22:58:11] AppID 108600 Workshop update changed : Running Update,
+[2026-08-14 22:58:11] AppID 108600 Workshop update changed : Running Update,Committing,
+[2026-08-14 22:58:11] AppID 108600 starting commit from "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop/downloads/108600" to "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop/content/108600" : 5 updated, 0 moved, 0 deleted files
+[2026-08-14 22:58:11] AppID 108600 Workshop update changed : Running Update,
+[2026-08-14 22:58:11] AppID 108600 Workshop update changed : None
+[2026-08-14 22:59:12] HTTPS (SteamCache,200) - cache2-sto2.steamcontent.com (155.133.252.5:443 / 155.133.252.5:443, host: cache2-sto2.steamcontent.com): Closing connection
+[2026-08-14 22:59:12] HTTP (CDN,29) - edgenext.cdn.steampipe.steamcontent.com (143.14.15.100:80 / 143.14.15.100:80, host: edgenext.cdn.steampipe.steamcontent.com): Closing connection
+[2026-08-14 22:59:12] HTTP (CDN,33) - alibaba.cdn.steampipe.steamcontent.com (3.164.247.91:80 / 3.164.247.91:80, host: alibaba.cdn.steampipe.steamcontent.com): Closing connection

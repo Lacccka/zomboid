@@ -226,3 +226,21 @@
 [2026-08-14 21:52:48] ThreadedReadFromDisk: loading appinfo cache from: C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server/appcache/appinfo.vdf
 [2026-08-14 21:52:48] ThreadedReadFromDisk: failed to open file: C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server/appcache/appinfo.vdf
 [2026-08-14 21:52:48] CAppInfoCacheReadFromDiskThread took 0 milliseconds to initialize
+
+
+[2026-08-14 22:57:36] Client version: no bootstrapper found
+[2026-08-14 22:57:36] ThreadedReadFromDisk: loading appinfo cache from: C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server/appcache/appinfo.vdf
+[2026-08-14 22:57:36] ThreadedReadFromDisk: failed to open file: C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server/appcache/appinfo.vdf
+[2026-08-14 22:57:36] CAppInfoCacheReadFromDiskThread took 0 milliseconds to initialize
+
+
+[2026-08-14 22:59:49] Client version: no bootstrapper found
+[2026-08-14 22:59:49] ThreadedReadFromDisk: loading appinfo cache from: C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server/appcache/appinfo.vdf
+[2026-08-14 22:59:49] ThreadedReadFromDisk: failed to open file: C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server/appcache/appinfo.vdf
+[2026-08-14 22:59:49] CAppInfoCacheReadFromDiskThread took 0 milliseconds to initialize
+
+
+[2026-08-14 23:04:59] Client version: no bootstrapper found
+[2026-08-14 23:04:59] ThreadedReadFromDisk: loading appinfo cache from: C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server/appcache/appinfo.vdf
+[2026-08-14 23:04:59] ThreadedReadFromDisk: failed to open file: C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server/appcache/appinfo.vdf
+[2026-08-14 23:04:59] CAppInfoCacheReadFromDiskThread took 0 milliseconds to initialize
