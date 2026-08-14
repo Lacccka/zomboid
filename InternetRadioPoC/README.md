@@ -1,4 +1,4 @@
-# Internet Vehicle Radio — Direct Server Transport Probe 0.8.6
+# Internet Vehicle Radio — Direct Server Transport Probe 0.8.7
 
 Proof of concept for Project Zomboid Build 42.20.2 multiplayer.
 
@@ -7,7 +7,7 @@ Mod ID: `LaccckaInternetRadioPoC`
 
 ## Current milestone
 
-Version 0.8.6 tests one narrow question:
+Version 0.8.7 tests one narrow question:
 
 > Can `RakVoice.SendFrame()` be called after Dedicated Server VOIP
 > initialization and deliver generated PCM to an ordinary Project Zomboid
@@ -21,9 +21,10 @@ Leaf entrypoint runs, but also proved that `ServerMap.preupdate()` is not called
 by this Dedicated Server lifecycle. Version 0.8.5 removed the lifecycle mixin
 and started a lightweight daemon monitor from the proven entrypoint, but its
 direct access to `UdpConnection.playerIDs` was incompatible with the runtime
-class and stopped the probe before `SendFrame()`. Version 0.8.6 resolves the
-player through `GameServer.getAnyPlayerFromConnection()` and obtains the ID
-through `IsoPlayer.getOnlineID()` instead.
+class and stopped the probe before `SendFrame()`. Version 0.8.6 then established
+that the documented `GameServer.getAnyPlayerFromConnection()` method is also
+absent from the actual B42.20.2 server JAR. Version 0.8.7 removes hard bytecode
+links to both unstable members and resolves the online ID reflectively.
 
 ## Probe architecture
 
@@ -33,8 +34,9 @@ Leaf main entrypoint
 Server-only daemon monitor
   -> [MONITOR_OK]
 GameServer.udpEngine.connections
-  -> GameServer.getAnyPlayerFromConnection()
-  -> fully connected GUID + IsoPlayer onlineID
+  -> reflect connection.players / connection.playerIDs
+  -> single-connection GameServer player collections as fallback
+  -> fully connected GUID + runtime player onlineID
 RakVoice server state
   -> sample rate + frame period + buffer size
 440 Hz mono S16LE generator
@@ -58,9 +60,10 @@ exception. Audible delivery must still be confirmed in game.
 ## Expected server log
 
 ```text
-[InternetRadioBridge][BOOT] version=0.8.6; ...
+[InternetRadioBridge][BOOT] version=0.8.7; ...
 [InternetRadioBridge][MONITOR_OK] daemon polling started; ...
 [InternetRadioBridge][WAIT] no fully-connected player ...
+[InternetRadioBridge][TARGET_RESOLVE] strategy=...; onlineId=...; ...
 [InternetRadioBridge][VOICE_STATE] serverEnabled=true; sampleRate=...; ...
 [InternetRadioBridge][TARGET] sourceGuid=...; sourceOnlineId=...; ...
 [InternetRadioBridge][DIRECT_TEST] guid=...; onlineId=...; bytes=...; ...
@@ -74,6 +77,8 @@ Interpretation:
 - no `BOOT`: Leaf found metadata but did not run the entrypoint;
 - `BOOT` without `MONITOR_OK`: the entrypoint could not start its daemon;
 - `MONITOR_POLL FAIL`: target discovery failed before the VOIP test;
+- `TARGET_RESOLVE unresolved`: no supported runtime player representation was
+  found; the same line includes the actual connection field inventory;
 - `serverEnabled=false`: VOIP is disabled in server settings;
 - `SEND_ENTER` without `SEND_RETURN`: native call failed or blocked;
 - `DIRECT_RESULT` without audible sound: the call was accepted but delivery,
@@ -111,7 +116,7 @@ For a standard Dedicated Server installation, load the exact JAR before `-cp`:
 ## Test procedure
 
 1. Update Workshop item `3783046891` and fully restart the server.
-2. Confirm Leaf reports `lcc-internet-radio-server-bridge 0.8.6`.
+2. Confirm Leaf reports `lcc-internet-radio-server-bridge 0.8.7`.
 3. Confirm `[BOOT]` and `[MONITOR_OK]` appear.
 4. Connect the available ordinary client with VOIP enabled.
 5. Wait at least ten seconds after it finishes loading.
@@ -132,7 +137,7 @@ test only if direct delivery works.
 F11 remains the confirmed control for packaged audio and moving vehicle
 positioning; it is independent of this RakVoice probe.
 
-## Decision after 0.8.6
+## Decision after 0.8.7
 
 - If direct delivery works, the next probe adds radio routing on 104.6 MHz.
 - If `SendFrame()` returns but clients consistently receive no audio with valid

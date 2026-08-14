@@ -1,9 +1,13 @@
 package lcc.internetradio.server;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import zombie.characters.IsoPlayer;
 import zombie.core.raknet.RakVoice;
 import zombie.core.raknet.UdpConnection;
 import zombie.core.raknet.UdpEngine;
@@ -11,7 +15,7 @@ import zombie.network.GameServer;
 
 /** Server-only Phase 0 probe for RakVoice.SendFrame after RVInitServer. */
 public final class ServerToneBridge {
-    public static final String VERSION = "0.8.6";
+    public static final String VERSION = "0.8.7";
 
     private static final long MONITOR_PERIOD_MS = 250L;
     private static final long TEST_DELAY_MS = 5_000L;
@@ -26,6 +30,8 @@ public final class ServerToneBridge {
     private static final AtomicBoolean VOICE_STATE_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean VOICE_DISABLED_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean TARGET_LOGGED = new AtomicBoolean();
+    private static final AtomicBoolean TARGET_RESOLUTION_LOGGED = new AtomicBoolean();
+    private static final AtomicBoolean TARGET_RESOLUTION_FAILURE_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean PROBE_STARTED = new AtomicBoolean();
 
     private static volatile long eligibleSince;
@@ -139,19 +145,223 @@ public final class ServerToneBridge {
         if (connections == null) return result;
 
         Object[] snapshot = connections.toArray();
+        List<UdpConnection> fullyConnected = new ArrayList<>();
         for (Object value : snapshot) {
             if (!(value instanceof UdpConnection)) continue;
             UdpConnection connection = (UdpConnection) value;
             if (!connection.isFullyConnected()) continue;
-            IsoPlayer player = GameServer.getAnyPlayerFromConnection(connection);
-            if (player == null) continue;
-            short playerId = player.getOnlineID();
+            fullyConnected.add(connection);
+        }
+
+        boolean allowGlobalFallback = fullyConnected.size() == 1;
+        for (UdpConnection connection : fullyConnected) {
+            ResolvedPlayer resolved = resolvePlayerId(
+                    connection, allowGlobalFallback);
+            short playerId = resolved.playerId;
             if (playerId < 0) continue;
             long guid = connection.getConnectedGUID();
             if (guid == 0L) continue;
+            if (TARGET_RESOLUTION_LOGGED.compareAndSet(false, true)) {
+                log("TARGET_RESOLVE", "strategy=" + resolved.strategy
+                        + "; onlineId=" + playerId
+                        + "; connectedCount=" + fullyConnected.size());
+            }
             result.add(new Target(guid, playerId));
         }
+
+        if (result.isEmpty() && !fullyConnected.isEmpty()
+                && TARGET_RESOLUTION_FAILURE_LOGGED.compareAndSet(false, true)) {
+            UdpConnection connection = fullyConnected.get(0);
+            log("TARGET_RESOLVE", "unresolved; connectionClass="
+                    + connection.getClass().getName()
+                    + "; fields=" + describeFields(connection.getClass()));
+        }
         return result;
+    }
+
+    private static ResolvedPlayer resolvePlayerId(
+            UdpConnection connection, boolean allowGlobalFallback) {
+        short playerId = firstOnlineId(readField(connection, "players"));
+        if (playerId >= 0) {
+            return new ResolvedPlayer(playerId, "connection.players");
+        }
+
+        playerId = firstNumericId(readField(connection, "playerIDs"));
+        if (playerId >= 0) {
+            return new ResolvedPlayer(playerId, "connection.playerIDs");
+        }
+
+        if (allowGlobalFallback) {
+            playerId = firstOnlineId(readStaticField(GameServer.class, "Players"));
+            if (playerId >= 0) {
+                return new ResolvedPlayer(playerId, "GameServer.Players-single-connection");
+            }
+
+            playerId = firstOnlineId(
+                    readStaticField(GameServer.class, "IDToPlayerMap"));
+            if (playerId >= 0) {
+                return new ResolvedPlayer(
+                        playerId, "GameServer.IDToPlayerMap-single-connection");
+            }
+        }
+
+        return ResolvedPlayer.NONE;
+    }
+
+    private static Object readField(Object target, String fieldName) {
+        if (target == null) return null;
+        Field field = findField(target.getClass(), fieldName);
+        if (field == null) return null;
+        try {
+            field.setAccessible(true);
+            return field.get(target);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static Object readStaticField(Class<?> owner, String fieldName) {
+        Field field = findField(owner, fieldName);
+        if (field == null) return null;
+        try {
+            field.setAccessible(true);
+            return field.get(null);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static Field findField(Class<?> type, String fieldName) {
+        for (Class<?> current = type; current != null;
+                current = current.getSuperclass()) {
+            try {
+                return current.getDeclaredField(fieldName);
+            } catch (NoSuchFieldException ignored) {
+                // Continue through the runtime hierarchy.
+            }
+        }
+        return null;
+    }
+
+    private static short firstOnlineId(Object value) {
+        if (value == null) return -1;
+        if (value instanceof Map<?, ?>) {
+            for (Object entryValue : ((Map<?, ?>) value).values()) {
+                short id = firstOnlineId(entryValue);
+                if (id >= 0) return id;
+            }
+            return -1;
+        }
+        if (value instanceof Iterable<?>) {
+            for (Object element : (Iterable<?>) value) {
+                short id = firstOnlineId(element);
+                if (id >= 0) return id;
+            }
+            return -1;
+        }
+        if (value.getClass().isArray()) {
+            int length = Array.getLength(value);
+            for (int index = 0; index < length; index++) {
+                short id = firstOnlineId(Array.get(value, index));
+                if (id >= 0) return id;
+            }
+            return -1;
+        }
+
+        Object result = invokeNoArg(value, "getOnlineID");
+        return result instanceof Number
+                ? validShort(((Number) result).longValue()) : -1;
+    }
+
+    private static short firstNumericId(Object value) {
+        if (value == null) return -1;
+        if (value instanceof Number) {
+            return validShort(((Number) value).longValue());
+        }
+        if (value instanceof Iterable<?>) {
+            for (Object element : (Iterable<?>) value) {
+                short id = firstNumericId(element);
+                if (id >= 0) return id;
+            }
+            return -1;
+        }
+        if (value.getClass().isArray()) {
+            int length = Array.getLength(value);
+            for (int index = 0; index < length; index++) {
+                short id = firstNumericId(Array.get(value, index));
+                if (id >= 0) return id;
+            }
+            return -1;
+        }
+
+        Object sizeValue = invokeNoArg(value, "size");
+        if (!(sizeValue instanceof Number)) return -1;
+        int size = ((Number) sizeValue).intValue();
+        for (int index = 0; index < size; index++) {
+            Object element = invokeIntArg(value, "get", index);
+            short id = firstNumericId(element);
+            if (id >= 0) return id;
+        }
+        return -1;
+    }
+
+    private static Object invokeNoArg(Object target, String methodName) {
+        Method method = findMethod(target.getClass(), methodName);
+        if (method == null) return null;
+        try {
+            method.setAccessible(true);
+            return method.invoke(target);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static Object invokeIntArg(
+            Object target, String methodName, int argument) {
+        Method method = findMethod(target.getClass(), methodName, int.class);
+        if (method == null) return null;
+        try {
+            method.setAccessible(true);
+            return method.invoke(target, argument);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static Method findMethod(
+            Class<?> type, String methodName, Class<?>... parameterTypes) {
+        try {
+            return type.getMethod(methodName, parameterTypes);
+        } catch (NoSuchMethodException ignored) {
+            // Check non-public runtime declarations as a compatibility fallback.
+        }
+        for (Class<?> current = type; current != null;
+                current = current.getSuperclass()) {
+            try {
+                return current.getDeclaredMethod(methodName, parameterTypes);
+            } catch (NoSuchMethodException ignored) {
+                // Continue through the runtime hierarchy.
+            }
+        }
+        return null;
+    }
+
+    private static short validShort(long value) {
+        return value >= 0L && value <= Short.MAX_VALUE ? (short) value : -1;
+    }
+
+    private static String describeFields(Class<?> type) {
+        List<String> descriptions = new ArrayList<>();
+        for (Class<?> current = type; current != null;
+                current = current.getSuperclass()) {
+            for (Field field : current.getDeclaredFields()) {
+                descriptions.add(field.getName() + ":"
+                        + field.getType().getTypeName());
+            }
+        }
+        Collections.sort(descriptions);
+        String joined = String.join(",", descriptions);
+        return joined.length() <= 1_000 ? joined : joined.substring(0, 1_000) + "...";
     }
 
     private static void logVoiceStateOnce() {
@@ -274,6 +484,19 @@ public final class ServerToneBridge {
         private Target(long guid, short playerId) {
             this.guid = guid;
             this.playerId = playerId;
+        }
+    }
+
+    private static final class ResolvedPlayer {
+        private static final ResolvedPlayer NONE =
+                new ResolvedPlayer((short) -1, "none");
+
+        private final short playerId;
+        private final String strategy;
+
+        private ResolvedPlayer(short playerId, String strategy) {
+            this.playerId = playerId;
+            this.strategy = strategy;
         }
     }
 }
