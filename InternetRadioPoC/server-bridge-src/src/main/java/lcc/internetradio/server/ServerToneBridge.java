@@ -8,7 +8,7 @@ import zombie.core.raknet.UdpConnection;
 
 /** Server-only RakVoice capability probe. */
 public final class ServerToneBridge {
-    public static final String VERSION = "0.8.1";
+    public static final String VERSION = "0.8.2";
 
     private static final long TEST_DELAY_MS = 5_000L;
     private static final long TARGET_EXPIRY_MS = 15_000L;

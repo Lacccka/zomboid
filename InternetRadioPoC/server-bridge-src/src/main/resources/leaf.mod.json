@@ -1,7 +1,7 @@
 {
     "schemaVersion": 1,
     "id": "lcc-internet-radio-server-bridge",
-    "version": "0.8.1",
+    "version": "0.8.2",
     "name": "LCC Internet Radio Server Voice Bridge",
     "description": "Server-only RakVoice 440 Hz injection capability probe.",
     "authors": ["Lacccka"],
