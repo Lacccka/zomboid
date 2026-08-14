@@ -1,72 +1,67 @@
-# Internet Vehicle Radio — automatic download PoC 0.6.0
+# Internet Vehicle Radio — B42 HTTP boundary result 0.6.1
 
-Workshop-only playback probe for Project Zomboid Build 42.20.2 multiplayer.
+Workshop-only probe for Project Zomboid Build 42.20.2 multiplayer.
 
 Workshop ID: `3783046891`  
 Mod ID: `LaccckaInternetRadioPoC`
 
-## Confirmed by 0.5.1
+## Confirmed working
 
-- The packaged `GameSound` is parsed and known by the game.
+- A packaged WAV registered as `LCCInternetRadioTest` is known by the game.
 - F10 plays it positionally at the player's square.
-- F11 plays it through the vehicle emitter with a non-zero handle and
-  `isPlaying=true`.
-- F9 retrieves the registered `GameSoundClip`, whose file is
-  `media/sound/test.wav`, and plays it directly through the vehicle emitter.
-- The emitter source moves with the vehicle.
+- F11 plays it through the vehicle emitter with a non-zero handle and the
+  source follows the moving vehicle.
+- F9 obtains its `GameSoundClip` and plays the clip directly through the same
+  emitter with a non-zero handle.
+- Distance, movement, stop, and normal Workshop distribution work without a
+  Java/Leaf/native installation.
 
-This confirms the supported sound-name, clip, emitter, 3D position, and moving
-vehicle portions of the architecture.
+## Confirmed blocked
 
-## New F8 test
-
-F8 tests the remaining Workshop-only file bridge without requiring any manual
-client installation:
-
-1. PZ downloads a finite public test WAV with `getUrlInputStream`.
-2. The returned binary bytes are saved with `getFileOutput` under
-   `Zomboid/Lua/LCCInternetRadioPoC/downloaded-test.wav`.
-3. Lua writes a temporary sound definition beside it.
-4. `GameSounds.ReloadFile` registers the temporary sound as
-   `LCCInternetRadioDownloadedTest`.
-5. The vehicle emitter plays that downloaded sound by its registered name.
-
-The external file is a small public-domain/licensed-for-reuse audio test from
-the public `ArtskydJ/test-audio` repository. It is deliberately a very short
-drip sound, not WIVK music. The dynamic sound loops so it is easy to hear and
-stops when another test starts or the game exits.
-
-No `OnTick`, vehicle enumeration, Java mod, Leaf loader, native library, or
-manual client installation is used. The server does not download or relay the
-audio.
-
-## Test order
-
-After uploading the Workshop update, fully restart both server and client.
-
-1. Sit inside a vehicle.
-2. Press `F8` once. A short pause while 37 KB downloads is possible.
-3. Listen for the repeating downloaded drip sound and drive a few tiles.
-4. Press `F11` to stop it and confirm the packaged music still works.
-
-The decisive successful F8 lines are:
+Version 0.6.0 attempted a finite client-side WAV download. On B42.20.2
+multiplayer the call failed before any network connection was attempted:
 
 ```text
-getFileInput(downloaded WAV): OK; returned=java.io.DataInputStream@...
-GameSounds.isKnownSound(downloaded): OK; returned=true
-downloaded clip:getFile: OK; returned=.../Zomboid/Lua/LCCInternetRadioPoC/downloaded-test.wav
-vehicle emitter:playSound(downloaded name): OK; returned=<non-zero handle>
-vehicle emitter:isPlaying: OK; returned=true
+getUrlInputStream: FAILED; Tried to call nil
 ```
 
-If F8 fails, provide the complete block from
-`automatic WAV download ... started` through its stop/finish line. F9, F10,
-and F11 remain unchanged controls.
+The Java method still appears in generated engine documentation, but the
+multiplayer client Lua environment does not export it as a callable global.
+The client therefore cannot fetch the station API, playlist, AAC segment, or
+converted WAV by this route.
 
-## Decision after F8
+Direct assignment to `GameSoundClip.file` is also blocked by Kahlua. Direct
+absolute paths and URLs supplied as sound names return emitter handle `0`.
+The stock file-sound path resolves local game/mod files before asking FMOD to
+load them, so a normal registered clip does not provide an HTTP transport.
 
-If F8 succeeds, the mod can automatically download finite HLS-derived audio
-segments, generate or refresh a named sound slot, and attach that slot to a
-vehicle without any client-side installation outside Steam Workshop. The next
-step will replace the public test WAV with station segment acquisition and add
-buffered segment rotation.
+Version 0.6.1 removes every download call. F8 is now a no-error report that
+prints:
+
+```text
+type(getUrlInputStream)=nil
+client-side HTTP download is unavailable in B42.20.2 multiplayer Lua
+```
+
+F9, F10, and F11 remain the confirmed local-audio controls.
+
+## Architectural consequence
+
+Under the requirement that players install only the Steam Workshop mod, live
+internet audio cannot be fetched independently by each B42.20.2 client with
+the currently exposed Lua/FMOD interfaces.
+
+The remaining implementation choices are:
+
+1. **Dedicated-server relay** — the server downloads finite audio segments and
+   sends their bytes to nearby clients. This requires no manual client install,
+   but makes the server carry audio bandwidth and is different from the
+   original state-only architecture.
+2. **Client Java/native bridge** — clients download directly and FMOD can use a
+   stream decoder, but this requires installation outside the ordinary Lua
+   Workshop lifecycle and has already been rejected for this project.
+3. **Packaged audio** — keep the working vehicle radio behavior with files
+   included in Workshop, but it is not live internet radio.
+
+No server-relay implementation is included until its bandwidth and security
+trade-off is explicitly accepted.
