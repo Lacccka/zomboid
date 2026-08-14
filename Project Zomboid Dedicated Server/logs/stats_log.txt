@@ -142,3 +142,7 @@
 
 [2026-08-14 23:16:04] Client version: no bootstrapper found
 [2026-08-14 23:16:04] [AppID 108600] CAPIJobStoreUserStats::BInit() - no stats found, aborting
+
+
+[2026-08-15 00:02:02] Client version: no bootstrapper found
+[2026-08-15 00:02:02] [AppID 108600] CAPIJobStoreUserStats::BInit() - no stats found, aborting

@@ -320,3 +320,18 @@
 [2026-08-14 23:38:34] Client version: no bootstrapper found
 [2026-08-14 23:38:34] Loaded store 'install' from 'C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\config\config.vdf' successfully
 [2026-08-14 23:39:06] Flushed store 'install' to 'C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\config\config.vdf'
+
+
+[2026-08-14 23:53:11] Client version: no bootstrapper found
+[2026-08-14 23:53:11] Loaded store 'install' from 'C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\config\config.vdf' successfully
+[2026-08-14 23:53:44] Flushed store 'install' to 'C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\config\config.vdf'
+[2026-08-14 23:53:46] Loaded store 'install' from 'C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\config\config.vdf' successfully
+[2026-08-14 23:53:46] Loaded store 'userlocal' from 'C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\config\localconfig.vdf' successfully
+[2026-08-14 23:53:47] Flushed store 'userlocal' to 'C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\config\localconfig.vdf'
+[2026-08-14 23:53:48] Flushed store 'userlocal' to 'C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\config\localconfig.vdf'
+[2026-08-14 23:54:18] Flushed store 'install' to 'C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\config\config.vdf'
+
+
+[2026-08-14 23:55:52] Client version: no bootstrapper found
+[2026-08-14 23:55:52] Loaded store 'install' from 'C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\config\config.vdf' successfully
+[2026-08-14 23:55:54] Flushed store 'install' to 'C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\config\config.vdf'
