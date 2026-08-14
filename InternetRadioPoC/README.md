@@ -1,4 +1,4 @@
-# Internet Vehicle Radio — Synthetic Radio Sender 0.9.0
+# Internet Vehicle Radio — Synthetic Radio Sender 0.9.1
 
 Server-only transport proof of concept for Project Zomboid Build 42.20.2.
 
@@ -7,7 +7,7 @@ Mod ID: `LaccckaInternetRadioPoC`
 
 ## Current milestone
 
-Version 0.9.0 tests the lightest architecture compatible with an unmodified
+Version 0.9.1 tests the lightest architecture compatible with an unmodified
 Project Zomboid client:
 
 ```text
@@ -26,7 +26,7 @@ The test source is still a deterministic 440 Hz tone. HLS, AAC and the WIVK-FM
 API are intentionally behind the `PcmSource` boundary and are not enabled
 until this transport reaches the normal client.
 
-## Why 0.9.0 differs from 0.8.7
+## Why 0.9.1 differs from 0.8.7
 
 Inspection of the actual B42.20.2 `projectzomboid.jar` established that:
 
@@ -38,10 +38,22 @@ Inspection of the actual B42.20.2 `projectzomboid.jar` established that:
   players known to `GameClient`;
 - one-client self injection is therefore expected to be suppressed or ignored.
 
-Version 0.9.0 announces a minimal remote `IsoPlayer` with reserved online ID
+Version 0.9.1 announces a minimal remote `IsoPlayer` with reserved online ID
 `3000`, sends radio metadata for that ID, and then injects PCM using the same
 ID. This makes the one-client test meaningful without requiring a full bot
 login.
+
+The first 0.9.0 server run also exposed two dedicated-server differences that
+0.9.1 corrects:
+
+- B42.20.2 coordinate setters have descriptor `(float) -> float`, not
+  `(float) -> void`;
+- `RakVoice.GetBufferSizeBytes()` returns zero in the server voice context,
+  because the server has no FMOD microphone record buffer.
+
+When the native size is zero, the bridge derives one mono signed PCM16 frame
+from the authoritative voice parameters. With the current server settings this
+is `24000 samples/s * 20 ms * 2 bytes = 960 bytes`.
 
 ## Runtime behavior
 
@@ -69,7 +81,7 @@ The bridge queries sample rate, frame period and PCM buffer size from
 ## Expected server log
 
 ```text
-[InternetRadioBridge][BOOT] version=0.9.0; transport=synthetic-radio-sender; frequency=104.6; onlineId=3000
+[InternetRadioBridge][BOOT] version=0.9.1; transport=synthetic-radio-sender; frequency=104.6; onlineId=3000
 [InternetRadioBridge][MONITOR_OK] ...
 [InternetRadioBridge][VOICE_STATE] serverEnabled=true; ...
 [InternetRadioBridge][SYNTHETIC_ID] reserved onlineId=3000; collision=false
@@ -77,7 +89,7 @@ The bridge queries sample rate, frame period and PCM buffer size from
 [InternetRadioBridge][IDENTITY_RETURN] GameServer.sendPlayerConnected returned
 [InternetRadioBridge][RADIO_ROUTE_RETURN] SyncRadioData sent; values=4
 [InternetRadioBridge][IDENTITY_READY] ... frequency=104.6
-[InternetRadioBridge][SYNTHETIC_TEST] ... expectedFrequency=104.6
+[InternetRadioBridge][SYNTHETIC_TEST] ... bytes=960; bytesSource=derived-pcm16-mono; expectedFrequency=104.6
 [InternetRadioBridge][SEND_ENTER] ... onlineId=3000; ...
 [InternetRadioBridge][SEND_RETURN] first synthetic frame returned without exception
 [InternetRadioBridge][SYNTHETIC_RESULT] ... listenOn=104.6
@@ -95,7 +107,7 @@ Interpretation:
 ## Test procedure
 
 1. Publish/update Workshop item `3783046891` and fully restart the server.
-2. Confirm Leaf loads `lcc-internet-radio-server-bridge 0.9.0`.
+2. Confirm Leaf loads `lcc-internet-radio-server-bridge 0.9.1`.
 3. Join with the single ordinary client and enable VOIP.
 4. Sit in a vehicle with a working radio.
 5. Turn the radio on and tune it to exactly `104.6 MHz`.

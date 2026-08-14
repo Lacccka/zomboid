@@ -2,5 +2,5 @@ name=Internet Vehicle Radio - WIVK-FM PoC
 id=LaccckaInternetRadioPoC
 author=Lacccka
 description=Build 42 vehicle sound control plus server-only synthetic RakVoice radio sender on 104.6 MHz. F11 remains the packaged vehicle control.
-modversion=0.9.0
+modversion=0.9.1
 versionMin=42.20.0

@@ -26,7 +26,7 @@ import zombie.network.PacketTypes;
  * sufficient.</p>
  */
 public final class ServerToneBridge {
-    public static final String VERSION = "0.9.0";
+    public static final String VERSION = "0.9.1";
 
     private static final int RADIO_FREQUENCY = 104_600;
     private static final int RADIO_RANGE = 30_000;
@@ -275,8 +275,11 @@ public final class ServerToneBridge {
             sendRadioData(target, state.ghost);
 
             int sampleRate = RakVoice.GetSampleRate();
-            int frameBytes = RakVoice.GetBufferSizeBytes();
             int framePeriodMs = RakVoice.GetSendFramePeriod();
+            int nativeFrameBytes = RakVoice.GetBufferSizeBytes();
+            int frameBytes = nativeFrameBytes > 0
+                    ? nativeFrameBytes
+                    : calculatePcmFrameBytes(sampleRate, framePeriodMs);
             if (sampleRate <= 0 || frameBytes < 2 || framePeriodMs <= 0) {
                 throw new IllegalStateException("invalid voice format: sampleRate="
                         + sampleRate + "; frameBytes=" + frameBytes
@@ -292,6 +295,8 @@ public final class ServerToneBridge {
                             + "; syntheticOnlineId=" + SYNTHETIC_ONLINE_ID
                             + "; source=" + TEST_SOURCE.description()
                             + "; bytes=" + frameBytes
+                            + "; bytesSource="
+                            + (nativeFrameBytes > 0 ? "native" : "derived-pcm16-mono")
                             + "; frames=" + framesToSend
                             + "; durationMs=" + TONE_DURATION_MS
                             + "; expectedFrequency="
@@ -362,6 +367,24 @@ public final class ServerToneBridge {
                 return;
             }
         }
+    }
+
+    private static int calculatePcmFrameBytes(
+            int sampleRate, int framePeriodMs) {
+        if (sampleRate <= 0 || framePeriodMs <= 0) return 0;
+        long sampleMillis = (long) sampleRate * framePeriodMs;
+        if (sampleMillis % 1_000L != 0L) {
+            throw new IllegalStateException(
+                    "voice frame does not contain a whole PCM sample count: "
+                            + "sampleRate=" + sampleRate
+                            + "; periodMs=" + framePeriodMs);
+        }
+        long bytes = sampleMillis / 1_000L * Short.BYTES;
+        if (bytes > Integer.MAX_VALUE) {
+            throw new IllegalStateException(
+                    "derived voice frame is too large: " + bytes);
+        }
+        return (int) bytes;
     }
 
     private static void sleep(long millis) {

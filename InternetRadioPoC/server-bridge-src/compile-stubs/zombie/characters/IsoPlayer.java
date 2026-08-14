@@ -12,7 +12,7 @@ public class IsoPlayer {
     public float getX() { return 0.0f; }
     public float getY() { return 0.0f; }
     public float getZ() { return 0.0f; }
-    public void setX(float value) { }
-    public void setY(float value) { }
-    public void setZ(float value) { }
+    public float setX(float value) { return value; }
+    public float setY(float value) { return value; }
+    public float setZ(float value) { return value; }
 }
