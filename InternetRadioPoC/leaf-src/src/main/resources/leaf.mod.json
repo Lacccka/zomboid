@@ -1,0 +1,17 @@
+{
+    "schemaVersion": 1,
+    "id": "lcc-internet-radio-bridge",
+    "version": "0.2.0",
+    "name": "LCC Internet Radio FMOD Bridge",
+    "description": "Client-only FMOD HTTP stream bridge for LaccckaInternetRadioPoC.",
+    "authors": ["Lacccka"],
+    "contact": {"sources": "https://github.com/Lacccka/zomboid"},
+    "license": "All-Rights-Reserved",
+    "environment": "client",
+    "mixins": ["lcc-internet-radio.mixins.json"],
+    "depends": {
+        "leafloader": ">=1.6.0",
+        "zomboid": ">=42.20.0",
+        "java": ">=17"
+    }
+}

@@ -1,7 +1,6 @@
 version=1
 id=3783046891
 title=Internet Vehicle Radio - WIVK-FM PoC
-description=Build 42 multiplayer proof of concept for an HTTPS AAC internet stream attached to a vehicle radio emitter.
+description=Build 42 multiplayer internet radio PoC with a client-only Leaf/FMOD bridge and positional vehicle audio.
 tags=Build 42;Multiplayer
 visibility=unlisted
-

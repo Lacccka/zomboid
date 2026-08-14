@@ -1,28 +1,25 @@
 -- Internet Vehicle Radio - WIVK-FM proof of concept for Project Zomboid B42.
---
--- This intentionally tests the shortest possible path first:
---     HTTPS AAC URL -> BaseVehicle emitter -> 3D FMOD sound
---
--- Vanilla vehicle DeviceData remains authoritative for power, channel and volume.
--- No audio is proxied through the dedicated server.
+-- Vanilla DeviceData owns power/channel/volume. A client-only Leaf mixin adds
+-- URL-stream methods to FMODSoundEmitter. The server never relays audio.
 
 local MOD_TAG = "[LCC Internet Radio PoC]"
-
 local CONFIG = {
     stationUuid = "dea0ad58-9bd8-4a2c-b4e5-ca6f3714ae7e",
     stationName = "WIVK-FM",
     frequency = 104600,
     streamUrl = "https://playerservices.streamtheworld.com/api/livestream-redirect/WIVKFMAAC.aac",
+    minDistance = 2,
     maxDistance = 60,
     updateEveryTicks = 15,
-    verifyAfterTicks = 900,
-    retryAfterTicks = 3600,
+    verifyEveryTicks = 300,
+    retryAfterTicks = 1800,
 }
 
 local activeStreams = {}
 local retryAt = {}
 local tickNumber = 0
-local trackedVehicle = nil
+local bridgeVersion = nil
+local bridgeMissingLogged = false
 
 local function log(message)
     print(MOD_TAG .. " " .. tostring(message))
@@ -30,47 +27,32 @@ end
 
 local function vehicleKey(vehicle)
     local id = vehicle and vehicle:getId() or nil
-    if id ~= nil then
-        return tostring(id)
-    end
+    if id ~= nil then return tostring(id) end
     return tostring(vehicle)
 end
 
 local function getRadioData(vehicle)
     local part = vehicle and vehicle:getPartById("Radio") or nil
-    if not part or not part:getInventoryItem() then
-        return nil
-    end
+    if not part or not part:getInventoryItem() then return nil end
     return part:getDeviceData()
 end
 
 local function ensureStationPreset(deviceData)
-    if not deviceData then
-        return
-    end
-
+    if not deviceData then return end
     local presets = deviceData:getDevicePresets()
     local entries = presets and presets:getPresets() or nil
-    if not presets or not entries then
-        return
-    end
+    if not presets or not entries then return end
 
     local entryCount = entries:size()
     for index = 0, entryCount - 1 do
         local entry = entries:get(index)
-        if entry and entry:getFrequency() == CONFIG.frequency then
-            return
-        end
+        if entry and entry:getFrequency() == CONFIG.frequency then return end
     end
 
     if entryCount >= presets:getMaxPresets() then
-        -- Preserve every existing preset. This max-count change stays local because
-        -- the PoC deliberately never calls transmitPresets().
+        -- Preserve existing presets. Vanilla SetChannel synchronizes the choice.
         presets:setMaxPresets(entryCount + 1)
     end
-
-    -- Client-only UI hint. Do not call transmitPresets(): vanilla SetChannel is
-    -- already synchronized when the player tunes the radio to this preset.
     presets:addPreset(CONFIG.stationName, CONFIG.frequency)
     log("added local preset " .. CONFIG.stationName .. " on 104.6 MHz")
 end
@@ -82,103 +64,84 @@ local function distanceSquared(player, vehicle)
     return dx * dx + dy * dy + dz * dz
 end
 
+local function emitterHasBridge(emitter)
+    if not emitter or emitter.lccInternetRadioBridgeVersion == nil then
+        if not bridgeMissingLogged then
+            bridgeMissingLogged = true
+            log("audio bridge is missing; install Leaf Loader and restart the client")
+        end
+        return false
+    end
+    if not bridgeVersion then
+        bridgeVersion = tostring(emitter:lccInternetRadioBridgeVersion())
+        log("detected audio bridge " .. bridgeVersion)
+    end
+    return true
+end
+
 local function stopStream(key, reason)
     local state = activeStreams[key]
-    if not state then
-        return
+    if not state then return end
+    if state.emitter and state.emitter.lccStopInternetStream ~= nil then
+        state.emitter:lccStopInternetStream(state.handle)
     end
-
-    if state.emitter and state.emitter.stopSound and state.handle and state.handle ~= 0 then
-        state.emitter:stopSound(state.handle)
-    end
-
     activeStreams[key] = nil
-    if reason then
-        log("stopped vehicle " .. key .. " (" .. reason .. ")")
+    if reason then log("stopped vehicle " .. key .. " (" .. reason .. ")") end
+end
+
+local function bridgeError(emitter)
+    if emitter and emitter.lccInternetRadioBridgeLastError ~= nil then
+        return tostring(emitter:lccInternetRadioBridgeLastError())
     end
+    return "unknown bridge error"
 end
 
 local function startStream(vehicle, deviceData, key)
-    if retryAt[key] and tickNumber < retryAt[key] then
-        return
-    end
+    if retryAt[key] and tickNumber < retryAt[key] then return end
 
     local emitter = vehicle:getEmitter()
-    if not emitter then
+    if not emitterHasBridge(emitter) then
         retryAt[key] = tickNumber + CONFIG.retryAfterTicks
-        log("vehicle " .. key .. " has no sound emitter")
-        return
-    end
-    if type(emitter.playSound) ~= "function" then
-        retryAt[key] = tickNumber + CONFIG.retryAfterTicks
-        log("vehicle " .. key .. " emitter has no Lua playSound method")
         return
     end
 
-    log("attempting direct HTTPS AAC for vehicle " .. key)
-    local ok, handleOrError = pcall(function()
-        -- Core PoC call. B42 may reject this because the public emitter API
-        -- normally resolves registered local GameSound resources, not URLs.
-        return emitter:playSound(CONFIG.streamUrl)
-    end)
-
-    if not ok then
-        retryAt[key] = tickNumber + CONFIG.retryAfterTicks
-        log("direct HTTPS AAC call threw for vehicle " .. key .. ": " .. tostring(handleOrError))
-        return
-    end
-
-    local handle = handleOrError
+    local handle = emitter:lccPlayInternetStream(
+        CONFIG.streamUrl,
+        CONFIG.minDistance,
+        CONFIG.maxDistance,
+        deviceData:getDeviceVolume()
+    )
     if not handle or handle == 0 then
         retryAt[key] = tickNumber + CONFIG.retryAfterTicks
-        log("direct HTTPS AAC call returned no handle for vehicle " .. key .. "; B42 direct streaming is unavailable on this client")
+        log("stream start failed for vehicle " .. key .. ": " .. bridgeError(emitter))
         return
-    end
-
-    if emitter.set3D then
-        emitter:set3D(handle, true)
-    end
-    if emitter.setVolume then
-        emitter:setVolume(handle, deviceData:getDeviceVolume())
     end
 
     activeStreams[key] = {
         emitter = emitter,
         handle = handle,
-        startedAt = tickNumber,
-        verified = false,
+        lastVerifiedAt = tickNumber,
     }
     retryAt[key] = nil
-    log("FMOD accepted the stream request for vehicle " .. key .. "; waiting for playback verification")
+    log("started WIVK-FM for vehicle " .. key .. " (channel " .. tostring(handle) .. ")")
 end
 
 local function updateActiveStream(deviceData, key)
     local state = activeStreams[key]
-    if not state then
+    if not state then return end
+
+    if not state.emitter:lccUpdateInternetStream(state.handle, deviceData:getDeviceVolume()) then
+        stopStream(key, "FMOD channel update failed")
+        retryAt[key] = tickNumber + CONFIG.retryAfterTicks
         return
     end
 
-    if state.emitter.setVolume then
-        state.emitter:setVolume(state.handle, deviceData:getDeviceVolume())
+    if tickNumber - state.lastVerifiedAt < CONFIG.verifyEveryTicks then return end
+    state.lastVerifiedAt = tickNumber
+    if not state.emitter:lccIsInternetStreamPlaying(state.handle) then
+        stopStream(key, "FMOD channel ended")
+        retryAt[key] = tickNumber + CONFIG.retryAfterTicks
     end
-
-    local shouldVerify = state.verified or tickNumber - state.startedAt >= CONFIG.verifyAfterTicks
-    if not shouldVerify then
-        return
-    end
-
-    local playing = state.emitter.isPlaying and state.emitter:isPlaying(state.handle) or false
-    if playing then
-        if not state.verified then
-            state.verified = true
-            log("FMOD reports the HTTPS handle as playing for vehicle " .. key .. "; confirm audible AAC in-game")
-        end
-        return
-    end
-
-    stopStream(key, "FMOD handle is not playing")
-    retryAt[key] = tickNumber + CONFIG.retryAfterTicks
-    log("RESULT: direct HTTPS AAC was not playable; a client streaming/decoder bridge is required")
 end
 
 local function shouldPlay(deviceData)
@@ -188,82 +151,61 @@ local function shouldPlay(deviceData)
         and deviceData:getDeviceVolume() > 0
 end
 
-local function updateVehicle(player, vehicle)
+local function updateVehicle(player, vehicle, seen)
     local key = vehicleKey(vehicle)
-
+    seen[key] = true
     local deviceData = getRadioData(vehicle)
-    if deviceData then
-        ensureStationPreset(deviceData)
-    end
+    if deviceData then ensureStationPreset(deviceData) end
 
-    local inRange = distanceSquared(player, vehicle) <= CONFIG.maxDistance * CONFIG.maxDistance
-    if not inRange then
+    if distanceSquared(player, vehicle) > CONFIG.maxDistance * CONFIG.maxDistance then
         stopStream(key, "out of range")
         return
     end
-
     if not shouldPlay(deviceData) then
         stopStream(key, "radio off, muted, or tuned away")
         return
     end
 
-    if not activeStreams[key] then
-        startStream(vehicle, deviceData, key)
-    else
+    if activeStreams[key] then
         updateActiveStream(deviceData, key)
+    else
+        startStream(vehicle, deviceData, key)
     end
 end
 
 local function update()
     tickNumber = tickNumber + 1
-    if tickNumber % CONFIG.updateEveryTicks ~= 0 then
-        return
-    end
+    if tickNumber % CONFIG.updateEveryTicks ~= 0 then return end
 
     local player = getPlayer()
-    if not player then
-        return
+    local cell = getCell()
+    local vehicles = cell and cell:getVehicles() or nil
+    if not player or not vehicles then return end
+
+    -- B42 exposes a Java ArrayList here. Use only its concrete size()/get() API;
+    -- the removed generic collection probing caused the earlier nil-call errors.
+    local seen = {}
+    for index = 0, vehicles:size() - 1 do
+        local vehicle = vehicles:get(index)
+        if vehicle then updateVehicle(player, vehicle, seen) end
     end
 
-    local currentVehicle = player:getVehicle()
-    if currentVehicle then
-        if trackedVehicle and vehicleKey(trackedVehicle) ~= vehicleKey(currentVehicle) then
-            stopStream(vehicleKey(trackedVehicle), "player entered another vehicle")
-        end
-        trackedVehicle = currentVehicle
+    local unloaded = {}
+    for key, _ in pairs(activeStreams) do
+        if not seen[key] then unloaded[#unloaded + 1] = key end
     end
-
-    if not trackedVehicle then
-        return
-    end
-
-    local key = vehicleKey(trackedVehicle)
-    if distanceSquared(player, trackedVehicle) > CONFIG.maxDistance * CONFIG.maxDistance then
-        stopStream(key, "out of range")
-        trackedVehicle = nil
-        return
-    end
-
-    updateVehicle(player, trackedVehicle)
+    for _, key in ipairs(unloaded) do stopStream(key, "vehicle unloaded") end
 end
 
 local function stopAll()
     local keys = {}
-    for key, _ in pairs(activeStreams) do
-        keys[#keys + 1] = key
-    end
-    for _, key in ipairs(keys) do
-        stopStream(key, "session ended")
-    end
-    trackedVehicle = nil
+    for key, _ in pairs(activeStreams) do keys[#keys + 1] = key end
+    for _, key in ipairs(keys) do stopStream(key, "session ended") end
 end
 
 Events.OnGameStart.Add(function()
-    log("loaded; WIVK-FM=" .. CONFIG.frequency .. ", UUID=" .. CONFIG.stationUuid)
-    log("the dedicated server carries only vanilla vehicle-radio state; every client opens its own stream")
-    log("PoC mode: tracking only the current or last-entered vehicle; no world vehicle scan")
+    log("loaded; WIVK-FM=104.6 MHz, UUID=" .. CONFIG.stationUuid)
+    log("client FMOD bridge mode; server carries only vanilla vehicle-radio state")
 end)
 Events.OnTick.Add(update)
-if Events.OnGameExit then
-    Events.OnGameExit.Add(stopAll)
-end
+if Events.OnGameExit then Events.OnGameExit.Add(stopAll) end
