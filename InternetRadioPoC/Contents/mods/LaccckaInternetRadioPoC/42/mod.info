@@ -1,6 +1,6 @@
 name=Internet Vehicle Radio - WIVK-FM PoC
 id=LaccckaInternetRadioPoC
 author=Lacccka
-description=Build 42 Workshop-only local WAV playback probe. Press F8, F9, and F10 in game to test direct, named, and positional playback.
-modversion=0.4.0
+description=Build 42 Workshop-only local WAV and vehicle-emitter probe. Press F8-F12 in game; no recurring tick handler.
+modversion=0.4.1
 versionMin=42.20.0
