@@ -6,7 +6,7 @@ This is a separate mod and does not modify `LaccckaCompatibilityPatch` or subscr
 
 ## Scope
 
-- Adds a local `WIVK-FM` preset at `104.7 MHz` to loaded vehicle radios.
+- Adds a local `WIVK-FM` preset at `104.6 MHz` to loaded vehicle radios.
 - Uses the vanilla vehicle radio state as the multiplayer source of truth:
   power, channel and volume are already synchronized by Project Zomboid.
 - On each client, attempts the exact direct path that must be proven first:
@@ -56,7 +56,7 @@ dependency on `LaccckaB4220Compat` and its load order is not significant.
 
 1. Start a B42.20.x dedicated server with the mod enabled on server and both clients.
 2. Enter a vehicle with an installed radio and open the radio UI.
-3. Turn it on, choose `104.7 MHz WIVK-FM`, and set volume above zero.
+3. Turn it on, choose `104.6 MHz WIVK-FM`, and set volume above zero.
 4. Confirm only one start line appears per vehicle in each client's `console.txt`.
 5. Check the log for either the live-handle line or the explicit bridge-required result.
 6. If audio plays, test one player inside and one outside the vehicle.

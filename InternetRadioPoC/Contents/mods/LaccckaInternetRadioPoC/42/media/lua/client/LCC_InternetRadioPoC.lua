@@ -11,9 +11,10 @@ local MOD_TAG = "[LCC Internet Radio PoC]"
 local CONFIG = {
     stationUuid = "dea0ad58-9bd8-4a2c-b4e5-ca6f3714ae7e",
     stationName = "WIVK-FM",
-    frequency = 104700,
+    frequency = 104600,
     streamUrl = "https://playerservices.streamtheworld.com/api/livestream-redirect/WIVKFMAAC.aac",
     maxDistance = 60,
+    scanSquaresPerUpdate = 2048,
     updateEveryTicks = 15,
     verifyAfterTicks = 900,
     retryAfterTicks = 3600,
@@ -22,77 +23,28 @@ local CONFIG = {
 local activeStreams = {}
 local retryAt = {}
 local tickNumber = 0
-local vehicleCollectionMode = nil
-local presetCollectionMode = nil
-local collectionWarnings = {}
+local knownVehicles = {}
+local scanCursor = 1
+
+local scanOffsets = {}
+for dy = -CONFIG.maxDistance, CONFIG.maxDistance do
+    for dx = -CONFIG.maxDistance, CONFIG.maxDistance do
+        local distance = dx * dx + dy * dy
+        if distance <= CONFIG.maxDistance * CONFIG.maxDistance then
+            scanOffsets[#scanOffsets + 1] = {
+                x = dx,
+                y = dy,
+                distance = distance,
+            }
+        end
+    end
+end
+table.sort(scanOffsets, function(a, b)
+    return a.distance < b.distance
+end)
 
 local function log(message)
     print(MOD_TAG .. " " .. tostring(message))
-end
-
-local function collectionSize(collection)
-    if not collection then
-        return 0
-    end
-
-    local ok, count = pcall(function()
-        return collection:size()
-    end)
-    if ok and type(count) == "number" then
-        return count
-    end
-
-    ok, count = pcall(function()
-        return #collection
-    end)
-    if ok and type(count) == "number" then
-        return count
-    end
-
-    return 0
-end
-
-local function collectionGet(collection, index, mode)
-    if not collection then
-        return nil, "unsupported"
-    end
-
-    if mode == nil or mode == "java" then
-        local ok, value = pcall(function()
-            return collection:get(index)
-        end)
-        if ok then
-            return value, "java"
-        end
-    end
-
-    if mode == nil or mode == "zero-based" then
-        local ok, value = pcall(function()
-            return collection[index]
-        end)
-        if ok and value ~= nil then
-            return value, "zero-based"
-        end
-    end
-
-    if mode == nil or mode == "one-based" then
-        local ok, value = pcall(function()
-            return collection[index + 1]
-        end)
-        if ok and value ~= nil then
-            return value, "one-based"
-        end
-    end
-
-    return nil, "unsupported"
-end
-
-local function warnUnsupportedCollection(name)
-    if collectionWarnings[name] then
-        return
-    end
-    collectionWarnings[name] = true
-    log("cannot read " .. name .. " collection on this B42 client; update loop skipped")
 end
 
 local function vehicleKey(vehicle)
@@ -124,14 +76,9 @@ local function ensureStationPreset(deviceData)
         return
     end
 
-    local entryCount = collectionSize(entries)
+    local entryCount = entries:size()
     for index = 0, entryCount - 1 do
-        local entry
-        entry, presetCollectionMode = collectionGet(entries, index, presetCollectionMode)
-        if presetCollectionMode == "unsupported" then
-            warnUnsupportedCollection("radio presets")
-            return
-        end
+        local entry = entries:get(index)
         if entry and entry:getFrequency() == CONFIG.frequency then
             return
         end
@@ -146,7 +93,35 @@ local function ensureStationPreset(deviceData)
     -- Client-only UI hint. Do not call transmitPresets(): vanilla SetChannel is
     -- already synchronized when the player tunes the radio to this preset.
     presets:addPreset(CONFIG.stationName, CONFIG.frequency)
-    log("added local preset " .. CONFIG.stationName .. " on 104.7 MHz")
+    log("added local preset " .. CONFIG.stationName .. " on 104.6 MHz")
+end
+
+local function rememberVehicle(vehicle)
+    if vehicle then
+        knownVehicles[vehicleKey(vehicle)] = vehicle
+    end
+end
+
+local function scanNearbySquares(cell, player)
+    rememberVehicle(player:getVehicle())
+
+    local centerX = math.floor(player:getX())
+    local centerY = math.floor(player:getY())
+    local centerZ = math.floor(player:getZ())
+    local scanCount = math.min(CONFIG.scanSquaresPerUpdate, #scanOffsets)
+
+    for _ = 1, scanCount do
+        local offset = scanOffsets[scanCursor]
+        local square = cell:getGridSquare(centerX + offset.x, centerY + offset.y, centerZ)
+        if square then
+            rememberVehicle(square:getVehicleContainer())
+        end
+
+        scanCursor = scanCursor + 1
+        if scanCursor > #scanOffsets then
+            scanCursor = 1
+        end
+    end
 end
 
 local function distanceSquared(player, vehicle)
@@ -297,23 +272,24 @@ local function update()
 
     local player = getPlayer()
     local cell = getCell()
-    local vehicles = cell and cell:getVehicles() or nil
-    if not player or not vehicles then
+    if not player or not cell then
         return
     end
 
+    scanNearbySquares(cell, player)
+
     local seen = {}
-    local vehicleCount = collectionSize(vehicles)
-    for index = 0, vehicleCount - 1 do
-        local vehicle
-        vehicle, vehicleCollectionMode = collectionGet(vehicles, index, vehicleCollectionMode)
-        if vehicleCollectionMode == "unsupported" then
-            warnUnsupportedCollection("vehicles")
-            break
-        end
-        if vehicle then
+    local forgotten = {}
+    for key, vehicle in pairs(knownVehicles) do
+        if vehicle and distanceSquared(player, vehicle) <= CONFIG.maxDistance * CONFIG.maxDistance then
             updateVehicle(player, vehicle, seen)
+        else
+            forgotten[#forgotten + 1] = key
+            stopStream(key, "out of range or unloaded")
         end
+    end
+    for _, key in ipairs(forgotten) do
+        knownVehicles[key] = nil
     end
 
     local unloaded = {}
