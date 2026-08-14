@@ -1,7 +1,6 @@
 version=1
 id=3782987959
-title=Lacccka B42.20 Compatibility Patch
+title=B42.20 Compatibility Patch
 description=Compatibility fixes for a curated Project Zomboid Build 42.20 multiplayer mod set.
 tags=Build 42;Multiplayer
-visibility=unlisted
-
+visibility=public
