@@ -2,14 +2,11 @@
 -- No OnTick callback, vehicle scan, HTTP request, luajava, or external loader.
 
 local MOD_TAG = "[LCC Internet Radio PoC]"
-local MOD_ID = "LaccckaInternetRadioPoC"
-local VERSION_DIR = "42"
 local SOUND_NAME = "LCCInternetRadioTest"
-local SOUND_RELATIVE_PATH = "media/sound/test.wav"
 
 -- LWJGL/PZ key codes. Numeric constants avoid depending on an exposed
 -- Keyboard Java class in the restricted multiplayer Lua environment.
-local KEY_RUNTIME_CLIP = 67 -- F9
+local KEY_REGISTERED_CLIP = 67 -- F9
 local KEY_NAMED_WORLD = 68 -- F10
 local KEY_VEHICLE_NAMED = 87 -- F11
 
@@ -47,19 +44,6 @@ local function getManager()
         return nil
     end
     return manager
-end
-
-local function getAbsoluteWavPath()
-    local ok, modInfo = attempt("getModInfoByID", function()
-        return getModInfoByID(MOD_ID)
-    end)
-    if not ok or not modInfo then return nil end
-
-    local dirOk, modDir = attempt("modInfo:getDir", function()
-        return modInfo:getDir()
-    end)
-    if not dirOk or not modDir then return nil end
-    return tostring(modDir) .. "/" .. VERSION_DIR .. "/" .. SOUND_RELATIVE_PATH
 end
 
 local function stopPrevious(manager)
@@ -177,8 +161,8 @@ local function runVehicleNamedTest()
     log("registered GameSound vehicle-emitter control finished")
 end
 
-local function runRuntimeClipTest()
-    log("runtime GameSoundClip remap vehicle test started")
+local function runRegisteredClipTest()
+    log("registered GameSoundClip vehicle test started")
     local manager = getManager()
     if not manager then return end
     stopPrevious(manager)
@@ -186,18 +170,11 @@ local function runRuntimeClipTest()
     local vehicle, emitter = getVehicleAndEmitter()
     if not vehicle or not emitter then return end
 
-    local path = getAbsoluteWavPath()
-    if not path then
-        log("runtime clip test stopped: WAV path could not be resolved")
-        return
-    end
-    log("runtime clip target=" .. path)
-
     local soundOk, gameSound = attempt("GameSounds.getSound", function()
         return GameSounds.getSound(SOUND_NAME)
     end)
     if not soundOk or not gameSound then
-        log("runtime clip test stopped: registered GameSound is unavailable")
+        log("registered clip test stopped: GameSound is unavailable")
         return
     end
 
@@ -205,32 +182,23 @@ local function runRuntimeClipTest()
         return gameSound:getRandomClip()
     end)
     if not clipOk or not clip then
-        log("runtime clip test stopped: GameSound has no clip")
+        log("registered clip test stopped: GameSound has no clip")
         return
     end
 
-    attempt("clip:getFile(before remap)", function()
+    attempt("clip:getFile", function()
         return clip:getFile()
     end)
-    local remapOk = attempt("clip.file = absolute path", function()
-        clip.file = path
-        return clip:getFile()
-    end)
-    if not remapOk then
-        log("runtime clip test stopped: clip file is not writable from Lua")
-        return
-    end
-
-    local playOk, handle = attempt("vehicle emitter:playClip(remapped clip)", function()
+    local playOk, handle = attempt("vehicle emitter:playClip(registered clip)", function()
         return emitter:playClip(clip, vehicle)
     end)
     if playOk then rememberEmitterPlayback(emitter, handle) end
-    log("runtime GameSoundClip remap vehicle test finished")
+    log("registered GameSoundClip vehicle test finished")
 end
 
 local function onKeyPressed(key)
-    if key == KEY_RUNTIME_CLIP then
-        runRuntimeClipTest()
+    if key == KEY_REGISTERED_CLIP then
+        runRegisteredClipTest()
     elseif key == KEY_NAMED_WORLD then
         runNamedWorldTest()
     elseif key == KEY_VEHICLE_NAMED then
@@ -239,8 +207,8 @@ local function onKeyPressed(key)
 end
 
 Events.OnGameStart.Add(function()
-    log("0.5.0 registered GameSound and runtime-clip probe loaded")
-    log("F9=runtime clip remap in vehicle; F10=registered world; F11=registered vehicle")
+    log("0.5.1 registered GameSound parser fix loaded")
+    log("F9=registered clip in vehicle; F10=registered world; F11=registered vehicle")
     attempt("GameSounds.isKnownSound(" .. SOUND_NAME .. ")", function()
         return GameSounds.isKnownSound(SOUND_NAME)
     end)
