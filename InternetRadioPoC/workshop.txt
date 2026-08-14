@@ -1,6 +1,6 @@
 version=1
 id=3783046891
 title=Internet Vehicle Radio - WIVK-FM PoC
-description=Build 42.20.2 Workshop-only WAV probe. 0.5.0 registers a normal GameSound, preserves the confirmed moving vehicle emitter, and tests runtime GameSoundClip remapping. No external installation.
+description=Build 42.20.2 Workshop-only WAV probe. 0.5.1 fixes B42 integer sound-distance parsing and tests registered GameSound playback through the moving vehicle emitter. No external installation.
 tags=Build 42;Multiplayer
 visibility=unlisted
