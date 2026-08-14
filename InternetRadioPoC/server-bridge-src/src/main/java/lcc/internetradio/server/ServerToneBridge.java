@@ -1,49 +1,125 @@
 package lcc.internetradio.server;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import zombie.core.raknet.RakVoice;
 import zombie.core.raknet.UdpConnection;
+import zombie.core.raknet.UdpEngine;
+import zombie.network.GameServer;
 
-/** Server-only RakVoice capability probe. */
+/** Server-only Phase 0 probe for RakVoice.SendFrame after RVInitServer. */
 public final class ServerToneBridge {
-    public static final String VERSION = "0.8.2";
+    public static final String VERSION = "0.8.3";
 
     private static final long TEST_DELAY_MS = 5_000L;
-    private static final long TARGET_EXPIRY_MS = 15_000L;
-    private static final long TONE_DURATION_MS = 3_000L;
+    private static final long TONE_DURATION_MS = 4_000L;
     private static final double TONE_HZ = 440.0;
-    private static final double AMPLITUDE = 0.12;
-    private static final Map<Long, Target> TARGETS = new ConcurrentHashMap<>();
-    private static final AtomicBoolean STARTED = new AtomicBoolean();
-    private static final AtomicBoolean CAPABILITIES_LOGGED = new AtomicBoolean();
+    private static final double AMPLITUDE = 0.20;
+
+    private static final AtomicBoolean BOOTSTRAPPED = new AtomicBoolean();
+    private static final AtomicBoolean HOOK_LOGGED = new AtomicBoolean();
+    private static final AtomicBoolean ENGINE_WAIT_LOGGED = new AtomicBoolean();
+    private static final AtomicBoolean CONNECTION_WAIT_LOGGED = new AtomicBoolean();
+    private static final AtomicBoolean VOICE_STATE_LOGGED = new AtomicBoolean();
+    private static final AtomicBoolean VOICE_DISABLED_LOGGED = new AtomicBoolean();
+    private static final AtomicBoolean TARGET_LOGGED = new AtomicBoolean();
+    private static final AtomicBoolean PROBE_STARTED = new AtomicBoolean();
+
+    private static volatile long eligibleSince;
     private static volatile boolean disabled;
 
     private ServerToneBridge() {
     }
 
-    /** Called after vanilla updates VOIP routing for a connection. */
-    public static void observe(UdpConnection connection) {
-        if (disabled || connection == null) return;
+    /** Called by Leaf's deterministic main entrypoint. */
+    public static void bootstrap() {
+        if (!BOOTSTRAPPED.compareAndSet(false, true)) return;
+        log("BOOT", "version=" + VERSION + "; environment=dedicated-server"
+                + "; directProbe=true; frequencyFuture=104.6");
+    }
+
+    /** Called on the Dedicated Server main thread from ServerMap.preupdate. */
+    public static void serverTick() {
+        if (disabled) return;
+        if (HOOK_LOGGED.compareAndSet(false, true)) {
+            log("SERVER_HOOK_OK", "ServerMap.preupdate; thread="
+                    + Thread.currentThread().getName());
+        }
+        if (PROBE_STARTED.get()) return;
+
         try {
-            if (!connection.isFullyConnected()) return;
-            short playerId = firstPlayerId(connection.playerIDs);
-            if (playerId < 0) return;
+            UdpEngine engine = GameServer.udpEngine;
+            if (engine == null) {
+                if (ENGINE_WAIT_LOGGED.compareAndSet(false, true)) {
+                    log("WAIT", "GameServer.udpEngine is not initialized yet");
+                }
+                return;
+            }
+
+            List<Target> connected = snapshotTargets(engine.connections);
+            if (connected.isEmpty()) {
+                eligibleSince = 0L;
+                if (CONNECTION_WAIT_LOGGED.compareAndSet(false, true)) {
+                    log("WAIT", "no fully-connected player with a valid onlineID");
+                }
+                return;
+            }
+
+            logVoiceStateOnce();
+            if (!RakVoice.GetServerVOIPEnable()) {
+                if (VOICE_DISABLED_LOGGED.compareAndSet(false, true)) {
+                    log("WAIT", "server VOIP is disabled; direct probe is paused");
+                }
+                return;
+            }
 
             long now = System.currentTimeMillis();
-            long guid = connection.getConnectedGUID();
-            TARGETS.compute(guid, (ignored, previous) -> {
-                if (previous == null) return new Target(guid, playerId, now);
-                previous.playerId = playerId;
-                previous.lastSeenAt = now;
-                return previous;
-            });
-            logCapabilitiesOnce();
-            startWorkerOnce();
+            if (eligibleSince == 0L) eligibleSince = now;
+
+            Target source = connected.get(0);
+            Target recipient = connected.size() >= 2 ? connected.get(1) : source;
+            if (TARGET_LOGGED.compareAndSet(false, true)) {
+                log("TARGET", "sourceGuid=" + source.guid
+                        + "; sourceOnlineId=" + source.playerId
+                        + "; recipientGuid=" + recipient.guid
+                        + "; connectedTargets=" + connected.size()
+                        + "; mode=" + (source.guid == recipient.guid
+                                ? "self-target (two clients recommended)"
+                                : "cross-client"));
+            }
+
+            if (now - eligibleSince < TEST_DELAY_MS) return;
+            if (!PROBE_STARTED.compareAndSet(false, true)) return;
+
+            Thread worker = new Thread(
+                    () -> sendTone(source, recipient),
+                    "LCC-InternetRadio-DirectProbe");
+            worker.setDaemon(true);
+            worker.setUncaughtExceptionHandler(
+                    (thread, error) -> fail("WORKER", error));
+            worker.start();
         } catch (Throwable error) {
-            fail("OBSERVE", error);
+            fail("SERVER_TICK", error);
         }
+    }
+
+    private static List<Target> snapshotTargets(List<UdpConnection> connections) {
+        List<Target> result = new ArrayList<>();
+        if (connections == null) return result;
+
+        Object[] snapshot = connections.toArray();
+        for (Object value : snapshot) {
+            if (!(value instanceof UdpConnection)) continue;
+            UdpConnection connection = (UdpConnection) value;
+            if (!connection.isFullyConnected()) continue;
+            short playerId = firstPlayerId(connection.playerIDs);
+            if (playerId < 0) continue;
+            long guid = connection.getConnectedGUID();
+            if (guid == 0L) continue;
+            result.add(new Target(guid, playerId));
+        }
+        return result;
     }
 
     private static short firstPlayerId(short[] playerIds) {
@@ -54,80 +130,55 @@ public final class ServerToneBridge {
         return -1;
     }
 
-    private static void logCapabilitiesOnce() {
-        if (!CAPABILITIES_LOGGED.compareAndSet(false, true)) return;
+    private static void logVoiceStateOnce() {
+        if (!VOICE_STATE_LOGGED.compareAndSet(false, true)) return;
         try {
-            log("VOICE", "RakVoice initialized"
-                    + "; enabled=" + RakVoice.GetServerVOIPEnable()
+            log("VOICE_STATE", "serverEnabled=" + RakVoice.GetServerVOIPEnable()
                     + "; sampleRate=" + RakVoice.GetSampleRate()
-                    + "; frameBytes=" + RakVoice.GetBufferSizeBytes()
-                    + "; framePeriodMs=" + RakVoice.GetSendFramePeriod()
+                    + "; periodMs=" + RakVoice.GetSendFramePeriod()
+                    + "; bufferSize=" + RakVoice.GetBufferSizeBytes()
                     + "; buffering=" + RakVoice.GetBuffering()
                     + "; is3D=" + RakVoice.GetIs3D()
                     + "; minDistance=" + RakVoice.GetMinDistance()
                     + "; maxDistance=" + RakVoice.GetMaxDistance());
         } catch (Throwable error) {
-            fail("VOICE", error);
+            fail("VOICE_STATE", error);
         }
     }
 
-    private static void startWorkerOnce() {
-        if (disabled || !STARTED.compareAndSet(false, true)) return;
-        Thread worker = new Thread(ServerToneBridge::workerLoop,
-                "LCC-InternetRadio-ToneProbe");
-        worker.setDaemon(true);
-        worker.setUncaughtExceptionHandler((thread, error) -> fail("WORKER", error));
-        worker.start();
-        log("TEST", "tone worker started; version=" + VERSION);
-    }
-
-    private static void workerLoop() {
-        while (!disabled) {
-            long now = System.currentTimeMillis();
-            for (Target target : TARGETS.values()) {
-                if (now - target.lastSeenAt > TARGET_EXPIRY_MS) {
-                    TARGETS.remove(target.guid, target);
-                    continue;
-                }
-                if (!target.sent && now - target.firstSeenAt >= TEST_DELAY_MS) {
-                    target.sent = true;
-                    sendTone(target);
-                }
-            }
-            sleep(50L);
-        }
-    }
-
-    private static void sendTone(Target target) {
+    private static void sendTone(Target source, Target recipient) {
         try {
             int sampleRate = RakVoice.GetSampleRate();
             int frameBytes = RakVoice.GetBufferSizeBytes();
             int framePeriodMs = RakVoice.GetSendFramePeriod();
             if (sampleRate <= 0 || frameBytes < 2 || framePeriodMs <= 0) {
-                log("TEST", "FAIL invalid voice format"
+                log("DIRECT_TEST", "FAIL invalid voice format"
                         + "; sampleRate=" + sampleRate
                         + "; frameBytes=" + frameBytes
                         + "; framePeriodMs=" + framePeriodMs);
                 return;
             }
 
-            // The vanilla capture path consumes mono signed 16-bit PCM. This
-            // runtime test also validates that assumption for B42.20.2.
             byte[] frame = new byte[frameBytes];
             int samplesPerFrame = frameBytes / 2;
             int framesToSend = Math.max(1,
                     (int) Math.ceil((double) TONE_DURATION_MS / framePeriodMs));
             double phase = 0.0;
             double phaseStep = 2.0 * Math.PI * TONE_HZ / sampleRate;
-            log("TEST", "440Hz generation started"
-                    + "; guid=" + target.guid
-                    + "; sourcePlayerId=" + target.playerId
-                    + "; frames=" + framesToSend);
+
+            log("DIRECT_TEST", "guid=" + recipient.guid
+                    + "; onlineId=" + source.playerId
+                    + "; bytes=" + frameBytes
+                    + "; frames=" + framesToSend
+                    + "; durationMs=" + TONE_DURATION_MS
+                    + "; toneHz=" + TONE_HZ);
 
             int sent = 0;
             long nextFrameAt = System.nanoTime();
-            for (int frameIndex = 0; frameIndex < framesToSend && !disabled; frameIndex++) {
-                for (int sampleIndex = 0; sampleIndex < samplesPerFrame; sampleIndex++) {
+            for (int frameIndex = 0; frameIndex < framesToSend && !disabled;
+                    frameIndex++) {
+                for (int sampleIndex = 0; sampleIndex < samplesPerFrame;
+                        sampleIndex++) {
                     short sample = (short) Math.round(
                             Math.sin(phase) * Short.MAX_VALUE * AMPLITUDE);
                     int byteIndex = sampleIndex * 2;
@@ -136,16 +187,28 @@ public final class ServerToneBridge {
                     phase += phaseStep;
                     if (phase >= 2.0 * Math.PI) phase -= 2.0 * Math.PI;
                 }
-                RakVoice.SendFrame(target.guid, target.playerId, frame, frame.length);
+
+                if (frameIndex == 0) {
+                    log("SEND_ENTER", "guid=" + recipient.guid
+                            + "; onlineId=" + source.playerId
+                            + "; bytes=" + frame.length);
+                }
+                RakVoice.SendFrame(
+                        recipient.guid, source.playerId, frame, frame.length);
+                if (frameIndex == 0) {
+                    log("SEND_RETURN", "first frame returned without Java/native exception");
+                }
                 sent++;
                 nextFrameAt += framePeriodMs * 1_000_000L;
                 sleepUntil(nextFrameAt);
             }
-            log("TEST", "tone finished; framesSent=" + sent
-                    + "; guid=" + target.guid
-                    + "; sourcePlayerId=" + target.playerId);
+
+            log("DIRECT_RESULT", "sendFrameReturned=true; framesSent=" + sent
+                    + "; audibleResult=must-be-confirmed-in-game"
+                    + "; sourceOnlineId=" + source.playerId
+                    + "; recipientGuid=" + recipient.guid);
         } catch (Throwable error) {
-            fail("TEST", error);
+            fail("DIRECT_TEST", error);
         }
     }
 
@@ -164,20 +227,11 @@ public final class ServerToneBridge {
         }
     }
 
-    private static void sleep(long millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
-            disabled = true;
-        }
-    }
-
     private static void fail(String area, Throwable error) {
         disabled = true;
         Throwable root = error;
         while (root.getCause() != null) root = root.getCause();
-        log(area, "FAIL; bridge disabled; " + root.getClass().getSimpleName()
+        log(area, "FAIL; probe disabled; " + root.getClass().getName()
                 + (root.getMessage() == null ? "" : ": " + root.getMessage()));
     }
 
@@ -187,16 +241,11 @@ public final class ServerToneBridge {
 
     private static final class Target {
         private final long guid;
-        private final long firstSeenAt;
-        private volatile short playerId;
-        private volatile long lastSeenAt;
-        private volatile boolean sent;
+        private final short playerId;
 
-        private Target(long guid, short playerId, long now) {
+        private Target(long guid, short playerId) {
             this.guid = guid;
             this.playerId = playerId;
-            this.firstSeenAt = now;
-            this.lastSeenAt = now;
         }
     }
 }

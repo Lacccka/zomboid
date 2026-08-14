@@ -1,128 +1,141 @@
-# Internet Vehicle Radio — Low-Level Server Voice Bridge 0.8.2
+# Internet Vehicle Radio — Direct Server Transport Probe 0.8.3
 
 Proof of concept for Project Zomboid Build 42.20.2 multiplayer.
 
 Workshop ID: `3783046891`  
 Mod ID: `LaccckaInternetRadioPoC`
 
-## Milestone
+## Current milestone
 
-Version 0.8.2 tests one question only:
+Version 0.8.3 tests one narrow question:
 
-> Can a server-only Java component inject generated audio through RakVoice so
-> that an unmodified Project Zomboid client hears it?
+> Can `RakVoice.SendFrame()` be called after Dedicated Server VOIP
+> initialization and deliver generated PCM to an ordinary Project Zomboid
+> client?
 
-It does not download WIVK, parse HLS, decode AAC, create a virtual source, or
-change vehicle radio state yet. Those features remain blocked until this tone
-test passes.
+It does not claim that radio routing, frequency 104.6, a virtual sender, HTTP,
+AAC decoding, buffering, or vehicle integration work yet.
 
-## Architecture of this probe
+Version 0.8.2 did not test `SendFrame()`: its mixin targeted
+`VoiceManager.UpdateChannelsRoaming()`, a client lifecycle method that never
+executed on the Dedicated Server. Version 0.8.3 replaces that silent hook with
+an obligatory `ServerMap.preupdate()` injection and a normal Leaf entrypoint.
+
+## Probe architecture
 
 ```text
-Dedicated Server
-  -> generate 440 Hz mono S16LE PCM
-  -> RakVoice.SendFrame(recipientGuid, sourcePlayerId, frame, size)
+Leaf main entrypoint
+  -> [BOOT]
+ServerMap.preupdate (required injection)
+  -> [SERVER_HOOK_OK]
+GameServer.udpEngine.connections
+  -> fully connected GUID + onlineID
+RakVoice server state
+  -> sample rate + frame period + buffer size
+440 Hz mono S16LE generator
+  -> RakVoice.SendFrame(recipientGuid, sourceOnlineId, frame, size)
   -> ordinary Project Zomboid client
 ```
 
-The server observes a fully connected client after vanilla
-`VoiceManager.UpdateChannelsRoaming`. Five seconds later it sends that client a
-three-second tone. For this first transport test, the receiving player's own
-online id is used as the temporary source id. A virtual/vehicle source is not
-claimed to work yet.
+The probe waits five seconds after finding an eligible connection, sends a
+four-second tone once, and never retries during the same server process.
+
+With two connected clients, the first connection provides the temporary source
+onlineID and the second is the recipient. This is the preferred test because a
+single client may suppress audio attributed to its own player. With only one
+client the probe still runs, but logs `self-target (two clients recommended)`.
+
+`SEND_RETURN` proves only that the Java/native call returned without an
+exception. Audible delivery must still be confirmed in game.
+
+## Expected server log
+
+```text
+[InternetRadioBridge][BOOT] version=0.8.3; ...
+[InternetRadioBridge][SERVER_HOOK_OK] ServerMap.preupdate; ...
+[InternetRadioBridge][WAIT] no fully-connected player ...
+[InternetRadioBridge][VOICE_STATE] serverEnabled=true; sampleRate=...; ...
+[InternetRadioBridge][TARGET] sourceGuid=...; sourceOnlineId=...; ...
+[InternetRadioBridge][DIRECT_TEST] guid=...; onlineId=...; bytes=...; ...
+[InternetRadioBridge][SEND_ENTER] guid=...; onlineId=...; bytes=...
+[InternetRadioBridge][SEND_RETURN] first frame returned ...
+[InternetRadioBridge][DIRECT_RESULT] sendFrameReturned=true; framesSent=...;
+```
+
+Interpretation:
+
+- no `BOOT`: Leaf found metadata but did not run the entrypoint;
+- `BOOT` without `SERVER_HOOK_OK`: required mixin application failed;
+- `serverEnabled=false`: VOIP is disabled in server settings;
+- `SEND_ENTER` without `SEND_RETURN`: native call failed or blocked;
+- `DIRECT_RESULT` without audible sound: the call was accepted but delivery,
+  source identity, client loopback, or routing rejected the frame.
 
 ## Installation boundary
 
 - Players install only the normal Steam Workshop mod.
-- Players do not install Leaf, Java modules, DLLs, ffmpeg, or a custom launcher.
-- The low-level loader and bridge are server-only components.
-- The server administrator must install a compatible server-side Leaf Loader.
-  A normal Workshop Lua mod cannot load Java bytecode by itself.
+- Players do not install Leaf, JARs, DLLs, ffmpeg, or a custom launcher.
+- Leaf and this Java bridge are server-only.
 
-The built server plugin stays inside the only Workshop-approved `mods` tree:
+The Workshop upload source contains the bridge here:
 
 ```text
 Contents/mods/LaccckaInternetRadioPoC/leaf/mods/
   LaccckaInternetRadioServerBridge.jar
 ```
 
-Project Zomboid's Workshop validator rejects a top-level `Contents/leaf`
-directory. This valid Workshop location is deeper than Leaf's automatic
-Workshop traversal limit, so the launch command must supply the exact JAR with
-`leaf.addMods`. This is server-side only and remains automatic after Workshop
-updates.
-
-Its `leaf.mod.json` uses `environment: server`, so it must not load on clients.
-The earlier client FMOD bridge JAR is retained only as historical source and is
-not part of this architecture.
-
-## Expected server log
-
-On a successful mixin load and player connection:
-
-```text
-[InternetRadioBridge][VOICE] RakVoice initialized; enabled=...; sampleRate=...
-[InternetRadioBridge][TEST] tone worker started; version=0.8.2
-[InternetRadioBridge][TEST] 440Hz generation started; ...
-[InternetRadioBridge][TEST] tone finished; framesSent=...; ...
-```
-
-The final success criterion is not merely `framesSent`: the connected player
-must actually hear the tone. If no `[InternetRadioBridge]` lines appear, the
-server loader or mixin did not load. If the lines appear but there is no sound,
-the log values distinguish invalid voice format from client rejection/routing.
-
-Any Java/native error disables only this probe and is caught before it can
-repeat in the server tick.
-
-For a Dedicated Server installed in the standard Steam layout, make the
-Workshop search root explicit in the Java launch command:
-
-```bat
--Dleaf.gameWorkshopPath="%CD%\..\..\workshop\content\108600"
--Dleaf.addMods="%CD%\..\..\workshop\content\108600\3783046891\Contents\mods\LaccckaInternetRadioPoC\leaf\mods\LaccckaInternetRadioServerBridge.jar"
-```
-
-Place both properties before `-cp`. `leaf.addMods` bypasses directory discovery
-and loads this exact server JAR. After the Workshop update, this file must
-exist:
+Steam installs the contents of `Contents` at the item root, so the actual
+Dedicated Server path is:
 
 ```text
 steamapps/workshop/content/108600/3783046891/
-  Contents/mods/LaccckaInternetRadioPoC/leaf/mods/
+  mods/LaccckaInternetRadioPoC/leaf/mods/
     LaccckaInternetRadioServerBridge.jar
 ```
 
+For a standard Dedicated Server installation, load the exact JAR before `-cp`:
+
+```bat
+"-Dleaf.addMods=%CD%\steamapps\workshop\content\108600\3783046891\mods\LaccckaInternetRadioPoC\leaf\mods\LaccckaInternetRadioServerBridge.jar"
+"-Dleaf.gameWorkshopPath=%CD%\steamapps\workshop\content\108600"
+```
+
+## Test procedure
+
+1. Update Workshop item `3783046891` and fully restart the server.
+2. Confirm Leaf reports `lcc-internet-radio-server-bridge 0.8.3`.
+3. Confirm `[BOOT]` and `[SERVER_HOOK_OK]` appear.
+4. Preferably connect two ordinary clients with VOIP enabled.
+5. Wait at least ten seconds after both clients finish loading.
+6. Record whether the second client hears a four-second 440 Hz tone.
+7. Save both client logs and the server log.
+
+No radio or 104.6 tuning is used in this phase. Frequency routing is the next
+test only if direct delivery works.
+
 ## Existing client controls
 
-The client Lua remains deliberately unchanged except for its version log:
-
-- F8: report that client HTTP is unavailable.
-- F9: packaged `GameSoundClip` through vehicle emitter.
+- F8: report client HTTP availability only.
+- F9: packaged `GameSoundClip` through the vehicle emitter.
 - F10: packaged positional world sound.
 - F11: packaged sound through the vehicle emitter.
 
-F11 remains the confirmed control proving that packaged audio and moving
-vehicle positioning work independently of RakVoice.
+F11 remains the confirmed control for packaged audio and moving vehicle
+positioning; it is independent of this RakVoice probe.
 
-## What a successful tone unlocks
+## Decision after 0.8.3
 
-Only after the tone is heard:
-
-1. determine whether a source can be independent of a real `IsoPlayer`;
-2. route and position a virtual source;
-3. attach its coordinates to a vehicle;
-4. synchronize radio state on 104.6 MHz;
-5. add server-side WIVK HLS fetch and AAC decode;
-6. reuse one decoded station stream for multiple vehicle sources.
-
-If the ordinary client rejects server-injected frames or requires a real remote
-player source, the RakVoice approach is closed without implementing HLS.
+- If direct delivery works, the next probe adds radio routing on 104.6 MHz.
+- If `SendFrame()` returns but clients consistently receive no audio with valid
+  cross-client identities, stop expanding direct injection and move to a
+  separate Virtual Client transport.
+- HTTP/AAC work starts only after `synthetic PCM -> PZ transport -> ordinary
+  client` succeeds.
 
 ## Build
 
-The JAR is compiled against narrow local stubs; no Project Zomboid classes are
-bundled into it:
+The JAR compiles against narrow local stubs. No Project Zomboid or Leaf classes
+are bundled into it:
 
 ```bash
 bash server-bridge-src/build.sh

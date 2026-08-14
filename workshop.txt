@@ -1,6 +1,0 @@
-version=1
-id=3783046891
-title=Internet Vehicle Radio - WIVK-FM PoC
-description=Build 42.20.2 low-level radio PoC 0.8.3. Uses a deterministic server hook to test RakVoice.SendFrame after RVInitServer. Ordinary clients need no Leaf, Java, DLL, decoder, or launcher.
-tags=Build 42;Multiplayer
-visibility=unlisted
