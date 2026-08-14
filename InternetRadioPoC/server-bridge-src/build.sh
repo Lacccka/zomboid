@@ -6,7 +6,7 @@ BUILD_DIR="$SCRIPT_DIR/build"
 OUTPUT_JAR="$SCRIPT_DIR/../Contents/mods/LaccckaInternetRadioPoC/leaf/mods/LaccckaInternetRadioServerBridge.jar"
 
 mkdir -p "$BUILD_DIR/stubs" "$BUILD_DIR/classes" "$(dirname -- "$OUTPUT_JAR")"
-find "$BUILD_DIR/stubs" "$BUILD_DIR/classes" -type f -delete
+find "$BUILD_DIR/stubs" "$BUILD_DIR/classes" -mindepth 1 -delete
 
 java -m jdk.compiler/com.sun.tools.javac.Main --release 17 \
     -d "$BUILD_DIR/stubs" \

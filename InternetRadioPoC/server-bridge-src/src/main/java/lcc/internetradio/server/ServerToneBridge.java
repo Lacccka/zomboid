@@ -10,15 +10,16 @@ import zombie.network.GameServer;
 
 /** Server-only Phase 0 probe for RakVoice.SendFrame after RVInitServer. */
 public final class ServerToneBridge {
-    public static final String VERSION = "0.8.4";
+    public static final String VERSION = "0.8.5";
 
+    private static final long MONITOR_PERIOD_MS = 250L;
     private static final long TEST_DELAY_MS = 5_000L;
     private static final long TONE_DURATION_MS = 4_000L;
     private static final double TONE_HZ = 440.0;
     private static final double AMPLITUDE = 0.20;
 
     private static final AtomicBoolean BOOTSTRAPPED = new AtomicBoolean();
-    private static final AtomicBoolean HOOK_LOGGED = new AtomicBoolean();
+    private static final AtomicBoolean MONITOR_STARTED = new AtomicBoolean();
     private static final AtomicBoolean ENGINE_WAIT_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean CONNECTION_WAIT_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean VOICE_STATE_LOGGED = new AtomicBoolean();
@@ -37,15 +38,31 @@ public final class ServerToneBridge {
         if (!BOOTSTRAPPED.compareAndSet(false, true)) return;
         log("BOOT", "version=" + VERSION + "; environment=dedicated-server"
                 + "; directProbe=true; frequencyFuture=104.6");
+
+        Thread monitor = new Thread(
+                ServerToneBridge::monitorLoop,
+                "LCC-InternetRadio-Monitor");
+        monitor.setDaemon(true);
+        monitor.setUncaughtExceptionHandler(
+                (thread, error) -> fail("MONITOR", error));
+        monitor.start();
     }
 
-    /** Called on the Dedicated Server main thread from ServerMap.preupdate. */
-    public static void serverTick() {
-        if (disabled) return;
-        if (HOOK_LOGGED.compareAndSet(false, true)) {
-            log("SERVER_HOOK_OK", "ServerMap.preupdate; thread="
+    private static void monitorLoop() {
+        if (MONITOR_STARTED.compareAndSet(false, true)) {
+            log("MONITOR_OK", "daemon polling started; periodMs="
+                    + MONITOR_PERIOD_MS + "; thread="
                     + Thread.currentThread().getName());
         }
+
+        while (!disabled && !PROBE_STARTED.get()) {
+            pollOnce();
+            if (!disabled && !PROBE_STARTED.get()) sleepMonitorPeriod();
+        }
+    }
+
+    private static void pollOnce() {
+        if (disabled) return;
         if (PROBE_STARTED.get()) return;
 
         try {
@@ -67,6 +84,7 @@ public final class ServerToneBridge {
             }
 
             logVoiceStateOnce();
+            if (disabled) return;
             if (!RakVoice.GetServerVOIPEnable()) {
                 if (VOICE_DISABLED_LOGGED.compareAndSet(false, true)) {
                     log("WAIT", "server VOIP is disabled; direct probe is paused");
@@ -101,7 +119,17 @@ public final class ServerToneBridge {
                     (thread, error) -> fail("WORKER", error));
             worker.start();
         } catch (Throwable error) {
-            fail("SERVER_TICK", error);
+            fail("MONITOR_POLL", error);
+        }
+    }
+
+    private static void sleepMonitorPeriod() {
+        try {
+            Thread.sleep(MONITOR_PERIOD_MS);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            disabled = true;
+            log("MONITOR", "interrupted; probe disabled");
         }
     }
 

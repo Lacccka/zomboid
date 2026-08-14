@@ -1,6 +1,6 @@
 version=1
 id=3783046891
 title=Internet Vehicle Radio - WIVK-FM PoC
-description=Build 42.20.2 low-level radio PoC 0.8.4. Supports a clearly marked single-client self-target diagnostic for RakVoice.SendFrame. Ordinary clients need no Leaf, Java, DLL, decoder, or launcher.
+description=Build 42.20.2 low-level radio PoC 0.8.5. Uses a server-only Leaf entrypoint daemon to test RakVoice.SendFrame without relying on an unproven game lifecycle hook. Ordinary clients need no Leaf, Java, DLL, decoder, or launcher.
 tags=Build 42;Multiplayer
 visibility=unlisted
