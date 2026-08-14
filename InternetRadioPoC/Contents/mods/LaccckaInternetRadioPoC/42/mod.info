@@ -1,6 +1,6 @@
 name=Internet Vehicle Radio - WIVK-FM PoC
 id=LaccckaInternetRadioPoC
 author=Lacccka
-description=Build 42 Workshop-only vehicle sound probe and client HTTP boundary report. Press F8-F11 in game; no recurring tick handler.
-modversion=0.6.1
+description=Build 42 vehicle sound control plus server-only RakVoice 440 Hz injection probe. F11 remains the packaged vehicle control.
+modversion=0.8.0
 versionMin=42.20.0
