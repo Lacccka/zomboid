@@ -7,4 +7,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.FIELD, ElementType.METHOD})
-public @interface Shadow {}
+public @interface Shadow {
+    boolean remap() default true;
+}

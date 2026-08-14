@@ -6,11 +6,11 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
 /** Adds a narrow client-only URL-stream API without replacing FMODSoundEmitter. */
-@Mixin(targets = "fmod.fmod.FMODSoundEmitter")
+@Mixin(targets = "fmod.fmod.FMODSoundEmitter", remap = false)
 public abstract class FMODSoundEmitterMixin {
-    @Shadow public float x;
-    @Shadow public float y;
-    @Shadow public float z;
+    @Shadow(remap = false) public float x;
+    @Shadow(remap = false) public float y;
+    @Shadow(remap = false) public float z;
 
     @Unique public String lccInternetRadioBridgeVersion() {
         return InternetStreamBridge.VERSION;
