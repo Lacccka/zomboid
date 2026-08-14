@@ -1,0 +1,16 @@
+module Base
+{
+    sound LCCInternetRadioTest
+    {
+        category = Vehicle,
+        loop = false,
+        is3D = true,
+        clip
+        {
+            file = media/sound/test.wav,
+            volume = 1.0,
+            distanceMin = 3.0,
+            distanceMax = 30.0,
+        }
+    }
+}
