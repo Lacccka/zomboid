@@ -1,74 +1,58 @@
-# Internet Vehicle Radio — local WAV and vehicle PoC 0.4.1
+# Internet Vehicle Radio — registered sound and runtime clip PoC 0.5.0
 
-Minimal Workshop-only playback probe for Project Zomboid Build 42.20.2
-multiplayer. It tests the supplied `test.wav` without registering a `GameSound`.
+Workshop-only playback probe for Project Zomboid Build 42.20.2 multiplayer.
 
 Workshop ID: `3783046891`  
 Mod ID: `LaccckaInternetRadioPoC`
 
-## Scope
+## Confirmed by 0.4.1
 
-This version deliberately contains no HTTP, AAC, HLS, vehicle enumeration,
-multiplayer radio synchronization, `OnTick`, `luajava`, or external loader.
-Every potentially unsupported audio call is isolated with `pcall`, so one
-failed method is logged once instead of producing a recurring error.
+- `test.wav` plays by its short name.
+- `vehicle:getEmitter():playSound("test")` returns a non-zero handle.
+- The sound source moves with the vehicle.
+- Passing an absolute WAV path directly to the vehicle emitter returns handle
+  `0` and does not play.
 
-The WAV must be present at:
+The vehicle and 3D-audio portion is therefore working. The remaining problem is
+how to make a file obtained at runtime visible to FMOD under a usable sound
+name.
 
-```text
-Contents/mods/LaccckaInternetRadioPoC/42/media/sound/test.wav
-```
+## What 0.5.0 changes
 
-It is intentionally not declared in a sound script. The purpose is to determine
-whether B42 can load a plain WAV at runtime without a pre-existing `GameSound`.
+The WAV is now registered in a normal `media/scripts` sound definition as
+`LCCInternetRadioTest`. This is the same supported mechanism used by ordinary
+music and sound mods, and removes the engine warning about an unknown sound.
 
-## Confirmed result from 0.4.0
+There is no `OnTick`, vehicle enumeration, HTTP request, AAC/HLS decoder,
+`luajava`, Leaf, or external client installation. Every experimental Java/Lua
+boundary call is isolated with `pcall`, so an unsupported operation produces a
+single labelled log line instead of a recurring error flood.
 
-On B42.20.2 multiplayer, `F10` successfully played the unregistered WAV with:
+## Test order
 
-```text
-PlayWorldSoundWav("test", ...) -> fmod.fmod.FMODAudio
-```
+After the Workshop item updates, fully restart the game and join the server.
 
-The previous F8 path was invalid because `getDir()` returned the root mod
-directory while versioned content is stored under an additional `/42` folder.
-Version 0.4.1 corrects that path before drawing conclusions about arbitrary
-absolute-file playback.
+1. Press `F10` on foot. The WAV should play at the player's square through the
+   registered sound name.
+2. Sit inside a vehicle and press `F11`. The WAV should play from the vehicle
+   and move with it. This is the registered-name control.
+3. Still inside the vehicle, press `F9`. The mod obtains the registered
+   `GameSoundClip`, changes its `file` field to the fully resolved path of the
+   same Workshop WAV, and calls `vehicleEmitter:playClip(clip, vehicle)`.
 
-## Tests
+`F9` is the critical new result:
 
-After updating Workshop item `3783046891`, fully restart the client and join the
-server. Run the tests one at a time:
+- if it is audible and returns a non-zero handle, a runtime-downloaded WAV can
+  be inserted into this clip slot next;
+- if field assignment or `playClip` is unavailable, the labelled log output
+  identifies exactly which boundary B42 blocks.
 
-- `F8` — use the corrected `/42/media/sound/test.wav` absolute path with
-  `PlayWorldSoundWav` at the player's square;
-- `F9` — use that corrected absolute path with the 2D `PlaySoundWav` method;
-- `F10` — repeat the confirmed named positional-world test as a control;
-- `F11` — while seated in a vehicle, call its emitter with the unregistered
-  name `test`, then enable 3D and query the returned handle;
-- `F12` — repeat the vehicle-emitter test with the corrected absolute path.
-
-The client log begins every line with:
+The client log prefix is:
 
 ```text
 [LCC Internet Radio PoC]
 ```
 
-For each key, record whether the WAV was audible and provide the complete block
-from `test started` through `test finished`. A method returning `nil` is not by
-itself proof of failure: audible output and subsequent engine log messages are
-the decisive observations.
-
-For F11 and F12, remain seated in the vehicle until the WAV finishes. If sound
-plays, drive several tiles and ask a second nearby client whether the source
-moves with the car.
-
-## Decision after the test
-
-- If `F8` works, the positional sound method accepts an arbitrary full path;
-  the next test can create or download a file outside `media/sound` at runtime.
-- `F10` is already confirmed and establishes packaged positional WAV playback.
-- If F11 or F12 returns a non-zero handle and is audible, the standard vehicle
-  emitter can play the WAV and automatically follow the moving vehicle.
-- If both emitter tests fail, named world WAV remains usable, but moving-source
-  behavior will require controlled segment restarts or another exposed handle.
+Please report whether each key was audible and include the complete labelled
+block for `F9`. F12 is no longer used, so Steam's screenshot binding is not
+triggered by this version.
