@@ -14,7 +14,6 @@ local CONFIG = {
     frequency = 104600,
     streamUrl = "https://playerservices.streamtheworld.com/api/livestream-redirect/WIVKFMAAC.aac",
     maxDistance = 60,
-    scanSquaresPerUpdate = 2048,
     updateEveryTicks = 15,
     verifyAfterTicks = 900,
     retryAfterTicks = 3600,
@@ -23,35 +22,15 @@ local CONFIG = {
 local activeStreams = {}
 local retryAt = {}
 local tickNumber = 0
-local knownVehicles = {}
-local scanCursor = 1
-
-local scanOffsets = {}
-for dy = -CONFIG.maxDistance, CONFIG.maxDistance do
-    for dx = -CONFIG.maxDistance, CONFIG.maxDistance do
-        local distance = dx * dx + dy * dy
-        if distance <= CONFIG.maxDistance * CONFIG.maxDistance then
-            scanOffsets[#scanOffsets + 1] = {
-                x = dx,
-                y = dy,
-                distance = distance,
-            }
-        end
-    end
-end
-table.sort(scanOffsets, function(a, b)
-    return a.distance < b.distance
-end)
+local trackedVehicle = nil
 
 local function log(message)
     print(MOD_TAG .. " " .. tostring(message))
 end
 
 local function vehicleKey(vehicle)
-    local ok, id = pcall(function()
-        return vehicle:getId()
-    end)
-    if ok and id ~= nil then
+    local id = vehicle and vehicle:getId() or nil
+    if id ~= nil then
         return tostring(id)
     end
     return tostring(vehicle)
@@ -96,34 +75,6 @@ local function ensureStationPreset(deviceData)
     log("added local preset " .. CONFIG.stationName .. " on 104.6 MHz")
 end
 
-local function rememberVehicle(vehicle)
-    if vehicle then
-        knownVehicles[vehicleKey(vehicle)] = vehicle
-    end
-end
-
-local function scanNearbySquares(cell, player)
-    rememberVehicle(player:getVehicle())
-
-    local centerX = math.floor(player:getX())
-    local centerY = math.floor(player:getY())
-    local centerZ = math.floor(player:getZ())
-    local scanCount = math.min(CONFIG.scanSquaresPerUpdate, #scanOffsets)
-
-    for _ = 1, scanCount do
-        local offset = scanOffsets[scanCursor]
-        local square = cell:getGridSquare(centerX + offset.x, centerY + offset.y, centerZ)
-        if square then
-            rememberVehicle(square:getVehicleContainer())
-        end
-
-        scanCursor = scanCursor + 1
-        if scanCursor > #scanOffsets then
-            scanCursor = 1
-        end
-    end
-end
-
 local function distanceSquared(player, vehicle)
     local dx = player:getX() - vehicle:getX()
     local dy = player:getY() - vehicle:getY()
@@ -137,13 +88,8 @@ local function stopStream(key, reason)
         return
     end
 
-    if state.emitter and state.handle and state.handle ~= 0 then
-        local ok, err = pcall(function()
-            state.emitter:stopSound(state.handle)
-        end)
-        if not ok then
-            log("stop failed for vehicle " .. key .. ": " .. tostring(err))
-        end
+    if state.emitter and state.emitter.stopSound and state.handle and state.handle ~= 0 then
+        state.emitter:stopSound(state.handle)
     end
 
     activeStreams[key] = nil
@@ -163,7 +109,13 @@ local function startStream(vehicle, deviceData, key)
         log("vehicle " .. key .. " has no sound emitter")
         return
     end
+    if type(emitter.playSound) ~= "function" then
+        retryAt[key] = tickNumber + CONFIG.retryAfterTicks
+        log("vehicle " .. key .. " emitter has no Lua playSound method")
+        return
+    end
 
+    log("attempting direct HTTPS AAC for vehicle " .. key)
     local ok, handleOrError = pcall(function()
         -- Core PoC call. B42 may reject this because the public emitter API
         -- normally resolves registered local GameSound resources, not URLs.
@@ -183,10 +135,12 @@ local function startStream(vehicle, deviceData, key)
         return
     end
 
-    pcall(function()
+    if emitter.set3D then
         emitter:set3D(handle, true)
+    end
+    if emitter.setVolume then
         emitter:setVolume(handle, deviceData:getDeviceVolume())
-    end)
+    end
 
     activeStreams[key] = {
         emitter = emitter,
@@ -204,20 +158,17 @@ local function updateActiveStream(deviceData, key)
         return
     end
 
-    pcall(function()
+    if state.emitter.setVolume then
         state.emitter:setVolume(state.handle, deviceData:getDeviceVolume())
-    end)
+    end
 
     local shouldVerify = state.verified or tickNumber - state.startedAt >= CONFIG.verifyAfterTicks
     if not shouldVerify then
         return
     end
 
-    local ok, playing = pcall(function()
-        return state.emitter:isPlaying(state.handle)
-    end)
-
-    if ok and playing then
+    local playing = state.emitter.isPlaying and state.emitter:isPlaying(state.handle) or false
+    if playing then
         if not state.verified then
             state.verified = true
             log("FMOD reports the HTTPS handle as playing for vehicle " .. key .. "; confirm audible AAC in-game")
@@ -237,9 +188,8 @@ local function shouldPlay(deviceData)
         and deviceData:getDeviceVolume() > 0
 end
 
-local function updateVehicle(player, vehicle, seen)
+local function updateVehicle(player, vehicle)
     local key = vehicleKey(vehicle)
-    seen[key] = true
 
     local deviceData = getRadioData(vehicle)
     if deviceData then
@@ -271,36 +221,30 @@ local function update()
     end
 
     local player = getPlayer()
-    local cell = getCell()
-    if not player or not cell then
+    if not player then
         return
     end
 
-    scanNearbySquares(cell, player)
-
-    local seen = {}
-    local forgotten = {}
-    for key, vehicle in pairs(knownVehicles) do
-        if vehicle and distanceSquared(player, vehicle) <= CONFIG.maxDistance * CONFIG.maxDistance then
-            updateVehicle(player, vehicle, seen)
-        else
-            forgotten[#forgotten + 1] = key
-            stopStream(key, "out of range or unloaded")
+    local currentVehicle = player:getVehicle()
+    if currentVehicle then
+        if trackedVehicle and vehicleKey(trackedVehicle) ~= vehicleKey(currentVehicle) then
+            stopStream(vehicleKey(trackedVehicle), "player entered another vehicle")
         end
-    end
-    for _, key in ipairs(forgotten) do
-        knownVehicles[key] = nil
+        trackedVehicle = currentVehicle
     end
 
-    local unloaded = {}
-    for key, _ in pairs(activeStreams) do
-        if not seen[key] then
-            unloaded[#unloaded + 1] = key
-        end
+    if not trackedVehicle then
+        return
     end
-    for _, key in ipairs(unloaded) do
-        stopStream(key, "vehicle unloaded")
+
+    local key = vehicleKey(trackedVehicle)
+    if distanceSquared(player, trackedVehicle) > CONFIG.maxDistance * CONFIG.maxDistance then
+        stopStream(key, "out of range")
+        trackedVehicle = nil
+        return
     end
+
+    updateVehicle(player, trackedVehicle)
 end
 
 local function stopAll()
@@ -311,11 +255,13 @@ local function stopAll()
     for _, key in ipairs(keys) do
         stopStream(key, "session ended")
     end
+    trackedVehicle = nil
 end
 
 Events.OnGameStart.Add(function()
     log("loaded; WIVK-FM=" .. CONFIG.frequency .. ", UUID=" .. CONFIG.stationUuid)
     log("the dedicated server carries only vanilla vehicle-radio state; every client opens its own stream")
+    log("PoC mode: tracking only the current or last-entered vehicle; no world vehicle scan")
 end)
 Events.OnTick.Add(update)
 if Events.OnGameExit then

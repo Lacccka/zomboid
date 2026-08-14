@@ -2,5 +2,5 @@ name=Internet Vehicle Radio - WIVK-FM PoC
 id=LaccckaInternetRadioPoC
 author=Lacccka
 description=Build 42 proof of concept for a positional WIVK-FM internet stream attached to vehicle radios on 104.6 MHz.
-modversion=0.1.1
+modversion=0.1.2
 versionMin=42.20.0

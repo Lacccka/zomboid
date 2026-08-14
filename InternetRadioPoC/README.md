@@ -15,6 +15,8 @@ This is a separate mod and does not modify `LaccckaCompatibilityPatch` or subscr
   and stops when the player moves away, the vehicle unloads, the radio is switched
   off/muted, or another frequency is selected.
 - Keeps at most one stream handle per vehicle on each client.
+- This PoC intentionally tracks only the current or last-entered vehicle on each
+  client. It does not scan every vehicle in the world before HTTP/AAC support is proven.
 
 Station used by the PoC:
 
@@ -32,6 +34,10 @@ Project Zomboid use resolves registered local `GameSound` resources. The public 
 does not document HTTP stream creation, codec buffering, reconnects or a PCM feed.
 Therefore this mod is an instrumented compatibility test, not a claim that direct
 streaming already works.
+
+Existing music mods do not prove URL support: they register local `.ogg` files as
+named `GameSound` resources and pass those names to the emitter. This PoC passes an
+HTTPS AAC URL, which is a different FMOD input path.
 
 Expected client-log outcomes:
 
@@ -55,11 +61,11 @@ dependency on `LaccckaB4220Compat` and its load order is not significant.
 ## Two-client test checklist
 
 1. Start a B42.20.x dedicated server with the mod enabled on server and both clients.
-2. Enter a vehicle with an installed radio and open the radio UI.
+2. On each client, briefly enter the test vehicle once; then open the radio UI.
 3. Turn it on, choose `104.6 MHz WIVK-FM`, and set volume above zero.
 4. Confirm only one start line appears per vehicle in each client's `console.txt`.
 5. Check the log for either the live-handle line or the explicit bridge-required result.
-6. If audio plays, test one player inside and one outside the vehicle.
+6. If audio plays, let one player exit and verify the vehicle remains the 3D source.
 7. Drive the vehicle and verify that the source moves with it.
 8. Walk beyond 60 tiles, return, switch frequency, mute, and turn the radio off.
 9. Despawn/unload the vehicle and confirm that the handle is stopped.
