@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$SCRIPT_DIR/build"
-OUTPUT_JAR="$SCRIPT_DIR/../Contents/mods/LaccckaInternetRadioPoC/leaf/mods/LaccckaInternetRadioServerBridge.jar"
+OUTPUT_JAR="$SCRIPT_DIR/../Contents/leaf/mods/LaccckaInternetRadioServerBridge.jar"
 
 mkdir -p "$BUILD_DIR/stubs" "$BUILD_DIR/classes" "$(dirname -- "$OUTPUT_JAR")"
 find "$BUILD_DIR/stubs" "$BUILD_DIR/classes" -type f -delete

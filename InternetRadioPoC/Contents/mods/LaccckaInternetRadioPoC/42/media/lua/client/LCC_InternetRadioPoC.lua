@@ -217,7 +217,7 @@ local function onKeyPressed(key)
 end
 
 Events.OnGameStart.Add(function()
-    log("0.8.0 B42 server voice-injection probe client control loaded")
+    log("0.8.1 B42 server voice-injection probe client control loaded")
     log("F8=report HTTP availability only; F9=packaged clip in vehicle")
     log("F10=packaged world; F11=packaged vehicle")
     attempt("GameSounds.isKnownSound(" .. SOUND_NAME .. ")", function()

@@ -1,6 +1,6 @@
 version=1
 id=3783046891
 title=Internet Vehicle Radio - WIVK-FM PoC
-description=Build 42.20.2 low-level radio PoC. Keeps the confirmed F11 moving-vehicle WAV control and adds a server-only RakVoice 440 Hz injection probe. Ordinary Workshop clients need no Java, DLL, decoder, or launcher.
+description=Build 42.20.2 low-level radio PoC 0.8.1. Places the server-only RakVoice 440 Hz bridge in the Leaf Workshop discovery path. Ordinary Workshop clients need no Java, DLL, decoder, or launcher.
 tags=Build 42;Multiplayer
 visibility=unlisted

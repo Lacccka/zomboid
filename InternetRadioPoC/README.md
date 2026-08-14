@@ -1,4 +1,4 @@
-# Internet Vehicle Radio — Low-Level Server Voice Bridge 0.8.0
+# Internet Vehicle Radio — Low-Level Server Voice Bridge 0.8.1
 
 Proof of concept for Project Zomboid Build 42.20.2 multiplayer.
 
@@ -7,7 +7,7 @@ Mod ID: `LaccckaInternetRadioPoC`
 
 ## Milestone
 
-Version 0.8.0 tests one question only:
+Version 0.8.1 tests one question only:
 
 > Can a server-only Java component inject generated audio through RakVoice so
 > that an unmodified Project Zomboid client hears it?
@@ -39,12 +39,18 @@ claimed to work yet.
 - The server administrator must install a compatible server-side Leaf Loader.
   A normal Workshop Lua mod cannot load Java bytecode by itself.
 
-The built server plugin is:
+The built server plugin is deliberately outside the normal PZ mod directory:
 
 ```text
-Contents/mods/LaccckaInternetRadioPoC/leaf/mods/
+Contents/leaf/mods/
   LaccckaInternetRadioServerBridge.jar
 ```
+
+Leaf's Workshop finder walks from `workshop/content/108600`, accepts JARs whose
+parent ends in `leaf/mods`, and has a finite traversal depth. The old location
+under `Contents/mods/LaccckaInternetRadioPoC/leaf/mods` was one level beyond
+that limit, so the JAR was valid but never inspected. Do not move the server
+JAR back under the PZ mod directory.
 
 Its `leaf.mod.json` uses `environment: server`, so it must not load on clients.
 The earlier client FMOD bridge JAR is retained only as historical source and is
@@ -56,7 +62,7 @@ On a successful mixin load and player connection:
 
 ```text
 [InternetRadioBridge][VOICE] RakVoice initialized; enabled=...; sampleRate=...
-[InternetRadioBridge][TEST] tone worker started; version=0.8.0
+[InternetRadioBridge][TEST] tone worker started; version=0.8.1
 [InternetRadioBridge][TEST] 440Hz generation started; ...
 [InternetRadioBridge][TEST] tone finished; framesSent=...; ...
 ```
@@ -68,6 +74,22 @@ the log values distinguish invalid voice format from client rejection/routing.
 
 Any Java/native error disables only this probe and is caught before it can
 repeat in the server tick.
+
+For a Dedicated Server installed in the standard Steam layout, make the
+Workshop search root explicit in the Java launch command:
+
+```bat
+-Dleaf.gameWorkshopPath="%CD%\..\..\workshop\content\108600"
+```
+
+Place it before `-cp`. This avoids Leaf falling back to a client-game Steam
+library when the Dedicated Server lives elsewhere. After the Workshop update,
+this file must exist:
+
+```text
+steamapps/workshop/content/108600/3783046891/
+  Contents/leaf/mods/LaccckaInternetRadioServerBridge.jar
+```
 
 ## Existing client controls
 
