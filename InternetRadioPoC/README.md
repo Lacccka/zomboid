@@ -1,4 +1,4 @@
-# Internet Vehicle Radio — Direct Server Transport Probe 0.8.3
+# Internet Vehicle Radio — Direct Server Transport Probe 0.8.4
 
 Proof of concept for Project Zomboid Build 42.20.2 multiplayer.
 
@@ -7,7 +7,7 @@ Mod ID: `LaccckaInternetRadioPoC`
 
 ## Current milestone
 
-Version 0.8.3 tests one narrow question:
+Version 0.8.4 tests one narrow question:
 
 > Can `RakVoice.SendFrame()` be called after Dedicated Server VOIP
 > initialization and deliver generated PCM to an ordinary Project Zomboid
@@ -18,7 +18,7 @@ AAC decoding, buffering, or vehicle integration work yet.
 
 Version 0.8.2 did not test `SendFrame()`: its mixin targeted
 `VoiceManager.UpdateChannelsRoaming()`, a client lifecycle method that never
-executed on the Dedicated Server. Version 0.8.3 replaces that silent hook with
+executed on the Dedicated Server. Version 0.8.4 replaces that silent hook with
 an obligatory `ServerMap.preupdate()` injection and a normal Leaf entrypoint.
 
 ## Probe architecture
@@ -37,14 +37,15 @@ RakVoice server state
   -> ordinary Project Zomboid client
 ```
 
-The probe waits for two fully connected clients, then waits another five
+The probe waits for at least one fully connected client, then waits five
 seconds, sends a four-second tone once, and never retries during the same
 server process.
 
-The first connection provides the temporary source onlineID and the second is
-the recipient. Two clients are required because a single client may suppress
-audio attributed to its own player. With only one client the probe remains in
-`WAIT` and does not consume its single attempt.
+With one client, that connection supplies both the temporary source onlineID
+and recipient GUID. Logs mark this as `mode=self-target` and
+`selfSuppressionPossible=true`. Silence in this mode is inconclusive because
+the client may suppress audio attributed to its own player. With two clients,
+the first connection is the source identity and the second is the recipient.
 
 `SEND_RETURN` proves only that the Java/native call returned without an
 exception. Audible delivery must still be confirmed in game.
@@ -52,10 +53,9 @@ exception. Audible delivery must still be confirmed in game.
 ## Expected server log
 
 ```text
-[InternetRadioBridge][BOOT] version=0.8.3; ...
+[InternetRadioBridge][BOOT] version=0.8.4; ...
 [InternetRadioBridge][SERVER_HOOK_OK] ServerMap.preupdate; ...
 [InternetRadioBridge][WAIT] no fully-connected player ...
-[InternetRadioBridge][WAIT] one fully-connected player found; two clients ...
 [InternetRadioBridge][VOICE_STATE] serverEnabled=true; sampleRate=...; ...
 [InternetRadioBridge][TARGET] sourceGuid=...; sourceOnlineId=...; ...
 [InternetRadioBridge][DIRECT_TEST] guid=...; onlineId=...; bytes=...; ...
@@ -105,11 +105,12 @@ For a standard Dedicated Server installation, load the exact JAR before `-cp`:
 ## Test procedure
 
 1. Update Workshop item `3783046891` and fully restart the server.
-2. Confirm Leaf reports `lcc-internet-radio-server-bridge 0.8.3`.
+2. Confirm Leaf reports `lcc-internet-radio-server-bridge 0.8.4`.
 3. Confirm `[BOOT]` and `[SERVER_HOOK_OK]` appear.
-4. Connect two ordinary clients with VOIP enabled.
-5. Wait at least ten seconds after both clients finish loading.
-6. Record whether the second client hears a four-second 440 Hz tone.
+4. Connect the available ordinary client with VOIP enabled.
+5. Wait at least ten seconds after it finishes loading.
+6. Record whether it hears a four-second 440 Hz tone, but do not treat silence
+   in `self-target` mode as proof that direct injection failed.
 7. Save both client logs and the server log.
 
 No radio or 104.6 tuning is used in this phase. Frequency routing is the next
@@ -125,7 +126,7 @@ test only if direct delivery works.
 F11 remains the confirmed control for packaged audio and moving vehicle
 positioning; it is independent of this RakVoice probe.
 
-## Decision after 0.8.3
+## Decision after 0.8.4
 
 - If direct delivery works, the next probe adds radio routing on 104.6 MHz.
 - If `SendFrame()` returns but clients consistently receive no audio with valid

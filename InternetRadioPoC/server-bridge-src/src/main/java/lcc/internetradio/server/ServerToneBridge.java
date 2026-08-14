@@ -10,7 +10,7 @@ import zombie.network.GameServer;
 
 /** Server-only Phase 0 probe for RakVoice.SendFrame after RVInitServer. */
 public final class ServerToneBridge {
-    public static final String VERSION = "0.8.3";
+    public static final String VERSION = "0.8.4";
 
     private static final long TEST_DELAY_MS = 5_000L;
     private static final long TONE_DURATION_MS = 4_000L;
@@ -21,7 +21,6 @@ public final class ServerToneBridge {
     private static final AtomicBoolean HOOK_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean ENGINE_WAIT_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean CONNECTION_WAIT_LOGGED = new AtomicBoolean();
-    private static final AtomicBoolean SECOND_CONNECTION_WAIT_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean VOICE_STATE_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean VOICE_DISABLED_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean TARGET_LOGGED = new AtomicBoolean();
@@ -67,15 +66,6 @@ public final class ServerToneBridge {
                 return;
             }
 
-            if (connected.size() < 2) {
-                eligibleSince = 0L;
-                if (SECOND_CONNECTION_WAIT_LOGGED.compareAndSet(false, true)) {
-                    log("WAIT", "one fully-connected player found; two clients"
-                            + " are required for the cross-client probe");
-                }
-                return;
-            }
-
             logVoiceStateOnce();
             if (!RakVoice.GetServerVOIPEnable()) {
                 if (VOICE_DISABLED_LOGGED.compareAndSet(false, true)) {
@@ -88,17 +78,20 @@ public final class ServerToneBridge {
             if (eligibleSince == 0L) eligibleSince = now;
 
             Target source = connected.get(0);
-            Target recipient = connected.get(1);
+            Target recipient = connected.size() >= 2 ? connected.get(1) : source;
+
+            if (now - eligibleSince < TEST_DELAY_MS) return;
+            if (!PROBE_STARTED.compareAndSet(false, true)) return;
+
             if (TARGET_LOGGED.compareAndSet(false, true)) {
+                boolean selfTarget = source.guid == recipient.guid;
                 log("TARGET", "sourceGuid=" + source.guid
                         + "; sourceOnlineId=" + source.playerId
                         + "; recipientGuid=" + recipient.guid
                         + "; connectedTargets=" + connected.size()
-                        + "; mode=cross-client");
+                        + "; mode=" + (selfTarget ? "self-target" : "cross-client")
+                        + "; selfSuppressionPossible=" + selfTarget);
             }
-
-            if (now - eligibleSince < TEST_DELAY_MS) return;
-            if (!PROBE_STARTED.compareAndSet(false, true)) return;
 
             Thread worker = new Thread(
                     () -> sendTone(source, recipient),
@@ -156,6 +149,7 @@ public final class ServerToneBridge {
 
     private static void sendTone(Target source, Target recipient) {
         try {
+            boolean selfTarget = source.guid == recipient.guid;
             int sampleRate = RakVoice.GetSampleRate();
             int frameBytes = RakVoice.GetBufferSizeBytes();
             int framePeriodMs = RakVoice.GetSendFramePeriod();
@@ -179,7 +173,8 @@ public final class ServerToneBridge {
                     + "; bytes=" + frameBytes
                     + "; frames=" + framesToSend
                     + "; durationMs=" + TONE_DURATION_MS
-                    + "; toneHz=" + TONE_HZ);
+                    + "; toneHz=" + TONE_HZ
+                    + "; mode=" + (selfTarget ? "self-target" : "cross-client"));
 
             int sent = 0;
             long nextFrameAt = System.nanoTime();
@@ -212,7 +207,9 @@ public final class ServerToneBridge {
             }
 
             log("DIRECT_RESULT", "sendFrameReturned=true; framesSent=" + sent
-                    + "; audibleResult=must-be-confirmed-in-game"
+                    + "; audibleResult=" + (selfTarget
+                            ? "inconclusive-if-silent-self-voice-may-be-suppressed"
+                            : "must-be-confirmed-in-game")
                     + "; sourceOnlineId=" + source.playerId
                     + "; recipientGuid=" + recipient.guid);
         } catch (Throwable error) {

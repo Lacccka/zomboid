@@ -1,7 +1,7 @@
 {
     "schemaVersion": 1,
     "id": "lcc-internet-radio-server-bridge",
-    "version": "0.8.3",
+    "version": "0.8.4",
     "name": "LCC Internet Radio Server Voice Bridge",
     "description": "Server-only deterministic RakVoice direct-injection probe.",
     "authors": ["Lacccka"],

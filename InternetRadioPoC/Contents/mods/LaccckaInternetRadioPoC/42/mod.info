@@ -2,5 +2,5 @@ name=Internet Vehicle Radio - WIVK-FM PoC
 id=LaccckaInternetRadioPoC
 author=Lacccka
 description=Build 42 vehicle sound control plus deterministic server-only RakVoice direct probe. F11 remains the packaged vehicle control.
-modversion=0.8.3
+modversion=0.8.4
 versionMin=42.20.0
