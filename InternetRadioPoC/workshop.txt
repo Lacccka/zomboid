@@ -1,6 +1,6 @@
 version=1
 id=3783046891
 title=Internet Vehicle Radio - WIVK-FM PoC
-description=Build 42 multiplayer internet-radio PoC using built-in FMOD through Lua. No external client installation.
+description=Build 42.20.2 Workshop-only internet-stream compatibility probe. The tested Lua client exposes no HTTP/AAC playback backend; 0.3.1 disables the failed path safely and requires no external installation.
 tags=Build 42;Multiplayer
 visibility=unlisted
