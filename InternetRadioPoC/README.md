@@ -1,65 +1,72 @@
-# Internet Vehicle Radio — registered sound parser fix 0.5.1
+# Internet Vehicle Radio — automatic download PoC 0.6.0
 
 Workshop-only playback probe for Project Zomboid Build 42.20.2 multiplayer.
 
 Workshop ID: `3783046891`  
 Mod ID: `LaccckaInternetRadioPoC`
 
-## Confirmed by 0.4.1
+## Confirmed by 0.5.1
 
-- `test.wav` plays by its short name.
-- `vehicle:getEmitter():playSound("test")` returns a non-zero handle.
-- The sound source moves with the vehicle.
-- Passing an absolute WAV path directly to the vehicle emitter returns handle
-  `0` and does not play.
+- The packaged `GameSound` is parsed and known by the game.
+- F10 plays it positionally at the player's square.
+- F11 plays it through the vehicle emitter with a non-zero handle and
+  `isPlaying=true`.
+- F9 retrieves the registered `GameSoundClip`, whose file is
+  `media/sound/test.wav`, and plays it directly through the vehicle emitter.
+- The emitter source moves with the vehicle.
 
-The vehicle and 3D-audio portion is therefore working. The remaining problem is
-how to make a file obtained at runtime visible to FMOD under a usable sound
-name.
+This confirms the supported sound-name, clip, emitter, 3D position, and moving
+vehicle portions of the architecture.
 
-## Result from 0.5.0
+## New F8 test
 
-Build 42 removed `LCCInternetRadioTest` while parsing its sound script because
-`distanceMin` and `distanceMax` were written as decimal values. These fields
-are parsed as integers in B42. F10 therefore received an empty automatically
-created sound and F11 returned handle `0`.
+F8 tests the remaining Workshop-only file bridge without requiring any manual
+client installation:
 
-The runtime clip experiment also established that `GameSoundClip` can be read
-from Lua, but its public Java field cannot be assigned with `clip.file = ...`.
-Version 0.5.1 removes that blocked write and cannot produce that error.
+1. PZ downloads a finite public test WAV with `getUrlInputStream`.
+2. The returned binary bytes are saved with `getFileOutput` under
+   `Zomboid/Lua/LCCInternetRadioPoC/downloaded-test.wav`.
+3. Lua writes a temporary sound definition beside it.
+4. `GameSounds.ReloadFile` registers the temporary sound as
+   `LCCInternetRadioDownloadedTest`.
+5. The vehicle emitter plays that downloaded sound by its registered name.
 
-## What 0.5.1 changes
+The external file is a small public-domain/licensed-for-reuse audio test from
+the public `ArtskydJ/test-audio` repository. It is deliberately a very short
+drip sound, not WIVK music. The dynamic sound loops so it is easy to hear and
+stops when another test starts or the game exits.
 
-The WAV remains registered as the normal `GameSound`
-`LCCInternetRadioTest`, but its distances now use the B42-compatible integers
-`3` and `30`.
-
-There is no `OnTick`, vehicle enumeration, HTTP request, AAC/HLS decoder,
-`luajava`, Leaf, or external client installation. Every experimental Java/Lua
-boundary call is isolated with `pcall`, so an unsupported operation produces a
-single labelled log line instead of a recurring error flood.
+No `OnTick`, vehicle enumeration, Java mod, Leaf loader, native library, or
+manual client installation is used. The server does not download or relay the
+audio.
 
 ## Test order
 
-After the Workshop item updates, fully restart the game and join the server.
+After uploading the Workshop update, fully restart both server and client.
 
-1. Press `F10` on foot. The WAV should play at the player's square through the
-   registered sound name.
-2. Sit inside a vehicle and press `F11`. The WAV should play from the vehicle
-   and move with it. This is the registered-name control.
-3. Still inside the vehicle, press `F9`. The mod obtains the registered
-   `GameSoundClip` read-only and calls `vehicleEmitter:playClip(clip, vehicle)`.
+1. Sit inside a vehicle.
+2. Press `F8` once. A short pause while 37 KB downloads is possible.
+3. Listen for the repeating downloaded drip sound and drive a few tiles.
+4. Press `F11` to stop it and confirm the packaged music still works.
 
-F9 must no longer perform or report `clip.file = absolute path`. It is a safe
-control that confirms whether the exposed `playClip` method works with a
-properly parsed registered clip.
-
-The client log prefix is:
+The decisive successful F8 lines are:
 
 ```text
-[LCC Internet Radio PoC]
+getFileInput(downloaded WAV): OK; returned=java.io.DataInputStream@...
+GameSounds.isKnownSound(downloaded): OK; returned=true
+downloaded clip:getFile: OK; returned=.../Zomboid/Lua/LCCInternetRadioPoC/downloaded-test.wav
+vehicle emitter:playSound(downloaded name): OK; returned=<non-zero handle>
+vehicle emitter:isPlaying: OK; returned=true
 ```
 
-Please report whether each key was audible and include the complete labelled
-blocks. The important startup line is
-`GameSounds.isKnownSound(LCCInternetRadioTest): OK; returned=true`.
+If F8 fails, provide the complete block from
+`automatic WAV download ... started` through its stop/finish line. F9, F10,
+and F11 remain unchanged controls.
+
+## Decision after F8
+
+If F8 succeeds, the mod can automatically download finite HLS-derived audio
+segments, generate or refresh a named sound slot, and attach that slot to a
+vehicle without any client-side installation outside Steam Workshop. The next
+step will replace the public test WAV with station segment acquisition and add
+buffered segment rotation.
