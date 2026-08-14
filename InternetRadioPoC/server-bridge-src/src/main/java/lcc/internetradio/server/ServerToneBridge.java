@@ -3,6 +3,7 @@ package lcc.internetradio.server;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import zombie.characters.IsoPlayer;
 import zombie.core.raknet.RakVoice;
 import zombie.core.raknet.UdpConnection;
 import zombie.core.raknet.UdpEngine;
@@ -10,7 +11,7 @@ import zombie.network.GameServer;
 
 /** Server-only Phase 0 probe for RakVoice.SendFrame after RVInitServer. */
 public final class ServerToneBridge {
-    public static final String VERSION = "0.8.5";
+    public static final String VERSION = "0.8.6";
 
     private static final long MONITOR_PERIOD_MS = 250L;
     private static final long TEST_DELAY_MS = 5_000L;
@@ -142,21 +143,15 @@ public final class ServerToneBridge {
             if (!(value instanceof UdpConnection)) continue;
             UdpConnection connection = (UdpConnection) value;
             if (!connection.isFullyConnected()) continue;
-            short playerId = firstPlayerId(connection.playerIDs);
+            IsoPlayer player = GameServer.getAnyPlayerFromConnection(connection);
+            if (player == null) continue;
+            short playerId = player.getOnlineID();
             if (playerId < 0) continue;
             long guid = connection.getConnectedGUID();
             if (guid == 0L) continue;
             result.add(new Target(guid, playerId));
         }
         return result;
-    }
-
-    private static short firstPlayerId(short[] playerIds) {
-        if (playerIds == null) return -1;
-        for (short playerId : playerIds) {
-            if (playerId >= 0) return playerId;
-        }
-        return -1;
     }
 
     private static void logVoiceStateOnce() {
