@@ -22,9 +22,77 @@ local CONFIG = {
 local activeStreams = {}
 local retryAt = {}
 local tickNumber = 0
+local vehicleCollectionMode = nil
+local presetCollectionMode = nil
+local collectionWarnings = {}
 
 local function log(message)
     print(MOD_TAG .. " " .. tostring(message))
+end
+
+local function collectionSize(collection)
+    if not collection then
+        return 0
+    end
+
+    local ok, count = pcall(function()
+        return collection:size()
+    end)
+    if ok and type(count) == "number" then
+        return count
+    end
+
+    ok, count = pcall(function()
+        return #collection
+    end)
+    if ok and type(count) == "number" then
+        return count
+    end
+
+    return 0
+end
+
+local function collectionGet(collection, index, mode)
+    if not collection then
+        return nil, "unsupported"
+    end
+
+    if mode == nil or mode == "java" then
+        local ok, value = pcall(function()
+            return collection:get(index)
+        end)
+        if ok then
+            return value, "java"
+        end
+    end
+
+    if mode == nil or mode == "zero-based" then
+        local ok, value = pcall(function()
+            return collection[index]
+        end)
+        if ok and value ~= nil then
+            return value, "zero-based"
+        end
+    end
+
+    if mode == nil or mode == "one-based" then
+        local ok, value = pcall(function()
+            return collection[index + 1]
+        end)
+        if ok and value ~= nil then
+            return value, "one-based"
+        end
+    end
+
+    return nil, "unsupported"
+end
+
+local function warnUnsupportedCollection(name)
+    if collectionWarnings[name] then
+        return
+    end
+    collectionWarnings[name] = true
+    log("cannot read " .. name .. " collection on this B42 client; update loop skipped")
 end
 
 local function vehicleKey(vehicle)
@@ -56,17 +124,23 @@ local function ensureStationPreset(deviceData)
         return
     end
 
-    for index = 0, entries:size() - 1 do
-        local entry = entries:get(index)
+    local entryCount = collectionSize(entries)
+    for index = 0, entryCount - 1 do
+        local entry
+        entry, presetCollectionMode = collectionGet(entries, index, presetCollectionMode)
+        if presetCollectionMode == "unsupported" then
+            warnUnsupportedCollection("radio presets")
+            return
+        end
         if entry and entry:getFrequency() == CONFIG.frequency then
             return
         end
     end
 
-    if entries:size() >= presets:getMaxPresets() then
+    if entryCount >= presets:getMaxPresets() then
         -- Preserve every existing preset. This max-count change stays local because
         -- the PoC deliberately never calls transmitPresets().
-        presets:setMaxPresets(entries:size() + 1)
+        presets:setMaxPresets(entryCount + 1)
     end
 
     -- Client-only UI hint. Do not call transmitPresets(): vanilla SetChannel is
@@ -229,8 +303,14 @@ local function update()
     end
 
     local seen = {}
-    for index = 0, vehicles:size() - 1 do
-        local vehicle = vehicles:get(index)
+    local vehicleCount = collectionSize(vehicles)
+    for index = 0, vehicleCount - 1 do
+        local vehicle
+        vehicle, vehicleCollectionMode = collectionGet(vehicles, index, vehicleCollectionMode)
+        if vehicleCollectionMode == "unsupported" then
+            warnUnsupportedCollection("vehicles")
+            break
+        end
         if vehicle then
             updateVehicle(player, vehicle, seen)
         end
