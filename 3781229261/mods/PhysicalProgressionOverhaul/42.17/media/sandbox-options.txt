@@ -1,0 +1,510 @@
+VERSION = 1,
+
+option PhysicalProgressionOverhaul.MultiplierCapLevels01
+{
+    type = integer,
+    min = 1,
+    max = 50,
+    default = 3,
+    page = PPO_Multiplier,
+    translation = PhysicalProgressionOverhaul_MultiplierCapLevels01,
+    tooltip = PhysicalProgressionOverhaul_MultiplierCapLevels01_tooltip,
+}
+
+option PhysicalProgressionOverhaul.MultiplierCapLevels23
+{
+    type = integer,
+    min = 1,
+    max = 50,
+    default = 5,
+    page = PPO_Multiplier,
+    translation = PhysicalProgressionOverhaul_MultiplierCapLevels23,
+    tooltip = PhysicalProgressionOverhaul_MultiplierCapLevels23_tooltip,
+}
+
+option PhysicalProgressionOverhaul.MultiplierCapLevels45
+{
+    type = integer,
+    min = 1,
+    max = 50,
+    default = 8,
+    page = PPO_Multiplier,
+    translation = PhysicalProgressionOverhaul_MultiplierCapLevels45,
+    tooltip = PhysicalProgressionOverhaul_MultiplierCapLevels45_tooltip,
+}
+
+option PhysicalProgressionOverhaul.MultiplierCapLevels67
+{
+    type = integer,
+    min = 1,
+    max = 50,
+    default = 12,
+    page = PPO_Multiplier,
+    translation = PhysicalProgressionOverhaul_MultiplierCapLevels67,
+    tooltip = PhysicalProgressionOverhaul_MultiplierCapLevels67_tooltip,
+}
+
+option PhysicalProgressionOverhaul.MultiplierCapLevels89
+{
+    type = integer,
+    min = 1,
+    max = 50,
+    default = 16,
+    page = PPO_Multiplier,
+    translation = PhysicalProgressionOverhaul_MultiplierCapLevels89,
+    tooltip = PhysicalProgressionOverhaul_MultiplierCapLevels89_tooltip,
+}
+
+option PhysicalProgressionOverhaul.ShareAdaptationPercent
+{
+    type = integer,
+    min = 0,
+    max = 100,
+    default = 60,
+    page = PPO_Multiplier,
+    translation = PhysicalProgressionOverhaul_ShareAdaptationPercent,
+    tooltip = PhysicalProgressionOverhaul_ShareAdaptationPercent_tooltip,
+}
+
+option PhysicalProgressionOverhaul.ShareProteinPercent
+{
+    type = integer,
+    min = 0,
+    max = 100,
+    default = 10,
+    page = PPO_Multiplier,
+    translation = PhysicalProgressionOverhaul_ShareProteinPercent,
+    tooltip = PhysicalProgressionOverhaul_ShareProteinPercent_tooltip,
+}
+
+option PhysicalProgressionOverhaul.ShareCreatinePercent
+{
+    type = integer,
+    min = 0,
+    max = 100,
+    default = 10,
+    page = PPO_Multiplier,
+    translation = PhysicalProgressionOverhaul_ShareCreatinePercent,
+    tooltip = PhysicalProgressionOverhaul_ShareCreatinePercent_tooltip,
+}
+
+option PhysicalProgressionOverhaul.ShareSleepPercent
+{
+    type = integer,
+    min = 0,
+    max = 100,
+    default = 10,
+    page = PPO_Multiplier,
+    translation = PhysicalProgressionOverhaul_ShareSleepPercent,
+    tooltip = PhysicalProgressionOverhaul_ShareSleepPercent_tooltip,
+}
+
+option PhysicalProgressionOverhaul.ShareFuelPercent
+{
+    type = integer,
+    min = 0,
+    max = 100,
+    default = 10,
+    page = PPO_Multiplier,
+    translation = PhysicalProgressionOverhaul_ShareFuelPercent,
+    tooltip = PhysicalProgressionOverhaul_ShareFuelPercent_tooltip,
+}
+
+option PhysicalProgressionOverhaul.AdaptationGainScale
+{
+    type = double,
+    min = 0.25,
+    max = 4.0,
+    default = 1.0,
+    page = PPO_Adaptation,
+    translation = PhysicalProgressionOverhaul_AdaptationGainScale,
+    tooltip = PhysicalProgressionOverhaul_AdaptationGainScale_tooltip,
+}
+
+option PhysicalProgressionOverhaul.AdaptationCreditCap
+{
+    type = double,
+    min = 0.15,
+    max = 1.20,
+    default = 0.60,
+    page = PPO_Adaptation,
+    translation = PhysicalProgressionOverhaul_AdaptationCreditCap,
+    tooltip = PhysicalProgressionOverhaul_AdaptationCreditCap_tooltip,
+}
+
+option PhysicalProgressionOverhaul.AdaptationConversionHours
+{
+    type = integer,
+    min = 6,
+    max = 96,
+    default = 24,
+    page = PPO_Adaptation,
+    translation = PhysicalProgressionOverhaul_AdaptationConversionHours,
+    tooltip = PhysicalProgressionOverhaul_AdaptationConversionHours_tooltip,
+}
+
+option PhysicalProgressionOverhaul.AdaptationDecay
+{
+    type = boolean,
+    default = true,
+    page = PPO_Adaptation,
+    translation = PhysicalProgressionOverhaul_AdaptationDecay,
+    tooltip = PhysicalProgressionOverhaul_AdaptationDecay_tooltip,
+}
+
+option PhysicalProgressionOverhaul.AdaptationGraceHours
+{
+    type = integer,
+    min = 0,
+    max = 336,
+    default = 72,
+    page = PPO_Adaptation,
+    translation = PhysicalProgressionOverhaul_AdaptationGraceHours,
+    tooltip = PhysicalProgressionOverhaul_AdaptationGraceHours_tooltip,
+}
+
+option PhysicalProgressionOverhaul.AdaptationDecayDays
+{
+    type = integer,
+    min = 5,
+    max = 120,
+    default = 30,
+    page = PPO_Adaptation,
+    translation = PhysicalProgressionOverhaul_AdaptationDecayDays,
+    tooltip = PhysicalProgressionOverhaul_AdaptationDecayDays_tooltip,
+}
+
+option PhysicalProgressionOverhaul.AdaptationMinimumTrainingMinutes
+{
+    type = integer,
+    min = 10,
+    max = 30,
+    default = 10,
+    page = PPO_Adaptation,
+    translation = PhysicalProgressionOverhaul_AdaptationMinimumTrainingMinutes,
+    tooltip = PhysicalProgressionOverhaul_AdaptationMinimumTrainingMinutes_tooltip,
+}
+
+option PhysicalProgressionOverhaul.AdaptationFullQualityTrainingMinutes
+{
+    type = integer,
+    min = 10,
+    max = 60,
+    default = 20,
+    page = PPO_Adaptation,
+    translation = PhysicalProgressionOverhaul_AdaptationFullQualityTrainingMinutes,
+    tooltip = PhysicalProgressionOverhaul_AdaptationFullQualityTrainingMinutes_tooltip,
+}
+
+option PhysicalProgressionOverhaul.TrainingBudgetMinutes
+{
+    type = integer,
+    min = 0,
+    max = 180,
+    default = 45,
+    page = PPO_Adaptation,
+    translation = PhysicalProgressionOverhaul_TrainingBudgetMinutes,
+    tooltip = PhysicalProgressionOverhaul_TrainingBudgetMinutes_tooltip,
+}
+
+option PhysicalProgressionOverhaul.TrainingBudgetRecoveryHours
+{
+    type = integer,
+    min = 6,
+    max = 168,
+    default = 24,
+    page = PPO_Adaptation,
+    translation = PhysicalProgressionOverhaul_TrainingBudgetRecoveryHours,
+    tooltip = PhysicalProgressionOverhaul_TrainingBudgetRecoveryHours_tooltip,
+}
+
+option PhysicalProgressionOverhaul.ExerciseBonusDecay
+{
+    type = boolean,
+    default = true,
+    page = PPO_Adaptation,
+    translation = PhysicalProgressionOverhaul_ExerciseBonusDecay,
+    tooltip = PhysicalProgressionOverhaul_ExerciseBonusDecay_tooltip,
+}
+
+option PhysicalProgressionOverhaul.SleepInfluence
+{
+    type = enum,
+    numValues = 2,
+    default = 1,
+    page = PPO_Recovery,
+    translation = PhysicalProgressionOverhaul_SleepInfluence,
+    valueTranslation = PhysicalProgressionOverhaul_SleepInfluence,
+    tooltip = PhysicalProgressionOverhaul_SleepInfluence_tooltip,
+}
+
+option PhysicalProgressionOverhaul.ReadinessFatiguePenalty
+{
+    type = integer,
+    min = 0,
+    max = 100,
+    default = 30,
+    page = PPO_Recovery,
+    translation = PhysicalProgressionOverhaul_ReadinessFatiguePenalty,
+    tooltip = PhysicalProgressionOverhaul_ReadinessFatiguePenalty_tooltip,
+}
+
+option PhysicalProgressionOverhaul.ReadinessFuelPenalty
+{
+    type = integer,
+    min = 0,
+    max = 100,
+    default = 20,
+    page = PPO_Recovery,
+    translation = PhysicalProgressionOverhaul_ReadinessFuelPenalty,
+    tooltip = PhysicalProgressionOverhaul_ReadinessFuelPenalty_tooltip,
+}
+
+option PhysicalProgressionOverhaul.ReadinessFloorPercent
+{
+    type = integer,
+    min = 0,
+    max = 100,
+    default = 50,
+    page = PPO_Recovery,
+    translation = PhysicalProgressionOverhaul_ReadinessFloorPercent,
+    tooltip = PhysicalProgressionOverhaul_ReadinessFloorPercent_tooltip,
+}
+
+option PhysicalProgressionOverhaul.ToneMaxDurationHours
+{
+    type = integer,
+    min = 1,
+    max = 24,
+    default = 24,
+    page = PPO_Recovery,
+    translation = PhysicalProgressionOverhaul_ToneMaxDurationHours,
+    tooltip = PhysicalProgressionOverhaul_ToneMaxDurationHours_tooltip,
+}
+
+option PhysicalProgressionOverhaul.ToneCarryStage1
+{
+    type = integer,
+    min = 0,
+    max = 30,
+    default = 2,
+    page = PPO_Recovery,
+    translation = PhysicalProgressionOverhaul_ToneCarryStage1,
+    tooltip = PhysicalProgressionOverhaul_ToneCarryStage1_tooltip,
+}
+
+option PhysicalProgressionOverhaul.ToneCarryStage2
+{
+    type = integer,
+    min = 0,
+    max = 30,
+    default = 4,
+    page = PPO_Recovery,
+    translation = PhysicalProgressionOverhaul_ToneCarryStage2,
+    tooltip = PhysicalProgressionOverhaul_ToneCarryStage2_tooltip,
+}
+
+option PhysicalProgressionOverhaul.ToneCarryStage3
+{
+    type = integer,
+    min = 0,
+    max = 30,
+    default = 6,
+    page = PPO_Recovery,
+    translation = PhysicalProgressionOverhaul_ToneCarryStage3,
+    tooltip = PhysicalProgressionOverhaul_ToneCarryStage3_tooltip,
+}
+
+option PhysicalProgressionOverhaul.ToneEnduranceStage1
+{
+    type = integer,
+    min = 0,
+    max = 100,
+    default = 5,
+    page = PPO_Recovery,
+    translation = PhysicalProgressionOverhaul_ToneEnduranceStage1,
+    tooltip = PhysicalProgressionOverhaul_ToneEnduranceStage1_tooltip,
+}
+
+option PhysicalProgressionOverhaul.ToneEnduranceStage2
+{
+    type = integer,
+    min = 0,
+    max = 100,
+    default = 10,
+    page = PPO_Recovery,
+    translation = PhysicalProgressionOverhaul_ToneEnduranceStage2,
+    tooltip = PhysicalProgressionOverhaul_ToneEnduranceStage2_tooltip,
+}
+
+option PhysicalProgressionOverhaul.ToneEnduranceStage3
+{
+    type = integer,
+    min = 0,
+    max = 100,
+    default = 15,
+    page = PPO_Recovery,
+    translation = PhysicalProgressionOverhaul_ToneEnduranceStage3,
+    tooltip = PhysicalProgressionOverhaul_ToneEnduranceStage3_tooltip,
+}
+
+option PhysicalProgressionOverhaul.EnduranceRefundEnabled
+{
+    type = boolean,
+    default = true,
+    page = PPO_Recovery,
+    translation = PhysicalProgressionOverhaul_EnduranceRefundEnabled,
+    tooltip = PhysicalProgressionOverhaul_EnduranceRefundEnabled_tooltip,
+}
+
+option PhysicalProgressionOverhaul.NutritionSupportDurationHours
+{
+    type = integer,
+    min = 6,
+    max = 336,
+    default = 24,
+    page = PPO_Supplements,
+    translation = PhysicalProgressionOverhaul_NutritionSupportDurationHours,
+    tooltip = PhysicalProgressionOverhaul_NutritionSupportDurationHours_tooltip,
+}
+
+option PhysicalProgressionOverhaul.SupplementCourseDurationHours
+{
+    type = integer,
+    min = 12,
+    max = 720,
+    default = 48,
+    page = PPO_Supplements,
+    translation = PhysicalProgressionOverhaul_SupplementCourseDurationHours,
+    tooltip = PhysicalProgressionOverhaul_SupplementCourseDurationHours_tooltip,
+}
+
+option PhysicalProgressionOverhaul.SupplementOnsetHours
+{
+    type = integer,
+    min = 1,
+    max = 168,
+    default = 24,
+    page = PPO_Supplements,
+    translation = PhysicalProgressionOverhaul_SupplementOnsetHours,
+    tooltip = PhysicalProgressionOverhaul_SupplementOnsetHours_tooltip,
+}
+
+option PhysicalProgressionOverhaul.CourseCeilingAnabolic
+{
+    type = integer,
+    min = 0,
+    max = 100,
+    default = 40,
+    page = PPO_Supplements,
+    translation = PhysicalProgressionOverhaul_CourseCeilingAnabolic,
+    tooltip = PhysicalProgressionOverhaul_CourseCeilingAnabolic_tooltip,
+}
+
+option PhysicalProgressionOverhaul.CourseCeilingCardio
+{
+    type = integer,
+    min = 0,
+    max = 100,
+    default = 40,
+    page = PPO_Supplements,
+    translation = PhysicalProgressionOverhaul_CourseCeilingCardio,
+    tooltip = PhysicalProgressionOverhaul_CourseCeilingCardio_tooltip,
+}
+
+option PhysicalProgressionOverhaul.SupplementCourseSideEffects
+{
+    type = integer,
+    min = 0,
+    max = 200,
+    default = 100,
+    page = PPO_Supplements,
+    translation = PhysicalProgressionOverhaul_SupplementCourseSideEffects,
+    tooltip = PhysicalProgressionOverhaul_SupplementCourseSideEffects_tooltip,
+}
+
+option PhysicalProgressionOverhaul.SupplementCourseWithdrawal
+{
+    type = boolean,
+    default = true,
+    page = PPO_Supplements,
+    translation = PhysicalProgressionOverhaul_SupplementCourseWithdrawal,
+    tooltip = PhysicalProgressionOverhaul_SupplementCourseWithdrawal_tooltip,
+}
+
+option PhysicalProgressionOverhaul.SupplementStimulantHours
+{
+    type = integer,
+    min = 0,
+    max = 72,
+    default = 24,
+    page = PPO_Supplements,
+    translation = PhysicalProgressionOverhaul_SupplementStimulantHours,
+    tooltip = PhysicalProgressionOverhaul_SupplementStimulantHours_tooltip,
+}
+
+option PhysicalProgressionOverhaul.StimulantTankServings
+{
+    type = integer,
+    min = 1,
+    max = 10,
+    default = 2,
+    page = PPO_Supplements,
+    translation = PhysicalProgressionOverhaul_StimulantTankServings,
+    tooltip = PhysicalProgressionOverhaul_StimulantTankServings_tooltip,
+}
+
+option PhysicalProgressionOverhaul.SupplementThermogenicHours
+{
+    type = integer,
+    min = 0,
+    max = 72,
+    default = 12,
+    page = PPO_Supplements,
+    translation = PhysicalProgressionOverhaul_SupplementThermogenicHours,
+    tooltip = PhysicalProgressionOverhaul_SupplementThermogenicHours_tooltip,
+}
+
+option PhysicalProgressionOverhaul.ThermogenicTankServings
+{
+    type = integer,
+    min = 1,
+    max = 10,
+    default = 5,
+    page = PPO_Supplements,
+    translation = PhysicalProgressionOverhaul_ThermogenicTankServings,
+    tooltip = PhysicalProgressionOverhaul_ThermogenicTankServings_tooltip,
+}
+
+option PhysicalProgressionOverhaul.LootCoursePreparations
+{
+    type = enum,
+    numValues = 7,
+    default = 5,
+    page = PPO_Loot,
+    translation = PhysicalProgressionOverhaul_LootCoursePreparations,
+    valueTranslation = Rarity,
+    tooltip = PhysicalProgressionOverhaul_LootCoursePreparations_tooltip,
+}
+
+option PhysicalProgressionOverhaul.LootSportsNutrition
+{
+    type = enum,
+    numValues = 7,
+    default = 5,
+    page = PPO_Loot,
+    translation = PhysicalProgressionOverhaul_LootSportsNutrition,
+    valueTranslation = Rarity,
+    tooltip = PhysicalProgressionOverhaul_LootSportsNutrition_tooltip,
+}
+
+option PhysicalProgressionOverhaul.LootTrainingAids
+{
+    type = enum,
+    numValues = 7,
+    default = 5,
+    page = PPO_Loot,
+    translation = PhysicalProgressionOverhaul_LootTrainingAids,
+    valueTranslation = Rarity,
+    tooltip = PhysicalProgressionOverhaul_LootTrainingAids_tooltip,
+}

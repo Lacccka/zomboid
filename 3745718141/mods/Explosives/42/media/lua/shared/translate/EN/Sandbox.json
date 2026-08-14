@@ -1,0 +1,17 @@
+{
+    "Sandbox_ExplosivesOptions": "US Military Grenades",
+    "Sandbox_ExplosivesOptions_LootMultiplier": "Loot Multiplier",
+    "Sandbox_ExplosivesOptions_LootMultiplier_tooltip": "Multiplies the spawn chance of all grenades and mines in loot containers. 0.5 = half as frequent, 1.0 = default, 2.0 = twice as frequent.",
+    "Sandbox_ExplosivesOptions_VanillaBallisticsEnabled": "Apply Ballistic Arc to Vanilla Throwables",
+    "Sandbox_ExplosivesOptions_VanillaBallisticsEnabled_tooltip": "Off by default. When enabled, the mod's custom throw arc and ground-target marker also apply to vanilla Pipe Bombs, Aerosol Bombs, Smoke Bombs, Flame Traps, Noise Traps, Firecrackers, and Molotov Cocktails (including their sensor, remote, and timer variants where they exist), instead of only this mod's own grenades.",
+    "Sandbox_ExplosivesOptions_FireDamageEnabled": "Enhanced Fire Damage",
+    "Sandbox_ExplosivesOptions_FireDamageEnabled_tooltip": "When enabled, zombies take additional damage while on fire, regardless of the fire source. Disable to use vanilla fire behavior.",
+    "Sandbox_ExplosivesOptions_FireDamageMultiplier": "Fire Damage Multiplier",
+    "Sandbox_ExplosivesOptions_FireDamageMultiplier_tooltip": "Multiplies the additional fire damage dealt to burning zombies. 0.5 = about 30% faster than vanilla, 1.0 = about twice as fast, 5.0 = about five times faster than vanilla.",
+    "Sandbox_ExplosivesOptions_DelayedFuseEnabled": "Delayed Fuse on Landing",
+    "Sandbox_ExplosivesOptions_DelayedFuseEnabled_tooltip": "Off by default. When enabled, this mod's own grenades (Mk2, M26, M67, M84 Flashbang, M14 TH3) land and sit armed for a few seconds before exploding, instead of detonating immediately on impact. Does not affect mines/Claymores (which already land as placed traps) or vanilla throwables.",
+    "Sandbox_ExplosivesOptions_DelayedFuseSeconds": "Fuse Delay (seconds)",
+    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "How many seconds a landed grenade sits armed before exploding, when Delayed Fuse on Landing is enabled.",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled": "Enable Debug Spawn Key",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled_tooltip": "Off by default. When enabled, Shift + Numpad \"+\" (rebindable in Mod Options) spawns a single flashbang directly into your inventory for quick trajectory testing."
+}

@@ -1,0 +1,23 @@
+module ImmersiveVehiclePaint
+{
+    imports
+    {
+        Base
+    }
+
+    item AutomotivePaintingMag
+	{
+		DisplayCategory     = RecipeResource,
+		ItemType 		    = base:literature,
+		Weight 			    = 0.5,
+		Icon 			    = AutomotivePaintMagazine,
+		BoredomChange 	    = -20,
+        StressChange 	    = -15,
+		LearnedRecipes 	    = AutomotivePainting,
+        StaticModel         = Magazine,
+        WorldStaticModel    = ImmersiveVehiclePaint.AutomotivePaintMagazine,
+        Tooltip 		    = Tooltip_IVP_Item_AutomotivePaintingMag,
+        Tags 			    = base:magazine,
+        OnCreate            = SpecialLootSpawns.OnCreateRecipeMagazine,
+	}
+}

@@ -1,0 +1,10 @@
+{
+    "Tooltip_PPO_ProteinPowder": "只要體內還有蛋白質，力量和體態的成長就更快。<br>一份大約能維持一天。<br>乾粉會讓人口渴，最好用水沖開。",
+    "Tooltip_PPO_CreatineComplex": "只要體內還有肌酸，力量和體態的成長就更快。<br>一份大約能維持一天。<br>乾粉會讓人口渴，最好用水沖開。",
+    "Tooltip_PPO_CalorieGainer": "食物緊張時，一勺就能補上接近一天的熱量。<br>但一直喝下去，體重就會上去。<br>乾粉會讓人口渴，最好用水沖開。",
+    "Tooltip_PPO_ElectrolyteComplex": "奔跑途中或打鬥間隙來一口，迅速回氣重新站穩。<br>乾粉會讓人口渴，最好用水沖開。",
+    "Tooltip_PPO_PreWorkoutStimulant": "生效期間訓練不會留下痠痛，第二天早上手臂照樣聽使喚。<br>驅走疲憊。<br>但效果最多維持兩天，喝再多也一樣，多出的份量白白浪費。<br>乾粉會讓人口渴，最好用水沖開。",
+    "Tooltip_PPO_AnabolicPreparation": "一個療程能抬高力量成長可以推到的上限。<br>並非立刻見效，大約一天才積累起來。<br>但停藥之後身體會跌到平常之下，而且持續很久。",
+    "Tooltip_PPO_CardioPreparation": "一個療程能抬高體態成長可以推到的上限。<br>並非立刻見效，大約一天才積累起來。<br>但停藥之後身體會跌到平常之下，而且持續很久。",
+    "Tooltip_PPO_ThermogenicComplex": "拉高代謝：生效期間身體消耗熱量，體重掉得更快。<br>但體溫居高不下，熱得口渴難耐。<br>效果結束之後體重仍會繼續下降，直到熱量儲備恢復。"
+}

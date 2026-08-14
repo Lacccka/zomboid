@@ -1,0 +1,4194 @@
+module RussianAlbumsNewMusic
+{
+
+    sound RANM_ClassicDorogaVibe_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/01_01_vinyl_7b_molodye_vetra.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/02_01_vinyl_agas_chetyre_tatarina.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/03_02_vinyl_agas_aziya_evraziya.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/04_02_vinyl_agas_vorovskaya_dolya.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/05_03_vinyl_aleksandr_rozenbaum_izvozchik.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/06_03_vinyl_ariya_igra_s_ognyem_1989.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/07_04_vinyl_ariya_torero_1988.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/08_04_vinyl_basta_rostov_don.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/09_05_vinyl_ariya_ulitsa_roz_1988.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/10_05_vinyl_bumer_moskva_magadan.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/11_06_vinyl_butyrka_devchonka_s_tsentra.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/12_06_vinyl_chernikovskaya_hata_nazhmi_na_knopku.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_13
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/13_07_vinyl_butyrka_za_rostovskuyu_bratvu.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_14
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/14_07_vinyl_chernikovskaya_hata_stavlyu_na_zero.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_15
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/15_08_vinyl_chicherina_tu_lu_la.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_16
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/16_08_vinyl_conec_solnetnihy_dnei_eudu_daleko.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_17
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/17_09_vinyl_ddt_prosvistela.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_18
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/18_09_vinyl_eolika_karavana_1985.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_19
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/19_10_vinyl_gde_fantom_relsi.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_20
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/20_10_vinyl_kipelov_ya_svoboden.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_21
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/21_11_vinyl_gruppa_butyrka_a_dlya_vas_ya_nikto.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_22
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/22_11_vinyl_komissar_nashe_vremya_prishlo_1991.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_23
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/23_12_vinyl_kosmos_na_potolke_relsy.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_24
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/24_12_vinyl_leningrad_moskva.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_25
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/25_13_vinyl_krug_mihail_devochka_pay.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_26
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/26_13_vinyl_lyube_atas.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_27
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/27_14_vinyl_krug_mihail_kolshchik.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_28
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/28_14_vinyl_lyube_kombat_1992.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicDorogaVibe_29
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_doroga_vibe/29_15_vinyl_lyube_soldat.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/01_01_vinyl_abba_gimme.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/02_02_vinyl_aida_vedishcheva_pesenka_o_medvedyah.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/03_03_vinyl_aleksey_lebedinskiy_za_chto_gerasim_utopil_mumu.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/04_04_vinyl_baccara_i_can_boogie.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/05_05_vinyl_boney_m_daddy_cool.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/06_06_vinyl_bravo_chernyy_kot.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/07_07_vinyl_bravo_lyubite_devushki.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/08_08_vinyl_chernikovskaya_hata_ty_ne_ver_slezam.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/09_09_vinyl_dschinghis_khan_moskau.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/10_10_vinyl_durnojj_vkus_svetomuzyka.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/11_11_vinyl_e_rotic_max_dont_have_sex_with_your_ex.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/12_12_vinyl_elektroklub_igrushka_1990.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_13
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/13_13_vinyl_forum_davaite_sosvinimsya_1987.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_14
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/14_14_vinyl_glukoza_yura.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_15
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/15_15_vinyl_gruppa_na_na_faina.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_16
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/16_16_vinyl_ice_mc_think_about_the_way.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_17
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/17_17_vinyl_igorek_podozhdem_tvoyu_mat.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_18
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/18_18_vinyl_kar_men_chio_chio_san_1990.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_19
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/19_19_vinyl_kosmos_na_potolke_limonady.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_20
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/20_20_vinyl_kosmos_na_potolke_vecherinka.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_21
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/21_21_vinyl_larisa_mondrus_prosnis_i_poy.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicGoldWind_22
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_gold_wind/22_22_vinyl_laura_braningan_selfcontrol.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/01_01_vinyl_abba_sos.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/02_02_vinyl_apofeoz_toski_doroga.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/03_03_vinyl_apofeoz_toski_lift.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/04_04_vinyl_apoforez_toski_oblomki.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/05_05_vinyl_ariya_poteryannyy_ray.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/06_06_vinyl_buerak_grustno_s_toboi.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/07_07_vinyl_buerak_porazhenie.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/08_08_vinyl_chernikovskaya_hata_spektakl_okonchen.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/09_09_vinyl_ddt_chto_takoe_osen.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/10_10_vinyl_durnojj_vkus_ne_ukhodi.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/11_11_vinyl_electropticy_vso_zakonchitsa.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/12_12_vinyl_elektroklub_posledniye_svidaniye_1989.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_13
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/13_13_vinyl_elektroklub_proshalnyi_den_1987.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_14
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/14_14_vinyl_gde_fantom_chuzhaya_zhizn.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_15
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/15_15_vinyl_hi_fi_a_dozhd_na_oknah_risuet.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_16
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/16_16_vinyl_igor_kornelyuk_dozhdi.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_17
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/17_17_vinyl_igor_talkov_letnii_dozhd_1995.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_18
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/18_18_vinyl_komissar_ty_uidyesh_1991.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicItWillBeGood_19
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_it_will_be_good/19_zarqon_muzhchiny.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicKino_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_kino/01_01_01_kino_bezdelnik.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicKino_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_kino/02_02_02_kino_gruppa_krovi_1987.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicKino_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_kino/03_03_03_kino_konchitsya_leto.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicKino_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_kino/04_04_04_kino_mama_anarhiya.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicKino_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_kino/05_05_05_kino_nam_s_toboi_1990.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicKino_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_kino/06_06_06_kino_sledi_za_soboy.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicKino_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_kino/07_07_07_kino_spokoinya_notch.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicKino_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_kino/08_08_08_kino_trolleybus.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicKino_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_kino/09_09_09_kino_xochu_peremen_1989.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicKino_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_kino/10_10_10_kino_zvezda_po_imeni_solnste_1988.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicKino_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_kino/11_11_11_kino_v_tsoy_gruppa_krovi.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicKino_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_kino/12_12_12_kino_v_tsoy_peremen.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/01_01_vinyl_agas_romashka_belaya.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/02_01_vinyl_anna_german_nadezhda.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/03_02_vinyl_akula_malo.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/04_02_vinyl_ariel_v_krayu_magnoliy.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/05_03_vinyl_angliya_davai_poka.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/06_03_vinyl_buerak_na_starykh_sideniyakh_kinoteatra.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/07_04_vinyl_best_glukoza_nevesta.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/08_04_vinyl_durnoy_vkus_starye_plastinki.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/09_05_vinyl_bi_2_schaste_moe_gde_ty.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/10_05_vinyl_elektroklub_ty_pomnish_moskvu_1987.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/11_06_vinyl_bravo_feat_zhanna_aguzarova_kak_byt_bonus_track.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/12_06_vinyl_forum_ostrovok_1987.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_13
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/13_07_vinyl_chay_vdvoem_den_rozhdenya.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_14
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/14_07_vinyl_gde_fantom_starik.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_15
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/15_08_vinyl_elektroklub_ne_begi_1988.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_16
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/16_08_vinyl_igor_kornelyuk_gorod_kotorogo_net.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_17
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/17_09_vinyl_elektroklub_polchasa_1990.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_18
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/18_09_vinyl_igor_sklyar_komarovo.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_19
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/19_10_vinyl_eolika_prostiye_slova_1982.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_20
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/20_10_vinyl_igor_talkov_chistviye_prudy_1989.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_21
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/21_11_vinyl_igor_talkov_ya_vernus_1991.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_22
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/22_11_vinyl_irina_saltykova_serye_glaza.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_23
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/23_12_vinyl_komissar_eti_glaza_1991.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_24
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/24_13_vinyl_korotkaya_lyubov_kursk.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicLifeEnd_25
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_life_end/25_14_vinyl_lera_masskva_7_etazh.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicMistyroad_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_mistyroad/01_01_vinyl_7b_nekreshchenaya_luna.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicMistyroad_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_mistyroad/02_02_vinyl_alliyance_na_zare_1984.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicMistyroad_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_mistyroad/03_03_vinyl_alyans_na_zare.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicMistyroad_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_mistyroad/04_04_vinyl_angliya_skazochnyi_mir.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicMistyroad_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_mistyroad/05_05_vinyl_bi_2_polkovniku_nikto_ne_pishet.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicMistyroad_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_mistyroad/06_06_vinyl_bishkek_krysha.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicMistyroad_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_mistyroad/07_07_vinyl_brain_storm_veter.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicMistyroad_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_mistyroad/08_08_vinyl_buerak_puls_stuchit.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicMistyroad_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_mistyroad/09_09_vinyl_bumazhnye_tigry_henhina_v_peskah.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicMistyroad_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_mistyroad/10_10_vinyl_chernikovskaya_hata_belaya_noch.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicMistyroad_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_mistyroad/11_11_vinyl_cultodinochestva_ya_ehoghu.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicMistyroad_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_mistyroad/12_12_vinyl_durnojj_vkus_navsegda.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicMistyroad_13
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_mistyroad/13_13_vinyl_electropticy_morskya.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicMistyroad_14
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_mistyroad/14_14_vinyl_eolika_nokitirne_1983.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicMistyroad_15
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_mistyroad/15_15_vinyl_forum_belaya_noch_1987.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicMistyroad_16
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_mistyroad/16_16_vinyl_kvartira_dhina_belya_vedma.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicMistyroad_17
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_mistyroad/17_17_vinyl_kvartira_dzhina_mnogojetazhki.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicPankRock_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_pank_rock/01_01_vinyl_agata_kristi_kak_na_voyne.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicPankRock_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_pank_rock/02_02_vinyl_bespokojjnik_snova.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicPankRock_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_pank_rock/03_03_vinyl_chenki_nenavist.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicPankRock_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_pank_rock/04_04_vinyl_conec_solnetchih_dney_deti_nemoi_strany.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicPankRock_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_pank_rock/05_05_vinyl_disciplina_bezbolnoi_bity_plenka.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicPankRock_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_pank_rock/06_06_vinyl_divergetia_mama_ya_ne_hochu_v_armiu.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicPankRock_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_pank_rock/07_07_vinyl_egor_letov_i_kommunizm_fantom.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicPankRock_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_pank_rock/08_08_vinyl_eho_pos_pank.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicPankRock_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_pank_rock/09_09_vinyl_grazhdanskaya_oborona_vse_idet_po_planu.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicPankRock_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_pank_rock/10_10_vinyl_leningrad_nikogo_ne_zhalko.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicPankRock_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_pank_rock/11_11_vinyl_leningrad_ryba.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicPankRock_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_pank_rock/12_nervy_a_a_a.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicPankRock_13
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_pank_rock/13_nervy_bey_moe_serdtse.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicPankRock_14
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_pank_rock/14_nervy_muza.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_ClassicPankRock_15
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/classic_pank_rock/15_nervy_nervy.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/01_dxrk_do_or_die_speed_up.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/02_atl_na_shchite.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/03_big_baby_tape_trap_luv.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/04_fem_love_fotografiruyu_zakat.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/05_kavinsky_nightcall_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/06_lil_peep_x_bones_five_degrees_cut_mushup.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/07_lizer_pachka_sigaret.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/08_oliver_tree_bounce.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/09_oliver_tree_jerk_almost_phonk_remix_by_dahata.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/10_pharaoh_moy_kayf.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/11_plenka_when_you_find_me.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/12_pussykiller_remix_tik_tok_by_tep_edits_papa.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_13
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/13_shadowraze_astral_step.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_14
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/14_soska_69_basy_dolbyat.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_15
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/15_t_a_t_u_pokazhi_mne_lyubov_tik_tok_remix.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_16
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/16_twinky_bedy_s_bashkoy_prod_by_shvrpness.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_17
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/17_twinky_ja_tebja_obmanu.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_18
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/18_wenaro_lxner_led.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_19
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/19_willv_forever.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_20
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/20_xxxtentacion_sad.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_21
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/21_zhanulka_ne_ya.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_22
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/22_zhanulka_tok.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_23
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/23_dzhizus_ty_menya_ne_ishchi_remix.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_24
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/24_kishlak_11_11.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_25
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/25_kishlak_gryaz.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_26
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/26_kishlak_emo.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_27
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/27_mertvye_sny_ne_hochu_zhit.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_28
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/28_neizvesten_my_umrem_gde_to_posredi_nochi_speed_up.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_29
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/29_semsot_sem_pustota.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_30
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/30_semsot_sem_kishlak_vnutri.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Deadinsidesoft_31
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/deadinsidesoft/31_yuno_hikikomori.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/01_dora_bolshe.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/02_dora_byt_s_tobojj.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/03_dora_doradura.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/04_dora_esli_khochesh.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/05_dora_loverboy.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/06_dora_mjejjbi_bjejjbi_barbisajjz.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/07_dora_mjejjbi_bjejjbi_ne_ispravljus_1.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/08_dora_mjejjbi_bjejjbi_ne_ispravljus.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/09_dora_mladshaja_sestra.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/10_dora_stop_slovo.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/11_dora_vtjurilas.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/12_mejbi_bejbi_zajka_themp3_info.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_13
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/13_mejbi_bejbi_lsp_klub_themp3_info.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_14
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/14_mjejjbi_bjejjbi_akhegao.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_15
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/15_mjejjbi_bjejjbi_bratik.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_16
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/16_mjejjbi_bjejjbi_dakimakura.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_17
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/17_mjejjbi_bjejjbi_feat_quiizzzmeow_bol.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_18
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/18_mjejjbi_bjejjbi_intimki.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_19
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/19_mjejjbi_bjejjbi_mjejjbiljend.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_20
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/20_mjejjbi_bjejjbi_planeta_m.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_21
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/21_mjejjbi_bjejjbi_pokhrjukajj.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_22
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/22_mjejjbi_bjejjbi_superporosenok.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_23
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/23_mjejjbi_bjejjbi_treepside_vysshaja_shkola_fejj.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MaybeDora_24
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/maybe_dora/24_platina_feat_dora_san_laran.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/01_anguish_ambvsh_ily_bubblegum_bitch_slowed.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/02_anime_kei_fighting_spirit.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/03_anime_kei_strong_and_strike.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/04_artemas_i_like_the_way_you_kiss_me.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/05_bbno_antidepressants.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/06_bbno_it_boy.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/07_bbno_two.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/08_bbno_ironmouse_1_800.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/09_bbno_lentra_imma.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/10_cjbeards_maestro.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/11_convolk_cat_scratch.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/12_convolk_lonewolf.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_13
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/13_damage_black_catcher_phonk.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_14
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/14_danger_twins_show_of_hands.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_15
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/15_dk_alrt_nerves.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_16
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/16_lida_foto_so_zvezdoy.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_17
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/17_lida_ya_lyublyu_buhat.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_18
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/18_lonely_blaze_bros_menya.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_19
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/19_offl1nx_misted.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_20
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/20_oliver_tree_hurt.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_21
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/21_pyatno_trash.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_22
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/22_rat_boy_ibdy_who_s_ready_for_tomorrow.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_23
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/23_soska_69_chernaya_mashina.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_24
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/24_sunmi_cynical.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_25
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/25_the_weeknd_false_alarm.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_26
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/26_twinky_dyshi.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_27
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/27_bredish_v_ahue.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_28
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/28_kishlak_dorogu_molodym.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_29
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/29_kishlak_samyy_luchshiy_den.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_30
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/30_obnimayu_tachka.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_31
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/31_plm_golod.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_32
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/32_plm_chel_zamolchi_pzh.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByNekit_33
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_nekit/33_svit_shot_zerkala.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByRicardo_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_ricardo/01_01_01_gachibasser_pharaoh_diko_naprimer_right_version_gachi_remix_gachibass_themp3_info.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByRicardo_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_ricardo/02_02_02_gachimuchi_valim_na_gelike_gachi_remix_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByRicardo_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_ricardo/03_03_03_gayazov_brother_malinovaya_lada_right_version_gachi_remix_themp3_info.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByRicardo_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_ricardo/04_04_04_iowa_ulybajsya_gachi_remix_themp3_info.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByRicardo_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_ricardo/05_05_05_korol_i_shut_horoshij_pirat_mertvyj_pirat_right_version_gachi_remix_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByRicardo_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_ricardo/06_06_06_razor_shot_yunost_v_sapogah_gachi_version_gachimuchi_remiks_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByRicardo_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_ricardo/07_07_07_ruki_vverh_dumala_right_version_gachi_remix_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByRicardo_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_ricardo/08_08_08_slava_marlow_snova_ya_napivayus_right_version_themp3_info.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByRicardo_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_ricardo/09_09_09_via_gra_pocelui_right_version_gachi_remix_themp3_info.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByRicardo_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_ricardo/10_10_10_yurij_shatunov_belye_rozy_right_version_gachi_remix_gachi_shedevr_belye_rozy_themp3_info.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByRicardo_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_ricardo/11_benny_benassi_satisfaction_right_version_gachimuchi.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByRicardo_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_ricardo/12_danzel_you_spin_me_round_right_version.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByRicardo_13
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_ricardo/13_shadowraze_astral_step_right_version_gachi_remix.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByRicardo_14
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_ricardo/14_tredcat_zaplatite_vedmaku_300.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByRicardo_15
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_ricardo/15_valentin_strykalo_nash_dungeon_master_right_version_gachi_remix.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByRicardo_16
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_ricardo/16_klava_koka_niletto_krash_right_version.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByVan_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_van/01_01_01_alla_pugacheva_kuda_uhodit_detstvo_gachi_version_gachimuchi_remiks_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByVan_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_van/02_02_02_anzhelika_varum_gorodok_right_version_gachi_remix_gachi_right_gachi_gachi_gorodok_right_ver_themp3_info.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByVan_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_van/03_03_03_artur_pirozhkov_zacepila_right_version_gachi_remix_themp3_info.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByVan_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_van/04_04_04_asiya_assiya_nu_che_ty_takoj_no_homo_gachi_remix_by_tredcat_right_version_nu_che_ty_takoj_themp3_info.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByVan_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_van/05_05_05_bi_2_varvara_gachi_version_gachimuchi_remiks_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByVan_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_van/06_06_06_datezrealboi_25_17_golova_chtoby_dumat_right_version_gachi_remix_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByVan_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_van/07_07_07_dead_blonde_malchik_na_devyatke_right_version_gachi_remix_by_deltamix_themp3_info.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByVan_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_van/08_08_08_edikboi_rasa_pchelovod_gachi_version_ty_pchela_ya_boy_next_door_gachimuchi_remiks_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByVan_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_van/09_09_09_eldzhej_feduk_rozovoe_vino_right_version_gachi_remix_by_rat_tv_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByVan_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_van/10_10_10_evgeniya_otradnaya_uhodi_i_dver_zakroj_gachiremix_right_version_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByVan_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_van/11_gachi_kto_pchelok_uvazhaet.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByVan_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_van/12_pyatakoff_lyublyu_bolshih_lyublyu_popastyh_moto_moto_right_version_gachi_remix.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByVan_13
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_van/13_uncleflexxx_camry_3_5_right_version_gachi_remix.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByVan_14
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_van/14_a4_kids_right_version.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByVan_15
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_van/15_verka_serdyuchka_gulyanochka_right_version_g_man.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeByVan_16
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_by_van/16_meybi_beybi_ahegao_right_version.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeToBilly_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_to_billy/01_gachi_remix_big_baby_tape_gimme_the_ass.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeToBilly_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_to_billy/02_semen_slepakov_kazhduyu_pyatnitsu_gachi.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeToBilly_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_to_billy/03_01_01_korol_i_shut_motocikl_right_version_gachi_remix_themp3_info.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeToBilly_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_to_billy/04_02_02_linkin_park_numb_right_version_gachi_remix_themp3_info.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeToBilly_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_to_billy/05_03_03_maks_korzh_zhit_v_kajf_gachi_version_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeToBilly_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_to_billy/06_04_04_mihail_shufutinskij_3_sentyabrya_no_shufutinskij_dumaet_chto_on_ven_darkholm_right_version_gachi_re_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeToBilly_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_to_billy/07_05_05_neizvesten_dima_bilan_molniya_gachi_version_gachimuchi_remiks_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeToBilly_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_to_billy/08_06_06_niletto_lyubimka_right_version_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeToBilly_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_to_billy/09_07_07_papiny_dochki_gachi_version_gachimuchi_remiks_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeToBilly_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_to_billy/10_08_08_shoshon_elegant_dora_poshlyu_ego_na_gachi_remix_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeToBilly_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_to_billy/11_09_09_v_yacheslav_kukoba_kabanchik_right_version_gachi_remix_themp3_info.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeToBilly_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_to_billy/12_10_10_vintazh_roman_right_version_gachi_remix_skysound_cc.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeToBilly_13
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_to_billy/13_gachimuchi_butylochka.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeToBilly_14
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_to_billy/14_kl_fotografiruyu_zakat_gachi_remix.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeToBilly_15
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_to_billy/15_evgeniya_otradnaya_uhodi_i_dver_zakroy_right_version.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_MixtapeToBilly_16
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/mixtape_to_billy/16_nurminskiy_black_guard_right_version_gachi_remix.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/01_lida_feat_serega_pirat_chsv.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/02_mzlff_feat_serega_pirat_ja_ne_bojus_oshibatsja.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/03_serega_pirat_apelsin.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/04_serega_pirat_dengimenjajut.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/05_serega_pirat_feat_barikader_kak_zhe_on_silen.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/06_serega_pirat_feat_qeqoqeq_zombi_apokalipsis.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/07_serega_pirat_gimn_dakhaka.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/08_serega_pirat_izvini_segodnja_prazdnik.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/09_serega_pirat_ja_podnimaju_svoju_golovu_vverkh.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/10_serega_pirat_ja_vzletaju_vverkh.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/11_serega_pirat_kachalka.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/12_serega_pirat_khejjtery.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_13
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/13_serega_pirat_masha.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_14
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/14_serega_pirat_mojj_bajjk.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_15
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/15_serega_pirat_mojj_topor.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_16
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/16_serega_pirat_natalija.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_17
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/17_serega_pirat_nu_i_chto_chto_ja_vor.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_18
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/18_serega_pirat_pochemu_ty_eshhe_ne_fanat.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_19
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/19_serega_pirat_rassel_krou.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_20
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/20_serega_pirat_shizoid.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_21
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/21_serega_pirat_tp_na_ame.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_22
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/22_serega_pirat_vajjbmen.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PeregaSirat_23
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/perega_sirat/23_serega_pirat_v_jetojj_trave.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/01_mokez_towa_d1s6ix_evil_clique.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/02_42path_backpack.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/03_42path_freddie_race.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/04_ace_nows_x_kyanite_x_styx_hated_soulz.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/05_da_menace_x_dj_akoza_price_on_your_head.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/06_dead_welder_shit_on_is.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/07_dragonmane_buck_playa_buck.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/08_evil_prend_une_sip.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/09_extemple_chorus.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/10_hpshawty_i_need_that_cap.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/11_junior_ferrari_evil_evil.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/12_ke_playa_downstairs.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_13
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/13_lil_kaine_kingpin_skinny_pimp_lil_sko_came_2_rob.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_14
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/14_nissan_playa_evil_inside.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_15
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/15_nissan_playa_tennessee.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_16
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/16_nissan_playa_tokyo.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_17
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/17_nissan_playa_twin_turbo.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_18
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/18_nissan_playa_useless.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_19
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/19_rxdxvil_steelman.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_20
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/20_ryznbeatz_sxreen.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_21
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/21_scriptz_jon_t_black_pearl_paint.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_22
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/22_shinigami_tenshi_paranoid_streets.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_23
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/23_towa_token_most_wanted.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_24
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/24_valoder_feat_smxkydog_laid_back.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer1_25
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver1/25_whiteye_runnin_up_umbasa_x_cxxlion.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/01_yunx_how_much_she_love_me.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/02_archez_berserk_moves.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/03_crypt1k_necrotic.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/04_crypt1k_reanimate.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/05_dj_playastation_x_londy_murderer.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/06_fishbonez_dont_sleep_prod_bxgdvn.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/07_forgottenage_warfare.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/08_hageshi_jigoku_moonlight_illuminates.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/09_hayabusa_mitsubishi_4all.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/10_hayabusa_mitsubishi_septum.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/11_hayabusa_mitsubishi_spirit_2.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/12_kreiiin_wheezzys_hell_race.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_13
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/13_kxtsu_crusaders.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_14
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/14_ldrr_las_canciones_de_alfredo_larin_cuando_se_te_moja_la_tarea.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_15
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/15_mista_playa_armor_breaking.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_16
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/16_mista_playa_sakura_illusion.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_17
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/17_prxsxnt_fxture_helltaker.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_18
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/18_prxsxnt_fxture_house.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_19
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/19_relyct_arkea_a_what_ultra_slowed.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_20
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/20_shinki21_green_orxnge_typical_chill_song.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_21
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/21_slim_guerilla_outlaw_prod_genshin.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_22
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/22_tadakatsu_descent_on_irohazaka.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_23
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/23_trxshrelvx_madness.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_24
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/24_trxshrelvx_ghxstblvde_dance_dance.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_PhonkVer2_25
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/phonk_ver2/25_umbasa_shit_storm.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_RedzedBohemianPsycho_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/redzed_bohemian_psycho/01_1_redzed_dead_bodies_everywhere.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_RedzedBohemianPsycho_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/redzed_bohemian_psycho/02_10_redzed_antichrist.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_RedzedBohemianPsycho_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/redzed_bohemian_psycho/03_11_redzed_sinister.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_RedzedBohemianPsycho_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/redzed_bohemian_psycho/04_12_redzed_bleed_for_me_drumin_hard.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_RedzedBohemianPsycho_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/redzed_bohemian_psycho/05_2_redzed_eyes_wide_open.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_RedzedBohemianPsycho_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/redzed_bohemian_psycho/06_3_redzed_straight_outta_flames.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_RedzedBohemianPsycho_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/redzed_bohemian_psycho/07_4_redzed_sippin_blood.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_RedzedBohemianPsycho_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/redzed_bohemian_psycho/08_5_redzed_rave_in_the_grave.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_RedzedBohemianPsycho_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/redzed_bohemian_psycho/09_6_redzed_doom.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_RedzedBohemianPsycho_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/redzed_bohemian_psycho/10_7_redzed_chopper_swing.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_RedzedBohemianPsycho_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/redzed_bohemian_psycho/11_8_redzed_blind.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_RedzedBohemianPsycho_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/redzed_bohemian_psycho/12_9_redzed_feat_gizmo_ghoul.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_01
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/01_1_sqwoz_bab_kus.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_02
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/02_10_sqwoz_bab_sberbank.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_03
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/03_11_sqwoz_bab_kia_rio.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_04
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/04_12_sqwoz_bab_dzharahov_booty.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_05
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/05_13_sqwoz_bab_aum_raa_qlitorock.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_06
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/06_14_sqwoz_bab_arbuz.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_07
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/07_15_sqwoz_bab_ograb_moi_yaytsa.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_08
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/08_2_sqwoz_bab_ne_babushka.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_09
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/09_3_sqwoz_bab_oy.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_10
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/10_4_sqwoz_bab_thai_trap.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_11
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/11_5_sqwoz_bab_roulanges_rolan_guap.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_12
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/12_6_sqwoz_bab_boyskaut.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_13
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/13_7_sqwoz_bab_deti_rave_zidane.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_14
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/14_8_sqwoz_bab_adler.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_15
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/15_9_sqwoz_bab_aum_raa_mezim.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_16
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/16_sqwoz_bab_ebenya.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_17
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/17_sqwoz_bab_ozero_v_lesu.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_18
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/18_sqwoz_bab_rahat_lukum.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_19
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/19_sqwoz_bab_tatarskiy_bogatyr.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_20
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/20_sqwoz_bab_hleb_byvshiy.ogg,
+            distanceMax = 75,
+        }
+    }
+
+    sound RANM_Sqwozbab_21
+    {
+        category = Music,
+        master = Ambient,
+        clip
+        {
+            file = media/sound/custom_cd/sqwozbab/21_rolan_sqwoz_bab_lamba.ogg,
+            distanceMax = 75,
+        }
+    }
+}
