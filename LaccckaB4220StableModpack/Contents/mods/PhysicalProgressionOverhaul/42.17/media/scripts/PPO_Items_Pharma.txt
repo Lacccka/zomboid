@@ -1,0 +1,55 @@
+/*
+ * Drainable supplements. A drug is a drainable rather than a food because food
+ * is eaten in quarters, halves or whole: only a drainable removes exactly
+ * UseDelta per use and shows the doses that remain.
+ */
+module PhysicalProgressionOverhaul
+{
+    item AnabolicPreparation
+    {
+        DisplayCategory = FirstAid,
+        ItemType = base:drainable,
+        Weight = 0.15,
+        Icon = PPO_AnabolicPreparation,
+        Medical = true,
+        UseDelta = 0.5,
+        UseWhileEquipped = false,
+        StaticModel = PPO_AnabolicBottle,
+        WorldStaticModel = PPO_AnabolicBottle,
+        Tags = base:consumable;PPO_Supplement;PPO_SupplementAnabolic,
+        Tooltip = Tooltip_PPO_AnabolicPreparation,
+    }
+
+    item CardioPreparation
+    {
+        DisplayCategory = FirstAid,
+        ItemType = base:drainable,
+        Weight = 0.15,
+        Icon = PPO_CardioPreparation,
+        Medical = true,
+        UseDelta = 0.5,
+        UseWhileEquipped = false,
+        StaticModel = PPO_CardioBottle,
+        WorldStaticModel = PPO_CardioBottle,
+        Tags = base:consumable;PPO_Supplement;PPO_SupplementCardio,
+        Tooltip = Tooltip_PPO_CardioPreparation,
+    }
+
+    item ThermogenicComplex
+    {
+        DisplayCategory = FirstAid,
+        ItemType = base:drainable,
+        Weight = 0.2,
+        Icon = PPO_ThermogenicComplex,
+        Medical = true,
+        UseDelta = 0.2,
+        UseWhileEquipped = false,
+        fatigueChange = -4.0,
+        StressChange = 2,
+        OnEat = PPO_ItemCallbacks.takeThermogenic,
+        StaticModel = PPO_ThermogenicBottle,
+        WorldStaticModel = PPO_ThermogenicBottle,
+        Tags = base:consumable,
+        Tooltip = Tooltip_PPO_ThermogenicComplex,
+    }
+}

@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Skinned\Clothes\NPDM_MILVEST_M.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Skinned\Clothes\NPDM_MILVEST.fbx</m_FemaleModel>
+	<m_GUID>3a3f361f-7607-4b2c-8a9d-166910cab5b3</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+	<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+	<textureChoices>VESTS/AMV1</textureChoices>
+	<textureChoices>VESTS/AMV2</textureChoices>
+	<textureChoices>VESTS/AMV3</textureChoices>
+	<textureChoices>VESTS/AMV4</textureChoices>
+	<textureChoices>VESTS/AMV5</textureChoices>
+	<textureChoices>VESTS/AMV6</textureChoices>
+	<textureChoices>VESTS/AMV7</textureChoices>
+	<textureChoices>VESTS/AMV8</textureChoices>
+	<textureChoices>VESTS/AMV9</textureChoices>
+	<textureChoices>VESTS/AMV10</textureChoices>
+	<textureChoices>VESTS/AMV11</textureChoices>
+	<textureChoices>VESTS/AMV12</textureChoices>
+
+
+</clothingItem>

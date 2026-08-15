@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>Static\Clothes\GP_21_MILLENIUM_NF</m_MaleModel>
+	<m_FemaleModel>Static\Clothes\GP_21_MILLENIUM_NF</m_FemaleModel>
+	<m_GUID>e4b521d2-af71-4724-acee-93d96e74f0b2</m_GUID>
+	<m_Static>true</m_Static>
+	<m_AllowRandomHue>false</m_AllowRandomHue>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone>Bip01_Head</m_AttachBone>
+	<m_MasksFolder>media/textures/Clothes/Hat/Masks</m_MasksFolder>
+
+	<textureChoices>HEADGEAR\GP_21_MILLENIUM_Y1</textureChoices>
+	<textureChoices>HEADGEAR\GP_21_MILLENIUM_Y2E</textureChoices>
+	<textureChoices>HEADGEAR\GP_21_MILLENIUM_Y</textureChoices>
+	<textureChoices>HEADGEAR\GP_21_MILLENIUM_Y2</textureChoices>
+</clothingItem>

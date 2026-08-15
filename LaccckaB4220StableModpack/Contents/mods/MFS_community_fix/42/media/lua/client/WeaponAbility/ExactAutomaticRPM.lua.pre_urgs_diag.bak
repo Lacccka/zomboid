@@ -1,0 +1,119 @@
+require "Gun_Vars/Weapon_Ability/AWCWF_Exact_RPM"
+
+local ENGINE_REFERENCE_RPM = 600
+local lastWeapon = nil
+local M240_DIAG_TYPE = "M240_cat"
+local m240Diag = {
+    lastSneaking = nil,
+    lastSwingMs = nil,
+    swingCount = 0,
+}
+
+local function isM240(weapon)
+    return weapon and weapon.getType and weapon:getType() == M240_DIAG_TYPE
+end
+
+local function readFloat(call, fallback)
+    local ok, value = pcall(call)
+    if ok and type(value) == "number" then return value end
+    return fallback
+end
+
+local function formatFloat(value)
+    return type(value) == "number" and string.format("%.3f", value) or "n/a"
+end
+
+local function getAutoShootSpeed(playerObj)
+    if not playerObj or not playerObj.getVariableFloat then return nil end
+    return readFloat(function()
+        return playerObj:getVariableFloat("autoShootSpeed", -1.0)
+    end, nil)
+end
+
+local function logM240(playerObj, weapon, reason, details)
+    if not isM240(weapon) then return end
+    local cyclic = weapon.getCyclicRateMultiplier and
+        readFloat(function() return weapon:getCyclicRateMultiplier() end, nil) or nil
+    local sneaking = playerObj and playerObj.isSneaking and playerObj:isSneaking() or false
+    local fireMode = weapon.getFireMode and weapon:getFireMode() or "n/a"
+    print("[MFS M240 RPM DIAG] reason=" .. tostring(reason)
+        .. " sneaking=" .. tostring(sneaking)
+        .. " fireMode=" .. tostring(fireMode)
+        .. " cyclic=" .. formatFloat(cyclic)
+        .. " autoShootSpeed=" .. formatFloat(getAutoShootSpeed(playerObj))
+        .. (details and (" " .. details) or ""))
+end
+
+local function applyExactRPM(playerObj, weapon, reason)
+    if not weapon or not weapon.IsWeapon or not weapon:IsWeapon() or not weapon:isRanged() then return end
+    local configuredRPM = AWCWF_GetConfiguredRPM and AWCWF_GetConfiguredRPM(weapon) or
+        (AWCWF_ExactRPM and AWCWF_ExactRPM[weapon:getType()])
+    if not configuredRPM then return end
+
+    local appliedRPM, category, categoryScale, globalScale
+    if AWCWF_GetAppliedRPM then
+        appliedRPM, category, categoryScale, globalScale = AWCWF_GetAppliedRPM(weapon)
+    else
+        appliedRPM, category, categoryScale, globalScale = configuredRPM, "Automatic", 1.0, 1.0
+    end
+
+    if weapon.setCyclicRateMultiplier then
+        local beforeCyclic = isM240(weapon) and weapon.getCyclicRateMultiplier and
+            readFloat(function() return weapon:getCyclicRateMultiplier() end, nil) or nil
+        local beforeAutoSpeed = isM240(weapon) and getAutoShootSpeed(playerObj) or nil
+        weapon:setCyclicRateMultiplier(appliedRPM / ENGINE_REFERENCE_RPM)
+        local data = weapon:getModData()
+        data.AWCWF_ConfiguredRPM = configuredRPM
+        data.AWCWF_AppliedRPM = appliedRPM
+        data.AWCWF_RPMCategory = category
+        data.AWCWF_RPMCategoryScale = categoryScale
+        data.AWCWF_RPMGlobalScale = globalScale
+        if isM240(weapon) then
+            logM240(playerObj, weapon, reason or "apply",
+                "configuredRPM=" .. formatFloat(configuredRPM)
+                .. " appliedRPM=" .. formatFloat(appliedRPM)
+                .. " category=" .. tostring(category)
+                .. " categoryScale=" .. formatFloat(categoryScale)
+                .. " globalScale=" .. formatFloat(globalScale)
+                .. " beforeCyclic=" .. formatFloat(beforeCyclic)
+                .. " beforeAutoShootSpeed=" .. formatFloat(beforeAutoSpeed))
+        end
+    end
+end
+
+local function onPlayerUpdate(playerObj)
+    if not playerObj then return end
+    local weapon = playerObj:getPrimaryHandItem()
+    if weapon ~= lastWeapon then
+        lastWeapon = weapon
+        m240Diag.lastSneaking = nil
+        m240Diag.lastSwingMs = nil
+        m240Diag.swingCount = 0
+        applyExactRPM(playerObj, weapon, "equip")
+    end
+    if isM240(weapon) then
+        local sneaking = playerObj:isSneaking()
+        if m240Diag.lastSneaking == nil or sneaking ~= m240Diag.lastSneaking then
+            m240Diag.lastSneaking = sneaking
+            logM240(playerObj, weapon, "stance-change")
+        end
+    end
+end
+
+local function onWeaponSwing(playerObj, weapon)
+    if isM240(weapon) then
+        local now = getTimestampMs()
+        local delta = m240Diag.lastSwingMs and (now - m240Diag.lastSwingMs) or nil
+        m240Diag.lastSwingMs = now
+        m240Diag.swingCount = m240Diag.swingCount + 1
+        applyExactRPM(playerObj, weapon,
+            "swing#" .. tostring(m240Diag.swingCount)
+            .. " deltaMs=" .. (delta and tostring(delta) or "first"))
+        return
+    end
+    applyExactRPM(playerObj, weapon, "swing")
+end
+
+print("[MFS M240 RPM DIAG] probe loaded")
+Events.OnPlayerUpdate.Add(onPlayerUpdate)
+Events.OnWeaponSwing.Add(onWeaponSwing)

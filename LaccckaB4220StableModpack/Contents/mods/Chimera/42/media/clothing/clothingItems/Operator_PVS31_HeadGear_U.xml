@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Static\Clothes\GPNVG_OFF.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Static\Clothes\GPNVG_OFF.fbx</m_FemaleModel>
+	<m_GUID>bb5b2c62-8588-4ebf-bf65-2cca85aecc41</m_GUID>
+	<m_Static>true</m_Static>
+	<m_AllowRandomHue>false</m_AllowRandomHue>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone>Bip01_Head</m_AttachBone>
+		<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+	<textureChoices>HEADGEAR/GPNVG</textureChoices>
+	<textureChoices>HEADGEAR/GPNVG_Woodland</textureChoices>
+</clothingItem>

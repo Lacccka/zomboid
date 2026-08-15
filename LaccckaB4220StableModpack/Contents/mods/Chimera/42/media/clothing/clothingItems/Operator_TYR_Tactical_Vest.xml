@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Skinned\Clothes\NPDM_Kentucky_State_Police_Vest_M.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Skinned\Clothes\NPDM_Kentucky_State_Police_Vest.fbx</m_FemaleModel>
+	<m_GUID>ef86fb2b-05f5-4469-b8ab-54f717a8e406</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+		<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+	<textureChoices>V3X/TYR_KENTUCKY_TAC5_AVA</textureChoices>
+	<textureChoices>V3X/TYR_KENTUCKY_TAC_YELLOW</textureChoices>
+	<textureChoices>V3X/TYR_KENTUCKY_TAC_CADPAT</textureChoices>
+	<textureChoices>V3X/TYR_KENTUCKY_TAC_FLECKTARN</textureChoices>
+	<textureChoices>V3X/TYR_KENTUCKY_TAC_FLECKTARN2</textureChoices>
+	<textureChoices>V3X/TYR_KENTUCKY_TAC_FLECKTARN3</textureChoices>
+	<textureChoices>V3X/TYR_KENTUCKY_TAC_FLECKTARN5</textureChoices>
+	<textureChoices>V3X/TYR_KENTUCKY_TAC_FLECKTARN6</textureChoices>
+	<textureChoices>V3X/TYR_KENTUCKY_TAC_FLECKTARN7</textureChoices>
+	<textureChoices>V3X/TYR_KENTUCKY_TAC_FLECKTARN8</textureChoices>
+	<textureChoices>V3X/TYR_KENTUCKY_TAC_FLECKTARN9</textureChoices>
+	<textureChoices>V3X/TYR_KENTUCKY_TAC_FLECKTARN8_AUS</textureChoices>
+	<textureChoices>V3X/TYR_KENTUCKY_TAC_FLECKTARN10A_AUS</textureChoices>
+	<textureChoices>V3X/TYR_KENTUCKY_TAC_FLECKTARN9_AUS</textureChoices>
+	<textureChoices>V3X/TYR_KENTUCKY_TAC_FLECKTARN9_AUS_SNOW</textureChoices>
+
+
+</clothingItem>

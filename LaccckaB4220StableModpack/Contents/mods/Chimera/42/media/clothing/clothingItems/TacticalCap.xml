@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Skinned\Clothes\MTBK_Patched_Cap_M.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Skinned\Clothes\MTBK_Patched_Cap.fbx</m_FemaleModel>
+	<m_GUID>27f09b11-a388-43cc-9299-0b0a132575a4</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomHue>false</m_AllowRandomHue>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+	<m_HatCategory>Group02</m_HatCategory>
+		<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+	<textureChoices>HEADGEAR/MTBK_CM_AUSCAM</textureChoices>
+	<textureChoices>HEADGEAR/MTBK_CMN2</textureChoices>
+	<textureChoices>HEADGEAR/MTBK_CMC</textureChoices>
+	<textureChoices>HEADGEAR/MTBK2</textureChoices>
+	<textureChoices>HEADGEAR/MTBK_CM1</textureChoices>
+	<textureChoices>HEADGEAR/MTBK_CMB</textureChoices>
+	<textureChoices>HEADGEAR/MTBK_CMN</textureChoices>
+
+</clothingItem>

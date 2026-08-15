@@ -1,0 +1,262 @@
+module PhysicalProgressionOverhaul
+{
+    fluid ProteinShake
+    {
+        ColorReference = OldLace,
+        DisplayName = Fluid_Name_PPO_ProteinShake,
+        Categories
+        {
+            Beverage,
+        }
+        Properties
+        {
+            HungerChange = -20.0,
+            ThirstChange = -45.0,
+            Calories = 214.0,
+            Carbohydrates = 10.6,
+            Lipids = 5.3,
+            Proteins = 42.6,
+        }
+        BlendWhiteList
+        {
+            whitelist = true,
+            categories
+            {
+                Beverage,
+                Water,
+            }
+        }
+    }
+
+    fluid CreatineDrink
+    {
+        ColorReference = PowderBlue,
+        DisplayName = Fluid_Name_PPO_CreatineDrink,
+        Categories
+        {
+            Beverage,
+        }
+        Properties
+        {
+            HungerChange = -8.0,
+            ThirstChange = -45.0,
+            Calories = 24.0,
+            Carbohydrates = 6.0,
+            Lipids = 0.0,
+            Proteins = 0.0,
+        }
+        BlendWhiteList
+        {
+            whitelist = true,
+            categories
+            {
+                Beverage,
+                Water,
+            }
+        }
+    }
+
+    fluid HomemadeProteinShake
+    {
+        ColorReference = SandyBrown,
+        DisplayName = Fluid_Name_PPO_HomemadeProteinShake,
+        Categories
+        {
+            Beverage,
+        }
+        Properties
+        {
+            HungerChange = -44.0,
+            ThirstChange = -20.0,
+            Calories = 1790.0,
+            Carbohydrates = 213.8,
+            Lipids = 116.0,
+            Proteins = 74.7,
+        }
+        BlendWhiteList
+        {
+            whitelist = true,
+            categories
+            {
+                Beverage,
+                Water,
+            }
+        }
+    }
+
+    fluid HomemadeCreatineDrink
+    {
+        ColorReference = RosyBrown,
+        DisplayName = Fluid_Name_PPO_HomemadeCreatineDrink,
+        Categories
+        {
+            Beverage,
+        }
+        Properties
+        {
+            HungerChange = -90.0,
+            ThirstChange = -40.0,
+            Calories = 440.0,
+            Carbohydrates = 0.0,
+            Lipids = 18.7,
+            Proteins = 63.24,
+        }
+        BlendWhiteList
+        {
+            whitelist = true,
+            categories
+            {
+                Beverage,
+                Water,
+            }
+        }
+    }
+
+    fluid HomemadePreWorkoutDrink
+    {
+        ColorReference = Sienna,
+        DisplayName = Fluid_Name_PPO_HomemadePreWorkoutDrink,
+        Categories
+        {
+            Beverage,
+        }
+        Properties
+        {
+            HungerChange = -38.0,
+            ThirstChange = -20.0,
+            Calories = 90.0,
+            Carbohydrates = 24.0,
+            Lipids = 0.0,
+            Proteins = 1.0,
+            fatigueChange = -20.0,
+            StressChange = 30.0,
+        }
+        BlendWhiteList
+        {
+            whitelist = true,
+            categories
+            {
+                Beverage,
+                Water,
+            }
+        }
+    }
+
+    fluid HomemadeElectrolyteDrink
+    {
+        ColorReference = PaleGoldenrod,
+        DisplayName = Fluid_Name_PPO_HomemadeElectrolyteDrink,
+        Categories
+        {
+            Beverage,
+        }
+        Properties
+        {
+            HungerChange = -18.0,
+            ThirstChange = -60.0,
+            Calories = 80.0,
+            Carbohydrates = 20.0,
+            Lipids = 0.0,
+            Proteins = 0.0,
+            enduranceChange = 0.5,
+        }
+        BlendWhiteList
+        {
+            whitelist = true,
+            categories
+            {
+                Beverage,
+                Water,
+            }
+        }
+    }
+
+    fluid CalorieShake
+    {
+        ColorReference = Tan,
+        DisplayName = Fluid_Name_PPO_CalorieShake,
+        Categories
+        {
+            Beverage,
+        }
+        Properties
+        {
+            HungerChange = -32.0,
+            ThirstChange = -45.0,
+            Calories = 1920.0,
+            Carbohydrates = 380.0,
+            Lipids = 36.0,
+            Proteins = 18.0,
+        }
+        BlendWhiteList
+        {
+            whitelist = true,
+            categories
+            {
+                Beverage,
+                Water,
+            }
+        }
+    }
+
+    fluid ElectrolyteDrink
+    {
+        ColorReference = LightSkyBlue,
+        DisplayName = Fluid_Name_PPO_ElectrolyteDrink,
+        Categories
+        {
+            Beverage,
+        }
+        Properties
+        {
+            HungerChange = -4.0,
+            ThirstChange = -70.0,
+            Calories = 80.0,
+            Carbohydrates = 20.0,
+            Lipids = 0.0,
+            Proteins = 0.0,
+            /* Unscaled, unlike the item field: one 0.5 serving of the drink
+               grants +0.75 endurance. */
+            enduranceChange = 1.5,
+        }
+        BlendWhiteList
+        {
+            whitelist = true,
+            categories
+            {
+                Beverage,
+                Water,
+            }
+        }
+    }
+
+    fluid PreWorkoutDrink
+    {
+        ColorReference = Tomato,
+        DisplayName = Fluid_Name_PPO_PreWorkoutDrink,
+        Categories
+        {
+            Beverage,
+        }
+        Properties
+        {
+            HungerChange = -8.0,
+            ThirstChange = -40.0,
+            Calories = 60.0,
+            Carbohydrates = 12.0,
+            Lipids = 0.0,
+            Proteins = 0.0,
+            fatigueChange = -40.0,
+            StressChange = 30.0,
+        }
+        BlendWhiteList
+        {
+            whitelist = true,
+            categories
+            {
+                Beverage,
+                Water,
+            }
+        }
+    }
+}

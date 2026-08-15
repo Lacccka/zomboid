@@ -1,0 +1,14 @@
+{
+  "SewGrenadeBandolier": "手榴弾バンドリエを縫う",
+  "AddRemoteTriggerToClaymore": "クレイモアにリモートトリガーを追加",
+  "ForgeMk2Shell": "Mk2手榴弾ケースを鍛造",
+  "ForgeM26Shell": "M26手榴弾ケースを鍛造",
+  "ForgeM67Shell": "M67手榴弾ケースを鍛造",
+  "MakeStrikerLever": "手榴弾撃発レバーを溶接",
+  "MakeMk2FuzeAssembly": "Mk2信管アセンブリを作成",
+  "MakeM26FuzeAssembly": "M26信管アセンブリを作成",
+  "MakeM67FuzeAssembly": "M67信管アセンブリを作成",
+  "AssembleMk2": "Mk2手榴弾を組み立てる",
+  "AssembleM26": "M26手榴弾を組み立てる",
+  "AssembleM67": "M67手榴弾を組み立てる"
+}

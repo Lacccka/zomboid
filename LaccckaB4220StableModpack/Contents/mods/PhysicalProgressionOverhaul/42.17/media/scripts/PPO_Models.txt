@@ -1,0 +1,85 @@
+/*
+ * World size is mesh height times the FBX node's Lcl Scaling times this scale,
+ * and the result is metres. UnitScaleFactor is not the knob; Lcl Scaling is.
+ * Vanilla agrees twice over: a bag of sugar is 12.1114*0.0278*0.5 = 0.1682,
+ * and Pillow.X, which declares no scale at all, measures 0.3807 straight out
+ * of the file -- a real pillow.
+ *
+ * Three meshes carry all eight items. Sharing a mesh across models is the
+ * vanilla pattern: JarFoodBrown and JarFoodGreen both name mesh JarFood and
+ * differ only in texture.
+ *
+ *   PPO_ProteinJar    0.4164 * 100  * 0.0024 = 0.0999  (protein, creatine)
+ *   PPO_SportJar      0.3831 * 100  * 0.0024 = 0.0919  (gainer, electrolyte,
+ *                                                       pre-workout)
+ *   PPO_PillBottle    6.2912 * 2.54 * 0.0039 = 0.0623  (three preparations)
+ *
+ * The two jars come out of one Blender scene, so one constant -- 0.0024 --
+ * keeps the proportion the art was authored at. A vanilla-looking 0.5 there
+ * makes the tub 124 times a bag of sugar, because the export carries Lcl
+ * Scaling 100 where vanilla carries 0.0278.
+ *
+ * The pill bottle is judged against vanilla instead: PillBottle.X is 0.0629
+ * tall and its model script declares no scale, so 0.0629 is the size the game
+ * already shows for a bottle of pills. 0.0039 reproduces it to within 1%.
+ *
+ * Re-exporting any mesh at a different Lcl Scaling invalidates its number.
+ */
+module Base
+{
+    model PPO_ProteinJar
+    {
+        mesh = WorldItems/PPO_ProteinJar,
+        texture = WorldItems/PPO_ProteinJar,
+        scale = 0.0024,
+    }
+
+    model PPO_CreatineJar
+    {
+        mesh = WorldItems/PPO_ProteinJar,
+        texture = WorldItems/PPO_CreatineJar,
+        scale = 0.0024,
+    }
+
+    model PPO_GainerJar
+    {
+        mesh = WorldItems/PPO_SportJar,
+        texture = WorldItems/PPO_GainerJar,
+        scale = 0.0024,
+    }
+
+    model PPO_ElectrolyteJar
+    {
+        mesh = WorldItems/PPO_SportJar,
+        texture = WorldItems/PPO_ElectrolyteJar,
+        scale = 0.0024,
+    }
+
+    model PPO_PreWorkoutJar
+    {
+        mesh = WorldItems/PPO_SportJar,
+        texture = WorldItems/PPO_PreWorkoutJar,
+        scale = 0.0024,
+    }
+
+    model PPO_AnabolicBottle
+    {
+        mesh = WorldItems/PPO_PillBottle,
+        texture = WorldItems/PPO_AnabolicBottle,
+        scale = 0.0039,
+    }
+
+    model PPO_CardioBottle
+    {
+        mesh = WorldItems/PPO_PillBottle,
+        texture = WorldItems/PPO_CardioBottle,
+        scale = 0.0039,
+    }
+
+    model PPO_ThermogenicBottle
+    {
+        mesh = WorldItems/PPO_PillBottle,
+        texture = WorldItems/PPO_ThermogenicBottle,
+        scale = 0.0039,
+    }
+}

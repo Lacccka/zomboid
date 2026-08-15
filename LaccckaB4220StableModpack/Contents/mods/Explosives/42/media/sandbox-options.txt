@@ -1,0 +1,47 @@
+VERSION = 1,
+
+option Explosives.VanillaBallisticsEnabled {
+    page = ExplosivesOptions,
+    translation = ExplosivesOptions_VanillaBallisticsEnabled,
+    type = boolean,
+    default = false,
+}
+
+option Explosives.LootMultiplier {
+    page = ExplosivesOptions,
+    translation = ExplosivesOptions_LootMultiplier,
+    type = double, min = 0.01, max = 5.0, default = 1.0,
+}
+
+option Explosives.FireDamageEnabled {
+    page = ExplosivesOptions,
+    translation = ExplosivesOptions_FireDamageEnabled,
+    type = boolean,
+    default = true,
+}
+
+option Explosives.FireDamageMultiplier {
+    page = ExplosivesOptions,
+    translation = ExplosivesOptions_FireDamageMultiplier,
+    type = double, min = 0.5, max = 5.0, default = 1.0,
+}
+
+option Explosives.DelayedFuseEnabled {
+    page = ExplosivesOptions,
+    translation = ExplosivesOptions_DelayedFuseEnabled,
+    type = boolean,
+    default = false,
+}
+
+option Explosives.DelayedFuseSeconds {
+    page = ExplosivesOptions,
+    translation = ExplosivesOptions_DelayedFuseSeconds,
+    type = double, min = 0.5, max = 10.0, default = 3.0,
+}
+
+option Explosives.DebugSpawnKeyEnabled {
+    page = ExplosivesOptions,
+    translation = ExplosivesOptions_DebugSpawnKeyEnabled,
+    type = boolean,
+    default = false,
+}

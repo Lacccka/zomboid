@@ -1,0 +1,63 @@
+{
+  "Sandbox_CommonSense": "Common Sense",
+
+  "Sandbox_CommonSense_PryingMechanic": "Levye İle Zorlama Mekaniği",
+  "Sandbox_CommonSense_PryingMechanic_tooltip": "Oyuncuların levye kullanarak kapıları, pencereleri vb. zorlayarak açıp açamayacağını belirler.",
+
+  "Sandbox_CommonSense_GunStats": "Silah İstatistikleri",
+  "Sandbox_CommonSense_GunStats_tooltip": "Bir silah kuşanıldığında mühimmat türünü, mevcut mermiyi, silahın durumunu vb. gösteren özel bir kullanıcı arayüzünü etkinleştirir.",
+
+  "Sandbox_CommonSense_ObviousCollecting": "Belirgin Nesneleri Toplama",
+  "Sandbox_CommonSense_ObviousCollecting_tooltip": "Yerden çalı çırpı, taş, yabani ot, çalı gibi belirgin nesneleri toplama yeteneğini açar veya kapatır.",
+
+  "Sandbox_CommonSense_ColorFilter": "Renk Filtresi",
+  "Sandbox_CommonSense_ColorFilter_tooltip": "Renk körlüğünden etkilenen oyuncular için kolaylaştırılmış kullanıcı arayüzü renklerini etkinleştirir.",
+
+  "Sandbox_CommonSense_PryAllDoors": "Tüm Kapıları Zorlayarak Aç",
+  "Sandbox_CommonSense_PryAllDoors_tooltip": "Tüm kapıların zorlanarak açılıp açılamayacağını belirler.<br>Varsayılan olarak güçlendirilmiş kapılar (Hapishane kapıları, metal parmaklıklı kapılar vb.), oyuncunun Güç seviyesi Min. Güçlendirilmiş Kapı Seviyesine eşit veya daha yüksek olmadığı sürece zorlanamaz.",
+
+  "Sandbox_CommonSense_ReinforcedDoorLevel": "Min. Güçlendirilmiş Kapı Seviyesi",
+  "Sandbox_CommonSense_ReinforcedDoorLevel_tooltip": "Oyuncuların güçlendirilmiş kapıları (Hapishane kapıları, metal parmaklıklı kapılar vb.) zorlayarak açabilmesi için gereken minimum Güç seviyesini belirler.",
+
+  "Sandbox_CommonSense_WindowShatterChance": "Pencere Kırılma İhtimali",
+  "Sandbox_CommonSense_WindowShatterChance_tooltip": "Oyuncu bir pencereyi zorlayarak açmaya çalışıp başarısız olduğunda camın kırılma olasılığını belirler.",
+
+  "Sandbox_CommonSense_PryingChanceMultiplier": "Zorlama İhtimali Çarpanı",
+  "Sandbox_CommonSense_PryingChanceMultiplier_tooltip": "Levye ile nesneleri zorlayarak açmanın zorluğunu belirler.<br>Daha yüksek bir çarpan nesneleri başarıyla açmayı zorlaştırırken, daha düşük bir çarpan kolaylaştırır.<br>0 = Her Zaman Başarılı.<br>1 = Varsayılan Zorluk.<br>5 = En Yüksek Zorluk.",
+
+  "Sandbox_CommonSense_ShatterVehicleWindows": "Araç Camlarını Kır",
+  "Sandbox_CommonSense_ShatterVehicleWindows_tooltip": "Oyuncuların araç kapılarını zorlayarak açmaya çalışırken kazara camları kırıp kıramayacağını belirler.<br>Etkinleştirilirse bu durum rastgele gerçekleşebilir (Pencere Kırılma İhtimali ayarına bağlı olarak).",
+
+  "Sandbox_CommonSense_OC_DisableLoot": "Eşya Vermeyi Kapat (Belirgin Nesneleri Toplama)",
+  "Sandbox_CommonSense_OC_DisableLoot_tooltip": "Yerden çalı çırpı, taş, yabani ot, çalı gibi nesneleri temizlemenin oyuncuya kaldırdığı eşyayı verip vermeyeceğini belirler.",
+
+  "Sandbox_CommonSense_OC_LootMultiplier": "Eşya Çarpanı (Belirgin Nesneleri Toplama)",
+  "Sandbox_CommonSense_OC_LootMultiplier_tooltip": "Oyuncunun yerden belirgin nesneleri toplarken elde ettiği eşya miktarını katlar.",
+
+  "Sandbox_CommonSense_PryBuildingDoors": "Bina Kapılarını Zorlayarak Aç",
+  "Sandbox_CommonSense_PryBuildingDoors_tooltip": "Oyuncuların ev, apartman vb. binaların kapılarını zorlayarak açıp açamayacağını belirler.",
+
+  "Sandbox_CommonSense_PryGarageDoors": "Garaj Kapılarını Zorlayarak Aç",
+  "Sandbox_CommonSense_PryGarageDoors_tooltip": "Oyuncuların garaj kapılarını zorlayarak açıp açamayacağını belirler.",
+
+  "Sandbox_CommonSense_PrySafeDoors": "Güçlendirilmiş Kapıları Zorlayarak Aç",
+  "Sandbox_CommonSense_PrySafeDoors_tooltip": "Oyuncuların güçlendirilmiş kapıları (Hapishane kapıları, metal parmaklıklı kapılar vb.) zorlayarak açıp açamayacağını belirler.<br>Bu kapılar, oyuncunun Güç seviyesi Min. Güçlendirilmiş Kapı Seviyesine eşit veya daha yüksek olmadığı sürece zorlanamaz.",
+
+  "Sandbox_CommonSense_PryWindows": "Pencereleri Zorlayarak Aç",
+  "Sandbox_CommonSense_PryWindows_tooltip": "Oyuncuların ev, apartman vb. binaların pencerelerini zorlayarak açıp açamayacağını belirler.",
+
+  "Sandbox_CommonSense_PryVehicleDoors": "Araç Kapılarını Zorlayarak Aç",
+  "Sandbox_CommonSense_PryVehicleDoors_tooltip": "Oyuncuların araç kapılarını zorlayarak açıp açamayacağını belirler.",
+
+  "Sandbox_CommonSense_CanWoundChance": "Konserve Açarken Yaralanma İhtimali",
+  "Sandbox_CommonSense_CanWoundChance_tooltip": "Bıçak veya makasla konserve açarken yaralanma olasılığı.",
+
+  "Sandbox_CommonSense_WashOnly": "Yıkama Menüsü",
+  "Sandbox_CommonSense_WashOnly_tooltip": "Sadece kuşanılan veya kuşanılmayan eşyaları yıkama menüsünü etkinleştirir/devre dışı bırakır.",
+
+  "Sandbox_CommonSense_ReplaceBandage": "Sargı Bezini Değiştir",
+  "Sandbox_CommonSense_ReplaceBandage_tooltip": "Kirli sargı bezlerini doğrudan değiştirme menüsünü etkinleştirir/devre dışı bırakır.",
+
+  "Sandbox_CommonSense_ReloadAllMags": "Tüm Şarjörleri Doldur",
+  "Sandbox_CommonSense_ReloadAllMags_tooltip": "Seçilen tüm şarjörleri otomatik olarak yeniden doldurma menüsünü etkinleştirir/devre dışı bırakır."
+}

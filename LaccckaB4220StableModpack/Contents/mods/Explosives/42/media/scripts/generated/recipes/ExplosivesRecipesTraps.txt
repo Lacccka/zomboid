@@ -1,0 +1,25 @@
+module Explosives
+{
+    craftRecipe AddRemoteTriggerToClaymore
+    {
+        timedAction = MakingElectrical,
+        time = 80,
+        NeedToBeLearn = true,
+        SkillRequired = Electricity:2,
+        Tags = AnySurfaceCraft,
+        category = Electrical,
+        AutoLearnAny = Electricity:8,
+        xpAward = Electricity:6,
+        inputs
+        {
+            item 1 [Explosives.M18a1Claymore] mode:destroy,
+            item 1 [Base.TriggerCrafted],
+            item 2 [Base.ElectronicsScrap],
+            item 1 [Base.DuctTape],
+        }
+        outputs
+        {
+            item 1 Explosives.M18a1ClaymoreRemote,
+        }
+    }
+}

@@ -1,0 +1,13 @@
+{
+  "Tooltip_GrenadeBandolier": "Zapewnia 4 sloty na granaty. Przeciągnij granaty na ikony mocowania, aby je tam schować dla szybkiego dostępu - to nie jest pojemnik do przechowywania.",
+  "Tooltip_FlareBurning": "Zapalona flara sygnalizacyjna, jasno płonąca i wydzielająca iskry oraz dym. Rzuć nią, aby oznaczyć miejsce lub oświetlić okolicę.",
+  "Tooltip_FlareSpent": "Wypalona flara sygnalizacyjna. Nie nadaje się już do użytku.",
+  "Tooltip_ClaymoreRemote": "Mina Claymore M18A1 wyposażona w zdalny detonator zamiast czujnika ruchu. Zdetonuj ją na odległość za pomocą pilota.",
+  "Tooltip_Mk2Shell": "Niedokończony, pusty korpus granatu odłamkowego Mk2. Wymaga zespołu zapalnika, dźwigni zapalnika i prochu strzelniczego, aby stać się działającym granatem.",
+  "Tooltip_M26Shell": "Niedokończony, pusty korpus granatu odłamkowego M26. Wymaga zespołu zapalnika, dźwigni zapalnika i prochu strzelniczego, aby stać się działającym granatem.",
+  "Tooltip_M67Shell": "Niedokończony, pusty korpus granatu odłamkowego M67. Wymaga zespołu zapalnika, dźwigni zapalnika i prochu strzelniczego, aby stać się działającym granatem.",
+  "Tooltip_StrikerLever": "Sprężynowa dźwignia zapalnika, wykuta ze złomu. Potrzebna do złożenia dowolnego granatu ręcznego - to ona uruchamia zapalnik po zwolnieniu.",
+  "Tooltip_Mk2FuzeAssembly": "Ręcznie zbudowany zespół zapalnika do korpusu granatu Mk2 - spłonka, element opóźniający i okablowanie, gotowy do wkręcenia w korpus.",
+  "Tooltip_M26FuzeAssembly": "Ręcznie zbudowany zespół zapalnika do korpusu granatu M26 - spłonka, element opóźniający i okablowanie, gotowy do wkręcenia w korpus.",
+  "Tooltip_M67FuzeAssembly": "Ręcznie zbudowany zespół zapalnika do korpusu granatu M67 - spłonka, element opóźniający i okablowanie, gotowy do wkręcenia w korpus."
+}

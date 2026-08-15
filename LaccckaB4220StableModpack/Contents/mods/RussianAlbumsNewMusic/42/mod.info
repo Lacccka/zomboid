@@ -1,0 +1,12 @@
+name=[B42] Russian Albums New Music
+poster=poster.png
+icon=icon.png
+id=RussianAlbumsNewMusic
+require=NewMusic
+author=Nekit
+versionMin=42.13.0
+modversion=2.0
+description=Album pack for New Music [42+] build 42.19 <LINE>
+description=Albums generated: 18 <LINE>
+description=Tracks generated: 381 <LINE>
+description=Mixed-format albums: 5

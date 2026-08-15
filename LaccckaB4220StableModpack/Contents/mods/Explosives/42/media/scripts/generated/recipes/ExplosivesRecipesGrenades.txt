@@ -1,0 +1,244 @@
+module Explosives
+{
+    craftRecipe ForgeMk2Shell
+    {
+        category = Weaponry,
+        SkillRequired = Blacksmith:8,
+        tags = AdvancedForge,
+        time = 1200,
+        NeedToBeLearn = true,
+        timedAction = HammerMetalStanding,
+        xpAward = Blacksmith:80,
+        
+        inputs
+        {
+            item 5 tags[base:charcoal],
+            item 1 [Base.SteelBlock;4:Base.SteelChunk;Base.PiercedSteelBlock;4:Base.PiercedSteelChunk;Base.SteelIngot;Base.PiercedSteelIngot],
+            item 1 tags[base:SmithingHammer] mode:keep flags[Prop1;MayDegradeLight],
+            item 1 tags[base:tongs] mode:keep flags[Prop2],
+        }
+        outputs
+        {
+            item 1 Explosives.Mk2Shell,
+        }
+    }
+
+    craftRecipe ForgeM26Shell
+    {
+        category = Weaponry,
+        SkillRequired = Blacksmith:8,
+        tags = AdvancedForge,
+        time = 1200,
+        NeedToBeLearn = true,
+        timedAction = HammerMetalStanding,
+        xpAward = Blacksmith:80,
+        
+        inputs
+        {
+            item 5 tags[base:charcoal],
+            item 1 [Base.SteelBlock;4:Base.SteelChunk;Base.PiercedSteelBlock;4:Base.PiercedSteelChunk;Base.SteelIngot;Base.PiercedSteelIngot],
+            item 1 tags[base:SmithingHammer] mode:keep flags[Prop1;MayDegradeLight],
+            item 1 tags[base:tongs] mode:keep flags[Prop2],
+        }
+
+        outputs
+        {
+            item 1 Explosives.M26Shell,
+        }
+    }
+
+    craftRecipe ForgeM67Shell
+    {
+        category = Weaponry,
+        SkillRequired = Blacksmith:8,
+        tags = AdvancedForge,
+        time = 1200,
+        NeedToBeLearn = true,
+        timedAction = HammerMetalStanding,
+        xpAward = Blacksmith:80,
+        
+        inputs
+        {
+            item 5 tags[base:charcoal],
+            item 1 [Base.SteelBlock;4:Base.SteelChunk;Base.PiercedSteelBlock;4:Base.PiercedSteelChunk;Base.SteelIngot;Base.PiercedSteelIngot],
+            item 1 tags[base:SmithingHammer] mode:keep flags[Prop1;MayDegradeLight],
+            item 1 tags[base:tongs] mode:keep flags[Prop2],
+        }
+
+        outputs
+        {
+            item 1 Explosives.M67Shell,
+        }
+    }
+
+    craftRecipe MakeMk2FuzeAssembly
+    {
+        time = 800,
+        category = Assembly,
+        Tags = AnySurfaceCraft,
+        SkillRequired = Maintenance:8,
+        timedAction = Making,
+        xpAward = Maintenance:80,
+        inputs
+        {
+            item 1 tags[base:screwdriver] mode:keep flags[NoBrokenItems;Prop1],
+            item 1 tags[base:pliers] mode:keep flags[MayDegradeVeryLight],
+            item 1 tags[base:file] mode:keep flags[MayDegradeLight],
+            item 1 tags[base:epoxy],
+            item 1 [Base.Wire] mode:destroy flags[IsFull;ItemCount],
+            item 1 [Base.SmallSheetMetal],
+        }
+        outputs
+        {
+            item 1 Explosives.Mk2FuzeAssembly,
+        }
+    }
+
+    craftRecipe MakeM26FuzeAssembly
+    {
+        time = 900,
+        category = Assembly,
+        Tags = AnySurfaceCraft,
+        SkillRequired = Maintenance:9,
+        timedAction = Making,
+        xpAward = Maintenance:90,
+        inputs
+        {
+            item 1 tags[base:screwdriver] mode:keep flags[NoBrokenItems;Prop1],
+            item 1 tags[base:pliers] mode:keep flags[MayDegradeVeryLight],
+            item 1 tags[base:file] mode:keep flags[MayDegradeLight],
+            item 1 tags[base:epoxy],
+            item 1 [Base.Wire] mode:destroy flags[IsFull;ItemCount],
+            item 1 [Base.SmallSheetMetal],
+        }
+        outputs
+        {
+            item 1 Explosives.M26FuzeAssembly,
+        }
+    }
+
+    craftRecipe MakeM67FuzeAssembly
+    {
+        time = 1000,
+        category = Assembly,
+        Tags = AnySurfaceCraft,
+        SkillRequired = Maintenance:10,
+        timedAction = Making,
+        xpAward = Maintenance:100,
+        inputs
+        {
+            item 1 tags[base:screwdriver] mode:keep flags[NoBrokenItems;Prop1],
+            item 1 tags[base:pliers] mode:keep flags[MayDegradeVeryLight],
+            item 1 tags[base:file] mode:keep flags[MayDegradeLight],
+            item 1 tags[base:epoxy],
+            item 1 [Base.Wire] mode:destroy flags[IsFull;ItemCount],
+            item 1 [Base.SmallSheetMetal],
+        }
+        outputs
+        {
+            item 1 Explosives.M67FuzeAssembly,
+        }
+    }
+
+    craftRecipe MakeStrikerLever
+    {
+        timedAction = Welding,
+        time = 250,
+        NeedToBeLearn = false,
+        SkillRequired = MetalWelding:4,
+        Tags = InHandCraft;Welding,
+        category = Metalworking,
+        xpAward = MetalWelding:40,
+        AutoLearnAny = MetalWelding:6,
+        
+        inputs
+        {
+            item 1 [Base.SmallSheetMetal],
+            item 2 [Base.BlowTorch],
+            item 1 tags[base:weldingmask] mode:keep,
+        }
+
+        outputs
+        {
+            item 1 Explosives.StrikerLever,
+        }
+    }
+
+    craftRecipe AssembleMk2
+    {
+        category = Assembly,
+        SkillRequired = Maintenance:8,
+        Tags = AnySurfaceCraft,
+        time = 250,
+        NeedToBeLearn = true,
+        timedAction = Explosives.Assembly,
+        xpAward = Maintenance:80,
+        
+        inputs
+        {
+            item 1 tags[base:screwdriver] mode:keep flags[NoBrokenItems;Prop1],
+            item 1 tags[base:pliers] mode:keep flags[MayDegradeVeryLight],
+            item 1 tags[base:file] mode:keep flags[MayDegradeLight],
+            item 20 [Base.GunPowder],
+            item 1 [Explosives.Mk2Shell] flags[Prop2],
+            item 1 [Explosives.Mk2FuzeAssembly],
+            item 1 [Explosives.StrikerLever],
+        }
+        outputs
+        {
+            item 1 Explosives.Mk2Grenade,
+        }
+    }
+
+    craftRecipe AssembleM26
+    {
+        category = Assembly,
+        SkillRequired = Maintenance:9,
+        Tags = AnySurfaceCraft,
+        time = 250,
+        NeedToBeLearn = true,
+        timedAction = Explosives.Assembly,
+        xpAward = Maintenance:90,
+        
+        inputs
+        {
+            item 1 tags[base:screwdriver] mode:keep flags[NoBrokenItems;Prop1],
+            item 1 tags[base:pliers] mode:keep flags[MayDegradeVeryLight],
+            item 1 tags[base:file] mode:keep flags[MayDegradeLight],
+            item 25 [Base.GunPowder],
+            item 1 [Explosives.M26Shell] flags[Prop2],
+            item 1 [Explosives.M26FuzeAssembly],
+            item 1 [Explosives.StrikerLever],
+        }
+        outputs
+        {
+            item 1 Explosives.M26Grenade,
+        }
+    }
+
+    craftRecipe AssembleM67
+    {
+        category = Assembly,
+        SkillRequired = Maintenance:10,
+        Tags = AnySurfaceCraft,
+        time = 250,
+        NeedToBeLearn = true,
+        timedAction = Explosives.Assembly,
+        xpAward = Maintenance:100,
+        
+        inputs
+        {
+            item 1 tags[base:screwdriver] mode:keep flags[NoBrokenItems;Prop1],
+            item 1 tags[base:pliers] mode:keep flags[MayDegradeVeryLight],
+            item 1 tags[base:file] mode:keep flags[MayDegradeLight],
+            item 30 [Base.GunPowder],
+            item 1 [Explosives.M67Shell] flags[Prop2],
+            item 1 [Explosives.M67FuzeAssembly],
+            item 1 [Explosives.StrikerLever],
+        }
+        outputs
+        {
+            item 1 Explosives.M67Grenade,
+        }
+    }
+}

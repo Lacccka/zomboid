@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Skinned\Clothes\RAVEN_BOOTS_M.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Skinned\Clothes\RAVEN_BOOTS.fbx</m_FemaleModel>
+	<m_GUID>70286389-3a32-4932-8fc5-0f096235a462</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+		<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+<textureChoices>RAVEN\RAVEN_CN1</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN18A</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN19</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN18</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN17</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN16</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN15</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN14</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN13</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN12</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN11</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN10</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN9</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN8</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN7</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN6</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN5</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN4</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN3</textureChoices>
+<textureChoices>RAVEN\RAVEN_CN2</textureChoices>
+<textureChoices>RAVEN\RAVEN_CNT</textureChoices>
+
+</clothingItem>

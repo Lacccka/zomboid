@@ -1,0 +1,120 @@
+module PhysicalProgressionOverhaul
+{
+    item ProteinPowder
+    {
+        DisplayCategory = Food,
+        ItemType = base:food,
+        Weight = 0.25,
+        WeightEmpty = 0.1,
+        Icon = PPO_ProteinPowder,
+        EatType = Candrink,
+        UseDelta = 0.2,
+        UseWhileEquipped = false,
+        HungerChange = -50.0,
+        ThirstChange = 25.0,
+        Calories = 533.0,
+        Carbohydrates = 26.7,
+        Lipids = 13.3,
+        Proteins = 106.5,
+        FoodType = NoExplicit,
+        StaticModel = PPO_ProteinJar,
+        WorldStaticModel = PPO_ProteinJar,
+        Tags = PPO_Supplement;PPO_SupplementProtein,
+        Tooltip = Tooltip_PPO_ProteinPowder,
+    }
+
+    item CreatineComplex
+    {
+        DisplayCategory = Food,
+        ItemType = base:food,
+        Weight = 0.3,
+        WeightEmpty = 0.1,
+        Icon = PPO_CreatineComplex,
+        EatType = Candrink,
+        UseDelta = 0.2,
+        UseWhileEquipped = false,
+        HungerChange = -20.0,
+        ThirstChange = 50.0,
+        Calories = 60.0,
+        Carbohydrates = 15.0,
+        Lipids = 0.0,
+        Proteins = 0.0,
+        FoodType = NoExplicit,
+        StaticModel = PPO_CreatineJar,
+        WorldStaticModel = PPO_CreatineJar,
+        Tags = PPO_Supplement;PPO_SupplementCreatine,
+        Tooltip = Tooltip_PPO_CreatineComplex,
+    }
+
+    item CalorieGainer
+    {
+        DisplayCategory = Food,
+        ItemType = base:food,
+        Weight = 0.35,
+        WeightEmpty = 0.1,
+        Icon = PPO_CalorieGainer,
+        EatType = Candrink,
+        UseDelta = 0.2,
+        UseWhileEquipped = false,
+        HungerChange = -80.0,
+        ThirstChange = 30.0,
+        Calories = 4800.0,
+        Carbohydrates = 950.0,
+        Lipids = 90.0,
+        Proteins = 45.0,
+        FoodType = NoExplicit,
+        StaticModel = PPO_GainerJar,
+        WorldStaticModel = PPO_GainerJar,
+        Tooltip = Tooltip_PPO_CalorieGainer,
+    }
+
+    item ElectrolyteComplex
+    {
+        DisplayCategory = Food,
+        ItemType = base:food,
+        Weight = 0.1,
+        WeightEmpty = 0.05,
+        Icon = PPO_ElectrolyteComplex,
+        EatType = Candrink,
+        UseDelta = 0.2,
+        UseWhileEquipped = false,
+        HungerChange = -10.0,
+        ThirstChange = 40.0,
+        Calories = 200.0,
+        Carbohydrates = 50.0,
+        Lipids = 0.0,
+        Proteins = 0.0,
+        /* Item enduranceChange is divided by 100, so one 0.2 serving of the dry
+           powder grants +0.25 endurance. The drink expresses the same effect
+           with 1.5, because FluidDefinitionScript does not divide. */
+        enduranceChange = 125.0,
+        FoodType = NoExplicit,
+        StaticModel = PPO_ElectrolyteJar,
+        WorldStaticModel = PPO_ElectrolyteJar,
+        Tooltip = Tooltip_PPO_ElectrolyteComplex,
+    }
+
+    item PreWorkoutStimulant
+    {
+        DisplayCategory = Food,
+        ItemType = base:food,
+        Weight = 0.2,
+        WeightEmpty = 0.08,
+        Icon = PPO_PreWorkoutStimulant,
+        EatType = Candrink,
+        UseDelta = 0.2,
+        UseWhileEquipped = false,
+        HungerChange = -20.0,
+        ThirstChange = 30.0,
+        Calories = 150.0,
+        Carbohydrates = 30.0,
+        Lipids = 0.0,
+        Proteins = 0.0,
+        fatigueChange = -60.0,
+        StressChange = 50,
+        FoodType = NoExplicit,
+        StaticModel = PPO_PreWorkoutJar,
+        WorldStaticModel = PPO_PreWorkoutJar,
+        Tooltip = Tooltip_PPO_PreWorkoutStimulant,
+    }
+}

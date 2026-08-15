@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Static\Clothes\InVisio_T7.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Static\Clothes\InVisio_T7.fbx</m_FemaleModel>
+	<m_GUID>5dc71d5f-ed19-4e92-b85a-98eecd578d3a</m_GUID>
+	<m_Static>true</m_Static>
+	<m_AllowRandomHue>false</m_AllowRandomHue>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone>Bip01_Head</m_AttachBone>
+	<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+	<textureChoices>HEADGEAR/InVisioT7_2K</textureChoices>
+	<textureChoices>HEADGEAR/InVisioT7_DRK2_2K</textureChoices>
+	<textureChoices>HEADGEAR/InVisioT7_P</textureChoices>
+	<textureChoices>HEADGEAR/InVisioT7_TB_Aged</textureChoices>
+	<textureChoices>HEADGEAR/InVisioT7_Pink_Aged</textureChoices>
+	<textureChoices>HEADGEAR/InVisioT7_TN2</textureChoices>
+	<textureChoices>HEADGEAR/InVisioT7_TN_Dirty</textureChoices>
+	<textureChoices>HEADGEAR/InVisioT7_W</textureChoices>
+</clothingItem>

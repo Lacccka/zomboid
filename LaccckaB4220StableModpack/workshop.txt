@@ -1,0 +1,6 @@
+version=1
+id=0
+title=Lacccka B42.20 Stable Modpack
+description=Version-locked and compatibility-tested Project Zomboid Build 42.20 multiplayer mod collection.
+tags=Build 42;Multiplayer
+visibility=public

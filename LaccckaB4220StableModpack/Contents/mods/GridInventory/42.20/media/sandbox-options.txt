@@ -1,0 +1,73 @@
+VERSION = 1,
+
+option GridInventory.ScatterMode
+{
+    type = enum, numValues = 3, default = 1,
+    page = GridInventory,
+    translation = GridInventory_ScatterMode,
+    valueTranslation = GridInventory_ScatterMode,
+}
+
+option GridInventory.ReorderTimeAction
+{
+    type = enum, numValues = 2, default = 1,
+    page = GridInventory,
+    translation = GridInventory_ReorderTimeAction,
+    valueTranslation = GridInventory_ReorderTimeAction,
+}
+
+option GridInventory.ReorderMoveWhileWalking
+{
+    type = boolean, default = true,
+    page = GridInventory,
+    translation = GridInventory_ReorderMoveWhileWalking,
+}
+
+option GridInventory.SearchWorldContainers
+{
+    type = boolean, default = false,
+    page = GridInventory,
+    translation = GridInventory_SearchWorldContainers,
+}
+
+option GridInventory.SearchTimePerItem
+{
+    type = integer, min = 0, max = 1000, default = 300,
+    page = GridInventory,
+    translation = GridInventory_SearchTimePerItem,
+}
+
+option GridInventory.EnableDevTools
+{
+    type = boolean, default = false,
+    page = GridInventory,
+    translation = GridInventory_EnableDevTools,
+}
+
+option GridInventory.MaxContainerGridSize
+{
+    type = integer, min = 3, max = 30, default = 15,
+    page = GridInventory,
+    translation = GridInventory_MaxContainerGridSize,
+}
+
+option GridInventory.InventoryPlayerWidth
+{
+    type = integer, min = 1, max = 10, default = 3,
+    page = GridInventory,
+    translation = GridInventory_InventoryPlayerWidth,
+}
+
+option GridInventory.InventoryPlayerHeight
+{
+    type = integer, min = 1, max = 20, default = 4,
+    page = GridInventory,
+    translation = GridInventory_InventoryPlayerHeight,
+}
+
+option GridInventory.MinWorldWidthGridSize
+{
+    type = integer, min = 3, max = 30, default = 6,
+    page = GridInventory,
+    translation = GridInventory_MinWorldWidthGridSize,
+}

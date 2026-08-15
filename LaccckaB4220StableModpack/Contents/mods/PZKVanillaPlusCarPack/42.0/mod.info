@@ -1,0 +1,11 @@
+name= PZK Vanilla Plus Car Pack (read Steam mod description, PZK VLC WIKI FAQ for proper supported mods load order)
+id=PzkVanillaPlusCarPack
+description=PZK Vanilla Plus Car Pack (read Steam mod description, PZK VLC WIKI FAQ for proper supported mods load order)
+poster=preview.png
+icon=icon.png
+author=Peter Hammerman
+tags=Vehicles
+modversion=42.20
+zomboidversion=42.20
+incompatible=\FiliSceneReplacer,\NoVanillaVehicles,\NoVanillaStoriesKI5+Filibuster,\NoVanillaStoriesKI5,\VVR,\NoVanillaDuplicates,\NoVanillaProf,\SCKCOVehicles,\Ze_VVehicleEnhancer_42B,\93chevySuburbanExpanded,\86fordE150expanded,\AuthPolice,\85chevyStepVanexpanded,\WelcomeMessageBegone,\disablewelcome,\NoWelcomeWindow,\Disable42panel, \NoVanillaCivilianVehicles,\stanczyknovanilla
+loadafter=\tsarslib,\ImmersiveVehiclePaint,\BanditsWeekOne,\StandardizedVehicleUpgrades3Core,\StandardizedVehicleUpgrades3V

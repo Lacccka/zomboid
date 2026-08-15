@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Skinned\Clothes\ARES_BACKPACK.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Skinned\Clothes\ARES_BACKPACK.fbx</m_FemaleModel>
+	<m_GUID>535b64f8-56bc-49f5-9d5a-ea4469f39017</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+	<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+
+
+
+<textureChoices>ARES\ARES_C2</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK1</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK1A</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK2A</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK2B</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK2C</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK2D</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK2E</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK2F</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK2G</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK2H</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK3A</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK3B</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK3C</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK3D</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK4A</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK4B</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK4C</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK4D</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK4E</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK4F</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK5A</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK5B</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK5C</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK5D</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK5E</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK5F</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK5G</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK6A</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK6B</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK6C</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK7A</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK7B</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK7C</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK7D</textureChoices>
+<textureChoices>ARES\ARES_ARMORY_BACKPACK7E</textureChoices>
+<textureChoices>ARES\ARES_C1</textureChoices>
+
+</clothingItem>
