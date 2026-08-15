@@ -8,6 +8,10 @@ local GridRender = require("UI/GridRender/GridRender")
 local ItemFootprint = require("Algorithm/ItemFootprint")
 local GridModOptions = require("System/GridModOptions")
 
+-- Mesmo padding usado no ISInventoryPage_Hijack (barra de controles dentro do
+-- rodapé reservado do grid ativo). Mantido em 1px nos dois arquivos.
+local CONTROLS_PAD = 1
+
 -- ============================================================================
 -- A interceptação do ISHotbar foi movida para dentro do OnGameBoot
 -- para garantir que o ISHotbar nativo já foi instanciado.
@@ -91,15 +95,31 @@ Events.OnGameBoot.Add(function()
         -- MP FLICKER FIX: Só recriamos os GridRenders se a estrutura de mochilas mudou
         -- ou se algum inventário overflow precisou nascer/morrer.
         local currentBackpackHash = ""
+        -- OTIMIZAÇÃO: quando o poll 300ms disparou o hard refresh, ele JÁ rodou o
+        -- gc:refresh() de cada grid (linhas ~366-373). Sem essa flag o refreshContainer
+        -- REFARIA o remap de todos os containers = duplo O(n*W*H) na mesma mudança.
+        local skipRefresh = self._pollAlreadyRefreshed
+        self._pollAlreadyRefreshed = nil
         for _, c in ipairs(containersToRender) do
             currentBackpackHash = currentBackpackHash .. tostring(c.inv) .. "|"
             local gc = GridContainer.getOrCreate(c.inv, self.player)
-            local okRefresh, refreshErr = pcall(function() gc:refresh() end)
-            if not okRefresh then
-                print("[GridInventory] ERRO no refreshContainer: " .. tostring(refreshErr))
+            if not skipRefresh then
+                local okRefresh, refreshErr = pcall(function() gc:refresh() end)
+                if not okRefresh then
+                    print("[GridInventory] ERRO no refreshContainer: " .. tostring(refreshErr))
+                end
             end
             local newUnpos = gc.unpositioned and #gc.unpositioned or 0
             currentBackpackHash = currentBackpackHash .. "UNPOS:" .. newUnpos .. "|"
+            -- Conteúdo do overflow no hash: o OverflowGridRender é um SNAPSHOT, e o
+            -- size pode ser o mesmo com itens DIFERENTES (um volta pro grid, outro
+            -- cai no overflow). Sem os IDs o hash não muda e a UI mostra itens velhos.
+            if newUnpos > 0 then
+                for _, ui in ipairs(gc.unpositioned) do
+                    currentBackpackHash = currentBackpackHash .. "O:" .. ui:getID() .. ";"
+                end
+                currentBackpackHash = currentBackpackHash .. "|"
+            end
             -- Nº de grids: o chão abre grids extras (overflow vira grid real).
             -- Como nesses casos o unpositioned fica 0, sem contar os grids o hash
             -- NÃO muda e a 2ª grid de chão nunca nasceria na UI.
@@ -157,15 +177,22 @@ Events.OnGameBoot.Add(function()
                 -- Passar yOffset aqui fazia a UI Java gravar um tamanho gigantesco no cache
                 local gridUi = GridRender:new(10, 0, gridCoreInstance, self.player, inv, i, cItem, cIcon)
                 gridUi:initialise()
+                -- Altura base (SEM o footer da controlsUI): usada pelo
+                -- gridInv_positionControlsUI pra ancorar a barra logo abaixo do
+                -- conteúdo. Capturada aqui (e não no update) pra nunca ficar nil
+                -- no primeiro frame após o rebuild.
+                gridUi.baseGridHeight = gridUi.height
                 -- Marca o grid do CHÃO (assinatura "floor") pra ele ser SEMPRE o
                 -- último painel no FlexBox (ver prerender).
                 gridUi.isFloor = GridContainer.containerSignature(inv) == "floor"
                 
                 if self.inventoryPage and self.inventoryPage.onCharacter then
-                    -- Margem de 25px para dar espaço para a scrollbar
-                    gridUi.baseX = self.width - gridUi.width - 25
+                    -- Margem de 15px para a scrollbar (mesma do flexbox no prerender)
+                    gridUi.baseX = self.width - gridUi.width - 15
                 else
-                    gridUi.baseX = 10
+                    -- Loot: mesma margem de 15px pro espelho simétrico (sem
+                    -- scrollbar na esquerda, mas igual ao lado do jogador).
+                    gridUi.baseX = 15
                 end
                 
                 gridUi:setX(gridUi.baseX)
@@ -186,9 +213,10 @@ Events.OnGameBoot.Add(function()
                     local OverflowGridRender = require("UI/GridRender/OverflowGridRender")
                     local overflowUi = OverflowGridRender:new(10, 0, gridContainer.unpositioned, self.player, true, inv, cItem, cIcon)
                     overflowUi:initialise()
+                    overflowUi.baseGridHeight = overflowUi.height
                     overflowUi.isFloor = GridContainer.containerSignature(inv) == "floor"
                     
-                    overflowUi.baseX = 10
+                    overflowUi.baseX = 15
                     overflowUi:setX(overflowUi.baseX)
                     overflowUi.baseY = 0
                     
@@ -212,9 +240,10 @@ Events.OnGameBoot.Add(function()
             local OverflowGridRender = require("UI/GridRender/OverflowGridRender")
             local overflowUi = OverflowGridRender:new(10, 0, allPlayerUnpositioned, self.player, false, self.inventory, nil, nil)
             overflowUi:initialise()
+            overflowUi.baseGridHeight = overflowUi.height
             overflowUi.isFloor = GridContainer.containerSignature(self.inventory) == "floor"
             
-            overflowUi.baseX = self.width - overflowUi.width - 25
+            overflowUi.baseX = self.width - overflowUi.width - 15
             overflowUi:setX(overflowUi.baseX)
             overflowUi.baseY = 0
             
@@ -234,10 +263,72 @@ Events.OnGameBoot.Add(function()
         if self.vscroll then
             self.vscroll:bringToTop()
         end
+
+        -- HEIGHT FIX: o vanilla ISInventoryPage (update e refreshBackpacks)
+        -- desconta controlsUI.height da altura do PANE — reserva do rodapé
+        -- nativo onde os botões Take All viveriam. O mod moveu a barra pra
+        -- DENTRO do grid (gridInv_positionControlsUI), então esse desconto é
+        -- fantasma: faz o painel "respirar" (perder/ganhar altura) a cada troca
+        -- de container. Restauramos a altura cheia do pane AQUI, no fim do
+        -- refreshContainer (cobre os 2 caminhos: update via gridRefreshDirty e
+        -- refreshBackpacks/selectContainer), então o vanilla nunca deixa o pane
+        -- encolhido nem por 1 frame.
+        local page = self.inventoryPage
+        if page then
+            local resizeH = 0
+            if page.resizeWidget and page.resizeWidget.height then
+                resizeH = page.resizeWidget.height
+            end
+            local fullH = page.height - self.y - resizeH
+            if self.height ~= fullH then
+                self:setHeight(fullH)
+            end
+        end
     end
 
     -- 3. Limpamos a tela de lixo visual do Zomboid e atualizamos o scroll!
     local og_prerender = ISInventoryPane.prerender
+
+    -- Posiciona a controlsUI (Take All/Transfer All/objeto) no rodapé do grid
+    -- ATIVO usando os valores do FLEXBOX recém-calculados (baseX/baseY deste
+    -- mesmo frame). Chamado no fim do prerender — NÃO no update — pra a barra
+    -- seguir o grid no MESMO frame (sem lag de 1 frame quando o grid cresce
+    -- pro footer ou o flexbox quebra coluna). No update só reservamos a altura
+    -- do grid; o baseY que o flexbox lê já inclui o footer.
+    local function gridInv_positionControlsUI(pane)
+        local page = pane.inventoryPage
+        local controlsUI = page and page.controlsUI
+        if not controlsUI then return end
+        local gridUi = nil
+        if pane.gridContainerUis then
+            local activeInv = pane.inventory
+            for _, g in ipairs(pane.gridContainerUis) do
+                if not g.isOverflow and g.inventoryContainer == activeInv then
+                    gridUi = g
+                    break
+                end
+            end
+        end
+        local hasButtons = (gridUi and controlsUI.controls and #controlsUI.controls > 0)
+        if not hasButtons then
+            controlsUI:setVisible(false)
+            return
+        end
+        -- Usa baseX/baseY (flexbox) + baseGridHeight (altura SEM o footer):
+        -- posição exata dentro do rodapé reservado, no MESMO frame do layout.
+        local bx = gridUi.baseX or gridUi:getX()
+        local by = gridUi.baseY or gridUi:getY()
+        controlsUI:setX(bx + CONTROLS_PAD)
+        controlsUI:setY(by + (gridUi.baseGridHeight or gridUi:getHeight()) + CONTROLS_PAD)
+        controlsUI:setWidth(gridUi:getWidth() - (CONTROLS_PAD * 2))
+        controlsUI:setVisible(true)
+        local kids = pane:getChildrenInOrder()
+        local isTop = kids[#kids] == controlsUI
+        if not isTop then
+            controlsUI:bringToTop()
+        end
+    end
+
     function ISInventoryPane:prerender()
         -- Polling de Segurança de Alta Performance (Smart Hash)
         -- O Zomboid frequentemente falha em disparar OnContainerUpdate (ex: admin commands, 
@@ -282,31 +373,46 @@ Events.OnGameBoot.Add(function()
                 self.lastGridHash = currentHash
                 
                 local needsHardRefresh = false
-                
-                -- Fazemos um refresh lógico/silencioso apenas
+
+                -- Fazemos um refresh lógico/silencioso apenas. IMPORTANTE: itera
+                -- pollInv (o MESMO conjunto do refreshContainer: backpacks ou
+                -- container ativo) — antes iterava gridContainerUis, que diverge
+                -- (overflow/floor são UIs extras do mesmo container) e fazia o
+                -- _pollAlreadyRefreshed pular o refresh de containers que o poll
+                -- não tinha tocado.
+                local refreshedAny = false
+                for _, inv in ipairs(pollInv) do
+                    if inv then
+                        refreshedAny = true
+                        local gridContainer = GridContainer.getOrCreate(inv, self.player)
+
+                        local oldUnpositioned = gridContainer.unpositioned and #gridContainer.unpositioned or 0
+
+                        local okRefresh, refreshErr = pcall(function() gridContainer:refresh() end)
+                        if not okRefresh then
+                            print("[GridInventory] ERRO no refresh do container: " .. tostring(refreshErr))
+                        end
+
+                        local newUnpositioned = gridContainer.unpositioned and #gridContainer.unpositioned or 0
+
+                        -- QUALQUER mudança no overflow exige hard refresh: o
+                        -- OverflowGridRender é um SNAPSHOT criado no rebuild. Se
+                        -- um item de overflow volta pro grid sem zerar (ex: 2→1),
+                        -- sem o rebuild a UI continua mostrando o item que já saiu
+                        -- ("overflow perdido") até um rebuild forçado (trocar de
+                        -- container). O crossing 0↔>0 antigo só cobria nascer/morrer.
+                        if oldUnpositioned ~= newUnpositioned then
+                            needsHardRefresh = true
+                        end
+                    end
+                end
+
+                -- Checagens UI-level (baratas, sem refresh): STALE de instância e
+                -- contagem de grids de chão. Independentes do passe acima.
                 if self.gridContainerUis then
                     for _, gridUi in ipairs(self.gridContainerUis) do
                         local inv = gridUi.inventoryContainer
                         if inv then
-                            local gridContainer = GridContainer.getOrCreate(inv, self.player)
-                            
-                            local oldUnpositioned = gridContainer.unpositioned and #gridContainer.unpositioned or 0
-                            
-                            local okRefresh, refreshErr = pcall(function() gridContainer:refresh() end)
-                            if not okRefresh then
-                                print("[GridInventory] ERRO no refresh do container: " .. tostring(refreshErr))
-                            end
-                            
-                            local newUnpositioned = gridContainer.unpositioned and #gridContainer.unpositioned or 0
-                            
-                            -- Se um overflow grid precisar nascer ou morrer, precisamos de um hard refresh!
-                            if (oldUnpositioned == 0 and newUnpositioned > 0) or (oldUnpositioned > 0 and newUnpositioned == 0) then
-                                needsHardRefresh = true
-                            end
-                            
-                            -- STALE: o GridRender aponta pra instância órfã (GridDevTool
-                            -- limpou GridContainer.instances) → força rebuild. Sem isso o
-                            -- grid NUNCA reflete mudanças (loot congela ao pegar item).
                             if not needsHardRefresh and gridUi.gridCore then
                                 local gc = GridContainer.instances[inv]
                                 if gc and gc.grids and gc.grids[1] and gridUi.gridCore ~= gc.grids[1] then
@@ -319,6 +425,7 @@ Events.OnGameBoot.Add(function()
                             -- precisa nascer/morrer junto. Compara a contagem de
                             -- grids do container com as UIs não-overflow dele.
                             if not needsHardRefresh and inv.getType and inv:getType() == "floor" then
+                                local gridContainer = GridContainer.getOrCreate(inv, self.player)
                                 local uiCount = 0
                                 for _, other in ipairs(self.gridContainerUis) do
                                     if not other.isOverflow and other.inventoryContainer == inv then
@@ -331,11 +438,17 @@ Events.OnGameBoot.Add(function()
                             end
                         end
                     end
-                else
+                elseif #pollInv > 0 then
                     needsHardRefresh = true
                 end
-                
+
                 if needsHardRefresh then
+                    -- O refresh() de todos os containers JÁ rodou neste poll (passe
+                    -- acima, mesmos containers do refreshContainer). Informa o
+                    -- refreshContainer pra NÃO refazer o remap (duplo custo).
+                    if refreshedAny then
+                        self._pollAlreadyRefreshed = true
+                    end
                     self:refreshContainer()
                     -- NÃO aborta o frame: o FlexBox abaixo reposiciona os grids
                     -- recriados NO MESMO frame. Abortar deixava tudo no baseY=0
@@ -361,13 +474,25 @@ Events.OnGameBoot.Add(function()
         local isPlayer = (self.inventoryPage and self.inventoryPage.onCharacter)
         local core = getCore()
         local screenW = core:getScreenWidth()
-        local panelW = (screenW - 350) / 2
-        if not GridModOptions.isFullscreenPanel() then
-            panelW = self.width
+        -- Largura real do painel: o ISInventoryPage_Hijack já calcula isso no
+        -- update (paperDollW com UI Scale + expansão pro grid ativo caber) e
+        -- seta self.width do pane. Recalcular com (screenW-350)/2 aqui deixava
+        -- um GAP entre o grid e a coluna de bolsas: com UI Scale >100 ou um
+        -- grid largo, o painel real fica MAIOR que essa conta, e como o layout
+        -- do jogador ancora o grid pela DIREITA (paneWidth - xMargin), o grid
+        -- parava antes do fim real — sobrava espaço até a coluna de bolsas.
+        local paneWidth = self.width
+        if paneWidth <= 0 then
+            paneWidth = (screenW - 350) / 2
         end
-        local paneWidth = panelW - (self.inventoryPage and self.inventoryPage.buttonSize or 32)
         
-        local xMargin = isPlayer and 25 or 10
+        -- Margem da borda do pane. No jogador, o grid termina ANTES da
+        -- scrollbar (que fica no canto direito, ~15px). No loot não há scrollbar
+        -- na esquerda, mas pra manter o ESPELHO simétrico dos dois painéis
+        -- (inv = grid à direita, loot = grid à esquerda) usamos a MESMA margem
+        -- dos dois lados: 15px. Senão o grid do loot fica colado na coluna de
+        -- bolsas enquanto o do jogador fica mais afastado — visual estranho.
+        local xMargin = 15
         
         local curX = isPlayer and (paneWidth - xMargin) or xMargin
         local curY = 15
@@ -418,7 +543,11 @@ Events.OnGameBoot.Add(function()
             gridUi:setY(gridUi.baseY)
             gridUi:setX(gridUi.baseX)
         end
-        
+
+        -- Posiciona a barra de controles (Take All/Transfer All/objeto) com os
+        -- baseY/baseX do flexbox DESTE frame (sem lag de 1 frame vs o grid).
+        gridInv_positionControlsUI(self)
+
         local finalHeight = curY + rowTallest + 30
         self.myFinalHeight = finalHeight
         if finalHeight ~= self:getScrollHeight() then

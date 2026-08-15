@@ -88,6 +88,7 @@ item TTI_Benelli_M4_cat
         MultipleHitConditionAffected = FALSE,
             ModelWeaponPart = Gunpart.XY_OF Gunpart.XY_OF Canon Canon,
         ModelWeaponPart = Gunpart.AAC_Silencer_2 Gunpart.AAC_Silencer_2 Canon Canon,
+	ModelWeaponPart = Gunpart.SMSUP_cat Gunpart.SMSUP_cat Canon Canon,
         ModelWeaponPart = Gunpart.XY_M4MK18 Gunpart.XY_M4MK18 Canon Canon,
         ModelWeaponPart = Gunpart.XY_SP Gunpart.XY_SP Canon Canon,
         ModelWeaponPart = Gunpart.ArmytekPredator_Bottom Gunpart.ArmytekPredator_Bottom Light Light,

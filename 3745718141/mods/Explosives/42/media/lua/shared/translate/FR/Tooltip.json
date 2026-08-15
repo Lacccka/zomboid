@@ -1,0 +1,13 @@
+{
+  "Tooltip_GrenadeBandolier": "Offre 4 emplacements de fixation pour grenades. Faites glisser les grenades sur les icônes de fixation pour les accrocher et y accéder rapidement - ce n'est pas un contenant de stockage.",
+  "Tooltip_FlareBurning": "Une fusée éclairante allumée, brûlant vivement en dégageant des étincelles et de la fumée. Lancez-la pour marquer un endroit ou éclairer la zone.",
+  "Tooltip_FlareSpent": "Une fusée éclairante épuisée. Ne sert plus à rien.",
+  "Tooltip_ClaymoreRemote": "Une mine Claymore M18A1 équipée d'un déclencheur à distance au lieu d'un détecteur de mouvement. Déclenchez-la à distance à l'aide d'une télécommande.",
+  "Tooltip_Mk2Shell": "Un corps de grenade Mk2 inachevé et creux. Nécessite un ensemble de fusée, un levier percuteur et de la poudre à canon pour devenir une grenade fonctionnelle.",
+  "Tooltip_M26Shell": "Un corps de grenade M26 inachevé et creux. Nécessite un ensemble de fusée, un levier percuteur et de la poudre à canon pour devenir une grenade fonctionnelle.",
+  "Tooltip_M67Shell": "Un corps de grenade M67 inachevé et creux. Nécessite un ensemble de fusée, un levier percuteur et de la poudre à canon pour devenir une grenade fonctionnelle.",
+  "Tooltip_StrikerLever": "Un levier percuteur à ressort, forgé à partir de ferraille. Nécessaire pour assembler n'importe quelle grenade à main - c'est lui qui déclenche la mèche une fois relâché.",
+  "Tooltip_Mk2FuzeAssembly": "Un ensemble de fusée fabriqué à la main pour un corps de grenade Mk2 - amorce, élément de retard et câblage, prêt à être vissé dans le corps.",
+  "Tooltip_M26FuzeAssembly": "Un ensemble de fusée fabriqué à la main pour un corps de grenade M26 - amorce, élément de retard et câblage, prêt à être vissé dans le corps.",
+  "Tooltip_M67FuzeAssembly": "Un ensemble de fusée fabriqué à la main pour un corps de grenade M67 - amorce, élément de retard et câblage, prêt à être vissé dans le corps."
+}

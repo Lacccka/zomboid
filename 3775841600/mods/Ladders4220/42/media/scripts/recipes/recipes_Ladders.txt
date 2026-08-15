@@ -1,0 +1,46 @@
+module Base
+{
+	craftRecipe MakeSteelLadder
+	{
+		timedAction = Welding,
+		Time = 60,
+		NeedToBeLearn = False,
+		SkillRequired = MetalWelding:2,
+		Tags = InHandCraft;Welding,
+		category = Metalworking,
+		xpAward = MetalWelding:25,
+		AutoLearnAny = MetalWelding:2,
+		inputs
+		{
+			item 6 [Base.IronBar],
+			item 4 [Base.MetalPipe],
+			item 20 [Base.Screws],
+			item 1 tags[Screwdriver] mode:keep,
+		}
+		outputs
+		{
+			item 1 Base.SteelLadder,
+		}
+	}
+	craftRecipe MakeWoodenLadder
+	{
+		timedAction = Making,
+		Time = 60,
+		tags = AnySurfaceCraft;Carpentry,
+		category = Carpentry,
+		xpAward = Woodwork:5,
+		SkillRequired = Woodwork:3,
+		inputs
+		{
+			item 1 tags[Hammer] mode:keep flags[MayDegradeLight],
+			item 1 tags[Saw] mode:keep flags[MayDegradeLight;Prop1],
+			item 6 [Base.Plank] flags[Prop2],
+			item 4 [Base.LongStick],
+			item 20 [Base.Nails],
+		}
+		outputs
+		{
+			item 1 Base.WoodenLadder,
+		}
+	}
+}

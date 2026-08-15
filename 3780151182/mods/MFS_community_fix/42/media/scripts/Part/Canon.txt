@@ -541,7 +541,7 @@ module Gunpart
                 WorldStaticModel    = SMSUP_cat,
                 WeightModifier      = 0.1,
                 DamageModifier      = -0.5,
-                MountOn = M870_cat;TTI_Benelli_M4_cat;Striker12_cat;Typhoon_cat;FAL_cat;Christine45_cat;Saiga12_cat;AKS74U_cat;AKS74U_cat_Drum;origin12_cat;UTS15_cat;M1887_cat,
+                MountOn = M870_cat;TTI_Benelli_M4_cat;Striker12_cat;Typhoon_cat;Saiga12_cat;origin12_cat;UTS15_cat;M1887_cat;AA12_cat,
             }
             model SMSUP_cat
             {

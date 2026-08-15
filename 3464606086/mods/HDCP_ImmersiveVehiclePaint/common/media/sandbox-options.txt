@@ -1,0 +1,28 @@
+VERSION = 1,
+
+option ImmersiveVehiclePaint.SpraySpawnRate
+{
+    type = enum,
+    default = 3,
+    numValues = 5,
+    page = ImmersiveVehiclePaint,
+    translation = ImmersiveVehiclePaint_SpraySpawnRate,
+}
+
+option ImmersiveVehiclePaint.MagazineSpawnRate
+{
+    type = enum,
+    default = 3,
+    numValues = 5,
+    page = ImmersiveVehiclePaint,
+    translation = ImmersiveVehiclePaint_MagazineSpawnRate,
+}
+
+option ImmersiveVehiclePaint.ToolSpawnRate
+{
+    type = enum,
+    default = 3,
+    numValues = 5,
+    page = ImmersiveVehiclePaint,
+    translation = ImmersiveVehiclePaint_ToolSpawnRate,
+}

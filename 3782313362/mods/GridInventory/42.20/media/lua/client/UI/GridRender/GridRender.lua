@@ -26,7 +26,6 @@ GridRender = ISPanel:derive("GridRender")
 GridInventory_InTransit = GridInventory_InTransit or {}
 
 local GridRender = ISPanel:derive("GridRender")
-local GRID_PADDING = 10
 
 local ITEM_BG_COLOR = {r=0.4, g=0.4, b=0.4, a=0.5}
 local ITEM_BG_FROZEN = {r=0.2, g=0.6, b=0.9, a=0.5}
@@ -130,10 +129,16 @@ local function gridCapacity(container, playerObj)
 end
 
 function GridRender:new(x, y, gridCore, playerNum, inventoryContainer, gridIndex, containerItem, fallbackIcon, noHeader)
-    local headerH = 28
+    -- UI Scale (Mod Options): fator em % aplicado ao tamanho da célula, padding
+    -- e header. Default 1.0. O global é sincronizado pelo GridModOptions.
+    local uiScale = GridInventory_uiScale or 100
+    local scale = uiScale / 100
+    local headerH = math.floor(28 * scale)
     if noHeader then headerH = 0 end
-    local width = (gridCore.width * 40) + (GRID_PADDING * 2)
-    local height = (gridCore.height * 40) + (GRID_PADDING * 2) + headerH
+    local cellSize = math.floor(40 * scale)
+    local gridPadding = math.floor(10 * scale)
+    local width = (gridCore.width * cellSize) + (gridPadding * 2)
+    local height = (gridCore.height * cellSize) + (gridPadding * 2) + headerH
     local o = ISPanel:new(x, y, width, height)
     setmetatable(o, self)
     self.__index = self
@@ -143,7 +148,9 @@ function GridRender:new(x, y, gridCore, playerNum, inventoryContainer, gridIndex
     o.gridIndex = gridIndex or 1
     o.fallbackIcon = fallbackIcon
     o.headerH = headerH
-    o.cellSize = 40
+    o.cellSize = cellSize
+    o.gridPadding = gridPadding
+    o.uiScale = scale
     o.playerNum = playerNum or 0
     o.draggedItem = nil
     o.selectedItems = {}
@@ -652,11 +659,15 @@ function GridRender:startSearch()
 end
 
 function GridRender:render()
+    if GridInventory_Profiler and GridInventory_Profiler.enabled and self.gridCore then
+        GridInventory_Profiler.renderGrid(self.gridCore.width or 0, self.gridCore.height or 0)
+    end
+
     local mouseX = self:getMouseX()
     local mouseY = self:getMouseY()
     
     if self.headerH and self.headerH > 0 then
-        self:drawRect(GRID_PADDING, GRID_PADDING, self.width - (GRID_PADDING*2), self.headerH - 4, 0.5, 0.1, 0.1, 0.1)
+        self:drawRect(self.gridPadding, self.gridPadding, self.width - (self.gridPadding*2), self.headerH - 4, 0.5, 0.1, 0.1, 0.1)
         
         local isActive = false
         local pInv = getPlayerInventory(self.playerNum)
@@ -671,9 +682,9 @@ function GridRender:render()
         end
         
         if isActive then
-            self:drawRectBorder(GRID_PADDING, GRID_PADDING, self.width - (GRID_PADDING*2), self.headerH - 4, 0.9, 1.0, 0.9, 0.3)
+            self:drawRectBorder(self.gridPadding, self.gridPadding, self.width - (self.gridPadding*2), self.headerH - 4, 0.9, 1.0, 0.9, 0.3)
         else
-            self:drawRectBorder(GRID_PADDING, GRID_PADDING, self.width - (GRID_PADDING*2), self.headerH - 4, 0.8, 0.3, 0.3, 0.3)
+            self:drawRectBorder(self.gridPadding, self.gridPadding, self.width - (self.gridPadding*2), self.headerH - 4, 0.8, 0.3, 0.3, 0.3)
         end
         
         local text = ""
@@ -707,17 +718,16 @@ function GridRender:render()
             text = text .. " (Overflow)"
         end
         
-        local textX = GRID_PADDING + 5
+        local textX = self.gridPadding + 5
         if tex then
-            self:drawTextureScaledAspect(tex, textX, GRID_PADDING + 2, 20, 20, 1, 1, 1, 1)
+            self:drawTextureScaledAspect(tex, textX, self.gridPadding + 2, 20, 20, 1, 1, 1, 1)
             textX = textX + 25
         end
 
         -- ── PESO: calcula o TEXTO e a COR antes de desenhar qualquer coisa,
         -- só pra saber a largura que ele vai ocupar (ainda não desenha na tela).
         -- O DISPLAY mantém o getMaxWeight() (a capacidade "confortável" do
-        -- personagem, ex.: 12) — é o que o jogador enxerga no vanilla. O teto
-        -- real (getEffectiveCapacity, ex.: 50) só é usado no FEEDBACK.
+        -- personagem, ex.: 12) — é o que o jogador enxerga no vanilla.
         local weightStr = nil
         local weightR, weightG, weightB = 0.9, 0.9, 0.9
         local hasWeightDisplay = self.inventoryContainer and self.inventoryContainer.getCapacityWeight and self.inventoryContainer.getMaxWeight
@@ -756,14 +766,14 @@ function GridRender:render()
         end
 
         -- ── NOME: agora que já sabemos quanto espaço sobra, trunca e desenha.
-        local titleMaxWidth = (self.width - GRID_PADDING - 5) - textX - weightReservedWidth
+        local titleMaxWidth = (self.width - self.gridPadding - 5) - textX - weightReservedWidth
         local displayText = truncateText(text, titleMaxWidth, UIFont.Small)
-        self:drawText(displayText, textX, GRID_PADDING + 4, 0.9, 0.9, 0.9, 1, UIFont.Small)
+        self:drawText(displayText, textX, self.gridPadding + 4, 0.9, 0.9, 0.9, 1, UIFont.Small)
 
         -- ── PESO: desenha por último, já com texto e cor prontos de antes.
         if weightStr then
-            local rightX = self.width - GRID_PADDING - 5
-            self:drawTextRight(weightStr, rightX, GRID_PADDING + 4, weightR, weightG, weightB, 1, UIFont.Small)
+            local rightX = self.width - self.gridPadding - 5
+            self:drawTextRight(weightStr, rightX, self.gridPadding + 4, weightR, weightG, weightB, 1, UIFont.Small)
         end
 
         -- ── BUSCA (Tarkov): aviso "Vasculhar (X)" no header enquanto houver
@@ -775,19 +785,19 @@ function GridRender:render()
                 searchText = searchText .. " (" .. tostring(hidden) .. ")"
             end
             local sw = getTextManager():MeasureStringX(UIFont.Small, searchText)
-            local rightX = self.width - GRID_PADDING - 5
+            local rightX = self.width - self.gridPadding - 5
             if weightStr then
                 rightX = rightX - (getTextManager():MeasureStringX(UIFont.Small, weightStr) + 10)
             end
-            self:drawTextRight(searchText, rightX, GRID_PADDING + 4, 1.0, 0.75, 0.3, 1, UIFont.Small)
+            self:drawTextRight(searchText, rightX, self.gridPadding + 4, 1.0, 0.75, 0.3, 1, UIFont.Small)
         end
     end
 
     -- Desenha a malha do grid (os quadrados de cada slot)
     for col = 1, self.gridCore.width do
         for row = 1, self.gridCore.height do
-            local cellX = GRID_PADDING + ((col - 1) * self.cellSize)
-            local cellY = GRID_PADDING + (self.headerH or 0) + ((row - 1) * self.cellSize)
+            local cellX = self.gridPadding + ((col - 1) * self.cellSize)
+            local cellY = self.gridPadding + (self.headerH or 0) + ((row - 1) * self.cellSize)
             
             -- Mantém a transparência natural preta, desenhando APENAS a borda
             self:drawRectBorder(cellX, cellY, self.cellSize, self.cellSize, 0.15, 0.5, 0.5, 0.5)
@@ -816,24 +826,27 @@ function GridRender:render()
     -- idade/umidade (o vanilla faz isso ao renderizar itens em containers
     -- visíveis). Só o LÍDER desenha o ícone.
     for itemId, data in pairs(self.gridCore.items) do
-        if data.stackMemberOf and data.itemObj then
-            if data.itemObj.updateAge then data.itemObj:updateAge() end
-            if data.itemObj.updateWetness then data.itemObj:updateWetness() end
-        end
-    end
-
-    for itemId, data in pairs(self.gridCore.items) do
         -- Membros de pilha não são desenhados individualmente: só o LÍDER
         -- renderiza (ícone + badge de contagem). As células apontam pro líder.
+        -- (Passo único: o tick de age/wetness do membro de pilha roda aqui,
+        -- dentro do mesmo loop do líder — antes eram 2 passes de pairs().)
         if data.stackMemberOf then
-            -- skip
+            if data.itemObj then
+                if data.itemObj.updateAge then data.itemObj:updateAge() end
+                if data.itemObj.updateWetness then data.itemObj:updateWetness() end
+            end
+            -- skip render
         else
+        if GridInventory_Profiler and GridInventory_Profiler.enabled then
+            GridInventory_Profiler.count("items")
+        end
+
         -- Se estivermos arrastando, não renderizamos o item localmente se for um dos arrastados.
         local isDragged = GridInventory_GlobalDrag and GridInventory_GlobalDrag.sourceGrid == self and GridInventory_GlobalDrag.itemsMap[itemId]
         
         if not isDragged then
-            local drawX = GRID_PADDING + ((data.x - 1) * self.cellSize)
-            local drawY = GRID_PADDING + (self.headerH or 0) + ((data.y - 1) * self.cellSize)
+            local drawX = self.gridPadding + ((data.x - 1) * self.cellSize)
+            local drawY = self.gridPadding + (self.headerH or 0) + ((data.y - 1) * self.cellSize)
             
             local drawW = data.w * self.cellSize
             local drawH = data.h * self.cellSize
@@ -962,6 +975,31 @@ function GridRender:render()
                         local qy = drawY + (drawH - qSize) / 2
                         self:drawTextureScaled(qTex, qx, qy, qSize, qSize, 1, 1, 1, 0.9)
                     end
+                else
+                    -- DESCOBERTA (Tarkov): item acabou de ser revelado pela busca.
+                    -- Wipe BRANCO subindo de baixo pra cima no footprint, ~350ms.
+                    -- O lookup é O(1) e só roda pra itens já visíveis (o hot path
+                    -- dos ocultos continua intocado). A limpeza é lazy (expira
+                    -- sozinha na consulta), sem custo por frame.
+                    -- SÓ renderiza quando este grid é de um container do mundo
+                    -- com busca habilitada (searchKey ~= nil = não é inv do
+                    -- jogador nem chão; e a option ligada). Usar "searchPending"
+                    -- aqui cortaria o wipe do ÚLTIMO item revelado (aí não há
+                    -- mais ocultos). Sem a guarda, um revealAnim residual faria
+                    -- o wipe aparecer no inventário do jogador mesmo com a
+                    -- opção de busca DESLIGADA.
+                    local revealP = searchKey and GridInventory_Search.getRevealProgress(data.itemObj:getID())
+                    if revealP then
+                        -- revealP 0→1: a borda do wipe sobe; abaixo dela, um
+                        -- preenchimento branco translúcido "revela" o item.
+                        local wipeH = drawH * (1 - revealP)
+                        local wipeY = drawY + drawH - wipeH
+                        -- Base do wipe (abaixo da borda): cobertura branca
+                        -- esmaecida que desce conforme o wipe sobe.
+                        self:drawRect(drawX, wipeY, drawW, wipeH, 0.35 * (1 - revealP), 1, 1, 1)
+                        -- Borda frontal do wipe: linha branca brilhante.
+                        self:drawRect(drawX, wipeY, drawW, 2, 0.9, 1, 1, 1)
+                    end
                 end
                 
                 -- Feedback visual de falta de espaço
@@ -1016,8 +1054,8 @@ function GridRender:render()
 
     if self.gridCore.ghostItems then
         for gId, gData in pairs(self.gridCore.ghostItems) do
-            local drawX = GRID_PADDING + ((gData.x - 1) * self.cellSize)
-            local drawY = GRID_PADDING + (self.headerH or 0) + ((gData.y - 1) * self.cellSize)
+            local drawX = self.gridPadding + ((gData.x - 1) * self.cellSize)
+            local drawY = self.gridPadding + (self.headerH or 0) + ((gData.y - 1) * self.cellSize)
             local drawW = gData.w * self.cellSize
             local drawH = gData.h * self.cellSize
             
@@ -1210,8 +1248,8 @@ end
 -- ============================================================================
 
 function GridRender:getGridCellAtMouse(x, y)
-    local col = math.floor((x - GRID_PADDING) / self.cellSize) + 1
-    local row = math.floor((y - GRID_PADDING - (self.headerH or 0)) / self.cellSize) + 1
+    local col = math.floor((x - self.gridPadding) / self.cellSize) + 1
+    local row = math.floor((y - self.gridPadding - (self.headerH or 0)) / self.cellSize) + 1
     if col >= 1 and col <= self.gridCore.width and row >= 1 and row <= self.gridCore.height then
         return col, row
     end
@@ -1301,8 +1339,8 @@ function GridRender:drawDropPreview()
     -- então a GlobalDragRender não desenha fundo/borda por cima dele.
     GridInventory_DropPreview = { grid = self, dragRef = GridInventory_GlobalDrag }
 
-    local px = GRID_PADDING + ((targetX - 1) * self.cellSize)
-    local py = GRID_PADDING + (self.headerH or 0) + ((targetY - 1) * self.cellSize)
+    local px = self.gridPadding + ((targetX - 1) * self.cellSize)
+    local py = self.gridPadding + (self.headerH or 0) + ((targetY - 1) * self.cellSize)
     local pw = effectiveW * self.cellSize
     local ph = effectiveH * self.cellSize
 
@@ -1316,8 +1354,8 @@ function GridRender:drawDropPreview()
         self:drawRect(px, py, pw, ph, 0.3, 0.9, 0.2, 0.2)
         self:drawRectBorder(px, py, pw, ph, 0.85, 1.0, 0.3, 0.3)
         if snapX and snapY then
-            local sx = GRID_PADDING + ((snapX - 1) * self.cellSize)
-            local sy = GRID_PADDING + (self.headerH or 0) + ((snapY - 1) * self.cellSize)
+            local sx = self.gridPadding + ((snapX - 1) * self.cellSize)
+            local sy = self.gridPadding + (self.headerH or 0) + ((snapY - 1) * self.cellSize)
             self:drawRectBorder(sx, sy, pw, ph, 0.9, 0.3, 1.0, 0.45)
         end
     end
@@ -1346,7 +1384,7 @@ function GridRender:onMouseDown(x, y)
 
     -- Verifica se clicou no Header!
     if self.headerH and self.headerH > 0 then
-        if y >= GRID_PADDING and y <= GRID_PADDING + self.headerH then
+        if y >= self.gridPadding and y <= self.gridPadding + self.headerH then
             local pLoot = getPlayerLoot(self.playerNum)
             local pInv = getPlayerInventory(self.playerNum)
             local found = false
@@ -1824,10 +1862,19 @@ function GridRender:performGridReorder(targets)
             modData.gridContainer = GridContainer.containerSignature(self.inventoryContainer)
             -- Posição MANUAL: consolidação de pilhas nunca move este item.
             modData.gridManual = true
-            -- MP server-mandatory: o servidor grava e broadcasta a posição.
-            GridClientNetwork.sendItemMove(self.inventoryContainer, t.item.itemObj:getID(), t.tx, t.ty, t.item.rotated, modData.gridContainer, true)
         end
     end
+    -- MP server-mandatory: um comando em LOTE com TODOS os alvos. O servidor
+    -- valida o lote junto (movedSet) e aplica all-or-nothing — se enviássemos
+    -- um REQUEST_MOVE por item, o servidor validaria cada um contra o modData
+    -- atual (os outros itens ainda na origem) e o primeiro swap colidiria.
+    GridClientNetwork.sendReorder(self.inventoryContainer, targets,
+        GridContainer.containerSignature(self.inventoryContainer))
+    -- Reorder no MESMO grid é só modData: nada mais dispara refresh (poll: hash
+    -- de itens igual; OnContainerUpdate: item não saiu do container; SP: sem eco
+    -- do servidor). Toca o pane na hora pra o OverflowGridRender (snapshot) ser
+    -- reconstruído se o reorder abriu espaço pro overflow voltar pro grid.
+    GridClientNetwork.markGridChanged(self.inventoryContainer, self.playerNum)
     self.selectedItems = {}
     return true
 end
@@ -1926,8 +1973,8 @@ function GridRender:onMouseUp(x, y)
         local rh = math.abs(mY - self.marquisStartY)
         
         for itemId, data in pairs(self.gridCore.items) do
-            local itemX = GRID_PADDING + ((data.x - 1) * self.cellSize)
-            local itemY = GRID_PADDING + (self.headerH or 0) + ((data.y - 1) * self.cellSize)
+            local itemX = self.gridPadding + ((data.x - 1) * self.cellSize)
+            local itemY = self.gridPadding + (self.headerH or 0) + ((data.y - 1) * self.cellSize)
             local itemW = data.w * self.cellSize
             local itemH = data.h * self.cellSize
             
@@ -2373,6 +2420,62 @@ function GridRender:onRightMouseUp(x, y)
         return
     end
 
+    -- Clique direito no HEADER do grid: abre o MESMO menu de contexto que o
+    -- clique direito na coluna de containers do painel (ISInventoryPage:
+    -- onBackpackRightMouseDown). Isso expõe Rename Bag, DevTools (Edit Grid
+    -- Size), etc. direto no grid. Para o inventário do jogador (sem item
+    -- contendo) o vanilla não abre menu de bag; mas o DevTools aparece no
+    -- menu de ITEM (a bolsa principal é um item), então usamos o container
+    -- contendo (se existir) ou o próprio inventário como item falso.
+    if self.headerH and self.headerH > 0 then
+        if y >= self.gridPadding and y <= self.gridPadding + self.headerH then
+            local container = self.inventoryContainer
+            if container then
+                -- Acha o BOTÃO REAL da coluna de containers que representa este
+                -- container e reusa o clique direito nativo dele (onBackpack
+                -- RightMouseDown) — o MESMO menu da coluna: Rename Bag, Refill
+                -- Container, etc. (o DevTools é adicionado DEPOIS, no contexto
+                -- recém-criado — ISContextMenu.get LIMPA o menu a cada chamada,
+                -- então adicionar antes seria apagado).
+                local pLoot = getPlayerLoot and getPlayerLoot(self.playerNum)
+                local pInv = getPlayerInventory and getPlayerInventory(self.playerNum)
+                local targetBtn = nil
+                local page = nil
+                for _, pg in ipairs({pInv, pLoot}) do
+                    if pg and pg.backpacks then
+                        for _, btn in ipairs(pg.backpacks) do
+                            if btn and btn.inventory == container then
+                                targetBtn = btn
+                                page = pg
+                                break
+                            end
+                        end
+                    end
+                    if targetBtn then break end
+                end
+                -- Menu da coluna vanilla (Rename Bag, Refill, etc.) pra bags.
+                if targetBtn then
+                    if targetBtn.onRightMouseDown then
+                        targetBtn.onRightMouseDown(targetBtn, x, y)
+                    elseif targetBtn.onBackpackRightMouseDown then
+                        targetBtn.onBackpackRightMouseDown(targetBtn, x, y)
+                    end
+                end
+                -- DevTools com o CONTAINER como alvo (edita o grid do mundo/
+                -- jogador, não só bags com item). Adiciona DEPOIS do menu da
+                -- coluna (o ISContextMenu.get limpa a cada chamada).
+                local GridDevToolUI = require("UI/GridDevTool")
+                if GridDevToolUI and GridDevToolUI.addContextOption then
+                    local context = ISContextMenu.get(self.playerNum, getMouseX(), getMouseY())
+                    if context then
+                        GridDevToolUI.addContextOption(context, self.playerNum, container)
+                    end
+                end
+            end
+            return
+        end
+    end
+
     if GridInventory_GlobalDrag then
         -- Rotaciona TODOS os itens sendo arrastados no grupo!
         for _, draggedItem in ipairs(GridInventory_GlobalDrag.itemsData) do
@@ -2509,10 +2612,6 @@ function GridRender:updateTooltip()
 end
 
 function GridRender:update()
-    -- Marca o início do frame pro cache de busca (Tarkov): needsSearch /
-    -- isItemHidden / countHiddenStacks compartilham UMA varredura do container
-    -- por frame em vez de re-iterar os itens a cada consulta do render.
-    GridInventory_Search.beginFrame()
     ISPanel.update(self)
     self:updateTooltip()
 

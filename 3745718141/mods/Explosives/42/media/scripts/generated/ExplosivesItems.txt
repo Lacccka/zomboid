@@ -1,0 +1,492 @@
+module Explosives
+{
+    item Mk2Grenade
+    {
+        DisplayCategory = Explosives,
+        ItemType = base:weapon,
+        Weight = 0.6,
+        Icon = Mk2Grenade,
+        ExplosionPower = 90,
+        ExplosionRange = 7,
+        ExplosionSound = PipeBombExplode,
+        FireStartingEnergy = 0,
+        FireStartingChance = 0,
+        MaxDamage = 0.0,
+        MaxHitcount = 0,
+        MaxRange = 20.0,
+        MinDamage = 0.0,
+        MinimumSwingtime = 1.5,
+        PhysicsObject = Explosives.Mk2Grenade,
+        SwingAmountBeforeImpact = 0.1,
+        SwingAnim = Throw,
+        SwingSound = PipeBombThrow,
+        Swingtime = 1.5,
+        Tooltip = Tooltip_Trap,
+        UseSelf = true,
+        WeaponSprite = Explosives.Mk2Grenade,
+        WorldStaticModel = Explosives.Mk2Grenade,
+        ConditionMax = 1,
+        AttachmentType = GrenadeSlot,
+    }
+
+    item M26Grenade
+    {
+        DisplayCategory = Explosives,
+        ItemType = base:weapon,
+        Weight = 0.45,
+        Icon = M26Grenade,
+        ExplosionPower = 100,
+        ExplosionRange = 8,
+        ExplosionSound = PipeBombExplode,
+        FireStartingEnergy = 0,
+        FireStartingChance = 0,
+        MaxDamage = 0.0,
+        MaxHitcount = 0,
+        MaxRange = 20.0,
+        MinDamage = 0.0,
+        MinimumSwingtime = 1.5,
+        PhysicsObject = Explosives.M26Grenade,
+        SwingAmountBeforeImpact = 0.1,
+        SwingAnim = Throw,
+        SwingSound = PipeBombThrow,
+        Swingtime = 1.5,
+        Tooltip = Tooltip_Trap,
+        UseSelf = true,
+        WeaponSprite = Explosives.M26Grenade,
+        WorldStaticModel = Explosives.M26Grenade,
+        ConditionMax = 1,
+        AttachmentType = GrenadeSlot,
+    }
+
+    item M67Grenade
+    {
+        DisplayCategory = Explosives,
+        ItemType = base:weapon,
+        Weight = 0.4,
+        Icon = M67Grenade,
+        ExplosionPower = 120,
+        ExplosionRange = 10,
+        ExplosionSound = PipeBombExplode,
+        FireStartingEnergy = 0,
+        FireStartingChance = 0,
+        MaxDamage = 0.0,
+        MaxHitcount = 0,
+        MaxRange = 20.0,
+        MinDamage = 0.0,
+        MinimumSwingtime = 1.5,
+        PhysicsObject = Explosives.M67Grenade,
+        SwingAmountBeforeImpact = 0.1,
+        SwingAnim = Throw,
+        SwingSound = PipeBombThrow,
+        Swingtime = 1.5,
+        Tooltip = Tooltip_Trap,
+        UseSelf = true,
+        WeaponSprite = Explosives.M67Grenade,
+        WorldStaticModel = Explosives.M67Grenade,
+        ConditionMax = 1,
+        AttachmentType = GrenadeSlot,
+    }
+
+    item M14TH3Grenade
+    {
+        DisplayCategory = Explosives,
+        ItemType = base:weapon,
+        Weight = 0.45,
+        Icon = M14TH3Grenade,
+        ExplosionPower = 1,
+        ExplosionRange = 7,
+        ExplosionSound = FlameTrapExplode,
+        FireStartingEnergy = 40,
+        FireStartingChance = 50,
+        FireRange = 6,
+        MaxDamage = 0.0,
+        MaxHitcount = 0,
+        MaxRange = 20.0,
+        MinDamage = 0.0,
+        MinimumSwingtime = 1.5,
+        PhysicsObject = Explosives.M14TH3Grenade,
+        SwingAmountBeforeImpact = 0.1,
+        SwingAnim = Throw,
+        SwingSound = FlameTrapThrow,
+        Swingtime = 1.5,
+        Tooltip = Tooltip_Trap,
+        UseSelf = true,
+        WeaponSprite = Explosives.M14TH3Grenade,
+        WorldStaticModel = Explosives.M14TH3Grenade,
+        ConditionMax = 1,
+        AttachmentType = GrenadeSlot,
+    }
+
+    item M84Flashbang
+    {
+        DisplayCategory = Explosives,
+        ItemType = base:weapon,
+        Weight = 0.3,
+        Icon = M84Flashbang,
+        ExplosionPower = 1,
+        ExplosionRange = 1,
+        ExplosionSound = PipeBombExplode,
+        FireStartingEnergy = 0,
+        FireStartingChance = 0,
+        FireRange = 0,
+        NoiseRange = 80,
+        MaxDamage = 0.0,
+        MaxHitcount = 0,
+        MaxRange = 20.0,
+        MinDamage = 0.0,
+        MinimumSwingtime = 1.5,
+        PhysicsObject = Explosives.M84Flashbang,
+        SwingAmountBeforeImpact = 0.1,
+        SwingAnim = Throw,
+        SwingSound = PipeBombThrow,
+        Swingtime = 1.5,
+        Tooltip = Tooltip_Trap,
+        UseSelf = true,
+        WeaponSprite = Explosives.M84Flashbang,
+        WorldStaticModel = Explosives.M84Flashbang,
+        ConditionMax = 1,
+        AttachmentType = GrenadeSlot,
+    }
+
+    item Flare
+    {
+        DisplayCategory = Explosives,
+        ItemType = base:weapon,
+        Weight = 0.1,
+        Icon = Flare,
+        ExplosionPower = 0,
+        ExplosionRange = 0,
+        FireStartingEnergy = 0,
+        FireStartingChance = 0,
+        MaxDamage = 0.0,
+        MaxHitcount = 0,
+        MaxRange = 20.0,
+        MinDamage = 0.0,
+        MinimumSwingtime = 1.5,
+        PhysicsObject = Explosives.Flare,
+        SwingAmountBeforeImpact = 0.1,
+        SwingAnim = Throw,
+        SwingSound = PipeBombThrow,
+        Swingtime = 1.5,
+        Tooltip = Tooltip_Trap,
+        UseSelf = true,
+        WeaponSprite = Explosives.Flare,
+        WorldStaticModel = Explosives.Flare,
+        ConditionMax = 1,
+        AttachmentType = GrenadeSlot,
+    }
+    item FlareBurning
+    {
+        DisplayCategory = Explosives,
+        ItemType = base:weapon,
+        Weight = 0.1,
+        Icon = FlareBurning,
+        ExplosionPower = 0,
+        ExplosionRange = 0,
+        FireStartingEnergy = 0,
+        FireStartingChance = 0,
+        MaxDamage = 0.0,
+        MaxHitcount = 0,
+        MaxRange = 20.0,
+        MinDamage = 0.0,
+        MinimumSwingtime = 1.5,
+        PhysicsObject = Explosives.Flare,
+        SwingAmountBeforeImpact = 0.1,
+        SwingAnim = Throw,
+        SwingSound = PipeBombThrow,
+        Swingtime = 1.5,
+        Tooltip = Tooltip_FlareBurning,
+        UseSelf = true,
+        WeaponSprite = Explosives.Flare,
+        WorldStaticModel = Explosives.Flare,
+        ConditionMax = 1,
+        AttachmentType = GrenadeSlot,
+    }
+    item FlareSpent
+    {
+        DisplayCategory = Explosives,
+        ItemType = base:weapon,
+        Weight = 0.05,
+        Icon = FlareSpent,
+        ExplosionPower = 0,
+        ExplosionRange = 0,
+        FireStartingEnergy = 0,
+        FireStartingChance = 0,
+        MaxDamage = 0.0,
+        MaxHitcount = 0,
+        MaxRange = 20.0,
+        MinDamage = 0.0,
+        MinimumSwingtime = 1.5,
+        PhysicsObject = Explosives.FlareSpent,
+        SwingAmountBeforeImpact = 0.1,
+        SwingAnim = Throw,
+        SwingSound = PipeBombThrow,
+        Swingtime = 1.5,
+        Tooltip = Tooltip_FlareSpent,
+        UseSelf = true,
+        WeaponSprite = Explosives.FlareSpent,
+        WorldStaticModel = Explosives.FlareSpent,
+        ConditionMax = 1,
+    }
+
+    item M14Mine
+    {
+        DisplayCategory = Explosives,
+        ItemType = base:weapon,
+        Weight = 1.5,
+        Icon = M14Mine,
+        CanBePlaced = true,
+        ExplosionPower = 40,
+        ExplosionRange = 7,
+        ExplosionSound = PipeBombExplode,
+        FireStartingEnergy = 0,
+        FireStartingChance = 0,
+        ExplosionTimer = 10,
+        MaxDamage = 0.0,
+        MaxHitcount = 0,
+        MinDamage = 0.0,
+        MinimumSwingtime = 1.5,
+        PhysicsObject = Explosives.M14Mine,
+        SensorRange = 1,
+        SwingAmountBeforeImpact = 0.1,
+        SwingAnim = Throw,
+        Swingtime = 1.5,
+        Tooltip = Tooltip_Trap,
+        UseSelf = true,
+        WeaponSprite = Explosives.M14Mine,
+        WorldStaticModel = Explosives.M14Mine,
+        ConditionMax = 1,
+    }
+
+    item M18a1Claymore
+    {
+        DisplayCategory = Explosives,
+        ItemType = base:weapon,
+        Weight = 1.5,
+        Icon = M18a1Claymore,
+        CanBePlaced = true,
+        ExplosionPower = 200,
+        ExplosionRange = 10,
+        ExplosionSound = PipeBombExplode,
+        FireStartingEnergy = 0,
+        FireStartingChance = 0,
+        ExplosionTimer = 10,
+        MaxDamage = 0.0,
+        MaxHitcount = 0,
+        MinDamage = 0.0,
+        MinimumSwingtime = 1.5,
+        PhysicsObject = Explosives.M18a1Claymore,
+        SensorRange = 1,
+        SwingAmountBeforeImpact = 0.1,
+        SwingAnim = Throw,
+        Swingtime = 1.5,
+        Tooltip = Tooltip_Trap,
+        UseSelf = true,
+        WeaponSprite = Explosives.M18a1Claymore,
+        WorldStaticModel = Explosives.M18a1Claymore,
+        ConditionMax = 1,
+    }
+
+    item M18a1ClaymoreRemote
+    {
+        DisplayCategory = Explosives,
+        ItemType = base:weapon,
+        Weight = 1.5,
+        Icon = M18a1ClaymoreRemote,
+        CanBePlaced = true,
+        CanBeRemote = true,
+        ExplosionPower = 200,
+        ExplosionRange = 10,
+        ExplosionSound = PipeBombExplode,
+        FireStartingEnergy = 0,
+        FireStartingChance = 0,
+        MaxDamage = 0.0,
+        MaxHitcount = 0,
+        MinDamage = 0.0,
+        MinimumSwingtime = 1.5,
+        PhysicsObject = Explosives.M18a1ClaymoreRemote,
+        SensorRange = 4,
+        SwingAmountBeforeImpact = 0.1,
+        SwingAnim = Throw,
+        Swingtime = 1.5,
+        Tooltip = Tooltip_ClaymoreRemote,
+        UseSelf = true,
+        WeaponSprite = Explosives.M18a1ClaymoreRemote,
+        WorldStaticModel = Explosives.M18a1ClaymoreRemote,
+        ConditionMax = 1,
+    }
+
+    item Bag_AmmoBox_Grenades
+    {
+        DisplayCategory = Bag,
+        ItemType = base:container,
+        Weight = 1.0,
+        Icon = AmmoCase,
+        CanHaveHoles = false,
+        Capacity = 6,
+        CloseSound = CloseAmmunitionBox,
+        ClothingItem = Bag_AmmoBox_RHand,
+        OpenSound = OpenAmmunitionBox,
+        PutInSound = StoreItemAmmunitionBox,
+        ReplaceInPrimaryHand = Bag_AmmoBox_RHand holdingbagright,
+        ReplaceInSecondHand = Bag_AmmoBox_LHand holdingbagleft,
+        RunSpeedModifier = 0.99,
+        WeightReduction = 50,
+        WorldStaticModel = AmmoBox_Ground,
+        Tags = base:ammocase,
+    }
+
+    item Bag_ProtectiveCaseSmallMilitary_Grenades
+    {
+        DisplayCategory = Container,
+        ItemType = base:container,
+        Weight = 1.0,
+        Icon = ProtectiveCase_SmallGreen,
+        CanHaveHoles = false,
+        Capacity = 4,
+        CloseSound = CloseProtectiveCaseSmall,
+        OpenSound = OpenProtectiveCaseSmall,
+        PutInSound = StoreItemProtectiveCaseSmall,
+        ReplaceInPrimaryHand = Bag_ProtectiveCaseSmall_RHand_Green holdingbagright,
+        ReplaceInSecondHand = Bag_ProtectiveCaseSmall_LHand_Green holdingbagleft,
+        WeightReduction = 50,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        ClothingItem = Bag_ProtectiveCaseSmall_RHand_Green,
+    }
+    
+    item Bag_ProtectiveCaseBulkyGrenades
+    {
+        DisplayCategory = Container,
+        ItemType = base:container,
+        Weight = 1.0,
+        Icon = ProtectiveCase_LargeBlack,
+        CanHaveHoles = false,
+        Capacity = 16,
+        CloseSound = CloseBulkyProtectiveContainer,
+        OpenSound = OpenBulkyProtectiveContainer,
+        PutInSound = StoreItemBulkyProtectiveContainer,
+        ReplaceInPrimaryHand = Bag_ProtectiveCaseBulky_RHand holdingbagright,
+        ReplaceInSecondHand = Bag_ProtectiveCaseBulky_LHand holdingbagleft,
+        WeightReduction = 50,
+        WorldStaticModel = ProtectiveCaseBulky_Ground,
+        ClothingItem = Bag_ProtectiveCaseBulky_RHand,
+    }
+
+    item GrenadeBandolier
+    {
+        DisplayCategory     = Accessory,
+        ItemType            = base:clothing,
+        ClothingItem        = GrenadeBandolier_ClothingItem,
+        BodyLocation        = base:ammostrap,
+        AttachmentsProvided = GrenadeBandolierSlot1;GrenadeBandolierSlot2;GrenadeBandolierSlot3;GrenadeBandolierSlot4,
+        Weight              = 0.5,
+        Icon                = GrenadeBandolier,
+        WorldStaticModel    = GrenadeBandolierGround,
+        ReplaceInPrimaryHand = Bag_ProtectiveCaseBulky_RHand holdingbagright,
+        ReplaceInSecondHand = Bag_ProtectiveCaseBulky_LHand holdingbagleft,
+        Tooltip             = Tooltip_GrenadeBandolier,
+        Researchablerecipes = Forge_Buckle;SewBandolier;SewShellsBandolier;SewGrenadeBandolier,
+    }
+
+    item GrenadeBandolierFull
+    {
+        DisplayCategory     = Accessory,
+        ItemType            = base:clothing,
+        ClothingItem        = GrenadeBandolierFull_ClothingItem,
+        BodyLocation        = base:ammostrap,
+        AttachmentsProvided = GrenadeBandolierSlot1;GrenadeBandolierSlot2;GrenadeBandolierSlot3;GrenadeBandolierSlot4,
+        Weight              = 0.5,
+        Icon                = GrenadeBandolier,
+        WorldStaticModel    = GrenadeBandolierGround,
+        Tooltip             = Tooltip_GrenadeBandolier,
+        Researchablerecipes = Forge_Buckle;SewBandolier;SewShellsBandolier;SewGrenadeBandolier,
+    }
+
+    item Mk2Shell
+    {
+        DisplayCategory = Material,
+        ItemType = base:normal,
+        Weight = 0.3,
+        Icon = Mk2Shell,
+        WorldStaticModel = Explosives.Mk2Shell,
+        StaticModel = Explosives.Mk2Shell,
+        Tooltip = Tooltip_Mk2Shell,
+    }
+
+    item M26Shell
+    {
+        DisplayCategory = Material,
+        ItemType = base:normal,
+        Weight = 0.2,
+        Icon = M26Shell,
+        WorldStaticModel = Explosives.M26Shell,
+        StaticModel = Explosives.M26Shell,
+        Tooltip = Tooltip_M26Shell,
+    }
+
+    item M67Shell
+    {
+        DisplayCategory = Material,
+        ItemType = base:normal,
+        Weight = 0.2,
+        Icon = M67Shell,
+        WorldStaticModel = Explosives.M67Shell,
+        StaticModel = Explosives.M67Shell,
+        Tooltip = Tooltip_M67Shell,
+    }
+
+    item StrikerLever
+    {
+        DisplayCategory = Material,
+        ItemType = base:normal,
+        Weight = 0.02,
+        Icon = StrikerLever,
+        WorldStaticModel = Explosives.StrikerLever,
+        Tooltip = Tooltip_StrikerLever,
+    }
+
+    item Mk2FuzeAssembly
+    {
+        DisplayCategory = Material,
+        ItemType = base:normal,
+        Weight = 0.05,
+        Icon = Mk2FuzeAssembly,
+        WorldStaticModel = Explosives.Mk2FuzeAssembly,
+        Tooltip = Tooltip_Mk2FuzeAssembly,
+    }
+
+    item M26FuzeAssembly
+    {
+        DisplayCategory = Material,
+        ItemType = base:normal,
+        Weight = 0.05,
+        Icon = M26FuzeAssembly,
+        WorldStaticModel = Explosives.M26FuzeAssembly,
+        Tooltip = Tooltip_M26FuzeAssembly,
+    }
+
+    item M67FuzeAssembly
+    {
+        DisplayCategory = Material,
+        ItemType = base:normal,
+        Weight = 0.05,
+        Icon = M67FuzeAssembly,
+        WorldStaticModel = Explosives.M67FuzeAssembly,
+        Tooltip = Tooltip_M67FuzeAssembly,
+    }
+
+    item Magazine_MilitaryExplosives
+    {
+        DisplayCategory = RecipeResource,
+        ItemType = base:literature,
+        Weight = 0.5,
+        Icon = Magazine_MilitaryExplosives,
+        BoredomChange = -20,
+        StressChange = -15,
+        LearnedRecipes = ForgeMk2Shell;ForgeM26Shell;ForgeM67Shell;AssembleMk2;AssembleM26;AssembleM67,
+        StaticModel = Magazine,
+        WorldStaticModel = Explosives.Magazine_MilitaryExplosives,
+        Tags = base:magazine,
+    }
+
+}

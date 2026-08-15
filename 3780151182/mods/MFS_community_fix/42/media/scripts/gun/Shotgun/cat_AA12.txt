@@ -105,6 +105,7 @@ item AA12_cat
         ModelWeaponPart = Gunpart.Carryhandle Gunpart.Carryhandle Scope Scope,
         ModelWeaponPart = Gunpart.AACMini7_Silencer Gunpart.AACMini7_Silencer Canon Canon,
         ModelWeaponPart = Gunpart.XY_fang1_Silencer Gunpart.XY_fang1_Silencer Canon Canon,
+	ModelWeaponPart = Gunpart.SMSUP_cat Gunpart.SMSUP_cat Canon Canon,
         ModelWeaponPart = Gunpart.VP09 Gunpart.VP09 Canon Canon,
         ModelWeaponPart = Gunpart.FortisNitride_RED2 Gunpart.FortisNitride_RED2 Canon Canon,
         ModelWeaponPart = Gunpart.SE-5Grip Gunpart.SE-5Grip,
