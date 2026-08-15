@@ -1,0 +1,20 @@
+module ImmersiveVehiclePaint
+{
+    imports
+    {
+        Base
+    }
+
+    item SandingBlock
+      {
+        DisplayName         = Sanding Block,
+		DisplayCategory     = Tool,
+		ItemType            = base:normal,
+		Weight              = 0.2,
+		Icon                = SandingBlock,
+        StaticModel         = SandingBlock,
+        WorldStaticModel    = ImmersiveVehiclePaint.SandingBlock,
+        Tooltip             = Tooltip_IVP_Item_SandingBlock,
+		Tags                = base:isfirefuel,
+    }
+}

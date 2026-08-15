@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>Skinned\ArmorParts\M_zReV2_11ECO_upperarms_Left</m_MaleModel>
+	<m_AltMaleModel>Skinned\ArmorParts\M_zReV2_11ECO_upperarms_Left_ALT</m_AltMaleModel>
+	<m_FemaleModel>Skinned\ArmorParts\F_zReV2_11ECO_upperarms_Left</m_FemaleModel>
+	<m_AltFemaleModel>Skinned\ArmorParts\F_zReV2_11ECO_upperarms_Left_ALT</m_AltFemaleModel>
+	<m_GUID>b4eaf7bf-4111-4bf8-831f-e89054184b43</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+	<textureChoices>Clothes\BulletVest\zReV2_4ECO_armor_U</textureChoices>
+	<m_SpawnWith>c0d1dec6-be02-4dd3-b59e-6360cf3e0f3c</m_SpawnWith>
+</clothingItem>

@@ -1,0 +1,124 @@
+require "Gun_Vars/Weapon_Ability/AWCWF_Exact_RPM"
+
+local ENGINE_REFERENCE_RPM = 600
+local lastWeapon = nil
+local RPM_DIAG_TYPES = {
+    ["M240_cat"] = true,
+    ["URG_S_cat"] = true,
+    ["URG_S_cat_Drum"] = true,
+}
+local rpmDiag = {
+    lastSneaking = nil,
+    lastSwingMs = nil,
+    swingCount = 0,
+}
+
+local function isDiagWeapon(weapon)
+    return weapon and weapon.getType and RPM_DIAG_TYPES[weapon:getType()] == true
+end
+
+local function readFloat(call, fallback)
+    local ok, value = pcall(call)
+    if ok and type(value) == "number" then return value end
+    return fallback
+end
+
+local function formatFloat(value)
+    return type(value) == "number" and string.format("%.3f", value) or "n/a"
+end
+
+local function getAutoShootSpeed(playerObj)
+    if not playerObj or not playerObj.getVariableFloat then return nil end
+    return readFloat(function()
+        return playerObj:getVariableFloat("autoShootSpeed", -1.0)
+    end, nil)
+end
+
+local function logRPMDiag(playerObj, weapon, reason, details)
+    if not isDiagWeapon(weapon) then return end
+    local cyclic = weapon.getCyclicRateMultiplier and
+        readFloat(function() return weapon:getCyclicRateMultiplier() end, nil) or nil
+    local sneaking = playerObj and playerObj.isSneaking and playerObj:isSneaking() or false
+    local fireMode = weapon.getFireMode and weapon:getFireMode() or "n/a"
+    print("[MFS RPM DIAG] weapon=" .. tostring(weapon:getType())
+        .. " reason=" .. tostring(reason)
+        .. " sneaking=" .. tostring(sneaking)
+        .. " fireMode=" .. tostring(fireMode)
+        .. " cyclic=" .. formatFloat(cyclic)
+        .. " autoShootSpeed=" .. formatFloat(getAutoShootSpeed(playerObj))
+        .. (details and (" " .. details) or ""))
+end
+
+local function applyExactRPM(playerObj, weapon, reason)
+    if not weapon or not weapon.IsWeapon or not weapon:IsWeapon() or not weapon:isRanged() then return end
+    local configuredRPM = AWCWF_GetConfiguredRPM and AWCWF_GetConfiguredRPM(weapon) or
+        (AWCWF_ExactRPM and AWCWF_ExactRPM[weapon:getType()])
+    if not configuredRPM then return end
+
+    local appliedRPM, category, categoryScale, globalScale
+    if AWCWF_GetAppliedRPM then
+        appliedRPM, category, categoryScale, globalScale = AWCWF_GetAppliedRPM(weapon)
+    else
+        appliedRPM, category, categoryScale, globalScale = configuredRPM, "Automatic", 1.0, 1.0
+    end
+
+    if weapon.setCyclicRateMultiplier then
+        local beforeCyclic = isDiagWeapon(weapon) and weapon.getCyclicRateMultiplier and
+            readFloat(function() return weapon:getCyclicRateMultiplier() end, nil) or nil
+        local beforeAutoSpeed = isDiagWeapon(weapon) and getAutoShootSpeed(playerObj) or nil
+        weapon:setCyclicRateMultiplier(appliedRPM / ENGINE_REFERENCE_RPM)
+        local data = weapon:getModData()
+        data.AWCWF_ConfiguredRPM = configuredRPM
+        data.AWCWF_AppliedRPM = appliedRPM
+        data.AWCWF_RPMCategory = category
+        data.AWCWF_RPMCategoryScale = categoryScale
+        data.AWCWF_RPMGlobalScale = globalScale
+        if isDiagWeapon(weapon) then
+            logRPMDiag(playerObj, weapon, reason or "apply",
+                "configuredRPM=" .. formatFloat(configuredRPM)
+                .. " appliedRPM=" .. formatFloat(appliedRPM)
+                .. " category=" .. tostring(category)
+                .. " categoryScale=" .. formatFloat(categoryScale)
+                .. " globalScale=" .. formatFloat(globalScale)
+                .. " beforeCyclic=" .. formatFloat(beforeCyclic)
+                .. " beforeAutoShootSpeed=" .. formatFloat(beforeAutoSpeed))
+        end
+    end
+end
+
+local function onPlayerUpdate(playerObj)
+    if not playerObj then return end
+    local weapon = playerObj:getPrimaryHandItem()
+    if weapon ~= lastWeapon then
+        lastWeapon = weapon
+        rpmDiag.lastSneaking = nil
+        rpmDiag.lastSwingMs = nil
+        rpmDiag.swingCount = 0
+        applyExactRPM(playerObj, weapon, "equip")
+    end
+    if isDiagWeapon(weapon) then
+        local sneaking = playerObj:isSneaking()
+        if rpmDiag.lastSneaking == nil or sneaking ~= rpmDiag.lastSneaking then
+            rpmDiag.lastSneaking = sneaking
+            logRPMDiag(playerObj, weapon, "stance-change")
+        end
+    end
+end
+
+local function onWeaponSwing(playerObj, weapon)
+    if isDiagWeapon(weapon) then
+        local now = getTimestampMs()
+        local delta = rpmDiag.lastSwingMs and (now - rpmDiag.lastSwingMs) or nil
+        rpmDiag.lastSwingMs = now
+        rpmDiag.swingCount = rpmDiag.swingCount + 1
+        applyExactRPM(playerObj, weapon,
+            "swing#" .. tostring(rpmDiag.swingCount)
+            .. " deltaMs=" .. (delta and tostring(delta) or "first"))
+        return
+    end
+    applyExactRPM(playerObj, weapon, "swing")
+end
+
+print("[MFS RPM DIAG] probe loaded weapons=M240_cat,URG_S_cat,URG_S_cat_Drum")
+Events.OnPlayerUpdate.Add(onPlayerUpdate)
+Events.OnWeaponSwing.Add(onWeaponSwing)

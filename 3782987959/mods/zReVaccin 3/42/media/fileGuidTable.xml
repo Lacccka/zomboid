@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fileGuidTable>
+
+<!-- **********************************************************
+							ECO-13
+*************************************************************** -->
+<!-- FULLHELMET, 4 -->
+	<files>
+		<path>media/clothing/clothingItems/zReV2_1ECO_fullhelmet1.xml</path>
+		<guid>9980288e-f717-4d6c-bc50-1e31aada4297</guid>
+	</files>
+	<files>
+		<path>media/clothing/clothingItems/zReV2_1ECO_fullhelmet1A.xml</path>
+		<guid>7ee31202-dccb-4adf-b21f-2629eb5536ed</guid>
+	</files>
+	<files>
+		<path>media/clothing/clothingItems/zReV2_1ECO_fullhelmet2.xml</path>
+		<guid>817692eb-7081-44f8-b5cf-385c1061d4eb</guid>
+	</files>
+	<files>
+		<path>media/clothing/clothingItems/zReV2_1ECO_fullhelmet2A.xml</path>
+		<guid>0f39de61-57de-47cb-8276-1081c410cde2</guid>
+	</files>
+<!-- JACKET -->
+	<files>
+		<path>media/clothing/clothingItems/zReV2_2ECO_jacket.xml</path>
+		<guid>678c75c6-1e0e-4268-bd7c-24fbc083a043</guid>
+	</files>
+<!-- PANTS -->
+	<files>
+		<path>media/clothing/clothingItems/zReV2_3ECO_pants.xml</path>
+		<guid>f944624d-3024-4a34-8fd3-896556b992f8</guid>
+	</files>
+<!-- ARMOR -->
+	<files>
+		<path>media/clothing/clothingItems/zReV2_4ECO_armor.xml</path>
+		<guid>28fc654e-2402-4658-b0fe-fd5edb4bcf51</guid>
+	</files>
+<!-- CHESTRIG, 2 -->
+	<files>
+		<path>media/clothing/clothingItems/zReV2_5ECO_chestrig1.xml</path>
+		<guid>da00936a-2e3d-4de4-bc1e-4d74fda130b7</guid>
+	</files>
+	<files>
+		<path>media/clothing/clothingItems/zReV2_5ECO_chestrig2.xml</path>
+		<guid>8821590d-e1b8-4639-bfee-9dc0320e2920</guid>
+	</files>
+<!-- GLOVES -->
+	<files>
+		<path>media/clothing/clothingItems/zReV2_6ECO_gloves.xml</path>
+		<guid>29b29ff7-371f-49b9-b34d-800443887113</guid>
+	</files>
+<!-- BACKPACK -->
+	<files>
+		<path>media/clothing/clothingItems/zReV2_8ECO_backpack.xml</path>
+		<guid>fb4901da-54ab-43b9-8285-da5f8fb7bdfd</guid>
+	</files>  
+	<files>
+		<path>media/clothing/clothingItems/zReV2_8ECO_backpack_LHand.xml</path>
+		<guid>6d4eb933-6e70-4229-8bcf-4f9ef524c7a8</guid>
+	</files>
+	<files>
+		<path>media/clothing/clothingItems/zReV2_8ECO_backpack_RHand.xml</path>
+		<guid>54d0415d-6d5d-42d2-8eba-c107460eaf6f</guid>
+	</files>
+<!-- ARMOR PARTS -->
+	<files>
+		<path>media/clothing/clothingItems/zReV2_9ECO_legslower_L.xml</path>
+		<guid>b025aa83-2ffc-4a1c-9981-9d2b3f6f04d9</guid>
+	</files>
+	<files>
+		<path>media/clothing/clothingItems/zReV2_9ECO_legslower_R.xml</path>
+		<guid>b7298d32-0e2f-4f50-9267-583d6ccf3603</guid>
+	</files>
+<!-- BAGBACK -->
+	<files>
+		<path>media/clothing/clothingItems/zReV2_10ECO_bagback.xml</path>
+		<guid>7f3cda10-5699-4524-98ff-6027305cf1fe</guid>
+	</files>
+	<files>
+		<path>media/clothing/clothingItems/zReV2_10ECO_bagback_LHand.xml</path>
+		<guid>ff774143-402a-4731-a32a-4473f8562551</guid>
+	</files>
+	<files>
+		<path>media/clothing/clothingItems/zReV2_10ECO_bagback_RHand.xml</path>
+		<guid>9ad5e7a5-1cdc-493b-a482-cac0390e82dc</guid>
+	</files>
+<!-- UPPER ARMS -->
+	<files>
+		<path>media/clothing/clothingItems/zReV2_11ECO_upperarms_L.xml</path>
+		<guid>b4eaf7bf-4111-4bf8-831f-e89054184b43</guid>
+	</files>
+	<files>
+		<path>media/clothing/clothingItems/zReV2_11ECO_upperarms_R.xml</path>
+		<guid>c0d1dec6-be02-4dd3-b59e-6360cf3e0f3c</guid>
+	</files>
+<!-- **********************************************************
+	VANILA's
+*************************************************************** -->
+<!-- BOOTS -->
+	<files>
+		<path>media/clothing/clothingItems/Shoes_ArmyBoots.xml</path>
+		<guid>227cb2d5-05a5-44ed-872d-ac4ca16e80bc</guid>
+	</files>
+<!-- SOCKS -->
+	<files>
+		<path>media/clothing/clothingItems/Socks_Ankle.xml</path>
+		<guid>ebea15c8-99b3-4e20-905b-d22cf82b8217</guid>
+	</files>
+	
+</fileGuidTable>

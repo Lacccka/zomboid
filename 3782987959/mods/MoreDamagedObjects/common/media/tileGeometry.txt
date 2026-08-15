@@ -1,0 +1,2573 @@
+tileGeometry
+{
+    VERSION = 2,
+
+    tileset
+    {
+        name = ct_more_damaged_objects_01,
+
+        /* ct_more_damaged_objects_01_1 */
+        tile
+        {
+            xy = 1x0,
+
+            box
+            {
+                translate = 49x0x-2986,
+                rotate = 0x118434x0,
+                min = -5210x0x-741,
+                max = 5210x430x741,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_2 */
+        tile
+        {
+            xy = 2x0,
+
+            box
+            {
+                translate = 249x0x108,
+                rotate = 0x-567203x0,
+                min = -5210x0x-792,
+                max = 5210x430x792,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_3 */
+        tile
+        {
+            xy = 3x0,
+
+            box
+            {
+                translate = -2612x0x3103,
+                rotate = 0x435375x0,
+                min = -980x0x-741,
+                max = 980x430x741,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_4 */
+        tile
+        {
+            xy = 4x0,
+
+            box
+            {
+                translate = 3204x0x-2684,
+                rotate = 0x435375x0,
+                min = -980x0x-741,
+                max = 980x430x741,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_5 */
+        tile
+        {
+            xy = 5x0,
+
+            box
+            {
+                translate = 212x0x113,
+                rotate = 0x-331329x0,
+                min = -5237x0x-792,
+                max = 5237x430x792,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_6 */
+        tile
+        {
+            xy = 6x0,
+
+            box
+            {
+                translate = -2852x0x-27,
+                rotate = 1800000x-784516x1800000,
+                min = -5210x0x-842,
+                max = 5210x430x842,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_9 */
+        tile
+        {
+            xy = 1x1,
+
+            box
+            {
+                translate = 504x0x250,
+                rotate = 1800000x602117x1800000,
+                min = -5247x0x-796,
+                max = 5247x430x796,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_10 */
+        tile
+        {
+            xy = 2x1,
+
+            box
+            {
+                translate = 248x0x347,
+                rotate = 1800000x-425453x1800000,
+                min = -5210x0x-792,
+                max = 5210x430x792,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_11 */
+        tile
+        {
+            xy = 3x1,
+
+            box
+            {
+                translate = -2385x0x-2202,
+                rotate = 0x-242472x0,
+                min = -980x0x-741,
+                max = 980x430x741,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_12 */
+        tile
+        {
+            xy = 4x1,
+
+            box
+            {
+                translate = -2060x0x-2513,
+                rotate = 0x-577903x0,
+                min = -1032x0x-850,
+                max = 1032x430x850,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_13 */
+        tile
+        {
+            xy = 5x1,
+
+            box
+            {
+                translate = 378x0x208,
+                rotate = 1800000x-469659x1800000,
+                min = -5210x0x-792,
+                max = 5210x430x792,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_14 */
+        tile
+        {
+            xy = 6x1,
+
+            box
+            {
+                translate = 374x0x390,
+                rotate = 1800000x299327x1800000,
+                min = -5247x0x-796,
+                max = 5247x430x796,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_16 */
+        tile
+        {
+            xy = 0x2,
+
+            box
+            {
+                translate = -111x0x-522,
+                rotate = 0x0x0,
+                min = -3133x0x-2964,
+                max = 3133x965x2964,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_17 */
+        tile
+        {
+            xy = 1x2,
+
+            box
+            {
+                translate = -669x0x-469,
+                rotate = 1799854x899802x-1799854,
+                min = -2945x0x-3111,
+                max = 2945x965x3111,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_18 */
+        tile
+        {
+            xy = 2x2,
+
+            box
+            {
+                translate = -141x0x-42,
+                rotate = 0x0x0,
+                min = -3060x0x-2669,
+                max = 3060x744x2669,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_19 */
+        tile
+        {
+            xy = 3x2,
+
+            box
+            {
+                translate = -36x0x-662,
+                rotate = 1799854x899802x-1799854,
+                min = -2951x0x-2694,
+                max = 2951x744x2694,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_22 */
+        tile
+        {
+            xy = 6x2,
+
+            polygon
+            {
+                translate = 0x884x-30,
+                rotate = -822317x0x0,
+                plane = XZ,
+                points = -4792x-5286 1145x-5286 2708x-3394 3155x-691 -1262x3294 -4788x5118 -5770x5793 -6932x3023 -6131x-3461,
+            }
+
+            polygon
+            {
+                translate = -734x5276x-1583,
+                rotate = 0x243736x0,
+                plane = XY,
+                points = 3844x-5695 1010x-6144 1010x-4358 3828x-4547,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_23 */
+        tile
+        {
+            xy = 7x2,
+
+            polygon
+            {
+                translate = -22x665x0,
+                rotate = -899999x64633x0,
+                plane = XZ,
+                points = -5000x-5000 -1469x-6017 5000x-5000 5000x5000 -5000x5000 -8166x793,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_24 */
+        tile
+        {
+            xy = 0x3,
+
+            box
+            {
+                translate = 177x0x1035,
+                rotate = 1800000x-386885x1800000,
+                min = -3328x0x-3995,
+                max = 3328x983x3995,
+            }
+
+            cylinder
+            {
+                translate = 4492x803x-1547,
+                rotate = -1797715x504896x-609,
+                radius1 = 1291,
+                radius2 = 1291,
+                height = 3260,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_25 */
+        tile
+        {
+            xy = 1x3,
+
+            box
+            {
+                translate = 1063x0x561,
+                rotate = 0x386885x0,
+                min = -3666x0x-3620,
+                max = 3666x983x3620,
+            }
+
+            cylinder
+            {
+                translate = -2402x809x4020,
+                rotate = -2299x-514036x1799429,
+                radius1 = 1291,
+                radius2 = 1291,
+                height = 2386,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_26 */
+        tile
+        {
+            xy = 2x3,
+
+            polygon
+            {
+                translate = 0x5013x0,
+                rotate = 0x0x0,
+                plane = XY,
+                points = -625x-5013 625x-5013 625x599 -625x599,
+            }
+
+            polygon
+            {
+                translate = 0x10143x-2074,
+                rotate = -250643x0x0,
+                plane = XY,
+                points = -669x-4989 656x-4996 763x2518 -620x2467,
+            }
+
+            polygon
+            {
+                translate = 0x16954x-5253,
+                rotate = -252531x0x-448739,
+                plane = XY,
+                points = -3772x-3686 3968x-4027 5804x1896 -1936x2236,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_27 */
+        tile
+        {
+            xy = 3x3,
+
+            polygon
+            {
+                translate = 0x5013x0,
+                rotate = 1799854x899802x-1799854,
+                plane = XY,
+                points = -937x-5013 312x-5013 312x1365 -937x1365,
+            }
+
+            polygon
+            {
+                translate = -1861x10242x242,
+                rotate = -900000x649356x899999,
+                plane = XY,
+                points = -688x-4345 572x-4406 -51x2707 -1113x2653,
+            }
+
+            polygon
+            {
+                translate = -5076x17208x1384,
+                rotate = -900000x647468x699057,
+                plane = XY,
+                points = -3787x-4570 2523x-4973 4926x2412 -1390x2703,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_28 */
+        tile
+        {
+            xy = 4x3,
+
+            polygon
+            {
+                translate = -151x5013x0,
+                rotate = 0x0x0,
+                plane = XY,
+                points = -625x-5013 625x-5013 625x599 -625x599,
+            }
+
+            polygon
+            {
+                translate = -514x10143x-2074,
+                rotate = -250643x0x0,
+                plane = XY,
+                points = -240x-4999 999x-4999 580x2498 -535x2507,
+            }
+
+            polygon
+            {
+                translate = -955x16899x-5228,
+                rotate = -252531x0x-408597,
+                plane = XY,
+                points = -3984x-3705 3968x-4027 5934x1844 -1957x2117,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_29 */
+        tile
+        {
+            xy = 5x3,
+
+            polygon
+            {
+                translate = 0x5013x5,
+                rotate = 1799854x899802x-1799854,
+                plane = XY,
+                points = -625x-5013 625x-5013 630x1747 -620x1747,
+            }
+
+            polygon
+            {
+                translate = -1697x10319x756,
+                rotate = -900000x649356x899999,
+                plane = XY,
+                points = 100x-4055 1350x-4055 1882x2365 675x2467,
+            }
+
+            polygon
+            {
+                translate = -4809x17097x955,
+                rotate = -900000x647468x491402,
+                plane = XY,
+                points = -1015x-4418 4994x-3394 5805x4442 -204x3418,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_30 */
+        tile
+        {
+            xy = 6x3,
+
+            polygon
+            {
+                translate = -151x5013x0,
+                rotate = 0x0x0,
+                plane = XY,
+                points = -521x-4995 590x-5013 625x599 -516x617,
+            }
+
+            polygon
+            {
+                translate = -514x10143x-2074,
+                rotate = -250643x0x0,
+                plane = XY,
+                points = -78x-4972 1134x-5010 774x2482 -418x2467,
+            }
+
+            polygon
+            {
+                translate = -955x16899x-5228,
+                rotate = -252531x0x-408597,
+                plane = XY,
+                points = -3617x-3725 4186x-4179 6164x1571 -1638x2025,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_31 */
+        tile
+        {
+            xy = 7x3,
+
+            polygon
+            {
+                translate = 0x5013x151,
+                rotate = 1799854x899802x-1799854,
+                plane = XY,
+                points = -521x-4995 776x-5013 776x1747 -473x1747,
+            }
+
+            polygon
+            {
+                translate = -2116x11158x514,
+                rotate = -900000x649356x899999,
+                plane = XY,
+                points = -78x-4972 1134x-5010 1580x1578 508x1629,
+            }
+
+            polygon
+            {
+                translate = -4847x17079x955,
+                rotate = -900000x647468x491402,
+                plane = XY,
+                points = -1117x-4454 4858x-3324 5837x4457 -172x3432,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_32 */
+        tile
+        {
+            xy = 0x4,
+
+            polygon
+            {
+                translate = -151x5013x0,
+                rotate = 0x0x0,
+                plane = XY,
+                points = -521x-4995 776x-5013 776x599 -516x617,
+            }
+
+            polygon
+            {
+                translate = -514x10143x-2074,
+                rotate = -250643x0x0,
+                plane = XY,
+                points = -78x-4972 1134x-5010 774x2482 -418x2467,
+            }
+
+            polygon
+            {
+                translate = -955x16899x-5228,
+                rotate = -252531x0x-408597,
+                plane = XY,
+                points = -3916x-3579 4155x-4004 6301x1825 -1769x2249,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_33 */
+        tile
+        {
+            xy = 1x4,
+
+            polygon
+            {
+                translate = 0x5013x151,
+                rotate = 1799854x899802x-1799854,
+                plane = XY,
+                points = -521x-4995 776x-5013 776x1747 -473x1747,
+            }
+
+            polygon
+            {
+                translate = -2116x11158x514,
+                rotate = -900000x649356x899999,
+                plane = XY,
+                points = -244x-4944 1005x-4944 1456x916 206x916,
+            }
+
+            polygon
+            {
+                translate = -4847x17079x955,
+                rotate = -900000x647468x491402,
+                plane = XY,
+                points = -813x-4931 5297x-3752 5972x4035 -3x2904,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_34 */
+        tile
+        {
+            xy = 2x4,
+
+            polygon
+            {
+                translate = -151x5013x0,
+                rotate = 0x0x0,
+                plane = XY,
+                points = -473x-5013 776x-5013 776x599 -473x599,
+            }
+
+            polygon
+            {
+                translate = -514x10143x-2074,
+                rotate = -250643x0x0,
+                plane = XY,
+                points = -78x-4972 1171x-4972 831x2467 -374x2365,
+            }
+
+            polygon
+            {
+                translate = -955x16899x-5228,
+                rotate = -252531x0x-408597,
+                plane = XY,
+                points = -3748x-3502 3968x-4027 6370x1951 -1701x2375,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_35 */
+        tile
+        {
+            xy = 3x4,
+
+            polygon
+            {
+                translate = 0x5013x427,
+                rotate = 1799854x899802x-1799854,
+                plane = XY,
+                points = -625x-5013 625x-5013 630x1747 -620x1747,
+            }
+
+            polygon
+            {
+                translate = -1697x10319x1183,
+                rotate = -900000x649356x899999,
+                plane = XY,
+                points = 100x-4055 1350x-4055 1882x2365 675x2467,
+            }
+
+            polygon
+            {
+                translate = -4809x17097x955,
+                rotate = -900000x647468x491402,
+                plane = XY,
+                points = -1116x-5044 4859x-3915 5669x3922 -339x2897,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_36 */
+        tile
+        {
+            xy = 4x4,
+
+            polygon
+            {
+                translate = -151x5013x0,
+                rotate = 0x0x0,
+                plane = XY,
+                points = -625x-5013 625x-5013 625x599 -625x599,
+            }
+
+            polygon
+            {
+                translate = -514x10143x-2074,
+                rotate = -250643x0x0,
+                plane = XY,
+                points = -240x-4999 999x-4999 580x2498 -535x2507,
+            }
+
+            polygon
+            {
+                translate = -955x16899x-5228,
+                rotate = -252531x0x-408597,
+                plane = XY,
+                points = -3816x-3628 4086x-4130 6370x1951 -1837x2122,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_37 */
+        tile
+        {
+            xy = 5x4,
+
+            polygon
+            {
+                translate = 0x5013x5,
+                rotate = 1799854x899802x-1799854,
+                plane = XY,
+                points = -625x-5013 625x-5013 630x1747 -620x1747,
+            }
+
+            polygon
+            {
+                translate = -1697x10319x756,
+                rotate = -900000x649356x899999,
+                plane = XY,
+                points = 100x-4055 1350x-4055 1882x2365 675x2467,
+            }
+
+            polygon
+            {
+                translate = -4809x17097x955,
+                rotate = -900000x647468x491402,
+                plane = XY,
+                points = -846x-4474 5096x-3239 5771x4548 -204x3418,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_38 */
+        tile
+        {
+            xy = 6x4,
+
+            box
+            {
+                translate = -1298x124x-3989,
+                rotate = 0x202201x0,
+                min = -3695x0x-2634,
+                max = 3695x409x2634,
+            }
+
+            box
+            {
+                translate = -55x46x-391,
+                rotate = 0x201442x0,
+                min = -326x0x-1172,
+                max = 326x340x1172,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_39 */
+        tile
+        {
+            xy = 7x4,
+
+            box
+            {
+                translate = -3265x124x-1731,
+                rotate = 0x563344x0,
+                min = -3695x0x-2634,
+                max = 3695x409x2634,
+            }
+
+            box
+            {
+                translate = -27x46x275,
+                rotate = 0x563814x0,
+                min = -326x0x-1172,
+                max = 326x340x1172,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_40 */
+        tile
+        {
+            xy = 0x5,
+
+            box
+            {
+                translate = -9023x0x-5329,
+                rotate = 0x-313625x425,
+                min = -4693x0x-2821,
+                max = 4693x435x2821,
+            }
+
+            box
+            {
+                translate = -3633x124x-1897,
+                rotate = 0x-313909x0,
+                min = -2192x0x-477,
+                max = 2192x254x477,
+            }
+
+            box
+            {
+                translate = -1470x0x-496,
+                rotate = 0x-312358x0,
+                min = -384x0x-1844,
+                max = 384x1024x1844,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_01_41 */
+        tile
+        {
+            xy = 1x5,
+
+            box
+            {
+                translate = -5467x0x-9330,
+                rotate = 408x-599866x728,
+                min = -4866x0x-2879,
+                max = 4866x435x2879,
+            }
+
+            box
+            {
+                translate = -2250x124x-3879,
+                rotate = 0x-598788x0,
+                min = -2192x0x-526,
+                max = 2192x254x526,
+            }
+
+            box
+            {
+                translate = -864x0x-1687,
+                rotate = 0x-603700x0,
+                min = -414x0x-1844,
+                max = 414x1024x1844,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+    }
+
+    tileset
+    {
+        name = ct_more_damaged_objects_02,
+
+        /* ct_more_damaged_objects_02_0 */
+        tile
+        {
+            xy = 0x0,
+
+            cylinder
+            {
+                translate = 498x1340x491,
+                rotate = 2700000x0x0,
+                radius1 = 893,
+                radius2 = 893,
+                height = 2680,
+            }
+
+            cylinder
+            {
+                translate = 491x4326x502,
+                rotate = 2700000x0x0,
+                radius1 = 686,
+                radius2 = 686,
+                height = 3289,
+            }
+
+            cylinder
+            {
+                translate = 1868x14504x-939,
+                rotate = -993817x93287x15519,
+                radius1 = 675,
+                radius2 = 675,
+                height = 17284,
+            }
+
+            cylinder
+            {
+                translate = 3325x24022x-2761,
+                rotate = -990336x56279x0,
+                radius1 = 1870,
+                radius2 = 1870,
+                height = 2177,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_1 */
+        tile
+        {
+            xy = 1x0,
+
+            cylinder
+            {
+                translate = 498x1340x502,
+                rotate = 2700000x0x0,
+                radius1 = 870,
+                radius2 = 870,
+                height = 2680,
+            }
+
+            cylinder
+            {
+                translate = 491x4326x491,
+                rotate = 2700000x0x0,
+                radius1 = 702,
+                radius2 = 702,
+                height = 3289,
+            }
+
+            cylinder
+            {
+                translate = -2268x13125x493,
+                rotate = -899999x-206065x0,
+                radius1 = 695,
+                radius2 = 695,
+                height = 15686,
+            }
+
+            cylinder
+            {
+                translate = -5507x21689x490,
+                rotate = -899999x-208913x0,
+                radius1 = 1866,
+                radius2 = 1866,
+                height = 2605,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_2 */
+        tile
+        {
+            xy = 2x0,
+
+            box
+            {
+                translate = 472x0x634,
+                rotate = 0x0x0,
+                min = -803x0x-778,
+                max = 803x2155x778,
+            }
+
+            cylinder
+            {
+                translate = 121x2447x274,
+                rotate = 2700000x0x0,
+                radius1 = 908,
+                radius2 = 908,
+                height = 579,
+            }
+
+            cylinder
+            {
+                translate = -166x4394x0,
+                rotate = 2700000x0x0,
+                radius1 = 709,
+                radius2 = 709,
+                height = 3310,
+            }
+
+            cylinder
+            {
+                translate = 1763x13561x-401,
+                rotate = -931580x140736x7889,
+                radius1 = 710,
+                radius2 = 710,
+                height = 15947,
+            }
+
+            cylinder
+            {
+                translate = 3949x22354x-882,
+                rotate = -924138x127523x0,
+                radius1 = 1183,
+                radius2 = 1183,
+                height = 2257,
+            }
+
+            box
+            {
+                translate = 4077x23466x-1051,
+                rotate = -49364x0x-116555,
+                min = -1368x0x-1276,
+                max = 1368x3041x1276,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_3 */
+        tile
+        {
+            xy = 3x0,
+
+            box
+            {
+                translate = 472x0x634,
+                rotate = 0x0x0,
+                min = -803x0x-778,
+                max = 803x2155x778,
+            }
+
+            cylinder
+            {
+                translate = 121x2447x274,
+                rotate = 2700000x0x0,
+                radius1 = 908,
+                radius2 = 908,
+                height = 579,
+            }
+
+            cylinder
+            {
+                translate = -166x4394x0,
+                rotate = 2700000x0x0,
+                radius1 = 709,
+                radius2 = 709,
+                height = 3310,
+            }
+
+            cylinder
+            {
+                translate = -2411x11837x0,
+                rotate = -900000x-200465x0,
+                radius1 = 710,
+                radius2 = 710,
+                height = 13394,
+            }
+
+            cylinder
+            {
+                translate = -5114x19177x0,
+                rotate = -899999x-198426x0,
+                radius1 = 1171,
+                radius2 = 1171,
+                height = 2252,
+            }
+
+            box
+            {
+                translate = -5579x20213x-179,
+                rotate = 0x0x199661,
+                min = -1289x0x-1203,
+                max = 1289x2572x1203,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_4 */
+        tile
+        {
+            xy = 4x0,
+
+            cylinder
+            {
+                translate = 498x1340x491,
+                rotate = 2700000x0x0,
+                radius1 = 893,
+                radius2 = 893,
+                height = 2680,
+            }
+
+            cylinder
+            {
+                translate = 491x4326x502,
+                rotate = 2700000x0x0,
+                radius1 = 686,
+                radius2 = 686,
+                height = 3289,
+            }
+
+            cylinder
+            {
+                translate = 1868x14504x-939,
+                rotate = -993817x93287x15519,
+                radius1 = 675,
+                radius2 = 675,
+                height = 17284,
+            }
+
+            cylinder
+            {
+                translate = 3325x24022x-2761,
+                rotate = -990336x56279x0,
+                radius1 = 1870,
+                radius2 = 1870,
+                height = 2177,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_5 */
+        tile
+        {
+            xy = 5x0,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_6 */
+        tile
+        {
+            xy = 6x0,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_7 */
+        tile
+        {
+            xy = 7x0,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_8 */
+        tile
+        {
+            xy = 0x1,
+
+            cylinder
+            {
+                translate = 816x1160x961,
+                rotate = 2700000x0x0,
+                radius1 = 1225,
+                radius2 = 1225,
+                height = 2320,
+            }
+
+            cylinder
+            {
+                translate = 807x4619x952,
+                rotate = 2700000x0x0,
+                radius1 = 932,
+                radius2 = 932,
+                height = 4593,
+            }
+
+            cylinder
+            {
+                translate = 750x16059x-1059,
+                rotate = -1024712x0x0,
+                radius1 = 963,
+                radius2 = 963,
+                height = 18915,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_9 */
+        tile
+        {
+            xy = 1x1,
+
+            cylinder
+            {
+                translate = 5389x14033x-611,
+                rotate = -1024712x0x0,
+                radius1 = 740,
+                radius2 = 740,
+                height = 19872,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_10 */
+        tile
+        {
+            xy = 2x1,
+
+            box
+            {
+                translate = 2319x21487x0,
+                rotate = 0x0x0,
+                min = -2680x0x-5000,
+                max = 2680x3006x5000,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_11 */
+        tile
+        {
+            xy = 3x1,
+
+            cylinder
+            {
+                translate = 816x1160x961,
+                rotate = 2700000x0x0,
+                radius1 = 1120,
+                radius2 = 1120,
+                height = 2320,
+            }
+
+            cylinder
+            {
+                translate = 807x4619x952,
+                rotate = 2700000x0x0,
+                radius1 = 870,
+                radius2 = 870,
+                height = 4593,
+            }
+
+            cylinder
+            {
+                translate = 2760x17596x951,
+                rotate = -899999x106737x0,
+                radius1 = 870,
+                radius2 = 870,
+                height = 21881,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_12 */
+        tile
+        {
+            xy = 4x1,
+
+            cylinder
+            {
+                translate = 6296x11751x951,
+                rotate = -899999x106737x0,
+                radius1 = 803,
+                radius2 = 803,
+                height = 15563,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_13 */
+        tile
+        {
+            xy = 5x1,
+
+            box
+            {
+                translate = -683x19744x-397,
+                rotate = 0x0x0,
+                min = -4316x0x-2301,
+                max = 4316x2883x2301,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_15 */
+        tile
+        {
+            xy = 7x1,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_16 */
+        tile
+        {
+            xy = 0x2,
+
+            box
+            {
+                translate = 1160x20205x820,
+                rotate = 0x0x0,
+                min = -2056x0x-4178,
+                max = 2056x3100x4178,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_17 */
+        tile
+        {
+            xy = 1x2,
+
+            cylinder
+            {
+                translate = -4496x7048x1016,
+                rotate = -791703x0x0,
+                radius1 = 870,
+                radius2 = 870,
+                height = 14819,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_18 */
+        tile
+        {
+            xy = 2x2,
+
+            cylinder
+            {
+                translate = 816x1160x961,
+                rotate = 2700000x0x0,
+                radius1 = 1120,
+                radius2 = 1120,
+                height = 2320,
+            }
+
+            cylinder
+            {
+                translate = 807x4619x952,
+                rotate = 2700000x0x0,
+                radius1 = 870,
+                radius2 = 870,
+                height = 4593,
+            }
+
+            cylinder
+            {
+                translate = 805x17471x3009,
+                rotate = -791703x0x0,
+                radius1 = 879,
+                radius2 = 879,
+                height = 21767,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_19 */
+        tile
+        {
+            xy = 3x2,
+
+            box
+            {
+                translate = 0x21798x1995,
+                rotate = 0x0x0,
+                min = -5000x0x-2307,
+                max = 5000x2696x2307,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_20 */
+        tile
+        {
+            xy = 4x2,
+
+            cylinder
+            {
+                translate = -5365x10344x951,
+                rotate = -899999x-117769x0,
+                radius1 = 870,
+                radius2 = 870,
+                height = 19864,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_21 */
+        tile
+        {
+            xy = 5x2,
+
+            cylinder
+            {
+                translate = 816x1160x961,
+                rotate = 2700000x0x0,
+                radius1 = 1120,
+                radius2 = 1120,
+                height = 2320,
+            }
+
+            cylinder
+            {
+                translate = 807x4619x952,
+                rotate = 2700000x0x0,
+                radius1 = 870,
+                radius2 = 870,
+                height = 4593,
+            }
+
+            cylinder
+            {
+                translate = -1164x16062x951,
+                rotate = -899999x-117769x0,
+                radius1 = 951,
+                radius2 = 951,
+                height = 19078,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_23 */
+        tile
+        {
+            xy = 7x2,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_02_48 */
+        tile
+        {
+            xy = 0x6,
+
+            cylinder
+            {
+                translate = 685x520x847,
+                rotate = 2700000x0x0,
+                radius1 = 1340,
+                radius2 = 1340,
+                height = 1040,
+            }
+
+            cylinder
+            {
+                translate = 697x13894x846,
+                rotate = 2700000x0x0,
+                radius1 = 656,
+                radius2 = 656,
+                height = 24494,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+    }
+
+    tileset
+    {
+        name = ct_more_damaged_objects_04,
+
+        /* ct_more_damaged_objects_04_80 */
+        tile
+        {
+            xy = 0x10,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_04_81 */
+        tile
+        {
+            xy = 1x10,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_04_82 */
+        tile
+        {
+            xy = 2x10,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_04_83 */
+        tile
+        {
+            xy = 3x10,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_04_84 */
+        tile
+        {
+            xy = 4x10,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_04_85 */
+        tile
+        {
+            xy = 5x10,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_04_86 */
+        tile
+        {
+            xy = 6x10,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_04_87 */
+        tile
+        {
+            xy = 7x10,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+    }
+
+    tileset
+    {
+        name = ct_more_damaged_objects_05,
+
+        /* ct_more_damaged_objects_05_20 */
+        tile
+        {
+            xy = 4x2,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_05_21 */
+        tile
+        {
+            xy = 5x2,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_05_22 */
+        tile
+        {
+            xy = 6x2,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_05_23 */
+        tile
+        {
+            xy = 7x2,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_05_60 */
+        tile
+        {
+            xy = 4x7,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_05_61 */
+        tile
+        {
+            xy = 5x7,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_05_62 */
+        tile
+        {
+            xy = 6x7,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_05_63 */
+        tile
+        {
+            xy = 7x7,
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+    }
+
+    tileset
+    {
+        name = ct_more_damaged_objects_06,
+
+        /* ct_more_damaged_objects_06_16 */
+        tile
+        {
+            xy = 0x2,
+
+            polygon
+            {
+                translate = -1468x23696x1462,
+                rotate = 0x451908x0,
+                plane = YZ,
+                points = -4879x-23611 5196x-23659 5000x5000 -5000x5000,
+            }
+
+            polygon
+            {
+                translate = 1442x23720x-1452,
+                rotate = 0x449942x0,
+                plane = XY,
+                points = -4640x-23651 4996x-23709 5000x5000 -5000x5000,
+            }
+
+            cylinder
+            {
+                translate = -268x12662x-559,
+                rotate = 2700000x0x0,
+                radius1 = 1357,
+                radius2 = 1357,
+                height = 24495,
+            }
+        }
+
+        /* ct_more_damaged_objects_06_17 */
+        tile
+        {
+            xy = 1x2,
+
+            polygon
+            {
+                translate = -1468x23696x1462,
+                rotate = 0x451908x0,
+                plane = YZ,
+                points = -4879x-23611 5196x-23659 5000x5000 -5000x5000,
+            }
+
+            polygon
+            {
+                translate = 1442x23720x-1452,
+                rotate = 0x449942x0,
+                plane = XY,
+                points = -4640x-23651 4996x-23709 5000x5000 -5000x5000,
+            }
+
+            cylinder
+            {
+                translate = -268x12662x-559,
+                rotate = 2700000x0x0,
+                radius1 = 1357,
+                radius2 = 1357,
+                height = 24495,
+            }
+        }
+
+        /* ct_more_damaged_objects_06_18 */
+        tile
+        {
+            xy = 2x2,
+
+            polygon
+            {
+                translate = -1468x23696x1462,
+                rotate = 0x451908x0,
+                plane = YZ,
+                points = -4879x-23611 5196x-23659 5000x5000 -5000x5000,
+            }
+
+            polygon
+            {
+                translate = 1442x23720x-1452,
+                rotate = 0x449942x0,
+                plane = XY,
+                points = -4640x-23651 4996x-23709 5000x5000 -5000x5000,
+            }
+
+            cylinder
+            {
+                translate = -268x12662x-559,
+                rotate = 2700000x0x0,
+                radius1 = 1357,
+                radius2 = 1357,
+                height = 24495,
+            }
+        }
+
+        /* ct_more_damaged_objects_06_19 */
+        tile
+        {
+            xy = 3x2,
+
+            polygon
+            {
+                translate = -1468x23696x1462,
+                rotate = 0x451908x0,
+                plane = YZ,
+                points = -4879x-23611 5196x-23659 5000x5000 -5000x5000,
+            }
+
+            polygon
+            {
+                translate = 1442x23720x-1452,
+                rotate = 0x449942x0,
+                plane = XY,
+                points = -4640x-23651 4996x-23709 5000x5000 -5000x5000,
+            }
+
+            cylinder
+            {
+                translate = -268x12662x-559,
+                rotate = 2700000x0x0,
+                radius1 = 1357,
+                radius2 = 1357,
+                height = 24495,
+            }
+        }
+
+        /* ct_more_damaged_objects_06_20 */
+        tile
+        {
+            xy = 4x2,
+
+            polygon
+            {
+                translate = -1468x23696x1462,
+                rotate = 0x451908x0,
+                plane = YZ,
+                points = -4879x-23611 5196x-23659 5000x5000 -5000x5000,
+            }
+
+            polygon
+            {
+                translate = 1442x23720x-1452,
+                rotate = 0x449942x0,
+                plane = XY,
+                points = -4640x-23651 4996x-23709 5000x5000 -5000x5000,
+            }
+
+            cylinder
+            {
+                translate = -268x12662x-559,
+                rotate = 2700000x0x0,
+                radius1 = 1357,
+                radius2 = 1357,
+                height = 24495,
+            }
+        }
+
+        /* ct_more_damaged_objects_06_21 */
+        tile
+        {
+            xy = 5x2,
+
+            polygon
+            {
+                translate = -1468x23696x1462,
+                rotate = 0x451908x0,
+                plane = YZ,
+                points = -4879x-23611 5196x-23659 5000x5000 -5000x5000,
+            }
+
+            polygon
+            {
+                translate = 1442x23720x-1452,
+                rotate = 0x449942x0,
+                plane = XY,
+                points = -4640x-23651 4996x-23709 5000x5000 -5000x5000,
+            }
+
+            cylinder
+            {
+                translate = -268x12662x-559,
+                rotate = 2700000x0x0,
+                radius1 = 1357,
+                radius2 = 1357,
+                height = 24495,
+            }
+        }
+
+        /* ct_more_damaged_objects_06_22 */
+        tile
+        {
+            xy = 6x2,
+
+            polygon
+            {
+                translate = -1468x23696x1462,
+                rotate = 0x451908x0,
+                plane = YZ,
+                points = -4879x-23611 5196x-23659 5000x5000 -5000x5000,
+            }
+
+            polygon
+            {
+                translate = 1442x23720x-1452,
+                rotate = 0x449942x0,
+                plane = XY,
+                points = -4640x-23651 4996x-23709 5000x5000 -5000x5000,
+            }
+
+            cylinder
+            {
+                translate = -268x12662x-559,
+                rotate = 2700000x0x0,
+                radius1 = 1357,
+                radius2 = 1357,
+                height = 24495,
+            }
+        }
+
+        /* ct_more_damaged_objects_06_23 */
+        tile
+        {
+            xy = 7x2,
+
+            polygon
+            {
+                translate = -1468x23696x1462,
+                rotate = 0x451908x0,
+                plane = YZ,
+                points = -4879x-23611 5196x-23659 5000x5000 -5000x5000,
+            }
+
+            polygon
+            {
+                translate = 1442x23720x-1452,
+                rotate = 0x449942x0,
+                plane = XY,
+                points = -4640x-23651 4996x-23709 5000x5000 -5000x5000,
+            }
+
+            cylinder
+            {
+                translate = -268x12662x-559,
+                rotate = 2700000x0x0,
+                radius1 = 1357,
+                radius2 = 1357,
+                height = 24495,
+            }
+        }
+
+        /* ct_more_damaged_objects_06_40 */
+        tile
+        {
+            xy = 0x5,
+
+            polygon
+            {
+                translate = -1468x23696x1462,
+                rotate = 0x451908x0,
+                plane = YZ,
+                points = -4879x-23611 5196x-23659 5000x5000 -5000x5000,
+            }
+
+            polygon
+            {
+                translate = 1442x23720x-1452,
+                rotate = 0x449942x0,
+                plane = XY,
+                points = -4640x-23651 4996x-23709 5000x5000 -5000x5000,
+            }
+
+            cylinder
+            {
+                translate = -268x12662x-559,
+                rotate = 2700000x0x0,
+                radius1 = 1357,
+                radius2 = 1357,
+                height = 24495,
+            }
+        }
+
+        /* ct_more_damaged_objects_06_41 */
+        tile
+        {
+            xy = 1x5,
+
+            polygon
+            {
+                translate = -1468x23696x1462,
+                rotate = 0x451908x0,
+                plane = YZ,
+                points = -4879x-23611 5196x-23659 5000x5000 -5000x5000,
+            }
+
+            polygon
+            {
+                translate = 1442x23720x-1452,
+                rotate = 0x449942x0,
+                plane = XY,
+                points = -4640x-23651 4996x-23709 5000x5000 -5000x5000,
+            }
+
+            cylinder
+            {
+                translate = -268x12662x-559,
+                rotate = 2700000x0x0,
+                radius1 = 1357,
+                radius2 = 1357,
+                height = 24495,
+            }
+        }
+
+        /* ct_more_damaged_objects_06_42 */
+        tile
+        {
+            xy = 2x5,
+
+            polygon
+            {
+                translate = -1468x23696x1462,
+                rotate = 0x451908x0,
+                plane = YZ,
+                points = -4879x-23611 5196x-23659 5000x5000 -5000x5000,
+            }
+
+            polygon
+            {
+                translate = 1442x23720x-1452,
+                rotate = 0x449942x0,
+                plane = XY,
+                points = -4640x-23651 4996x-23709 5000x5000 -5000x5000,
+            }
+
+            cylinder
+            {
+                translate = -268x12662x-559,
+                rotate = 2700000x0x0,
+                radius1 = 1357,
+                radius2 = 1357,
+                height = 24495,
+            }
+        }
+
+        /* ct_more_damaged_objects_06_43 */
+        tile
+        {
+            xy = 3x5,
+
+            polygon
+            {
+                translate = -1468x23696x1462,
+                rotate = 0x451908x0,
+                plane = YZ,
+                points = -4879x-23611 5196x-23659 5000x5000 -5000x5000,
+            }
+
+            polygon
+            {
+                translate = 1442x23720x-1452,
+                rotate = 0x449942x0,
+                plane = XY,
+                points = -4640x-23651 4996x-23709 5000x5000 -5000x5000,
+            }
+
+            cylinder
+            {
+                translate = -268x12662x-559,
+                rotate = 2700000x0x0,
+                radius1 = 1357,
+                radius2 = 1357,
+                height = 24495,
+            }
+        }
+
+        /* ct_more_damaged_objects_06_45 */
+        tile
+        {
+            xy = 5x5,
+
+            cylinder
+            {
+                translate = -8x315x-330,
+                rotate = -899999x0x-450000,
+                radius1 = 924,
+                radius2 = 924,
+                height = 631,
+            }
+
+            box
+            {
+                translate = 715x0x-397,
+                rotate = 0x0x0,
+                min = -2400x0x-2287,
+                max = 2400x373x2287,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+
+        /* ct_more_damaged_objects_06_46 */
+        tile
+        {
+            xy = 6x5,
+
+            cylinder
+            {
+                translate = 320x1700x635,
+                rotate = 1793548x510379x1803,
+                radius1 = 1659,
+                radius2 = 1659,
+                height = 7346,
+            }
+
+            box
+            {
+                translate = -189x0x-93,
+                rotate = 0x0x0,
+                min = -3584x0x-4294,
+                max = 3584x373x4294,
+            }
+
+            properties
+            {
+                Translucent = true,
+            }
+        }
+    }
+
+    tileset
+    {
+        name = ct_snowy_more_damaged_objects_01,
+
+        /* ct_snowy_more_damaged_objects_01_0 */
+        tile
+        {
+            xy = 0x0,
+
+            cylinder
+            {
+                translate = 498x1340x491,
+                rotate = 2700000x0x0,
+                radius1 = 893,
+                radius2 = 893,
+                height = 2680,
+            }
+
+            cylinder
+            {
+                translate = 491x4326x502,
+                rotate = 2700000x0x0,
+                radius1 = 686,
+                radius2 = 686,
+                height = 3289,
+            }
+
+            cylinder
+            {
+                translate = 1868x14504x-939,
+                rotate = -993817x93287x15519,
+                radius1 = 675,
+                radius2 = 675,
+                height = 17284,
+            }
+
+            cylinder
+            {
+                translate = 3325x24022x-2761,
+                rotate = -990336x56279x0,
+                radius1 = 1870,
+                radius2 = 1870,
+                height = 2177,
+            }
+
+            cylinder
+            {
+                translate = 839x529x839,
+                rotate = 2700000x0x0,
+                radius1 = 1567,
+                radius2 = 1567,
+                height = 1058,
+            }
+        }
+
+        /* ct_snowy_more_damaged_objects_01_1 */
+        tile
+        {
+            xy = 1x0,
+
+            cylinder
+            {
+                translate = 498x1340x502,
+                rotate = 2700000x0x0,
+                radius1 = 870,
+                radius2 = 870,
+                height = 2680,
+            }
+
+            cylinder
+            {
+                translate = 491x4326x491,
+                rotate = 2700000x0x0,
+                radius1 = 702,
+                radius2 = 702,
+                height = 3289,
+            }
+
+            cylinder
+            {
+                translate = -2268x13125x493,
+                rotate = -899999x-206065x0,
+                radius1 = 695,
+                radius2 = 695,
+                height = 15686,
+            }
+
+            cylinder
+            {
+                translate = -5507x21689x490,
+                rotate = -899999x-208913x0,
+                radius1 = 1866,
+                radius2 = 1866,
+                height = 2605,
+            }
+
+            cylinder
+            {
+                translate = 975x444x1009,
+                rotate = 2700000x0x0,
+                radius1 = 1649,
+                radius2 = 1649,
+                height = 888,
+            }
+        }
+
+        /* ct_snowy_more_damaged_objects_01_8 */
+        tile
+        {
+            xy = 0x1,
+
+            cylinder
+            {
+                translate = 816x1160x961,
+                rotate = 2700000x0x0,
+                radius1 = 1225,
+                radius2 = 1225,
+                height = 2320,
+            }
+
+            cylinder
+            {
+                translate = 807x4619x952,
+                rotate = 2700000x0x0,
+                radius1 = 932,
+                radius2 = 932,
+                height = 4593,
+            }
+
+            cylinder
+            {
+                translate = 750x16059x-1059,
+                rotate = -1024712x0x0,
+                radius1 = 963,
+                radius2 = 963,
+                height = 18915,
+            }
+
+            cylinder
+            {
+                translate = 933x580x1108,
+                rotate = 2700000x0x0,
+                radius1 = 1676,
+                radius2 = 1676,
+                height = 1160,
+            }
+        }
+
+        /* ct_snowy_more_damaged_objects_01_9 */
+        tile
+        {
+            xy = 1x1,
+
+            box
+            {
+                translate = 2319x21487x0,
+                rotate = 0x0x0,
+                min = -2680x0x-5000,
+                max = 2680x3421x5000,
+            }
+        }
+
+        /* ct_snowy_more_damaged_objects_01_10 */
+        tile
+        {
+            xy = 2x1,
+
+            cylinder
+            {
+                translate = 816x1160x961,
+                rotate = 2700000x0x0,
+                radius1 = 1120,
+                radius2 = 1120,
+                height = 2320,
+            }
+
+            cylinder
+            {
+                translate = 807x4619x952,
+                rotate = 2700000x0x0,
+                radius1 = 870,
+                radius2 = 870,
+                height = 4593,
+            }
+
+            cylinder
+            {
+                translate = 2760x17596x951,
+                rotate = -899999x106737x0,
+                radius1 = 870,
+                radius2 = 870,
+                height = 21881,
+            }
+
+            cylinder
+            {
+                translate = 980x580x1134,
+                rotate = 2700000x0x0,
+                radius1 = 1676,
+                radius2 = 1676,
+                height = 1161,
+            }
+        }
+
+        /* ct_snowy_more_damaged_objects_01_11 */
+        tile
+        {
+            xy = 3x1,
+
+            box
+            {
+                translate = -683x19744x-397,
+                rotate = 0x0x0,
+                min = -4316x0x-2301,
+                max = 4316x3321x2301,
+            }
+        }
+
+        /* ct_snowy_more_damaged_objects_01_16 */
+        tile
+        {
+            xy = 0x2,
+
+            box
+            {
+                translate = 1160x20205x820,
+                rotate = 0x0x0,
+                min = -2056x0x-4178,
+                max = 2056x3630x4178,
+            }
+        }
+
+        /* ct_snowy_more_damaged_objects_01_17 */
+        tile
+        {
+            xy = 1x2,
+
+            cylinder
+            {
+                translate = 816x1160x961,
+                rotate = 2700000x0x0,
+                radius1 = 1120,
+                radius2 = 1120,
+                height = 2320,
+            }
+
+            cylinder
+            {
+                translate = 807x4619x952,
+                rotate = 2700000x0x0,
+                radius1 = 870,
+                radius2 = 870,
+                height = 4593,
+            }
+
+            cylinder
+            {
+                translate = 805x17471x3009,
+                rotate = -791703x0x0,
+                radius1 = 879,
+                radius2 = 879,
+                height = 21767,
+            }
+
+            cylinder
+            {
+                translate = 1027x580x1190,
+                rotate = 2700000x0x0,
+                radius1 = 1678,
+                radius2 = 1678,
+                height = 1160,
+            }
+        }
+
+        /* ct_snowy_more_damaged_objects_01_18 */
+        tile
+        {
+            xy = 2x2,
+
+            box
+            {
+                translate = -265x21798x1995,
+                rotate = 0x0x0,
+                min = -5265x0x-2307,
+                max = 5265x3042x2307,
+            }
+        }
+
+        /* ct_snowy_more_damaged_objects_01_19 */
+        tile
+        {
+            xy = 3x2,
+
+            cylinder
+            {
+                translate = 816x1160x961,
+                rotate = 2700000x0x0,
+                radius1 = 1120,
+                radius2 = 1120,
+                height = 2320,
+            }
+
+            cylinder
+            {
+                translate = 807x4619x952,
+                rotate = 2700000x0x0,
+                radius1 = 870,
+                radius2 = 870,
+                height = 4593,
+            }
+
+            cylinder
+            {
+                translate = -1164x16062x951,
+                rotate = -899999x-117769x0,
+                radius1 = 951,
+                radius2 = 951,
+                height = 19078,
+            }
+
+            cylinder
+            {
+                translate = 1009x580x1169,
+                rotate = 2700000x0x0,
+                radius1 = 1678,
+                radius2 = 1678,
+                height = 1160,
+            }
+        }
+    }
+}

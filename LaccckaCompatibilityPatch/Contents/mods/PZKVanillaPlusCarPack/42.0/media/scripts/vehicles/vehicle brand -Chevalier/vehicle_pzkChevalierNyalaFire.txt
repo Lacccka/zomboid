@@ -1,0 +1,31 @@
+module Base
+{
+	vehicle pzkChevalierNyalaFire
+	{
+	
+		zombieType = FiremanFullSuit;Fireman,
+        specialKeyRing = Base.KeyRing_EagleFlag,
+		
+	    template! = pzkChevalierCeriseSedanLightsTemplate,
+		template = pzk85SedanCollision,
+
+		model
+        {
+            file = Vehicles_CarLights_NoRandom,
+            scale = 1.82,
+            offset = 0.0 0.2692 0.0,
+        }
+		lightbar
+        {
+            soundSiren = VehicleSiren,
+            leftCol = 1.0;0.0;0.0,
+            rightCol = 1.0;0.0;0.0,
+        }
+		skin
+		{
+			texture = Vehicles/vehicle_carlightsfireshell,
+			textureMask = Vehicles/vehicle_carnormal_mask,
+			textureLights = Vehicles/vehicle_carnormalFire_lights,
+		}
+	}
+}

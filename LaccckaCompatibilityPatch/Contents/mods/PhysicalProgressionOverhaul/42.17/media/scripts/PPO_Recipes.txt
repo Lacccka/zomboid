@@ -1,0 +1,246 @@
+/*
+ * The dedicated server rebuilds this action from a network packet, and
+ * PZNetKahluaTableImpl writes a CraftRecipe as a bare name that
+ * ScriptBucketCollection resolves against module Base. Declared anywhere else,
+ * the recipe comes back null on the server and the craft never ends.
+ */
+module Base
+{
+    craftRecipe MixProteinShake
+    {
+        timedAction = MixingBowl,
+        time = 50,
+        Tags = AnySurfaceCraft;Cooking,
+        category = Cooking,
+        OnCreate = PPO_RecipeCallbacks.mixProteinShake,
+        inputs
+        {
+            item 1 [Base.Sportsbottle;Base.WaterBottle;Base.PopBottle] mode:destroy flags[ItemCount] mappers[bottleType],
+            -fluid 0.5 [Water;CarbonatedWater] mode:mixture,
+            item 10 [PhysicalProgressionOverhaul.ProteinPowder],
+        }
+        outputs
+        {
+            item 1 mapper:bottleType,
+        }
+        itemMapper bottleType
+        {
+            Base.Sportsbottle = Base.Sportsbottle,
+            Base.WaterBottle = Base.WaterBottle,
+            Base.PopBottle = Base.PopBottle,
+        }
+    }
+
+    craftRecipe MixCreatineDrink
+    {
+        timedAction = MixingBowl,
+        time = 50,
+        Tags = AnySurfaceCraft;Cooking,
+        category = Cooking,
+        OnCreate = PPO_RecipeCallbacks.mixCreatineDrink,
+        inputs
+        {
+            item 1 [Base.Sportsbottle;Base.WaterBottle;Base.PopBottle] mode:destroy flags[ItemCount] mappers[bottleType],
+            -fluid 0.5 [Water;CarbonatedWater] mode:mixture,
+            item 4 [PhysicalProgressionOverhaul.CreatineComplex],
+        }
+        outputs
+        {
+            item 1 mapper:bottleType,
+        }
+        itemMapper bottleType
+        {
+            Base.Sportsbottle = Base.Sportsbottle,
+            Base.WaterBottle = Base.WaterBottle,
+            Base.PopBottle = Base.PopBottle,
+        }
+    }
+
+    craftRecipe MixHomemadeProteinBlend
+    {
+        timedAction = MixingBowl,
+        time = 100,
+        SkillRequired = Cooking:6,
+        Tags = AnySurfaceCraft;Cooking,
+        category = Cooking,
+        OnCreate = PPO_RecipeCallbacks.mixHomemadeProteinBlend,
+        inputs
+        {
+            item 1 tags[base:mortarpestle] mode:keep,
+            item 1 [Base.Sportsbottle;Base.WaterBottle;Base.PopBottle] mode:destroy flags[ItemCount] mappers[bottleType],
+            -fluid 0.5 [Water;CarbonatedWater] mode:mixture,
+            item 10 [Base.OatsRaw;Base.Rice;Base.Pasta],
+            item 5 [Base.PeanutButter],
+            item 1 tags[base:egg] flags[ItemCount],
+        }
+        outputs
+        {
+            item 1 mapper:bottleType,
+        }
+        itemMapper bottleType
+        {
+            Base.Sportsbottle = Base.Sportsbottle,
+            Base.WaterBottle = Base.WaterBottle,
+            Base.PopBottle = Base.PopBottle,
+        }
+    }
+
+    craftRecipe MixHomemadeCreatineDrink
+    {
+        timedAction = MixingBowl,
+        time = 120,
+        SkillRequired = Cooking:6,
+        Tags = AnySurfaceCraft;Cooking,
+        category = Cooking,
+        OnCreate = PPO_RecipeCallbacks.mixHomemadeCreatineDrink,
+        inputs
+        {
+            item 1 tags[base:mortarpestle] mode:keep,
+            item 1 [Base.Sportsbottle;Base.WaterBottle;Base.PopBottle] mode:destroy flags[ItemCount] mappers[bottleType],
+            -fluid 0.5 [Water;CarbonatedWater] mode:mixture,
+            item 40 [Base.Steak;Base.ChickenFried;Base.MeatPatty;Base.TunaTinOpen],
+            item 5 tags[base:salt],
+        }
+        outputs
+        {
+            item 1 mapper:bottleType,
+        }
+        itemMapper bottleType
+        {
+            Base.Sportsbottle = Base.Sportsbottle,
+            Base.WaterBottle = Base.WaterBottle,
+            Base.PopBottle = Base.PopBottle,
+        }
+    }
+
+    craftRecipe MixHomemadePreWorkoutDrink
+    {
+        timedAction = MixingBowl,
+        time = 80,
+        SkillRequired = Cooking:5,
+        Tags = AnySurfaceCraft;Cooking,
+        category = Cooking,
+        OnCreate = PPO_RecipeCallbacks.mixHomemadePreWorkoutDrink,
+        inputs
+        {
+            item 1 tags[base:mortarpestle] mode:keep,
+            item 1 [Base.Sportsbottle;Base.WaterBottle;Base.PopBottle] mode:destroy flags[ItemCount] mappers[bottleType],
+            -fluid 0.5 [Water;CarbonatedWater] mode:mixture,
+            item 15 [Base.Coffee2],
+            item 4 [Base.Sugar;Base.SugarBrown],
+        }
+        outputs
+        {
+            item 1 mapper:bottleType,
+        }
+        itemMapper bottleType
+        {
+            Base.Sportsbottle = Base.Sportsbottle,
+            Base.WaterBottle = Base.WaterBottle,
+            Base.PopBottle = Base.PopBottle,
+        }
+    }
+
+    craftRecipe MixHomemadeElectrolyteDrink
+    {
+        timedAction = MixingBowl,
+        time = 80,
+        SkillRequired = Cooking:4,
+        Tags = AnySurfaceCraft;Cooking,
+        category = Cooking,
+        OnCreate = PPO_RecipeCallbacks.mixHomemadeElectrolyteDrink,
+        inputs
+        {
+            item 1 tags[base:mortarpestle] mode:keep,
+            item 1 [Base.Sportsbottle;Base.WaterBottle;Base.PopBottle] mode:destroy flags[ItemCount] mappers[bottleType],
+            -fluid 0.5 [Water;CarbonatedWater] mode:mixture,
+            item 5 tags[base:salt],
+            item 4 [Base.Sugar;Base.SugarBrown],
+        }
+        outputs
+        {
+            item 1 mapper:bottleType,
+        }
+        itemMapper bottleType
+        {
+            Base.Sportsbottle = Base.Sportsbottle,
+            Base.WaterBottle = Base.WaterBottle,
+            Base.PopBottle = Base.PopBottle,
+        }
+    }
+
+    craftRecipe MixCalorieShake
+    {
+        timedAction = MixingBowl,
+        time = 50,
+        Tags = AnySurfaceCraft;Cooking,
+        category = Cooking,
+        OnCreate = PPO_RecipeCallbacks.mixCalorieShake,
+        inputs
+        {
+            item 1 [Base.Sportsbottle;Base.WaterBottle;Base.PopBottle] mode:destroy flags[ItemCount] mappers[bottleType],
+            -fluid 0.5 [Water;CarbonatedWater] mode:mixture,
+            item 16 [PhysicalProgressionOverhaul.CalorieGainer],
+        }
+        outputs
+        {
+            item 1 mapper:bottleType,
+        }
+        itemMapper bottleType
+        {
+            Base.Sportsbottle = Base.Sportsbottle,
+            Base.WaterBottle = Base.WaterBottle,
+            Base.PopBottle = Base.PopBottle,
+        }
+    }
+
+    craftRecipe MixElectrolyteDrink
+    {
+        timedAction = MixingBowl,
+        time = 40,
+        Tags = AnySurfaceCraft;Cooking,
+        category = Cooking,
+        OnCreate = PPO_RecipeCallbacks.mixElectrolyteDrink,
+        inputs
+        {
+            item 1 [Base.Sportsbottle;Base.WaterBottle;Base.PopBottle] mode:destroy flags[ItemCount] mappers[bottleType],
+            -fluid 0.5 [Water;CarbonatedWater] mode:mixture,
+            item 2 [PhysicalProgressionOverhaul.ElectrolyteComplex],
+        }
+        outputs
+        {
+            item 1 mapper:bottleType,
+        }
+        itemMapper bottleType
+        {
+            Base.Sportsbottle = Base.Sportsbottle,
+            Base.WaterBottle = Base.WaterBottle,
+            Base.PopBottle = Base.PopBottle,
+        }
+    }
+
+    craftRecipe MixPreWorkoutDrink
+    {
+        timedAction = MixingBowl,
+        time = 40,
+        Tags = AnySurfaceCraft;Cooking,
+        category = Cooking,
+        OnCreate = PPO_RecipeCallbacks.mixPreWorkoutDrink,
+        inputs
+        {
+            item 1 [Base.Sportsbottle;Base.WaterBottle;Base.PopBottle] mode:destroy flags[ItemCount] mappers[bottleType],
+            -fluid 0.5 [Water;CarbonatedWater] mode:mixture,
+            item 4 [PhysicalProgressionOverhaul.PreWorkoutStimulant],
+        }
+        outputs
+        {
+            item 1 mapper:bottleType,
+        }
+        itemMapper bottleType
+        {
+            Base.Sportsbottle = Base.Sportsbottle,
+            Base.WaterBottle = Base.WaterBottle,
+            Base.PopBottle = Base.PopBottle,
+        }
+    }
+}

@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Skinned\Clothes\STALKER_OutRider_Jacket_M.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Skinned\Clothes\STALKER_OutRider_Jacket_NH_F.fbx</m_FemaleModel>
+	<m_GUID>e6c758c7-b994-4abd-aec5-e6e7b721dbf1</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+		<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+
+	<m_Masks>3</m_Masks>
+	<m_Masks>5</m_Masks>
+
+
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N15A</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N1</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N2</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N2A</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N2B</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N3</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N3A</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N4</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N4A</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N5</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N5A</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N6</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N6A</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N7</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N7A</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N8</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N9</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N9A</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N10</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N10A</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N11</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N12</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N12A</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N13</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N13A</textureChoices>
+<textureChoices>STALKER\Stalker_OutRider_Jacket_N14</textureChoices>
+
+
+</clothingItem>

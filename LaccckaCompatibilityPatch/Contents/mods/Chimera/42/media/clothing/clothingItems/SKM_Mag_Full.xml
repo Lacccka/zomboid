@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Skinned\Clothes\SKM_Mag_Full.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Skinned\Clothes\SKM_Mag_Full.fbx</m_FemaleModel>
+	<m_GUID>15dd93f3-afe5-4c8e-bc2d-eb9b678489b8</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+		<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+	<textureChoices>EQUIPMENT/SIG_M17_FDE</textureChoices>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</clothingItem>

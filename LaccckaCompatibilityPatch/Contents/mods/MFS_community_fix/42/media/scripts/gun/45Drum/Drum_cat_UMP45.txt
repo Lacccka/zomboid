@@ -1,0 +1,17 @@
+/*
+ * MFS B42.20 Redux - RC7
+ *
+ * SUPERSEDED DUPLICATE - intentionally emptied, do not restore.
+ *
+ * This file defined UMP45_cat_Drum a second time. The authoritative
+ * definition lives in gun/45Drum/cat_UMP45_Drum.txt, which follows the
+ * cat_<name>_Drum naming used by every other calibre folder.
+ *
+ * Two files defining the same item ID left the winner up to load order.
+ * On usp45_cat_Drum the two copies disagreed (MaxAmmo 7 vs 50) and on
+ * Pistol2_Drum they disagreed on ClipSize.
+ *
+ * The body is commented out rather than the file deleted, because an
+ * overlay can only add or overwrite files - it cannot remove them from
+ * an existing installation.
+ */

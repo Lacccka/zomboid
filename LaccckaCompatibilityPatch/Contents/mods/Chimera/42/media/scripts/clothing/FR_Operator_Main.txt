@@ -1,0 +1,4727 @@
+module CHIMERA
+{
+
+	/************************ FEDERAL RANGERS V10.2 UPDATE: CHIMERA  ************************/
+
+
+
+
+
+craftRecipe Change [Gear Texture] [Helmet Patch A]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Warhawk_HeavyRiotGear_HelmetPatchA] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Warhawk_HeavyRiotGear_HelmetPatchA,
+        }
+    }
+
+craftRecipe Change [Gear Texture] [Helmet Patch B]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Warhawk_HeavyRiotGear_HelmetPatchB] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Warhawk_HeavyRiotGear_HelmetPatchB,
+        }
+    }
+
+craftRecipe Change [Gear Texture] [Helmet Patch C]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Warhawk_HeavyRiotGear_HelmetPatchC] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Warhawk_HeavyRiotGear_HelmetPatchC,
+        }
+    }
+
+    
+craftRecipe Change [Gear Texture] [Oakley Tac Gloves]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Oakley_TacGloves] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Oakley_TacGloves,
+        }
+    }
+
+
+
+
+craftRecipe Change [Gear Texture] [WarFighter H]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.WarFighter_Fast_MT_Helmet] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.WarFighter_Fast_MT_Helmet,
+        }
+    }
+
+craftRecipe Change [Gear Texture] [WarFighter Gear]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.WarFighter_Fast_MT_Helmet_Gearset] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.WarFighter_Fast_MT_Helmet_Gearset,
+        }
+    }
+
+    craftRecipe Change [Gear Texture] [Crye Airframe H]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Crye_Precision_AirFrame_Ballistic_Helmet] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Crye_Precision_AirFrame_Ballistic_Helmet,
+        }
+    }
+
+craftRecipe Change [Gear Texture] [Crye Airframe]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Crye_Precision_AirFrame_Cover_Cutout] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Crye_Precision_AirFrame_Cover_Cutout,
+        }
+    }
+
+craftRecipe Change [Gear Texture] [Paladin]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Operator_Paladin_MolleVestMain] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Operator_Paladin_MolleVestMain,
+        }
+    }
+
+craftRecipe Change [Gear Texture] [TYR]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Operator_TYR_Tactical_Vest] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Operator_TYR_Tactical_Vest,
+        }
+    }
+
+    
+
+craftRecipe Change [Gear Texture] [G4]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.FR_Operator_CRYE_G4_Tactical_Pants] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.FR_Operator_CRYE_G4_Tactical_Pants,
+        }
+    }
+
+
+craftRecipe Change [Gear Texture] [Scrim]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.RAVEN_OPERATOR_SCRIM] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.RAVEN_OPERATOR_SCRIM,
+        }
+    }
+
+
+
+craftRecipe Change [Gear Texture] [Delta Rifle Holster]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Operator_Delta_Molle_Rifle] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Operator_Delta_Molle_Rifle,
+        }
+    }
+
+
+
+
+
+craftRecipe Change [Gear Texture] [Ghillie]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Ghillie_Top] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Ghillie_Top,
+        }
+    }
+
+craftRecipe Change [Gear Texture] [Boonie]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.FR_Operator_Boonie] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.FR_Operator_Boonie,
+        }
+    }
+
+craftRecipe Wear As [Poncho Scrim]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.RAVEN_OPERATOR_SCRIM] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.RAVEN_OPERATOR_SCRIM_PONCHO,
+        }
+    }
+
+craftRecipe Wear As [Scrim]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.RAVEN_OPERATOR_SCRIM_PONCHO] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.RAVEN_OPERATOR_SCRIM,
+        }
+    }
+
+
+craftRecipe Change [Gear Texture] [Poncho Scrim]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.RAVEN_OPERATOR_SCRIM_PONCHO] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.RAVEN_OPERATOR_SCRIM_PONCHO,
+        }
+    }
+
+
+
+craftRecipe Change [Gear Texture] [Facewrap]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.FR_Operator_FaceWrap] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.FR_Operator_FaceWrap,
+        }
+    }
+
+
+craftRecipe Change [Gear Texture] [Jacket]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.FR_Operator_Jacket] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.FR_Operator_Jacket,
+        }
+    }
+
+
+craftRecipe Change [Gear Texture] [Pants]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.FR_Operator_Pants] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.FR_Operator_Pants,
+        }
+    }
+
+
+craftRecipe Change [Gear Texture] [SKM Helmet]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.SKM_ATE_HHV_Helmet] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.SKM_ATE_HHV_Helmet,
+        }
+    }
+
+craftRecipe Change [Gear Texture] [SKM Gear]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.SKM_ATE_HHV_Helmet_GearSet] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.SKM_ATE_HHV_Helmet_GearSet,
+        }
+    }
+
+
+craftRecipe Change [Gear Texture] [SKM LV119]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.SKM_Vest_Spiritus_LV119] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.SKM_Vest_Spiritus_LV119,
+        }
+    }
+
+craftRecipe Change [Gear Texture] [BlackArrow]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.BlackArrow_Top] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.BlackArrow_Top,
+        }
+    }
+
+
+craftRecipe Change [Gear Texture] [Comtac]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Peltor_Comtac] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Peltor_Comtac,
+        }
+    }
+
+
+
+
+craftRecipe Change [Gear Texture] [Beanie]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.FR_Operator_Beanie] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.FR_Operator_Beanie,
+        }
+    }
+
+
+
+
+
+
+
+craftRecipe Change [Gear Texture] [Team Raven Trousers]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.RAVEN_Trousers] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.RAVEN_Trousers,
+        }
+    }
+
+
+craftRecipe Change [Gear Texture] [Team Raven Boots]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.RAVEN_Boots] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.RAVEN_Boots,
+        }
+    }
+
+
+
+craftRecipe Change [Gear Texture] [Team Raven Jacket]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.RAVEN_Jacket] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.RAVEN_Jacket,
+        }
+    }
+
+craftRecipe Change [Gear Texture] [Team Raven Salomon Sneakers]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.RAVEN_Salomon_X_Ultra_Boots] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.RAVEN_Salomon_X_Ultra_Boots,
+        }
+    }
+
+
+craftRecipe Change [Gear Texture] [Stalker Outrider Boots]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Stalker_Outrider_Boots] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Stalker_Outrider_Boots,
+        }
+    }
+
+
+craftRecipe Change [Gear Texture] [Stalker Outrider Jacket]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Stalker_Outrider_Jacket] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Stalker_Outrider_Jacket,
+        }
+    }
+    
+
+
+craftRecipe Change [Gear Texture] [Haley Strategic Carrier]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.SKM_Haley_Strategic_Plate_Carrier] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.SKM_Haley_Strategic_Plate_Carrier,
+        }
+    }
+
+craftRecipe Change [Gear Texture] [GMR G3]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.GMR_Minimap_G3] flags[IsNotWorn;IsEmpty],
+        }
+        outputs
+        {
+            item 1 CHIMERA.GMR_Minimap_G3,
+        }
+    }
+
+craftRecipe Change [Gear Texture] [Atlas]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Bag_Operator_Ranger_Atlas] flags[IsNotWorn;IsEmpty],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Bag_Operator_Ranger_Atlas,
+        }
+    }
+
+craftRecipe Change [Gear Texture] [TRI ZIP]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.SKM_D3_TRIZIP] flags[IsNotWorn;IsEmpty],
+        }
+        outputs
+        {
+            item 1 CHIMERA.SKM_D3_TRIZIP,
+        }
+    }
+    
+
+
+
+craftRecipe Change [Gear Texture] [Spiritus 556 Kit]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.SKM_Placard_Spiritus_556] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.SKM_Placard_Spiritus_556,
+        }
+    }
+
+
+
+
+
+
+
+
+
+craftRecipe Change [Gear Texture] [CCS]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.SKM_Pouch_Spiritus_CCS] flags[IsNotWorn;IsEmpty],
+        }
+        outputs
+        {
+            item 1 CHIMERA.SKM_Pouch_Spiritus_CCS,
+        }
+    }
+
+
+craftRecipe Change [Gear Texture] [JSTA]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.SKM_Pouch_Spiritus_JSTA] flags[IsNotWorn;IsEmpty],
+        }
+        outputs
+        {
+            item 1 CHIMERA.SKM_Pouch_Spiritus_JSTA,
+        }
+    }
+
+
+craftRecipe Change [Gear Texture] [ARSET]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Bag_Operator_Ranger_ARset] flags[IsNotWorn;IsEmpty],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Bag_Operator_Ranger_ARset,
+        }
+    }
+
+
+craftRecipe Change [Gear Texture] [ARES]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.ARES_BACKPACK] flags[IsNotWorn;IsEmpty],
+        }
+        outputs
+        {
+            item 1 CHIMERA.ARES_BACKPACK,
+        }
+    }
+
+
+craftRecipe Change [Gear Texture] [Delta]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.TAC7_DeltaForce80] flags[IsNotWorn;IsEmpty],
+        }
+        outputs
+        {
+            item 1 CHIMERA.TAC7_DeltaForce80,
+        }
+    }
+
+craftRecipe Change [Gear Texture] [Condor R]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Operator_TacPants_Condor_R] flags[IsNotWorn;IsEmpty],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Operator_TacPants_Condor_R,
+        }
+    }
+
+craftRecipe Change [Gear Texture] [Condor L]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Operator_TacPants_Condor_L] flags[IsNotWorn;IsEmpty],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Operator_TacPants_Condor_L,
+        }
+    }
+
+craftRecipe Change [Gear Texture] [Condor B]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Operator_TacPants_Condor_B] flags[IsNotWorn;IsEmpty],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Operator_TacPants_Condor_B,
+        }
+    }
+
+
+
+
+
+
+
+
+craftRecipe Change [Gear Texture] [ODB]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Ranger_ODB] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Ranger_ODB,
+        }
+    }
+
+craftRecipe Change [Gear Texture] [Mechanix ODB]
+    {
+        timedAction = CraftWeapon1H,
+        Time = 2,
+        category = Assembly,
+        Tags = InHandCraft,
+        inputs
+        {
+            item 1 [CHIMERA.Mechanix_Ranger_ODB] flags[Prop2;InheritCondition],
+        }
+        outputs
+        {
+            item 1 CHIMERA.Mechanix_Ranger_ODB,
+        }
+    }
+
+
+	/************************ FEDERAL RANGERS V10.2 UPDATE: CHIMERA  ************************/
+
+
+
+    item Ranger_ODB
+    {
+        DisplayCategory = Clothing,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        Icon = BraStraplessGeneric,
+        BodyLocation = base:underweartop,
+        CanHaveHoles = false,
+        ClothingItem = Ranger_ODB,
+        WorldStaticModel = BraStraplessBlack_Ground,
+        Tags = base:isfirefuel;base:isfiretinder,
+    }
+
+
+    item Mechanix_Ranger_ODB
+    {
+        DisplayCategory = Clothing,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        ScratchDefense = 12,
+        CombatSpeedModifier = 1.1,
+        Icon = BraStraplessGeneric,
+        BodyLocation = base:underweartop,
+        CanHaveHoles = false,
+        ClothingItem = Mechanix_Ranger_ODB,
+        WorldStaticModel = BraStraplessBlack_Ground,
+        Tags = base:isfirefuel;base:isfiretinder,
+    }
+
+
+
+
+
+
+
+
+	/************************ HALEY STATEGIC: ************************/	
+
+
+    item SKM_Haley_Strategic_Plate_Carrier
+    {
+        DisplayCategory = Bag,
+        ItemType = base:clothing,
+        DisplayName = [SKM] Haley Strategic Plate Carrier,
+        ClothingItem = SKM_Haley_Strategic_Plate_Carrier,
+        Weight  =       0.4,
+		BodyLocation = base:TorsoExtraVestBullet,
+        BulletHitArmourSound = ArmourFirearmHitBone,
+        WeaponHitArmourSound = ArmourMeleeHitBone,
+        Icon = TV119_C,
+        BloodLocation = ShirtNoSleeves,
+        CanHaveHoles = true,
+        FabricType = Cotton,
+		NeckProtectionModifier = 0.3,
+        Insulation = 0.18,
+        WindResistance = 0.6,
+        BiteDefense = 100,
+        ScratchDefense = 82,
+        BulletDefense = 100,
+        ConditionMax = 32,
+        ClothingItemExtra = SKM_Haley_Strategic_Plate_Carrier_Tight,
+        ClothingItemExtraOption = Adjust,
+        ConditionLowerChanceOneIn = 28,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        AttachmentsProvided = OperatorVestMain;OperatorSlingMain,
+    
+        ToolTip = [Haley Strategic],
+    }
+
+    item SKM_Haley_Strategic_Plate_Carrier_Tight
+    {
+        DisplayCategory = Bag,
+        ItemType = base:clothing,
+        DisplayName = [SKM] Haley Strategic Plate Carrier [Tight],
+        ClothingItem = SKM_Haley_Strategic_Plate_Carrier_Tight,
+        Weight  =       0.4,
+		BodyLocation = base:TorsoExtraVestBullet,
+        BulletHitArmourSound = ArmourFirearmHitBone,
+        WeaponHitArmourSound = ArmourMeleeHitBone,
+        Icon = TV119_C,
+        BloodLocation = ShirtNoSleeves,
+        CanHaveHoles = true,
+        FabricType = Cotton,
+		NeckProtectionModifier = 0.3,
+        Insulation = 0.18,
+        WindResistance = 0.6,
+        BiteDefense = 100,
+        ScratchDefense = 82,
+        BulletDefense = 100,
+        ConditionMax = 32,
+        ClothingItemExtra = SKM_Haley_Strategic_Plate_Carrier,
+        ClothingItemExtraOption = Adjust,
+        ConditionLowerChanceOneIn = 28,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        AttachmentsProvided = OperatorVestMain;OperatorSlingMain,
+    
+        ToolTip = [Haley Strategic],
+    }
+
+
+    item GMR_Minimap_G3
+    {
+        DisplayCategory = Bag,
+        ItemType = base:container,
+        DisplayName = [GMR] Minimap G3 Backpack,
+        ClothingItem = GMR_Minimap_G3,
+        CanBeEquipped = Back,
+        WeightReduction	=	98,
+        Weight	=	1,
+        Capacity	=	18,
+        RunSpeedModifier = 1.1,
+        Icon = TRIZIP,
+        OpenSound   =   OpenBag,
+        CloseSound   =   CloseBag,
+        PutInSound   =   PutItemInBag,
+        BloodLocation = Bag,
+        CanHaveHoles = false,
+        AttachmentReplacement = Bag,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        AttachmentsProvided = OperatorVestMain;BedrollBottomALICE;WebbingRight;WebbingLeft,
+    
+        ToolTip = [MiniMap GMR],
+    }
+
+
+
+
+
+
+    item Warhawk_HeavyRiotGear_SidePlate_Left
+    {
+        DisplayCategory = ProtectiveGear,
+        ItemType = base:clothing,
+        Icon = Onepiece_ShoulderArmour,
+        DisplayName	=  [Warhawk] Heavy Riot Gear Shoulder Plate [Left],
+        BloodLocation = UpperArm_L,
+        BodyLocation = base:shoulderpadleft,
+        ClothingItem = Warhawk_HeavyRiotGear_SidePlate_Left,
+        ClothingExtraSubmenu = LeftShoulder,
+        ClothingItemExtra = CHIMERA.Warhawk_HeavyRiotGear_SidePlate_Right,
+        ClothingItemExtraOption = RightShoulder,
+        CanHaveHoles = false,
+        WorldStaticModel = Shoulderpad_Metal_L,
+        BiteDefense = 70,
+        ScratchDefense = 80,
+        BulletDefense = 45,
+        CombatSpeedModifier = 0.95,
+        FabricType = Cotton,
+        BreakSound = ArmourBreakMetal,
+        BulletHitArmourSound = ArmourFirearmHitMetal,
+        WeaponHitArmourSound = ArmourMeleeHitMetal,
+        Tags = base:hasmetal;base:ignorezombiedensity;base:smeltablesteelsmall,
+        Weight = 1.0,
+        DiscomfortModifier = 0.2,
+        ConditionMax = 15,
+        ConditionLowerChanceOneIn = 8,
+        Researchablerecipes = Assemble_Simple_Shoulder_Armor;Assemble_Shoulder_Armor_Left;Assemble_Shoulder_Armor_Right;MakeScrapMetalShoulderArmor;Forge_Buckle,
+    }
+
+    item Warhawk_HeavyRiotGear_SidePlate_Right
+    {
+        DisplayCategory = ProtectiveGear,
+        ItemType = base:clothing,
+        Icon = Onepiece_ShoulderArmour,
+        DisplayName	=  [Warhawk] Heavy Riot Gear Shoulder Plate [Right],
+        BloodLocation = UpperArm_R,
+        BodyLocation = base:shoulderpadright,
+        ClothingItem = Warhawk_HeavyRiotGear_SidePlate_Right,
+        ClothingExtraSubmenu = RightShoulder,
+        ClothingItemExtra = CHIMERA.Warhawk_HeavyRiotGear_SidePlate_Left,
+        ClothingItemExtraOption = LeftShoulder,
+        CanHaveHoles = false,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        BiteDefense = 70,
+        ScratchDefense = 80,
+        BulletDefense = 45,
+        FabricType = Cotton,
+        CombatSpeedModifier = 0.97,
+        BreakSound = ArmourBreakMetal,
+        BulletHitArmourSound = ArmourFirearmHitMetal,
+        WeaponHitArmourSound = ArmourMeleeHitMetal,
+        Tags = base:hasmetal;base:ignorezombiedensity;base:smeltablesteelsmall,
+        Weight = 1.0,
+        DiscomfortModifier = 0.1,
+        ConditionMax = 15,
+        ConditionLowerChanceOneIn = 8,
+        Researchablerecipes = Assemble_Simple_Shoulder_Armor;Assemble_Shoulder_Armor_Left;Assemble_Shoulder_Armor_Right;MakeScrapMetalShoulderArmor;Forge_Buckle,
+    }
+
+
+
+
+    item Warhawk_HeavyRiotGear_VisorPartA            {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        Weight = 0.4,
+        DisplayName	=  [Warhawk] Heavy Riot Gear Visor,
+        Icon = FR_Operator,
+        BodyLocation = base:eyes,
+        BloodLocation = Head,
+        ChanceToFall = 0,
+        ClothingItem = Warhawk_HeavyRiotGear_VisorPartA,
+        BiteDefense = 100,
+        ScratchDefense = 100,
+        BulletDefense = 20,
+        ClothingItemExtra = Warhawk_HeavyRiotGear_VisorPartB,
+        ClothingItemExtraOption = Visor,
+        Tags = base:isupperdisguise,                }
+
+
+
+    item Warhawk_HeavyRiotGear_VisorPartB            {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        Weight = 0.4,
+        DisplayName	=  [Warhawk] Heavy Riot Gear Visor,
+        Icon = FR_Operator,
+        BodyLocation = base:eyes,
+        BloodLocation = Head,
+        ChanceToFall = 0,
+        ClothingItem = Warhawk_HeavyRiotGear_VisorPartB,
+        BiteDefense = 100,
+        ScratchDefense = 100,
+        BulletDefense = 20,
+        ClothingItemExtra = Warhawk_HeavyRiotGear_VisorPartA,
+        ClothingItemExtraOption = Visor,
+        Tags = base:isupperdisguise,                }
+
+
+
+
+    item Warhawk_HeavyRiotGear_GlassesBallisticA            {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        DisplayName	= [Warhawk] Heavy Riot Gear Ballistic Glasses [A],
+        Icon = TacM_HeadGear_ColorE_D,
+        BodyLocation = CHIMERA:HeavyRiotGearEyewear,
+        BloodLocation = Head,
+        ChanceToFall = 0,
+        ScratchDefense = 40,
+        ClothingItem = Warhawk_HeavyRiotGear_GlassesBallisticA,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        Tags = base:isupperdisguise,   }
+
+    item Warhawk_HeavyRiotGear_GlassesBallisticB            {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        DisplayName	= [Warhawk] Heavy Riot Gear Ballistic Glasses [B],
+        Icon = TacM_HeadGear_ColorE_D,
+        BodyLocation = CHIMERA:HeavyRiotGearEyewear,
+        BloodLocation = Head,
+        ChanceToFall = 0,
+        ScratchDefense = 40,
+        ClothingItem = Warhawk_HeavyRiotGear_GlassesBallisticB,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        Tags = base:isupperdisguise,   }
+
+    item Warhawk_HeavyRiotGear_GlassesBallisticC            {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        DisplayName	= [Warhawk] Heavy Riot Gear Ballistic Glasses [C],
+        Icon = TacM_HeadGear_ColorE_D,
+        BodyLocation = CHIMERA:HeavyRiotGearEyewear,
+        BloodLocation = Head,
+        ChanceToFall = 0,
+        ScratchDefense = 40,
+        ClothingItem = Warhawk_HeavyRiotGear_GlassesBallisticC,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        Tags = base:isupperdisguise,   }
+
+
+    item Raven_ShirtShortSleeve
+    /* */                                                {
+    DisplayCategory = Clothing,
+    ItemType = base:clothing,
+    DisplayName = [Warhawk] Raven Short Sleeve,
+    ClothingItem = Raven_ShirtShortSleeve,
+    BodyLocation = base:shirt,
+    Icon = FR_JACKET_MAIN,
+    BloodLocation = Shirt,
+    CanHaveHoles    = false,
+    BiteDefense = 76,
+    ScratchDefense = 100,
+    BulletDefense   = 12,
+    NeckProtectionModifier = 1,
+    Insulation = 0.5,
+    WindResistance = 0.85,
+    FabricType = Leather,
+    WaterResistance = 0.85,
+    Weight = 1,
+    ConditionMax = 15,
+    ConditionLowerChanceOneIn = 8,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Raven],
+    /* */                                                }
+
+
+    item Warhawk_HeavyRiotGear_Belt
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        Icon = Belt,
+        DisplayName	= [Warhawk] Heavy Belt,
+        AttachmentsProvided = SmallBeltLeft;SmallBeltRight,
+        BodyLocation = base:belt,
+        ScratchDefense = 15,
+        BiteDefense = 15,
+        ClothingItem = Warhawk_HeavyRiotGear_Belt,
+        WorldStaticModel = Belt_Ground,
+        FabricType = Leather,
+        Tags = base:hasmetal;base:buckle;base:scrapasbelt,
+        Researchablerecipes = Forge_Buckle,
+    }
+
+
+
+    item Warhawk_HeavyRiotGear_FrontPlate
+    {
+        DisplayCategory = Bag,
+        ItemType = base:clothing,
+        DisplayName = [Warhawk] Front Plate,
+        ClothingItem = Warhawk_HeavyRiotGear_FrontPlate,
+        Weight  =       1,
+		BodyLocation = CHIMERA:HeavyRiotGearFrontPlate,
+        BulletHitArmourSound = ArmourFirearmHitBone,
+        WeaponHitArmourSound = ArmourMeleeHitBone,
+        Icon = FR_VEST_MAIN,
+        BloodLocation = Groin,
+        CanHaveHoles = false,
+        FabricType = Cotton,
+        Insulation = 0.15,
+        WindResistance = 0.3,
+        BiteDefense = 55,
+        ScratchDefense = 65,
+        BulletDefense = 45,
+        ConditionMax = 55,
+        ConditionLowerChanceOneIn = 48,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+    }
+
+    item Warhawk_HeavyRiotGear_GlassesTacticalA            {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        DisplayName	= [Warhawk] Lite Riot Ballistic Glasses,
+        Icon = TacM_HeadGear_ColorE_D,
+        BodyLocation = CHIMERA:HeavyRiotGearEyewear,
+        BloodLocation = Head,
+        ChanceToFall = 0,
+        ScratchDefense = 15,
+        AttachmentsProvided = OperatorHeadGearMount,
+        ClothingItem = Warhawk_HeavyRiotGear_GlassesTacticalA,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        Tags = base:isupperdisguise,   }
+
+
+
+    item Warhawk_HeavyRiotGear_HelmetA
+    /* */                                                                                                                                     {
+    DisplayCategory = Accessory,
+    ItemType = base:clothing,
+    DisplayName     = [Warhawk] Heavy Riot Gear Ballistic Helmet [A],
+    ClothingItem    = Warhawk_HeavyRiotGear_HelmetA,
+    BodyLocation = CHIMERA:HelmetBase,
+    Icon    = FR_ATE_SSV_MAIN,
+    BloodLocation   = Head,
+    CanHaveHoles    = FALSE,
+    BiteDefense     = 100,
+    ScratchDefense  = 92,
+    BulletDefense   = 92,
+    ChanceToFall    = 0,
+    Insulation      = 0.7,
+    WaterResistance = 0.85,
+    WindResistance  = 0.85,
+    AttachmentsProvided = OperatorHeadGearMount,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Weight  = 0.6,
+    /* */                                                                                                                                     }
+
+    item Warhawk_HeavyRiotGear_HelmetB
+    /* */                                                                                                                                     {
+    DisplayCategory = Accessory,
+    ItemType = base:clothing,
+    DisplayName     = [Warhawk] Heavy Riot Gear Ballistic Helmet [B],
+    ClothingItem    = Warhawk_HeavyRiotGear_HelmetB,
+    BodyLocation = CHIMERA:HelmetBase,
+    Icon    = FR_ATE_SSV_MAIN,
+    BloodLocation   = Head,
+    CanHaveHoles    = FALSE,
+    BiteDefense     = 100,
+    ScratchDefense  = 92,
+    BulletDefense   = 92,
+    ChanceToFall    = 0,
+    Insulation      = 0.7,
+    WaterResistance = 0.85,
+    WindResistance  = 0.85,
+    AttachmentsProvided = OperatorHeadGearMount,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Weight  = 0.6,
+    ToolTip = [PASGT],
+    /* */                                                                                                                                     }
+
+
+    item Warhawk_HeavyRiotGear_HelmetC
+    /* */                                                                                                                                     {
+    DisplayCategory = Accessory,
+    ItemType = base:clothing,
+    DisplayName     = [Warhawk] Heavy Riot Gear Ballistic Helmet [C],
+    ClothingItem    = Warhawk_HeavyRiotGear_HelmetC,
+    BodyLocation = CHIMERA:HelmetBase,
+    Icon    = FR_ATE_SSV_MAIN,
+    BloodLocation   = Head,
+    CanHaveHoles    = FALSE,
+    BiteDefense     = 100,
+    ScratchDefense  = 92,
+    BulletDefense   = 92,
+    ChanceToFall    = 0,
+    Insulation      = 0.7,
+    WaterResistance = 0.85,
+    WindResistance  = 0.85,
+    AttachmentsProvided = OperatorHeadGearMount,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Weight  = 0.6,
+    /* */                                                                                                                                     }
+
+
+    item Warhawk_HeavyRiotGear_HelmetD
+    /* */                                                                                                                                     {
+    DisplayCategory = Accessory,
+    ItemType = base:clothing,
+    DisplayName     = [Warhawk] Heavy Riot Gear Ballistic Helmet [D],
+    ClothingItem    = Warhawk_HeavyRiotGear_HelmetD,
+    BodyLocation = CHIMERA:HelmetBase,
+    Icon    = FR_ATE_SSV_MAIN,
+    BloodLocation   = Head,
+    CanHaveHoles    = FALSE,
+    BiteDefense     = 100,
+    ScratchDefense  = 92,
+    BulletDefense   = 92,
+    ChanceToFall    = 0,
+    Insulation      = 0.7,
+    WaterResistance = 0.85,
+    WindResistance  = 0.85,
+    AttachmentsProvided = OperatorHeadGearMount,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Weight  = 0.6,
+    /* */                                                                                                                                     }
+
+
+
+
+    item Warhawk_HeavyRiotGear_HelmetPatchA		        {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [Warhawk] Helmet Gear Patches,
+    ClothingItem	= Warhawk_HeavyRiotGear_HelmetPatchA,
+    BodyLocation = CHIMERA:HeavyRiotGearHelmetPatchA,
+    Icon = FR_Operator,
+    Weight= 0.1,
+    ChanceToFall	= 0,
+    ClothingItemExtra = Warhawk_HeavyRiotGear_HelmetPatchB,
+    ClothingItemExtraOption = Adjust,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Fitment A],	   		   }
+
+
+    item Warhawk_HeavyRiotGear_HelmetPatchB		        {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [Warhawk] Helmet Gear Patches [Medium],
+    ClothingItem	= Warhawk_HeavyRiotGear_HelmetPatchB,
+    BodyLocation = CHIMERA:HeavyRiotGearHelmetPatchA,
+    ClothingItemExtra = Warhawk_HeavyRiotGear_HelmetPatchC,
+    ClothingItemExtraOption = Adjust,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Icon = FR_Operator,
+    Weight= 0.1,
+    ChanceToFall	= 0,
+    ToolTip = [Fitment B],	   		   }
+
+    item Warhawk_HeavyRiotGear_HelmetPatchC		        {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [Warhawk] Helmet Gear Patches [Close],
+    ClothingItem	= Warhawk_HeavyRiotGear_HelmetPatchC,
+    BodyLocation = CHIMERA:HeavyRiotGearHelmetPatchA,
+    ClothingItemExtra = Warhawk_HeavyRiotGear_HelmetPatchA,
+    ClothingItemExtraOption = Adjust,
+    Icon = FR_Operator,
+    Weight= 0.1,
+    ChanceToFall	= 0,
+    ToolTip = [Fitment C],	   		   }
+
+
+    
+    item Warhawk_HeavyRiotGear_VestPatchVar0		        {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [Warhawk] Heavy Riot Gear Vest Patches,
+    ClothingItem	= Warhawk_HeavyRiotGear_VestPatchVar0,
+    BodyLocation = CHIMERA:HeavyRiotGearHelmetPatchB,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Icon = FR_Operator,
+    Weight= 0.1,
+    ChanceToFall	= 0,
+    ToolTip = [Chimera],	   		   }
+
+
+
+
+
+
+
+
+
+    item Warhawk_HeavyRiotGear_HelmetPresetA
+    /* */                                                                                                                                     {
+    DisplayCategory = Accessory,
+    ItemType = base:clothing,
+    DisplayName     = [Warhawk] Heavy Riot GearSet [A],
+    ClothingItem    = Warhawk_HeavyRiotGear_HelmetPresetA,
+    BodyLocation = CHIMERA:HelmetGearSet,
+    Icon    = FR_ATE_SSV_GEARSET_MAIN,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    BloodLocation   = Neck,
+    CanHaveHoles    = FALSE,
+    BiteDefense     = 35,
+    ScratchDefense  = 24,
+    BulletDefense   = 15,
+    ChanceToFall    = 0,
+    Insulation      = 0.5,
+    WaterResistance = 0.85,
+    WindResistance  = 0.85,
+    Weight  = 0.5,
+    /* */                                                                                                                                     }
+
+    item Warhawk_HeavyRiotGear_HelmetPresetB
+    /* */                                                                                                                                     {
+    DisplayCategory = Accessory,
+    ItemType = base:clothing,
+    DisplayName     = [Warhawk] Heavy Riot GearSet [B],
+    ClothingItem    = Warhawk_HeavyRiotGear_HelmetPresetB,
+    BodyLocation = CHIMERA:HelmetGearSet,
+    Icon    = FR_ATE_SSV_GEARSET_MAIN,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    BloodLocation   = Neck,
+    CanHaveHoles    = FALSE,
+    BiteDefense     = 35,
+    ScratchDefense  = 24,
+    BulletDefense   = 15,
+    ChanceToFall    = 0,
+    Insulation      = 0.5,
+    WaterResistance = 0.85,
+    WindResistance  = 0.85,
+    Weight  = 0.5,
+    /* */                                                                                                                                     }
+
+    item Warhawk_HeavyRiotGear_HelmetPresetC
+    /* */                                                                                                                                     {
+    DisplayCategory = Accessory,
+    ItemType = base:clothing,
+    DisplayName     = [Warhawk] Heavy Riot GearSet [C],
+    ClothingItem    = Warhawk_HeavyRiotGear_HelmetPresetC,
+    BodyLocation = CHIMERA:HelmetGearSet,
+    Icon    = FR_ATE_SSV_GEARSET_MAIN,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    BloodLocation   = Neck,
+    CanHaveHoles    = FALSE,
+    BiteDefense     = 35,
+    ScratchDefense  = 24,
+    BulletDefense   = 15,
+    ChanceToFall    = 0,
+    Insulation      = 0.5,
+    WaterResistance = 0.85,
+    WindResistance  = 0.85,
+    Weight  = 0.5,
+    /* */                                                                                                                                     }
+
+    item Warhawk_HeavyRiotGear_HelmetPresetD
+    /* */                                                                                                                                     {
+    DisplayCategory = Accessory,
+    ItemType = base:clothing,
+    DisplayName     = [Warhawk] Heavy Riot GearSet [D],
+    ClothingItem    = Warhawk_HeavyRiotGear_HelmetPresetD,
+    BodyLocation = CHIMERA:HelmetGearSet,
+    Icon    = FR_ATE_SSV_GEARSET_MAIN,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    BloodLocation   = Neck,
+    CanHaveHoles    = FALSE,
+    BiteDefense     = 35,
+    ScratchDefense  = 24,
+    BulletDefense   = 15,
+    ChanceToFall    = 0,
+    Insulation      = 0.5,
+    WaterResistance = 0.85,
+    WindResistance  = 0.85,
+    Weight  = 0.5,
+    /* */                                                                                                                                     }
+
+    item Warhawk_HeavyRiotGear_HelmetPresetG
+    /* */                                                                                                                                     {
+    DisplayCategory = Accessory,
+    ItemType = base:clothing,
+    DisplayName     = [Warhawk] Heavy Riot GearSet [G],
+    ClothingItem    = Warhawk_HeavyRiotGear_HelmetPresetG,
+    BodyLocation = CHIMERA:HelmetGearSet,
+    Icon    = FR_ATE_SSV_GEARSET_MAIN,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    BloodLocation   = Neck,
+    CanHaveHoles    = FALSE,
+    BiteDefense     = 35,
+    ScratchDefense  = 24,
+    BulletDefense   = 15,
+    ChanceToFall    = 0,
+    Insulation      = 0.5,
+    WaterResistance = 0.85,
+    WindResistance  = 0.85,
+    Weight  = 0.5,
+    /* */                                                                                                                                     }
+
+    item Warhawk_HeavyRiotGear_HelmetPresetL
+    /* */                                                                                                                                     {
+    DisplayCategory = Accessory,
+    ItemType = base:clothing,
+    DisplayName     = [Warhawk] Heavy Riot GearSet [L],
+    ClothingItem    = Warhawk_HeavyRiotGear_HelmetPresetL,
+    BodyLocation = CHIMERA:HelmetGearSet,
+    Icon    = FR_ATE_SSV_GEARSET_MAIN,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    BloodLocation   = Neck,
+    CanHaveHoles    = FALSE,
+    BiteDefense     = 35,
+    ScratchDefense  = 24,
+    BulletDefense   = 15,
+    ChanceToFall    = 0,
+    Insulation      = 0.5,
+    WaterResistance = 0.85,
+    WindResistance  = 0.85,
+    Weight  = 0.5,
+    /* */                                                                                                                                     }
+
+
+
+    item Warhawk_HeavyRiotGear_Vest
+    {
+        DisplayCategory = Bag,
+        ItemType = base:clothing,
+        DisplayName = [Warhawk] Heavy Riot Gear Vest,
+        ClothingItem = Warhawk_HeavyRiotGear_Vest,
+        Weight  =       1,
+		BodyLocation = CHIMERA:HeavyRiotGearVest,
+        BulletHitArmourSound = ArmourFirearmHitBone,
+        WeaponHitArmourSound = ArmourMeleeHitBone,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        Icon = TV119_C,
+        BloodLocation = ShirtNoSleeves,
+        CanHaveHoles = false,
+        FabricType = Cotton,
+        Insulation = 0.28,
+        WindResistance = 0.5,
+        BiteDefense = 100,
+        ScratchDefense = 88,
+        BulletDefense = 100,
+        AttachmentsProvided = OperatorVestMain;OperatorSlingMain,
+    
+        ToolTip = [Chimera][Radio Mount][Rifle Sling],
+    }
+
+
+
+
+
+    item Warhawk_HeavyRiotGear_VestKit_A
+    {
+        DisplayCategory = Bag,
+        ItemType = base:container,
+        DisplayName = [Warhawk] Heavy Riot Gear Vest Kit [A],
+        ClothingItem = Warhawk_HeavyRiotGear_VestKit_A,
+        CanBeEquipped = CHIMERA:MolleStorageKit,
+        BodyLocation = CHIMERA:MolleStorageKit,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        WeightReduction	=	97,
+        Weight	=	0.6,
+        Capacity	=	17,
+        Icon = FR_VEST_MAIN,
+        OpenSound   =   OpenBag,
+        CloseSound   =   CloseBag,
+        PutInSound   =   PutItemInBag,
+        BloodLocation = Bag,
+        CanHaveHoles = false,
+        AttachmentsProvided = ARsetOperatorMolleStorage;ARsetOperatorMolleStorageRight;ARsetOperatorMolleStorageMiddle;WebbingRight;WebbingLeft;OperatorVestMain,
+        ToolTip = [VestKit: A],
+    }
+
+
+    item Warhawk_HeavyRiotGear_VestKit_A_M4Mag		        {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [Warhawk] Heavy Riot Gear M4 Kit,
+    ClothingItem	= Warhawk_HeavyRiotGear_VestKit_A_M4Mag,
+    BodyLocation	= CHIMERA:MollePlacard,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Icon = FR_Operator,
+    Weight= 0.2,
+    CanHaveHoles = false,
+    ScratchDefense          = 12,
+    ChanceToFall	= 0,
+    ToolTip = [VestKit: A],	   		                   }
+
+
+
+
+
+
+
+
+    item Warhawk_HeavyRiotGear_VestKit_C
+    {
+        DisplayCategory = Bag,
+        ItemType = base:container,
+        DisplayName = [Warhawk] Heavy Riot Gear Vest Kit [C],
+        ClothingItem = Warhawk_HeavyRiotGear_VestKit_C,
+        CanBeEquipped = CHIMERA:MolleStorageKit,
+        BodyLocation = CHIMERA:MolleStorageKit,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        WeightReduction	=	97,
+        Weight	=	0.6,
+        Capacity	=	17,
+        Icon = FR_VEST_MAIN,
+        OpenSound   =   OpenBag,
+        CloseSound   =   CloseBag,
+        PutInSound   =   PutItemInBag,
+        BloodLocation = Bag,
+        CanHaveHoles = false,
+        AttachmentsProvided = ARsetOperatorMolleStorage;ARsetOperatorMolleStorageRight;ARsetOperatorMolleStorageMiddle;WebbingRight;WebbingLeft;OperatorVestMain,
+        ToolTip = [VestKit: C],
+    }
+
+
+    item Warhawk_HeavyRiotGear_VestKit_C_AKMag		        {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [Warhawk] Heavy Riot Gear AK Kit,
+    ClothingItem	= Warhawk_HeavyRiotGear_VestKit_C_AKMag,
+    BodyLocation	= CHIMERA:MollePlacard,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Icon = FR_Operator,
+    Weight= 0.2,
+    CanHaveHoles = false,
+    ScratchDefense          = 12,
+    ChanceToFall	= 0,
+    ToolTip = [VestKit: C],	   		                        }
+
+
+
+
+
+    item Warhawk_HeavyRiotGear_VestPresetC_MagRadioGear	    {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [Warhawk] Heavy Riot Gear Radio Kit,
+    ClothingItem	= Warhawk_HeavyRiotGear_VestPresetC_MagRadioGear,
+    BodyLocation	= CHIMERA:MollePlacard,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Icon = FR_Operator,
+    Weight= 0.2,
+    CanHaveHoles = false,
+    ScratchDefense          = 12,
+    ChanceToFall	= 0,
+    ToolTip = [VestKit: C],	   		                        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+item Operator_Delta_Molle_Rifle
+{
+ItemType = base:clothing,
+DisplayName = Delta Rifle Sling Holster,
+ClothingItem = Operator_Delta_Molle_Rifle,
+BodyLocation = CHIMERA:HolsterVest,
+WorldStaticModel = ProtectiveCaseSmall_Ground,
+Icon = FRholster,
+Weight = 0.3,
+StompPower= 5.5,
+CanHaveHoles = false,
+CombatSpeedModifier = 1.1,
+ScratchDefense = 10,
+BiteDefense = 10,
+BulletDefense = 5,
+Insulation = 0.1,
+WindResistance = 0.2,
+ToolTip = [Chimera],
+WorldStaticModel = Holster_Ground,
+}
+
+
+
+
+
+
+
+
+
+
+        item Ghillie_Top_FaceHide
+    {
+        DisplayCategory = Clothing,
+        ItemType = base:clothing,
+		DisplayName = Ghillie Suit [FaceHide],
+        Weight = 4.0,
+        Icon = JacketGhillie,
+        BiteDefense = 10,
+        BloodLocation = Jacket,
+        BodyLocation = CHIMERA:Ghillie,
+        ClothingItem = Ghillie_TopH,
+        CombatSpeedModifier = 0.9,
+        Insulation = 0.7,
+        RunSpeedModifier = 0.75,
+        ScratchDefense = 30,
+        WaterResistance = 0.35,
+        WindResistance = 0.45,
+        ClothingExtraSubmenu = Ghillie_Top_FaceHide,
+        ClothingItemExtra = CHIMERA.Ghillie_Down;CHIMERA.Ghillie_Top_FaceHide,
+		ClothingItemExtraOption = Ghillie_Down;Ghillie_Top_FaceHide;Ghillie_Top,
+        WorldStaticModel = GhillieTop_Ground,
+    }
+
+
+
+
+    item Ghillie_Top
+    {
+        DisplayCategory = Clothing,
+        ItemType = base:clothing,
+		DisplayName = Ghillie Suit,
+        Weight = 4.0,
+        Icon = JacketGhillie,
+        BiteDefense = 10,
+        BloodLocation = Jacket,
+        BodyLocation = CHIMERA:Ghillie,
+        ClothingItem = Ghillie_Top2,
+        CombatSpeedModifier = 0.9,
+        Insulation = 0.7,
+        RunSpeedModifier = 0.75,
+        ScratchDefense = 30,
+        WaterResistance = 0.35,
+        WindResistance = 0.45,
+        ClothingExtraSubmenu = Ghillie_Top,
+        ClothingItemExtra = CHIMERA.Ghillie_Down;CHIMERA.Ghillie_Top_FaceHide,
+		ClothingItemExtraOption = Ghillie_Down;Ghillie_Top_FaceHide;Ghillie_Top_Large,
+        WorldStaticModel = GhillieTop_Ground,
+    }
+
+    item Ghillie_Down
+    {
+        DisplayCategory = Clothing,
+        ItemType = base:clothing,
+		DisplayName = Ghillie Suit,
+        Weight = 4.0,
+        Icon = JacketGhillie,
+        BiteDefense = 10,
+        BloodLocation = Jacket,
+        BodyLocation = CHIMERA:Ghillie,
+        ClothingItem = Ghillie_Top,
+        CombatSpeedModifier = 0.9,
+        Insulation = 0.7,
+        RunSpeedModifier = 0.75,
+        ScratchDefense = 30,
+        WaterResistance = 0.35,
+        WindResistance = 0.45,
+        ClothingExtraSubmenu = Ghillie_Down,
+		ClothingItemExtra = Ghillie_Top,
+		ClothingItemExtraOption = AshlandUp,
+        WorldStaticModel = GhillieTop_Ground,
+    }
+
+
+
+
+
+
+
+item Operator_Delta_ChestMount_Holster
+{
+ItemType = base:clothing,
+DisplayName = Operator Delta ChestMount Holster,
+ClothingItem = ChestMountDT,
+BodyLocation = CHIMERA:HolsterVest,
+Icon = FRholster,
+Weight = 0.3,
+StompPower= 5.5,
+CanHaveHoles = false,
+CombatSpeedModifier = 1.1,
+ScratchDefense = 10,
+BiteDefense = 10,
+BulletDefense = 5,
+Insulation = 0.1,
+WindResistance = 0.2,
+ToolTip = [Chimera],
+AttachmentsProvided = ChestMountDT,
+WorldStaticModel = Holster_Ground,
+}
+
+
+
+
+
+    item FR_Operator_HolsterDeltaR
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.2,
+        DisplayName = [Chimera] Delta [Molle] Holster [R],
+        Icon = FR_HOLSTER_MAIN,
+        AttachmentsProvided = HolsterChimeraDeltaR,
+        BodyLocation = CHIMERA:HolsterDeltaRight,
+        ClothingItem = Operator_Delta_Molle_Holster_R,
+        WorldStaticModel = HolsterSingle_Ground,
+        Tags = base:firearmloot,
+        ClothingItemExtra = FR_Operator_HolsterDeltaL,
+        ClothingItemExtraOption = DeltaLeftSideSwap,
+        Researchablerecipes = SewHolster;SewHolsterDouble,
+    }
+
+
+
+
+
+    item FR_Operator_HolsterDeltaL
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.2,
+        DisplayName = [Chimera] Delta [Molle] Holster [L] ,
+        Icon = FR_HOLSTER_MAIN,
+        AttachmentsProvided = HolsterChimeraDeltaL,
+        BodyLocation = CHIMERA:HolsterDeltaLeft,
+        ClothingItem = Operator_Delta_Molle_Holster_L,
+        WorldStaticModel = HolsterSingle_Ground,
+        Tags = base:firearmloot,
+        ClothingItemExtra = FR_Operator_HolsterDeltaR,
+        ClothingItemExtraOption = DeltaRightSideSwap,
+        Researchablerecipes = SewHolster;SewHolsterDouble,
+    }
+
+
+
+
+
+
+
+
+
+
+
+    item VALKYRIE_LEOTARD
+    /* */                                                                                                                                     {
+    DisplayCategory = Clothing,
+    ItemType = base:clothing,
+    DisplayName = [Valkyrie] Tactical Leotard,
+    ClothingItem = VALKYRIE_LEOTARD,
+    BodyLocation = CHIMERA:TacticalLeoTard,
+    Icon = FR_JACKET_MAIN,
+    BloodLocation = Shirt,
+    CanHaveHoles    = true,
+    BiteDefense = 76,
+    ScratchDefense = 100,
+    NeckProtectionModifier = 3,
+    Insulation = 1,
+    WindResistance = 1,
+    FabricType = Leather,
+    WaterResistance = 1,
+    Weight = 1,
+    ConditionMax = 5,
+    ConditionLowerChanceOneIn = 11,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Chimera][F],
+    /* */                                                                                                                                     }
+
+    item VALKYRIE_DYNAMIX
+    /* */                                                                                                                                     {
+    DisplayCategory = Clothing,
+    ItemType = base:clothing,
+    DisplayName = [Valkyrie Dynamix] Tactical Jacket,
+    ClothingItem = VALKYRIE_DYNAMIX,
+    BodyLocation = CHIMERA:CleavageOperator,
+    Icon = FR_JACKET_MAIN,
+    BloodLocation = Shirt,
+    CanHaveHoles    = true,
+    BiteDefense = 76,
+    ScratchDefense = 100,
+    NeckProtectionModifier = 3,
+    Insulation = 0.6,
+    WindResistance = 0.6,
+    FabricType = Leather,
+    WaterResistance = 0.5,
+    Weight = 0.6,
+    ConditionMax = 7,
+    ConditionLowerChanceOneIn = 22,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Chimera][F],
+    /* */                                                                                                                                     }
+
+
+
+    	item VALKYRIE_DSX_PIXO
+    {
+        DisplayCategory = Bag,
+        ItemType = base:clothing,
+        DisplayName = [Valkyrie] [DSX] PICO Assaulter Vest,
+        ClothingItem = VALKYRIE_DSX_PIXO,
+        Weight  =       0.4,
+		BodyLocation = base:TorsoExtraVestBullet,
+        BulletHitArmourSound = ArmourFirearmHitBone,
+        WeaponHitArmourSound = ArmourMeleeHitBone,
+        Icon = DSX,
+        BloodLocation = ShirtNoSleeves,
+        CanHaveHoles = false,
+        FabricType = Cotton,
+		NeckProtectionModifier = 0.3,
+        Insulation = 0.13,
+        WindResistance = 0.3,
+        BiteDefense = 29,
+        ScratchDefense = 27,
+        BulletDefense = 56,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        AttachmentsProvided = OperatorVestMain,
+    
+        ToolTip = [Radio Mount],
+    }
+
+    item VALKYRIE_SM_S_K_MINI		                    {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [Valkyrie] [DSX] PICO 5.56 Placard Kit,
+    ClothingItem	= VALKYRIE_SM_S_K_MINI,
+    BodyLocation	= CHIMERA:MollePlacard,
+    Icon = DSX1,
+    Weight= 0.1,
+    CanHaveHoles = false,
+    ScratchDefense          = 20,
+    ChanceToFall	= 0,
+    AttachmentsProvided = StanagMolleStorageMiddle;StanagMolleStorageLeft;StanagMolleStorageRight,
+    ToolTip = [Chimera][Mag Holder],	   		        }
+
+
+    item VALKYRIE_DYNAMIX_MAGS		                    {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [Valkyrie] [SKM] 5.56x45 Magazines,
+    ClothingItem	= VALKYRIE_DYNAMIX_MAGS,
+    BodyLocation	= CHIMERA:MolleMagazineSet,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Icon = FR_Operator,
+    Weight= 0.12,
+    ScratchDefense          = 22,
+    ChanceToFall	= 0,
+    ToolTip = [Chimera],	   		                    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+item WarFighter_Fast_MT_Helmet_BlastPlate               {
+DisplayCategory = Accessory,
+ItemType = base:clothing,
+DisplayName = [Warfighter] Fast MT Ballistic Plates,
+ClothingItem = WarFighter_Fast_MT_Helmet_BlastPlate,
+BodyLocation = CHIMERA:HelmetArmorPlates,
+WorldStaticModel = ProtectiveCaseSmall_Ground,
+Icon = FR_Operator,
+CanHaveHoles = false,
+BloodLocation = Head,
+BiteDefense     = 100,
+ScratchDefense  = 100,
+BulletDefense   = 100,
+Insulation = 0.25,
+WindResistance = 0.1,
+WaterResistance = 0.1,}
+
+
+
+    item WarFighter_Fast_MT_Helmet_Gearset
+    /* */                                                                                                                                     {
+    DisplayCategory = Accessory,
+    ItemType = base:clothing,
+    DisplayName     = [Warfighter] Fast MT Ballistic Helmet [GearSet],
+    ClothingItem    = WarFighter_Fast_MT_Helmet_Gearset,
+    BodyLocation    = CHIMERA:HelmetGearSet,
+    Icon    = FR_ATE_SSV_GEARSET_MAIN,
+    BloodLocation   = Head,
+    CanHaveHoles    = FALSE,
+    BiteDefense     = 55,
+    ScratchDefense  = 40,
+    BulletDefense   = 40,
+    ChanceToFall    = 0,
+    Insulation      = 0.1,
+    WaterResistance = 0.85,
+    WindResistance  = 0.85,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Weight  = 0.1,
+    /* */                                                                                                                                     }
+
+
+
+    item WarFighter_Fast_MT_Helmet
+    /* */                                                                                                                                     {
+    DisplayCategory = Accessory,
+    ItemType = base:clothing,
+    DisplayName     = [Warfighter] Fast MT Ballistic Helmet,
+    ClothingItem    = WarFighter_Fast_MT_Helmet,
+    BodyLocation = base:hat,
+    Icon    = FR_ATE_SSV_MAIN,
+    CanHaveHoles    = FALSE,
+    BiteDefense     = 100,
+    ScratchDefense  = 82,
+    BulletDefense   = 98,
+    ChanceToFall    = 0,
+    Insulation      = 0.5,
+    WaterResistance = 0.75,
+    WindResistance  = 0.75,
+    AttachmentsProvided = OperatorHeadGearMount,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Weight  = 0.4,
+    /* */                                                                                                                                     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	/************************ V9 RAVEN ADDON   ************************/
+
+
+
+
+    item Stalker_Outrider_Jacket
+    /* */                                                                                                                                     {
+    DisplayCategory = Clothing,
+    ItemType = base:clothing,
+    DisplayName = Stalker Outrider Jacket,
+    ClothingItem = Stalker_Outrider_Jacket,
+    BodyLocation = base:shirt,
+    Icon = FR_JACKET_MAIN,
+    BloodLocation = Shirt,
+    CanHaveHoles    = true,
+    BiteDefense = 76,
+    BulletDefense   = 22,
+    ScratchDefense = 100,
+    NeckProtectionModifier = 1,
+    Insulation = 0.5,
+    WindResistance = 0.85,
+    FabricType = Leather,
+    WaterResistance = 0.85,
+    Weight = 1,
+    ConditionMax = 4,
+    ConditionLowerChanceOneIn = 7,
+    ToolTip = [Chimera],
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    /* */                                                                                                                                     }
+
+    item Stalker_Outrider_Boots
+    /* */                                                                                                                                     {
+    Weight = 0.3,
+    DisplayCategory = Clothing,
+    ItemType = base:clothing,
+    DisplayName = Stalker Outrider Boots,
+    ClothingItem = Stalker_Outrider_Boots,
+    BodyLocation = base:shoes,
+    BloodLocation = Shoes,
+    Icon = FR_BOOTS_MAIN,
+    StompPower = 4,
+    ConditionLowerChanceOneIn = 46,
+    ConditionMax = 33,
+    CanHaveHoles= true,
+    RemoveOnBroken = false,
+    ScratchDefense = 100,
+    BiteDefense = 100,
+    Insulation = 0.65,
+    FabricType = Leather,
+    WindResistance = 1,
+    WaterResistance = 0.86,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Chimera],
+    /* */                                                                                                                                     }
+
+    
+    /************************ FR: Trousers  ****/
+    item Stalker_Outrider_Trousers
+    /* */                                                                                                                                     {
+    DisplayCategory = Clothing,
+    Weight = 1.2,
+    ItemType = base:clothing,
+    DisplayName = Stalker Outrider Trousers,
+    ClothingItem = Stalker_Outrider_Trousers,
+    BodyLocation = base:pants,
+    Icon = FR_TROUSERS_MAIN,
+    CanHaveHoles    = true,
+    ScratchDefense = 96,
+    BiteDefense = 48,
+    ConditionMax = 7,
+    ConditionLowerChanceOneIn = 7,
+    Insulation = 0.4,
+    BulletDefense   = 17,
+    WindResistance = 0.98,
+    WaterResistance = 0.98,
+    FabricType = Leather,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Chimera],				}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    item RAVEN_HELMET_GearSet
+    /* */                                                                                                                                     {
+    DisplayCategory = Accessory,
+    ItemType = base:clothing,
+    DisplayName     = Operator Raven Ballistic Helmet [GearSet],
+    ClothingItem    = RAVEN_HELMET_GearSet,
+    BodyLocation = CHIMERA:HelmetGearSet,
+    Icon    = FR_ATE_SSV_GEARSET_MAIN,
+    BloodLocation = Head,
+    CanHaveHoles    = FALSE,
+    BiteDefense     = 35,
+    ScratchDefense  = 24,
+    BulletDefense   = 15,
+    ChanceToFall    = 0,
+    Insulation      = 0.5,
+    WaterResistance = 0.85,
+    WindResistance  = 0.85,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Weight  = 0.5,
+    /* */                                                                                                                                     }
+
+
+
+    item RAVEN_HELMET_N1
+    /* */                                                                                                                                     {
+    DisplayCategory = Accessory,
+    ItemType = base:clothing,
+    DisplayName     = Operator Raven Ballistic Helmet [Bare],
+    ClothingItem    = RAVEN_HELMET_N1,
+    BodyLocation = CHIMERA:HelmetBase,
+    Icon    = FR_ATE_SSV_MAIN,
+    BloodLocation   = Head,
+    CanHaveHoles    = FALSE,
+    BiteDefense     = 100,
+    ScratchDefense  = 82,
+    BulletDefense   = 82,
+    ChanceToFall    = 0,
+    Insulation      = 0.5,
+    WaterResistance = 0.75,
+    WindResistance  = 0.75,
+    AttachmentsProvided = OperatorHeadGearMount,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Weight  = 0.2,
+    /* */                                                                                                                                     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    item RAVEN_Salomon_X_Ultra_Boots
+    /* */                                                {
+    Weight = 0.1,
+    DisplayCategory = Clothing,
+    ItemType = base:clothing,
+    DisplayName = Salomon X Ultra Boots,
+    ClothingItem = RAVEN_Salomon_X_Ultra_Boots,
+    BodyLocation = base:shoes,
+    BloodLocation = Shoes,
+    Icon = FR_BOOTS_MAIN,
+    StompPower = 4,
+    ConditionLowerChanceOneIn = 52,
+    CanHaveHoles    = true,
+    ConditionMax = 26,
+    RemoveOnBroken = false,
+    ScratchDefense = 100,
+    BiteDefense = 100,
+    BulletDefense   = 5,
+    Insulation = 0.65,
+    FabricType = Leather,
+    WindResistance = 1,
+    WaterResistance = 0.99,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Raven],
+    /* */                                                }
+
+    item RAVEN_Cap								         {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= Operator Raven Baseball Cap,
+    ToolTip = [TAC],
+    ClothingItem	= RAVEN_Cap,
+    BodyLocation = base:hat,
+    Icon=TAC7C,
+    ScratchDefense = 12,
+    BiteDefense = 8,
+    Insulation = 0.5,
+    WindResistance = 0.21,
+    BulletDefense   = 1,
+    WaterResistance = 0.32,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    BloodLocation	= Head,						         }
+
+    item RAVEN_Jacket
+    /* */                                                {
+    DisplayCategory = Clothing,
+    ItemType = base:clothing,
+    DisplayName = Operator Raven Jacket,
+    ClothingItem = RAVEN_Jacket,
+    BodyLocation = base:shirt,
+    Icon = FR_JACKET_MAIN,
+    BloodLocation = Shirt,
+    CanHaveHoles    = true,
+    BiteDefense = 76,
+    ScratchDefense = 100,
+    BulletDefense   = 12,
+    NeckProtectionModifier = 1,
+    Insulation = 0.5,
+    ConditionMax = 7,
+    ConditionLowerChanceOneIn = 8,
+    WindResistance = 0.85,
+    FabricType = Leather,
+    WaterResistance = 0.85,
+    Weight = 1,
+    ToolTip = [Raven],
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    /* */                                                }
+
+    item RAVEN_Boots
+    /* */                                                {
+    Weight = 0.3,
+    DisplayCategory = Clothing,
+    ItemType = base:clothing,
+    DisplayName = Operator Raven Boots,
+    ClothingItem = RAVEN_Boots,
+    BodyLocation = base:shoes,
+    BloodLocation = Shoes,
+    Icon = FR_BOOTS_MAIN,
+    StompPower = 4,
+    ConditionLowerChanceOneIn = 56,
+    ConditionMax = 38,
+    CanHaveHoles= true,
+    RemoveOnBroken = false,
+    ScratchDefense = 100,
+    BiteDefense = 100,
+    BulletDefense   = 4,
+    Insulation = 0.65,
+    FabricType = Leather,
+    WindResistance = 1,
+    WaterResistance = 0.86,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+
+    ToolTip = [Raven],
+    /* */                                                }
+
+    
+    item RAVEN_Trousers
+    /* */                                                {
+    DisplayCategory = Clothing,
+    Weight = 1.2,
+    ItemType = base:clothing,
+    DisplayName = Operator Raven Trousers,
+    BloodLocation = Trousers,
+    ClothingItem = RAVEN_Trousers,
+    BodyLocation = base:pants,
+    Icon = FR_TROUSERS_MAIN,
+    CanHaveHoles    = true,
+    ScratchDefense = 96,
+    BiteDefense = 48,
+    BulletDefense   = 22,
+    Insulation = 0.4,
+    ConditionMax = 7,
+    ConditionLowerChanceOneIn = 7,
+    WindResistance = 0.98,
+    WaterResistance = 0.98,
+    FabricType = Leather,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Raven],				                     }
+    /* */                                                                                                                                    
+    
+
+
+
+
+
+
+
+
+    item DSX_PICO_ASSAULTER_VEST_BRACKET		        {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [DSX] PICO Bracket GameBoy Kit,
+    ClothingItem	= DSX_PICO_ASSAULTER_VEST_BRACKET,
+    BodyLocation	= CHIMERA:MolleBracket,
+    Icon = FR_Operator,
+    Weight= 0.1,
+    ScratchDefense          = 4,
+    ChanceToFall	= 0,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Chimera][DSX],	   		   }
+
+    item DSX_PICO_ASSAULTER_VEST
+    {
+        DisplayCategory = Bag,
+        ItemType = base:clothing,
+        DisplayName = [DSX] PICO Assaulter Vest,
+        ClothingItem = DSX_PICO_ASSAULTER_VEST,
+        Weight  =       0.8,
+		BodyLocation = base:TorsoExtraVestBullet,
+        BulletHitArmourSound = ArmourFirearmHitBone,
+        WeaponHitArmourSound = ArmourMeleeHitBone,
+        Icon = DSX,
+        BloodLocation = ShirtNoSleeves,
+        CanHaveHoles = false,
+        FabricType = Cotton,
+		NeckProtectionModifier = 0.3,
+        Insulation = 0.15,
+        WindResistance = 0.5,
+        BiteDefense = 29,
+        ScratchDefense = 27,
+        BulletDefense = 100,
+        ConditionMax = 37,
+        ConditionLowerChanceOneIn = 27,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        AttachmentsProvided = OperatorVestMain,
+    
+        ToolTip = [Chimera][Radio Mount][DSX],
+    }
+
+    item DSX_PICO_ASSAULTER_VEST_PLACARD		        {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [DSX] PICO 5.56 Placard Kit,
+    ClothingItem	= DSX_PICO_ASSAULTER_VEST_PLACARD,
+    BodyLocation	= CHIMERA:MollePlacard,
+    Icon = DSX1,
+    Weight= 0.1,
+    CanHaveHoles = false,
+    ScratchDefense          = 19,
+    ChanceToFall	= 0,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    AttachmentsProvided = StanagMolleStorageMiddle;StanagMolleStorageLeft;StanagMolleStorageRight,
+    ToolTip = [Chimera][Mag Holder][DSX],	   		   }
+
+
+
+
+    item DSX_PICO_ASSAULTER_VEST_POUCH
+    {
+        DisplayCategory = Bag,
+        ItemType = base:container,
+        DisplayName = [DSX] PICO: Pouch Kit,
+        ClothingItem = DSX_PICO_ASSAULTER_VEST_POUCH,
+        CanBeEquipped = CHIMERA:MollePouch,
+        BodyLocation = CHIMERA:MollePouch,
+        WeightReduction	=	99,
+        Weight	=	0.5,
+        Capacity	=	17,
+        Icon = DSX3,
+        OpenSound   =   OpenBag,
+        CloseSound   =   CloseBag,
+        PutInSound   =   PutItemInBag,
+        BloodLocation = Bag,
+        CanHaveHoles = false,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        ToolTip = [Molle Storage][DSX],
+    }
+
+
+
+    item DSX_PICO_ASSAULTER_VEST_POUCH_MINI
+    {
+        DisplayCategory = Bag,
+        ItemType = base:container,
+        DisplayName = [DSX] PICO: Mini Storage Pouch,
+        ClothingItem = DSX_PICO_ASSAULTER_VEST_POUCH_MINI,
+        CanBeEquipped = CHIMERA:MollePouchTwo,
+        BodyLocation = CHIMERA:MollePouchTwo,
+        WeightReduction	=	94,
+        Weight	=	0.3,
+        Capacity	=	22,
+        Icon = DSX2,
+        OpenSound   =   OpenBag,
+        CloseSound   =   CloseBag,
+        PutInSound   =   PutItemInBag,
+        BloodLocation = Bag,
+        CanHaveHoles = false,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        ToolTip = [Molle Storage][DSX],
+    }
+
+    item DSX_PICO_ASSAULTER_VEST_POCKET		        {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [GameBoy] Pocket [Vest Camera],
+    ClothingItem	= DSX_PICO_ASSAULTER_VEST_POCKET,
+    BodyLocation = CHIMERA:MollePouchThree,
+    Icon = GBP,
+    Weight= 0.2,
+    ScratchDefense          = 12,
+    BiteDefense = 12,
+    ChanceToFall	= 0,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Chimera][DSX],	   		   }
+
+	/************************ Destiny Dynamix Operator CropCut  ************************/
+
+
+    item Operator_Dynamix_Tactical_Crop
+    /* */                                                                                                                                     {
+    DisplayCategory = Clothing,
+    ItemType = base:clothing,
+    DisplayName = [Destiny Dynamix] Operator Tactical Crop Jacket,
+    ClothingItem = Operator_Dynamix_Tactical_Crop,
+    BodyLocation = base:shirt,
+    Icon = FR_JACKET_MAIN,
+    BloodLocation = Shirt,
+    CanHaveHoles    = true,
+    BiteDefense = 76,
+    ScratchDefense = 100,
+    NeckProtectionModifier = 3,
+    Insulation = 1,
+    WindResistance = 1,
+    FabricType = Leather,
+    WaterResistance = 1,
+    Weight = 1,
+    ConditionMax = 5,
+    ConditionLowerChanceOneIn = 16,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Chimera][F],
+    /* */                                                                                                                                     }
+
+
+	item Operator_AMV_MilVest
+	{
+		DisplayName = Bulletproof Vest - Military,
+		DisplayCategory = ProtectiveGear,
+		ItemType = base:clothing,
+		Icon = USMC,
+		BiteDefense = 30,
+		BloodLocation = ShirtNoSleeves,
+		BodyLocation = base:TorsoExtraVestBullet,
+        BulletHitArmourSound = ArmourFirearmHitBone,
+        WeaponHitArmourSound = ArmourMeleeHitBone,
+		BulletDefense = 100,
+        CanHaveHoles    = true,
+		ClothingItem = Operator_AMV_MilVest,
+		Insulation = 0.75,
+        FabricType = Leather,
+		ScratchDefense = 55,
+		WindResistance = 0.45,
+        ConditionMax = 12,
+        ConditionLowerChanceOneIn = 5,
+		WorldStaticModel = BulletVest_Ground,
+		Weight = 3,  
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    item MSA_MILLENIUM_YELLOW				   { 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName = MSA Millenium GP-25 Gas Mask [BioHazard],
+    ToolTip = [Chimera],
+    ClothingItem	= MSA_MILLENIUM_YELLOW,
+    BodyLocation = base:mask,
+    Icon= MSA,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    Tags = base:gasmask;base:islowerdisguise,
+    BloodLocation	= Head,
+    Insulation	= 0.24,
+    OnCreate = ItemCodeOnCreate.onCreateGasMask,
+    WithoutDrainable = CHIMERA.MSA_MILLENIUM_YELLOW_NOFILTER,
+    ScratchDefense = 30,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Researchablerecipes = MakeCraftedGasMaskFilter;RechargeFilters;MakeImprovisedGasMask,
+    KeepOnDeplete = true,
+    WaterResistance = 1.0,				   }
+
+    item MSA_MILLENIUM_GREEN				   { 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName = MSA Millenium GP-25 Gas Mask [Military],
+    ToolTip = [Chimera],
+    ClothingItem	= MSA_MILLENIUM_GREEN,
+    BodyLocation = base:mask,
+    Icon= MSA,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    OnCreate = ItemCodeOnCreate.onCreateGasMask,
+    Tags = base:gasmask;base:islowerdisguise,
+    WithoutDrainable = CHIMERA.MSA_MILLENIUM_GREEN_NOFILTER,
+    BloodLocation	= Head,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Researchablerecipes = MakeCraftedGasMaskFilter;RechargeFilters;MakeImprovisedGasMask,
+    KeepOnDeplete = true,
+    Insulation	= 0.24,
+    ScratchDefense = 30,
+    WaterResistance = 1.0,				   }
+
+    item MSA_MILLENIUM_BLUE				       { 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName = MSA Millenium GP-25 Gas Mask [Riot],
+    ToolTip = [Chimera],
+    ClothingItem	= MSA_MILLENIUM_BLUE,
+    BodyLocation = base:mask,
+    Icon= MSA,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    OnCreate = ItemCodeOnCreate.onCreateGasMask,
+    Tags = base:gasmask;base:islowerdisguise,
+    WithoutDrainable = CHIMERA.MSA_MILLENIUM_BLUE_NOFILTER,
+    BloodLocation	= Head,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Researchablerecipes = MakeCraftedGasMaskFilter;RechargeFilters;MakeImprovisedGasMask,
+    KeepOnDeplete = true,
+    Insulation	= 0.24,
+    ScratchDefense = 30,
+    WaterResistance = 1.0,				   }
+
+
+    item MSA_MILLENIUM_RED				       { 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName = MSA Millenium GP-25 Gas Mask [R],
+    ToolTip = [Chimera],
+    ClothingItem	= MSA_MILLENIUM_RED,
+    BodyLocation = base:mask,
+    Icon= MSA,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    Tags = base:gasmask;base:islowerdisguise,
+    BloodLocation	= Head,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    OnCreate = ItemCodeOnCreate.onCreateGasMask,
+    WithoutDrainable = CHIMERA.MSA_MILLENIUM_RED_NOFILTER,
+    Researchablerecipes = MakeCraftedGasMaskFilter;RechargeFilters;MakeImprovisedGasMask,
+    KeepOnDeplete = true,
+    Insulation	= 0.24,
+    ScratchDefense = 30,
+    WaterResistance = 1.0,				   }
+
+
+
+
+    item MSA_MILLENIUM				       { 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName = MSA Millenium GP-25 Gas Mask,
+    ToolTip = [Chimera],
+    ClothingItem	= MSA_MILLENIUM,
+    BodyLocation = base:mask,
+    Icon= MSA,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+        Tags = base:gasmask;base:islowerdisguise,
+        OnCreate = ItemCodeOnCreate.onCreateGasMask,
+        WithoutDrainable = CHIMERA.MSA_MILLENIUM_NOFILTER,
+        Researchablerecipes = MakeCraftedGasMaskFilter;RechargeFilters;MakeImprovisedGasMask,
+        KeepOnDeplete = true,
+    BloodLocation	= Head,
+    Insulation	= 0.24,
+    ScratchDefense = 30,
+    WaterResistance = 1.0,				   }
+
+
+
+
+
+
+
+
+
+
+
+	/************************ Nofilter  ************************/
+
+
+
+
+    item MSA_MILLENIUM_YELLOW_NOFILTER				   { 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName = MSA Millenium GP-25 Gas Mask [BioHazard] [Empty],
+    ToolTip = [Chimera],
+    ClothingItem	= MSA_MILLENIUM_YELLOW_NOFILTER,
+    BodyLocation = base:mask,
+    Icon= MSA,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    WithDrainable = CHIMERA.MSA_MILLENIUM_YELLOW,
+    Tags = base:gasmasknofilter;base:isdisguise,
+    BloodLocation	= Head,
+    Insulation	= 0.24,
+    ScratchDefense = 30,
+    WaterResistance = 1.0,				               }
+
+    item MSA_MILLENIUM_GREEN_NOFILTER				   { 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName = MSA Millenium GP-25 Gas Mask [Military] [Empty],
+    ToolTip = [Chimera],
+    ClothingItem	= MSA_MILLENIUM_GREEN_NOFILTER,
+    BodyLocation = base:mask,
+    Icon= MSA,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    WithDrainable = CHIMERA.MSA_MILLENIUM_GREEN,
+    Tags = base:gasmasknofilter;base:isdisguise,
+    BloodLocation	= Head,
+    Insulation	= 0.24,
+    ScratchDefense = 30,
+    WaterResistance = 1.0,				               }
+
+    item MSA_MILLENIUM_BLUE_NOFILTER				       { 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName = MSA Millenium GP-25 Gas Mask [Riot] [Empty],
+    ToolTip = [Chimera],
+    ClothingItem	= MSA_MILLENIUM_BLUE_NOFILTER,
+    BodyLocation = base:mask,
+    Icon= MSA,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    WithDrainable = CHIMERA.MSA_MILLENIUM_BLUE,
+    Tags = base:gasmasknofilter;base:isdisguise,
+    BloodLocation	= Head,
+    Insulation	= 0.24,
+    ScratchDefense = 30,
+    WaterResistance = 1.0,				               }
+
+
+    item MSA_MILLENIUM_RED_NOFILTER				       { 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName = MSA Millenium GP-25 Gas Mask [R] [Empty],
+    ToolTip = [Chimera],
+    ClothingItem	= MSA_MILLENIUM_RED_NOFILTER,
+    BodyLocation = base:mask,
+    Icon= MSA,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    WithDrainable = CHIMERA.MSA_MILLENIUM_RED,
+    Tags = base:gasmasknofilter;base:isdisguise,
+    BloodLocation	= Head,
+    Insulation	= 0.24,
+    ScratchDefense = 30,
+    WaterResistance = 1.0,				               }
+
+
+
+
+    item MSA_MILLENIUM_NOFILTER				           { 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName = MSA Millenium GP-25 Gas Mask [Empty],
+    ToolTip = [Chimera],
+    ClothingItem	= MSA_MILLENIUM_NOFILTER,
+    BodyLocation = base:mask,
+    Icon= MSA,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    WithDrainable = CHIMERA.MSA_MILLENIUM,
+        Tags = base:gasmasknofilter;base:isdisguise,
+        OnCreate = ItemCodeOnCreate.onCreateGasMask,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+        Researchablerecipes = MakeCraftedGasMaskFilter;RechargeFilters;MakeImprovisedGasMask,
+        KeepOnDeplete = true,
+    BloodLocation	= Head,
+    Insulation	= 0.24,
+    ScratchDefense = 30,
+    WaterResistance = 1.0,				               }
+
+
+
+
+
+
+
+
+
+
+    item HighReactTeam_Trousers
+    /* */                                                {
+    DisplayCategory = Clothing,
+    Weight = 1.2,
+    ItemType = base:clothing,
+    DisplayName = [High React Team] Raven Trousers,
+    ClothingItem = HighReactTeam_Trousers,
+    BodyLocation = base:pants,
+    Icon = FR_TROUSERS_MAIN,
+    BloodLocation = Trousers,
+    CanHaveHoles    = true,
+    ConditionMax = 22,
+    ConditionLowerChanceOneIn = 7,
+    ScratchDefense = 96,
+    BiteDefense = 48,
+    BulletDefense   = 22,
+    Insulation = 0.4,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ClothingItemExtra = HighReactTeam_Trousers_Alt,
+    ClothingItemExtraOption = highres,
+    WindResistance = 0.98,
+    WaterResistance = 0.98,
+    FabricType = Leather,   		                     }
+
+
+
+
+
+    item Raven_WarHawk_Belt
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        Icon = Belt,
+        DisplayName	= [Raven] Warhawk Belt,
+        AttachmentsProvided = SmallBeltLeft;SmallBeltRight,
+        BodyLocation = base:belt,
+        ScratchDefense = 12,
+        BiteDefense = 10,
+        ClothingItem = Raven_WarHawk_Belt,
+        WorldStaticModel = Belt_Ground,
+        FabricType = Leather,
+        Tags = base:hasmetal;base:buckle;base:scrapasbelt,
+        Researchablerecipes = Forge_Buckle,
+    }
+
+
+    item SKM_EyePro_ESS_Influx       {
+    DisplayCategory = Accessory,
+    ItemType = base:clothing,
+    Weight = 0.4,
+    DisplayName	= [SKM] EyePro ESS Influx Goggles,
+    Icon = FR_Operator,
+    BodyLocation = base:eyes,
+    ChanceToFall = 0,
+    BloodLocation	= Head,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ClothingItem = SKM_EyePro_ESS_Influx,
+    Insulation	= 0.24,
+    ScratchDefense = 30,
+    BiteDefense = 22,
+    WaterResistance = 1.0,
+    WindResistance	= 1,
+    Tags = base:isupperdisguise,    }
+
+
+    item SKM_Balaclava			                { 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [Balaclava],
+    ToolTip = [Chimera],
+    ClothingItem	= SKM_Balaclava,
+    BodyLocation = base:mask,
+    Icon= FR_MASK_MAIN,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    NeckProtectionModifier = 1,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Tags = base:islowerdisguise,
+    BloodLocation	= Head,
+    Insulation	= 0.54,
+    ScratchDefense = 90,
+    WaterResistance = 1.0,
+    WindResistance	= 1,					   }
+
+
+    item FR_Operator_FaceWrap_Hide			   { 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [Operator] FaceWrap [Hide],
+    ToolTip = [Chimera],
+    ClothingItem	= Operator_Gait_R2,
+    BodyLocation = base:mask,
+    Icon= FR_MASK_MAIN,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    NeckProtectionModifier = 1,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ClothingItemExtra = FR_Operator_FaceWrap,
+    ClothingItemExtraOption = Down,
+    Tags = base:islowerdisguise,
+    BloodLocation	= Neck,
+    Insulation	= 0.24,
+    ScratchDefense = 60,
+    WaterResistance = 1.0,
+    WindResistance	= 1,					   }
+
+
+
+
+    item FR_Operator_FaceWrap				   { 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [Operator] FaceWrap,
+    ToolTip = [Chimera],
+    ClothingItem	= Operator_Gait_R1,
+    BodyLocation = base:mask,
+    Icon= FR_MASK_MAIN,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    NeckProtectionModifier = 1,
+    Tags = base:islowerdisguise,
+    BloodLocation	= Neck,
+    ClothingItemExtra = FR_Operator_FaceWrap_Hide,
+    ClothingItemExtraOption = Up,
+    Insulation	= 0.24,
+    ScratchDefense = 30,
+    WaterResistance = 1.0,
+    WindResistance	= 0.5,					   }
+
+
+
+
+    craftRecipe RemoveGasMSAMaskFilter
+    {
+        timedAction = Making,
+        time = 30,
+        OnCreate = RecipeCodeOnCreate.removeGasFilter,
+        OnTest = RecipeCodeOnTest.haveFilter,
+        AllowBatchCraft = false,
+        Tags = InHandCraft;CanBeDoneInDark,
+        category = Miscellaneous,
+        inputs
+        {
+            item 1 tags[base:gasmask] mode:keep flags[AllowFavorite;ItemCount],
+        }
+    }
+
+    craftRecipe PutFilterOnMSAGasMask
+    {
+        timedAction = Making,
+        time = 30,
+        OnCreate = RecipeCodeOnCreate.addGasFilter,
+        OnTest = RecipeCodeOnTest.noFilter,
+        AllowBatchCraft = false,
+        Tags = InHandCraft;CanBeDoneInDark,
+        category = Miscellaneous,
+        inputs
+        {
+            item 1 tags[base:gasmask] mode:keep flags[AllowFavorite;ItemCount],
+            item 1 tags[base:gasmaskfilter] flags[ItemCount;NotEmpty] mode:destroy,
+        }
+    }
+
+
+
+
+
+
+    
+item MTBK_ServiceCap						{
+DisplayCategory	= Accessory,
+ItemType = base:clothing,
+DisplayName	= [MTBK] Service Baseball Cap,
+ToolTip = [Phenerix Tactical],
+ClothingItem	= TacticalCap,
+BodyLocation = base:hat,
+Icon= TaskForceCap,
+NeckProtectionModifier = 1,
+ScratchDefense = 12,
+WorldStaticModel = ProtectiveCaseSmall_Ground,
+BiteDefense = 8,
+CombatSpeedModifier = 1.2,
+Insulation = 0.5,
+WindResistance = 0.21,
+WaterResistance = 0.32,
+CanHaveHoles	= false,
+ChanceToFall	= 1,
+BloodLocation	= Head,						}
+
+item RayBeans								{
+DisplayCategory	= Accessory,
+ItemType = base:clothing,
+DisplayName	= Ray Beans,
+ClothingItem	= RayBean_Phenerix,
+WorldStaticModel = RayBeansG,
+BodyLocation = base:eyes,
+Icon= RayBeans,
+Weight= 0.1,
+Cosmetic	= TRUE,
+ChanceToFall	= 2,
+ToolTip = [Phenerix Tactical],				}
+
+
+    item AshleyMframe                       {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        DisplayName	= Ashley Mframe Glasses,
+        Icon = TacM_HeadGear_ColorE_D,
+        BodyLocation = base:eyes,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        ChanceToFall = 50,
+        ClothingItem = AshleyMframe_Phenerix,
+        Cosmetic = true,
+        AttachmentsProvided = OperatorHeadGearMount,
+        Tags = base:isupperdisguise,   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    item RayBean_Paradigm       			   {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [Ray-Bean] Paradigm Sun Glasses,
+    ClothingItem	= RayBean_Paradigm,
+    BodyLocation	= base:eyes,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Icon= RAYB_NPDM,
+
+    Weight= 0.1,
+    ScratchDefense          = 14,
+    ChanceToFall	= 0,
+    AttachmentsProvided = OperatorHeadGearMount,
+    ToolTip = [Chimera],	   		   }
+
+    item RayBean_Paradigm_A1       			   {
+    DisplayCategory	= Accessory,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ItemType = base:clothing,
+    DisplayName	= [Ray-Bean] Paradigm Sun Glasses,
+    ClothingItem	= RayBean_Paradigm1,
+    BodyLocation	= base:eyes,
+    Icon= RAYB_NPDM,
+
+    Weight= 0.1,
+    ScratchDefense          = 14,
+    ChanceToFall	= 0,
+    AttachmentsProvided = OperatorHeadGearMount,
+    ToolTip = [Chimera],	   		   }
+
+    item RayBean_Paradigm_A2       			   {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [Ray-Bean] Paradigm Sun Glasses,
+    ClothingItem	= RayBean_Paradigm2,
+    
+    BodyLocation	= base:eyes,
+    Icon= RAYB_NPDM,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Weight= 0.1,
+    ScratchDefense          = 14,
+    ChanceToFall	= 0,
+    AttachmentsProvided = OperatorHeadGearMount,
+    ToolTip = [Chimera],	   		   }
+
+    item Operator_TYR_Tactical_Vest
+    {
+        DisplayCategory = Bag,
+        ItemType = base:clothing,
+        DisplayName = [TYR] Tactical Vest,
+        ClothingItem = Operator_TYR_Tactical_Vest,
+        Weight  =       1.4,
+		BodyLocation = base:TorsoExtraVestBullet,
+        BulletHitArmourSound = ArmourFirearmHitBone,
+        WeaponHitArmourSound = ArmourMeleeHitBone,
+        Icon = KSPD,
+        ConditionMax = 8,
+        ConditionLowerChanceOneIn = 3,
+        BloodLocation = ShirtNoSleeves,
+        CanHaveHoles = true,
+        FabricType = Cotton,
+		NeckProtectionModifier = 0.3,
+        Insulation = 0.19,
+        WindResistance = 0.4,
+        BiteDefense = 100,
+        ScratchDefense = 58,
+        BulletDefense = 100,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        AttachmentsProvided = OperatorVestMain,
+        ToolTip = [Chimera],
+    }
+
+	item Oakley_TacGloves
+	{
+		DisplayName = [Oakley] Tac - Gloves,
+		DisplayCategory = Accessory,
+		ItemType = base:clothing,
+		Weight = 0.2,
+        ConditionMax = 22,
+        ConditionLowerChanceOneIn = 8,
+        CanHaveHoles	= true,
+        FabricType = Leather,
+		Icon = OakleyGlove,
+		BloodLocation = Hands,
+		BodyLocation = base:hands,
+		ClothingItem = Oakley_TacGloves,
+		Insulation = 0.21,
+        BiteDefense = 32,
+		ScratchDefense = 40,
+		WindResistance = 0.4,
+        BulletHitArmourSound = ArmourFirearmHitBone,
+        WeaponHitArmourSound = ArmourMeleeHitBone,
+		WorldStaticModel = Gloves_Ground,
+        ResearchableRecipes = SewLeatherGloves,
+        ToolTip = [Chimera],
+	}
+
+	item Operator_Mechanix_Gloves
+	{
+		DisplayName = [Mechanix] - Gloves,
+		DisplayCategory = Accessory,
+		ItemType = base:clothing,
+		Weight = 0.1,
+        ConditionMax = 11,
+        ConditionLowerChanceOneIn = 3,
+        CanHaveHoles	= true,
+        FabricType = Leather,
+		Icon = GlovesFingerlessWhite,
+		BloodLocation = Hands,
+		BodyLocation = base:hands,
+		ClothingItem = Operator_Mechanix_Gloves,
+		Insulation = 0.25,
+		ScratchDefense = 35,
+		WindResistance = 0.3,
+        BulletHitArmourSound = ArmourFirearmHitBone,
+        WeaponHitArmourSound = ArmourMeleeHitBone,
+		WorldStaticModel = Gloves_Ground,
+        ResearchableRecipes = SewLeatherGloves,
+        ToolTip = [Chimera],
+	}
+
+
+	item Operator_Mechanix_Delta_Gloves
+	{
+		DisplayName = [Mechanix] - [Delta] Gloves,
+		DisplayCategory = Accessory,
+		ItemType = base:clothing,
+		Weight = 0.1,
+        ConditionMax = 11,
+        ConditionLowerChanceOneIn = 5,
+        CanHaveHoles	= true,
+        FabricType = Leather,
+		Icon = GlovesFingerlessWhite,
+		BloodLocation = Hands,
+		BodyLocation = base:hands,
+		ClothingItem = Operator_Mechanix_Delta_Gloves,
+		Insulation = 0.55,
+		ScratchDefense = 45,
+		WindResistance = 0.3,
+        BulletHitArmourSound = ArmourFirearmHitBone,
+        WeaponHitArmourSound = ArmourMeleeHitBone,
+		WorldStaticModel = Gloves_Ground,
+        ResearchableRecipes = SewLeatherGloves,
+        ToolTip = [Chimera],
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+item TAC7_CAPHeadSet								{
+DisplayCategory	= Accessory,
+ItemType = base:clothing,
+DisplayName	= [TAC] 7 [Headset] Baseball Cap,
+ToolTip = [TAC],
+ClothingItem	= TAC7_CAPHeadSet,
+BodyLocation = base:hat,
+WorldStaticModel = TaskForceCapG,
+Icon= TAC7HC,
+ScratchDefense = 12,
+BiteDefense = 8,
+WorldStaticModel = ProtectiveCaseSmall_Ground,
+Insulation = 0.5,
+WindResistance = 0.21,
+WaterResistance = 0.32,
+CanHaveHoles	= false,
+ChanceToFall	= 0,
+BloodLocation	= Head,						}
+
+item TAC7_CAP								{
+DisplayCategory	= Accessory,
+ItemType = base:clothing,
+DisplayName	= [TAC] 7 Baseball Cap,
+ToolTip = [TAC],
+ClothingItem	= TAC7_CAP,
+BodyLocation = base:hat,
+WorldStaticModel = ProtectiveCaseSmall_Ground,
+Icon=TAC7C,
+ScratchDefense = 12,
+BiteDefense = 8,
+Insulation = 0.5,
+
+WindResistance = 0.21,
+WaterResistance = 0.32,
+CanHaveHoles	= false,
+ChanceToFall	= 0,
+BloodLocation	= Head,						}
+
+
+item TAC7_HeadSet						    {
+DisplayCategory	= Accessory,
+ItemType = base:clothing,
+DisplayName	= [TAC] 7 [Headset],
+ToolTip = [TAC],
+ClothingItem	= TAC7_HeadSet,
+BodyLocation = CHIMERA:HelmetGearHeadSet,
+CanBeEquipped = CHIMERA:HelmetGearHeadSet,
+WorldStaticModel = ProtectiveCaseSmall_Ground,
+Icon=TAC7H,
+ScratchDefense = 12,
+BiteDefense = 8,
+Insulation = 0.2,
+WindResistance = 0.21,
+WaterResistance = 0.32,
+CanHaveHoles	= false,
+ChanceToFall	= 0,
+BloodLocation	= Head,						}
+
+
+
+    item SKM_GHL_COVER
+    {
+        ItemType = base:clothing,
+        DisplayName = [SKM] Ghillie Backpack Cover,
+        ClothingItem = SKM_GHL_COVER,
+        BodyLocation = CHIMERA:CamoPackCover,
+        Icon = Shawl,
+        BloodLocation = Head,
+        BiteDefense = 2,
+        ScratchDefense = 12,
+        Insulation = 0.17,
+        WindResistance = 0.1,
+	    FabricType = Cotton,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+    }
+
+
+
+	/************************ Shemagh:           ************************/	
+
+    item Shemagh
+    {
+        ItemType = base:clothing,
+        DisplayName = [Shemagh],
+        ClothingItem = Shemagh,
+        BodyLocation = CHIMERA:Shemagh,
+        Icon = Shawl,
+        BloodLocation = Head,
+        BiteDefense = 22,
+        ScratchDefense = 25,
+        NeckProtectionModifier = 2,
+        Insulation = 0.27,
+        WindResistance = 1.0,
+        WaterResistance = 1.0,
+	    FabricType = Cotton,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+    }
+
+	/************************ Shawl: Ava Dixon ************************/	
+
+    item Ava_Dixon_Shawl
+    {
+        ItemType = base:clothing,
+        DisplayName =  Dixon's Shawl,
+        ClothingItem = Dixon_Shawl,
+        BodyLocation = CHIMERA:Shawl,
+        Icon = Shawl,
+        BloodLocation = Shirt;FullHelmet;Trousers,
+        BiteDefense = 60,
+        ScratchDefense = 77,
+        NeckProtectionModifier = 1,
+        Insulation = 0.17,
+        CanHaveHoles = true,
+        WindResistance = 0.8,
+        WaterResistance = 1.0,
+	    FabricType = Cotton,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+    }
+
+
+	/************************ HELMET: BLACKARROW ************************/	
+
+
+item RAVEN_OPERATOR_SCRIM{
+DisplayCategory = Accessory,
+ItemType = base:clothing,
+DisplayName = [Raven] Helmet [Scrim],
+ClothingItem = RAVEN_OPERATOR_SCRIM,
+BodyLocation = CHIMERA:HelmetScrimCover,
+Icon = FR_Operator,
+WorldStaticModel = ProtectiveCaseSmall_Ground,
+CanHaveHoles = false,
+BloodLocation = Head,
+BiteDefense     = 100,
+ScratchDefense  = 95,
+BulletDefense   = 97,
+Insulation = 0.25,
+WindResistance = 1,
+WaterResistance = 1,}
+
+
+
+item Crye_Precision_AirFrame_Ballistic_Helmet
+/* */                                                                                                                                     {
+DisplayCategory = Accessory,
+ItemType = base:clothing,
+DisplayName     = [Crye Precision] AirFrame Ballistic Helmet,
+ClothingItem    = Crye_Precision_AirFrame_Ballistic_Helmet,
+BodyLocation = base:hat,
+Icon    = FR_ATE_SSV_MAIN,
+BloodLocation	= Head,
+CanHaveHoles    = false,
+BiteDefense     = 100,
+ScratchDefense  = 95,
+BulletDefense   = 97,
+ChanceToFall    = 0,
+Insulation      = 0.5,
+WaterResistance = 0.85,
+WindResistance  = 0.85,
+WorldStaticModel = ProtectiveCaseSmall_Ground,
+AttachmentsProvided = OperatorHeadGearMount,
+Weight  = 1,
+/* */                                                                                                                                     }
+
+item Crye_Precision_AirFrame_Cover_Cutout{
+DisplayCategory = Accessory,
+ItemType = base:clothing,
+DisplayName = [Crye Precision] AirFrame [Cover],
+ClothingItem = Crye_Precision_AirFrame_Cover_Cutout,
+BodyLocation = CHIMERA:HelmetArmoredCover,
+Icon = FR_Operator,
+CanHaveHoles = false,
+BloodLocation = Head,
+BiteDefense     = 100,
+ScratchDefense  = 95,
+BulletDefense   = 97,
+Insulation = 0.25,
+WorldStaticModel = ProtectiveCaseSmall_Ground,
+WindResistance = 1,
+WaterResistance = 1,}
+
+item HEL_STAR{
+DisplayCategory = Accessory,
+ItemType = base:clothing,
+DisplayName = [Crye Precision] HEL - STAR [IFF],
+ClothingItem = HEL_STAR,
+BodyLocation = CHIMERA:HelmetArmoredCoverIFF,
+Icon = FR_Operator,
+CanHaveHoles = false,
+BloodLocation = Head,
+BiteDefense     = 5,
+ScratchDefense  = 5,
+BulletDefense   = 5,
+Insulation = 0.05,
+WorldStaticModel = ProtectiveCaseSmall_Ground,
+ClothingItemExtra = HEL_STAR_EMI,
+ClothingItemExtraOption = IFFOn,
+WindResistance = 1,
+WaterResistance = 1,}
+
+item HEL_STAR_EMI{
+DisplayCategory = Accessory,
+ItemType = base:clothing,
+DisplayName = [Crye Precision] HEL - STAR [IFF][ACTIVE],
+ClothingItem = HEL_STAR_EMI,
+BodyLocation = CHIMERA:HelmetArmoredCoverIFFT,
+Icon = FR_Operator,
+CanHaveHoles = false,
+BloodLocation = Head,
+BiteDefense     = 5,
+ScratchDefense  = 5,
+BulletDefense   = 5,
+Insulation = 0.05,
+WorldStaticModel = ProtectiveCaseSmall_Ground,
+ClothingItemExtra = HEL_STAR,
+ClothingItemExtraOption = IFFOff,
+WindResistance = 1,
+WaterResistance = 1,
+ToolTip = [ON],}
+
+
+item HEL_STAR_EMI_R{
+DisplayCategory = Accessory,
+ItemType = base:clothing,
+DisplayName = [Crye Precision] HEL - STAR [R][IFF][ACTIVE],
+ClothingItem = HEL_STAR_EMI_R,
+BodyLocation = CHIMERA:HelmetArmoredCoverIFFT,
+Icon = FR_Operator,
+CanHaveHoles = false,
+BloodLocation = Head,
+BiteDefense     = 5,
+ScratchDefense  = 5,
+BulletDefense   = 5,
+Insulation = 0.05,
+WorldStaticModel = ProtectiveCaseSmall_Ground,
+ClothingItemExtra = HEL_STAR,
+ClothingItemExtraOption = IFFOff,
+WindResistance = 1,
+WaterResistance = 1,
+ToolTip = [Wip..],}
+
+
+    item Ops_Core_Counterweight_Kit
+    /* */                                                                                                                                     {
+        DisplayCategory = Bag,
+        ItemType = base:clothing,
+        DisplayName = [Ops Core] Counterweight Kit,
+        ClothingItem = Ops_Core_Counterweight_Kit,
+        BodyLocation = CHIMERA:HelmetGearSetCounterWeight,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        Weight	=	0.5,
+        Icon = FR_Operator,
+        BiteDefense     = 12,
+        ScratchDefense  = 12,
+        BulletDefense   = 12,
+        WindResistance = 0.11,
+        WaterResistance = 0.11,
+        BloodLocation = Head,
+        CanHaveHoles = false,
+        ToolTip = [Weight Offset],
+    /* */                                                                                                                                     }
+
+
+    item SM_TNVC_Mohawk_MK3_Gen_2_ANPVS_31_Battery_Box_Counterweight
+    /* */                                                                                                                                     {
+        DisplayCategory = Bag,
+        ItemType = base:container,
+        DisplayName = [Mohawk] TNVC Battery Box Counterweight,
+        ClothingItem = SM_TNVC_Mohawk_MK3_Gen_2_ANPVS_31_Battery_Box_Counterweight,
+        BodyLocation = CHIMERA:HelmetGearSetCounterWeight,
+        CanBeEquipped = CHIMERA:HelmetGearSetCounterWeight,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        WeightReduction	=	99,
+        Weight	=	0.7,
+        Capacity	=	1,
+        Icon = FR_Operator,
+        OpenSound   =   OpenBag,
+        CloseSound   =   CloseBag,
+        PutInSound   =   PutItemInBag,
+        BloodLocation = Bag,
+        CanHaveHoles = false,
+        ToolTip = [Battery Storage],
+    /* */                                                                                                                                     }
+
+		item Peltor_Comtac
+		{
+		DisplayCategory = Accessory,
+		ItemType = base:clothing,
+		DisplayName = [3M] Peltor Comtac VII Head-Set,
+		ClothingItem = Peltor_Comtac,
+        BodyLocation = CHIMERA:HelmetGearHeadSet,
+		Icon = FR_Operator,
+		CanHaveHoles = false,
+        BloodLocation = Head,
+        Insulation = 0.17,
+        ScratchDefense = 15,
+        BulletDefense = 8,
+        BiteDefense = 15,
+		NeckProtectionModifier = 0.5,
+        WindResistance = 0.4,
+		AttachmentType = Screwdriver,
+        WaterResistance = 0.3,
+    
+    
+        
+	}
+
+
+		item L3Harris_Battery_PWR
+		{
+		DisplayCategory = Accessory,
+		ItemType = base:clothing,
+		DisplayName = [L3 Harris] Battery Module,
+		ClothingItem = L3Harris_Battery_PWR,
+		BodyLocation = CHIMERA:HelmetGearSetBatteryBox,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+		Icon = FR_Operator,
+		CanHaveHoles = false,
+        BloodLocation = Head,
+        Insulation = 0.17,
+        ScratchDefense = 15,
+        BulletDefense = 8,
+        BiteDefense = 15,
+		NeckProtectionModifier = 0.5,
+        WindResistance = 0.4,
+		AttachmentType = Screwdriver,
+        WaterResistance = 0.3,
+    
+    
+        
+	}
+
+
+
+
+	/************************ OUTFIT: BLACKARROW ************************/	
+
+
+
+
+    item BlackArrow_WaistPouches
+    /* */                                                                                                                                     {
+        DisplayCategory = Bag,
+        ItemType = base:container,
+        DisplayName = [Black Arrow] Pouch Kit,
+        ClothingItem = BlackArrow_WaistPouches,
+        BodyLocation = CHIMERA:BlackArrowPouchTwo,
+        CanBeEquipped = CHIMERA:BlackArrowPouchTwo,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        WeightReduction	=	99,
+        Weight	=	0.2,
+        Capacity	=	13,
+        Icon = FR_Operator,
+        OpenSound   =   OpenBag,
+        CloseSound   =   CloseBag,
+        PutInSound   =   PutItemInBag,
+        BloodLocation = Bag,
+        CanHaveHoles = false,
+        ToolTip = [Storage],
+    /* */                                                                                                                                     }
+
+
+    item BlackArrow_BracePouch
+    /* */                                                                                                                                     {
+        DisplayCategory = Bag,
+        ItemType = base:container,
+        DisplayName = [Black Arrow] Storage Bag,
+        ClothingItem = BlackArrow_BracePouch,
+        BodyLocation = CHIMERA:BlackArrowPouch,
+        CanBeEquipped = CHIMERA:BlackArrowPouch,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        WeightReduction	=	94,
+        Weight	=	0.3,
+        Capacity	=	18,
+        Icon = FR_Operator,
+        OpenSound   =   OpenBag,
+        CloseSound   =   CloseBag,
+        PutInSound   =   PutItemInBag,
+        BloodLocation = Bag,
+        CanHaveHoles = false,
+        ToolTip = [Storage],
+    /* */                                                                                                                                     }
+
+
+
+
+
+    item BlackArrow_Top
+    /* */                                                                                                                                     {
+        DisplayCategory = Clothing,
+        ItemType = base:clothing,
+        DisplayName = [Black Arrow] Tank Top,
+        ClothingItem = BlackArrow_Top,
+        BodyLocation = base:TankTop,
+        Icon = FR_Operator,
+        BloodLocation = ShirtNoSleeves,
+        Insulation = 0.42,
+        CanHaveHoles    = true,
+        WindResistance = 0.33,
+        BiteDefense = 12,
+        ScratchDefense = 31,
+        BulletDefense = 3,
+        WaterResistance = 0.27,
+        FabricType = Cotton,
+        ConditionMax = 12,
+        ConditionLowerChanceOneIn = 7,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        ToolTip = [Chimera],
+    /* */                                                                                                                                     }
+
+
+
+
+
+
+	/************************ VESTS: MAIN NEW ************************/	
+
+
+    item SKM_Vest_Spiritus_LV119
+    {
+        DisplayCategory = Bag,
+        ItemType = base:clothing,
+        DisplayName = Spiritus LV-119 TacVest,
+        ClothingItem = SKM_Vest_Spiritus_LV119,
+        Weight  =       0.4,
+		BodyLocation = base:TorsoExtraVestBullet,
+        BulletHitArmourSound = ArmourFirearmHitBone,
+        WeaponHitArmourSound = ArmourMeleeHitBone,
+        Icon = TV119_C,
+        BloodLocation = ShirtNoSleeves,
+        CanHaveHoles = false,
+        FabricType = Cotton,
+		NeckProtectionModifier = 0.3,
+        Insulation = 0.18,
+        WindResistance = 0.5,
+        BiteDefense = 100,
+        ScratchDefense = 78,
+        BulletDefense = 100,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        AttachmentsProvided = OperatorVestMain;OperatorSlingMain,
+    
+        ToolTip = [Chimera][Radio Mount],
+    }
+
+    item SKM_Placard_Spiritus_556		        {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [SKM] 5.56 Nato Pouch,
+    ClothingItem	= SKM_Placard_Spiritus_556,
+    BodyLocation	= CHIMERA:MollePlacard,
+    Icon = FR_Operator,
+    Weight= 0.1,
+    CanHaveHoles = false,
+    ScratchDefense          = 12,
+    ChanceToFall	= 0,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    AttachmentsProvided = StanagMolleStorageMiddle;StanagMolleStorageLeft;StanagMolleStorageRight,
+    ToolTip = [LV119],	   		   }
+
+
+
+    item SKM_Pouch_Spiritus_CCS
+    {
+        DisplayCategory = Bag,
+        ItemType = base:container,
+        DisplayName = [SKM] Spiritus: CCS Pouch Kit,
+        ClothingItem = SKM_Pouch_Spiritus_CCS,
+        BodyLocation	= CHIMERA:MollePouchFour,
+        CanBeEquipped = CHIMERA:MollePouchFour,
+        BulletHitArmourSound = ArmourFirearmHitBone,
+        WeaponHitArmourSound = ArmourMeleeHitBone,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        WeightReduction	=	99,
+        Weight	=	1,
+        Capacity	=	15,
+        Icon = FR_Operator,
+        OpenSound   =   OpenBag,
+        CloseSound   =   CloseBag,
+        PutInSound   =   PutItemInBag,
+        BloodLocation = Bag,
+        CanHaveHoles = false,
+        ToolTip = [LV119],
+    }
+
+
+
+
+    item SKM_Pouch_Spiritus_JSTA
+    {
+        DisplayCategory = Bag,
+        ItemType = base:container,
+        DisplayName = [SKM] Spiritus: JSTA Storage Bag,
+        ClothingItem = SKM_Pouch_Spiritus_JSTA,
+        CanBeEquipped = CHIMERA:MollePouchFive,
+        BodyLocation = CHIMERA:MollePouchFive,
+        BulletHitArmourSound = ArmourFirearmHitBone,
+        WeaponHitArmourSound = ArmourMeleeHitBone,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        WeightReduction	=	94,
+        Weight	=	1.3,
+        Capacity	=	22,
+        Icon = FR_Operator,
+        OpenSound   =   OpenBag,
+        CloseSound   =   CloseBag,
+        PutInSound   =   PutItemInBag,
+        BloodLocation = Bag,
+        CanHaveHoles = false,
+        ToolTip = [LV119],
+    }
+
+
+    item SKM_Mag_Full		        {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [SKM] G17 Spare Mag,
+    ClothingItem	= SKM_Mag_Full,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    BodyLocation = CHIMERA:MolleVisualStorage,
+    Icon = FR_Operator,
+    Weight= 0.2,
+    ScratchDefense          = 7,
+    ChanceToFall	= 0,
+
+    ToolTip = [LV119],	   		   }
+
+    item SKM_Magpul_Emag_Full		        {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [SKM] 5.56x45 Stanag Magazines,
+    ClothingItem	= SKM_Magpul_Emag_Full,
+    BodyLocation	= CHIMERA:MolleMagazineSet,
+    Icon = FR_Operator,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Weight= 0.12,
+    ScratchDefense          = 22,
+    ChanceToFall	= 0,
+    ToolTip = [Chimera],	   		   }
+
+
+    item SKM_MPU5Tablet		        {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [SKM] Spiritus ID-T,
+    ClothingItem	= SKM_MPU5Tablet,
+    BodyLocation = CHIMERA:MolleTabletID,
+    Icon = FR_Operator,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Weight= 0.2,
+    ScratchDefense          = 18,
+    ChanceToFall	= 0,
+    ToolTip = [LV119][ID-T] [Personal Identifier Tablet],	   		   }
+
+
+
+
+
+	/************************ VESTS: MAIN OLDER ************************/	
+
+
+    item PVS31_ON	                               {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= PVS-31 Night Vision Gear [ON],
+    ClothingItem	= Operator_PVS31_HeadGear,
+    BodyLocation = CHIMERA:HelmetNightVisionGear,
+    ClothingItemExtra = PVS31_OFF,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ClothingItemExtraOption = PVS31_OFF,
+    Icon= FR_Operator,
+    Weight= 0.23,
+    ScratchDefense          = 17,
+    ChanceToFall	= 0,
+    Tags = NVGchucked;NVITEM,
+    NightVision = true,
+    ToolTip = [Chimera][NVG][Fits: HHV Helmets],	   	   }
+
+
+    item PVS31_OFF			                           {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= PVS-31 Night Vision Gear [OFF],
+    ClothingItem	= Operator_PVS31_HeadGear_U,
+    BodyLocation = CHIMERA:HelmetNightVisionGear,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ClothingItemExtra = PVS31_ON,
+    ClothingItemExtraOption = PVS31_ON,
+    Icon= FR_Operator,
+    Weight= 0.23,
+    ScratchDefense          = 12,
+    NightVision = true,
+    ChanceToFall	= 0,
+    ToolTip = [Chimera][NVG][Fits: HHV Helmets],	   		}
+
+
+
+
+    item RAVEN_OPERATOR_SCRIM_PONCHO
+    {
+        ItemType = base:clothing,
+        DisplayName = [Raven] Poncho Scrim,
+        ClothingItem = RAVEN_OPERATOR_SCRIM_PONCHO,
+        BodyLocation = CHIMERA:Shawl,
+        Icon = Shawl,
+        BloodLocation = Shirt,
+        BiteDefense = 32,
+        ScratchDefense = 65,
+        NeckProtectionModifier = 1,
+        Insulation = 0.17,
+        WindResistance = 0.6,
+        WaterResistance = 0.4,
+        FabricType = Cotton,
+        WorldStaticModel = BulletVest_Ground,
+    }
+
+
+
+
+    item FR_Operator_JSOC_Shirt
+    /* */                                                                                                                                     {
+    DisplayCategory = Clothing,
+    ItemType = base:clothing,
+    DisplayName = JSOC Ranger Shirt,
+    ClothingItem = Operator_JSOC_Jacket,
+    BodyLocation = base:shirt,
+    Icon = FR_Operator,
+    BloodLocation = Shirt,
+    CanHaveHoles    = true,
+    BiteDefense = 45,
+    ScratchDefense = 75,
+    NeckProtectionModifier = 1,
+    Insulation = 0.55,
+    WindResistance = 0.85,
+    FabricType = Leather,
+    WaterResistance = 0.85,
+    Weight = 0.4,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Chimera],
+    /* */                                                                                                                                     }
+
+
+    item FR_Operator_JSOC_Pants
+    /* */                                                                                                                                     {
+    DisplayCategory = Clothing,
+    Weight = 1.3,
+    ItemType = base:clothing,
+    DisplayName = JSOC Ranger Trousers,
+    ClothingItem = Operator_JSOC_Pants,
+    BodyLocation = base:pants,
+    Icon = FR_Operator,
+    CanHaveHoles    = true,
+    ScratchDefense = 96,
+    BiteDefense = 52,
+    Insulation = 0.4,
+    WindResistance = 0.98,
+    WaterResistance = 0.98,
+    FabricType = Leather,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Chimera],				}
+
+
+
+
+
+
+item FR_Operator_JSOC_MolleVestMain
+    {
+        DisplayCategory = Bag,
+        ItemType = base:clothing,
+        DisplayName = JSOC Ranger [Molle] Vest,
+        ClothingItem = Operator_JSOC_TacVest,
+        Weight  =       0.9,
+		BodyLocation = base:TorsoExtraVestBullet,
+        BulletHitArmourSound = ArmourFirearmHitBone,
+        WeaponHitArmourSound = ArmourMeleeHitBone,
+        Icon = FR_VEST_MAIN,
+        BloodLocation = ShirtNoSleeves,
+        CanHaveHoles = false,
+        FabricType = Cotton,
+		NeckProtectionModifier = 0.4,
+        Insulation = 0.15,
+        WindResistance = 0.5,
+        BiteDefense = 55,
+        ScratchDefense = 45,
+        BulletDefense = 75,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        AttachmentsProvided = OperatorVestMain,
+    
+        ToolTip = [Chimera][Radio Mount][Mag Holder],
+    }
+
+
+
+
+    /************************ DEFCON VAN FIVE S  ************************/
+
+    item Operator_DEFCON_VAN_5S
+    /* */                                                                                                                                     {
+    Weight = 0.3,
+    DisplayCategory = Clothing,
+    ItemType = base:clothing,
+    DisplayName = Defcon Van 5S,
+    ClothingItem = Operator_DEFCON_VAN_5S,
+    BodyLocation = base:shoes,
+    BloodLocation = Shoes,
+    Icon = DEFCON_VAN_5S,
+    StompPower = 1,
+    ConditionLowerChanceOneIn = 52,
+    ConditionMax = 26,
+    CanHaveHoles= true,
+    RemoveOnBroken = false,
+    ScratchDefense = 100,
+    BiteDefense = 32,
+    Insulation = 0.65,
+    FabricType = Leather,
+    WindResistance = 1,
+    WaterResistance = 0.92,
+    RunSpeedModifier = 1.2,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Chimera],
+    /* */                                                                                                                                     }
+
+
+	/************************ Pheonix Kit  ************************/
+
+    item FR_Operator_CRYE_G4_Shirt
+    /* */                                                                                                                                     {
+    DisplayCategory = Clothing,
+    ItemType = base:clothing,
+    DisplayName = CRYE PRECISION G4 Tactical Shirt,
+    ClothingItem = Operator_G4_CRYE_Tactical_Shirt,
+    BodyLocation = base:shirt,
+    Icon = FR_Operator,
+    BloodLocation = Shirt,
+    CanHaveHoles    = true,
+    BiteDefense = 32,
+    ScratchDefense = 65,
+    NeckProtectionModifier = 1,
+    Insulation = 0.5,
+    WindResistance = 0.85,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    FabricType = Leather,
+    WaterResistance = 0.85,
+    Weight = 0.3,
+
+    ToolTip = [Chimera],
+    /* */                                                                                                                                     }
+
+    item FR_Operator_CRYE_G4_Shirt_Tucked
+    /* */                                                                                                                                     {
+    DisplayCategory = Clothing,
+    ItemType = base:clothing,
+    DisplayName = CRYE PRECISION G4 Tactical Shirt [Tucked],
+    ClothingItem = Operator_G4_CRYE_Tactical_Shirt_Tucked,
+    BodyLocation = base:shirt,
+    Icon = FR_Operator,
+    BloodLocation = Shirt,
+    CanHaveHoles    = true,
+    BiteDefense = 32,
+    ScratchDefense = 65,
+    NeckProtectionModifier = 1,
+    Insulation = 0.5,
+    WindResistance = 0.85,
+    FabricType = Leather,
+    WaterResistance = 0.85,
+    Weight = 1,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Chimera],
+    /* */                                                                                                                                     }
+
+
+    item Operator_CRYE_G4_TacBoots
+    /* */                                                                                                                                     {
+    Weight = 0.3,
+    DisplayCategory = Clothing,
+    ItemType = base:clothing,
+    DisplayName = CRYE PRECISION G4 Tactical Boots,
+    ClothingItem = Operator_G4_CRYE_Tactical_Boots,
+    BodyLocation = base:shoes,
+    BloodLocation = Shoes,
+    Icon = FR_Operator,
+    StompPower = 4,
+    ConditionLowerChanceOneIn = 46,
+    ConditionMax = 33,
+    CanHaveHoles= false,
+    RemoveOnBroken = false,
+    ScratchDefense = 100,
+    BiteDefense = 100,
+    Insulation = 0.6,
+    FabricType = Leather,
+    WindResistance = 1,
+    WaterResistance = 0.86,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Chimera],
+    /* */                                                                                                                                     }
+
+    item Operator_CRYE_G4_KneePads
+    /* */                                                                                                                                     {
+    Weight = 0.3,
+    DisplayCategory = Clothing,
+    ItemType = base:clothing,
+    DisplayName = CRYE PRECISION G4 Tactical KneePads,
+    ClothingItem = Operator_G4_CRYE_Tactical_KneePads,
+    BodyLocation = CHIMERA:ArmorKneePads,
+    BloodLocation = Shoes,
+    Icon = FR_Operator,
+    ConditionLowerChanceOneIn = 43,
+    ConditionMax = 33,
+    CanHaveHoles= false,
+    RemoveOnBroken = false,
+    ScratchDefense = 100,
+    BiteDefense = 34,
+    Insulation = 0.55,
+    FabricType = Leather,
+    WindResistance = 1,
+    WaterResistance = 0.86,
+    ToolTip = [Chimera],
+    /* */                                                                                                                                     }
+
+
+
+
+    item FR_Operator_CRYE_G4_Tactical_Pants
+    /* */                                                                                                                                     {
+    DisplayCategory = Clothing,
+    Weight = 1.2,
+    ItemType = base:clothing,
+    DisplayName = CRYE PRECISION G4 Tactical Trousers,
+    ClothingItem = Operator_G4_CRYE_Tactical_Trousers,
+    BodyLocation = base:pants,
+    Icon = FR_Operator,
+    CanHaveHoles    = true,
+    ScratchDefense = 96,
+    BiteDefense = 48,
+    Insulation = 0.4,
+    WindResistance = 0.98,
+    WaterResistance = 0.98,
+    FabricType = Leather,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Chimera],				}
+
+    item Operator_SKM_Patch_Pheonix		        {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [SKM] Pheonix Patch,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ClothingItem	= Operator_SKM_Patch_Pheonix,
+    BodyLocation = CHIMERA:HelmetPatch,
+    Icon = FR_Operator,
+    Weight= 0.1,
+    ScratchDefense          = 22,
+    ChanceToFall	= 0,
+    AttachmentsProvided = OperatorHeadGearMount,
+    ToolTip = [Chimera],	   		   }
+
+    item FR_Operator_ESS_Crossbow_SR1			{
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= ESS Crossbow SR1 Glasses,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ClothingItem	= Operator_EES_Crossbow_Glasses,
+    BodyLocation	= base:eyes,
+    Icon= TacM_HeadGear_ColorE_D,
+    
+    Weight= 0.1,
+    ScratchDefense          = 22,
+    ChanceToFall	= 0,
+    AttachmentsProvided = OperatorHeadGearMount,
+    ToolTip = [Chimera],	   		   }
+
+    item FR_Operator_ESS_Crossbow_SR2		   {
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= ESS Crossbow SR2 Glasses,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ClothingItem	= Operator_EES_SSR2_Crossbow_Glasses,
+    BodyLocation	= base:eyes,
+    Icon= TacM_HeadGear_ColorE_D,
+    
+    Weight= 0.1,
+    ScratchDefense          = 22,
+    ChanceToFall	= 0,
+    AttachmentsProvided = OperatorHeadGearMount,
+    ToolTip = [Chimera],	   		   }
+
+
+
+    item Operator_Ferro_Slickster_SKM_TacVest
+    {
+        DisplayCategory = Bag,
+        ItemType = base:clothing,
+        DisplayName = Ferro Slickster SKM TacVest,
+        ClothingItem = Operator_Ferro_Slickster_SKM_TacVest,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        Weight  =       0.5,
+		BodyLocation = base:TorsoExtraVestBullet,
+        BulletHitArmourSound = ArmourFirearmHitBone,
+        WeaponHitArmourSound = ArmourMeleeHitBone,
+        Icon = FR_SKM_VEST,
+        BloodLocation = ShirtNoSleeves,
+        CanHaveHoles = true,
+        FabricType = Cotton,
+		NeckProtectionModifier = 0.3,
+        Insulation = 0.15,
+        WindResistance = 0.5,
+        BiteDefense = 15,
+        ScratchDefense = 15,
+        BulletDefense = 89,
+        AttachmentsProvided = OperatorVestMain,
+    
+        ToolTip = [Chimera][Radio Mount][Mag Holder],
+    }
+
+
+
+
+item SKM_OPR8R_E1_Helmet
+/* */                                                                                                                                     {
+DisplayCategory = Accessory,
+ItemType = base:clothing,
+DisplayName     = [OPR8-R] GEN1 OPS-CORE E1 Ballistic Helmet [Bare],
+ClothingItem    = SKM_OPR8R_E1_Helmet,
+WorldStaticModel = ProtectiveCaseSmall_Ground,
+BodyLocation = base:hat,
+Icon    = FR_ATE_SSV_MAIN,
+BloodLocation	= Head,
+CanHaveHoles    = FALSE,
+BiteDefense     = 100,
+ScratchDefense  = 90,
+BulletDefense   = 85,
+ChanceToFall    = 0,
+Insulation      = 0.5,
+WaterResistance = 0.85,
+WindResistance  = 0.85,
+Weight  = 1,
+/* */                                                                                                                                     }
+
+
+item SKM_ATE_HHV_Helmet
+/* */                                                                                                                                     {
+DisplayCategory = Accessory,
+ItemType = base:clothing,
+DisplayName     = [ATE] GEN2 HHV OPS-CORE SHC Ballistic Helmet [Bare],
+ClothingItem    = Operator_SKM_ATE_HHV_Helmet,
+BodyLocation = base:hat,
+WorldStaticModel = ProtectiveCaseSmall_Ground,
+Icon    = FR_ATE_SSV_MAIN,
+BloodLocation	= Head,
+CanHaveHoles    = FALSE,
+BiteDefense     = 100,
+ScratchDefense  = 90,
+BulletDefense   = 85,
+ChanceToFall    = 0,
+Insulation      = 0.5,
+WaterResistance = 0.85,
+WindResistance  = 0.85,
+AttachmentsProvided = OperatorHeadGearMount,
+Weight  = 1,
+/* */                                                                                                                                     }
+
+item SKM_ATE_HHV_Helmet_GearSet
+/* */                                                                                                                                     {
+DisplayCategory = Accessory,
+ItemType = base:clothing,
+DisplayName     = [ATE] GEN2 HHV OPS-CORE SHC Ballistic Helmet [GearSet],
+ClothingItem    = Operator_SKM_SH_V2_EarPro_TacSet,
+BodyLocation = CHIMERA:HelmetGearSet,
+WorldStaticModel = ProtectiveCaseSmall_Ground,
+Icon    = FR_ATE_SSV_GEARSET_MAIN,
+CanHaveHoles    = FALSE,
+BiteDefense     = 35,
+ScratchDefense  = 24,
+BulletDefense   = 15,
+ChanceToFall    = 0,
+Insulation      = 0.5,
+WaterResistance = 0.85,
+WindResistance  = 0.85,
+Weight  = 1,
+/* */                                                                                                                                     }
+
+
+
+
+
+
+
+
+
+
+
+
+	/************************ Ranger Operator Jacket  ************************/
+
+
+    item FR_Operator_Jacket
+    /* */                                                                                                                                     {
+    DisplayCategory = Clothing,
+    ItemType = base:clothing,
+    DisplayName = Ranger Operator Jacket,
+    ClothingItem = Operator_JacketMain,
+    BodyLocation = base:shirt,
+    Icon = FR_JACKET_MAIN,
+    BloodLocation = Shirt,
+    CanHaveHoles    = false,
+    BiteDefense = 76,
+    ScratchDefense = 100,
+    NeckProtectionModifier = 1,
+    Insulation = 0.5,
+    WindResistance = 0.85,
+    FabricType = Leather,
+    WaterResistance = 0.85,
+    Weight = 1,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Chimera],
+    /* */                                                                                                                                     }
+
+    item Operator_TacBoots
+    /* */                                                                                                                                     {
+    Weight = 0.3,
+    DisplayCategory = Clothing,
+    ItemType = base:clothing,
+    DisplayName = Operator Ranger Boots,
+    ClothingItem = Operator_TacBootsMain,
+    BodyLocation = base:shoes,
+    BloodLocation = Shoes,
+    Icon = FR_BOOTS_MAIN,
+    StompPower = 4,
+    ConditionLowerChanceOneIn = 46,
+    ConditionMax = 33,
+    CanHaveHoles= false,
+    RemoveOnBroken = false,
+    ScratchDefense = 100,
+    BiteDefense = 100,
+    Insulation = 0.65,
+    FabricType = Leather,
+    WindResistance = 1,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    WaterResistance = 0.86,
+
+    ToolTip = [Chimera],
+    /* */                                                                                                                                     }
+
+    
+    /************************ FR: Trousers  ****/
+    item FR_Operator_Pants
+    /* */                                                                                                                                     {
+    DisplayCategory = Clothing,
+    Weight = 1.2,
+    ItemType = base:clothing,
+    DisplayName = Ranger Operator Trousers,
+    ClothingItem = Operator_TacPantsMain,
+    BodyLocation = base:pants,
+    Icon = FR_TROUSERS_MAIN,
+    BodyLocation = base:pants,
+    CanHaveHoles    = false,
+    ScratchDefense = 96,
+    BiteDefense = 48,
+    Insulation = 0.4,
+    WindResistance = 0.98,
+    WaterResistance = 0.98,
+    FabricType = Leather,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Chimera],				}
+    /* */                                                                                                                                    
+    
+	/************************ FR: Headgear  ****/
+    item FR_Operator_Beanie						{ 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName	= [P-TAC] Beanie,
+    ToolTip = [Chimera],
+    ClothingItem	= Operator_Beanie,
+    BodyLocation = base:hat,
+    Icon= FR_BEANIE_MAIN,
+    CanHaveHoles	= false,
+    ChanceToFall	= 1,
+    BloodLocation	= Head,
+    Weight = 0.2,
+    Insulation	= 0.8,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    AttachmentsProvided = OperatorHeadGearMount,
+    WindResistance	= 0.8,						}
+
+    item FR_Operator_Boonie						{ 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    Weight = 0.2,
+    DisplayName	= [Operator] Boonie,
+    ToolTip = [Chimera],
+    ClothingItem	= Operator_Boonie,
+    BodyLocation	= base:hat,
+    Icon= FR_BOONIE_MAIN,
+    ClothingItemExtra = FR_Operator_BoonieTwo,
+    ClothingItemExtraOption = FoldBoonie,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    BloodLocation	= Head,
+    Insulation	= 0.5,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    AttachmentsProvided = OperatorHeadGearMount,
+    WindResistance	= 0.5,						}
+
+    item FR_Operator_BoonieTwo					{ 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    Weight = 0.2,
+    DisplayName	= [Operator] Boonie [S],
+    ToolTip = [Chimera],
+    ClothingItem	= Operator_Boonie_F,
+    BodyLocation	= base:hat,
+    Icon= FR_BOONIE_MAIN,
+    ClothingItemExtra = FR_Operator_Boonie,
+    ClothingItemExtraOption = UnFoldBoonie,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    BloodLocation	= Head,
+    Insulation	= 0.5,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    AttachmentsProvided = OperatorHeadGearMount,
+    WindResistance	= 0.5,						}
+
+
+
+
+    item FR_Operator_TacM            {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        DisplayName	= Tac M Glasses,
+        Icon = TacM_HeadGear_ColorE_D,
+        BodyLocation = base:eyes,
+        ChanceToFall = 50,
+        ClothingItem = Operator_TacM,
+        Cosmetic = true,
+        ClothingItemExtra = FR_Operator_TacM_U,
+        ClothingItemExtraOption = GlassesUp,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        AttachmentsProvided = OperatorHeadGearMount,
+        Tags = base:isupperdisguise,   }
+
+
+
+
+
+
+
+
+    item FR_Operator_TacM_U            {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        DisplayName	= Tac M Glasses [Up],
+        Icon = TacM_HeadGear_ColorE_D,
+        BodyLocation = base:eyes,
+        ChanceToFall = 50,
+        ClothingItem = Operator_TacM_Up,
+        Cosmetic = true,
+        ClothingItemExtra = FR_Operator_TacM,
+        ClothingItemExtraOption = GlassesDown,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        Tags = base:isupperdisguise,   }
+
+
+
+	/************************ VESTS: MAIN  ************************/	
+
+    	item Operator_Paladin_MolleVestMain
+    {
+        DisplayCategory = Bag,
+        ItemType = base:clothing,
+        DisplayName = Operator Ranger [Paladin] [Molle] Vest,
+        ClothingItem = Operator_Paladin_Molle_Vest,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        Weight  =       0.8,
+		BodyLocation = base:TorsoExtraVestBullet,
+        BulletHitArmourSound = ArmourFirearmHitBone,
+        WeaponHitArmourSound = ArmourMeleeHitBone,
+        Icon = FR_VEST_MAIN,
+        BloodLocation = ShirtNoSleeves,
+        CanHaveHoles = false,
+        FabricType = Cotton,
+		NeckProtectionModifier = 0.3,
+        Insulation = 0.15,
+        WindResistance = 0.5,
+        BiteDefense = 15,
+        ScratchDefense = 15,
+        BulletDefense = 20,
+        AttachmentsProvided = OperatorVestMain,
+    
+        ToolTip = [Chimera][Radio Mount][Mag Holder],
+    }
+
+
+	/************************ VESTS: MagSets  ************************/	
+    item Bag_Operator_Ranger_ARset
+    {
+        DisplayCategory = Bag,
+        ItemType = base:container,
+        DisplayName = [Chimera] AR Mag: Molle Pouch Kit,
+        ClothingItem = Operator_Paladin_ARset_Molle_Vest,
+        CanBeEquipped = CHIMERA:MolleStorageKit,
+        BodyLocation = CHIMERA:MolleStorageKit,
+        WeightReduction	=	99,
+        Weight	=	1.4,
+        Capacity	=	27,
+        Icon = FR_VEST_MAIN,
+        OpenSound   =   OpenBag,
+        CloseSound   =   CloseBag,
+        PutInSound   =   PutItemInBag,
+        BloodLocation = Bag,
+        CanHaveHoles = false,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        AttachmentsProvided = ARsetOperatorMolleStorage;ARsetOperatorMolleStorageRight;ARsetOperatorMolleStorageMiddle;WebbingRight;WebbingLeft;OperatorVestMain;OperatorSlingMain,
+        ToolTip = [Molle Storage],
+    }
+
+
+	/************************ BAGS: MAIN  ************************/	
+
+
+    item ARES_BACKPACK
+    {
+        DisplayCategory = Bag,
+        ItemType = base:container,
+        DisplayName = [ARES] Nomad Backpack,
+        ClothingItem = ARES_BACKPACK,
+        CanBeEquipped = Back,
+        WeightReduction	=	96,
+        Weight	=	1.1,
+        Capacity	=	47,
+        Icon = TRIZIP,
+        OpenSound   =   OpenBag,
+        CloseSound   =   CloseBag,
+        PutInSound   =   PutItemInBag,
+        BloodLocation = Bag,
+        CanHaveHoles = false,
+        AttachmentReplacement = Bag,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        AttachmentsProvided = OperatorVestMain;BedrollBottomALICE;WebbingRight;WebbingLeft,
+        ReplaceInSecondHand = ARES_BACKPACK_LH holdingbagleft,
+        ReplaceInPrimaryHand = ARES_BACKPACK_RH holdingbagright,
+    
+    }
+
+
+    item TAC7_DeltaForce80
+    {
+        DisplayCategory = Bag,
+        ItemType = base:container,
+        DisplayName = [DeltaForce] TAC - 7 Backpack,
+        ClothingItem = TAC7_DeltaForce80,
+        CanBeEquipped = Back,
+        WeightReduction	=	92,
+        Weight	=	1.3,
+        Capacity	=	53,
+        Icon = TRIZIP,
+        OpenSound   =   OpenBag,
+        CloseSound   =   CloseBag,
+        PutInSound   =   PutItemInBag,
+        BloodLocation = Bag,
+        CanHaveHoles = false,
+        AttachmentReplacement = Bag,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        AttachmentsProvided = OperatorVestMain;BedrollBottomALICE;WebbingRight;WebbingLeft,
+        ReplaceInSecondHand = SKM_D3_TRIZIP_LH holdingbagleft,
+        ReplaceInPrimaryHand = SKM_D3_TRIZIP_RH holdingbagright,
+    
+        ToolTip = [New Paradigm Ranger's Addon],
+    }
+
+    item SKM_D3_TRIZIP
+    {
+        DisplayCategory = Bag,
+        ItemType = base:container,
+        DisplayName = [Chimera] SKM [D3] TRI - ZIP Backpack,
+        ClothingItem = SKM_D3_TRIZIP,
+        CanBeEquipped = Back,
+        WeightReduction	=	96,
+        Weight	=	2,
+        Capacity	=	67,
+        Icon = TRIZIP,
+        OpenSound   =   OpenBag,
+        CloseSound   =   CloseBag,
+        PutInSound   =   PutItemInBag,
+        BloodLocation = Bag,
+        CanHaveHoles = false,
+        AttachmentReplacement = Bag,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        AttachmentsProvided = OperatorVestMain;BedrollBottomALICE;WebbingRight;WebbingLeft,
+        ReplaceInSecondHand = SKM_D3_TRIZIP_LH holdingbagleft,
+        ReplaceInPrimaryHand = SKM_D3_TRIZIP_RH holdingbagright,
+    
+        ToolTip = [New Paradigm Ranger's Addon],
+    }
+
+    item Bag_Operator_Ranger_Atlas
+    {
+        DisplayCategory = Bag,
+        ItemType = base:container,
+        DisplayName = [Chimera] Atlas Backpack,
+        ClothingItem = Bag_Operator_Ranger_Atlas,
+        CanBeEquipped = Back,
+        WeightReduction	=	94,
+        Weight	=	1.6,
+        Capacity	=	40,
+        Icon = FR_BAG_MAIN,
+        OpenSound   =   OpenBag,
+        CloseSound   =   CloseBag,
+        PutInSound   =   PutItemInBag,
+        BloodLocation = Bag,
+        CanHaveHoles = false,
+        AttachmentReplacement = Bag,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        AttachmentsProvided = OperatorVestMain;BedrollBottomALICE;WebbingRight;WebbingLeft,
+        ReplaceInSecondHand = Bag_Operator_Ranger_Atlas_LH holdingbagleft,
+        ReplaceInPrimaryHand = Bag_Operator_Ranger_Atlas_RH holdingbagright,
+    
+        ToolTip = [Has Radio Mount],
+    }
+
+
+
+	item Operator_TacPants_Condor_R
+    {
+    ItemType = base:container,
+    DisplayName = [Condor] Elite Storage Pouch [R],
+    ClothingItem= Operator_TacPants_Condor_R,
+    CanBeEquipped = CHIMERA:LegStorageRight,
+    BodyLocation = CHIMERA:LegStorageRight,
+    WeightReduction = 88,
+    Weight= 0.1,
+    Capacity= 17,
+    Icon= FR_POUCH_MAIN,
+    OpenSound = OpenBag,
+    CloseSound= CloseBag,
+    PutInSound= PutItemInBag,
+    CanHaveHoles= false,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    }
+
+	item Operator_TacPants_Condor_L
+    {
+    ItemType = base:container,
+    DisplayName = [Condor] Elite Storage Pouch [L],
+    ClothingItem= Operator_TacPants_Condor_L,
+    CanBeEquipped = CHIMERA:LegStorageLeft,
+    BodyLocation = CHIMERA:LegStorageLeft,
+    WeightReduction = 88,
+    Weight= 0.1,
+    Capacity= 17,
+    Icon= FR_POUCH_MAIN,
+    OpenSound = OpenBag,
+    CloseSound= CloseBag,
+    PutInSound= PutItemInBag,
+    CanHaveHoles= false,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    }
+
+	item Operator_TacPants_Condor_B
+    {
+    ItemType = base:container,
+    DisplayName = [Condor] Elite Storage Pouch [B],
+    ClothingItem= Operator_TacPants_Condor_B,
+    CanBeEquipped = Back,
+    BloodLocation = Bag,
+    BodyLocation = CHIMERA:LegStorageLeft,
+    WeightReduction = 88,
+    Weight= 0.1,
+    Capacity= 17,
+    OpenSound   =   OpenBag,
+    CloseSound   =   CloseBag,
+    PutInSound   =   PutItemInBag,
+    Icon= FR_POUCH_MAIN,
+    OpenSound = OpenBag,
+    CloseSound= CloseBag,
+    PutInSound= PutItemInBag,
+    CanHaveHoles= false,
+    AttachmentReplacement = Bag,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    }
+
+    item BlackArrow_WaistHarness		        {
+    DisplayCategory	= Accessory,
+    ItemType = base:container,
+    DisplayName	= [Black Arrow Industries] Harness,
+    ClothingItem	= BlackArrow_WaistHarness,
+    BodyLocation	= CHIMERA:MolleHarness,
+    CanBeEquipped = CHIMERA:MolleHarness,
+    Icon = FR_Operator,
+    OpenSound   =   OpenBag,
+    CloseSound   =   CloseBag,
+    PutInSound   =   PutItemInBag,
+    Weight= 0.11,
+    WeightReduction = 97,
+    Capacity= 4,
+    CanHaveHoles    = false,
+    WaterResistance = 0.17,
+    ScratchDefense          = 14,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    ToolTip = [Chimera],	   		   }
+
+
+	/************************ M50 GAS MASK  ************************/
+
+
+
+
+
+
+
+
+    item CX_M50				                { 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName = M50 Gas Mask,
+    ToolTip = [Chimera],
+    ClothingItem	= CX_M50,
+    BodyLocation = base:mask,
+    Icon= MSA,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    Tags = base:gasmask;base:islowerdisguise,
+    BloodLocation	= Head,
+    Insulation	= 0.24,
+    OnCreate = ItemCodeOnCreate.onCreateGasMask,
+    WithoutDrainable = CHIMERA.CX_M50_NOFILTER,
+    ScratchDefense = 30,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Researchablerecipes = MakeCraftedGasMaskFilter;RechargeFilters;MakeImprovisedGasMask,
+    KeepOnDeplete = true,
+    WaterResistance = 1.0,				   }
+
+
+
+
+    item CX_M50_NOFILTER				           { 
+    DisplayCategory	= Accessory,
+    ItemType = base:clothing,
+    DisplayName = M50 Gas Mask,
+    ToolTip = [Chimera],
+    ClothingItem	= CX_M50,
+    BodyLocation = base:mask,
+    Icon= MSA,
+    CanHaveHoles	= false,
+    ChanceToFall	= 0,
+    WithDrainable = CHIMERA.CX_M50,
+        Tags = base:gasmasknofilter;base:isdisguise,
+        OnCreate = ItemCodeOnCreate.onCreateGasMask,
+        
+        Researchablerecipes = MakeCraftedGasMaskFilter;RechargeFilters;MakeImprovisedGasMask,
+        KeepOnDeplete = true,
+    BloodLocation	= Head,
+    WorldStaticModel = ProtectiveCaseSmall_Ground,
+    Insulation	= 0.24,
+    ScratchDefense = 30,
+    WaterResistance = 1.0,				           }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	/************************ INVISIO T7 Long Range Headset  ************************/
+		item InVisioT7
+		{
+		DisplayCategory = Accessory,
+		ItemType = base:clothing,
+		DisplayName = InVisio T7 Head-Set,
+		ClothingItem = InVisio_T7,
+		BodyLocation = CHIMERA:HelmetGearHeadSet,
+		Icon = INVISIO_T7B,
+		CanHaveHoles = false,
+        BloodLocation = Head,
+        Insulation = 0.15,
+        ScratchDefense = 15,
+        BulletDefense = 8,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        BiteDefense = 15,
+		NeckProtectionModifier = 0.1,
+		ClothingItemExtra = InVisioT7_Low,
+		ClothingItemExtraOption = T7Low,
+        WindResistance = 0.4,
+		AttachmentType = Screwdriver,
+        WaterResistance = 0.3,
+    
+    
+        
+	}
+
+		item InVisioT7_Low
+		{
+		DisplayCategory = Accessory,
+		ItemType = base:clothing,
+		DisplayName = InVisio T7 Head-Set,
+		ClothingItem = InVisio_T7_L,
+		BodyLocation = CHIMERA:HelmetGearHeadSet,
+		Icon = INVISIO_T7B,
+		CanHaveHoles = false,
+        BloodLocation = Head,
+        Insulation = 0.20,
+        ScratchDefense = 10,
+        BulletDefense = 5,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        BiteDefense = 7,
+		NeckProtectionModifier = 1,
+		ClothingItemExtra = InVisioT7,
+		ClothingItemExtraOption = T7High,
+        WindResistance = 0.2,
+		AttachmentType = Screwdriver,
+        WaterResistance = 0.2,
+    
+    
+        
+	}
+
+
+
+
+
+	/************************ SORDIN EXALT II  ************************/	
+
+
+
+    item SordinExaltII
+	{
+		DisplayCategory         = Accessory,
+		ItemType = base:clothing,
+		DisplayName             = Sordin Exalt II Helmet,
+		ClothingItem            = FR6_SORDIN_EXALT_II,
+		Icon                    = EXALT_IIB,
+        BloodLocation = Head,
+        BodyLocation = base:hat,
+		CanHaveHoles            = false,
+		BiteDefense             = 100,
+        ScratchDefense          = 100,
+        AttachmentsProvided = OperatorHeadGearMount;OperatorHeadGearMountAlt,
+		BulletDefense           = 180,
+		ClothingItemExtra       = SordinExaltIID,
+		ClothingItemExtraOption = Down4,
+        ChanceToFall            = 0,
+        Insulation              = 0.3,
+        WindResistance          = 0.99,
+        WaterResistance         = 0.55,
+		Weight                  = 1.3,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        ToolTip = [S.W.A.T],	
+    
+		
+	}
+
+    item SordinExaltIID
+	{
+		DisplayCategory         = Accessory,
+		ItemType = base:clothing,
+		DisplayName             = Sordin Exalt II Lowered,
+		ClothingItem            = FR6_SORDIN_EXALT_II_D,
+        BloodLocation = Head,
+        BodyLocation = base:hat,
+		Icon                    = EXALT_IIB,
+		CanHaveHoles            = false,
+		BiteDefense             = 100,
+        ScratchDefense          = 100,
+        AttachmentsProvided = OperatorHeadGearMount;OperatorHeadGearMountAlt,
+		BulletDefense           = 180,
+		ClothingItemExtra       = SordinExaltII,
+		ClothingItemExtraOption = Up4,
+        ChanceToFall            = 0,
+        Insulation              = 0.3,
+        WindResistance          = 0.99,
+        WaterResistance         = 0.55,
+		Weight                  = 1.3,
+        WorldStaticModel = ProtectiveCaseSmall_Ground,
+        ToolTip = [S.W.A.T],
+    
+		Tags                    = NVGchucked;NVITEM,
+		
+	}
+
+	/************************ SORDIN EXALT II  ************************/	
+
+
+
+	/************************ Light overides.  ************************/	
+
+
+
+
+
+
+
+
+
+
+}

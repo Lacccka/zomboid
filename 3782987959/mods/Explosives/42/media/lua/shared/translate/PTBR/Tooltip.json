@@ -1,0 +1,13 @@
+{
+  "Tooltip_GrenadeBandolier": "Oferece 4 encaixes para granadas. Arraste as granadas para os ícones de encaixe para prendê-las ali para acesso rápido - não é um recipiente de armazenamento.",
+  "Tooltip_FlareBurning": "Um sinalizador aceso, queimando intensamente e soltando faíscas e fumaça. Jogue-o para marcar um local ou iluminar a área.",
+  "Tooltip_FlareSpent": "Um sinalizador gasto. Não serve mais para nada.",
+  "Tooltip_ClaymoreRemote": "Uma mina Claymore M18A1 equipada com um gatilho remoto em vez de um sensor de movimento. Detone-a à distância com um controle remoto.",
+  "Tooltip_Mk2Shell": "Um corpo de granada Mk2 oco e inacabado. Precisa de um conjunto de espoleta, alavanca percussora e pólvora para se tornar uma granada funcional.",
+  "Tooltip_M26Shell": "Um corpo de granada M26 oco e inacabado. Precisa de um conjunto de espoleta, alavanca percussora e pólvora para se tornar uma granada funcional.",
+  "Tooltip_M67Shell": "Um corpo de granada M67 oco e inacabado. Precisa de um conjunto de espoleta, alavanca percussora e pólvora para se tornar uma granada funcional.",
+  "Tooltip_StrikerLever": "Uma alavanca percussora com mola, forjada a partir de sucata. Necessária para montar qualquer granada de mão - é o que aciona o estopim ao ser solta.",
+  "Tooltip_Mk2FuzeAssembly": "Um conjunto de espoleta feito à mão para um corpo de granada Mk2 - espoleta, elemento de retardo e fiação, pronto para ser parafusado no corpo.",
+  "Tooltip_M26FuzeAssembly": "Um conjunto de espoleta feito à mão para um corpo de granada M26 - espoleta, elemento de retardo e fiação, pronto para ser parafusado no corpo.",
+  "Tooltip_M67FuzeAssembly": "Um conjunto de espoleta feito à mão para um corpo de granada M67 - espoleta, elemento de retardo e fiação, pronto para ser parafusado no corpo."
+}

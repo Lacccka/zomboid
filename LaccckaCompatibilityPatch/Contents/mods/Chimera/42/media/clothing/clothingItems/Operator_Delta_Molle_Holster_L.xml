@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Static\Clothes\DELTA_L.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Static\Clothes\DELTA_L.fbx</m_FemaleModel>
+	<m_GUID>e5e131ff-bc65-4b94-9bc1-b70e8f99e68d</m_GUID>
+	<m_Static>true</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone>Bip01_Pelvis</m_AttachBone>
+
+	<textureChoices>PANTS/T_Pants_CamoA_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoB_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoC_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoD_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoE_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoF_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoG_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoH_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoI_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoS_N1</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoS_N3</textureChoices>
+	<textureChoices>PANTS/T_Pants_CamoS_N4</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorA_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorB_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorC_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorD_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorE_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorF_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorG_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorH_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorI_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_ColorJ_D</textureChoices>
+	<textureChoices>PANTS/T_Pants_D</textureChoices>
+	<textureChoices>PANTS/Tac_Pants_CamoA_D</textureChoices>
+	<textureChoices>PANTS/Tac_Pants_CamoB_D</textureChoices>
+	<textureChoices>PANTS/Tac_Pants_CamoC_D</textureChoices>
+	<textureChoices>PANTS/Tac_Pants_CamoD_D</textureChoices>
+	<textureChoices>PANTS/Tac_Pants_CamoE_D</textureChoices>
+	<textureChoices>PANTS/Tac_Pants_CamoS_N2</textureChoices>
+	<textureChoices>Delta/T_Pants_ColorC_M</textureChoices>
+	<textureChoices>Delta/T_Pants_ColorC_T</textureChoices>
+	<textureChoices>Delta/T_Pants_ColorM_T</textureChoices>
+	<textureChoices>Delta/T_Pants_ColorP_K</textureChoices>
+	<textureChoices>Delta/T_Pants_ColorW_Z</textureChoices>
+</clothingItem>

@@ -1,0 +1,16 @@
+-------------------------------- TIS already fixed this ---------------------------------
+
+require 'Vehicles/ISUI/ISVehicleMenu'
+
+ISVehicleMenu = ISVehicleMenu or {}
+
+function ISVehicleMenu.onSwitchSeat(playerObj, seatTo)
+	local vehicle = playerObj:getVehicle()
+	if not vehicle then return end
+	if math.abs(vehicle:getCurrentSpeedKmHour()) > 0.8 and vehicle:isDriver(playerObj) then ISTimedActionQueue.add(ISStopVehicle:new(playerObj)) end
+	ISTimedActionQueue.add(ISSwitchVehicleSeat:new(playerObj, seatTo))
+	local doorPart = vehicle:getPassengerDoor(seatTo)
+    if doorPart and doorPart:getDoor():isOpen() then
+        ISTimedActionQueue.add(ISCloseVehicleDoor:new(playerObj, vehicle, doorPart))
+    end
+end

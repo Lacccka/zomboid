@@ -1,0 +1,44 @@
+require "Gun_Vars/Weapon_Ability/AWCWF_Exact_RPM"
+
+local ENGINE_REFERENCE_RPM = 600
+local lastWeapon = nil
+
+local function applyExactRPM(playerObj, weapon)
+    if not weapon or not weapon.IsWeapon or not weapon:IsWeapon() or not weapon:isRanged() then return end
+    local configuredRPM = AWCWF_GetConfiguredRPM and AWCWF_GetConfiguredRPM(weapon) or
+        (AWCWF_ExactRPM and AWCWF_ExactRPM[weapon:getType()])
+    if not configuredRPM then return end
+
+    local appliedRPM, category, categoryScale, globalScale
+    if AWCWF_GetAppliedRPM then
+        appliedRPM, category, categoryScale, globalScale = AWCWF_GetAppliedRPM(weapon)
+    else
+        appliedRPM, category, categoryScale, globalScale = configuredRPM, "Automatic", 1.0, 1.0
+    end
+
+    if weapon.setCyclicRateMultiplier then
+        weapon:setCyclicRateMultiplier(appliedRPM / ENGINE_REFERENCE_RPM)
+        local data = weapon:getModData()
+        data.AWCWF_ConfiguredRPM = configuredRPM
+        data.AWCWF_AppliedRPM = appliedRPM
+        data.AWCWF_RPMCategory = category
+        data.AWCWF_RPMCategoryScale = categoryScale
+        data.AWCWF_RPMGlobalScale = globalScale
+    end
+end
+
+local function onPlayerUpdate(playerObj)
+    if not playerObj then return end
+    local weapon = playerObj:getPrimaryHandItem()
+    if weapon ~= lastWeapon then
+        lastWeapon = weapon
+        applyExactRPM(playerObj, weapon)
+    end
+end
+
+local function onWeaponSwing(playerObj, weapon)
+    applyExactRPM(playerObj, weapon)
+end
+
+Events.OnPlayerUpdate.Add(onPlayerUpdate)
+Events.OnWeaponSwing.Add(onWeaponSwing)

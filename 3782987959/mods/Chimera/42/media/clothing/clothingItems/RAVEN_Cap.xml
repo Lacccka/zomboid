@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Skinned\Clothes\RAVEN_BASEBALL_CAP.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Skinned\Clothes\RAVEN_BASEBALL_CAP.fbx</m_FemaleModel>
+	<m_GUID>fa696eea-0106-4c82-bfe8-24a54c9897ce</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+	<m_HatCategory>Group01</m_HatCategory>
+		<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+	<textureChoices>RAVEN\RAVEN_CU1</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU18</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU17</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU16</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU14</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU15</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU13A</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU13</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU12</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU11</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU10</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU9</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU8</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU7</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU6</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU5</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU4</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU3</textureChoices>
+	<textureChoices>RAVEN\RAVEN_CU2</textureChoices>
+
+
+
+
+
+</clothingItem>

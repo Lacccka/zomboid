@@ -1,0 +1,15 @@
+{
+    "Sandbox_ExplosivesOptions": "Granadas militares estadounidenses",
+    "Sandbox_ExplosivesOptions_LootMultiplier": "Multiplicador de botín",
+    "Sandbox_ExplosivesOptions_LootMultiplier_tooltip": "Multiplica la probabilidad de aparición de todas las granadas y minas en los contenedores. 0.5 = la mitad de frecuente, 1.0 = por defecto, 2.0 = el doble de frecuente.",
+    "Sandbox_ExplosivesOptions_VanillaBallisticsEnabled": "Aplicar arco de lanzamiento a armas arrojadizas vanilla",
+    "Sandbox_ExplosivesOptions_VanillaBallisticsEnabled_tooltip": "Desactivado por defecto. Si se activa, el arco de lanzamiento y el marcador de objetivo personalizados del mod también se aplican a las bombas de tubo, bombas de aerosol, bombas de humo, trampas incendiarias, trampas de ruido, petardos y cócteles molotov vanilla (incluidas sus variantes de sensor, remota y temporizador donde existan), no solo a las granadas propias de este mod.",
+    "Sandbox_ExplosivesOptions_FireDamageEnabled": "Daño por fuego mejorado",
+    "Sandbox_ExplosivesOptions_FireDamageEnabled_tooltip": "Cuando está activado, los zombis reciben daño adicional mientras arden, independientemente de la fuente del fuego. Desactivar para el comportamiento vanilla.",
+    "Sandbox_ExplosivesOptions_FireDamageMultiplier": "Multiplicador de daño por fuego",
+    "Sandbox_ExplosivesOptions_FireDamageMultiplier_tooltip": "Multiplica el daño por fuego adicional infligido a los zombis en llamas. 0.5 = aproximadamente un 30% más rápido que vanilla, 1.0 = aproximadamente el doble de rápido, 5.0 = aproximadamente cinco veces más rápido que vanilla.",
+    "Sandbox_ExplosivesOptions_DelayedFuseEnabled": "Mecha Retardada al Aterrizar",
+    "Sandbox_ExplosivesOptions_DelayedFuseEnabled_tooltip": "Desactivado por defecto. Cuando está activado, las granadas propias de este mod (Mk2, M26, M67, M84 Flashbang, M14 TH3) aterrizan armadas y esperan unos segundos antes de explotar, en lugar de detonar inmediatamente al impacto. No afecta a las minas/Claymore (que ya caen como trampas colocadas) ni a los objetos arrojadizos vanilla.",
+    "Sandbox_ExplosivesOptions_DelayedFuseSeconds": "Retardo de Mecha (segundos)",
+    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "Cuántos segundos permanece armada una granada aterrizada antes de explotar, cuando 'Mecha Retardada al Aterrizar' está activado."
+}

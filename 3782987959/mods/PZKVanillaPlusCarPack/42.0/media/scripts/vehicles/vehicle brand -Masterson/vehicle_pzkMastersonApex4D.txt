@@ -1,0 +1,12 @@
+module Base
+{
+	vehicle pzkMastersonApex4D
+	{
+		template! = pzkMastersonApex4DTemplate,
+
+		skin
+		{
+			texture = Vehicles/Masterson/vehicle_pzkMastersonApex4Dshell,
+		}
+	}
+}

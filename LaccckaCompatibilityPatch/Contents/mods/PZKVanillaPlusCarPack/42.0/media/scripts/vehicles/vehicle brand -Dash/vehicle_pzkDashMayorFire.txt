@@ -1,0 +1,26 @@
+module Base
+{
+	vehicle pzkDashMayorFire
+	{
+        zombieType = FiremanFullSuit;Fireman,
+
+	    template! = pzkDashMayorPoliceTemplate,
+		template = pzk85SedanCollision,
+
+		skin
+		{
+			texture = Vehicles/Vehicle_pzkDashMayorFireshell,
+			textureMask = Vehicles/Vehicle_pzkDashMayor_mask,
+			textureLights = Vehicles/Vehicle_pzkDashMayorFire_lights,
+			
+		}
+		lightbar
+        {
+            soundSiren = VehicleSiren,
+            leftCol = 1.0;0.0;0.0,
+            rightCol = 1.0;0.0;0.0,
+        }
+	}
+
+	
+}

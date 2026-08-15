@@ -1,0 +1,50 @@
+module Base
+{
+	vehicle pzkSuvPoliceLouisvillePD
+	{
+	    zombieType = Police,
+	    specialKeyRing = KeyRing_EagleFlag,
+
+		template! = pzkSuvPoliceTemplate,
+		template = pzkSUVCollision,
+
+		skin
+		{
+			texture = Vehicles/SUV/vehicle_pzkSuvLVPDshell,
+			textureMask = Vehicles/SUV/vehicle_pzkSuv_mask,
+			textureLights = Vehicles/SUV/vehicle_pzkFranklinRaiderPolice_lights,
+		}
+	}
+
+	vehicle pzkSuvMeadeSheriff
+	{
+	    zombieType = Sheriff_Deputy,
+	    specialKeyRing = KeyRing_EagleFlag,
+
+		template! = pzkSuvPoliceTemplate,
+		template = pzkSUVCollision,
+
+		skin
+		{
+			texture = Vehicles/SUV/vehicle_pzkSuvSheriffshell,
+			textureMask = Vehicles/SUV/vehicle_pzkSuv_mask,
+			textureLights = Vehicles/SUV/vehicle_pzkFranklinRaiderPolice_lights,
+		}
+	}
+
+	vehicle pzkSuvWestPoint
+	{
+	    zombieType = Police,
+	    specialKeyRing = KeyRing_EagleFlag,
+
+		template! = pzkSuvPoliceTemplate,
+		template = pzkSUVCollision,
+
+		skin
+		{
+			texture = Vehicles/SUV/vehicle_pzkSuvWPshell,
+			textureMask = Vehicles/SUV/vehicle_pzkSuv_mask,
+			textureLights = Vehicles/SUV/vehicle_pzkFranklinRaiderPolice_lights,
+		}
+	}
+}

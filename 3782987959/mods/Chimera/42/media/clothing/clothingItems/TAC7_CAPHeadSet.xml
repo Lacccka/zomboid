@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Skinned\Clothes\TAC7_CapHeadset.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Skinned\Clothes\TAC7_CapHeadset.fbx</m_FemaleModel>
+	<m_GUID>0b21e513-9bbf-4209-85d0-961dd8e08c7b</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+	<m_HatCategory>Group01</m_HatCategory>
+		<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+	<textureChoices>TAC7/TC7_TAC</textureChoices>
+	<textureChoices>TAC7/TC7_TAC2</textureChoices>
+	<textureChoices>TAC7/TC7_TAC4</textureChoices>
+
+</clothingItem>

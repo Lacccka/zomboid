@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>Skinned\Clothes\Operator_Atlas_LH_TacBag.fbx</m_MaleModel>
+	<m_FemaleModel>Skinned\Clothes\Operator_Atlas_LH_TacBag.fbx</m_FemaleModel>
+	<m_GUID>4c605d85-d08f-4220-aa13-d78773217126</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomHue>false</m_AllowRandomHue>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+	<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+	<textureChoices>SPECIALS/T_TacBack_BlackHawk_Molle_ASH</textureChoices>
+	<textureChoices>SPECIALS/T_TacBack_Olivine_Molle_ASH</textureChoices>
+	<textureChoices>SPECIALS/T_TacBack_UWU_Molle_ASH</textureChoices>
+	<textureChoices>BACKPACKS/T_Vest_BackPack_Molle_D</textureChoices>
+	<textureChoices>BACKPACKS/T_TacBack_Molle_DTO</textureChoices>
+	<textureChoices>BACKPACKS/T_TacBack_Molle_DTVR</textureChoices>
+	<textureChoices>BACKPACKS/T_Vest_BackPack_Molle_I_DA</textureChoices>
+
+	<textureChoices>BACKPACKS/T_TacBack_Molle_DTB</textureChoices>
+	<textureChoices>BACKPACKS/T_TacBack_Molle_DTB2</textureChoices>
+	<textureChoices>BACKPACKS/T_TacBack_Molle_DTB3</textureChoices>
+</clothingItem>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>Skinned\Clothes\RAVEN_OPERATOR_SCRIM_PONCHO_M</m_MaleModel>
+	<m_FemaleModel>Skinned\Clothes\RAVEN_OPERATOR_SCRIM_PONCHO_F</m_FemaleModel>
+	<m_GUID>f9f6f0ba-a821-4f9b-a050-46a7733b91d0</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomHue>false</m_AllowRandomHue>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_MasksFolder>media/textures/Clothes/Hat/Masks</m_MasksFolder>
+	<textureChoices>HEADGEAR\SCRIM_A1</textureChoices>
+	<textureChoices>HEADGEAR\SCRIM_A2</textureChoices>
+	<textureChoices>HEADGEAR\SCRIM_A3</textureChoices>
+
+	<textureChoices>HEADGEAR\SCRIM_A4</textureChoices>
+	<textureChoices>HEADGEAR\SCRIM_A5</textureChoices>
+	<textureChoices>HEADGEAR\SCRIM_A6</textureChoices>
+	<textureChoices>HEADGEAR\SCRIM_A7</textureChoices>
+	<textureChoices>HEADGEAR\SCRIM_A8</textureChoices>
+	<textureChoices>HEADGEAR\SCRIM_A9</textureChoices>
+	<textureChoices>HEADGEAR\SCRIM_A10</textureChoices>
+	<textureChoices>HEADGEAR\SCRIM_A11</textureChoices>
+	<textureChoices>HEADGEAR\SCRIM_A12</textureChoices>
+</clothingItem>

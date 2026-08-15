@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Skinned\Clothes\HEL_STAR.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Skinned\Clothes\HEL_STAR.fbx</m_FemaleModel>
+	<m_GUID>12b4bbb1-7576-41a9-beaf-578c5efe5277</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+	<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+	<m_Shader>basicEffect_AddRed</m_Shader>
+
+
+	<textureChoices>HEADGEAR/HEL_STAR_Tan</textureChoices>
+</clothingItem>

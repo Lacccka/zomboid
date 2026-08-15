@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Skinned\Clothes\Operator_Condor_SidePouch_L.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Skinned\Clothes\Operator_Condor_SidePouch_L.fbx</m_FemaleModel>
+	<m_GUID>3d1395fc-6691-40f8-a97d-2de58816581e</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+		<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_ColorF_D</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_CamoA_D</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_CamoB_D</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_CamoC_D</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_CamoD_D</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_CamoE_D</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_CamoF_D</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_CamoG_D</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_CamoH_D</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_CamoI_D</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_CamoI_SNW</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_CamoS_N1</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_CamoS_N2</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_ColorA_D</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_ColorB_D</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_ColorC_D</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_ColorD_D</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_ColorE_D</textureChoices>
+<textureChoices>SIDEHOLDERGEAR\T_Pouches_ColorJ_D</textureChoices>
+</clothingItem>

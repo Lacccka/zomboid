@@ -1,0 +1,276 @@
+require "Gun_Vars/Weapon_Ability/AWCWF_Exact_RPM"
+
+-- =============================================================================
+-- RC5A-TEST1 - COMBINED H5/H6                    TEMPORARY MEASUREMENT BUILD
+-- =============================================================================
+-- Restore from ExactAutomaticRPM.lua.pre_rc5a_test1_h5_h6.bak after recording
+-- both H5 and H6. Test1 deliberately retains the existing per-shot reapply path;
+-- the idempotent/write-frequency optimization belongs to RC5A-Test2.
+--
+-- H5: keep G18_cat at cyclic 1.0 while the player varies stance, moodles,
+-- encumbrance and (if practical) injury/drunkenness. The log records character
+-- state on every swing so we can identify anything that selects the handgun
+-- 9/10-tick versus 12/13-tick timing band.
+--
+-- H6: reproduce three accepted long-gun measurements in two separate game
+-- sessions. Fire roughly 20 rounds standing and 20 crouched from each weapon,
+-- quit fully, restart, and repeat. Per-shot delta/tick logs reveal whether each
+-- cyclic value keeps the same adjacent-tick mixture between sessions.
+-- =============================================================================
+
+local RPM_DIAG_ROUND = "RC5A-T1-H5H6"
+
+local RPM_DIAG_POINTS = {
+    ["G18_cat"]          = { cyclic = 1.0, test = "H5" },
+    ["URG_S_cat_Drum"]   = { cyclic = 6.2, test = "H6" },
+    ["M4A1S_cat_Drum"]   = { cyclic = 4.5, test = "H6" },
+    ["URG_S_cat"]        = { cyclic = 2.4, test = "H6" },
+}
+
+local lastWeapon = nil
+local warnedWeaponTypes = {}
+local rpmDiag = {
+    lastSneaking = nil,
+    lastSwingMs = nil,
+    lastAmmoCount = nil,
+    swingCount = 0,
+}
+
+local function warnOnce(weaponType, message)
+    if warnedWeaponTypes[weaponType] then return end
+    warnedWeaponTypes[weaponType] = true
+    print("[MFS RPM] weapon=" .. tostring(weaponType) .. " " .. tostring(message))
+end
+
+local function isDiagWeapon(weapon)
+    return weapon and weapon.getType and RPM_DIAG_POINTS[weapon:getType()] ~= nil
+end
+
+local function readFloat(call, fallback)
+    local ok, value = pcall(call)
+    if ok and type(value) == "number" then return value end
+    return fallback
+end
+
+local function formatFloat(value)
+    return type(value) == "number" and string.format("%.3f", value) or "n/a"
+end
+
+local function getAutoShootSpeed(playerObj)
+    if not playerObj or not playerObj.getVariableFloat then return nil end
+    return readFloat(function()
+        return playerObj:getVariableFloat("autoShootSpeed", -1.0)
+    end, nil)
+end
+
+local function getFps()
+    local ok, v = pcall(function() return getAverageFPS() end)
+    if ok and type(v) == "number" and v > 0 then return v end
+    return nil
+end
+
+local function getAiming(playerObj)
+    if not playerObj then return nil end
+    local ok, v = pcall(function() return playerObj:getPerkLevel(Perks.Aiming) end)
+    if ok and type(v) == "number" then return v end
+    return nil
+end
+
+local function readValue(call, fallback)
+    local ok, value = pcall(call)
+    if ok and value ~= nil then return value end
+    return fallback
+end
+
+local function getPerkLevel(playerObj, perk)
+    if not playerObj or not perk then return nil end
+    return readValue(function() return playerObj:getPerkLevel(perk) end, nil)
+end
+
+local function getMoodleLevel(playerObj, moodleName)
+    if not playerObj or not MoodleType then return nil end
+    local moodleType = readValue(function() return MoodleType[moodleName] end, nil)
+    if not moodleType then return nil end
+    local moodles = readValue(function() return playerObj:getMoodles() end, nil)
+    if not moodles then return nil end
+    return readValue(function() return moodles:getMoodleLevel(moodleType) end, nil)
+end
+
+local function getBodyState(playerObj)
+    local bodyDamage = playerObj and readValue(function()
+        return playerObj:getBodyDamage()
+    end, nil) or nil
+    if not bodyDamage then return "health=n/a bleeding=n/a scratched=n/a bitten=n/a injured=n/a" end
+
+    local health = readValue(function() return bodyDamage:getOverallBodyHealth() end, nil)
+    local bleeding = readValue(function() return bodyDamage:getNumPartsBleeding() end, nil)
+    local scratched = readValue(function() return bodyDamage:getNumPartsScratched() end, nil)
+    local bitten = readValue(function() return bodyDamage:getNumPartsBitten() end, nil)
+    local injured = (type(health) == "number" and health < 99.999) or
+        (type(bleeding) == "number" and bleeding > 0) or
+        (type(scratched) == "number" and scratched > 0) or
+        (type(bitten) == "number" and bitten > 0)
+
+    return "health=" .. formatFloat(health)
+        .. " bleeding=" .. tostring(bleeding or "n/a")
+        .. " scratched=" .. tostring(scratched or "n/a")
+        .. " bitten=" .. tostring(bitten or "n/a")
+        .. " injured=" .. tostring(injured)
+end
+
+local function getPlayerStateDetails(playerObj)
+    if not playerObj then return "playerState=n/a" end
+    local strength = getPerkLevel(playerObj, Perks and Perks.Strength or nil)
+    local fitness = getPerkLevel(playerObj, Perks and Perks.Fitness or nil)
+    local inventoryWeight = readValue(function() return playerObj:getInventoryWeight() end, nil)
+    local maxWeight = readValue(function() return playerObj:getMaxWeight() end, nil)
+    local bodyWeight = readValue(function() return playerObj:getWeight() end, nil)
+
+    return "strength=" .. tostring(strength or "n/a")
+        .. " fitness=" .. tostring(fitness or "n/a")
+        .. " endurance=" .. tostring(getMoodleLevel(playerObj, "ENDURANCE") or "n/a")
+        .. " tired=" .. tostring(getMoodleLevel(playerObj, "TIRED") or "n/a")
+        .. " panic=" .. tostring(getMoodleLevel(playerObj, "PANIC") or "n/a")
+        .. " heavyLoad=" .. tostring(getMoodleLevel(playerObj, "HEAVY_LOAD") or "n/a")
+        .. " drunk=" .. tostring(getMoodleLevel(playerObj, "DRUNK") or "n/a")
+        .. " inventoryWeight=" .. formatFloat(inventoryWeight)
+        .. " maxWeight=" .. formatFloat(maxWeight)
+        .. " bodyWeight=" .. formatFloat(bodyWeight)
+        .. " isAiming=" .. tostring(readValue(function() return playerObj:isAiming() end, "n/a"))
+        .. " isRunning=" .. tostring(readValue(function() return playerObj:isRunning() end, "n/a"))
+        .. " " .. getBodyState(playerObj)
+end
+
+local function getAmmoCount(weapon)
+    if not weapon or not weapon.getCurrentAmmoCount then return nil end
+    return readFloat(function() return weapon:getCurrentAmmoCount() end, nil)
+end
+
+local function logRPMDiag(playerObj, weapon, reason, details)
+    if not isDiagWeapon(weapon) then return end
+    local diagPoint = RPM_DIAG_POINTS[weapon:getType()]
+    local cyclic = weapon.getCyclicRateMultiplier and
+        readFloat(function() return weapon:getCyclicRateMultiplier() end, nil) or nil
+    local sneaking = playerObj and playerObj.isSneaking and playerObj:isSneaking() or false
+    local fireMode = weapon.getFireMode and weapon:getFireMode() or "n/a"
+    print("[MFS RPM DIAG] round=" .. RPM_DIAG_ROUND
+        .. " test=" .. tostring(diagPoint and diagPoint.test or "n/a")
+        .. " weapon=" .. tostring(weapon:getType())
+        .. " reason=" .. tostring(reason)
+        .. " sneaking=" .. tostring(sneaking)
+        .. " fireMode=" .. tostring(fireMode)
+        .. " cyclic=" .. formatFloat(cyclic)
+        .. " autoShootSpeed=" .. formatFloat(getAutoShootSpeed(playerObj))
+        .. " fps=" .. formatFloat(getFps())
+        .. " aiming=" .. tostring(getAiming(playerObj) or "n/a")
+        .. " recoilDelay=" .. formatFloat(weapon.getRecoilDelay and
+               readFloat(function() return weapon:getRecoilDelay() end, nil) or nil)
+        .. " " .. getPlayerStateDetails(playerObj)
+        .. (details and (" " .. details) or ""))
+end
+
+local function applyExactRPM(playerObj, weapon, reason)
+    if not weapon or not weapon.IsWeapon or not weapon:IsWeapon() or not weapon:isRanged() then return end
+
+    local weaponType = weapon:getType()
+    local diagPoint = RPM_DIAG_POINTS[weaponType]
+
+    local calibration, configuredRPM, calibrationIndex
+    if AWCWF_ResolveRPM then
+        calibration, configuredRPM, calibrationIndex = AWCWF_ResolveRPM(weapon)
+    end
+    if not calibration and not diagPoint then return end
+
+    -- Forced measurement value for test weapons; calibrated value otherwise.
+    local cyclic = diagPoint and diagPoint.cyclic or calibration.cyclic
+
+    -- BYPASS 1: the RC4 whitelist would reject every uncalibrated candidate.
+    if not diagPoint then
+        if not AWCWF_IsCalibratedCyclic or not AWCWF_IsCalibratedCyclic(cyclic) then
+            warnOnce(weaponType, "rejected uncalibrated cyclic=" .. tostring(cyclic))
+            return
+        end
+    end
+
+    if not weapon.setCyclicRateMultiplier then
+        warnOnce(weaponType, "cannot apply calibrated cyclic: setter unavailable")
+        return
+    end
+
+    local beforeCyclic = diagPoint and weapon.getCyclicRateMultiplier and
+        readFloat(function() return weapon:getCyclicRateMultiplier() end, nil) or nil
+    local beforeAutoSpeed = diagPoint and getAutoShootSpeed(playerObj) or nil
+
+    weapon:setCyclicRateMultiplier(cyclic)
+
+    local data = weapon:getModData()
+    data.AWCWF_ConfiguredRPM = configuredRPM
+    data.AWCWF_DisplayRPM = calibration and calibration.displayRPM or nil
+    data.AWCWF_AppliedRPM = calibration and calibration.displayRPM or nil
+    -- BYPASS 2: record what was actually applied, not the table value.
+    data.AWCWF_CalibratedCyclic = cyclic
+    data.AWCWF_RPMCalibrationIndex = calibrationIndex
+    data.AWCWF_RPMCategory = diagPoint and ("DIAG-" .. RPM_DIAG_ROUND) or "CalibratedRPM"
+    data.AWCWF_RPMCategoryScale = 1.0
+    data.AWCWF_RPMGlobalScale = 1.0
+
+    if diagPoint then
+        logRPMDiag(playerObj, weapon, reason or "apply",
+            "configuredRPM=" .. formatFloat(configuredRPM)
+            .. " tableCyclic=" .. formatFloat(calibration and calibration.cyclic or nil)
+            .. " forcedCyclic=" .. formatFloat(cyclic)
+            .. " beforeCyclic=" .. formatFloat(beforeCyclic)
+            .. " beforeAutoShootSpeed=" .. formatFloat(beforeAutoSpeed))
+    end
+end
+
+local function onPlayerUpdate(playerObj)
+    if not playerObj then return end
+    local weapon = playerObj:getPrimaryHandItem()
+    if weapon ~= lastWeapon then
+        lastWeapon = weapon
+        rpmDiag.lastSneaking = nil
+        rpmDiag.lastSwingMs = nil
+        rpmDiag.lastAmmoCount = getAmmoCount(weapon)
+        rpmDiag.swingCount = 0
+        applyExactRPM(playerObj, weapon, "equip")
+    end
+    if isDiagWeapon(weapon) then
+        local sneaking = playerObj:isSneaking()
+        if rpmDiag.lastSneaking == nil or sneaking ~= rpmDiag.lastSneaking then
+            rpmDiag.lastSneaking = sneaking
+            rpmDiag.lastSwingMs = nil
+            rpmDiag.lastAmmoCount = getAmmoCount(weapon)
+            rpmDiag.swingCount = 0
+            logRPMDiag(playerObj, weapon, "stance-change")
+        end
+    end
+end
+
+local function onWeaponSwing(playerObj, weapon)
+    if isDiagWeapon(weapon) then
+        local now = getTimestampMs()
+        local delta = rpmDiag.lastSwingMs and (now - rpmDiag.lastSwingMs) or nil
+        local ammoCount = getAmmoCount(weapon)
+        local ammoDelta = rpmDiag.lastAmmoCount and ammoCount and
+            (rpmDiag.lastAmmoCount - ammoCount) or nil
+        rpmDiag.lastSwingMs = now
+        rpmDiag.lastAmmoCount = ammoCount
+        rpmDiag.swingCount = rpmDiag.swingCount + 1
+        applyExactRPM(playerObj, weapon,
+            "swing#" .. tostring(rpmDiag.swingCount)
+            .. " deltaMs=" .. (delta and tostring(delta) or "first")
+            .. " tickRPM=" .. (delta and delta > 0 and formatFloat(60000 / delta) or "n/a")
+            .. " frames60=" .. (delta and formatFloat(delta * 60 / 1000) or "n/a")
+            .. " framesFps=" .. (delta and getFps() and formatFloat(delta * getFps() / 1000) or "n/a")
+            .. " ammoCount=" .. formatFloat(ammoCount)
+            .. " ammoDelta=" .. formatFloat(ammoDelta))
+        return
+    end
+    applyExactRPM(playerObj, weapon, "swing")
+end
+
+print("[MFS RPM DIAG] RC5A-Test1 combined H5/H6 probe loaded round=" .. RPM_DIAG_ROUND
+    .. " H5=G18_cat@1.0 H6=URG_S_cat_Drum@6.2,M4A1S_cat_Drum@4.5,URG_S_cat@2.4")
+Events.OnPlayerUpdate.Add(onPlayerUpdate)
+Events.OnWeaponSwing.Add(onWeaponSwing)

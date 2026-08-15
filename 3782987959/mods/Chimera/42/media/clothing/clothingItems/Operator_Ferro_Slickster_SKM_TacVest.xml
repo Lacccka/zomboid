@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Skinned\Clothes\SKM_SLICKSTER_VestKit.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Skinned\Clothes\SKM_SLICKSTER_VestKit.fbx</m_FemaleModel>
+	<m_GUID>707996d5-fe2b-4115-9d70-1c1439a07027</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>	
+	<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+	<textureChoices>EQUIPMENT/SLICKSTER_MC_BaseColor</textureChoices>
+	<textureChoices>EQUIPMENT/SLICKSTER_MC_EL_KY_RANGER</textureChoices>
+	<textureChoices>EQUIPMENT/SLICKSTER_MC_EL_KYPD</textureChoices>
+	<textureChoices>EQUIPMENT/SLICKSTER_MC_EL3E</textureChoices>
+	<textureChoices>EQUIPMENT/SLICKSTER_MC_EL7E</textureChoices>
+
+
+</clothingItem>

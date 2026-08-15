@@ -1,0 +1,14 @@
+module Base
+{
+
+	/************************ FEDERAL RANGERS: UPDATE: CHIMERA  ************************/
+
+    model HandTorchGround
+    {
+        mesh = HandTorch,
+        texture = HandTorch,
+        scale = 0.4,
+    }
+
+    
+}

@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Skinned\Clothes\SKM_G4_Shirt_Rolled.fbx</m_MaleModel>
+	<m_FemaleModel>media\models_X\Skinned\Clothes\SKM_G4_Shirt_Rolled_F.fbx</m_FemaleModel>
+	<m_GUID>14e6e00d-8c55-40aa-8420-d8fa7e37426a</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone></m_AttachBone>
+	<m_MasksFolder>media/textures/Clothes/Custom_Mask/Ava</m_MasksFolder>
+	<textureChoices>SHIRTS/CRYE_G4_Shirt_MC_BaseColor</textureChoices>
+
+
+
+</clothingItem>

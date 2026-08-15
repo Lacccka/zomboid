@@ -1,0 +1,8 @@
+module Explosives
+{
+    timedAction Assembly
+    {
+        metabolics = UsingTools,
+        actionAnim = Disassemble,
+    }
+}

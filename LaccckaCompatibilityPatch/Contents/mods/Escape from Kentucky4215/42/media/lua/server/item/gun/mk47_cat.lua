@@ -1,0 +1,43 @@
+require 'Items/ProceduralDistributions'
+require "Items/ItemPicker"
+
+if not SandboxVars.ModernFirearmsSystemSandboxGun._mk47_cat_Spawn then return end
+
+table.insert(ProceduralDistributions["list"]["GunStoreShelf"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["GunStoreShelf"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["PlankStashGun"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["PlankStashGun"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["FirearmWeapons"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["FirearmWeapons"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["ArmyStorageGuns"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["ArmyStorageGuns"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["GunStoreCounter"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["GunStoreCounter"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["PoliceStorageGuns"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["PoliceStorageGuns"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["PawnShopGunsSpecial"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["PawnShopGunsSpecial"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["GunStoreDisplayCase"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["GunStoreDisplayCase"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["GarageFirearms"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["GarageFirearms"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["DrugLabGuns"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["DrugLabGuns"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["GunStoreAmmunition"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["GunStoreAmmunition"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["ArmyStorageAmmunition"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["ArmyStorageAmmunition"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["ArmySurplusCases"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["ArmySurplusCases"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["LockerArmyBedroom"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["LockerArmyBedroom"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["LockerArmyBedroomHome"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["LockerArmyBedroomHome"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["ArmySurplusAmmoBoxes"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["ArmySurplusAmmoBoxes"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["PoliceStorageAmmunition"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["PoliceStorageAmmunition"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["PrisonArmoryShotguns"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["PrisonArmoryShotguns"].items, 0.3);
+table.insert(ProceduralDistributions["list"]["GunStoreShelf"].items, "Base.mk47_cat");
+table.insert(ProceduralDistributions["list"]["GunStoreShelf"].items, 0.3);

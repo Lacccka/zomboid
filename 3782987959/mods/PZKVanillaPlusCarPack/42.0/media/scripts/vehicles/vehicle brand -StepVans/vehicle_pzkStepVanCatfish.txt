@@ -1,0 +1,13 @@
+module Base
+{
+	vehicle pzkStepVanCatfish
+	{
+		template! = pzkStepVanPizzaTemplate,
+		template = StepVanCollision,
+
+		skin
+		{
+			texture = Vehicles/Vehicle_StepVanCatfishshell,
+		}
+	}
+}

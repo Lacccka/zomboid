@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media/models_X/Skinned/Clothes/Warhawk_HeavyRiotGear_HelmetD_F.fbx</m_MaleModel>
+	<m_FemaleModel>media/models_X/Skinned/Clothes/Warhawk_HeavyRiotGear_HelmetD_F.fbx</m_FemaleModel>
+	<m_GUID>372eb468-d55a-4f70-9ce0-c4a11576cabf</m_GUID>
+	<m_Static>false</m_Static>
+	<m_AllowRandomHue>false</m_AllowRandomHue>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_HatCategory>Group02</m_HatCategory>
+	<textureChoices>RIOT/T_Headgear_ColorI_D_N</textureChoices>
+
+	
+</clothingItem>

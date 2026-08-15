@@ -1,0 +1,28 @@
+module Base
+{
+    craftRecipe SewGrenadeBandolier
+    {
+        timedAction = SewingCloth,
+        time = 400,
+        xpAward = Tailoring:55,
+        AllowBatchCraft = false,
+        Tags = AnySurfaceCraft,
+        category = Tailoring,
+        SkillRequired = Tailoring:5,
+        NeedToBeLearn = true,
+        MetaRecipe = base:sewbandolier,
+        inputs
+        {
+            item 1 tags[base:scissors] mode:keep flags[IsNotDull;MayDegradeLight],
+            item 1 tags[base:sewingneedle] mode:keep flags[MayDegradeLight],
+            item 1 tags[base:awl] mode:keep flags[MayDegradeLight],
+            item 4 [Base.LeatherStrips] mode:destroy,
+            item 4 tags[base:heavythread],
+            item 1 [Base.Buckle],
+        }
+        outputs
+        {
+            item 1 Explosives.GrenadeBandolier,
+        }
+    }
+}
