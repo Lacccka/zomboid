@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="SitOnFurnitureFront.xml">
+	<m_Name>SitOnFurnitureFront2Handed</m_Name>
+	<m_AnimName>Bob_Seated_SitDown_2Hand</m_AnimName>
+	<m_Conditions x_name="13f03e20-ebfb-4ccb-85fd-1eb86c4ab1fc">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="9431229a-0780-468c-8882-7abb1a8b03f1">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="ce462086-54f7-42f0-b4b6-47afedee6d06">
+		<m_Name>SitOnFurnitureDirection</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>Front</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="b4403a19-f32e-415a-af4c-ebfc2b77f08f">
+		<m_Name>SitOnFurnitureStarted</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>false</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="2ff5be34-bfda-4680-9fe1-bfc9d7aa97a0">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+	<m_Events x_name="1db8f495-cdc7-4dba-9972-480ebac3e5cc">
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+</animNode>

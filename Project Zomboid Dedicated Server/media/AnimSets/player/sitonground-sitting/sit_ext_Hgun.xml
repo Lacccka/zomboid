@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="sit_ext.xml">
+	<m_Name>sit_ext_Hgun</m_Name>
+	<m_AnimName>Bob_SitGround_ActionIdle_hgun</m_AnimName>
+	<m_Conditions x_name="af51f779-0e31-4fbc-a554-315ab6aad675">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>handgun</m_Value>
+	</m_Conditions>
+	<m_Transitions>
+		<m_Target>sit_loop_hgun</m_Target>
+		<m_AnimName>Bob_ActionToSitIdle_hgun</m_AnimName>
+	</m_Transitions>
+</animNode>

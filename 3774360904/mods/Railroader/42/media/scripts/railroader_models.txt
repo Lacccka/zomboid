@@ -1,0 +1,107 @@
+module Base
+{
+    /* Railroader placeholder visual (Task 1.A-art).
+       A SKINNED (static=false) model — the animal render path goes through the
+       skinned AnimatedModel pipeline, so a static/rigid model draws BLANK
+       (skinningData is null; proven in-game, see docs/ENGINE_NOTES.md). This
+       points at a self-contained skinned mesh built by the retopo pipeline:
+         - mesh:    42/media/models_X/Railroader/RR_LocoBody.fbx  (the carbody,
+                    rigged to ONE bone named Bip01, whole mesh weighted 1.0 to it;
+                    cut from the merged loco by tools/split_trucks.py, which also
+                    emits RR_Truck.fbx -- see RR_LocoTruck below).
+         - texture: 42/media/textures/RR_LocoTest.png
+       The mesh carries its OWN skeleton, so NO `animationsMesh` line is needed
+       (ModelMesh: static=false + no animationsMesh -> mesh uses itself as the
+       rig). Reusing animset="cow" only drives an AnimationPlayer; clips that
+       target cow bones we don't have simply no-op -> the box stays at bind pose.
+
+       Scale math (see ModelScript.java): rendered = scale * coreScale(1.5).
+       undoCoreScale multiplies `scale` by 2/3, cancelling the 1.5 -> the box
+       renders at the size you authored in Blender (1 Blender meter ~= 1 tile).
+       Start at scale=1.0; expect 1-2 tuning passes on size/orientation. */
+    /* shader = rr_loco (42/media/shaders/rr_loco.vert + .frag), NOT vanilla animalEffect.
+       The vertex stage is a faithful copy of animalEffect.vert; the FRAGMENT stage adds the
+       one thing PZ will not give a non-vehicle model -- SELF-ILLUMINATION. The twin
+       headlight lenses are painted onto the loco's own texture in key magenta, and
+       rr_loco.frag renders any magenta texel full-bright, ignoring the world lighting. That
+       is the only way to have a headlight that is actually bright at night: animalEffect
+       hard-clamps a lit model to its own albedo, and the vehicle emissive path
+       (TextureLights) is a VehicleModelInstance field we cannot reach.
+       WHICH lenses are lit is chosen by swapping the texture from Lua (RR_LightsRender):
+       RR_LocoTest (off) / RR_LocoTest_dim (one beam) / RR_LocoTest_bright (both). */
+    /* SINCE TASK 3.C THIS IS THE CARBODY ALONE -- the trucks left it and became their own
+       entities (RR_LocoTruck below), so the mesh is Railroader/RR_LocoBody and the file
+       Railroader/RR_LocoTest.fbx is gone. The NAME stays RR_LocoTest because it is also the
+       skin name: the animal breed, the three light variants and both texture paths are keyed
+       on it (RR_LocoDefinitions, RR_LightsRender, tools/retopo/install_model.py), and
+       renaming the model would have renamed the texture with it for no gain. */
+    model RR_LocoTest
+    {
+        mesh          = Railroader/RR_LocoBody,
+        texture       = RR_LocoTest,
+        shader        = rr_loco,
+        static        = false,
+        scale         = 0.01,
+        undoCoreScale = true,
+        cullFace      = NONE,
+    }
+
+    /* The TRUCK (bogie), Task 3.C. ONE mesh, rendered TWICE -- the two trucks of a GP7 are
+       the same part, and tools/split_trucks.py proves it every time it runs (it refuses to
+       cut unless the second truck is the first one translated, to 1e-4 m). Each copy is its
+       own rr_truck IsoAnimal, pinned per tick at its own point on the rail with its own
+       heading, which is the only way a sub-part of a skinned model can move in B42: Lua
+       cannot touch a bone (docs/ENGINE_NOTES.md).
+
+       texture = RR_LocoTest -- THE SAME ATLAS as the carbody, not a copy. The mesh was cut
+       out of the finished, baked loco, so its UVs already point into that atlas; a second
+       texture would be 4 MB to show the same texels. The engine loads the file once and both
+       models sample it.
+
+       shader = rr_truck, not rr_loco: same lighting, no headlight key (no lens lives on a
+       truck), plus the depth knob that exists in case the near truck sorts in front of the
+       body it belongs under. See 42/media/shaders/rr_truck.vert.
+
+       static = false for the same reason as the loco -- a rigid model draws BLANK on the
+       animal render path, which is what RR_ColliderBlank below exploits and what this must
+       avoid. scale/undoCoreScale are the loco's, so both models take the animal render scale
+       (1.5 * getAnimalSize()) identically and the truck cannot end up a different size from
+       the body it sits under. */
+    model RR_LocoTruck
+    {
+        mesh          = Railroader/RR_Truck,
+        texture       = RR_LocoTest,
+        shader        = rr_truck,
+        static        = false,
+        scale         = 0.01,
+        undoCoreScale = true,
+        cullFace      = NONE,
+    }
+
+    /* Collider segment model. Deliberately static=true: on the animal render path
+       a static/rigid model draws BLANK (skinningData is null; see above + ENGINE_
+       NOTES). We WANT that -- the collider segments (rr_collider) must be invisible
+       but still collide (collision uses width, not the model). This is admin/debug-
+       proof (unlike setInvisible, which the debug player still renders).
+       IMPORTANT: uses its OWN mesh FILE (RR_ColliderSeg.fbx), NOT the loco mesh.
+       MeshAssetManager caches a ModelMesh by PATH regardless of the static flag, so
+       pointing this static model at RR_LocoTest loaded the SHARED loco mesh without
+       skinning -> the visible loco went blank too. A separate file = separate cache
+       entry = no interference. (It never renders; it just needs to exist.)
+       Since v1.0.1 that file is a MINIMAL CUBE (18 KB). It used to be a byte-identical
+       copy of the 2.49 MB loco mesh -- 2.47 MB shipped to every subscriber to draw
+       nothing at all. Structure is deliberately unchanged (FBX 7400, one mesh, one
+       material, one bone named Bip01), so the importer builds the same node graph.
+       DO NOT "dedupe" this back onto RR_LocoTest: identical CONTENT was never the
+       point, a distinct PATH is. */
+    model RR_ColliderBlank
+    {
+        mesh          = Railroader/RR_ColliderSeg,
+        texture       = RR_LocoTest,
+        shader        = animalEffect,
+        static        = true,
+        scale         = 0.01,
+        undoCoreScale = true,
+        cullFace      = NONE,
+    }
+}

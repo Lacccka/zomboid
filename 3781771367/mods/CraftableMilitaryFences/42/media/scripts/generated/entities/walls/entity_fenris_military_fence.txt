@@ -1,0 +1,170 @@
+module Base
+{
+    entity Fenris_MilitaryFence_PlainSection
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_Fenris_MilitaryFence_PlainSection,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            LogicClass = WoodenWall,
+            health = 2500,
+            skillBaseHealth = 250,
+            face W
+            {
+                layer
+                {
+                    row = fencing_01_49,
+                }
+            }
+            face N
+            {
+                layer
+                {
+                    row = fencing_01_50,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildPoleFence,
+            time = 200,
+            category = Fences,
+            SkillRequired = MetalWelding:7,
+            xpAward = MetalWelding:70,
+            Tooltip = Tooltip_craft_BigMetalFenceDesc,
+            inputs
+            {
+                item 5 [Base.BlowTorch] flags[DontRecordInput],
+                item 5 [Base.MetalPipe],
+                item 2 [Base.ScrapMetal],
+                item 5 [Base.WeldingRods] flags[DontRecordInput],
+            }
+        }
+    }
+
+    entity Fenris_MilitaryFence_PostEndedSection
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_Fenris_MilitaryFence_PostEndedSection,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            LogicClass = WoodenWall,
+            health = 2500,
+            skillBaseHealth = 250,
+            face W
+            {
+                layer
+                {
+                    row = fencing_01_48,
+                }
+            }
+            face N
+            {
+                layer
+                {
+                    row = fencing_01_51,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildPoleFence,
+            time = 200,
+            category = Fences,
+            SkillRequired = MetalWelding:7,
+            xpAward = MetalWelding:70,
+            Tooltip = Tooltip_craft_BigMetalFenceDesc,
+            inputs
+            {
+                item 5 [Base.BlowTorch] flags[DontRecordInput],
+                item 5 [Base.MetalPipe],
+                item 2 [Base.ScrapMetal],
+                item 5 [Base.WeldingRods] flags[DontRecordInput],
+            }
+        }
+    }
+
+    entity Fenris_MilitaryFence_Corner
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_Fenris_MilitaryFence_Corner,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            health = 2500,
+            skillBaseHealth = 250,
+            face S
+            {
+                layer
+                {
+                    row = fencing_01_52,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildPoleFence,
+            time = 250,
+            category = Fences,
+            SkillRequired = MetalWelding:7,
+            xpAward = MetalWelding:70,
+            Tooltip = Tooltip_craft_BigMetalFenceDesc,
+            inputs
+            {
+                item 7 [Base.BlowTorch] flags[DontRecordInput],
+                item 7 [Base.MetalPipe],
+                item 3 [Base.ScrapMetal],
+                item 7 [Base.WeldingRods] flags[DontRecordInput],
+            }
+        }
+    }
+
+    entity Fenris_MilitaryFence_Post
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_Fenris_MilitaryFence_Post,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            health = 1250,
+            skillBaseHealth = 125,
+            face S
+            {
+                layer
+                {
+                    row = fencing_01_53,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildPoleFence,
+            time = 100,
+            category = Fences,
+            SkillRequired = MetalWelding:7,
+            xpAward = MetalWelding:20,
+            Tooltip = Tooltip_craft_BigMetalFenceDesc,
+            inputs
+            {
+                item 2 [Base.BlowTorch] flags[DontRecordInput],
+                item 1 [Base.MetalPipe],
+                item 1 [Base.ScrapMetal],
+                item 2 [Base.WeldingRods] flags[DontRecordInput],
+            }
+        }
+    }
+}

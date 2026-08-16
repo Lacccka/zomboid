@@ -1,0 +1,16 @@
+version = 0
+settings
+{
+    packFileName = ../../texturepacks/DepthMaps2x.pack
+    outputImageSize = 1024,1024
+    scale50 = false
+    inputImageDirectory
+    {
+        path = .
+        imagesAreTilesheets = true
+    }
+    tileDef
+    {
+        path = ../../../../../../The Indie Stone Dropbox/Tim Baker/PZ_Development/Art/Tiles/newtiledefinitions.tiles
+    }
+}

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="ShiftWeight_Ground.xml">
+	<m_Name>Shift_Weight_Ground_1H</m_Name>
+	<m_DeferredBoneName></m_DeferredBoneName>
+	<m_Conditions x_name="88953999-f6e4-4826-8f7e-a7e8bef639cc">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>1handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="0bd2491c-7a9e-4092-9e8e-58ee8999803e">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="7135de6c-4505-4bac-a956-2f589befea54">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>ShiftWeight</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="46b9ab71-0608-4eca-aab2-61d46f42a645">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>handgun</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="d4af41ed-3438-4429-a392-ffe0226668d1">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="fa401476-05b4-4e39-9f2b-9e951b775cef">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="58eab39e-d537-4724-b9ce-a518e3d75f49">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>ShiftWeight</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="adb48f94-83ab-4afa-984a-5cf968c673d9">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>knife</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="db0c57b8-4343-4874-a0da-0ace58ea8a4e">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+</animNode>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="PainArmR.xml">
+	<m_Name>Pain_Arm_R_1H</m_Name>
+	<m_Conditions x_name="a538b54e-d82e-45de-9977-5d164ef541a2">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>1handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="448c9229-fc86-4c29-bddb-02e16313e0df">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="91146527-28ba-4ef3-84a5-fd560940af33">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainArmR</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="72252dde-c1f7-4c78-a071-23e4333f097d">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>handgun</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="dcc7c31e-2145-4aea-8ad7-53c1419cdbe6">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="01be8f2c-4389-4508-beb0-e9c5ea700942">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainArmR</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="465679b5-4c54-46e7-85d2-e2f2ee6c7b70">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>heavy</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="88c072d6-1b22-47c5-960e-27089ca2485c">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="7cfe516c-05fe-4972-a0fd-045495c4a8ba">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainArmR</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="edbfc473-1056-4923-8028-52ab9e540919">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>knife</m_Value>
+	</m_Conditions>
+</animNode>

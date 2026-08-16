@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<outfitManager>
+
+	<m_MaleOutfits>
+		<m_Name>zReVAC2_ZombieECO1</m_Name>
+		<m_Guid>01acfa1b-d246-41b4-9b3a-e91e0321bb6a</m_Guid>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_items>	<!-- HAZARD SUIT -->
+			<itemGUID>430fb60d-a1be-48bd-a6c7-3a19b3116fe5</itemGUID>
+		</m_items>
+		<m_items>	<!-- SOCKS -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- BAGBACK -->
+			<probability>0.25</probability>
+			<itemGUID>7f3cda10-5699-4524-98ff-6027305cf1fe</itemGUID>
+		</m_items>
+	</m_MaleOutfits>
+
+	<m_MaleOutfits>
+		<m_Name>zReVAC2_ZombieECO2</m_Name>
+		<m_Guid>a80d54f4-38d3-45bf-9bcd-dc8a47b4f9f7</m_Guid>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_items>	<!-- HAZARD SUIT -->
+			<itemGUID>430fb60d-a1be-48bd-a6c7-3a19b3116fe5</itemGUID>
+		</m_items>
+		<m_items>	<!-- SOCKS -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- BAGBACK -->
+			<probability>0.25</probability>
+			<itemGUID>7f3cda10-5699-4524-98ff-6027305cf1fe</itemGUID>
+		</m_items>
+	</m_MaleOutfits>
+
+
+
+	<m_FemaleOutfits>
+		<m_Name>zReVAC2_ZombieECO1</m_Name>
+		<m_Guid>01acfa1b-d246-41b4-9b3a-e91e0321bb6a</m_Guid>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_items>	<!-- HAZARD SUIT -->
+			<itemGUID>430fb60d-a1be-48bd-a6c7-3a19b3116fe5</itemGUID>
+		</m_items>
+		<m_items>	<!-- SOCKS -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- BAGBACK -->
+			<probability>0.25</probability>
+			<itemGUID>7f3cda10-5699-4524-98ff-6027305cf1fe</itemGUID>
+		</m_items>
+	</m_FemaleOutfits>
+
+	<m_FemaleOutfits>
+		<m_Name>zReVAC2_ZombieECO2</m_Name>
+		<m_Guid>a80d54f4-38d3-45bf-9bcd-dc8a47b4f9f7</m_Guid>
+		<m_Pants>false</m_Pants>
+		<m_AllowPantsHue>false</m_AllowPantsHue>
+		<m_items>	<!-- HAZARD SUIT -->
+			<itemGUID>430fb60d-a1be-48bd-a6c7-3a19b3116fe5</itemGUID>
+		</m_items>
+		<m_items>	<!-- SOCKS -->
+			<itemGUID>ebea15c8-99b3-4e20-905b-d22cf82b8217</itemGUID>
+		</m_items>
+		<m_items>	<!-- BAGBACK -->
+			<probability>0.25</probability>
+			<itemGUID>7f3cda10-5699-4524-98ff-6027305cf1fe</itemGUID>
+		</m_items>
+	</m_FemaleOutfits>
+
+</outfitManager>

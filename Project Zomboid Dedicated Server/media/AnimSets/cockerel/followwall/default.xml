@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode>
+	<m_Name>default</m_Name>
+	<m_AnimName>Chk_Cock_Walk</m_AnimName>
+	<m_BlendTime>0.20</m_BlendTime>
+	<m_SyncTrackingEnabled>false</m_SyncTrackingEnabled>
+	<m_Conditions x_name="6be5445b-28ad-4a47-b061-62c9becb6a0d">
+		<m_Name>bMoving</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Events x_name="ab133269-73f8-4dd1-a4d2-2409be454dde">
+		<m_EventName>PlayBreedSound</m_EventName>
+		<m_TimePc>0.25</m_TimePc>
+		<m_ParameterValue>walk</m_ParameterValue>
+	</m_Events>
+	<m_Events x_name="1eb7a11b-0be7-4b5b-b2e6-f5664bd68a30">
+		<m_EventName>PlayBreedSound</m_EventName>
+		<m_TimePc>0.71</m_TimePc>
+		<m_ParameterValue>walk</m_ParameterValue>
+	</m_Events>
+</animNode>

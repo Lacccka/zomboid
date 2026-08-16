@@ -1,0 +1,6 @@
+{
+  "Tooltip_GrenadeBandolier": "提供4个手榴弹挂载插槽。将手榴弹拖到挂载图标上即可挂载在此处以便快速取用——这不是储物容器。",
+  "Tooltip_FlareBurning": "一支点燃的信号弹,燃烧明亮并冒出火花与烟雾。投掷它可以标记位置或照亮区域。",
+  "Tooltip_FlareSpent": "一支已燃尽的信号弹,已无法使用。",
+  "Tooltip_ClaymoreRemote": "一枚装有遥控引爆器而非移动传感器的M18A1阔剑地雷。可使用遥控器进行远程引爆。"
+}

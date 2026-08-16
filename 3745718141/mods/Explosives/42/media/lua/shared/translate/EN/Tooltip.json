@@ -1,0 +1,7 @@
+{
+  "Tooltip_GrenadeBandolier": "Provides 4 grenade attachment slots. Drag grenades onto the attachment icons to holster them there for quick access - it is not a storage container.",
+  "Tooltip_FlareBurning": "A lit signal flare, burning brightly and giving off sparks and smoke. Throw it to mark a location or light up the area.",
+  "Tooltip_FlareSpent": "A burnt-out signal flare. No longer useful.",
+  "Tooltip_ClaymoreRemote": "An M18A1 Claymore mine fitted with a remote trigger instead of a motion sensor. Detonate it from a distance using a remote control.",
+  "Tooltip_Explosives_DEBUG_SPAWN_KEY": "Hold Shift and press this key to spawn a single flashbang directly into your inventory, for testing grenade trajectories/collisions without needing full debug mode."
+}

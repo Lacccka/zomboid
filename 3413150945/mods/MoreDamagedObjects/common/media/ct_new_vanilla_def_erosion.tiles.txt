@@ -1,0 +1,1357 @@
+version = 1
+tileset
+{
+    file = e_americanholly_1
+    size = 8,1
+    id = 5
+    // e_americanholly_1_0
+    tile
+    {
+        xy = 0,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 3
+        tree = 1
+        vegitation = 
+    }
+    // e_americanholly_1_1
+    tile
+    {
+        xy = 1,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 3
+        tree = 2
+        vegitation = 
+    }
+    // e_americanholly_1_2
+    tile
+    {
+        xy = 2,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 3
+        tree = 3
+        vegitation = 
+    }
+    // e_americanholly_1_3
+    tile
+    {
+        xy = 3,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 3
+        tree = 4
+        vegitation = 
+    }
+}
+tileset
+{
+    file = e_americanlinden_1
+    size = 8,3
+    id = 6
+    // e_americanlinden_1_0
+    tile
+    {
+        xy = 0,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        tree = 1
+        vegitation = 
+    }
+    // e_americanlinden_1_1
+    tile
+    {
+        xy = 1,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        tree = 2
+        vegitation = 
+    }
+    // e_americanlinden_1_2
+    tile
+    {
+        xy = 2,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 3
+        vegitation = 
+    }
+    // e_americanlinden_1_3
+    tile
+    {
+        xy = 3,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 4
+        vegitation = 
+    }
+    // e_americanlinden_1_8
+    tile
+    {
+        xy = 0,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 1
+        vegitation = 
+    }
+    // e_americanlinden_1_9
+    tile
+    {
+        xy = 1,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 2
+        vegitation = 
+    }
+    // e_americanlinden_1_10
+    tile
+    {
+        xy = 2,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 3
+        vegitation = 
+    }
+    // e_americanlinden_1_11
+    tile
+    {
+        xy = 3,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 4
+        vegitation = 
+    }
+}
+tileset
+{
+    file = e_canadianhemlock_1
+    size = 8,2
+    id = 7
+    // e_canadianhemlock_1_0
+    tile
+    {
+        xy = 0,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 3
+        tree = 1
+        vegitation = 
+    }
+    // e_canadianhemlock_1_1
+    tile
+    {
+        xy = 1,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 3
+        tree = 2
+        vegitation = 
+    }
+    // e_canadianhemlock_1_2
+    tile
+    {
+        xy = 2,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 3
+        tree = 3
+        vegitation = 
+    }
+    // e_canadianhemlock_1_3
+    tile
+    {
+        xy = 3,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 3
+        tree = 4
+        vegitation = 
+    }
+    // e_canadianhemlock_1_8
+    tile
+    {
+        xy = 0,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 3
+        tree = 1
+        vegitation = 
+    }
+    // e_canadianhemlock_1_9
+    tile
+    {
+        xy = 1,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 3
+        tree = 2
+        vegitation = 
+    }
+    // e_canadianhemlock_1_10
+    tile
+    {
+        xy = 2,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 3
+        tree = 3
+        vegitation = 
+    }
+    // e_canadianhemlock_1_11
+    tile
+    {
+        xy = 3,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 3
+        tree = 4
+        vegitation = 
+    }
+}
+tileset
+{
+    file = e_carolinasilverbell_1
+    size = 8,3
+    id = 8
+    // e_carolinasilverbell_1_0
+    tile
+    {
+        xy = 0,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        tree = 1
+        vegitation = 
+    }
+    // e_carolinasilverbell_1_1
+    tile
+    {
+        xy = 1,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        tree = 2
+        vegitation = 
+    }
+    // e_carolinasilverbell_1_2
+    tile
+    {
+        xy = 2,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 3
+        vegitation = 
+    }
+    // e_carolinasilverbell_1_3
+    tile
+    {
+        xy = 3,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 4
+        vegitation = 
+    }
+    // e_carolinasilverbell_1_8
+    tile
+    {
+        xy = 0,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 1
+        vegitation = 
+    }
+    // e_carolinasilverbell_1_9
+    tile
+    {
+        xy = 1,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 2
+        vegitation = 
+    }
+    // e_carolinasilverbell_1_10
+    tile
+    {
+        xy = 2,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 3
+        vegitation = 
+    }
+    // e_carolinasilverbell_1_11
+    tile
+    {
+        xy = 3,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 4
+        vegitation = 
+    }
+}
+tileset
+{
+    file = e_cockspurhawthorn_1
+    size = 8,3
+    id = 9
+    // e_cockspurhawthorn_1_0
+    tile
+    {
+        xy = 0,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        tree = 1
+        vegitation = 
+    }
+    // e_cockspurhawthorn_1_1
+    tile
+    {
+        xy = 1,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        tree = 2
+        vegitation = 
+    }
+    // e_cockspurhawthorn_1_2
+    tile
+    {
+        xy = 2,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 3
+        vegitation = 
+    }
+    // e_cockspurhawthorn_1_3
+    tile
+    {
+        xy = 3,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 4
+        vegitation = 
+    }
+    // e_cockspurhawthorn_1_8
+    tile
+    {
+        xy = 0,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 1
+        vegitation = 
+    }
+    // e_cockspurhawthorn_1_9
+    tile
+    {
+        xy = 1,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 2
+        vegitation = 
+    }
+    // e_cockspurhawthorn_1_10
+    tile
+    {
+        xy = 2,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 3
+        vegitation = 
+    }
+    // e_cockspurhawthorn_1_11
+    tile
+    {
+        xy = 3,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 4
+        vegitation = 
+    }
+}
+tileset
+{
+    file = e_dogwood_1
+    size = 8,3
+    id = 11
+    // e_dogwood_1_0
+    tile
+    {
+        xy = 0,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        tree = 1
+        vegitation = 
+    }
+    // e_dogwood_1_1
+    tile
+    {
+        xy = 1,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        tree = 2
+        vegitation = 
+    }
+    // e_dogwood_1_2
+    tile
+    {
+        xy = 2,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 3
+        vegitation = 
+    }
+    // e_dogwood_1_3
+    tile
+    {
+        xy = 3,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 4
+        vegitation = 
+    }
+    // e_dogwood_1_8
+    tile
+    {
+        xy = 0,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 1
+        vegitation = 
+    }
+    // e_dogwood_1_9
+    tile
+    {
+        xy = 1,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 2
+        vegitation = 
+    }
+    // e_dogwood_1_10
+    tile
+    {
+        xy = 2,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 3
+        vegitation = 
+    }
+    // e_dogwood_1_11
+    tile
+    {
+        xy = 3,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 4
+        vegitation = 
+    }
+}
+tileset
+{
+    file = e_easternredbud_1
+    size = 8,3
+    id = 12
+    // e_easternredbud_1_0
+    tile
+    {
+        xy = 0,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        tree = 1
+        vegitation = 
+    }
+    // e_easternredbud_1_1
+    tile
+    {
+        xy = 1,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        tree = 2
+        vegitation = 
+    }
+    // e_easternredbud_1_2
+    tile
+    {
+        xy = 2,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 3
+        vegitation = 
+    }
+    // e_easternredbud_1_3
+    tile
+    {
+        xy = 3,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 4
+        vegitation = 
+    }
+    // e_easternredbud_1_8
+    tile
+    {
+        xy = 0,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 1
+        vegitation = 
+    }
+    // e_easternredbud_1_9
+    tile
+    {
+        xy = 1,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 2
+        vegitation = 
+    }
+    // e_easternredbud_1_10
+    tile
+    {
+        xy = 2,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 3
+        vegitation = 
+    }
+    // e_easternredbud_1_11
+    tile
+    {
+        xy = 3,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 4
+        vegitation = 
+    }
+}
+tileset
+{
+    file = e_redmaple_1
+    size = 8,3
+    id = 18
+    // e_redmaple_1_0
+    tile
+    {
+        xy = 0,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        tree = 1
+        vegitation = 
+    }
+    // e_redmaple_1_1
+    tile
+    {
+        xy = 1,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        tree = 2
+        vegitation = 
+    }
+    // e_redmaple_1_2
+    tile
+    {
+        xy = 2,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 3
+        vegitation = 
+    }
+    // e_redmaple_1_3
+    tile
+    {
+        xy = 3,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 4
+        vegitation = 
+    }
+    // e_redmaple_1_8
+    tile
+    {
+        xy = 0,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 1
+        vegitation = 
+    }
+    // e_redmaple_1_9
+    tile
+    {
+        xy = 1,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 2
+        vegitation = 
+    }
+    // e_redmaple_1_10
+    tile
+    {
+        xy = 2,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 3
+        vegitation = 
+    }
+    // e_redmaple_1_11
+    tile
+    {
+        xy = 3,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 4
+        vegitation = 
+    }
+}
+tileset
+{
+    file = e_riverbirch_1
+    size = 8,3
+    id = 19
+    // e_riverbirch_1_0
+    tile
+    {
+        xy = 0,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        tree = 1
+        vegitation = 
+    }
+    // e_riverbirch_1_1
+    tile
+    {
+        xy = 1,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        tree = 2
+        vegitation = 
+    }
+    // e_riverbirch_1_2
+    tile
+    {
+        xy = 2,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 3
+        vegitation = 
+    }
+    // e_riverbirch_1_3
+    tile
+    {
+        xy = 3,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 4
+        vegitation = 
+    }
+    // e_riverbirch_1_8
+    tile
+    {
+        xy = 0,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 1
+        vegitation = 
+    }
+    // e_riverbirch_1_9
+    tile
+    {
+        xy = 1,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 2
+        vegitation = 
+    }
+    // e_riverbirch_1_10
+    tile
+    {
+        xy = 2,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 3
+        vegitation = 
+    }
+    // e_riverbirch_1_11
+    tile
+    {
+        xy = 3,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 4
+        vegitation = 
+    }
+}
+tileset
+{
+    file = e_virginiapine_1
+    size = 8,2
+    id = 21
+    // e_virginiapine_1_0
+    tile
+    {
+        xy = 0,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        tree = 1
+        vegitation = 
+    }
+    // e_virginiapine_1_1
+    tile
+    {
+        xy = 1,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        tree = 2
+        vegitation = 
+    }
+    // e_virginiapine_1_2
+    tile
+    {
+        xy = 2,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 3
+        vegitation = 
+    }
+    // e_virginiapine_1_3
+    tile
+    {
+        xy = 3,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 4
+        vegitation = 
+    }
+    // e_virginiapine_1_8
+    tile
+    {
+        xy = 0,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 1
+        vegitation = 
+    }
+    // e_virginiapine_1_9
+    tile
+    {
+        xy = 1,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 2
+        vegitation = 
+    }
+    // e_virginiapine_1_10
+    tile
+    {
+        xy = 2,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 3
+        vegitation = 
+    }
+    // e_virginiapine_1_11
+    tile
+    {
+        xy = 3,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        tree = 4
+        vegitation = 
+    }
+}
+tileset
+{
+    file = e_yellowwood_1
+    size = 8,3
+    id = 22
+    // e_yellowwood_1_0
+    tile
+    {
+        xy = 0,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        tree = 1
+        vegitation = 
+    }
+    // e_yellowwood_1_1
+    tile
+    {
+        xy = 1,0
+        BlocksPlacement = 
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        tree = 2
+        vegitation = 
+    }
+    // e_yellowwood_1_2
+    tile
+    {
+        xy = 2,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 3
+        vegitation = 
+    }
+    // e_yellowwood_1_3
+    tile
+    {
+        xy = 3,0
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 4
+        vegitation = 
+    }
+    // e_yellowwood_1_8
+    tile
+    {
+        xy = 0,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 1
+        vegitation = 
+    }
+    // e_yellowwood_1_9
+    tile
+    {
+        xy = 1,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 2
+        vegitation = 
+    }
+    // e_yellowwood_1_10
+    tile
+    {
+        xy = 2,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 3
+        vegitation = 
+    }
+    // e_yellowwood_1_11
+    tile
+    {
+        xy = 3,1
+        BlocksPlacement = 
+        MoveWithWind = 
+        WindType = 2
+        tree = 4
+        vegitation = 
+    }
+}
+tileset
+{
+    file = f_bushes_1
+    size = 8,16
+    id = 23
+    // f_bushes_1_0
+    tile
+    {
+        xy = 0,0
+        BlocksPlacement = 
+        DamagedSprite = ct_more_damaged_objects_01_8
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        canBeCut = 
+        vegitation = 
+    }
+    // f_bushes_1_1
+    tile
+    {
+        xy = 1,0
+        BlocksPlacement = 
+        DamagedSprite = ct_more_damaged_objects_01_8
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        canBeCut = 
+        vegitation = 
+    }
+    // f_bushes_1_2
+    tile
+    {
+        xy = 2,0
+        BlocksPlacement = 
+        DamagedSprite = ct_more_damaged_objects_01_8
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        canBeCut = 
+        vegitation = 
+    }
+    // f_bushes_1_3
+    tile
+    {
+        xy = 3,0
+        BlocksPlacement = 
+        DamagedSprite = ct_more_damaged_objects_01_8
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        canBeCut = 
+        vegitation = 
+    }
+    // f_bushes_1_4
+    tile
+    {
+        xy = 4,0
+        BlocksPlacement = 
+        DamagedSprite = ct_more_damaged_objects_01_8
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        canBeCut = 
+        vegitation = 
+    }
+    // f_bushes_1_5
+    tile
+    {
+        xy = 5,0
+        BlocksPlacement = 
+        DamagedSprite = ct_more_damaged_objects_01_8
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        canBeCut = 
+        vegitation = 
+    }
+    // f_bushes_1_6
+    tile
+    {
+        xy = 6,0
+        BlocksPlacement = 
+        DamagedSprite = ct_more_damaged_objects_01_8
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        canBeCut = 
+        vegitation = 
+    }
+    // f_bushes_1_7
+    tile
+    {
+        xy = 7,0
+        BlocksPlacement = 
+        DamagedSprite = ct_more_damaged_objects_01_8
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        canBeCut = 
+        vegitation = 
+    }
+    // f_bushes_1_8
+    tile
+    {
+        xy = 0,1
+        BlocksPlacement = 
+        DamagedSprite = ct_more_damaged_objects_01_8
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        canBeCut = 
+        vegitation = 
+    }
+    // f_bushes_1_9
+    tile
+    {
+        xy = 1,1
+        BlocksPlacement = 
+        DamagedSprite = ct_more_damaged_objects_01_8
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        canBeCut = 
+        vegitation = 
+    }
+    // f_bushes_1_10
+    tile
+    {
+        xy = 2,1
+        BlocksPlacement = 
+        DamagedSprite = ct_more_damaged_objects_01_8
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        canBeCut = 
+        vegitation = 
+    }
+    // f_bushes_1_11
+    tile
+    {
+        xy = 3,1
+        BlocksPlacement = 
+        DamagedSprite = ct_more_damaged_objects_01_8
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        canBeCut = 
+        vegitation = 
+    }
+    // f_bushes_1_12
+    tile
+    {
+        xy = 4,1
+        BlocksPlacement = 
+        DamagedSprite = ct_more_damaged_objects_01_8
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        canBeCut = 
+        vegitation = 
+    }
+    // f_bushes_1_13
+    tile
+    {
+        xy = 5,1
+        BlocksPlacement = 
+        DamagedSprite = ct_more_damaged_objects_01_8
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        canBeCut = 
+        vegitation = 
+    }
+    // f_bushes_1_14
+    tile
+    {
+        xy = 6,1
+        BlocksPlacement = 
+        DamagedSprite = ct_more_damaged_objects_01_8
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        canBeCut = 
+        vegitation = 
+    }
+    // f_bushes_1_15
+    tile
+    {
+        xy = 7,1
+        BlocksPlacement = 
+        DamagedSprite = ct_more_damaged_objects_01_8
+        HitByCar = 
+        MinimumCarSpeedDmg = 10
+        MoveWithWind = 
+        WindType = 2
+        canBeCut = 
+        vegitation = 
+    }
+    // f_bushes_1_32
+    tile
+    {
+        xy = 0,4
+        MoveWithWind = 
+    }
+    // f_bushes_1_33
+    tile
+    {
+        xy = 1,4
+        MoveWithWind = 
+    }
+    // f_bushes_1_34
+    tile
+    {
+        xy = 2,4
+        MoveWithWind = 
+    }
+    // f_bushes_1_35
+    tile
+    {
+        xy = 3,4
+        MoveWithWind = 
+    }
+    // f_bushes_1_36
+    tile
+    {
+        xy = 4,4
+        MoveWithWind = 
+    }
+    // f_bushes_1_37
+    tile
+    {
+        xy = 5,4
+        MoveWithWind = 
+    }
+    // f_bushes_1_38
+    tile
+    {
+        xy = 6,4
+        MoveWithWind = 
+    }
+    // f_bushes_1_39
+    tile
+    {
+        xy = 7,4
+        MoveWithWind = 
+    }
+    // f_bushes_1_48
+    tile
+    {
+        xy = 0,6
+        BlocksPlacement = 
+        Bush = 
+        CanBreak = 
+        CustomName = Hedge
+        GroupName = Low
+        IsLow = 
+        IsMoveAble = 
+        Material = Natural
+        MoveType = Vegitation
+        MoveWithWind = 
+        Movement = HedgeLow
+        PickUpLevel = 1
+        PickUpTool = Shovel
+        PickUpWeight = 50
+        PlaceTool = Shovel
+        vegitation = 
+    }
+    // f_bushes_1_49
+    tile
+    {
+        xy = 1,6
+        BlocksPlacement = 
+        Bush = 
+        CanBreak = 
+        CustomName = Hedge
+        GroupName = Low
+        IsLow = 
+        IsMoveAble = 
+        Material = Natural
+        MoveType = Vegitation
+        MoveWithWind = 
+        Movement = HedgeLow
+        PickUpLevel = 1
+        PickUpTool = Shovel
+        PickUpWeight = 50
+        PlaceTool = Shovel
+        vegitation = 
+    }
+    // f_bushes_1_50
+    tile
+    {
+        xy = 2,6
+        BlocksPlacement = 
+        Bush = 
+        CanBreak = 
+        CustomName = Hedge
+        GroupName = Low
+        IsLow = 
+        IsMoveAble = 
+        Material = Natural
+        MoveType = Vegitation
+        MoveWithWind = 
+        Movement = HedgeLow
+        PickUpLevel = 1
+        PickUpTool = Shovel
+        PickUpWeight = 50
+        PlaceTool = Shovel
+        vegitation = 
+    }
+    // f_bushes_1_51
+    tile
+    {
+        xy = 3,6
+        BlocksPlacement = 
+        Bush = 
+        CanBreak = 
+        CustomName = Hedge
+        GroupName = Low
+        IsLow = 
+        IsMoveAble = 
+        Material = Natural
+        MoveType = Vegitation
+        MoveWithWind = 
+        Movement = HedgeLow
+        PickUpLevel = 1
+        PickUpTool = Shovel
+        PickUpWeight = 50
+        PlaceTool = Shovel
+        vegitation = 
+    }
+    // f_bushes_1_52
+    tile
+    {
+        xy = 4,6
+        BlocksPlacement = 
+        Bush = 
+        CanBreak = 
+        CustomName = Hedge
+        GroupName = Low
+        IsLow = 
+        IsMoveAble = 
+        Material = Natural
+        MoveType = Vegitation
+        MoveWithWind = 
+        Movement = HedgeLow
+        PickUpLevel = 1
+        PickUpTool = Shovel
+        PickUpWeight = 50
+        PlaceTool = Shovel
+        vegitation = 
+    }
+    // f_bushes_1_53
+    tile
+    {
+        xy = 5,6
+        BlocksPlacement = 
+        Bush = 
+        CanBreak = 
+        CustomName = Hedge
+        GroupName = Low
+        IsLow = 
+        IsMoveAble = 
+        Material = Natural
+        MoveType = Vegitation
+        MoveWithWind = 
+        Movement = HedgeLow
+        PickUpLevel = 1
+        PickUpTool = Shovel
+        PickUpWeight = 50
+        PlaceTool = Shovel
+        vegitation = 
+    }
+    // f_bushes_1_54
+    tile
+    {
+        xy = 6,6
+        BlocksPlacement = 
+        Bush = 
+        CanBreak = 
+        CustomName = Hedge
+        GroupName = Low
+        IsLow = 
+        IsMoveAble = 
+        Material = Natural
+        MoveType = Vegitation
+        MoveWithWind = 
+        Movement = HedgeLow
+        PickUpLevel = 1
+        PickUpTool = Shovel
+        PickUpWeight = 50
+        PlaceTool = Shovel
+        vegitation = 
+    }
+    // f_bushes_1_55
+    tile
+    {
+        xy = 7,6
+        BlocksPlacement = 
+        Bush = 
+        CanBreak = 
+        CustomName = Hedge
+        GroupName = Low
+        IsLow = 
+        IsMoveAble = 
+        Material = Natural
+        MoveType = Vegitation
+        MoveWithWind = 
+        Movement = HedgeLow
+        PickUpLevel = 1
+        PickUpTool = Shovel
+        PickUpWeight = 50
+        PlaceTool = Shovel
+        vegitation = 
+    }
+}

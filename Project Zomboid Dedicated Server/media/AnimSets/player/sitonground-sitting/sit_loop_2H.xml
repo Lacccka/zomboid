@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="sit_loop.xml">
+	<m_Name>sit_loop_2H</m_Name>
+	<m_AnimName>Bob_SitGround_Idle_2H</m_AnimName>
+	<m_BlendOutTime>-1.00</m_BlendOutTime>
+	<m_Conditions x_name="eeed1087-a5bd-43ba-8314-24f7ba233203">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Events x_name="4f95d328-4ba7-41cc-a5ee-4cb498576dcb">
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+	<m_Transitions />
+	<m_Transitions>
+		<m_Target>sit_ext_2h</m_Target>
+	</m_Transitions>
+</animNode>

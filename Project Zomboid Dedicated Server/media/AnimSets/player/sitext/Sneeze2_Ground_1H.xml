@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="Sneeze2_Ground.xml">
+	<m_Name>Sneeze2_Ground_1H</m_Name>
+	<m_DeferredBoneName></m_DeferredBoneName>
+	<m_Conditions x_name="0578015f-9414-4593-8c4f-c4824e377237">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>1handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="9363e52b-9591-4af8-99b0-00d87ff3bced">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="8f81b69d-2b2f-49cc-8b3f-e485a1a14640">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>Sneeze2</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="6813218c-2f09-43a5-898f-8bc2bc7f5987">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>handgun</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="92657a4d-874a-4d37-aa6d-e67469ae145e">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="6eb91e10-9354-4ab9-9e69-a1bfa3e740ad">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="447b36e5-c7e5-454c-92b3-0c113061f7ab">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>Sneeze2</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="c80dad2b-7787-461f-afb7-dc571a769bb6">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>knife</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="7e41d057-d7fc-4070-8f9b-367a537a3d16">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+</animNode>

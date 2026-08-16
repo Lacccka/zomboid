@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="default.xml">
+	<m_Name>run</m_Name>
+	<m_AnimName>DeerStag_Run</m_AnimName>
+	<m_Conditions x_name="7374d871-4dd5-4462-bfb0-e6fc1cccda38">
+		<m_Name>animalRunning</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Events x_name="514412a2-ba62-4f63-bf32-40f308ff5ec9">
+		<m_TimePc>0.31</m_TimePc>
+		<m_ParameterValue>run</m_ParameterValue>
+	</m_Events>
+	<m_Events x_name="244eeaf3-86df-45a2-bfdd-02f0172625b8">
+		<m_EventName></m_EventName>
+		<m_Time>Start</m_Time>
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+	<m_Events x_name="eff73231-c37a-44d5-959f-473cee9113cc">
+		<m_EventName></m_EventName>
+		<m_Time>Start</m_Time>
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+	<m_Events x_name="31bf6128-6ed7-4c3b-a458-b90921849f57">
+		<m_EventName></m_EventName>
+		<m_Time>Start</m_Time>
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+</animNode>

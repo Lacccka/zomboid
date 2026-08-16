@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="sit_ext.xml">
+	<m_Name>sit_ext_spear</m_Name>
+	<m_AnimName>Bob_SitGround_ActionIdle_2H</m_AnimName>
+	<m_Conditions x_name="2317a3f0-3eaf-4b17-b5db-d6624b652fd5">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+	<m_Transitions>
+		<m_Target>sit_loop_spear</m_Target>
+		<m_AnimName>Bob_ActionToSitIdle_2h</m_AnimName>
+	</m_Transitions>
+</animNode>

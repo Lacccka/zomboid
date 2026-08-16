@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="WipeBrow_Ground.xml">
+	<m_Name>Wipe_Brow_Ground_2H</m_Name>
+	<m_Conditions x_name="54bb7080-4ed6-4787-94cb-b18ac7c35d60">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="5e0b7287-2a9f-4b67-9533-1c40c83f5a09">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="c47ea316-b5ae-492d-82b6-fee08d794ac3">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>WipeBrow</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="9f2131f9-af80-4965-b1fc-ae09918f4884">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="d494510b-e997-4d7b-8d50-9603446c4d18">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="cdd39b74-e2da-4a5f-b745-5701b6028450">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="58f06b30-f81d-4bc9-ba2d-28139166e900">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>WipeBrow</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="7e6e3ec8-eb51-48da-a608-e54e0d186e9d">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="42e083b0-e5be-48a4-84a0-b4e8e3421dfd">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+</animNode>

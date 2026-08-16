@@ -1,0 +1,18 @@
+{
+  "Explosives.Mk2Grenade": "Осколочная граната Mk2 'Ананас'",
+  "Explosives.M26Grenade": "Осколочная граната M26 'Лимон'",
+  "Explosives.M67Grenade": "Осколочная граната M67",
+  "Explosives.M14TH3Grenade": "Зажигательная граната AN-M14 TH3",
+  "Explosives.M84Flashbang": "Светошумовая граната M84 (Флэшбэнг)",
+  "Explosives.M14Mine": "Мина M14",
+  "Explosives.M18a1Claymore": "M18A1 «Клеймор»",
+  "Explosives.M18a1ClaymoreRemote": "M18A1 «Клеймор» (Дистанционный)",
+  "Explosives.Bag_AmmoBox_Grenades": "Ящик для гранат",
+  "Explosives.Bag_ProtectiveCaseSmallMilitary_Grenades": "Малый военный кейс для гранат",
+  "Explosives.Bag_ProtectiveCaseBulkyGrenades": "Большой транспортный кейс для гранат",
+  "Explosives.GrenadeBandolier": "Патронташ для гранат",
+  "Explosives.GrenadeBandolierFull": "Патронташ для гранат (Полный)",
+  "Explosives.Flare": "Сигнальная ракета",
+  "Explosives.FlareBurning": "Сигнальная ракета (Горит)",
+  "Explosives.FlareSpent": "Использованная сигнальная ракета"
+}

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="WipeArmL_Ground.xml">
+	<m_Name>Wipe_Arm_L_Ground_1H</m_Name>
+	<m_DeferredBoneName></m_DeferredBoneName>
+	<m_Conditions x_name="8c113f02-3d4d-4dcc-9fc7-84db8dd4a0f6">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>1handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="5edab565-6201-40c1-a6a4-6e7779af4ea0">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="12cb18b3-4fbe-44bf-b125-403741750488">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>WipeArmL</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="e58c761f-2941-4801-acda-dab30efdda0a">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>handgun</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="e9a13ab7-9eed-42fe-852a-7634a8d48697">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="e1385242-accd-4304-ba77-d2be74bd577b">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="a303cbe9-cf81-4ab9-86ec-5baf6b066e70">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>WipeArmL</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="2ab1cb6e-0d89-4852-8d79-c75dc79fde57">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>knife</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="fe8bf99e-0609-4f87-8fb9-f1f24c05ef70">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+</animNode>

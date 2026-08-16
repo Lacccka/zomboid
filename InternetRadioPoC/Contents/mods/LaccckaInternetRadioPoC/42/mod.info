@@ -1,0 +1,6 @@
+name=Internet Vehicle Radio - WIVK-FM PoC
+id=LaccckaInternetRadioPoC
+author=Lacccka
+description=Build 42 vehicle sound control plus an automatic server-only RadioBot connection PoC for 104.6 MHz. F11 remains the packaged vehicle control.
+modversion=0.10.0
+versionMin=42.20.0

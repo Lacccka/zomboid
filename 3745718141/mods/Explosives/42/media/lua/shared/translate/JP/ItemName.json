@@ -1,0 +1,18 @@
+{
+  "Explosives.Mk2Grenade": "Mk2 'パイナップル' 破片手榴弾",
+  "Explosives.M26Grenade": "M26 'レモン' 破片手榴弾",
+  "Explosives.M67Grenade": "M67破片手榴弾",
+  "Explosives.M14TH3Grenade": "AN-M14 TH3焼夷手榴弾",
+  "Explosives.M84Flashbang": "M84閃光手榴弾（フラッシュバン）",
+  "Explosives.M14Mine": "M14地雷",
+  "Explosives.M18a1Claymore": "M18A1クレイモア",
+  "Explosives.M18a1ClaymoreRemote": "M18A1クレイモア（リモート）",
+  "Explosives.Bag_AmmoBox_Grenades": "手榴弾弾薬箱",
+  "Explosives.Bag_ProtectiveCaseSmallMilitary_Grenades": "小型軍用手榴弾ケース",
+  "Explosives.Bag_ProtectiveCaseBulkyGrenades": "大型手榴弾輯送ケース",
+  "Explosives.GrenadeBandolier": "手榴弾用弾薬帯",
+  "Explosives.GrenadeBandolierFull": "手榴弾用弾薬帯（満杯）",
+  "Explosives.Flare": "信号弾",
+  "Explosives.FlareBurning": "信号弾（燃焼中）",
+  "Explosives.FlareSpent": "使用済み信号弾"
+}

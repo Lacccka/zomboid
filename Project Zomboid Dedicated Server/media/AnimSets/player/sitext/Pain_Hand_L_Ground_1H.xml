@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="PainHandL_Ground.xml">
+	<m_Name>Pain_Hand_L_Ground_1H</m_Name>
+	<m_ConditionPriority>1</m_ConditionPriority>
+	<m_DeferredBoneName></m_DeferredBoneName>
+	<m_Conditions x_name="d8d0fac1-24f7-4fb8-9fbf-437585ae073e">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>1handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="dec4aa0f-1d23-4c1b-9ed7-86d2731046cc">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="71c82b84-9fcf-404a-9ad5-67a3ed0777c0">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainHandL</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="03e4edba-1529-43bb-b38f-758109997bb5">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>handgun</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="fd62b1e3-9987-4d34-babc-624cd7cecbc3">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="70526457-b0de-4ca4-b226-c2fcaab9f9f2">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="eeccf4e3-d596-4982-a178-10169b320a04">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainHandL</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="105e25dd-350a-49b7-a0c3-bdbfc816a015">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>knife</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="c432ebf0-d83c-479b-b0eb-7c7dd83e31ba">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+</animNode>

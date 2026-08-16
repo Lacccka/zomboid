@@ -1,0 +1,15 @@
+{
+    "Sandbox_ExplosivesOptions": "Военные гранаты США",
+    "Sandbox_ExplosivesOptions_LootMultiplier": "Множитель добычи",
+    "Sandbox_ExplosivesOptions_LootMultiplier_tooltip": "Умножает шанс появления всех гранат и мин в контейнерах. 0.5 = вдвое реже, 1.0 = по умолчанию, 2.0 = вдвое чаще.",
+    "Sandbox_ExplosivesOptions_VanillaBallisticsEnabled": "Применить баллистическую дугу к ванильному метательному оружию",
+    "Sandbox_ExplosivesOptions_VanillaBallisticsEnabled_tooltip": "По умолчанию выключено. При включении собственная дуга броска и маркер цели мода применяются также к ванильным трубным бомбам, аэрозольным бомбам, дымовым шашкам, огненным ловушкам, шумовым ловушкам, петардам и коктейлям Молотова (включая их сенсорные, дистанционные и таймерные варианты, где они есть), а не только к гранатам этого мода.",
+    "Sandbox_ExplosivesOptions_FireDamageEnabled": "Усиленный урон от огня",
+    "Sandbox_ExplosivesOptions_FireDamageEnabled_tooltip": "При включении зомби получают дополнительный урон во время горения, независимо от источника огня. Отключите для стандартного поведения.",
+    "Sandbox_ExplosivesOptions_FireDamageMultiplier": "Множитель урона от огня",
+    "Sandbox_ExplosivesOptions_FireDamageMultiplier_tooltip": "Умножает дополнительный урон от огня по горящим зомби. 0.5 = примерно на 30% быстрее ванили, 1.0 = примерно вдвое быстрее, 5.0 = примерно в пять раз быстрее ванили.",
+    "Sandbox_ExplosivesOptions_DelayedFuseEnabled": "Замедленный взрыватель при приземлении",
+    "Sandbox_ExplosivesOptions_DelayedFuseEnabled_tooltip": "По умолчанию выключено. Если включено, собственные гранаты этого мода (Mk2, M26, M67, M84 Flashbang, M14 TH3) приземляются взведёнными и лежат несколько секунд перед взрывом, вместо мгновенной детонации при ударе. Не влияет на мины/Клейморы (которые уже приземляются как установленные ловушки) или ванильные метательные предметы.",
+    "Sandbox_ExplosivesOptions_DelayedFuseSeconds": "Задержка взрывателя (секунды)",
+    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "Сколько секунд приземлившаяся граната лежит взведённой перед взрывом, когда включена опция «Замедленный взрыватель при приземлении»."
+}

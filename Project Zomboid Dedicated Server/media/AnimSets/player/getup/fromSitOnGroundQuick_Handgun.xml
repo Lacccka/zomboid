@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="fromSitOnGroundQuick.xml">
+	<m_Name>fromSitOnGroundQuick_Handgun</m_Name>
+	<m_Conditions x_name="b9fdc22f-29ba-448e-9e2d-a643aed3a5d9">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>handgun</m_Value>
+	</m_Conditions>
+	<m_Events x_name="e34660b2-a2d0-420a-b8dc-acc1b10d0755">
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+</animNode>

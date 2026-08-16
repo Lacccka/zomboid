@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="default.xml">
+	<m_Name>run</m_Name>
+	<m_AnimName>Sheep_Run</m_AnimName>
+	<m_Conditions x_name="7374d871-4dd5-4462-bfb0-e6fc1cccda38">
+		<m_Name>animalRunning</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Events x_name="bf913512-a3e7-4ef6-8c32-935b99b3e906">
+		<m_ParameterValue>run</m_ParameterValue>
+	</m_Events>
+	<m_Events x_name="c89e9739-21d9-4598-8ef7-a41a38a6b69c">
+		<m_EventName></m_EventName>
+		<m_Time>Start</m_Time>
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+	<m_Events x_name="1bdfccff-6e8f-4160-89a5-8040f63b5acf">
+		<m_EventName></m_EventName>
+		<m_Time>Start</m_Time>
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+	<m_Events x_name="c2e7e0d1-9f78-4334-afbe-b453969e9df6">
+		<m_EventName></m_EventName>
+		<m_Time>Start</m_Time>
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+</animNode>

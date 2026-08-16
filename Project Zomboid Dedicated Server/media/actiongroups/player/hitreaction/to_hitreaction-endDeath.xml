@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transition>
+	<transitionTo>hitreaction-endDeath</transitionTo>
+	<conditions>
+		<compare op="==" a="hitReaction" b="EndDeath" />
+	</conditions>
+</transition>

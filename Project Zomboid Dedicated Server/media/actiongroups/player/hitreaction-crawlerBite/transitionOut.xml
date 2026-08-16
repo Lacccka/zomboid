@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transition>
+	<transitionOut>true</transitionOut>
+	<conditions>
+		<compare op="!=" a="hitReaction" b="CrawlerBiteRIGHT" />
+		<compare op="!=" a="hitReaction" b="CrawlerBiteLEFT" />
+		<compare op="!=" a="hitReaction" b="CrawlerBite" />
+	</conditions>
+</transition>

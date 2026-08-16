@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode>
+	<m_Name>ScrubClothWithSoap</m_Name>
+	<m_AnimName>Bob_IdleScrubClothWithSoap</m_AnimName>
+	<m_BlendTime>0.20</m_BlendTime>
+	<m_SyncTrackingEnabled>false</m_SyncTrackingEnabled>
+	<m_Conditions x_name="bdaca2dd-e369-4756-8bae-a32f0663ae5e">
+		<m_Name>PerformingAction</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>ScrubClothWithSoap</m_Value>
+	</m_Conditions>
+	<m_Events x_name="022de4cd-8dbe-4f9b-b673-5f466c63b1b9">
+		<m_EventName>PlayWashSound</m_EventName>
+		<m_Time>Start</m_Time>
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+</animNode>

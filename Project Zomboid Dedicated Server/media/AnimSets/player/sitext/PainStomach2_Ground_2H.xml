@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="PainStomach2_Ground.xml">
+	<m_Name>PainStomach2_Ground_2H</m_Name>
+	<m_Conditions x_name="bd8d75ed-9f7d-405d-8776-64617bbc56dc">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="904a87e3-4149-40a0-962a-0ebd177742ed">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="5ec9a476-206e-4f27-b189-3bf88b76d309">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainStomach2</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="ddf8b7e5-4f14-4eab-b0f2-50781358d636">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="28a3a2dd-baa0-46ce-bb19-69a9da19474f">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="daee9b60-9ee6-4140-82ca-c90af837b721">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="de6b2f6f-c3b1-42f6-b2d2-76192a747292">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainStomach2</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="08219d0c-8318-4763-8f0a-54165a0c9e33">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="d2bc421c-e23b-4c74-8f56-a7d03b92fe7e">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+</animNode>

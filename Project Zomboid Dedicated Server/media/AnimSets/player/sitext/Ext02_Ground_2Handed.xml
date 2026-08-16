@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="Ext02_Ground.xml">
+	<m_Name>Ext02_Ground_2Handed</m_Name>
+	<m_AnimName>Bob_IdleBatExt02</m_AnimName>
+	<m_BlendTime>0.30</m_BlendTime>
+	<m_BlendOutTime>0.60</m_BlendOutTime>
+	<m_Conditions x_name="b73cd9b1-263d-4f4c-bd20-1661371daa0c">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="3610effd-264d-4889-86cb-f5d21020a68d">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="4b06a59e-98cf-4bc6-86ed-7099cd6452e9">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="dc5ef49a-1f72-4653-805e-81c48f514a70">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="bf0fcc0b-5a14-440e-b34e-32c5ae21fbc3">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="9a5dbf54-bfb1-4ee5-9759-66a74524b778">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="461a10f0-37b2-4e87-8088-8df05a0458a9">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="64c3ba9a-031f-49fa-8a73-76afba8b05ee">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="69867cd9-9d67-464b-83e4-9250d77a4d44">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights>
+		<weight>0.50</weight>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+</animNode>

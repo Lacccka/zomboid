@@ -1,0 +1,6 @@
+version=1
+id=3783046891
+title=Internet Vehicle Radio - WIVK-FM PoC
+description=Build 42.20.2 low-level radio PoC 0.8.7. Resolves the VOIP sender identity through runtime-compatible connection data, then tests RakVoice.SendFrame from a server-only Leaf entrypoint daemon. Ordinary clients need no Leaf, Java, DLL, decoder, or launcher.
+tags=Build 42;Multiplayer
+visibility=unlisted

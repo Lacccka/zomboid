@@ -1,0 +1,170 @@
+module Base
+{
+    /***********************************************************************
+     * Railroader -- RR_EngineerNotebook, "the engineer's notebook".
+     *
+     * The in-lore manual. A character who took the RAILROADER PROFESSION starts
+     * the game carrying his own pocket notebook: eight pages of crib-sheet notes
+     * plus a ninth naming the project's supporters,
+     * one fact per line, ordered by what the survivor needs first -- where the 800
+     * stands and how to board it, cranking it, moving and stopping it, reading the
+     * control stand, signals and lights, fuel and battery, switches and impacts,
+     * derailment and the cab. See shared/Railroader/RR_Manual.lua.
+     *
+     * WHY THIS SHAPE (verified in the B42 decompile + vanilla Lua):
+     *   * CanBeWrite = true is the whole mechanism. It makes the item a written
+     *     notebook: Literature.addPage(i, text) fills a page from Lua, the pages
+     *     (customPages) are serialized by Literature.save/load like any handwritten
+     *     journal, and ISInventoryPaneContextMenu offers "Read/Write ... note",
+     *     which opens the vanilla ISUIWriteJournal. No custom UI, no art.
+     *   * PageToWrite is the page count the journal UI pages through when the
+     *     notebook is EDITABLE (ISUIWriteJournal:new gets it as numberOfPages).
+     *     It MUST be >= the number of pages we prefill, or the later pages are
+     *     unreachable. 16 = our 8 + eight blanks, so the survivor can go on
+     *     keeping the notebook himself (he needs a pen; that is vanilla's gate).
+     *   * We deliberately do NOT setLockedBy(): the notebook is HIS, and a man
+     *     writing in his own notebook should not be locked out of it.
+     *   * A page is capped at 15 lines by the journal UI and 15*80 chars by the
+     *     text box; RR_Manual.MAX_LINES/MAX_COLS keep the authored text inside
+     *     that, and the unit tests check every EN and RU page against it.
+     *
+     * Icon/models are the vanilla notebook's (Icon = Notebook resolves to the
+     * vanilla Item_Notebook texture) -- a mod item may reference them, so the
+     * easter egg still needs no art of its own.
+     ***********************************************************************/
+    item RR_EngineerNotebook
+    {
+        DisplayCategory = Literature,
+        ItemType = base:literature,
+        Weight = 0.3,
+        Icon = Notebook,
+        CanBeWrite = true,
+        PageToWrite = 16,
+        StaticModel = EmptyNotebook,
+        WorldStaticModel = EmptyNotebook,
+        ReadType = newspaper,
+    }
+
+    /***********************************************************************
+     * Railroader -- THE TWO TRAINING BOOKS (see shared/Railroader/RR_Training.lua
+     * and docs/TRAINING_DESIGN.md). They are the road into the cab for a survivor
+     * who did not take the Railroader profession.
+     *
+     * THEY ARE RECIPE MAGAZINES, NOT SKILL BOOKS, AND THAT DISTINCTION IS THE WHOLE
+     * SHAPE OF THIS SCRIPT (owner, 2026-08-09). Vanilla splits its literature in two
+     * and the player has learned the split without being told it:
+     *   * a SKILL BOOK (SkillTrained + LvlSkillTrained) multiplies XP gain -- you
+     *     read it and then go and DO the thing faster. It unlocks nothing.
+     *   * a RECIPE MAGAZINE (LearnedRecipes) unlocks a capability outright, the
+     *     moment you finish it.
+     * Ours unlock a capability, so they are magazines: LearnedRecipes, the
+     * RecipeResource category, the onCreateRecipeMagazine hook, and magazine art. A
+     * player who saw a skill book here would wait for an XP bar that never moves.
+     * Do not add SkillTrained to either of these.
+     *
+     * WHAT LearnedRecipes BUYS US, all vanilla, all verified in the decompile:
+     *   * The grant itself. ISReadABook:complete -> IsoGameCharacter.ReadLiterature
+     *     (:4843-4852) walks getLearnedRecipes() and calls learnRecipe on each. The
+     *     permit is a raw string in knownRecipes, saved with the character (:5358).
+     *     RR_Licence still calls learnRecipe as a backstop, and owns the halo.
+     *   * The CHARACTER SHEET. ISLiteratureUI:setLists (:358-380) scans every
+     *     literature ITEM SCRIPT, files anything with LearnedRecipes under "Recipe
+     *     Books", and puts each recipe id in the "Recipes" tab. So both permits show
+     *     up in the player's own record of what he knows, which is where he will
+     *     look for them.
+     *   * "Show known recipes" on the right-click menu (doLiteratureMenu:1105+).
+     * The precedent is exact: vanilla's "Basic Mechanics" is likewise a raw string
+     * with no recipe script behind it, granted by MechanicMag1's LearnedRecipes and
+     * given a name/icon by hand (Recipes.json + ISLiteratureUI.miscRecipes, which
+     * RR_Licence fills in for ours).
+     *
+     * NO `Tags = base:magazine`, AND THAT IS DELIBERATE. Every vanilla recipe
+     * magazine carries it, but the tag is an INGREDIENT: MakeBodyMagazineArmor /
+     * MakeForearmMagazineArmor (CraftRecipeKey:397,466) consume tagged magazines as
+     * armour padding. Vanilla can afford that because its recipes are duplicated
+     * across many magazines; the train-handling book is the ONLY source of its
+     * permit in the world, and letting a player quietly shred it into a vest is a
+     * way to lose the feature with no message.
+     *
+     * WHY THE PAGE COUNTS DIFFER, and they are the whole difference in feel.
+     * ISReadABook.getDuration spends numPages * MinutesPerPage IN-GAME MINUTES
+     * (MinutesPerPage is a sandbox option, default 2.0), scaled by the reader's
+     * traits -- Fast Reader 0.7, Slow Reader 1.3, reading glasses 0.9. The sitting
+     * 0.9 does NOT apply in the cab: getDuration tests isSitOnGround /
+     * isSittingOnFurniture, and our driver is merely setIsResting.
+     *   * Model journal: 20 pages -> 40 in-game minutes. It was 5 (the numPages
+     *     default you get with NO NumberOfPages at all, Item.java:191 -> -1), i.e.
+     *     ten minutes -- a rounding error next to walking out to the locomotive.
+     *     Raised 2026-08-09 (owner), to 60 first and then settled at 20: long
+     *     enough to be a sitting you notice, short enough that the first-contact
+     *     loop in TRAINING_DESIGN section 2.1 still lands. TEN TIMES shorter than
+     *     the rulebook, which is the ratio the two icons are drawn to.
+     *   * Base manual: 200 pages -> 6 h 40 min in-game.
+     * Both are therefore read over several sittings, which is FREE and per
+     * character: getDuration reads character:getAlreadyReadPages(fullType) back,
+     * start() seeks to it, and IsoGameCharacter.save (:5350) round-trips the
+     * progress. No SkillTrained is needed for any of it -- readBooks is keyed by
+     * item full type alone. (That resume only exists while NumberOfPages > 0, which
+     * is the second reason the journal now declares one.)
+     *
+     * THE ART ENCODES THAT LENGTH, which is the one thing an icon can honestly say
+     * at 32 px:
+     *   * PaperReport1 + the ArmorMag7 models (vanilla, from ArmorMag7): loose typed
+     *     sheets with two seals -- thin, official, one sitting.
+     *   * RR_TrainHandling: OUR OWN 32x32, media/textures/Item_RR_TrainHandling.png,
+     *     drawn by tools/make_item_icons.py -- a dark green softbound manual with a
+     *     printed title band and a deep cream page block. Vanilla models underneath
+     *     (Magazine / MagazineGround), because only the ICON needed replacing.
+     * A CUSTOM ICON IS JUST A FILE: Texture.trygetTexture("Item_" + Icon)
+     * (InventoryItem:2362) misses the .pack atlases and falls through to
+     * media/textures/Item_<Icon>.png via ZomboidFileSystem, which searches the mod's
+     * own media dir -- the same route media/textures/prof_railroader.png already
+     * takes. No WItem_ sprite is needed while WorldStaticModel names a real model.
+     * WHY IT IS OURS AND NOT VANILLA'S: every vanilla recipe-magazine icon carries
+     * cover art for its own subject -- an anvil, a welding mask, a horseshoe -- and
+     * the least-wrong of them (Magazine_Metalworking1) still put an anvil on a
+     * railroad rulebook (owner, 2026-08-09). Ours depicts NOTHING: a title band, a
+     * rule and two text lines, so it cannot depict the wrong thing.
+     * TWO EARLIER PICKS FOR THE BASE MANUAL WERE WRONG AND BOTH ARE WORTH KEEPING
+     * IN MIND. Book_Generic + BookOpenTINT/BookClosedTINT: 50 vanilla users, every
+     * one a SkillBook -- chosen while avoiding Book11, which would have collided
+     * with only five. Then plain Book + BookClosedGround: 46 users, all ordinary
+     * Literature, so not a skill book by the letter -- but still a HARDBACK, and in
+     * this game a hardback is what an XP multiplier looks like. The rule that
+     * survives both mistakes: match the vanilla item that does the same JOB, not
+     * the one that looks nice.
+     ***********************************************************************/
+    item RR_ModelManual_GP7
+    {
+        DisplayCategory = RecipeResource,
+        ItemType = base:literature,
+        Weight = 0.4,
+        Icon = PaperReport1,
+        BoredomChange = -10,
+        StressChange = -5,
+        NumberOfPages = 20,
+        LearnedRecipes = RR_Operate_GP7,
+        Tooltip = Tooltip_item_RR_ModelManual_GP7,
+        StaticModel = ArmorMag7,
+        WorldStaticModel = ArmorMag7,
+        ReadType = newspaper,
+        OnCreate = ItemCodeOnCreate.onCreateRecipeMagazine,
+    }
+
+    item RR_TrainHandlingBook
+    {
+        DisplayCategory = RecipeResource,
+        ItemType = base:literature,
+        Weight = 1.0,
+        Icon = RR_TrainHandling,
+        BoredomChange = -10,
+        StressChange = -5,
+        NumberOfPages = 200,
+        LearnedRecipes = RR_TrainHandling,
+        Tooltip = Tooltip_item_RR_TrainHandlingBook,
+        StaticModel = Magazine,
+        WorldStaticModel = MagazineGround,
+        ReadType = newspaper,
+        OnCreate = ItemCodeOnCreate.onCreateRecipeMagazine,
+    }
+}

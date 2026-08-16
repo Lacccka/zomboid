@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode>
+	<m_Name>EndDeath</m_Name>
+	<m_AnimName>Bob_EndDeath</m_AnimName>
+	<m_Looped>false</m_Looped>
+	<m_BlendTime>0.20</m_BlendTime>
+	<m_SpeedScale>1.04</m_SpeedScale>
+	<m_Events x_name="56c40a66-2186-418a-a8fd-e3ecd9307dad">
+		<m_EventName>Death</m_EventName>
+		<m_Time>End</m_Time>
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+	<m_Events x_name="3979ada8-5d98-46f7-9a6f-e8558a917ec5">
+		<m_EventName>DeathSound</m_EventName>
+		<m_Time>Start</m_Time>
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+</animNode>

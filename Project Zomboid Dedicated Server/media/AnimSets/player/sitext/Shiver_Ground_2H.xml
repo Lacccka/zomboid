@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="Shiver_Ground.xml">
+	<m_Name>Shiver_Ground_2H</m_Name>
+	<m_AnimName>Bob_SitGround_Shiver_Sat_2H</m_AnimName>
+	<m_Conditions x_name="8558b241-a42b-4d85-9a74-c39ed27817c0">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="0eb3eb73-43d8-40d3-a7b4-4ec2bd68eaf0">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="ee169340-4d69-4c30-8875-45af3c99bdaf">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>Shiver</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="2d6fc6c8-879e-4ae2-b405-8252ca479acd">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="d1da4471-b4bb-4138-8f0a-dce6a0688394">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="37763100-7d39-46a0-b415-1e693430b1fc">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="c7a23d38-fc41-4267-b60e-4f488705f243">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>Shiver</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="fdf335d8-3291-4b7e-bc0e-ecdcfd5ae567">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="d16496ce-cbdb-4d4b-abe4-d2d4c56e8418">
+		<m_Name>NewCondition</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>heavy</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="71101309-793f-499d-a66e-b3c2e0980970">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="1c2a14f5-bb31-4cff-a083-c15e07dc2197">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>Shiver</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="b4395729-636e-426b-a400-f5141e9397d0">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="882df622-c5dd-4388-a8ad-da8d47ad72d3">
+		<m_Name>NewCondition</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+</animNode>

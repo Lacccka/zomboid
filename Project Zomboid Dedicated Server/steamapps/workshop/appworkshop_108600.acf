@@ -1,0 +1,480 @@
+"AppWorkshop"
+{
+	"appid"		"108600"
+	"SizeOnDisk"		"7767145695"
+	"NeedsUpdate"		"0"
+	"NeedsDownload"		"0"
+	"TimeLastUpdated"		"1786723518"
+	"TimeLastAppRan"		"0"
+	"LastBuildID"		"0"
+	"WorkshopItemsInstalled"
+	{
+		"2896041179"
+		{
+			"size"		"393918"
+			"timeupdated"		"1776712429"
+			"manifest"		"8218483994685904952"
+		}
+		"3077900375"
+		{
+			"size"		"674130"
+			"timeupdated"		"1775660491"
+			"manifest"		"5726953119991604654"
+		}
+		"3217685049"
+		{
+			"size"		"483672097"
+			"timeupdated"		"1786613908"
+			"manifest"		"5153711411384357879"
+		}
+		"3268487204"
+		{
+			"size"		"176903388"
+			"timeupdated"		"1786698561"
+			"manifest"		"763576206045782609"
+		}
+		"3304582091"
+		{
+			"size"		"25662263"
+			"timeupdated"		"1773960253"
+			"manifest"		"5686382571068868870"
+		}
+		"3402491515"
+		{
+			"size"		"10513690"
+			"timeupdated"		"1785731494"
+			"manifest"		"1782366204156191294"
+		}
+		"3403490889"
+		{
+			"size"		"1373478"
+			"timeupdated"		"1773960225"
+			"manifest"		"163131028279100743"
+		}
+		"3403870858"
+		{
+			"size"		"1432541683"
+			"timeupdated"		"1786222251"
+			"manifest"		"2269603909411913012"
+		}
+		"3413150945"
+		{
+			"size"		"22210249"
+			"timeupdated"		"1786661828"
+			"manifest"		"1419580310102567083"
+		}
+		"3464606086"
+		{
+			"size"		"1702077"
+			"timeupdated"		"1786396075"
+			"manifest"		"5416752711306595060"
+		}
+		"3465040406"
+		{
+			"size"		"23023316"
+			"timeupdated"		"1786239066"
+			"manifest"		"7055610500247755533"
+		}
+		"3633421539"
+		{
+			"size"		"3393118610"
+			"timeupdated"		"1782731477"
+			"manifest"		"3963828595403824855"
+		}
+		"3739256725"
+		{
+			"size"		"129488539"
+			"timeupdated"		"1786721256"
+			"manifest"		"7196313311804070051"
+		}
+		"3744973332"
+		{
+			"size"		"1108616454"
+			"timeupdated"		"1781486275"
+			"manifest"		"977685015852561241"
+		}
+		"3745718141"
+		{
+			"size"		"3501889"
+			"timeupdated"		"1786203131"
+			"manifest"		"7315833393474917225"
+		}
+		"3750253491"
+		{
+			"size"		"870126"
+			"timeupdated"		"1786641981"
+			"manifest"		"7853757084195517744"
+		}
+		"3766508989"
+		{
+			"size"		"2933955"
+			"timeupdated"		"1786352783"
+			"manifest"		"7086432741112211618"
+		}
+		"3766693411"
+		{
+			"size"		"791396825"
+			"timeupdated"		"1785645144"
+			"manifest"		"3408981499338078950"
+		}
+		"3774360904"
+		{
+			"size"		"12236297"
+			"timeupdated"		"1786290284"
+			"manifest"		"4917763225826450979"
+		}
+		"3774448621"
+		{
+			"size"		"35544474"
+			"timeupdated"		"1785463883"
+			"manifest"		"3167066363915334200"
+		}
+		"3774826484"
+		{
+			"size"		"10828119"
+			"timeupdated"		"1786590847"
+			"manifest"		"2945334651705939959"
+		}
+		"3774999360"
+		{
+			"size"		"571413"
+			"timeupdated"		"1785502057"
+			"manifest"		"3088398999110225480"
+		}
+		"3775841600"
+		{
+			"size"		"429523"
+			"timeupdated"		"1785731165"
+			"manifest"		"3356005751541610885"
+		}
+		"3779749594"
+		{
+			"size"		"5666858"
+			"timeupdated"		"1786254037"
+			"manifest"		"3940876439289869064"
+		}
+		"3780151182"
+		{
+			"size"		"78644890"
+			"timeupdated"		"1786680227"
+			"manifest"		"1060391916407395485"
+		}
+		"3780257177"
+		{
+			"size"		"6759954"
+			"timeupdated"		"1786254113"
+			"manifest"		"580479962529699089"
+		}
+		"3780257415"
+		{
+			"size"		"81182"
+			"timeupdated"		"1786254148"
+			"manifest"		"3571183198164756951"
+		}
+		"3781229261"
+		{
+			"size"		"1522918"
+			"timeupdated"		"1786595610"
+			"manifest"		"3538960858898089399"
+		}
+		"3781771367"
+		{
+			"size"		"1739359"
+			"timeupdated"		"1786537208"
+			"manifest"		"7473077880031334670"
+		}
+		"3781771737"
+		{
+			"size"		"1751508"
+			"timeupdated"		"1786537262"
+			"manifest"		"1579434149056495566"
+		}
+		"3782313362"
+		{
+			"size"		"985513"
+			"timeupdated"		"1786682772"
+			"manifest"		"570817815672279743"
+		}
+		"3782987959"
+		{
+			"size"		"9971"
+			"timeupdated"		"1786671231"
+			"manifest"		"1045490040968141248"
+		}
+		"3783046891"
+		{
+			"size"		"1777029"
+			"timeupdated"		"1786727989"
+			"manifest"		"4942791268129284558"
+		}
+	}
+	"WorkshopItemDetails"
+	{
+		"2896041179"
+		{
+			"manifest"		"8218483994685904952"
+			"timeupdated"		"1776712429"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1776712429"
+			"latest_manifest"		"8218483994685904952"
+		}
+		"3077900375"
+		{
+			"manifest"		"5726953119991604654"
+			"timeupdated"		"1775660491"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1775660491"
+			"latest_manifest"		"5726953119991604654"
+		}
+		"3217685049"
+		{
+			"manifest"		"5153711411384357879"
+			"timeupdated"		"1786613908"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786613908"
+			"latest_manifest"		"5153711411384357879"
+		}
+		"3268487204"
+		{
+			"manifest"		"763576206045782609"
+			"timeupdated"		"1786698561"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786698561"
+			"latest_manifest"		"763576206045782609"
+		}
+		"3304582091"
+		{
+			"manifest"		"5686382571068868870"
+			"timeupdated"		"1773960253"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1773960253"
+			"latest_manifest"		"5686382571068868870"
+		}
+		"3402491515"
+		{
+			"manifest"		"1782366204156191294"
+			"timeupdated"		"1785731494"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1785731494"
+			"latest_manifest"		"1782366204156191294"
+		}
+		"3403490889"
+		{
+			"manifest"		"163131028279100743"
+			"timeupdated"		"1773960225"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1773960225"
+			"latest_manifest"		"163131028279100743"
+		}
+		"3403870858"
+		{
+			"manifest"		"2269603909411913012"
+			"timeupdated"		"1786222251"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786222251"
+			"latest_manifest"		"2269603909411913012"
+		}
+		"3413150945"
+		{
+			"manifest"		"1419580310102567083"
+			"timeupdated"		"1786661828"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786661828"
+			"latest_manifest"		"1419580310102567083"
+		}
+		"3464606086"
+		{
+			"manifest"		"5416752711306595060"
+			"timeupdated"		"1786396075"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786396075"
+			"latest_manifest"		"5416752711306595060"
+		}
+		"3465040406"
+		{
+			"manifest"		"7055610500247755533"
+			"timeupdated"		"1786239066"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786239066"
+			"latest_manifest"		"7055610500247755533"
+		}
+		"3633421539"
+		{
+			"manifest"		"3963828595403824855"
+			"timeupdated"		"1782731477"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1782731477"
+			"latest_manifest"		"3963828595403824855"
+		}
+		"3739256725"
+		{
+			"manifest"		"7196313311804070051"
+			"timeupdated"		"1786721256"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786721256"
+			"latest_manifest"		"7196313311804070051"
+		}
+		"3744973332"
+		{
+			"manifest"		"977685015852561241"
+			"timeupdated"		"1781486275"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1781486275"
+			"latest_manifest"		"977685015852561241"
+		}
+		"3745718141"
+		{
+			"manifest"		"7315833393474917225"
+			"timeupdated"		"1786203131"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786203131"
+			"latest_manifest"		"7315833393474917225"
+		}
+		"3750253491"
+		{
+			"manifest"		"7853757084195517744"
+			"timeupdated"		"1786641981"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786641981"
+			"latest_manifest"		"7853757084195517744"
+		}
+		"3766508989"
+		{
+			"manifest"		"7086432741112211618"
+			"timeupdated"		"1786352783"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786352783"
+			"latest_manifest"		"7086432741112211618"
+		}
+		"3766693411"
+		{
+			"manifest"		"3408981499338078950"
+			"timeupdated"		"1785645144"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1785645144"
+			"latest_manifest"		"3408981499338078950"
+		}
+		"3774360904"
+		{
+			"manifest"		"4917763225826450979"
+			"timeupdated"		"1786290284"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786290284"
+			"latest_manifest"		"4917763225826450979"
+		}
+		"3774448621"
+		{
+			"manifest"		"3167066363915334200"
+			"timeupdated"		"1785463883"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1785463883"
+			"latest_manifest"		"3167066363915334200"
+		}
+		"3774826484"
+		{
+			"manifest"		"2945334651705939959"
+			"timeupdated"		"1786590847"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786590847"
+			"latest_manifest"		"2945334651705939959"
+		}
+		"3774999360"
+		{
+			"manifest"		"3088398999110225480"
+			"timeupdated"		"1785502057"
+			"timetouched"		"1786660472"
+			"BytesDownloaded"		"565504"
+			"BytesToDownload"		"565504"
+			"latest_timeupdated"		"1785502057"
+			"latest_manifest"		"3088398999110225480"
+		}
+		"3775841600"
+		{
+			"manifest"		"3356005751541610885"
+			"timeupdated"		"1785731165"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1785731165"
+			"latest_manifest"		"3356005751541610885"
+		}
+		"3779749594"
+		{
+			"manifest"		"3940876439289869064"
+			"timeupdated"		"1786254037"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786254037"
+			"latest_manifest"		"3940876439289869064"
+		}
+		"3780151182"
+		{
+			"manifest"		"1060391916407395485"
+			"timeupdated"		"1786680227"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786680227"
+			"latest_manifest"		"1060391916407395485"
+		}
+		"3780257177"
+		{
+			"manifest"		"580479962529699089"
+			"timeupdated"		"1786254113"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786254113"
+			"latest_manifest"		"580479962529699089"
+		}
+		"3780257415"
+		{
+			"manifest"		"3571183198164756951"
+			"timeupdated"		"1786254148"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786254148"
+			"latest_manifest"		"3571183198164756951"
+		}
+		"3781229261"
+		{
+			"manifest"		"3538960858898089399"
+			"timeupdated"		"1786595610"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786595610"
+			"latest_manifest"		"3538960858898089399"
+		}
+		"3781771367"
+		{
+			"manifest"		"7473077880031334670"
+			"timeupdated"		"1786537208"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786537208"
+			"latest_manifest"		"7473077880031334670"
+		}
+		"3781771737"
+		{
+			"manifest"		"1579434149056495566"
+			"timeupdated"		"1786537262"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786537262"
+			"latest_manifest"		"1579434149056495566"
+		}
+		"3782313362"
+		{
+			"manifest"		"570817815672279743"
+			"timeupdated"		"1786682772"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786682772"
+			"latest_manifest"		"570817815672279743"
+		}
+		"3782987959"
+		{
+			"manifest"		"1045490040968141248"
+			"timeupdated"		"1786671231"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786671231"
+			"latest_manifest"		"1045490040968141248"
+		}
+		"3783046891"
+		{
+			"manifest"		"4942791268129284558"
+			"timeupdated"		"1786727989"
+			"timetouched"		"1786728135"
+			"latest_timeupdated"		"1786727989"
+			"latest_manifest"		"4942791268129284558"
+		}
+	}
+}

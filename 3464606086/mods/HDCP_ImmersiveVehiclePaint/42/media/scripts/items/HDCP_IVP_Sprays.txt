@@ -1,0 +1,379 @@
+module ImmersiveVehiclePaint
+{
+    imports
+    {
+        Base
+    }
+
+    item UsedAutomotiveSprayPaintDummy
+    {
+        DisplayName         = Used Automotive Spray Paint Dummy,
+        DisplayCategory     = Junk,
+        ItemType            = base:normal,
+        Weight              = 1.0,
+    }
+
+    item UsedAutomotivePrimerSprayDummy
+    {
+        DisplayName         = Used Automotive Primer Spray Dummy,
+        DisplayCategory     = Junk,
+        ItemType            = base:normal,
+        Weight              = 1.0,
+    }
+
+    item NewAutomotiveSprayPaintDummy
+    {
+        DisplayName         = New Automotive Spray Paint Dummy,
+        DisplayCategory     = Junk,
+        ItemType            = base:normal,
+        Weight              = 1.0,
+    }
+
+    item NewAutomotivePrimerSprayDummy
+    {
+        DisplayName         = New Automotive Primer Spray Dummy,
+        DisplayCategory     = Junk,
+        ItemType            = base:normal,
+        Weight              = 1.0,
+    }
+
+    item EmptyAutomotivePaintSprayCan
+    {
+        DisplayName         = Empty Automotive Paint Spray Can,
+        DisplayCategory     = Junk,
+        ItemType            = base:normal,
+        Weight              = 0.3,
+        Icon                = EmptyAutomotivePaintSprayCan,
+        StaticModel         = EmptyAutomotivePaintSprayCan,
+        WorldStaticModel    = ImmersiveVehiclePaint.EmptyAutomotivePaintSprayCan,
+        MetalValue          = 10,
+        Tags                = HasMetal;EmptyCan,
+    }
+
+    item EmptyAutomotivePrimerSprayCan
+    {
+        DisplayName         = Empty Automotive Primer Spray Can,
+        DisplayCategory     = Junk,
+        ItemType            = base:normal,
+        Weight              = 0.3,
+        Icon                = EmptyAutomotivePrimerSprayCan,
+        StaticModel         = EmptyAutomotivePrimerSprayCan,
+        WorldStaticModel    = ImmersiveVehiclePaint.EmptyAutomotivePrimerSprayCan,
+        MetalValue          = 10,
+        Tags                = HasMetal;EmptyCan,
+    }
+
+    item AutomotivePrimerSpray
+    {
+        DisplayName         = Automotive Primer Spray,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = AutomotivePrimerSpray,
+        StaticModel         = AutomotivePrimerSpray,
+        WorldStaticModel    = ImmersiveVehiclePaint.AutomotivePrimerSpray,
+        ReplaceOnDeplete    = EmptyAutomotivePrimerSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item WhiteAutomotiveSprayPaint
+    {
+        DisplayName         = White Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = WhiteAutomotiveSprayPaint,
+        StaticModel         = WhiteAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.WhiteAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item PearlWhiteAutomotiveSprayPaint
+    {
+        DisplayName         = Pearl White Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = PearlWhiteAutomotiveSprayPaint,
+        StaticModel         = PearlWhiteAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.PearlWhiteAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item SilverAutomotiveSprayPaint
+    {
+        DisplayName         = Silver Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = SilverAutomotiveSprayPaint,
+        StaticModel         = SilverAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.SilverAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item GraphiteAutomotiveSprayPaint
+    {
+        DisplayName         = Graphite Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = GraphiteAutomotiveSprayPaint,
+        StaticModel         = GraphiteAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.GraphiteAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item BlackAutomotiveSprayPaint
+    {
+        DisplayName         = Black Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = BlackAutomotiveSprayPaint,
+        StaticModel         = BlackAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.BlackAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item MustardAutomotiveSprayPaint
+    {
+        DisplayName         = Mustard Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = MustardAutomotiveSprayPaint,
+        StaticModel         = MustardAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.MustardAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item TangerineAutomotiveSprayPaint
+    {
+        DisplayName         = Tangerine Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = TangerineAutomotiveSprayPaint,
+        StaticModel         = TangerineAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.TangerineAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item CherryAutomotiveSprayPaint
+    {
+        DisplayName         = Cherry Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = CherryAutomotiveSprayPaint,
+        StaticModel         = CherryAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.CherryAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item BurgundyAutomotiveSprayPaint
+    {
+        DisplayName         = Burgundy Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = BurgundyAutomotiveSprayPaint,
+        StaticModel         = BurgundyAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.BurgundyAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item HotPinkAutomotiveSprayPaint
+    {
+        DisplayName         = Hot Pink Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = HotPinkAutomotiveSprayPaint,
+        StaticModel         = HotPinkAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.HotPinkAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item AmethystAutomotiveSprayPaint
+    {
+        DisplayName         = Amethyst Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = AmethystAutomotiveSprayPaint,
+        StaticModel         = AmethystAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.AmethystAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item VioletAutomotiveSprayPaint
+    {
+        DisplayName         = Violet Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = VioletAutomotiveSprayPaint,
+        StaticModel         = VioletAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.VioletAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item SapphireAutomotiveSprayPaint
+    {
+        DisplayName         = Sapphire Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = SapphireAutomotiveSprayPaint,
+        StaticModel         = SapphireAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.SapphireAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item SkyBlueAutomotiveSprayPaint
+    {
+        DisplayName         = Sky Blue Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = SkyBlueAutomotiveSprayPaint,
+        StaticModel         = SkyBlueAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.SkyBlueAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item LimeGreenAutomotiveSprayPaint
+    {
+        DisplayName         = Lime Green Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = LimeGreenAutomotiveSprayPaint,
+        StaticModel         = LimeGreenAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.LimeGreenAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item HunterGreenAutomotiveSprayPaint
+    {
+        DisplayName         = Hunter Green Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = HunterGreenAutomotiveSprayPaint,
+        StaticModel         = HunterGreenAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.HunterGreenAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item HazelAutomotiveSprayPaint
+    {
+        DisplayName         = Hazel Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = HazelAutomotiveSprayPaint,
+        StaticModel         = HazelAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.HazelAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item CoffeeAutomotiveSprayPaint
+    {
+        DisplayName         = Coffee Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:drainable,
+        Weight              = 1.0,
+        Icon                = CoffeeAutomotiveSprayPaint,
+        StaticModel         = CoffeeAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.CoffeeAutomotiveSprayPaint,
+        ReplaceOnDeplete    = EmptyAutomotivePaintSprayCan,
+        UseWhileEquipped    = false,
+        UseDelta            = 0.125,
+    }
+
+    item BoxOfAutomotiveSprayPaint
+    {
+        DisplayName         = Box of Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:normal,
+        Weight              = 6.1,
+        Icon                = BoxOfAutomotiveSprayPaint,
+        StaticModel         = BoxOfAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.BoxOfAutomotiveSprayPaint,
+        DoubleClickRecipe   = OpenBoxOfAutomotiveSprayPaint,
+    }
+
+    item BoxOfWarmAutomotiveSprayPaint
+    {
+        DisplayName         = Box of Warm Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:normal,
+        Weight              = 6.1,
+        Icon                = BoxOfWarmAutomotiveSprayPaint,
+        StaticModel         = BoxOfWarmAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.BoxOfWarmAutomotiveSprayPaint,
+        DoubleClickRecipe   = OpenBoxOfWarmAutomotiveSprayPaint,
+    }
+
+    item BoxOfCoolAutomotiveSprayPaint
+    {
+        DisplayName         = Box of Cool Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:normal,
+        Weight              = 6.1,
+        Icon                = BoxOfCoolAutomotiveSprayPaint,
+        StaticModel         = BoxOfCoolAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.BoxOfCoolAutomotiveSprayPaint,
+        DoubleClickRecipe   = OpenBoxOfCoolAutomotiveSprayPaint,
+    }
+
+    item BoxOfNeutralAutomotiveSprayPaint
+    {
+        DisplayName         = Box of Neutral Automotive Spray Paint,
+        DisplayCategory     = Material,
+        ItemType            = base:normal,
+        Weight              = 6.1,
+        Icon                = BoxOfNeutralAutomotiveSprayPaint,
+        StaticModel         = BoxOfNeutralAutomotiveSprayPaint,
+        WorldStaticModel    = ImmersiveVehiclePaint.BoxOfNeutralAutomotiveSprayPaint,
+        DoubleClickRecipe   = OpenBoxOfNeutralAutomotiveSprayPaint,
+    }
+}

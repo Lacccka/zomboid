@@ -1,0 +1,19 @@
+{
+    "schemaVersion": 1,
+    "id": "lcc-internet-radio-server-bridge",
+    "version": "0.10.0",
+    "name": "LCC Internet Radio Server Voice Bridge",
+    "description": "Server-managed isolated RadioBot connection PoC; no client installation required.",
+    "authors": ["Lacccka"],
+    "contact": {"sources": "https://github.com/Lacccka/zomboid"},
+    "license": "All-Rights-Reserved",
+    "environment": "server",
+    "entrypoints": {
+        "main": ["lcc.internetradio.server.InternetRadioServerMod"]
+    },
+    "depends": {
+        "leafloader": ">=1.6.0",
+        "zomboid": ">=42.20.0",
+        "java": ">=17"
+    }
+}

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="fromSitOnGround.xml">
+	<m_Name>fromSitOnGround_1H</m_Name>
+	<m_Conditions x_name="2b04e671-4795-45dc-9081-acc40dcc2df8">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>1handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="283ff137-38a4-4cc5-95c1-4c40fbe8decd">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="b3a3c55a-c0ab-4d92-a622-604c208d51b6">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="de264aa2-5066-4590-bff0-738be130478a">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>knife</m_Value>
+	</m_Conditions>
+	<m_Events x_name="e34660b2-a2d0-420a-b8dc-acc1b10d0755">
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+</animNode>

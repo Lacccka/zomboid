@@ -1,0 +1,705 @@
+
+
+[2026-08-13 16:09:39] Client version: no bootstrapper found
+[2026-08-13 16:09:39] [AppID 108600] GetDetails request 0x1 - batch (0-31 of 31) => not in cache, requesting from Steam
+[2026-08-13 16:09:39] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-13 16:09:39] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (0 installed, 0 needed)
+[2026-08-13 16:09:39] [AppID 108600] Download item 3766508989 requested by app
+[2026-08-13 16:09:39] [AppID 108600] Starting Workshop download job (requested item 3766508989 )
+[2026-08-13 16:09:40] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3766508989, new manifest 7086432741112211618
+[2026-08-13 16:09:40] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:09:44] [AppID 108600] Download item 3766508989 result : OK
+[2026-08-13 16:09:44] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:09:44] [AppID 108600] Download item 3750253491 requested by app
+[2026-08-13 16:09:45] [AppID 108600] Updating workshop item details failed with Access Denied
+[2026-08-13 16:09:45] [AppID 108600] Starting Workshop download job (requested item 3750253491 )
+[2026-08-13 16:09:45] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3750253491, new manifest 6545467588752839443
+[2026-08-13 16:09:45] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:09:49] [AppID 108600] Download item 3750253491 result : OK
+[2026-08-13 16:09:49] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:09:49] [AppID 108600] Download item 3781771367 requested by app
+[2026-08-13 16:09:49] [AppID 108600] Starting Workshop download job (requested item 3781771367 )
+[2026-08-13 16:09:50] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3781771367, new manifest 7473077880031334670
+[2026-08-13 16:09:50] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:09:51] [AppID 108600] Download item 3781771367 result : OK
+[2026-08-13 16:09:51] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:09:51] [AppID 108600] Download item 3781771737 requested by app
+[2026-08-13 16:09:51] [AppID 108600] Starting Workshop download job (requested item 3781771737 )
+[2026-08-13 16:09:52] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3781771737, new manifest 1579434149056495566
+[2026-08-13 16:09:52] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:09:53] [AppID 108600] Download item 3781771737 result : OK
+[2026-08-13 16:09:53] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:09:53] [AppID 108600] Download item 3766693411 requested by app
+[2026-08-13 16:09:53] [AppID 108600] Starting Workshop download job (requested item 3766693411 )
+[2026-08-13 16:09:54] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3766693411, new manifest 3408981499338078950
+[2026-08-13 16:09:54] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:10:22] [AppID 108600] Download item 3766693411 result : OK
+[2026-08-13 16:10:22] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:10:22] [AppID 108600] Download item 3774826484 requested by app
+[2026-08-13 16:10:22] [AppID 108600] Starting Workshop download job (requested item 3774826484 )
+[2026-08-13 16:10:23] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3774826484, new manifest 2945334651705939959
+[2026-08-13 16:10:23] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:10:25] [AppID 108600] Download item 3774826484 result : OK
+[2026-08-13 16:10:25] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:10:25] [AppID 108600] Download item 3775841600 requested by app
+[2026-08-13 16:10:25] [AppID 108600] Starting Workshop download job (requested item 3775841600 )
+[2026-08-13 16:10:25] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3775841600, new manifest 3356005751541610885
+[2026-08-13 16:10:25] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:10:28] [AppID 108600] Download item 3775841600 result : OK
+[2026-08-13 16:10:28] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:10:28] [AppID 108600] Download item 3774999360 requested by app
+[2026-08-13 16:10:28] [AppID 108600] Starting Workshop download job (requested item 3774999360 )
+[2026-08-13 16:10:28] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3774999360, new manifest 3088398999110225480
+[2026-08-13 16:10:28] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:10:30] [AppID 108600] Download item 3774999360 result : OK
+[2026-08-13 16:10:30] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:10:30] [AppID 108600] Download item 3403870858 requested by app
+[2026-08-13 16:10:30] [AppID 108600] Starting Workshop download job (requested item 3403870858 )
+[2026-08-13 16:10:30] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3403870858, new manifest 2269603909411913012
+[2026-08-13 16:10:30] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:11:20] [AppID 108600] Download item 3403870858 result : OK
+[2026-08-13 16:11:20] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:11:20] [AppID 108600] Download item 3077900375 requested by app
+[2026-08-13 16:11:20] [AppID 108600] Starting Workshop download job (requested item 3077900375 )
+[2026-08-13 16:11:20] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3077900375, new manifest 5726953119991604654
+[2026-08-13 16:11:20] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:11:24] [AppID 108600] Download item 3077900375 result : OK
+[2026-08-13 16:11:24] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:11:24] [AppID 108600] Download item 3633421539 requested by app
+[2026-08-13 16:11:24] [AppID 108600] Starting Workshop download job (requested item 3633421539 )
+[2026-08-13 16:11:24] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3633421539, new manifest 3963828595403824855
+[2026-08-13 16:11:24] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:12:12] [AppID 108600] Download item 3633421539 result : OK
+[2026-08-13 16:12:12] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:12:12] [AppID 108600] Download item 3413150945 requested by app
+[2026-08-13 16:12:12] [AppID 108600] Starting Workshop download job (requested item 3413150945 )
+[2026-08-13 16:12:12] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3413150945, new manifest 6676360606844950350
+[2026-08-13 16:12:12] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:12:15] [AppID 108600] Download item 3413150945 result : OK
+[2026-08-13 16:12:15] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:12:15] [AppID 108600] Download item 3739256725 requested by app
+[2026-08-13 16:12:15] [AppID 108600] Starting Workshop download job (requested item 3739256725 )
+[2026-08-13 16:12:15] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3739256725, new manifest 1468562484704848672
+[2026-08-13 16:12:15] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:12:23] [AppID 108600] Download item 3739256725 result : OK
+[2026-08-13 16:12:23] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:12:23] [AppID 108600] Download item 3744973332 requested by app
+[2026-08-13 16:12:23] [AppID 108600] Starting Workshop download job (requested item 3744973332 )
+[2026-08-13 16:12:23] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3744973332, new manifest 977685015852561241
+[2026-08-13 16:12:23] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:13:01] [AppID 108600] Download item 3744973332 result : OK
+[2026-08-13 16:13:01] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:13:01] [AppID 108600] Download item 3465040406 requested by app
+[2026-08-13 16:13:01] [AppID 108600] Starting Workshop download job (requested item 3465040406 )
+[2026-08-13 16:13:01] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3465040406, new manifest 7055610500247755533
+[2026-08-13 16:13:01] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:13:05] [AppID 108600] Download item 3465040406 result : OK
+[2026-08-13 16:13:05] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:13:05] [AppID 108600] Download item 3217685049 requested by app
+[2026-08-13 16:13:05] [AppID 108600] Starting Workshop download job (requested item 3217685049 )
+[2026-08-13 16:13:05] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3217685049, new manifest 5153711411384357879
+[2026-08-13 16:13:05] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:13:35] [AppID 108600] Download item 3217685049 result : OK
+[2026-08-13 16:13:35] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:13:35] [AppID 108600] Download item 3781229261 requested by app
+[2026-08-13 16:13:35] [AppID 108600] Starting Workshop download job (requested item 3781229261 )
+[2026-08-13 16:13:35] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3781229261, new manifest 3538960858898089399
+[2026-08-13 16:13:35] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:13:40] [AppID 108600] Download item 3781229261 result : OK
+[2026-08-13 16:13:40] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:13:40] [AppID 108600] Download item 3774360904 requested by app
+[2026-08-13 16:13:40] [AppID 108600] Starting Workshop download job (requested item 3774360904 )
+[2026-08-13 16:13:41] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3774360904, new manifest 4917763225826450979
+[2026-08-13 16:13:41] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:13:44] [AppID 108600] Download item 3774360904 result : OK
+[2026-08-13 16:13:44] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:13:44] [AppID 108600] Download item 3403490889 requested by app
+[2026-08-13 16:13:44] [AppID 108600] Starting Workshop download job (requested item 3403490889 )
+[2026-08-13 16:13:44] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3403490889, new manifest 163131028279100743
+[2026-08-13 16:13:44] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:13:47] [AppID 108600] Download item 3403490889 result : OK
+[2026-08-13 16:13:47] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:13:47] [AppID 108600] Download item 3304582091 requested by app
+[2026-08-13 16:13:47] [AppID 108600] Starting Workshop download job (requested item 3304582091 )
+[2026-08-13 16:13:47] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3304582091, new manifest 5686382571068868870
+[2026-08-13 16:13:47] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:13:50] [AppID 108600] Download item 3304582091 result : OK
+[2026-08-13 16:13:50] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:13:50] [AppID 108600] Download item 3774448621 requested by app
+[2026-08-13 16:13:50] [AppID 108600] Starting Workshop download job (requested item 3774448621 )
+[2026-08-13 16:13:50] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3774448621, new manifest 3167066363915334200
+[2026-08-13 16:13:50] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:14:12] [AppID 108600] Download item 3774448621 result : OK
+[2026-08-13 16:14:12] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:14:12] [AppID 108600] Download item 3402491515 requested by app
+[2026-08-13 16:14:12] [AppID 108600] Starting Workshop download job (requested item 3402491515 )
+[2026-08-13 16:14:12] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3402491515, new manifest 1782366204156191294
+[2026-08-13 16:14:12] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:14:20] [AppID 108600] Download item 3402491515 result : OK
+[2026-08-13 16:14:20] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:14:20] [AppID 108600] Download item 3745718141 requested by app
+[2026-08-13 16:14:20] [AppID 108600] Starting Workshop download job (requested item 3745718141 )
+[2026-08-13 16:14:20] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3745718141, new manifest 7315833393474917225
+[2026-08-13 16:14:20] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:14:26] [AppID 108600] Download item 3745718141 result : OK
+[2026-08-13 16:14:26] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:14:26] [AppID 108600] Download item 3780151182 requested by app
+[2026-08-13 16:14:26] [AppID 108600] Starting Workshop download job (requested item 3780151182 )
+[2026-08-13 16:14:26] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3780151182, new manifest 7364031591725133503
+[2026-08-13 16:14:26] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:14:31] [AppID 108600] Download item 3780151182 result : OK
+[2026-08-13 16:14:31] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:14:31] [AppID 108600] Download item 3268487204 requested by app
+[2026-08-13 16:14:31] [AppID 108600] Starting Workshop download job (requested item 3268487204 )
+[2026-08-13 16:14:31] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3268487204, new manifest 4767584395101048258
+[2026-08-13 16:14:31] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:14:38] [AppID 108600] Download item 3268487204 result : OK
+[2026-08-13 16:14:38] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:14:38] [AppID 108600] Download item 3782313362 requested by app
+[2026-08-13 16:14:38] [AppID 108600] Starting Workshop download job (requested item 3782313362 )
+[2026-08-13 16:14:39] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3782313362, new manifest 5556409891277647608
+[2026-08-13 16:14:39] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:14:41] [AppID 108600] Download item 3782313362 result : OK
+[2026-08-13 16:14:41] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:14:41] [AppID 108600] Download item 3464606086 requested by app
+[2026-08-13 16:14:41] [AppID 108600] Starting Workshop download job (requested item 3464606086 )
+[2026-08-13 16:14:41] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3464606086, new manifest 5416752711306595060
+[2026-08-13 16:14:41] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:14:46] [AppID 108600] Download item 3464606086 result : OK
+[2026-08-13 16:14:46] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:14:46] [AppID 108600] Download item 2896041179 requested by app
+[2026-08-13 16:14:46] [AppID 108600] Starting Workshop download job (requested item 2896041179 )
+[2026-08-13 16:14:47] [AppID 108600] Detected workshop change (latest from server) : changed cached item 2896041179, new manifest 8218483994685904952
+[2026-08-13 16:14:47] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:14:48] [AppID 108600] Download item 2896041179 result : OK
+[2026-08-13 16:14:48] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:14:48] [AppID 108600] Download item 3780257177 requested by app
+[2026-08-13 16:14:48] [AppID 108600] Starting Workshop download job (requested item 3780257177 )
+[2026-08-13 16:14:49] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3780257177, new manifest 580479962529699089
+[2026-08-13 16:14:49] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:14:53] [AppID 108600] Download item 3780257177 result : OK
+[2026-08-13 16:14:53] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:14:54] [AppID 108600] Download item 3779749594 requested by app
+[2026-08-13 16:14:54] [AppID 108600] Starting Workshop download job (requested item 3779749594 )
+[2026-08-13 16:14:54] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3779749594, new manifest 3940876439289869064
+[2026-08-13 16:14:54] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:14:58] [AppID 108600] Download item 3779749594 result : OK
+[2026-08-13 16:14:58] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:14:58] [AppID 108600] Download item 3780257415 requested by app
+[2026-08-13 16:14:58] [AppID 108600] Starting Workshop download job (requested item 3780257415 )
+[2026-08-13 16:14:58] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3780257415, new manifest 3571183198164756951
+[2026-08-13 16:14:58] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 16:15:00] [AppID 108600] Download item 3780257415 result : OK
+[2026-08-13 16:15:00] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 16:54:46] [AppID 108600] Updating workshop item details failed with Access Denied
+[2026-08-13 17:39:47] [AppID 108600] Updating workshop item details failed with Access Denied
+[2026-08-13 18:24:49] [AppID 108600] Updating workshop item details failed with Access Denied
+[2026-08-13 19:09:51] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-13 19:42:34] Client version: no bootstrapper found
+[2026-08-13 19:42:34] [AppID 108600] GetDetails request 0x1 - batch (0-31 of 31) => not in cache, requesting from Steam
+[2026-08-13 19:42:35] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-13 19:42:35] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (31 installed, 31 needed)
+[2026-08-13 19:42:35] [AppID 108600] Download item 3780151182 requested by app
+[2026-08-13 19:42:35] [AppID 108600] Starting Workshop download job (requested item 3780151182 )
+[2026-08-13 19:42:35] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3780151182, new manifest 8712343333583474116
+[2026-08-13 19:42:35] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 19:43:09] [AppID 108600] Download item 3780151182 result : OK
+[2026-08-13 19:43:09] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 19:43:09] [AppID 108600] Download item 3782313362 requested by app
+[2026-08-13 19:43:09] [AppID 108600] Updating workshop item details failed with Access Denied
+[2026-08-13 19:43:09] [AppID 108600] Starting Workshop download job (requested item 3782313362 )
+[2026-08-13 19:43:09] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3782313362, new manifest 3887425997129033167
+[2026-08-13 19:43:09] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-13 19:43:12] [AppID 108600] Download item 3782313362 result : OK
+[2026-08-13 19:43:12] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-13 20:28:10] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 01:06:34] Client version: no bootstrapper found
+[2026-08-14 01:06:34] [AppID 108600] GetDetails request 0x1 - batch (0-31 of 31) => not in cache, requesting from Steam
+[2026-08-14 01:06:34] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 01:06:34] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (31 installed, 31 needed)
+[2026-08-14 01:06:34] [AppID 108600] Download item 3750253491 requested by app
+[2026-08-14 01:06:34] [AppID 108600] Starting Workshop download job (requested item 3750253491 )
+[2026-08-14 01:06:34] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3750253491, new manifest 7853757084195517744
+[2026-08-14 01:06:34] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 01:06:38] [AppID 108600] Download item 3750253491 result : OK
+[2026-08-14 01:06:38] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 01:06:38] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 01:34:28] Client version: no bootstrapper found
+[2026-08-14 01:34:28] [AppID 108600] GetDetails request 0x1 - batch (0-31 of 31) => not in cache, requesting from Steam
+[2026-08-14 01:34:28] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 01:34:28] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (31 installed, 31 needed)
+[2026-08-14 01:34:28] [AppID 108600] Download item 3782313362 requested by app
+[2026-08-14 01:34:28] [AppID 108600] Starting Workshop download job (requested item 3782313362 )
+[2026-08-14 01:34:28] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3782313362, new manifest 6044287077621526731
+[2026-08-14 01:34:28] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 01:34:32] [AppID 108600] Download item 3782313362 result : OK
+[2026-08-14 01:34:32] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 01:34:33] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 03:07:22] Client version: no bootstrapper found
+[2026-08-14 03:07:22] [AppID 108600] GetDetails request 0x1 - batch (0-31 of 31) => not in cache, requesting from Steam
+[2026-08-14 03:07:23] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 03:07:23] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (31 installed, 31 needed)
+[2026-08-14 03:07:23] [AppID 108600] Download item 3413150945 requested by app
+[2026-08-14 03:07:23] [AppID 108600] Starting Workshop download job (requested item 3413150945 )
+[2026-08-14 03:07:23] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3413150945, new manifest 1419580310102567083
+[2026-08-14 03:07:23] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 03:07:28] [AppID 108600] Download item 3413150945 result : OK
+[2026-08-14 03:07:28] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 03:07:28] [AppID 108600] Download item 3782987959 requested by app
+[2026-08-14 03:07:28] [AppID 108600] Starting Workshop download job (requested item 3782987959 )
+[2026-08-14 03:07:29] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3782987959, new manifest 9065652816792427805
+[2026-08-14 03:07:29] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 03:07:30] [AppID 108600] Download item 3782987959 result : OK
+[2026-08-14 03:07:30] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 03:07:31] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 04:37:02] Client version: no bootstrapper found
+[2026-08-14 04:37:02] [AppID 108600] GetDetails request 0x1 - batch (0-31 of 31) => not in cache, requesting from Steam
+[2026-08-14 04:37:03] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 04:37:03] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (32 installed, 32 needed)
+[2026-08-14 04:37:03] [AppID 108600] Download item 3782987959 requested by app
+[2026-08-14 04:37:03] [AppID 108600] Starting Workshop download job (requested item 3782987959 )
+[2026-08-14 04:37:03] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3782987959, new manifest 1045490040968141248
+[2026-08-14 04:37:03] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 04:37:06] [AppID 108600] Download item 3782987959 result : OK
+[2026-08-14 04:37:06] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 04:37:06] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 05:54:41] Client version: no bootstrapper found
+[2026-08-14 05:54:41] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 05:54:41] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 05:54:41] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (32 installed, 32 needed)
+[2026-08-14 05:54:41] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 05:54:41] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 05:54:42] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 7647702239692811315
+[2026-08-14 05:54:42] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 05:54:44] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 05:54:44] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 05:54:44] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 06:11:43] Client version: no bootstrapper found
+[2026-08-14 06:11:43] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 06:11:44] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 06:11:44] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 06:11:44] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 06:11:44] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 06:11:44] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 7705279284149595196
+[2026-08-14 06:11:44] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 06:11:47] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 06:11:47] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 06:11:47] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 06:29:37] Client version: no bootstrapper found
+[2026-08-14 06:29:37] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 06:29:37] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 06:29:37] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 06:29:37] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 06:29:37] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 06:29:38] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 3811873605588728243
+[2026-08-14 06:29:38] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 06:29:40] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 06:29:40] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 06:29:40] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 06:57:51] Client version: no bootstrapper found
+[2026-08-14 06:57:51] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 06:57:51] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 06:57:51] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 06:57:52] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 06:57:52] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 06:57:52] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 3077317295889111446
+[2026-08-14 06:57:52] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 06:57:55] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 06:57:55] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 06:57:55] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 07:45:49] Client version: no bootstrapper found
+[2026-08-14 07:45:49] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 07:45:49] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 07:45:49] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 07:45:50] [AppID 108600] Download item 3780151182 requested by app
+[2026-08-14 07:45:50] [AppID 108600] Starting Workshop download job (requested item 3780151182 )
+[2026-08-14 07:45:50] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3780151182, new manifest 1060391916407395485
+[2026-08-14 07:45:50] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 07:45:58] [AppID 108600] Download item 3780151182 result : OK
+[2026-08-14 07:45:58] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 07:45:58] [AppID 108600] Download item 3782313362 requested by app
+[2026-08-14 07:45:58] [AppID 108600] Updating workshop item details failed with Access Denied
+[2026-08-14 07:45:58] [AppID 108600] Starting Workshop download job (requested item 3782313362 )
+[2026-08-14 07:45:59] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3782313362, new manifest 2467954419606935712
+[2026-08-14 07:45:59] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 07:46:03] [AppID 108600] Download item 3782313362 result : OK
+[2026-08-14 07:46:03] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 07:46:03] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 07:46:03] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 07:46:03] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 1800625800303876083
+[2026-08-14 07:46:03] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 07:46:05] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 07:46:05] [AppID 108600] Finished Workshop download job : No Error
+
+
+[2026-08-14 07:56:25] Client version: no bootstrapper found
+[2026-08-14 07:56:25] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 07:56:25] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 07:56:25] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 07:56:25] [AppID 108600] Download item 3782313362 requested by app
+[2026-08-14 07:56:25] [AppID 108600] Starting Workshop download job (requested item 3782313362 )
+[2026-08-14 07:56:26] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3782313362, new manifest 570817815672279743
+[2026-08-14 07:56:26] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 07:56:30] [AppID 108600] Download item 3782313362 result : OK
+[2026-08-14 07:56:30] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 07:56:30] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 08:51:58] Client version: no bootstrapper found
+[2026-08-14 08:51:58] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 08:51:58] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 08:51:58] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 08:51:58] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 08:51:58] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 08:51:58] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 781708329062619000
+[2026-08-14 08:51:58] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 08:52:02] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 08:52:02] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 08:52:02] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 09:08:18] Client version: no bootstrapper found
+[2026-08-14 09:08:18] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 09:08:19] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 09:08:19] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 09:08:19] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 09:08:19] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 09:08:19] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 3769995285836185250
+[2026-08-14 09:08:19] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 09:08:22] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 09:08:22] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 09:08:22] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 09:33:04] Client version: no bootstrapper found
+[2026-08-14 09:33:04] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 09:33:05] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 09:33:05] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 09:33:05] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 09:33:05] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 09:33:05] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 6535864426331191890
+[2026-08-14 09:33:05] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 09:33:09] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 09:33:09] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 09:33:09] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 09:57:09] Client version: no bootstrapper found
+[2026-08-14 09:57:09] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 09:57:09] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 09:57:09] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 09:57:09] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 09:57:09] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 09:57:10] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 6456592144718658891
+[2026-08-14 09:57:10] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 09:57:14] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 09:57:14] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 09:57:15] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 10:29:20] Client version: no bootstrapper found
+[2026-08-14 10:29:20] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 10:29:20] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 10:29:20] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 10:29:20] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 10:29:20] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 10:29:20] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 3232387899138778308
+[2026-08-14 10:29:20] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 10:29:24] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 10:29:24] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 10:29:24] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 12:48:55] Client version: no bootstrapper found
+[2026-08-14 12:48:55] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 12:48:56] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 12:48:56] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 12:48:56] [AppID 108600] Download item 3268487204 requested by app
+[2026-08-14 12:48:56] [AppID 108600] Starting Workshop download job (requested item 3268487204 )
+[2026-08-14 12:48:56] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3268487204, new manifest 763576206045782609
+[2026-08-14 12:48:56] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 12:49:10] [AppID 108600] Download item 3268487204 result : OK
+[2026-08-14 12:49:10] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 12:49:10] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 12:49:10] [AppID 108600] Updating workshop item details failed with Access Denied
+[2026-08-14 12:49:10] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 12:49:11] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 1501095118669395104
+[2026-08-14 12:49:11] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 12:49:12] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 12:49:12] [AppID 108600] Finished Workshop download job : No Error
+
+
+[2026-08-14 13:06:30] Client version: no bootstrapper found
+[2026-08-14 13:06:30] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 13:06:31] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 13:06:31] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 13:06:32] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 13:21:17] Client version: no bootstrapper found
+[2026-08-14 13:21:17] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 13:21:17] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 13:21:17] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 13:21:17] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 13:21:17] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 13:21:18] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 3085307264807971332
+[2026-08-14 13:21:18] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 13:21:52] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 13:21:52] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 13:21:52] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 13:32:45] Client version: no bootstrapper found
+[2026-08-14 13:32:45] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 13:32:45] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 13:32:45] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 13:32:47] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 14:07:41] Client version: no bootstrapper found
+[2026-08-14 14:07:41] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 14:07:41] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 14:07:41] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 14:07:41] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 14:07:41] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 14:07:42] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 1043915608160208812
+[2026-08-14 14:07:42] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 14:08:15] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 14:08:15] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 14:08:15] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 14:20:36] Client version: no bootstrapper found
+[2026-08-14 14:20:36] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 14:20:37] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 14:20:37] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 14:20:38] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 14:22:55] Client version: no bootstrapper found
+[2026-08-14 14:22:55] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 14:22:55] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 14:22:55] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 14:22:56] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 14:25:43] Client version: no bootstrapper found
+[2026-08-14 14:25:43] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 14:25:44] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 14:25:44] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 14:25:45] [AppID 108600] Updating workshop item details failed with Access Denied
+[2026-08-14 15:10:46] [AppID 108600] Updating workshop item details failed with Access Denied
+[2026-08-14 15:55:48] [AppID 108600] Updating workshop item details failed with Access Denied
+[2026-08-14 16:40:49] [AppID 108600] Updating workshop item details failed with Access Denied
+[2026-08-14 17:25:50] [AppID 108600] Updating workshop item details failed with Access Denied
+[2026-08-14 18:10:52] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 19:05:51] Client version: no bootstrapper found
+[2026-08-14 19:05:51] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 19:05:52] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 19:05:52] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 19:05:52] [AppID 108600] Download item 3739256725 requested by app
+[2026-08-14 19:05:52] [AppID 108600] Starting Workshop download job (requested item 3739256725 )
+[2026-08-14 19:05:52] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3739256725, new manifest 7196313311804070051
+[2026-08-14 19:05:52] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 19:06:07] [AppID 108600] Download item 3739256725 result : OK
+[2026-08-14 19:06:07] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 19:06:07] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 19:06:07] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 19:06:07] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 1150202341782463980
+[2026-08-14 19:06:07] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 19:06:10] [AppID 108600] Update canceled: File commit failed: failed to move out file (File locked) "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop\content\108600\3783046891\mods\LaccckaInternetRadioPoC\leaf\mods\LaccckaInternetRadioServerBridge.jar"
+[2026-08-14 19:06:10] [AppID 108600] Download item 3783046891 result : Locking Failed
+[2026-08-14 19:06:10] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 19:06:10] [AppID 108600] Updating workshop item details failed with Access Denied
+[2026-08-14 19:06:10] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 19:06:10] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 19:06:10] [AppID 108600] Running full workshop file validation
+[2026-08-14 19:06:36] [AppID 108600] Update canceled: File commit failed: failed to move out file (File locked) "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop\content\108600\3783046891\mods\LaccckaInternetRadioPoC\leaf\mods\LaccckaInternetRadioServerBridge.jar"
+[2026-08-14 19:06:36] [AppID 108600] Download item 3783046891 result : Locking Failed
+[2026-08-14 19:06:36] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 19:06:36] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 19:06:36] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 19:06:36] [AppID 108600] Running full workshop file validation
+[2026-08-14 19:06:59] [AppID 108600] Update canceled: File commit failed: failed to move out file (File locked) "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop\content\108600\3783046891\mods\LaccckaInternetRadioPoC\leaf\mods\LaccckaInternetRadioServerBridge.jar"
+[2026-08-14 19:06:59] [AppID 108600] Download item 3783046891 result : Locking Failed
+
+
+[2026-08-14 19:23:16] Client version: no bootstrapper found
+[2026-08-14 19:23:16] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 19:23:17] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 19:23:17] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 19:23:17] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 19:23:17] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 19:23:17] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 19:23:18] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 19:23:18] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 19:23:18] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 19:35:38] Client version: no bootstrapper found
+[2026-08-14 19:35:38] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 19:35:39] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 19:35:39] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 19:35:40] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 19:53:50] Client version: no bootstrapper found
+[2026-08-14 19:53:50] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 19:53:50] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 19:53:50] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 19:53:50] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 19:53:50] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 19:53:50] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 1437286812182527247
+[2026-08-14 19:53:50] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 19:53:54] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 19:53:54] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 19:53:54] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 20:06:14] Client version: no bootstrapper found
+[2026-08-14 20:06:14] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 20:06:14] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 20:06:14] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 20:06:16] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 20:20:17] Client version: no bootstrapper found
+[2026-08-14 20:20:17] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 20:20:17] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 20:20:17] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 20:20:17] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 20:20:17] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 20:20:17] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 4942791268129284558
+[2026-08-14 20:20:17] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 20:20:20] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 20:20:20] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 20:20:21] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 20:22:15] Client version: no bootstrapper found
+[2026-08-14 20:22:15] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 20:22:15] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 20:22:15] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 20:22:17] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 21:47:47] Client version: no bootstrapper found
+[2026-08-14 21:47:47] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 21:47:47] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 21:47:47] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 21:47:47] [AppID 108600] Download item 3782313362 requested by app
+[2026-08-14 21:47:47] [AppID 108600] Starting Workshop download job (requested item 3782313362 )
+[2026-08-14 21:47:48] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3782313362, new manifest 4908642564181669787
+[2026-08-14 21:47:48] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 21:47:52] [AppID 108600] Download item 3782313362 result : OK
+[2026-08-14 21:47:52] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 21:47:52] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 21:47:52] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 21:47:52] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 2343475015004743059
+[2026-08-14 21:47:52] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 21:47:54] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 21:47:54] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 21:47:54] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 21:51:06] Client version: no bootstrapper found
+[2026-08-14 21:51:06] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 21:51:07] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 21:51:07] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 21:51:08] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 21:52:51] Client version: no bootstrapper found
+[2026-08-14 21:52:51] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 21:52:51] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 21:52:51] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 21:52:52] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 22:58:07] Client version: no bootstrapper found
+[2026-08-14 22:58:07] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 22:58:08] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 22:58:08] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 22:58:08] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 22:58:08] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 22:58:08] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 156953435254229356
+[2026-08-14 22:58:08] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 22:58:11] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 22:58:11] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 22:58:11] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 23:00:23] Client version: no bootstrapper found
+[2026-08-14 23:00:23] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 23:00:24] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 23:00:24] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 23:00:25] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 23:05:31] Client version: no bootstrapper found
+[2026-08-14 23:05:31] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 23:05:31] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 23:05:31] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 23:05:32] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 23:35:56] Client version: no bootstrapper found
+[2026-08-14 23:35:56] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 23:35:57] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 23:35:57] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 23:35:57] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 23:35:57] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 23:35:57] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 1672355460653793222
+[2026-08-14 23:35:57] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 23:36:01] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 23:36:01] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 23:36:01] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 23:39:06] Client version: no bootstrapper found
+[2026-08-14 23:39:06] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 23:39:07] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 23:39:07] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 23:39:08] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 23:53:44] Client version: no bootstrapper found
+[2026-08-14 23:53:44] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 23:53:45] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 23:53:45] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 23:53:45] [AppID 108600] Download item 3783046891 requested by app
+[2026-08-14 23:53:45] [AppID 108600] Starting Workshop download job (requested item 3783046891 )
+[2026-08-14 23:53:45] [AppID 108600] Detected workshop change (latest from server) : changed cached item 3783046891, new manifest 1561624606578939902
+[2026-08-14 23:53:45] [AppID 108600] Workshop update job started while app is running, commit : yes
+[2026-08-14 23:53:48] [AppID 108600] Download item 3783046891 result : OK
+[2026-08-14 23:53:48] [AppID 108600] Finished Workshop download job : No Error
+[2026-08-14 23:53:49] [AppID 108600] Updating workshop item details failed with Access Denied
+
+
+[2026-08-14 23:55:54] Client version: no bootstrapper found
+[2026-08-14 23:55:54] [AppID 108600] GetDetails request 0x1 - batch (0-32 of 32) => not in cache, requesting from Steam
+[2026-08-14 23:55:55] [AppID 108600] Workshop depot not defined, using AppID itself
+[2026-08-14 23:55:55] [AppID 108600] Loaded workshop items in "C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server\steamapps\workshop" (33 installed, 33 needed)
+[2026-08-14 23:55:56] [AppID 108600] Updating workshop item details failed with Access Denied

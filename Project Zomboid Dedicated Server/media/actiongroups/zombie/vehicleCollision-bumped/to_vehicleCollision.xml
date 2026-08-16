@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transitions>
+	<transition>
+		<transitionTo>vehicleCollision</transitionTo>
+		<conditions>
+			<isTrue>isVehicleCollision</isTrue>
+			<isTrue>bDead</isTrue>
+		</conditions>
+	</transition>
+	<transition>
+		<transitionTo>vehicleCollision</transitionTo>
+		<conditions>
+			<isTrue>isVehicleCollision</isTrue>
+			<isTrue>bKnockedDown</isTrue>
+		</conditions>
+	</transition>
+	<transition>
+		<transitionTo>vehicleCollision</transitionTo>
+		<conditions>
+			<isTrue>isVehicleCollision</isTrue>
+			<isTrue>bstaggerback</isTrue>
+		</conditions>
+	</transition>
+</transitions>

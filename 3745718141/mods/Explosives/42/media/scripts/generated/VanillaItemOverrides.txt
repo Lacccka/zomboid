@@ -1,0 +1,36 @@
+module Base
+{
+    item AmmoStrap_Bullets
+    {
+
+        Researchablerecipes = Forge_Buckle;SewBandolier;SewShellsBandolier;SewGrenadeBandolier,
+    }
+
+    item AmmoStrap_Brown_Bullets
+    {
+        Researchablerecipes = Forge_Buckle;SewBandolier;SewShellsBandolier;SewGrenadeBandolier,
+    }
+
+    item AmmoStrap_Bullets_308
+    {
+        Researchablerecipes = Forge_Buckle;SewBandolier;SewShellsBandolier;SewGrenadeBandolier,
+    }
+
+    item AmmoStrap_Shells
+    {
+        Researchablerecipes = Forge_Buckle;SewBandolier;SewShellsBandolier;SewGrenadeBandolier,
+    }
+
+    item AmmoStrap_Brown_Shells
+    {
+        Researchablerecipes = Forge_Buckle;SewBandolier;SewShellsBandolier;SewGrenadeBandolier,
+    }
+    item TailoringMag8
+    {
+        LearnedRecipes = SewLeatherGaiter;SewLeatherWaterBag;SewHideSleepingBag;SewBandolier;SewShellsBandolier;SewHideFannyBag;SewGrenadeBandolier,
+    }
+    item ElectronicsMag1
+    {
+        LearnedRecipes = MakeRemoteControllerV1;MakeRemoteControllerV2;MakeRemoteControllerV3;MakeRemoteTrigger;AddCraftedTriggerToBomb;AddRemoteTriggerToClaymore,
+    }
+}

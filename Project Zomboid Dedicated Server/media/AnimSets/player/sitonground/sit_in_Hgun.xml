@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="sit_in.xml">
+	<m_Name>sit_in_Hgun</m_Name>
+	<m_AnimName>Bob_SitGround_In_hgun</m_AnimName>
+	<m_Conditions x_name="176bb457-6b09-450a-898f-2c8f37c1f9c1">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>handgun</m_Value>
+	</m_Conditions>
+	<m_Events x_name="2a2130b0-34ac-4683-bcd8-72560e3613e9">
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+</animNode>
