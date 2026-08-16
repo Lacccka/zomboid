@@ -1,6 +1,6 @@
 version=1
 id=3782987959
-title=Lacccka B42.20 Frozen Modpack
-description=Frozen, compatibility-tested Project Zomboid Build 42.20 multiplayer mod collection.
+title=Lacccka B42.20 Compatibility Patch
+description=Compatibility fixes for a Project Zomboid Build 42.20 multiplayer mod set, including Russian translation for Bandits.
 tags=Build 42;Multiplayer
 visibility=public

@@ -1,6 +1,0 @@
-Fluids_EN = {
-
-Fluid_Name_pzkRustSolvent = "Rust Solvent",
-Fluid_Container_pzkRustSolvent = "Rust Solvent Bottle",
-
-}

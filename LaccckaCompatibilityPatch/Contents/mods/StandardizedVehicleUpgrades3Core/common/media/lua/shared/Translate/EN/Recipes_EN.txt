@@ -1,7 +1,0 @@
-RecipesEN {
-    ConvertATARoofLightItem = "Cut Front Rooflight",
-    ConvertATAFrontRoofLightItem = "Cut Rooflight",
-
-    CutHeavyChain = "Cut Heavy Chain",
-    RemoveHeavyChain = "Cut Heavy Chain Hook",
-}

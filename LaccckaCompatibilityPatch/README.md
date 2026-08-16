@@ -4,7 +4,7 @@ Compatibility fixes for the Project Zomboid Build 42.20.2 multiplayer mod set au
 
 Workshop ID: `3782987959`
 
-This is a separate mod. It does not modify subscribed Workshop content.
+This is a standalone compatibility patch. It does not bundle or replace subscribed Workshop mods.
 
 ## Fixed integrations
 
@@ -19,17 +19,26 @@ This is a separate mod. It does not modify subscribed Workshop content.
 - Bandits and PZK B42.20 UI module-path aliases.
 - B42.20 recipe-magazine callback rename.
 
-## Version 1.0.1
+## Russian translation
 
-- Added `ISUI/ISCharacterScreen` alias for Bandits.
-- Added both legacy `ISVehiclePartMenu` paths for PZK.
-- Added the root-level `ISBaseTimedAction` alias for PZK Carzone.
-- Added a guarded `SpecialLootSpawns.OnCreateRecipeMagazine` bridge.
-- Left Aegis vehicle repair and Survival's Hauler behavior unchanged.
+The patch provides the Russian Bandits translation from:
+
+`media/lua/shared/Translate/RU/IG_UI_ru.json`
+
+Keep the original Bandits mod enabled. Because `LaccckaB4220Compat` loads after `Bandits2`, Project Zomboid reads the translation from this patch without modifying the original Workshop mod.
+
+## Version 1.0.2
+
+- Converted the Workshop item back from a frozen modpack to a standalone compatibility patch.
+- Removed bundled copies of third-party mods.
+- Added the Russian Bandits 42.20 translation to the patch.
+- Preserved all compatibility fixes from version 1.0.1.
 
 ## Server order
 
 Add `3782987959` to `WorkshopItems=`. Add `LaccckaB4220Compat` as the last entry in `Mods=`.
+
+The original dependency mods, including `Bandits2`, must remain separately subscribed and enabled.
 
 Remove the obsolete `Lifestyle4220Compat` mod from both lists.
 
@@ -42,3 +51,4 @@ Remove the obsolete `Lifestyle4220Compat` mod from both lists.
 5. Right-click all three Ghillie Suit states and switch between them.
 6. Transfer and drop items using GridInventory, including vehicle and Aegis-modified containers.
 7. Enter baths from east and west sides.
+8. Switch the game language to Russian and confirm Bandits speech/UI strings are translated.
