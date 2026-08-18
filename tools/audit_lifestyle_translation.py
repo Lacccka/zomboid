@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+"""Audit LaccckaCompatibilityPatch Russian Lifestyle translation coverage.
+
+Run from the repository root:
+    python3 tools/audit_lifestyle_translation.py
+
+The script compares the current Lifestyle English translation keys with all
+matching Russian translation files shipped by LaccckaCompatibilityPatch.
+Both Build 42 JSON translation files and legacy *_RU.txt tables are supported.
+
+Exit codes:
+    0 - no missing keys
+    1 - one or more English keys are missing in the patch
+    2 - audit could not be completed (invalid/missing source files)
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import sys
+from pathlib import Path
+from typing import Iterable
+
+ROOT = Path(__file__).resolve().parents[1]
+LIFESTYLE_EN = (
+    ROOT
+    / "3403870858"
+    / "mods"
+    / "Lifestyle"
+    / "common"
+    / "media"
+    / "lua"
+    / "shared"
+    / "Translate"
+    / "EN"
+)
+PATCH_RU = (
+    ROOT
+    / "LaccckaCompatibilityPatch"
+    / "Contents"
+    / "mods"
+    / "LaccckaCompatibilityPatch"
+    / "42"
+    / "media"
+    / "lua"
+    / "shared"
+    / "Translate"
+    / "RU"
+)
+
+# language.txt is metadata rather than a normal key/value translation table.
+SKIP_FILES = {"language.txt"}
+
+# Legacy PZ translations look like:
+#   IGUI_RU = {
+#       IGUI_Foo = "...",
+#   }
+# We only need the keys for coverage auditing, so parsing the full Lua syntax
+# is deliberately avoided.
+LEGACY_KEY_RE = re.compile(r"^\s*([A-Za-z0-9_:.\-]+)\s*=\s*["]", re.MULTILINE)
+
+
+def load_json_keys(path: Path) -> set[str]:
+    with path.open("r", encoding="utf-8-sig") as fh:
+        data = json.load(fh)
+    if not isinstance(data, dict):
+        raise ValueError(f"{path}: expected a JSON object")
+    return set(data)
+
+
+def load_legacy_keys(path: Path) -> set[str]:
+    text = path.read_text(encoding="utf-8-sig")
+    return set(LEGACY_KEY_RE.findall(text))
+
+
+def collect_ru_keys(category: str) -> tuple[set[str], list[Path]]:
+    keys: set[str] = set()
+    sources: list[Path] = []
+
+    json_path = PATCH_RU / f"{category}.json"
+    if json_path.is_file():
+        keys.update(load_json_keys(json_path))
+        sources.append(json_path)
+
+    legacy_path = PATCH_RU / f"{category}_RU.txt"
+    if legacy_path.is_file():
+        keys.update(load_legacy_keys(legacy_path))
+        sources.append(legacy_path)
+
+    return keys, sources
+
+
+def short_paths(paths: Iterable[Path]) -> str:
+    result = []
+    for path in paths:
+        try:
+            result.append(str(path.relative_to(ROOT)))
+        except ValueError:
+            result.append(str(path))
+    return ", ".join(result) if result else "<none>"
+
+
+def main() -> int:
+    if not LIFESTYLE_EN.is_dir():
+        print(f"ERROR: Lifestyle EN directory not found: {LIFESTYLE_EN}", file=sys.stderr)
+        return 2
+    if not PATCH_RU.is_dir():
+        print(f"ERROR: patch RU directory not found: {PATCH_RU}", file=sys.stderr)
+        return 2
+
+    total_en = 0
+    total_ru = 0
+    total_missing = 0
+    total_extra = 0
+    failures: list[str] = []
+
+    print("Lifestyle Russian translation coverage")
+    print("=" * 38)
+
+    for en_path in sorted(LIFESTYLE_EN.glob("*.json")):
+        if en_path.name in SKIP_FILES:
+            continue
+
+        category = en_path.stem
+        try:
+            en_keys = load_json_keys(en_path)
+            ru_keys, ru_sources = collect_ru_keys(category)
+        except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+            failures.append(f"{category}: {exc}")
+            continue
+
+        missing = sorted(en_keys - ru_keys)
+        extra = sorted(ru_keys - en_keys)
+
+        total_en += len(en_keys)
+        total_ru += len(en_keys & ru_keys)
+        total_missing += len(missing)
+        total_extra += len(extra)
+
+        coverage = 100.0 if not en_keys else (len(en_keys & ru_keys) / len(en_keys)) * 100.0
+        marker = "OK" if not missing else "MISS"
+        print(
+            f"[{marker:4}] {category:16} "
+            f"{len(en_keys & ru_keys):4}/{len(en_keys):4} "
+            f"({coverage:6.2f}%)  RU: {short_paths(ru_sources)}"
+        )
+
+        if missing:
+            print("       Missing:")
+            for key in missing:
+                print(f"         {key}")
+
+        # Extra keys are not necessarily errors because the compatibility patch
+        # also translates other mods and custom patch-only strings. Keep them
+        # visible without failing the audit.
+        if extra:
+            print(f"       Extra/custom keys: {len(extra)}")
+
+    print("-" * 38)
+    coverage = 100.0 if not total_en else (total_ru / total_en) * 100.0
+    print(f"Covered: {total_ru}/{total_en} ({coverage:.2f}%)")
+    print(f"Missing: {total_missing}")
+    print(f"Extra/custom: {total_extra}")
+
+    if failures:
+        print("\nAudit errors:", file=sys.stderr)
+        for failure in failures:
+            print(f"  {failure}", file=sys.stderr)
+        return 2
+
+    return 1 if total_missing else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
