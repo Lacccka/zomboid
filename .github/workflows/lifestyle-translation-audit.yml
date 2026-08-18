@@ -31,6 +31,7 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 jobs:
   translation:
@@ -60,7 +61,49 @@ jobs:
             -type f -name '*.json' -print0)
 
       - name: Audit Lifestyle Russian translation
-        run: python3 tools/audit_lifestyle_translation.py
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          python3 tools/audit_lifestyle_translation.py 2>&1 | tee /tmp/lifestyle-translation-audit.log
+          audit_status=${PIPESTATUS[0]}
+          set -e
+
+          if [ "$audit_status" -ne 0 ]; then
+            diagnostic="$(python3 - <<'PY'
+          from pathlib import Path
+
+          lines = Path('/tmp/lifestyle-translation-audit.log').read_text(encoding='utf-8', errors='replace').splitlines()
+          mode = None
+          for raw in lines:
+              line = raw.strip()
+              if line == 'Missing:':
+                  mode = 'missing'
+                  continue
+              if line == 'Placeholder mismatches:':
+                  mode = 'placeholder'
+                  continue
+              if mode and line and not line.startswith('Extra/custom') and not line.startswith('Intentional original'):
+                  print(f'{mode}: {line}'[:140])
+                  break
+          else:
+              summary = next((line.strip() for line in reversed(lines) if line.strip()), 'translation audit failed')
+              print(summary[:140])
+          PY
+          )"
+
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+              -f state=failure \
+              -f context='lcc/translation-diagnostic' \
+              -f description="$diagnostic" >/dev/null
+            exit "$audit_status"
+          fi
+
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=success \
+            -f context='lcc/translation-diagnostic' \
+            -f description='Lifestyle Russian translation audit passed' >/dev/null
 
   yoga:
     name: Lifestyle Yoga proxy contract
