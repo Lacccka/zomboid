@@ -6,6 +6,31 @@ Compatibility patch for the Project Zomboid Build 42.20.x server/mod set maintai
 
 The patch contains targeted B42.20 compatibility fixes and guards for mods used by the server, including MFS, SVU3/TsarLib, PZK VLC, zRe, Bandits, Lifestyle, Aegis Panel and Federal Ranger's Chimera.
 
+## Platform support
+
+The gameplay/Lua side of the patch is intended to be platform-neutral and is supported on both Windows and Linux. Platform-specific workarounds live outside the gameplay files so a Linux fix cannot accidentally change Windows behavior.
+
+### Bandits on Linux: AnimSets case-sensitivity
+
+Bandits ships its animation tree under `mods/Bandits/common/media/AnimSets`. In Build 42.20 the XML `x_extends` resolver can request the inherited file through a lower-cased filesystem path such as `mods/bandits/common/media/animsets/...`. Windows normally hides this mismatch because its common filesystems are case-insensitive; Linux does not.
+
+The repository therefore provides `server/linux/start-server.sh`. Before starting Project Zomboid it creates two idempotent Linux-only aliases:
+
+- `mods/bandits -> Bandits`
+- `mods/Bandits/common/media/animsets -> AnimSets`
+
+The upstream Bandits files are not modified. Existing non-matching files/symlinks cause a hard error instead of being overwritten. On non-Linux systems the preflight is skipped.
+
+For the dedicated server, place the repository launcher in the Project Zomboid server root as `start-server.sh` (next to `ProjectZomboid64`) and start it with the same arguments as the stock launcher, for example:
+
+```bash
+bash start-server.sh -servername servertest
+```
+
+A successful first Linux preflight prints `[LCC][Linux][OK]` for the aliases. If Bandits has not been downloaded yet, the launcher warns you; after Steam finishes the first Workshop download, stop and start the server once more so the aliases exist before AnimSets are parsed.
+
+The patch also contains the Bandits dedicated-server Lua guards/overrides used by the server, including the missing `BanditZombie.GetInstanceById()` contract and the wanderer scheduler fix for empty dedicated multiplayer sessions.
+
 ### Lifestyle: Yoga progress
 
 Lifestyle stores **Yoga** as a hidden skill in `LSHiddenSkills.Yoga`, so the base mod does not expose its level in the normal character skill panel.
@@ -25,6 +50,8 @@ The implementation is in:
 
 - `42/media/perks.txt`
 - `42/media/lua/client/zzz_LCC_LifestyleYogaProgress.lua`
+
+`perks.txt` intentionally contains no Lua-style `--` comments: Build 42's `CustomPerks` parser treats them as an unknown block type. The compatibility workflow checks this invariant.
 
 The proxy XP thresholds intentionally mirror Lifestyle's `Helper/HSMng.lua` table. A static audit checks this contract so a future Lifestyle update cannot silently desynchronize the displayed Yoga progress.
 
@@ -52,22 +79,16 @@ The patch also continues to include the Russian Bandits localization used by the
 
 ### Automatic audits
 
-`.github/workflows/lifestyle-translation-audit.yml` runs two repository checks whenever relevant Lifestyle or patch files change:
+`.github/workflows/lifestyle-translation-audit.yml` validates Lifestyle translation/Yoga contracts.
 
-1. `tools/audit_lifestyle_translation.py`
-   - validates EN/RU JSON syntax;
-   - compares current Lifestyle translation keys with the patch's Russian coverage;
-   - checks `%1`, `%2`, `%%` placeholder compatibility in JSON translations;
-   - reports missing translatable keys while excluding canonical song-title keys.
-2. `tools/audit_lifestyle_yoga_proxy.py`
-   - verifies Yoga is still a Lifestyle HiddenSkill;
-   - verifies the `LSHiddenSkills` storage/API contract used by the patch;
-   - verifies proxy XP thresholds match Lifestyle levels 0–9;
-   - verifies Lifestyle still does not define a native Yoga perk;
-   - verifies the Lifestyle Skills-panel override remains compatible;
-   - verifies required Russian Yoga UI/tutorial/tooltip keys are present.
+`.github/workflows/compat-contract-audit.yml` validates high-risk compatibility overrides and cross-platform invariants, including:
 
-These checks are intended to fail loudly when a future Lifestyle update invalidates assumptions made by the compatibility patch.
+- strict upstream contracts for compatibility files;
+- rejection of Lua-style comments in `media/perks.txt`;
+- `bash -n` syntax validation for the Linux launcher;
+- presence of both Bandits Linux case aliases.
+
+These checks are intended to fail loudly when a future mod or patch update invalidates assumptions made by the compatibility layer.
 
 ## Load order
 
@@ -75,10 +96,12 @@ These checks are intended to fail loudly when a future Lifestyle update invalida
 
 ## Test checklist
 
-1. Start a client with Russian language and the server's normal mod order.
-2. Open **Персонаж → Навыки → Образ жизни** and verify that **Йога** appears in the same Lifestyle group as **Медитация**.
-3. Complete at least one Yoga pose, reopen the skills panel and verify that Yoga XP increased.
-4. Reconnect to the server and verify that the same Yoga level/XP is restored from `LSHiddenSkills`.
-5. Hover Yoga progress and verify the Russian level/XP tooltip.
-6. Open the Yoga tutorial, Lifestyle sandbox settings, inventions, ambitions and art UI and check for untranslated English keys/text.
-7. Check the client log for `[LaccckaCompatibilityPatch] Lifestyle Yoga progress UI installed` and make sure no Yoga warning/error follows it.
+1. On Linux, start through `server/linux/start-server.sh` copied to the PZ server root and verify the `[LCC][Linux][OK]` aliases are created.
+2. On Linux, verify the server log no longer contains `FileNotFoundException` paths under `mods/bandits/common/media/animsets`.
+3. On Windows, start normally and verify no Linux-specific filesystem changes are required.
+4. Verify the server log no longer reports `CustomPerks.readFile ... unknown block type "--"`.
+5. Start a client with Russian language and the server's normal mod order.
+6. Open **Персонаж → Навыки → Образ жизни** and verify that **Йога** appears in the same Lifestyle group as **Медитация**.
+7. Complete at least one Yoga pose, reopen the skills panel and verify that Yoga XP increased.
+8. Reconnect to the server and verify that the same Yoga level/XP is restored from `LSHiddenSkills`.
+9. Check the client/server logs for `[LCC][Guard][OK]` messages and make sure no compatibility feature is unexpectedly disabled.
