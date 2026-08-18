@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "contracts": [
+    {
+      "id": "bandits.wanderers-empty-server",
+      "kind": "full-override",
+      "upstream_path": "3268487204/mods/Bandits/42.20/media/lua/server/BanditServerWanderers.lua",
+      "patch_path": "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/server/BanditServerWanderers.lua",
+      "expected_upstream_blob_sha": "91ab86c2ea8aecd54b28f37d4bb6163a618f38c9",
+      "required_upstream_fragments": [
+        "local orchestrator = function()",
+        "local playerList = getOnlinePlayers()",
+        "day = player:getHoursSurvived() / 24",
+        "Events.EveryTenMinutes.Add(orchestrator)"
+      ],
+      "required_patch_fragments": [
+        "if playerList:size() == 0 then\n            return\n        end",
+        "day = player:getHoursSurvived() / 24",
+        "Events.EveryTenMinutes.Add(orchestrator)"
+      ]
+    },
+    {
+      "id": "bandits.zombie-square-guard",
+      "kind": "full-override",
+      "upstream_path": "3268487204/mods/Bandits/42.20/media/lua/client/BanditZombie.lua",
+      "patch_path": "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/client/BanditZombie.lua",
+      "expected_upstream_blob_sha": "56d37b366e67e365aec4a8ebae92946c1f76028f",
+      "required_upstream_fragments": [
+        "local function onZombieUpdate(zombie)",
+        "BanditZombie.Cache[id] = zombie",
+        "Events.OnZombieUpdate.Add(onZombieUpdate)"
+      ],
+      "required_patch_fragments": [
+        "if not zombie:getSquare() then",
+        "removeZombieFromCaches(id)",
+        "Events.OnZombieUpdate.Add(onZombieUpdate)"
+      ]
+    }
+  ]
+}

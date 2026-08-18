@@ -1,0 +1,26 @@
+name: Compatibility contract audit
+
+on:
+  push:
+    paths:
+      - "3268487204/mods/Bandits/42.20/media/lua/**"
+      - "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/**"
+      - "tools/compat_contracts.json"
+      - "tools/audit_compat_contracts.py"
+      - ".github/workflows/compat-contract-audit.yml"
+  pull_request:
+    paths:
+      - "3268487204/mods/Bandits/42.20/media/lua/**"
+      - "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/**"
+      - "tools/compat_contracts.json"
+      - "tools/audit_compat_contracts.py"
+      - ".github/workflows/compat-contract-audit.yml"
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify compatibility contracts
+        run: python3 tools/audit_compat_contracts.py

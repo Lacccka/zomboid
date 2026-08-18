@@ -7,10 +7,25 @@
 -- updating ItemsToSpawnAtDeath is conditional on a live local IsoZombie lookup.
 if not isServer() then return end
 
-BanditZombie = BanditZombie or {}
+local Guard = require "LCC/Guard"
+local FEATURE = "bandits.dedicated-zombie-lookup"
 
-if not BanditZombie.GetInstanceById then
-    BanditZombie.GetInstanceById = function(id)
-        return nil
-    end
-end
+Guard.install {
+    id = FEATURE,
+    validate = function()
+        if BanditZombie ~= nil and type(BanditZombie) ~= "table" then
+            return false, "BanditZombie exists but is not a table"
+        end
+        return true
+    end,
+    install = function()
+        BanditZombie = BanditZombie or {}
+
+        -- If Bandits restores the server-side API itself, leave it untouched.
+        if not BanditZombie.GetInstanceById then
+            BanditZombie.GetInstanceById = function(id)
+                return nil
+            end
+        end
+    end,
+}
