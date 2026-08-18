@@ -26,8 +26,12 @@ LCCYogaSkillProgressBar = ISSkillProgressBar:derive("LCCYogaSkillProgressBar")
 
 local function isYogaPerk(perk)
     if not perk then return false end
-    if perk.getName and perk:getName() == "Yoga" then return true end
-    return Perks and Perks.Yoga and perk.getType and perk:getType() == Perks.Yoga
+    if Perks and Perks.Yoga and perk.getType and perk:getType() == Perks.Yoga then return true end
+    if perk.getName then
+        local name = perk:getName()
+        return name == "Yoga" or name == "Йога"
+    end
+    return false
 end
 
 local function clamp(value, minValue, maxValue)
@@ -43,6 +47,17 @@ local function lccGetTextOrNull(key)
     local value = getText(key)
     if value == key then return nil end
     return value
+end
+
+local function getYogaName()
+    return lccGetTextOrNull("IGUI_perks_Yoga")
+        or lccGetTextOrNull("UI_LSHS_Yoga")
+        or "Yoga"
+end
+
+local function getYogaDescription()
+    return lccGetTextOrNull("IGUI_perks_Yoga_Description")
+        or lccGetTextOrNull("Tooltip_Yoga_Option")
 end
 
 function LCCYogaSkillProgressBar:syncHiddenYoga()
@@ -87,8 +102,7 @@ function LCCYogaSkillProgressBar:renderPerkRect()
 
     -- Current level progress.
     if self.level < 10 then
-        local percentProgress = (self.xp / self.xpForLvl) * 100
-        percentProgress = clamp(percentProgress, 0, 100)
+        local percentProgress = clamp((self.xp / self.xpForLvl) * 100, 0, 100)
         local sliceWidth = SKILL_POINT_HGT / 100
 
         self:drawTextureScaled(self.SkillUnitBorder, x, y, SKILL_POINT_HGT, SKILL_POINT_HGT, 1, 0.4, 0.4, 0.4)
@@ -109,7 +123,7 @@ function LCCYogaSkillProgressBar:updateTooltip(lvlSelected)
     self:syncHiddenYoga()
 
     lvlSelected = clamp(math.floor(tonumber(lvlSelected) or self.level), 0, 9)
-    self.message = getText("IGUI_perks_Yoga") .. " " .. xpSystemText.lvl .. " " .. tostring(lvlSelected + 1)
+    self.message = getYogaName() .. " " .. xpSystemText.lvl .. " " .. tostring(lvlSelected + 1)
 
     if lvlSelected < self.level then
         self.message = self.message .. " <LINE> " .. xpSystemText.unlocked
@@ -123,7 +137,7 @@ function LCCYogaSkillProgressBar:updateTooltip(lvlSelected)
         self.message = self.message .. " <LINE> " .. xpSystemText.locked
     end
 
-    local description = lccGetTextOrNull("IGUI_perks_Yoga_Description")
+    local description = getYogaDescription()
     if description and description ~= "" then
         self.message = self.message .. " <LINE><LINE> " .. description
     end
