@@ -3,6 +3,8 @@ require "ui/shared/host/NMFancyWindowTooltipHost"
 local env = _G.NMWalkmanWindowEnv
 setfenv(1, env)
 
+local FancySettingsWindow = require "ui/shared/host/NMFancySettingsWindow"
+
 local function getTransportState(window, transport, resolved)
     return NMDeviceUiHost.resolveTransportState(window, {
         transport = transport,
@@ -18,23 +20,51 @@ local function getControlTransportState(window, transport, resolved)
     })
 end
 
+local function getScaleTextureKey()
+    if NMFancyDeviceUiScale and NMFancyDeviceUiScale.getTextureScaleKey then
+        return NMFancyDeviceUiScale.getTextureScaleKey()
+    end
+    return "1x"
+end
+
+local function getLoopIconTextureForPath(cacheName, path)
+    local cacheKey = tostring(cacheName or "") .. "|" .. getScaleTextureKey()
+    UI_TEXTURES[cacheKey] = UI_TEXTURES[cacheKey] or nil
+    if UI_TEXTURES[cacheKey] == nil then
+        UI_TEXTURES[cacheKey] = NMFancyDeviceUiScale and NMFancyDeviceUiScale.getTexture
+            and NMFancyDeviceUiScale.getTexture(path)
+            or getTexture and getTexture(path)
+            or false
+    end
+    if UI_TEXTURES[cacheKey] == false then
+        return nil
+    end
+    return UI_TEXTURES[cacheKey]
+end
+
 function WalkmanWindow:getLoopIconTexture(resolved)
     local ctx = resolved or self:resolveContextCached()
     local policy = getLoopPolicy(ctx and ctx.state or nil)
     if policy == "loop_song" then
-        return UI_TEXTURES.loopIconSong
+        return getLoopIconTextureForPath("loopIconSong", LOOP_ICON_SONG_TEXTURE_PATH)
     end
     if policy == "loop_album" then
-        return UI_TEXTURES.loopIconAlbum
+        return getLoopIconTextureForPath("loopIconAlbum", LOOP_ICON_ALBUM_TEXTURE_PATH)
     end
-    return UI_TEXTURES.loopIconNone
+    return getLoopIconTextureForPath("loopIconNone", LOOP_ICON_NONE_TEXTURE_PATH)
 end
 
 function WalkmanWindow:getLoopIconRect(texture)
     local loopRect = self:getLoopButtonRect()
     local tex = texture or self:getLoopIconTexture()
-    local w = tex and tex.getWidthOrig and tex:getWidthOrig() or 39
-    local h = tex and tex.getHeightOrig and tex:getHeightOrig() or 29
+    local texW = tex and tex.getWidthOrig and tex:getWidthOrig() or 39
+    local texH = tex and tex.getHeightOrig and tex:getHeightOrig() or 29
+    local pad = math.max(1, math.floor((2 * getFancyDeviceUiScale()) + 0.5))
+    local maxW = math.max(1, SIDE_W - (pad * 2))
+    local maxH = math.max(1, loopRect.h - (pad * 2))
+    local fit = math.min(maxW / math.max(1, texW), maxH / math.max(1, texH))
+    local w = math.floor((texW * fit) + 0.5)
+    local h = math.floor((texH * fit) + 0.5)
     local y = loopRect.y + math.floor(((loopRect.h - h) * 0.5) + 0.5)
     return {
         x = LOOP_ICON_X,
@@ -68,6 +98,9 @@ function WalkmanWindow:getPlayButtonTooltip(transport)
 end
 
 function WalkmanWindow:getHoverTooltipAt(x, y)
+    if pointInRect(x, y, self:getSettingsRect()) then
+        return FancySettingsWindow.getSettingsTooltipText()
+    end
     if pointInRect(x, y, self:getLoopButtonRect()) then
         return self:getLoopModeTooltip()
     end
@@ -122,6 +155,25 @@ function WalkmanWindow:canUseTransportButtons()
     return self:hasInsertedCassette() == true
 end
 
+local function hasUsablePower(resolved)
+    local ctx = resolved
+    local state = ctx and ctx.state or nil
+    if not state then
+        return false
+    end
+    if state.batteryPresent == nil then
+        return true
+    end
+    return state.batteryPresent == true and (tonumber(state.batteryCharge) or 0) > 0
+end
+
+function WalkmanWindow:canUsePlayPowerButton(resolved)
+    if self:hasInsertedCassette() ~= true then
+        return false
+    end
+    return hasUsablePower(resolved or self:resolveContextCached()) == true
+end
+
 function WalkmanWindow:playTransportNoMediaFeedback()
     playWalkmanTransportSound(self, false)
 end
@@ -138,12 +190,13 @@ function WalkmanWindow:startPlayButtonTap()
 end
 
 function WalkmanWindow:handlePlayButtonActivate()
-    if self:canUseTransportButtons() ~= true then
+    local resolved = self:resolveContextCached()
+    if self:canUsePlayPowerButton(resolved) ~= true then
         self:playTransportNoMediaFeedback()
         self:startPlayButtonTap()
         return true
     end
-    local transport = getControlTransportState(self)
+    local transport = getControlTransportState(self, nil, resolved)
     local action = transport and transport.isPlaying == true and "stop" or "play"
     local ok = self:executeUiControl(action, {
         trackCount = tonumber(transport and transport.trackCount) or 0

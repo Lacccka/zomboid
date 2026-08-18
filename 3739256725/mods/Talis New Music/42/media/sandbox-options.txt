@@ -50,14 +50,6 @@ option NewMusic.ZombieAttractionRadius
     translation = NewMusic_ZombieAttractionRadius,
 }
 
-option NewMusic.FancyUI
-{
-    type = boolean,
-    default = true,
-    page = NewMusic,
-    translation = NewMusic_FancyUI,
-}
-
 option NewMusic.Disassembly
 {
     type = boolean,

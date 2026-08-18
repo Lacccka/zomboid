@@ -1,12 +1,18 @@
 local env = _G.NMCDPlayerWindowEnv
 setfenv(1, env)
 
+local FancySettingsWindow = require "ui/shared/host/NMFancySettingsWindow"
+
 function CDPlayerWindow:onMouseDown(x, y)
     if NMGamepadWindowTracker and NMGamepadWindowTracker.markWindow then
         NMGamepadWindowTracker.markWindow(self, "cdplayer")
     end
     if NMPortableMediaDropArbiter and NMPortableMediaDropArbiter.markWindowInteraction then
         NMPortableMediaDropArbiter.markWindowInteraction(self, "cdplayer")
+    end
+    if pointInRect(x, y, self:getSettingsRect()) then
+        self._nmSettingsPressed = true
+        return true
     end
     local buttonKind = self:getButtonKindAt(x, y)
     if buttonKind then
@@ -81,6 +87,13 @@ function CDPlayerWindow:onMouseUp(x, y)
         return true
     end
 
+    local shouldOpenSettings = self._nmSettingsPressed == true and pointInRect(x, y, self:getSettingsRect())
+    self._nmSettingsPressed = false
+    if shouldOpenSettings then
+        FancySettingsWindow.openForSourceWindow(self)
+        return true
+    end
+
     NMFancyWindowChrome.releaseHeaderInteraction(self, x, y)
     return true
 end
@@ -95,6 +108,7 @@ function CDPlayerWindow:onMouseUpOutside(x, y)
     self._nmLidZonePressed = nil
     self._nmPressedButtonKind = nil
     self._nmClosePressed = false
+    self._nmSettingsPressed = false
     NMFancyWindowChrome.cancelHeaderInteraction(self)
     return true
 end

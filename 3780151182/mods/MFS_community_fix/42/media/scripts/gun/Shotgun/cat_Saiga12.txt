@@ -94,6 +94,7 @@ item Saiga12_cat
         ModelWeaponPart = Gunpart.XY_M4MK18 Gunpart.XY_M4MK18 Canon Canon,
         ModelWeaponPart = Gunpart.XY_SP Gunpart.XY_SP Canon Canon,
         ModelWeaponPart = Gunpart.ArmytekPredator_Bottom Gunpart.ArmytekPredator_Bottom Light Light,
+	ModelWeaponPart = Gunpart.ArmytekPredator_Bottom1 Gunpart.ArmytekPredator_Bottom1 Light Light,
         ModelWeaponPart = Gunpart.DBAL_9021_Bottom Gunpart.DBAL_9021_Bottom Laser Laser,
         ModelWeaponPart = Gunpart.Harris_Open Gunpart.Harris_Open Stool Stool,
         ModelWeaponPart = Gunpart.x4Scope Gunpart.x4Scope,
@@ -180,6 +181,8 @@ item Saiga12_cat
         ModelWeaponPart = Gunpart.Harris_Open1 Gunpart.Harris_Open1 Stool Stool,
         ModelWeaponPart = Gunpart.M203_cat Gunpart.M203_cat Stool Stool,
         ModelWeaponPart = Gunpart.M203_cat_empty Gunpart.M203_cat_empty Stool Stool,
+        ModelWeaponPart = Gunpart.GP25_cat Gunpart.GP25_cat Stool Stool,
+        ModelWeaponPart = Gunpart.GP25_cat_empty Gunpart.GP25_cat_empty Stool Stool,
         ModelWeaponPart = Gunpart.M26_cat Gunpart.M26_cat,
         ModelWeaponPart = Gunpart.M26_cat_empty Gunpart.M26_cat_empty,
         ModelWeaponPart = Gunpart.bayonet_cat Gunpart.bayonet_cat,
@@ -239,6 +242,11 @@ attachment muzzle
             rotate = 0.0000 0.0000 0.0000,
         }
         attachment L_Scope
+        {
+            offset = 0.0 0.0 0.0,
+            rotate = 0.0000 0.0000 0.0000,
+        }
+        attachment Stool
         {
             offset = 0.0 0.0 0.0,
             rotate = 0.0000 0.0000 0.0000,

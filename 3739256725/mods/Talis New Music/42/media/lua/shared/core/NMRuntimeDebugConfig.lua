@@ -8,10 +8,14 @@ local subsystemNames = {
     "intent",
     "state",
     "runtime",
+    "runtime_apply",
+    "runtime_route",
     "memory",
     "playback_progression",
     "playback_transition",
     "vehicle",
+    "vehicle_identity",
+    "vehicle_route",
     "zombie_assignment",
     "zombie_corpse",
     "zombie_visual",
@@ -21,6 +25,7 @@ local subsystemNames = {
     "loot",
     "loot_probe",
     "ui_render",
+    "ui_refresh",
     "ui_auto_close",
     "ui_lifecycle",
     "slot"
@@ -40,6 +45,8 @@ local legacySubsystemMap = {
     emitter = { "runtime" },
     memoryProbe = { "memory" },
     runtimeProbe = { "runtime" },
+    runtimeApplyProbe = { "runtime_apply" },
+    runtimeRouteProbe = { "runtime_route" },
     progressionProbe = { "playback_progression" },
     vehicleRebindTrace = { "vehicle" },
     transitionProbe = { "playback_transition" },
@@ -52,7 +59,10 @@ local legacySubsystemMap = {
     zombieDiagnostics = ZOMBIE_SUBSYSTEMS,
     vehicleDiagnostics = { "vehicle" },
     vehicleTruthProbe = { "vehicle" },
+    vehicleIdentityProbe = { "vehicle_identity" },
+    vehicleRouteProbe = { "vehicle_route" },
     uiPerfProbe = { "ui_render" },
+    uiRefreshProbe = { "ui_refresh" },
     uiAutoCloseProbe = { "ui_auto_close" },
     portableUiProbe = { "ui_lifecycle" },
     portable_ui = { "ui_lifecycle" },
@@ -60,6 +70,14 @@ local legacySubsystemMap = {
     cycleModeProbe = { "vehicle" },
     slotAuthorityProbe = { "slot" },
     playback = { "runtime" }
+}
+
+local presetDefinitions = {
+    sp_loot_reload_probe = {
+        "core",
+        "loot",
+        "loot_probe"
+    }
 }
 
 local function ensureSubsystemDefaults()
@@ -140,6 +158,26 @@ function NMRuntimeConfig.getSubsystemDebugSnapshot()
         out[key] = subsystems[key] == true
     end
     return out
+end
+
+function NMRuntimeConfig.getSubsystemDebugPresetNames()
+    local out = {}
+    for name in pairs(presetDefinitions) do
+        out[#out + 1] = tostring(name)
+    end
+    table.sort(out)
+    return out
+end
+
+function NMRuntimeConfig.applySubsystemDebugPreset(name, enabled)
+    local preset = presetDefinitions[tostring(name or "")]
+    if type(preset) ~= "table" then
+        return false
+    end
+    for i = 1, #preset do
+        values.debugSubsystems[preset[i]] = enabled ~= false
+    end
+    return true
 end
 
 function NMRuntimeConfig.formatSubsystemDebugSummary(snapshot)

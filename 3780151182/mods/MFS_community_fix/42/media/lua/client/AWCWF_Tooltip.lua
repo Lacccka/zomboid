@@ -191,6 +191,7 @@ end
 -- 构建武器 Tooltip 行数据
 local function buildWeaponTooltipLines(item)
     local lines = {}
+    addLabelValueLine(lines, "Item ID", item:getFullType())
 
     local minDmg = item:getMinDamage()
     local maxDmg = item:getMaxDamage()
@@ -253,6 +254,7 @@ local function buildWeaponPartTooltipLines(item, altDown)
     local lines = {}
 
     addTitleLine(lines, item:getDisplayName())
+    addLabelValueLine(lines, "Item ID", item:getFullType())
     addLabelValueLine(lines, getText("Tooltip_item_Weight"), string.format("%.2f", item:getActualWeight()))
 
     if item:getConditionMax() > 0 then

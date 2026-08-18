@@ -2,6 +2,7 @@ require "ISUI/ISPanel"
 require "ui/shared/slots/NMSlotHostLifecycle"
 require "ui/shared/host/NMDeviceUiHost"
 require "ui/shared/host/NMFancyWindowChrome"
+require "ui/shared/host/NMFancyDeviceUiScale"
 local PortableWindowRegistry = require "ui/shared/host/NMPortableWindowRegistry"
 
 _G.NMCDPlayerWindow = _G.NMCDPlayerWindow or {}

@@ -1,6 +1,8 @@
 local env = _G.NMWalkmanWindowEnv
 setfenv(1, env)
 
+local FancySettingsWindow = require "ui/shared/host/NMFancySettingsWindow"
+
 function WalkmanWindow:onMouseDown(x, y)
     if NMGamepadWindowTracker and NMGamepadWindowTracker.markWindow then
         NMGamepadWindowTracker.markWindow(self, "walkman")
@@ -10,6 +12,11 @@ function WalkmanWindow:onMouseDown(x, y)
     end
     if pointInRect(x, y, self:getCloseRect()) then
         self._nmClosePressed = true
+        return true
+    end
+
+    if pointInRect(x, y, self:getSettingsRect()) then
+        self._nmSettingsPressed = true
         return true
     end
 
@@ -69,6 +76,13 @@ function WalkmanWindow:onMouseUp(x, y)
     self._nmClosePressed = false
     if shouldClose then
         self:close()
+        return true
+    end
+
+    local shouldOpenSettings = self._nmSettingsPressed == true and pointInRect(x, y, self:getSettingsRect())
+    self._nmSettingsPressed = false
+    if shouldOpenSettings then
+        FancySettingsWindow.openForSourceWindow(self)
         return true
     end
 
@@ -143,6 +157,7 @@ function WalkmanWindow:onMouseUpOutside(x, y)
         return true
     end
     self._nmClosePressed = false
+    self._nmSettingsPressed = false
     self._nmPlayButtonPressed = false
     self._nmPrevButtonPressed = false
     self._nmNextButtonPressed = false

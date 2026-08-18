@@ -424,7 +424,7 @@ function NMBatterySlot.attach(window, x, y, size)
             drawBatteryTexture(self)
             self.tooltip = renderState and renderState.tooltip or NMTranslations.ui("InsertBattery", "Insert Battery")
         else
-            drawEmptyBatteryVector(self)
+            drawEmptyBatteryTexture(self)
             self.tooltip = renderState and renderState.tooltip or NMTranslations.ui("InsertBattery", "Insert Battery")
         end
         if NMUIRenderProbe and NMUIRenderProbe.endWindow then

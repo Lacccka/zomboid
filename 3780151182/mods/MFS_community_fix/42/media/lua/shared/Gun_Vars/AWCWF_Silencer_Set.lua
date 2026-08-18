@@ -111,7 +111,7 @@ AWCWF_SilencerSet.Canon["XY_SP"] = {
 }
 
 AWCWF_SilencerSet.Canon["XY_OF"] = {
-    SoundVolumeModifier = 0.50,
-    SoundRadiusModifier = 0.50,
+    SoundVolumeModifier = 0.75,
+    SoundRadiusModifier = 0.75,
     SilenceSound = nil
 }

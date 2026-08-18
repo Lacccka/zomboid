@@ -85,6 +85,10 @@ local function newSession(activeMinute)
     return {
         coveredMinutes = 0,
         activeTrainingMinutes = 0,
+        -- Clock minutes above, work below. activeTrainingMinutes is how long
+        -- the action ran and is the coverage denominator; workMinutes is what
+        -- the repetitions were worth and is what credit and load read.
+        workMinutes = 0,
         loadReturnSum = 0,
         acceptedRepeats = 0,
         regularitySum = 0,
@@ -181,6 +185,7 @@ local function normalizeSession(source, activeMinute)
     source.coveredMinutes = positiveOr(source.coveredMinutes, 0)
     source.volume = nil
     source.activeTrainingMinutes = positiveOr(source.activeTrainingMinutes, 0)
+    source.workMinutes = positiveOr(source.workMinutes, 0)
     source.loadReturnSum = positiveOr(source.loadReturnSum, 0)
     source.acceptedRepeats = wholeCount(source.acceptedRepeats)
     source.regularitySum = positiveOr(source.regularitySum, 0)
@@ -256,15 +261,76 @@ local function newState(character)
     return state
 end
 
+-- A player's own mod data is not the server's to own. On a dedicated server the
+-- client's copy of it is echoed back over the server's within seconds, so every
+-- write made between two echoes is discarded: measured live on 2026-08-17, the
+-- state object under this key was replaced 38 times in one four-minute session,
+-- each time arriving with a session that had never seen a repetition. The minute
+-- tick survived that only because it recomputes rather than accumulates.
+--
+-- Global mod data is server-side and no client can overwrite it, so that is
+-- where the authoritative state lives whenever there is a server to own it.
+local STATE_KEY = "PhysicalProgressionOverhaul"
+local GLOBAL_STORE = "PhysicalProgressionOverhaulPlayers"
+
+local function playerKey(character)
+    local ok, name = pcall(function() return character:getUsername() end)
+    if not ok or type(name) ~= "string" or name == "" then return nil end
+    return name
+end
+
+local function globalStore()
+    if type(isServer) ~= "function" then return nil end
+    local flagOk, server = pcall(isServer)
+    if not flagOk or server ~= true then return nil end
+    if type(ModData) ~= "table" or type(ModData.getOrCreate) ~= "function" then
+        return nil
+    end
+    local ok, store = pcall(ModData.getOrCreate, GLOBAL_STORE)
+    if not ok or type(store) ~= "table" then return nil end
+    return store
+end
+
+-- Returns the table the state is stored in and the key it is stored under. The
+-- character's own mod data is still the holder in single player and on a
+-- client, where nothing else writes it and there is no echo to lose it to.
+local function holderFor(character)
+    local store = globalStore()
+    if store ~= nil then
+        local key = playerKey(character)
+        if key ~= nil then return store, key end
+    end
+    return character:getModData(), STATE_KEY
+end
+
+-- Saves written before the state moved carry it on the character. It is adopted
+-- once, on the first read, so a live save keeps its progress; the stale copy is
+-- dropped so nothing can read it later by mistake.
+local function adoptFromCharacter(character, holder, key)
+    if holder == nil or key == STATE_KEY then return nil end
+    local ok, modData = pcall(function() return character:getModData() end)
+    if not ok or type(modData) ~= "table" then return nil end
+    local carried = modData[STATE_KEY]
+    if type(carried) ~= "table" or carried.schema ~= SCHEMA then return nil end
+    holder[key] = carried
+    pcall(function() modData[STATE_KEY] = nil end)
+    return carried
+end
+
 function ExerciseState.get(character)
     if character == nil or character.getModData == nil then return nil end
 
-    local modData = character:getModData()
-    local state = modData.PhysicalProgressionOverhaul
+    local holder, key = holderFor(character)
+    if type(holder) ~= "table" then return nil end
+    local state = holder[key]
+
+    if type(state) ~= "table" then
+        state = adoptFromCharacter(character, holder, key)
+    end
 
     if type(state) ~= "table" then
         state = newState(character)
-        modData.PhysicalProgressionOverhaul = state
+        holder[key] = state
         return state
     end
 
@@ -272,7 +338,7 @@ function ExerciseState.get(character)
     -- ladder to climb: see the note beside SCHEMA.
     if state.schema ~= SCHEMA then
         state = newState(character)
-        modData.PhysicalProgressionOverhaul = state
+        holder[key] = state
         return state
     end
 

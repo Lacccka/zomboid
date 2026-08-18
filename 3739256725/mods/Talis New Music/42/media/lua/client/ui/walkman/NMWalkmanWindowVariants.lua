@@ -1,6 +1,20 @@
 local env = _G.NMWalkmanWindowEnv
 setfenv(1, env)
 
+local function getFancyTexture(path)
+    if NMFancyDeviceUiScale and NMFancyDeviceUiScale.getTexture then
+        return NMFancyDeviceUiScale.getTexture(path)
+    end
+    return getTexture and getTexture(path) or nil
+end
+
+local function getFancyTextureScaleKey()
+    if NMFancyDeviceUiScale and NMFancyDeviceUiScale.getTextureScaleKey then
+        return NMFancyDeviceUiScale.getTextureScaleKey()
+    end
+    return "1x"
+end
+
 function normalizeWalkmanVariantToken(rawToken)
     local text = tostring(rawToken or "")
     local token = text:match("Walkman([A-Za-z]+)$")
@@ -74,7 +88,8 @@ end
 
 function getWalkmanUITexturesForVariant(variant)
     local token = normalizeWalkmanVariantToken(variant) or WALKMAN_UI_VARIANT_FALLBACK
-    local cached = WALKMAN_UI_TEXTURES_BY_VARIANT[token]
+    local cacheKey = token .. "|" .. getFancyTextureScaleKey()
+    local cached = WALKMAN_UI_TEXTURES_BY_VARIANT[cacheKey]
     if cached then
         return cached
     end
@@ -86,31 +101,31 @@ function getWalkmanUITexturesForVariant(variant)
 
     local textures = {
         variant = token,
-        base = getTexture and getTexture(basePath) or nil,
-        side = getTexture and getTexture("media/textures/UI/Walkman/NM_UI_Walkman_Side_" .. token .. ".png") or nil,
-        lid = getTexture and getTexture("media/textures/UI/Walkman/NM_UI_Walkman_Lid_" .. token .. ".png") or nil,
+        base = getFancyTexture(basePath),
+        side = getFancyTexture("media/textures/UI/Walkman/NM_UI_Walkman_Side_" .. token .. ".png"),
+        lid = getFancyTexture("media/textures/UI/Walkman/NM_UI_Walkman_Lid_" .. token .. ".png"),
         play = nil,
         prev = nil,
         next = nil,
         stop = nil,
     }
     if token == "Lore" then
-        textures.play = getTexture and getTexture("media/textures/UI/Walkman/NM_UI_Button_Play_Lore.png") or nil
-        textures.prev = getTexture and getTexture("media/textures/UI/Walkman/NM_UI_Button_Prev_Lore.png") or nil
-        textures.next = getTexture and getTexture("media/textures/UI/Walkman/NM_UI_Button_Next_Lore.png") or nil
-        textures.stop = getTexture and getTexture("media/textures/UI/Walkman/NM_UI_Button_Stop_Lore.png") or nil
+        textures.play = getFancyTexture("media/textures/UI/Walkman/NM_UI_Button_Play_Lore.png")
+        textures.prev = getFancyTexture("media/textures/UI/Walkman/NM_UI_Button_Prev_Lore.png")
+        textures.next = getFancyTexture("media/textures/UI/Walkman/NM_UI_Button_Next_Lore.png")
+        textures.stop = getFancyTexture("media/textures/UI/Walkman/NM_UI_Button_Stop_Lore.png")
     elseif token == "White" then
-        textures.play = getTexture and getTexture(PLAY_BUTTON_DARK_TEXTURE_PATH) or nil
-        textures.prev = getTexture and getTexture(PREV_BUTTON_DARK_TEXTURE_PATH) or nil
-        textures.next = getTexture and getTexture(NEXT_BUTTON_DARK_TEXTURE_PATH) or nil
-        textures.stop = getTexture and getTexture(STOP_BUTTON_TEXTURE_PATH) or nil
+        textures.play = getFancyTexture(PLAY_BUTTON_DARK_TEXTURE_PATH)
+        textures.prev = getFancyTexture(PREV_BUTTON_DARK_TEXTURE_PATH)
+        textures.next = getFancyTexture(NEXT_BUTTON_DARK_TEXTURE_PATH)
+        textures.stop = getFancyTexture(STOP_BUTTON_TEXTURE_PATH)
     else
-        textures.play = getTexture and getTexture(PLAY_BUTTON_TEXTURE_PATH) or nil
-        textures.prev = getTexture and getTexture(PREV_BUTTON_TEXTURE_PATH) or nil
-        textures.next = getTexture and getTexture(NEXT_BUTTON_TEXTURE_PATH) or nil
-        textures.stop = getTexture and getTexture(STOP_BUTTON_TEXTURE_PATH) or nil
+        textures.play = getFancyTexture(PLAY_BUTTON_TEXTURE_PATH)
+        textures.prev = getFancyTexture(PREV_BUTTON_TEXTURE_PATH)
+        textures.next = getFancyTexture(NEXT_BUTTON_TEXTURE_PATH)
+        textures.stop = getFancyTexture(STOP_BUTTON_TEXTURE_PATH)
     end
-    WALKMAN_UI_TEXTURES_BY_VARIANT[token] = textures
+    WALKMAN_UI_TEXTURES_BY_VARIANT[cacheKey] = textures
     return textures
 end
 

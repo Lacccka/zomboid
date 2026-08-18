@@ -1,7 +1,6 @@
 require "TimedActions/ISBaseTimedAction"
 
--- Bare-handed fumble animation played for the duration of the
--- flare_ignite sound, instead of the player just standing still.
+-- Bare-handed fumble anim played for the flare_ignite sound duration.
 local IGNITE_ANIM = "OpenBeerBottle"
 
 ISIgniteFlareAction = ISBaseTimedAction:derive("ISIgniteFlareAction")
@@ -12,8 +11,7 @@ function ISIgniteFlareAction:isValid()
 end
 
 function ISIgniteFlareAction:start()
-    -- Re-resolve by ID -- the reference captured when the action was
-    -- queued can go stale by the time :complete() runs, especially in MP.
+    -- Re-resolve by ID: the queued reference can go stale by complete(), especially in MP.
     if isClient() and self.item then
         self.item = self.character:getInventory():getItemById(self.item:getID())
     end
@@ -37,15 +35,9 @@ function ISIgniteFlareAction:perform()
     ISBaseTimedAction.perform(self)
 end
 
--- Swaps the unlit item to Explosives.FlareBurning -- see
--- ExplosivesFlare.swapHeldItem in FlareHandler.lua for why a swap
--- instead of a modData flag (no in-place item-type change in PZ).
--- This class lives in shared/ (not client/) so the server can
--- reconstruct and run the replicated action too, but ExplosivesFlare
--- (light sources, sparkles, sounds) only exists client-side -- the
--- server's own copy of this action just needs to complete without
--- erroring; the authoritative item swap itself goes through the
--- SwapHeldFlare client->server command inside swapHeldItem.
+-- Swaps to Explosives.FlareBurning (see ExplosivesFlare.swapHeldItem for why a swap, not a modData flag).
+-- Lives in shared/ so the server can run the replicated action too; ExplosivesFlare itself is
+-- client-only, the server copy just needs to complete without erroring.
 function ISIgniteFlareAction:complete()
     if ExplosivesFlare then
         self.item:getModData().ignitedAtGameHours = getGameTime():getWorldAgeHours()
@@ -54,10 +46,8 @@ function ISIgniteFlareAction:complete()
     return true
 end
 
--- Not perk/trait-scaled on purpose (see adjustMaxTime override below) --
--- this needs to stay locked to the flare_ignite.ogg clip length, not
--- speed up/slow down with mood or action-speed modifiers like vanilla
--- timed actions normally do.
+-- Not perk/trait-scaled on purpose: stays locked to the flare_ignite.ogg clip length,
+-- unlike normal timed actions (see adjustMaxTime override below).
 function ISIgniteFlareAction:getDuration()
     return 60 -- ticks; tune in-game against the ~3s flare_ignite.ogg length
 end

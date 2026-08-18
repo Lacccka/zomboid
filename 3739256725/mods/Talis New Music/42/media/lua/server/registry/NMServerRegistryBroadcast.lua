@@ -16,6 +16,96 @@ local function nowRealMs()
     return 0
 end
 
+local function formatCoord(value)
+    local n = tonumber(value)
+    if n == nil then
+        return "nil"
+    end
+    return string.format("%.2f", n)
+end
+
+local function calculateDistance(oldX, oldY, oldZ, newX, newY, newZ)
+    local ox = tonumber(oldX)
+    local oy = tonumber(oldY)
+    local oz = tonumber(oldZ)
+    local nx = tonumber(newX)
+    local ny = tonumber(newY)
+    local nz = tonumber(newZ)
+    if ox == nil or oy == nil or oz == nil or nx == nil or ny == nil or nz == nil then
+        return 0
+    end
+    local dx = nx - ox
+    local dy = ny - oy
+    local dz = nz - oz
+    return math.sqrt((dx * dx) + (dy * dy) + (dz * dz))
+end
+
+local function countRecipients()
+    local players = getOnlinePlayers and getOnlinePlayers() or nil
+    if not players then
+        return 0
+    end
+    return players:size()
+end
+
+local function isAttachedRegistryTimelinePayload(payload)
+    local mode = tostring(payload and payload.sourceMode or "")
+    return mode == "attached" or mode == "stowed"
+end
+
+local function logAttachedRegistryTimeline(payload, op, sessionToken, signature, sentCount, diagnosticContext)
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("registry")) then
+        return
+    end
+    if not payload or not isAttachedRegistryTimelinePayload(payload) then
+        return
+    end
+    NMServerRegistryBroadcast.AttachedTimelineSeen = NMServerRegistryBroadcast.AttachedTimelineSeen or {}
+    local uuid = tostring(payload.uuid or "")
+    local previous = NMServerRegistryBroadcast.AttachedTimelineSeen[uuid] or {}
+    local previousX = previous.x
+    local previousY = previous.y
+    local previousZ = previous.z
+    local delta = calculateDistance(previousX, previousY, previousZ, payload.x, payload.y, payload.z)
+    local totalRecipients = countRecipients()
+    local heartbeatTick = diagnosticContext and diagnosticContext.heartbeatTick or 0
+    local trigger = tostring(diagnosticContext and diagnosticContext.trigger or "heartbeat")
+    NMCore.logChannel(
+        "registry",
+        "attached_registry_broadcast",
+        string.format(
+            "uuid=%s mode=%s op=%s trigger=%s heartbeatTick=%s sourceGen=%s pos=%s,%s,%s lastPos=%s,%s,%s delta=%.2f sent=%s recipients=%s signature=%s sessionToken=%s rebindReason=%s",
+            tostring(uuid),
+            tostring(payload.sourceMode or "nil"),
+            tostring(op or "upsert"),
+            tostring(trigger),
+            tostring(heartbeatTick),
+            tostring(payload.sourceGeneration or payload.sourceEpoch or 0),
+            formatCoord(payload.x),
+            formatCoord(payload.y),
+            formatCoord(payload.z),
+            formatCoord(previousX),
+            formatCoord(previousY),
+            formatCoord(previousZ),
+            tonumber(delta) or 0,
+            tostring(sentCount or 0),
+            tostring(totalRecipients),
+            tostring(signature or ""),
+            tostring(sessionToken or "nil"),
+            tostring(payload.rebindReason or "none")
+        )
+    )
+    NMServerRegistryBroadcast.AttachedTimelineSeen[uuid] = {
+        x = tonumber(payload.x),
+        y = tonumber(payload.y),
+        z = tonumber(payload.z),
+        signature = signature,
+        sentCount = sentCount,
+        heartbeatTick = heartbeatTick,
+        trigger = trigger
+    }
+end
+
 local function shouldEmitVehicleTruthLog(tag, payload, op, cooldownMs)
     local state = payload and payload.state or {}
     local key = table.concat({
@@ -306,7 +396,7 @@ function NMServerRegistryBroadcast.sendRegistryUpdate(playerObj, op, payload)
     return true
 end
 
-function NMServerRegistryBroadcast.broadcastEntry(worldRegistry, uuid, profile, state, op, recipientFn)
+function NMServerRegistryBroadcast.broadcastEntry(worldRegistry, uuid, profile, state, op, recipientFn, diagnosticContext)
     local entry = worldRegistry and worldRegistry[uuid] or nil
     if not entry then
         return 0
@@ -331,9 +421,10 @@ function NMServerRegistryBroadcast.broadcastEntry(worldRegistry, uuid, profile, 
     end
 
     local sent = 0
+    local sessionToken = NMServerBootReset and NMServerBootReset.getSessionToken and NMServerBootReset.getSessionToken() or nil
+    local signature = NMServerRegistryBroadcast.buildSignature(op, payload)
     if type(recipientFn) == "function" then
         recipientFn(function(playerObj)
-            local signature = NMServerRegistryBroadcast.buildSignature(op, payload)
             local force = tostring(op or "") == "remove"
             if force or NMServerRegistryBroadcast.shouldSendSignature(playerObj, uuid, signature) then
                 if NMServerRegistryBroadcast.sendRegistryUpdate(playerObj, op, payload) then
@@ -342,6 +433,7 @@ function NMServerRegistryBroadcast.broadcastEntry(worldRegistry, uuid, profile, 
             end
         end)
     end
+    logAttachedRegistryTimeline(payload, op, sessionToken, signature, sent, diagnosticContext)
     return sent
 end
 

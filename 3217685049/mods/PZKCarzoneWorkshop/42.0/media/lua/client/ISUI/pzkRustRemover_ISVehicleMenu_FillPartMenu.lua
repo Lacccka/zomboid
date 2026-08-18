@@ -7,7 +7,7 @@ local old_ISVehicleMenu_FillPartMenu = ISVehicleMenu.FillPartMenu
 
 VehicleUnrust_ISVehicleMenu = VehicleUnrust_ISVehicleMenu or {}
 
--- Timed action: ISUnrustVehicleAction (replacement)
+
 ISUnrustVehicleAction = ISBaseTimedAction:derive("ISUnrustVehicleAction")
 
 function ISUnrustVehicleAction:isValid()
@@ -19,65 +19,60 @@ function ISUnrustVehicleAction:isValid()
 end
 
 function ISUnrustVehicleAction:waitToStart()
-    -- face vehicle and wait to finish turning like other vehicle actions
+
     self.character:faceThisObject(self.vehicle)
     return self.character:shouldBeTurning()
 end
 
 function ISUnrustVehicleAction:start()
-    -- record solvent start usedDelta and compute target
+
     if self.solvent and self.solvent.getUsedDelta then
         self.itemStart = self.solvent:getUsedDelta() or 1.0
     else
         self.itemStart = 1.0
     end
-    -- compute target used delta after consuming 0.1 portion
+
     self.itemTarget = math.max(0, self.itemStart - 0.1)
 
-    -- animation: use the refuel/gascan node (works well for pour/cleaning poses)
     self:setActionAnim("refuelgascan")
-    -- only call setLoopedAction if available in this runtime
+
     if self.setLoopedAction then
         self:setLoopedAction(true)
     end
 
-    -- show items in hands using static model (same approach as working gas/water actions)
     local primaryModel = (self.solvent and self.solvent.getStaticModel) and self.solvent:getStaticModel() or nil
     local secondaryModel = (self.sheets  and self.sheets.getStaticModel)  and self.sheets:getStaticModel()  or nil
     if self.setOverrideHandModels then
         self:setOverrideHandModels(primaryModel, secondaryModel)
     end
 
-    -- make sure player faces the vehicle
     self.character:faceThisObject(self.vehicle)
-    -- optional sound: you can add a sound like in water script if wanted
-    -- self.sound = self.character:playSound("GetWaterFromTapMetalBig")
+
 end
 
 function ISUnrustVehicleAction:update()
-    -- keep facing vehicle
     if self.vehicle then
         self.character:faceThisObject(self.vehicle)
     end
 
-    -- show progress on the solvent item (job delta)
+
     if self.solvent and self.solvent.setJobDelta then
         self.solvent:setJobDelta(self:getJobDelta())
     end
 
-    -- metabolic target (so animation looks right)
+
     if self.character then
         self.character:setMetabolicTarget(Metabolics.LightWork)
     end
 end
 
 function ISUnrustVehicleAction:stop()
-    -- cleanup job delta if possible
+
     if self.solvent and self.solvent.setJobDelta then
         self.solvent:setJobDelta(0)
     end
-    -- stop sound if you added one (optional)
-    -- if self.sound and self.character:getEmitter():isPlaying(self.sound) then self.character:stopOrTriggerSound(self.sound); end
+
+
     ISBaseTimedAction.stop(self)
 end
 
@@ -87,10 +82,10 @@ function ISUnrustVehicleAction:perform()
     local sheets = self.sheets
     local vehicle = self.vehicle
 
-    -- make sure job delta cleared
+
     if solvent and solvent.setJobDelta then solvent:setJobDelta(0) end
 
-    -- 1) Drain solvent, replace with empty bottle
+
     if solvent then
         local inv = char:getInventory()
         local inPrimary = (char:getPrimaryHandItem() == solvent)
@@ -104,7 +99,13 @@ function ISUnrustVehicleAction:perform()
         end
 
         local bottle = nil
-        if inv then bottle = inv:AddItem("Base.pzkRustSolventBottle") end
+		if solvent.getFullType == "Base.pzkRusteeze" or solvent.getFullType == "Base.pzkRustSolvent" then
+		
+			if inv then bottle = inv:AddItem("Base.pzkRustSolventBottle") end
+			
+		elseif solvent.getFullType == "Base.Pop2" then
+			if inv then bottle = inv:AddItem("Base.Pop2Empty") end
+		end
 
         if inPrimary and bottle and char.setPrimaryHandItem then
             if inv and inv:contains(bottle) then
@@ -121,7 +122,7 @@ function ISUnrustVehicleAction:perform()
         end
     end
 
-    -- 2) Turn RippedSheets -> RippedSheetsDirty (try to preserve hand slot)
+
     if sheets then
         local inv = char:getInventory()
         local inPrimary = (char:getPrimaryHandItem() == sheets)
@@ -153,12 +154,11 @@ function ISUnrustVehicleAction:perform()
         -- otherwise dirty remains in inventory
     end
 
-    -- 3) Remove rust
     if vehicle and vehicle.setRust then
         vehicle:setRust(0)
     end
 
-    -- call base perform to finish action properly
+
     ISBaseTimedAction.perform(self)
 end
 
@@ -179,7 +179,6 @@ end
 
 -- ---------------------------------------------------------------------------
 
--- Helper: get full type string for an InventoryItem (safe)
 local function getItemFullType(item)
     if not item then return "" end
     if item.getFullType then
@@ -194,7 +193,7 @@ local function getItemFullType(item)
     return ""
 end
 
--- Search entire player (hands, inventory, worn) for an item matching fullType
+
 local function findItemByFullType(playerObj, wantedFullType)
     if not playerObj or not wantedFullType or wantedFullType == "" then return nil end
 
@@ -233,20 +232,20 @@ local function findItemByFullType(playerObj, wantedFullType)
     return nil
 end
 
--- NEW helper: find both needed items (solvent + sheets) and return them
 local function findSolventAndSheets(playerObj)
     if not playerObj then return nil, nil end
     local sheets = findItemByFullType(playerObj, "Base.RippedSheets")
 
-    -- accept either Base.Rusteeze or Base.pzkRusteeze or the explicit solvent type Base.pzkRustSolvent
+
     local solvent = findItemByFullType(playerObj, "Base.Rusteeze")
         or findItemByFullType(playerObj, "Base.pzkRusteeze")
         or findItemByFullType(playerObj, "Base.pzkRustSolvent")
+		or findItemByFullType(playerObj, "Base.Pop2")
 
     return solvent, sheets
 end
 
--- Override FillPartMenu to add our menu entry (radial or context)
+
 function ISVehicleMenu.FillPartMenu(playerIndex, context, slice, vehicle)
     local playerObj = getSpecificPlayer(playerIndex)
     if not playerObj or not vehicle then
@@ -260,16 +259,16 @@ function ISVehicleMenu.FillPartMenu(playerIndex, context, slice, vehicle)
    --     return
   --  end
 
-    -- Only show the option if vehicle actually has rust > 0
+
     if vehicle.getRust and vehicle:getRust() > 0 then
-        -- Now require both items and get their references
+
         local solventItem, sheetsItem = findSolventAndSheets(playerObj)
         if solventItem and sheetsItem then
             local label = "Remove Rust"
             local iconPath = "media/ui/vehicles/PZK_Remove_Rust.png"
             if slice then
                 slice:addSlice(label, getTexture(iconPath), function(player, veh, sol, sh)
-                    -- create action and queue it
+
                     ISTimedActionQueue.add(ISUnrustVehicleAction:new(playerObj, vehicle, solventItem, sheetsItem, 400))
                 end, playerObj, vehicle, solventItem, sheetsItem)
             else
@@ -285,6 +284,6 @@ function ISVehicleMenu.FillPartMenu(playerIndex, context, slice, vehicle)
         end
     end
 
-    -- Preserve other vehicle menu behaviour
+
     old_ISVehicleMenu_FillPartMenu(playerIndex, context, slice, vehicle)
 end

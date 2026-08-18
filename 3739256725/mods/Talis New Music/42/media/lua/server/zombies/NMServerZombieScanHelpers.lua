@@ -87,6 +87,49 @@ function NMServerZombieScanHelpers.isZombieNearAnyPlayer(zombie, players, radius
     return false
 end
 
+function NMServerZombieScanHelpers.scanAroundCharacter(character, callback, radius, maxZombies)
+    local square = character and character.getCurrentSquare and character:getCurrentSquare() or nil
+    local cell = getCell and getCell() or nil
+    if not (square and cell and cell.getGridSquare) then
+        return 0
+    end
+    local seen = {}
+    local processed = 0
+    local scanRadius = math.max(0, tonumber(radius) or 0)
+    local scanMax = math.max(0, tonumber(maxZombies) or 0)
+    if scanMax <= 0 then
+        return 0
+    end
+    local squareZ = tonumber(square:getZ()) or 0
+    for x = square:getX() - scanRadius, square:getX() + scanRadius do
+        for y = square:getY() - scanRadius, square:getY() + scanRadius do
+            if processed >= scanMax then
+                return processed
+            end
+            local gridSquare = cell:getGridSquare(x, y, squareZ)
+            if gridSquare then
+                local moving = gridSquare.getMovingObjects and gridSquare:getMovingObjects() or nil
+                local movingSize = moving and moving.size and moving:size() or 0
+                for i = 0, movingSize - 1 do
+                    local zombie = moving:get(i)
+                    local id = zombie and zombie.getObjectID and tostring(zombie:getObjectID() or "") or tostring(zombie)
+                    if not seen[id] and NMServerZombieScanHelpers.isAliveZombie(zombie) then
+                        seen[id] = true
+                        if callback then
+                            callback(zombie)
+                        end
+                        processed = processed + 1
+                        if processed >= scanMax then
+                            return processed
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return processed
+end
+
 function NMServerZombieScanHelpers.countZombiesWithModulo(zombies, startIndex, count, visitor)
     if not (zombies and zombies.size and visitor) then
         return 0

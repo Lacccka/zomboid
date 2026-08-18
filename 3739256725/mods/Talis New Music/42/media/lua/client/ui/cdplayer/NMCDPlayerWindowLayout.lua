@@ -118,6 +118,15 @@ function CDPlayerWindow:getCloseRect()
     }
 end
 
+function CDPlayerWindow:getSettingsRect()
+    return {
+        x = OPEN_BUTTON_X + math.floor(((OPEN_BUTTON_W - CLOSE_W) * 0.5) + 0.5),
+        y = OPEN_BUTTON_Y + OPEN_BUTTON_H + SETTINGS_GAP_Y,
+        w = CLOSE_W,
+        h = CLOSE_H
+    }
+end
+
 function CDPlayerWindow:getButtonClusterRect()
     return {
         x = BUTTON_CLUSTER_X,

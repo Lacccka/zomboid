@@ -1,5 +1,7 @@
 NMServerDistroPatch = NMServerDistroPatch or {}
 
+require "core/NMTempBootDebugProfiles"
+
 local patch = NMServerDistroPatch
 
 local state = {
@@ -69,6 +71,17 @@ function patch.getStats()
 end
 
 local function applyVanillaCDItemSuppression()
+    if NMCore and NMCore.logChannel then
+        NMCore.logChannel("loot", "temp_boot_marker", "stage=OnPreDistributionMerge")
+    end
+    if NMTempBootDebugProfiles then
+        NMTempBootDebugProfiles.logSandboxSnapshot(
+            "loot",
+            "temp_boot_sandbox",
+            "OnPreDistributionMerge",
+            "handler=applyVanillaCDItemSuppression"
+        )
+    end
     state.removedVanillaCDPlayers = 0
     state.removedVanillaCDs = 0
     state.removedVanillaCDPlayersByFamily = { procedural = 0, suburbs = 0 }

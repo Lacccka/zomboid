@@ -70,6 +70,9 @@ function NMBoomboxWindow.queuePersistedRestore(playerNum)
     if not isFancyUIEnabled() then
         return
     end
+    if NMClientMainRuntime and NMClientMainRuntime.requestTickGateWake then
+        NMClientMainRuntime.requestTickGateWake("boombox_restore_queue")
+    end
     pendingRestoreByPlayer[tostring(tonumber(playerNum) or 0)] = { playerNum = tonumber(playerNum) or 0, expiresAt = getNowMs() + RESTORE_RETRY_WINDOW_MS }
 end
 
@@ -112,4 +115,11 @@ function NMBoomboxWindow.tickPersistedRestore()
             pendingRestoreByPlayer[key] = nil
         end
     end
+end
+
+function NMBoomboxWindow.hasPendingPersistedRestore()
+    for _ in pairs(pendingRestoreByPlayer) do
+        return true
+    end
+    return false
 end

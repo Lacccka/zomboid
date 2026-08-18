@@ -1,6 +1,9 @@
 require "loot/NMManagedSpawnCatalog"
 require "loot/NMLootDistributionUtils"
+require "loot/NMLootPolicySnapshot"
+require "loot/NMLootResolvedPools"
 require "loot/NMLootSandboxSettings"
+require "core/NMTempBootDebugProfiles"
 
 NMLootBuildContext = NMLootBuildContext or {}
 
@@ -161,10 +164,49 @@ local function appendDeviceSpawnMap(targetMap, devicePools)
     end
 end
 
-function build.create(distributionAuditEnabled)
+function build.create(options)
+    local distributionAuditEnabled = false
+    local lootPolicy = nil
+    local buildId = ""
+    if type(options) == "table" then
+        distributionAuditEnabled = options.distributionAuditEnabled == true
+        lootPolicy = options.lootPolicy
+        buildId = tostring(options.buildId or "")
+    else
+        distributionAuditEnabled = options == true
+    end
     local allItems = getAllItems and getAllItems() or nil
-    local mediaSpawnsWithCases = not (NMRuntimeConfig and NMRuntimeConfig.getMediaSpawnsWithCasesEnabled)
+    local mediaSpawnsWithCases = lootPolicy ~= nil
+        and lootPolicy.casesEnabled == true
+        or not (NMRuntimeConfig and NMRuntimeConfig.getMediaSpawnsWithCasesEnabled)
         or NMRuntimeConfig.getMediaSpawnsWithCasesEnabled() == true
+    if NMCore and NMCore.logChannel then
+        NMCore.logChannel(
+            "loot",
+            "temp_boot_marker",
+            string.format(
+                "stage=build_context_create_start buildId=%s distributionAuditEnabled=%s allItems=%s mediaSpawnsWithCases=%s policy=%s",
+                tostring(buildId),
+                tostring(distributionAuditEnabled == true),
+                tostring(tonumber(allItems and allItems:size()) or 0),
+                tostring(mediaSpawnsWithCases),
+                tostring(NMLootPolicySnapshot and NMLootPolicySnapshot.formatPolicy and NMLootPolicySnapshot.formatPolicy(lootPolicy) or "runtime")
+            )
+        )
+    end
+    if NMTempBootDebugProfiles then
+        NMTempBootDebugProfiles.logSandboxSnapshot(
+            "loot",
+            "temp_boot_sandbox",
+            "build_context_create_start",
+            string.format(
+                "buildId=%s distributionAuditEnabled=%s allItems=%s",
+                tostring(buildId),
+                tostring(distributionAuditEnabled == true),
+                tostring(tonumber(allItems and allItems:size()) or 0)
+            )
+        )
+    end
 
     local phaseStartedAt = nowMs()
     local compatibleChildMods = NMManagedSpawnCatalog.buildCompatibleChildModSet()
@@ -203,8 +245,36 @@ function build.create(distributionAuditEnabled)
         )
     local managedPoolsMs = elapsedMs(phaseStartedAt)
 
-    local rawSandboxLoot = getRawSandboxLootSettings()
-    local lootBuildZomboidOST = resolveLootBuildZomboidOSTSetting()
+    local rawSandboxLoot = lootPolicy ~= nil
+        and NMLootPolicySnapshot.toRawSandboxLootSettings(lootPolicy)
+        or getRawSandboxLootSettings()
+    local lootBuildZomboidOST = lootPolicy ~= nil
+        and NMLootPolicySnapshot.toZomboidOSTSetting(lootPolicy)
+        or resolveLootBuildZomboidOSTSetting()
+    rawSandboxLoot.summary = string.format(
+        "cassettes=%s vinyl=%s cds=%s walkman=%s boombox=%s cdplayer=%s recordplayer=%s",
+        tostring(rawSandboxLoot and rawSandboxLoot.cassettes),
+        tostring(rawSandboxLoot and rawSandboxLoot.vinyl),
+        tostring(rawSandboxLoot and rawSandboxLoot.cds),
+        tostring(rawSandboxLoot and rawSandboxLoot.walkman),
+        tostring(rawSandboxLoot and rawSandboxLoot.boombox),
+        tostring(rawSandboxLoot and rawSandboxLoot.cdplayer),
+        tostring(rawSandboxLoot and rawSandboxLoot.recordplayer)
+    )
+    if NMTempBootDebugProfiles then
+        NMTempBootDebugProfiles.logSandboxSnapshot(
+            "loot",
+            "temp_boot_sandbox",
+            "build_context_sandbox_resolved",
+            string.format(
+                "buildId=%s rawRates=%s lootBuildZomboidOST={enabled=%s source=%s}",
+                tostring(buildId),
+                tostring(rawSandboxLoot and rawSandboxLoot.summary or "nil"),
+                tostring(lootBuildZomboidOST and lootBuildZomboidOST.enabled),
+                tostring(lootBuildZomboidOST and lootBuildZomboidOST.source or "unknown")
+            )
+        )
+    end
 
     phaseStartedAt = nowMs()
     local filteredBaseZomboidOST = NMManagedSpawnCatalog.filterBaseZomboidOSTMedia(basePools, lootBuildZomboidOST.enabled)
@@ -298,9 +368,20 @@ function build.create(distributionAuditEnabled)
     end
     local childFanoutMs = elapsedMs(phaseStartedAt)
 
+    phaseStartedAt = nowMs()
+    local resolvedPools = NMLootResolvedPools.build({
+        fallbackMediaPool = fallbackMediaPool,
+        fallbackDevicePool = fallbackDevicePool,
+        lootPolicy = lootPolicy,
+        buildId = buildId
+    })
+    local resolvedPoolsMs = elapsedMs(phaseStartedAt)
+
     return {
+        buildId = buildId,
         allItems = allItems,
         allItemCount = tonumber(allItems and allItems:size()) or 0,
+        lootPolicy = lootPolicy,
         mediaSpawnsWithCases = mediaSpawnsWithCases,
         compatibleChildMods = compatibleChildMods,
         overrides = overrides,
@@ -317,6 +398,7 @@ function build.create(distributionAuditEnabled)
         baseCategoryCounts = countPoolsByCategory(basePools),
         fallbackMediaPool = fallbackMediaPool,
         fallbackDevicePool = fallbackDevicePool,
+        resolvedPools = resolvedPools,
         basePresentCounts = basePresentCounts,
         baseMissingCounts = baseMissingCounts,
         childPoolCounts = childPoolCounts,
@@ -342,7 +424,8 @@ function build.create(distributionAuditEnabled)
         filterBaseOstMs = filterBaseOstMs,
         baseSplitPresenceMs = baseSplitPresenceMs,
         baseTouchMs = baseTouchMs,
-        childFanoutMs = childFanoutMs
+        childFanoutMs = childFanoutMs,
+        resolvedPoolsMs = resolvedPoolsMs
     }
 end
 

@@ -171,6 +171,12 @@ function NMServerIntentRouter.onClientCommand(module, command, player, args)
         local enabled = args and args.enabled == true
         local subsystem = tostring(args and args.subsystem or "")
         NMCore.setSubsystemDebugEnabled(subsystem, enabled)
+        if subsystem == "loot_probe"
+            and NMServerSandboxLootController
+            and NMServerSandboxLootController.refreshLootProbeForDebugState
+        then
+            NMServerSandboxLootController.refreshLootProbeForDebugState("debug_set")
+        end
         if NMCore and NMCore.logChannel then
             NMCore.logChannel(
                 "core",

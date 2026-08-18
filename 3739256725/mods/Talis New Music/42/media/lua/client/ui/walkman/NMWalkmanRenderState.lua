@@ -23,19 +23,11 @@ function NMWalkmanRenderState.buildCassetteLabelState(window, resolved, variant)
 
     local ctx = resolved or (window.resolveContextCached and window:resolveContextCached()) or nil
     local state = ctx and ctx.state or nil
-    local rect = window.getCassetteLabelRect and window:getCassetteLabelRect() or nil
+    local resolvedVariant = variant or (window.resolveWalkmanUIVariant and window:resolveWalkmanUIVariant(ctx)) or nil
+    local rect = window.getCassetteLabelRectForVariant and window:getCassetteLabelRectForVariant(resolvedVariant)
+        or (window.getCassetteLabelRect and window:getCassetteLabelRect() or nil)
     if not rect then
         return nil
-    end
-
-    local resolvedVariant = variant or (window.resolveWalkmanUIVariant and window:resolveWalkmanUIVariant(ctx)) or nil
-    if resolvedVariant == "Lore" then
-        rect = {
-            x = rect.x,
-            y = rect.y + 65,
-            w = rect.w,
-            h = rect.h
-        }
     end
 
     local labelState = NMReadoutLabelState.build(window, {

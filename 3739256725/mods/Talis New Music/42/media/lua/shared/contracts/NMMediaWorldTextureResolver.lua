@@ -7,6 +7,30 @@ local function norm(value)
     return tostring(value or "")
 end
 
+local function getFancyDeviceUiScaleTier()
+    local multiplier = nil
+    if NMFancyDeviceUiScale and NMFancyDeviceUiScale.getEffectiveScale then
+        multiplier = tonumber(NMFancyDeviceUiScale.getEffectiveScale())
+    elseif NMRuntimeConfig and NMRuntimeConfig.getFancyDeviceUiScaleMultiplier then
+        multiplier = tonumber(NMRuntimeConfig.getFancyDeviceUiScaleMultiplier())
+    end
+    multiplier = multiplier or 1.0
+    if multiplier >= 1.75 then
+        return "200"
+    end
+    if multiplier >= 1.25 then
+        return "150"
+    end
+    return "100"
+end
+
+local function buildPathCacheKey(fullType, scaleTier)
+    return table.concat({
+        norm(fullType),
+        tostring(scaleTier or "100")
+    }, "|")
+end
+
 local function findScriptItem(fullType)
     local ft = norm(fullType)
     if ft == "" then
@@ -180,17 +204,31 @@ local function cdPathFromWorldModelToken(token)
         return nil
     end
 
+    local scaleTier = getFancyDeviceUiScaleTier()
+    local nativeCdPath = "media/textures/WorldItems/CD/World_NM_CD.png"
+    local midCdPath = "media/textures/WorldItems/CD/World_NM_CD_150.png"
+    local highCdPath = "media/textures/WorldItems/CD/World_NM_CD_200.png"
+    local resolvedCdPath = nativeCdPath
+    if scaleTier == "150" then
+        resolvedCdPath = midCdPath
+    elseif scaleTier == "200" then
+        resolvedCdPath = highCdPath
+    end
+
     if modelToken == "NewMusic.CD" then
-        return "media/textures/WorldItems/CD/World_NM_CD.png"
+        return resolvedCdPath
+    end
+
+    if string.match(modelToken, "CD$") and not string.match(modelToken, "CDCover") then
+        return resolvedCdPath
     end
 
     local modelTexturePath = resolveModelScriptTexturePath(modelToken)
     if modelTexturePath then
+        if modelTexturePath == nativeCdPath or modelTexturePath == midCdPath or modelTexturePath == highCdPath then
+            return resolvedCdPath
+        end
         return modelTexturePath
-    end
-
-    if string.match(modelToken, "CD$") and not string.match(modelToken, "CDCover") then
-        return "media/textures/WorldItems/CD/World_NM_CD.png"
     end
 
     return nil
@@ -236,13 +274,27 @@ local function cassettePathFromIconToken(fullType)
     return nil
 end
 
+local function shouldUseScaleTierInCache(fullType)
+    local candidates = orderedCandidates(fullType)
+    for i = 1, #candidates do
+        local candidate = candidates[i]
+        local modelToken = resolveWorldStaticModelToken(candidate)
+        if cdPathFromWorldModelToken(modelToken) ~= nil then
+            return true
+        end
+    end
+    return false
+end
+
 function NMMediaWorldTextureResolver.resolvePath(fullType)
     local ft = norm(fullType)
     if ft == "" then
         return nil
     end
 
-    local cached = pathCache[ft]
+    local scaleTier = shouldUseScaleTierInCache(ft) and getFancyDeviceUiScaleTier() or "100"
+    local cacheKey = buildPathCacheKey(ft, scaleTier)
+    local cached = pathCache[cacheKey]
     if cached ~= nil then
         return cached or nil
     end
@@ -260,7 +312,7 @@ function NMMediaWorldTextureResolver.resolvePath(fullType)
         end
     end
 
-    pathCache[ft] = path or false
+    pathCache[cacheKey] = path or false
     return path
 end
 

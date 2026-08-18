@@ -1,6 +1,8 @@
 local env = _G.NMBoomboxWindowEnv
 setfenv(1, env)
 
+local FancySettingsWindow = require "ui/shared/host/NMFancySettingsWindow"
+
 local BUTTON_TEXTURE_BY_KIND = {
     play = "play",
     stop = "stop",
@@ -22,6 +24,42 @@ local function drawTextureScaledSafe(window, texture, rect, alpha, r, g, b)
     end
 end
 
+local function drawTextureScaledAngleSafe(window, texture, rect, angle, alpha, r, g, b)
+    if NMFancyDeviceUiScale and NMFancyDeviceUiScale.drawTextureScaledAngle then
+        return NMFancyDeviceUiScale.drawTextureScaledAngle(window, texture, rect, angle, alpha, r, g, b)
+    end
+    return drawTextureScaledSafe(window, texture, rect, alpha, r, g, b)
+end
+
+local function offsetRectY(rect, offsetY)
+    if not rect or offsetY == 0 then
+        return rect
+    end
+    return {
+        x = rect.x,
+        y = rect.y + offsetY,
+        w = rect.w,
+        h = rect.h,
+    }
+end
+
+local function offsetStateRectY(state, offsetY)
+    if not state or offsetY == 0 then
+        return state
+    end
+    local copy = {}
+    for k, v in pairs(state) do
+        copy[k] = v
+    end
+    if copy.y ~= nil then
+        copy.y = copy.y + offsetY
+    end
+    if copy.rect then
+        copy.rect = offsetRectY(copy.rect, offsetY)
+    end
+    return copy
+end
+
 local function resolveCloseTint(model)
     local variant = tostring(model and model.variant or "")
     if variant == "Oddbolt" or variant == "Black" then
@@ -32,14 +70,15 @@ end
 
 local function mainButtonPressed(window, kind)
     if kind == "play" then
-        return window._nmMainButtonDownByKind.play == true
+        local pulse = window._nmMainButtonPulseByKind[kind]
+        return window._nmMainButtonDownByKind.play == true or (pulse and pulse.phase == "down")
     end
     local pulse = window._nmMainButtonPulseByKind[kind]
     return pulse and pulse.phase == "down"
 end
 
-local function drawMainButton(window, textures, kind)
-    local rect = window:getMainButtonRect(kind)
+local function drawMainButton(window, textures, kind, canvasOffsetY)
+    local rect = offsetRectY(window:getMainButtonRect(kind), canvasOffsetY)
     local isPressed = mainButtonPressed(window, kind)
     local topRect = { x = rect.x, y = rect.y, w = rect.w, h = MAIN_BUTTON_TOP_H }
     local midH = isPressed and MAIN_BUTTON_MID_PRESSED_H or MAIN_BUTTON_MID_H
@@ -59,15 +98,15 @@ local function drawTopCollapsedButton(window, textures, kind)
     if window.isCollapsed ~= true then
         return
     end
-    local rect = window:getTopCollapsedButtonRect(kind)
+    local rect = window:getTopCollapsedButtonVisualRect(kind)
     drawTextureScaledSafe(window, textures[TOP_BUTTON_TEXTURE_BY_KIND[kind]], rect, 1.0, 1.0, 1.0, 1.0)
 end
 
-local function drawCassetteLabel(window, labelState)
+local function drawCassetteLabel(window, labelState, canvasOffsetY)
     if not labelState then
         return
     end
-    local labelRect = labelState.rect
+    local labelRect = offsetRectY(labelState.rect, canvasOffsetY)
     window:drawRect(labelRect.x, labelRect.y, labelRect.w, labelRect.h, CASSETTE_LABEL_BG.a, CASSETTE_LABEL_BG.r, CASSETTE_LABEL_BG.g, CASSETTE_LABEL_BG.b)
     local tm = getTextManager and getTextManager() or nil
     local textH = tm and tm.MeasureStringY and tm:MeasureStringY(UIFont.Small, "Ag") or 10
@@ -83,19 +122,20 @@ local function resolveVisibleCassetteState(model)
     return model and model.cassetteMediaState or nil, false
 end
 
-local function drawCassetteAssembly(window, model, textures)
+local function drawCassetteAssembly(window, model, textures, canvasOffsetY)
     local cassetteState, timedVisible = resolveVisibleCassetteState(model)
+    cassetteState = offsetStateRectY(cassetteState, canvasOffsetY)
     if cassetteState and cassetteState.visible == true and cassetteState.texture then
         drawTextureScaledSafe(window, cassetteState.texture, cassetteState, cassetteState.alpha or 1.0)
     end
     if timedVisible ~= true then
-        drawCassetteLabel(window, model and model.cassetteLabelState or nil)
+        drawCassetteLabel(window, model and model.cassetteLabelState or nil, canvasOffsetY)
     end
     if cassetteState and cassetteState.visible == true and textures.spool then
         local leftRect = window:getCassetteSpoolRect(1, cassetteState)
         local rightRect = window:getCassetteSpoolRect(2, cassetteState)
-        window:DrawTextureAngle(textures.spool, leftRect.x + (leftRect.w / 2), leftRect.y + (leftRect.h / 2), tonumber(window._nmLeftSpoolAngle) or 0.0)
-        window:DrawTextureAngle(textures.spool, rightRect.x + (rightRect.w / 2), rightRect.y + (rightRect.h / 2), tonumber(window._nmRightSpoolAngle) or 0.0)
+        drawTextureScaledAngleSafe(window, textures.spool, leftRect, tonumber(window._nmLeftSpoolAngle) or 0.0)
+        drawTextureScaledAngleSafe(window, textures.spool, rightRect, tonumber(window._nmRightSpoolAngle) or 0.0)
     end
 end
 
@@ -107,52 +147,63 @@ function BoomboxWindow:prerender()
     self:syncPlayButtonFromTransport(resolved, false)
     ISPanel.prerender(self)
     local textures = model and model.textures or self:resolveBoomboxUITextures()
+    local canvasOffsetY = self:getCanvasOffsetY()
 
     drawTopCollapsedButton(self, textures, "play")
     drawTopCollapsedButton(self, textures, "stop")
     drawTopCollapsedButton(self, textures, "prev")
     drawTopCollapsedButton(self, textures, "next")
 
-    drawTextureScaledSafe(self, textures.base, { x = BASE_X, y = BASE_Y, w = BASE_W, h = BASE_H })
-    drawTextureScaledSafe(self, textures.front, { x = FRONT_X, y = FRONT_Y, w = FRONT_W, h = FRONT_H })
+    drawTextureScaledSafe(self, textures.base, { x = BASE_X, y = BASE_Y + canvasOffsetY, w = BASE_W, h = BASE_H })
+    drawTextureScaledSafe(self, textures.front, { x = FRONT_X, y = FRONT_Y + canvasOffsetY, w = FRONT_W, h = FRONT_H })
     drawTextureScaledSafe(self, textures.powerBg, self:getPowerSwitchBgRect())
     drawTextureScaledSafe(self, textures.powerSlide, self:getPowerSwitchSlideRect(model and model.powerSwitchOn == true))
-    drawCassetteAssembly(self, model, textures)
+    drawCassetteAssembly(self, model, textures, canvasOffsetY)
 end
 
 function BoomboxWindow:render()
     ISPanel.render(self)
     local model = self:getRenderModel()
     local textures = model and model.textures or self:resolveBoomboxUITextures()
-    local volumeBgRect = self:getVolumeBgRect()
+    local canvasOffsetY = self:getCanvasOffsetY()
+    local volumeBgRect = offsetRectY(self:getVolumeBgRect(), canvasOffsetY)
     drawTextureScaledSafe(self, textures.volumeBg, volumeBgRect)
     if textures.volumeKnob then
-        local knobRect = self:getVolumeKnobRect()
-        self:DrawTextureAngle(textures.volumeKnob, knobRect.x + (knobRect.w / 2), knobRect.y + (knobRect.h / 2), tonumber(model and model.wheelAngle) or 0.0)
+        local knobRect = offsetRectY(self:getVolumeKnobRect(), canvasOffsetY)
+        drawTextureScaledAngleSafe(self, textures.volumeKnob, knobRect, tonumber(model and model.wheelAngle) or 0.0)
     end
 
     if model and model.lidEdgeState and model.lidEdgeState.visible == true then
-        drawTextureScaledSafe(self, model.lidEdgeState.texture, model.lidEdgeState)
+        local lidEdgeState = offsetStateRectY(model.lidEdgeState, canvasOffsetY)
+        drawTextureScaledSafe(self, lidEdgeState.texture, lidEdgeState)
     end
     if model and model.lidState then
-        drawTextureScaledSafe(self, model.lidState.texture, model.lidState)
+        local lidState = offsetStateRectY(model.lidState, canvasOffsetY)
+        drawTextureScaledSafe(self, lidState.texture, lidState)
     end
     if model and model.lidIngressVisible == true then
-        local ingressRect = self:getLidIngressZoneRect()
+        local ingressRect = offsetRectY(self:getLidIngressZoneRect(), canvasOffsetY)
         self:drawRectBorder(ingressRect.x, ingressRect.y, ingressRect.w, ingressRect.h, LID_INGRESS_BORDER.a, LID_INGRESS_BORDER.r, LID_INGRESS_BORDER.g, LID_INGRESS_BORDER.b)
     end
 
-    drawMainButton(self, textures, "play")
-    drawMainButton(self, textures, "stop")
-    drawMainButton(self, textures, "prev")
-    drawMainButton(self, textures, "next")
-    drawMainButton(self, textures, "eject")
+    drawMainButton(self, textures, "play", canvasOffsetY)
+    drawMainButton(self, textures, "stop", canvasOffsetY)
+    drawMainButton(self, textures, "prev", canvasOffsetY)
+    drawMainButton(self, textures, "next", canvasOffsetY)
+    drawMainButton(self, textures, "eject", canvasOffsetY)
 
     local closeR, closeG, closeB = resolveCloseTint(model)
     drawTextureScaledSafe(self, textures.close, self:getCloseRect(), 1.0, closeR, closeG, closeB)
+    local gearTexture = FancySettingsWindow.getGearTexture and FancySettingsWindow.getGearTexture() or nil
+    if gearTexture then
+        local gearRect = self:getSettingsRect()
+        local gearDrawRect = FancySettingsWindow.getGearDrawRect and FancySettingsWindow.getGearDrawRect(gearRect) or gearRect
+        local gearAlpha, gearR, gearG, gearB = FancySettingsWindow.resolveGearTint(self, model)
+        drawTextureScaledSafe(self, gearTexture, gearDrawRect, gearAlpha, gearR, gearG, gearB)
+    end
 
     for i = 1, 3 do
-        local rect = self:getModeButtonRect(i)
+        local rect = offsetRectY(self:getModeButtonRect(i), canvasOffsetY)
         drawTextureScaledSafe(self, textures.modeBg, rect)
         local selected = self:getSelectedModeIndex() == i
         local buttonRect = selected and { x = rect.x + 1, y = rect.y + 1, w = rect.w - 2, h = rect.h - 2 } or rect
@@ -160,8 +211,14 @@ function BoomboxWindow:render()
         drawTextureScaledSafe(self, textures.modeButton, buttonRect, 1.0, tint, tint, tint)
         local icon = textures.modeIcons and textures.modeIcons[i] or nil
         if icon then
-            local iw = icon.getWidthOrig and icon:getWidthOrig() or 16
-            local ih = icon.getHeightOrig and icon:getHeightOrig() or 16
+            local texW = icon.getWidthOrig and icon:getWidthOrig() or 16
+            local texH = icon.getHeightOrig and icon:getHeightOrig() or 16
+            local pad = math.max(1, math.floor((2 * getFancyDeviceUiScale()) + 0.5))
+            local maxW = math.max(1, rect.w - (pad * 2))
+            local maxH = math.max(1, rect.h - (pad * 2))
+            local fit = math.min(maxW / math.max(1, texW), maxH / math.max(1, texH))
+            local iw = math.floor((texW * fit) + 0.5)
+            local ih = math.floor((texH * fit) + 0.5)
             local ix = rect.x + math.floor(((rect.w - iw) * 0.5) + 0.5)
             local iy = rect.y + math.floor(((rect.h - ih) * 0.5) + 0.5)
             local iconAlpha = selected and math.min(1.0, MODE_ICON_ALPHA + 0.08) or MODE_ICON_ALPHA
@@ -171,7 +228,7 @@ function BoomboxWindow:render()
     end
 
     if model and model.volumeLabelVisible == true then
-        local labelRect = model.volumeLabelRect
+        local labelRect = offsetRectY(model.volumeLabelRect, canvasOffsetY)
         self:drawText(model.volumeLabelText, labelRect.x, labelRect.y, 1.0, 1.0, 1.0, 1.0, UIFont.Small)
     end
 end

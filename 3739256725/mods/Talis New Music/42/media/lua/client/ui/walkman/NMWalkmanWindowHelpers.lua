@@ -52,6 +52,13 @@ function getScreenSize()
     return sw, sh
 end
 
+function getFancyDeviceUiScale()
+    if NMFancyDeviceUiScale and NMFancyDeviceUiScale.getEffectiveScale then
+        return NMFancyDeviceUiScale.getEffectiveScale()
+    end
+    return 1.0
+end
+
 function isValidSoundId(soundId)
     if soundId == nil then
         return false
@@ -146,7 +153,11 @@ function resolveContextFreshUncached(window)
     end
     window.target.itemRef = item
     local profile = NMDeviceProfiles and NMDeviceProfiles.getForItem and NMDeviceProfiles.getForItem(item) or nil
-    local state = profile and NMDeviceState and NMDeviceState.ensure and NMDeviceState.ensure(item, profile) or nil
+    local localState = profile and NMDeviceState and NMDeviceState.ensure and NMDeviceState.ensure(item, profile) or nil
+    local state = localState
+    if localState and NMClientDisplayStateResolver and NMClientDisplayStateResolver.resolveForLiveItem then
+        state = NMClientDisplayStateResolver.resolveForLiveItem(item, localState)
+    end
     if not (profile and state) then
         return nil
     end
@@ -155,6 +166,7 @@ function resolveContextFreshUncached(window)
         item = item,
         profile = profile,
         state = state,
+        localState = localState,
         kind = "item"
     }
 end
@@ -433,5 +445,62 @@ function attachWalkmanSlots(window)
 end
 
 function WalkmanWindow:refreshSlotVisibility()
+end
+
+local function updateChildRect(child, x, y, width, height)
+    if not child then
+        return
+    end
+    if child.setX then child:setX(x) else child.x = x end
+    if child.setY then child:setY(y) else child.y = y end
+    if child.setWidth then child:setWidth(width) else child.width = width end
+    if child.setHeight then child:setHeight(height) else child.height = height end
+    if child.setWidthSilent then
+        child:setWidthSilent(width)
+    end
+end
+
+local function reflowWalkmanSlotChildren(window)
+    if not window then
+        return
+    end
+
+    local mediaRect = window:getSlotRect(1)
+    local headphoneRect = window:getSlotRect(2)
+    local batteryRect = window:getSlotRect(3)
+    local meterRect = window:getBatteryMeterRect()
+
+    updateChildRect(window.mediaSlot and window.mediaSlot.button or nil, mediaRect.x, mediaRect.y, SLOT_SIZE, SLOT_SIZE)
+    updateChildRect(window.headphoneSlot and window.headphoneSlot.button or nil, headphoneRect.x, headphoneRect.y, SLOT_SIZE, SLOT_SIZE)
+    updateChildRect(window.batterySlot and window.batterySlot.button or nil, batteryRect.x, batteryRect.y, SLOT_SIZE, SLOT_SIZE)
+    updateChildRect(window.walkmanBatteryMeter, meterRect.x, meterRect.y, meterRect.w, meterRect.h)
+end
+
+function WalkmanWindow:applyCurrentScaleLayout()
+    refreshWalkmanLayoutMetrics()
+    local currentScale = getFancyDeviceUiScale()
+    if math.abs((tonumber(self._nmAppliedFancyScale) or 0.0) - currentScale) < 0.0001 and self.width == PANEL_W and self.height == PANEL_H then
+        return
+    end
+
+    self._nmAppliedFancyScale = currentScale
+    if self.setWidth then self:setWidth(PANEL_W) else self.width = PANEL_W end
+    if self.setHeight then self:setHeight(PANEL_H) else self.height = PANEL_H end
+    self.width = PANEL_W
+    self.height = PANEL_H
+
+    self.playButtonCurrentY = self:getPlayButtonY(self.isPlayButtonDown == true)
+    self.prevButtonCurrentY = self:getPrevButtonY(false)
+    self.nextButtonCurrentY = self:getNextButtonY(false)
+    self.loopButtonCurrentX = self:getLoopButtonX(false)
+    self.lidCurrentY = self.isLidOpen == true and LID_OPEN_Y or LID_Y
+    self.lidCurrentH = self.isLidOpen == true and LID_OPEN_H or LID_H
+
+    reflowWalkmanSlotChildren(self)
+
+    local clampedX = self:clampWindowX(self:getX())
+    self:setX(clampedX)
+    self._nmExpandedY = self:clampWindowY(self._nmExpandedY or self:getDefaultExpandedY())
+    self:setY(self:getStateY(self.isCollapsed == true))
 end
 

@@ -168,6 +168,13 @@ function DeviceWindow:close()
     if WindowRegistry and WindowRegistry.unregisterWindow then
         WindowRegistry.unregisterWindow(env, self)
     end
+    if env and type(env.liveWindows) == "table" then
+        for i = #env.liveWindows, 1, -1 do
+            if env.liveWindows[i] == self or not (env.liveWindows[i] and env.liveWindows[i].javaObject) then
+                table.remove(env.liveWindows, i)
+            end
+        end
+    end
     ISCollapsableWindow.close(self)
 end
 

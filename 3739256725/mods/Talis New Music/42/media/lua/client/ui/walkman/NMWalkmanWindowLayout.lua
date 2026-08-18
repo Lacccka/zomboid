@@ -38,6 +38,16 @@ function WalkmanWindow:getCloseRect()
     }
 end
 
+function WalkmanWindow:getSettingsRect()
+    local closeRect = self:getCloseRect()
+    return {
+        x = closeRect.x,
+        y = closeRect.y + closeRect.h + SETTINGS_GAP_Y - 3,
+        w = closeRect.w,
+        h = closeRect.h
+    }
+end
+
 function WalkmanWindow:getPlayButtonY(down)
     if down == true then
         return PLAY_BUTTON_DOWN_Y

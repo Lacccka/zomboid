@@ -52,13 +52,19 @@ local MINIMUM_MINOR = 17
 -- repetition -- double XP, regularity, endurance drain and stiffness.
 local TIMER_AUTHORITY_MINOR = 20
 
-local function buildVersion()
-    if getCore == nil then return nil, nil end
+local function versionString()
+    if getCore == nil then return nil end
     local ok, version = pcall(function()
         return getCore():getVersionNumber()
     end)
-    if not ok or version == nil then return nil, nil end
-    local major, minor = string.match(tostring(version), "^(%d+)%.(%d+)")
+    if not ok or version == nil then return nil end
+    return tostring(version)
+end
+
+local function buildVersion()
+    local version = versionString()
+    if version == nil then return nil, nil end
+    local major, minor = string.match(version, "^(%d+)%.(%d+)")
     if major == nil or minor == nil then return nil, nil end
     return tonumber(major), tonumber(minor)
 end
@@ -78,6 +84,53 @@ local function usesServerTimerAuthority()
     return minor >= TIMER_AUTHORITY_MINOR
 end
 
+-- Every refusal in this file is silent by construction: the wrappers simply do
+-- not take, or the session simply does not arm, and the vanilla exercise keeps
+-- paying XP and regularity exactly as it would without the mod. From outside,
+-- a dead install and a session that drops every repetition are the same
+-- picture, and telling them apart cost a whole investigation on a live 42.20.2
+-- server.
+--
+-- A reason is announced once per authority instance, which is once per server
+-- process in production. The repetition loop runs every 1.3 to 3 seconds, so a
+-- line per call would bury the log; a line per reason is bounded by the number
+-- of reasons. Logging never changes behaviour, so a failing `print` is
+-- swallowed and not retried -- a log that cannot be written must not turn into
+-- a flood of attempts.
+local INSTALL_SCOPE = "exercise authority not installed"
+local SESSION_SCOPE = "exercise session refused"
+local REPEAT_SCOPE = "exercise repetition dropped"
+
+local function reportOnce(authority, scope, reason)
+    if authority == nil or type(authority.reported) ~= "table" then
+        return false
+    end
+    local key = scope .. ": " .. reason
+    if authority.reported[key] then return false end
+    authority.reported[key] = true
+    pcall(print, "[PPO] " .. key)
+    return true
+end
+
+-- The six wrapped methods plus the two globals the authority cannot work
+-- without. The first absent one is named, because a reader needs the name to
+-- know which mod or which build moved it.
+local WRAPPED_SEAMS = {
+    "start", "serverStart", "exeLooped", "stop", "perform", "serverStop",
+}
+
+local function missingSeam()
+    if Events == nil then return "Events" end
+    if Events.AddXP == nil then return "Events.AddXP" end
+    if ISFitnessAction == nil then return "ISFitnessAction" end
+    for _, name in ipairs(WRAPPED_SEAMS) do
+        if ISFitnessAction[name] == nil then
+            return "ISFitnessAction." .. name
+        end
+    end
+    return nil
+end
+
 -- The injection table is checked by type, not against `nil`: an unpassed
 -- parameter carries whatever the caller left on the stack, and reading fields
 -- off that value is an error rather than a fallback.
@@ -93,6 +146,7 @@ function Authority.new(options)
         activeByCharacter = {},
         installed = false,
         enabled = false,
+        reported = {},
     }
     instance.awarder = PPO.BonusAwarder.new(
         settings.issueXp or defaultIssueXp)
@@ -125,10 +179,17 @@ end
 
 local function beginSession(authority, action)
     if isClient ~= nil and isClient() then return false end
-    if action == nil or action.character == nil then return false end
+    if action == nil or action.character == nil then
+        reportOnce(authority, SESSION_SCOPE, "action carries no character")
+        return false
+    end
 
     local definition = PPO.ExerciseDefinitions.get(action.exeDataType)
-    if definition == nil then return false end
+    if definition == nil then
+        reportOnce(authority, SESSION_SCOPE,
+            "unknown exercise " .. tostring(action.exeDataType))
+        return false
+    end
 
     local previous = authority.activeByCharacter[action.character]
     if previous ~= nil then closeSession(authority, previous) end
@@ -140,6 +201,8 @@ local function beginSession(authority, action)
             local level = action.character:getPerkLevel(perk)
             if not PPO.MultiplierOwnership.acquire(
                     authority.ownership, action.character, perk, level) then
+                reportOnce(authority, SESSION_SCOPE,
+                    "multiplier ownership refused for " .. component)
                 acquired = false
                 break
             end
@@ -203,6 +266,7 @@ local function makeToken(authority, session)
         loadReturn = {},
         stimulus = {},
         loadMinutes = {},
+        workMinutes = {},
         mintMinute = mintMinute,
     }
     for _, component in ipairs({ "Strength", "Fitness" }) do
@@ -228,8 +292,12 @@ local function makeToken(authority, session)
             token.loadReturn[component] =
                 stateSnapshot[component].loadReturn
             token.loadMinutes[component] = loadMinutes
-            token.stimulus[component] =
-                definition.loadRate[component] * loadMinutes
+            -- A token is exactly one repetition, so its load is the exercise's
+            -- constant. The span beside it stays clock time and feeds only the
+            -- coverage gate.
+            token.stimulus[component] = definition.loadPerRepeat[component]
+            token.workMinutes[component] =
+                definition.minutesPerRepeat[component]
         end
     end
     return token
@@ -251,8 +319,10 @@ end
 -- The span belongs to a repetition only once that repetition is accepted, so it
 -- is charged here rather than when the token was minted. The commit recomputes
 -- the delta instead of trusting the token's preview, because a preceding
--- rejection widens the span and the token cannot know that. It has to run before
--- the award, which is what applies the stimulus.
+-- rejection widens the span and the token cannot know that. The span no longer
+-- buys load -- a repetition's load is its own constant -- so this charges
+-- coverage only, and it still has to run before the award so the marker moves
+-- exactly once per accepted repetition.
 local function commitTokenSpan(authority, session, token)
     if token.mintMinute == nil then return nil end
     local definition = session.definition
@@ -269,9 +339,8 @@ local function commitTokenSpan(authority, session, token)
 
     for _, component in ipairs({ "Strength", "Fitness" }) do
         if token.stimulus[component] ~= nil
-                and definition.loadRate[component] ~= nil then
+                and definition.loadPerRepeat[component] ~= nil then
             token.loadMinutes[component] = charged
-            token.stimulus[component] = definition.loadRate[component] * charged
         end
     end
     return previous
@@ -295,6 +364,7 @@ end
 
 local function handleMatch(authority, session, match)
     if match.kind == "closed" then
+        reportOnce(authority, REPEAT_SCOPE, "repetition matcher closed")
         closeSession(authority, session)
         return false
     end
@@ -338,6 +408,7 @@ local function onAddXp(authority, character, perk, amount)
         PPO.RepetitionMatcher.observeEvidence,
         authority.matcher, character, component, amount)
     if not ok then
+        reportOnce(authority, REPEAT_SCOPE, "evidence matcher failed")
         closeSession(authority, session)
         return
     end
@@ -349,7 +420,13 @@ local function authorityLoop(authority, action)
     if session == nil or not session.open then return false end
 
     local ok, token = pcall(makeToken, authority, session)
-    if not ok or token == nil then
+    if not ok then
+        reportOnce(authority, REPEAT_SCOPE, "token build failed")
+        closeSession(authority, session)
+        return false
+    end
+    if token == nil then
+        reportOnce(authority, REPEAT_SCOPE, "state snapshot unavailable")
         closeSession(authority, session)
         return false
     end
@@ -359,6 +436,7 @@ local function authorityLoop(authority, action)
             PPO.RepetitionMatcher.mintToken,
             authority.matcher, session.character, token)
         if not matchedOk then
+            reportOnce(authority, REPEAT_SCOPE, "repetition matcher failed")
             closeSession(authority, session)
             return false
         end
@@ -372,10 +450,12 @@ local function authorityLoop(authority, action)
         PPO.RepetitionMatcher.mintToken,
         authority.matcher, session.character, token)
     if not matchedOk then
+        reportOnce(authority, REPEAT_SCOPE, "repetition matcher failed")
         closeSession(authority, session)
         return false
     end
     if match.kind == "closed" then
+        reportOnce(authority, REPEAT_SCOPE, "repetition matcher closed")
         closeSession(authority, session)
         return false
     end
@@ -424,15 +504,23 @@ end
 
 function Authority.install(authority)
     if authority == nil or authority.installed then return false end
-    if Authority.ActiveInstance ~= nil then return false end
-    if not PPO.Config.Runtime.Enabled or not supportedBuild() then return false end
-    if ISFitnessAction == nil or Events == nil or Events.AddXP == nil
-            or ISFitnessAction.start == nil
-            or ISFitnessAction.serverStart == nil
-            or ISFitnessAction.exeLooped == nil
-            or ISFitnessAction.stop == nil
-            or ISFitnessAction.perform == nil
-            or ISFitnessAction.serverStop == nil then
+    if Authority.ActiveInstance ~= nil then
+        reportOnce(authority, INSTALL_SCOPE,
+            "another authority instance is already active")
+        return false
+    end
+    if not PPO.Config.Runtime.Enabled then
+        reportOnce(authority, INSTALL_SCOPE, "runtime disabled")
+        return false
+    end
+    if not supportedBuild() then
+        reportOnce(authority, INSTALL_SCOPE,
+            "unsupported build " .. (versionString() or "unreadable"))
+        return false
+    end
+    local absent = missingSeam()
+    if absent ~= nil then
+        reportOnce(authority, INSTALL_SCOPE, "vanilla seam missing: " .. absent)
         return false
     end
 
@@ -534,6 +622,13 @@ function Authority.install(authority)
     authority.installed = true
     authority.enabled = true
     Authority.ActiveInstance = authority
+    -- An absent refusal proves nothing by itself: a build of the mod that
+    -- predates those refusals is silent for the same reason a healthy one is.
+    -- This line is the one thing a reader can point at to say which version
+    -- the server actually loaded, which matters because a Workshop copy can
+    -- lag behind the tree the payload was installed from.
+    pcall(print, "[PPO] exercise authority installed on build "
+        .. (versionString() or "unreadable"))
     return true
 end
 

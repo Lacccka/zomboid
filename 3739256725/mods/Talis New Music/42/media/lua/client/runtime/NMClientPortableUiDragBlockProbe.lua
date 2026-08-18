@@ -83,6 +83,25 @@ local function getOpenPortableWindows()
         firstVisibleWindow(genericEnv and genericEnv.windowsByPlayer or nil)
 end
 
+function probe.hasPendingWork()
+    if not enabled() then
+        return false
+    end
+    local walkmanWindow, cdWindow, genericWindow = getOpenPortableWindows()
+    if walkmanWindow or cdWindow or genericWindow then
+        return true
+    end
+    if ISMouseDrag and type(ISMouseDrag.dragging) == "table" and #ISMouseDrag.dragging > 0 then
+        return true
+    end
+    local nmDragWindow = nil
+    local nmDrag = nil
+    if NMSlotGhostManager and NMSlotGhostManager.getActiveDrag then
+        nmDragWindow, nmDrag = NMSlotGhostManager.getActiveDrag()
+    end
+    return nmDragWindow ~= nil and nmDrag ~= nil
+end
+
 local function describeJavaUi(ui)
     if not ui then
         return "ui=nil"

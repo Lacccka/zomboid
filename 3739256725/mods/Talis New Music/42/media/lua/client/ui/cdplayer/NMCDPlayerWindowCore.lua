@@ -172,6 +172,7 @@ end
 
 -- Safety net for pre-registry or stale-key windows during UI/session transitions.
 function getOrCreateWindow(playerNum)
+    refreshCDPlayerLayoutMetrics()
     local screenW, screenH = getScreenSize()
     local x = math.max(0, screenW - PANEL_W - DEFAULT_RIGHT_MARGIN)
     local y = math.max(0, screenH - PANEL_H + EXPANDED_BOTTOM_OVERSHOOT - EXPANDED_BOTTOM_MARGIN)
@@ -181,6 +182,7 @@ function getOrCreateWindow(playerNum)
     ensureDisplaySongLabelPanel(win)
     ensureDisplayClockPanel(win)
     attachCDPlayerSlots(win)
+    win:applyCurrentScaleLayout()
     win:addToUIManager()
     return win
 end
@@ -230,6 +232,7 @@ function NMCDPlayerWindow.openForItemResolved(playerNum, item, resolvedContext)
     if not win then
         win = getOrCreateWindow(playerNum)
     end
+    win:applyCurrentScaleLayout()
     local currentX = tonumber(win:getX())
     local currentY = tonumber(win._nmExpandedY)
     local screenW, screenH = getScreenSize()
@@ -559,7 +562,16 @@ function CDPlayerWindow:close()
     unregisterWindow(self)
 end
 
+function CDPlayerWindow:resolveSettingsGearTint(model)
+    local variant = tostring(model and model.frontVariant or FRONT_TEXTURE_FALLBACK_VARIANT or "Cyan")
+    if variant == "Cow" or variant == "Black" then
+        return 1.0, 1.0, 1.0, 1.0
+    end
+    return CLOSE_TEXTURE_ALPHA, CLOSE_TEXTURE_TINT_R, CLOSE_TEXTURE_TINT_G, CLOSE_TEXTURE_TINT_B
+end
+
 function CDPlayerWindow:new(x, y, width, height)
+    refreshCDPlayerLayoutMetrics()
     local o = ISPanel:new(x, y, width, height)
     setmetatable(o, self)
     self.__index = self
@@ -573,6 +585,7 @@ function CDPlayerWindow:new(x, y, width, height)
     o.playerNum = 0
     o.target = nil
     o._nmClosePressed = false
+    o._nmSettingsPressed = false
     o._nmPressedButtonKind = nil
     o._nmButtonPulseUntilByKind = {}
     o._nmLastCDPlayerBeepSound = nil
@@ -634,6 +647,7 @@ function CDPlayerWindow:new(x, y, width, height)
     o.lidCurrentY = LID_CLOSED_Y
     o.lidCurrentH = LID_CLOSED_H
     o.isLidOpen = false
+    o._nmAppliedFancyScale = getFancyDeviceUiScale()
     if NMDeviceUiHost and NMDeviceUiHost.initWindow then
         NMDeviceUiHost.initWindow(o, "cdplayer")
     end

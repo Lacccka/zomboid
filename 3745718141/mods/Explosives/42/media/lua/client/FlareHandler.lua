@@ -1,6 +1,5 @@
--- Custom ignition + red glow for Explosives.Flare.
--- No vanilla ActivatedItem/light: uses IsoLightSource directly so the light
--- is a pure, fixed color (r,g,b) instead of the engine's white torch light.
+-- Custom ignition + red glow for Explosives.Flare via IsoLightSource
+-- (fixed color, not the engine's white torch light).
 require "ISIgniteFlareAction"
 
 ExplosivesFlare = {}
@@ -20,16 +19,13 @@ local handLights = {} -- [playerNum] = {light=IsoLightSource, x=, y=, z=}
 local handSizzle = {} -- [playerNum] = soundId
 local groundLights = {} -- list of {light=, square=, item=, expiresAt=, nextSizzleAt=}
 
--- Burn state lives in the item's fulltype (Flare/FlareBurning/FlareSpent)
--- so the model/icon reflect it natively. ignitedAtGameHours stays in
--- modData since it's a per-instance timestamp, not something a type can encode.
+-- Burn state lives in the item's fulltype so model/icon reflect it natively;
+-- ignitedAtGameHours stays in modData (per-instance timestamp).
 local function isIgnitedFlare(item)
     return item ~= nil and item:getFullType() == FLARE_BURNING_TYPE
 end
 
--- PZ has no "change this item's type in place" API, so igniting/burning
--- out a held flare means removing the old instance and adding a new one
--- of the target type, preserving modData and the hand slot it occupied.
+-- No in-place item-type change in PZ, so this removes+recreates, preserving modData and hand slot.
 function ExplosivesFlare.swapHeldItem(player, oldItem, newFullType)
     local oldItemID = oldItem:getID()
     local primaryItem = player:getPrimaryHandItem()
@@ -50,9 +46,7 @@ function ExplosivesFlare.swapHeldItem(player, oldItem, newFullType)
         if isSecondary then player:setSecondaryHandItem(newItem) end
     end
 
-    -- Local swap above is instant client-side feedback only and doesn't
-    -- reliably persist server-side in MP -- the server performs its own
-    -- authoritative swap via ExplosivesServer.lua, driven by this command.
+    -- Local swap is instant client feedback only; server swap via ExplosivesServer.lua is authoritative.
     if isClient() then
         sendClientCommand(player, "Explosives", "SwapHeldFlare", {
             oldItemID = oldItemID,
@@ -64,8 +58,7 @@ function ExplosivesFlare.swapHeldItem(player, oldItem, newFullType)
     return newItem
 end
 
--- Same idea for a WorldInventoryItem lying on the ground -- preserves
--- its sub-tile offset position and ignitedAtGameHours.
+-- Same idea for a ground WorldInventoryItem: preserves sub-tile offset + ignitedAtGameHours.
 function ExplosivesFlare.swapGroundItem(square, oldItem, newFullType)
     local oldWi = oldItem and oldItem:getWorldItem()
     local offX, offY, offZ = 0, 0, 0
@@ -94,9 +87,7 @@ function ExplosivesFlare.swapGroundItem(square, oldItem, newFullType)
     return newItem
 end
 
--- ===============================================================
 -- Sparkle fountain for a burning flare (hand and ground).
--- ===============================================================
 local SPARKLE_TEX = "media/textures/FX/flare/sparkle.png"
 local SPARKLE_SIZE = 2
 local SPARKLE_DURATION_MS = 850 -- how long a spark stays visible; also caps how far it can travel regardless of speed
@@ -109,16 +100,14 @@ local SPARKLE_SPEED_MAX = 2.5
 local SPARKLE_POP_MIN = 0.8 -- tiles/sec, initial upward kick
 local SPARKLE_POP_MAX = 3.0
 
--- The flare lies on the ground at a fixed compass angle (its model always
--- lands the same way up), so the ground fountain leans in that direction
--- instead of spraying a full 360 circle like the mid-flight fountain does.
+-- Flare model always lands the same way up, so the ground fountain leans that
+-- direction instead of spraying a full 360 circle like the mid-flight fountain.
 local SPARKLE_GROUND_LEAN_DEG = 180
 local SPARKLE_GROUND_TILT = 0.5 -- 0 = straight up, 1 = fully sideways along the lean direction
 local SPARKLE_GROUND_SPREAD_DEG = 3 -- jitter cone around the lean direction
 local SPARKLE_GROUND_POP_BIAS = 0.3 -- extra kick along the lean direction for the tip's slight upward bend
 
--- Nudges the spawn anchor toward the model's glowing tip, which sits
--- off-center from the item's registered position/pivot.
+-- Nudges the spawn anchor toward the model's glowing tip (off-center from the item's pivot).
 local SPARKLE_GROUND_ORIGIN_OFFSET_TILES = 0.15
 local SPARKLE_GROUND_LEAN_RAD = SPARKLE_GROUND_LEAN_DEG * (math.pi / 180)
 local SPARKLE_GROUND_ORIGIN_OFFSET_X = math.cos(SPARKLE_GROUND_LEAN_RAD) * SPARKLE_GROUND_ORIGIN_OFFSET_TILES
@@ -126,9 +115,8 @@ local SPARKLE_GROUND_ORIGIN_OFFSET_Y = math.sin(SPARKLE_GROUND_LEAN_RAD) * SPARK
 
 local sparkles = {}
 
--- state is the per-source table (a groundLights entry, or a projectile)
--- that owns lastSparkleAt, so multiple burning flares each get their own
--- spawn cooldown instead of starving each other via a shared one.
+-- state = per-source table (groundLights entry or projectile) owning lastSparkleAt,
+-- so multiple burning flares don't share one cooldown.
 local function trySpawnSparkle(state, x, y, z, leanDeg, tilt, spreadDeg, popBias)
     local now = getTimestampMs()
     if now - (state.lastSparkleAt or 0) < SPARKLE_INTERVAL_MS then return end
@@ -185,10 +173,7 @@ local function renderSparkles()
 end
 Events.OnPostRender.Add(renderSparkles)
 
--- ===============================================================
--- Smoke puffs drifting up from a burning flare on the ground.
--- Ground-only; a held flare doesn't get smoke.
--- ===============================================================
+-- Smoke puffs drifting up from a burning flare on the ground. Ground-only.
 local SMOKE_TEX = "media/textures/FX/explosion/explosion_11.png"
 local SMOKE_SIZE = 70
 local SMOKE_DURATION_MS = 2500
@@ -238,12 +223,8 @@ local function renderSmoke()
 end
 Events.OnPostRender.Add(renderSmoke)
 
--- ===============================================================
--- Ignite (one-way, no deactivation) -- queues ISIgniteFlareAction,
--- which plays the ignite sound and animation, then swaps the item to
--- FlareBurning once that finishes. Burns out on its own after
--- BURN_DURATION_GAME_MINUTES of in-game time and can't be re-ignited.
--- ===============================================================
+-- Ignite (one-way): queues ISIgniteFlareAction (sound+anim), swaps to FlareBurning
+-- on completion. Burns out after BURN_DURATION_GAME_MINUTES, can't re-ignite.
 local function onIgniteFlare(item)
     local player = getPlayer()
     ISTimedActionQueue.add(ISIgniteFlareAction:new(player, item))
@@ -264,19 +245,13 @@ local function FlareContextMenu(playerNum, context, items)
 end
 Events.OnFillInventoryObjectContextMenu.Add(FlareContextMenu)
 
--- ===============================================================
--- Catches FlareBurning items that end up on the ground without going
--- through the throw/land pipeline (dropped from inventory, placed via
--- precise-placement, spilled from a corpse, etc.), so they still get
--- their light/sparkle/sound instead of just sitting there inert.
--- ===============================================================
+-- Catches FlareBurning items landing outside the throw pipeline (dropped, precise-placed,
+-- spilled from a corpse) so they still get light/sparkle/sound instead of sitting inert.
 local UNTRACKED_SCAN_RADIUS = 3
 local UNTRACKED_SCAN_INTERVAL_MS = 1000
 local lastUntrackedScanAt = 0
 
--- Compares by unique item ID rather than Lua object identity, since an
--- InventoryItem reference obtained via worldObject:getItem() isn't
--- guaranteed to be == the original reference for the same underlying item.
+-- Compares by item ID, not Lua identity: worldObject:getItem() isn't guaranteed == the original reference.
 local function isGroundLightTracked(item)
     local id = item:getID()
     for _, entry in ipairs(groundLights) do
@@ -308,10 +283,7 @@ local function scanForUntrackedBurningFlares(player)
     end
 end
 
--- ===============================================================
--- Red glow (+ sizzle loop) that follows the player while an
--- ignited flare is held. Extinguishes itself once burnt out.
--- ===============================================================
+-- Red glow + sizzle loop following the player while an ignited flare is held; extinguishes once burnt out.
 local function updateHandLight(player)
     local playerNum = player:getPlayerNum()
 
@@ -365,10 +337,7 @@ local function updateHandLight(player)
 end
 Events.OnPlayerUpdate.Add(updateHandLight)
 
--- ===============================================================
--- Light that follows a thrown, ignited flare mid-flight.
--- Called from GrenadeBallistics.lua's projectile update loop.
--- ===============================================================
+-- Light following a thrown, ignited flare mid-flight. Called from GrenadeBallistics.lua's projectile loop.
 function ExplosivesFlare.updateFlightLight(proj, x, y, z)
     local fx, fy, fz = math.floor(x), math.floor(y), math.floor(z)
     local fl = proj.flightLight
@@ -388,20 +357,13 @@ function ExplosivesFlare.clearFlightLight(proj)
     end
 end
 
--- ===============================================================
--- Stationary red glow at the spot a thrown, ignited flare lands.
--- Keeps burning for the remainder of BURN_DURATION_GAME_MINUTES
--- (measured in in-game time from the moment it was originally
--- ignited, not from landing).
--- ===============================================================
+-- Stationary red glow where a thrown flare lands. Burns for the remainder of
+-- BURN_DURATION_GAME_MINUTES from the original ignite time, not from landing.
 function ExplosivesFlare.spawnGroundLight(square, item, ignitedAtGameHours)
     if not square then return end
 
-    -- the dropped item can sit at a random sub-tile offset within its
-    -- square (engine scatters ground items so they don't all stack dead
-    -- center) -- read the real spot instead of assuming tile center.
-    -- Rotation is left to the engine's own scatter, same as any other
-    -- dropped item -- deliberately not overridden.
+    -- Ground items scatter to a random sub-tile offset (engine default); read the
+    -- real spot instead of assuming tile center. Rotation left to engine scatter.
     local x, y, z = square:getX() + 0.5, square:getY() + 0.5, square:getZ()
     local wi = item and item:getWorldItem()
     if wi then
@@ -436,10 +398,7 @@ local function updateGroundLights()
 
     for i = #groundLights, 1, -1 do
         local entry = groundLights[i]
-        -- picked back up (or otherwise removed from the world) -- the
-        -- item's WorldItem wrapper goes away once it's no longer sitting
-        -- on the ground, so this is how we notice and clean up instead
-        -- of leaving the light/FX behind forever.
+        -- Picked up / removed from world: WorldItem wrapper goes away, this is how we notice and clean up.
         local pickedUp = entry.item and not entry.item:getWorldItem()
         local elapsedGameMinutes = (nowGameHours - entry.ignitedAtGameHours) * 60
         if pickedUp or elapsedGameMinutes >= ExplosivesFlare.BURN_DURATION_GAME_MINUTES then
@@ -458,6 +417,5 @@ local function updateGroundLights()
         end
     end
 end
--- driven by render tick (not OnPlayerUpdate) so the per-source spawn
--- intervals above are the only throttle.
+-- driven by render tick (not OnPlayerUpdate) so the per-source spawn intervals above are the only throttle.
 Events.OnPostRender.Add(updateGroundLights)

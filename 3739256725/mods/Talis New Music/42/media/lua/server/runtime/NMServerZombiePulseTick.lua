@@ -41,6 +41,17 @@ local function nearestPlayerDistanceSq(x, y, z, floorsLimit)
     return best
 end
 
+function NMServerZombiePulseTick.hasActiveWork()
+    local worldRegistry = NMServerRegistryState and NMServerRegistryState.worldRegistry or nil
+    if type(worldRegistry) ~= "table" then
+        return false
+    end
+    for _ in pairs(worldRegistry) do
+        return true
+    end
+    return false
+end
+
 function NMServerZombiePulseTick.onTick()
     local core = NMCore
     if not core.isMPServerAuthority() or not addSound then

@@ -136,8 +136,9 @@ function BoomboxWindow:getTimedCassetteAnimationState()
         }
     end
     local progress = clamp01(tonumber(timed.delta) or 0.0)
-    local startY = isInsert and (displayRect.y - 200) or displayRect.y
-    local endY = isInsert and displayRect.y or (displayRect.y - 200)
+    local travelY = math.max(1, math.floor((200 * getFancyDeviceUiScale()) + 0.5))
+    local startY = isInsert and (displayRect.y - travelY) or displayRect.y
+    local endY = isInsert and displayRect.y or (displayRect.y - travelY)
     local alpha = isInsert and progress or (1.0 - progress)
     return {
         visible = true,

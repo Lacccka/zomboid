@@ -253,6 +253,10 @@ local function isBaseZomboidOSTMediaUnit(unit)
     return BASE_ZOMBOID_OST_MEDIA[key] == true or BASE_ZOMBOID_OST_MEDIA[spawnFullType] == true
 end
 
+local function isBaseZomboidOSTMediaFullType(fullType)
+    return BASE_ZOMBOID_OST_MEDIA[tostring(fullType or "")] == true
+end
+
 local function addMediaUnit(targetPools, unit, metadata)
     if not unit or not unit.category or not unit.canonicalKey then
         return false
@@ -263,39 +267,29 @@ local function addMediaUnit(targetPools, unit, metadata)
         return false
     end
     local key = tostring(unit.canonicalKey)
-    local existing = bucket[key]
     local loadedOnly = metadata and metadata.loadedOnly == true
-    if existing then
-        if loadedOnly and existing.loadedOnly ~= true and tostring(unit.spawnFullType or "") ~= "" then
-            existing.spawnFullType = tostring(unit.spawnFullType)
-            existing.loadedOnly = true
-            existing.emptyCompanionFullType = tostring(unit.emptyCompanionFullType or "") ~= "" and tostring(unit.emptyCompanionFullType) or nil
-            existing.hasCompanionCase = unit.hasCompanionCase == true
-            existing.looseZombieRepresentativeFullType = tostring(unit.looseZombieRepresentativeFullType or unit.spawnFullType or existing.canonicalMediaFullType or "") ~= ""
-                and tostring(unit.looseZombieRepresentativeFullType or unit.spawnFullType or existing.canonicalMediaFullType or "")
-                or nil
-            existing.insertedZombieMediaFullType = tostring(unit.insertedZombieMediaFullType or unit.insertedMediaFullType or existing.canonicalMediaFullType or "") ~= ""
-                and tostring(unit.insertedZombieMediaFullType or unit.insertedMediaFullType or existing.canonicalMediaFullType or "")
-                or nil
-            existing.companionZombieCaseFullType = tostring(unit.companionZombieCaseFullType or unit.emptyCompanionFullType or "") ~= ""
-                and tostring(unit.companionZombieCaseFullType or unit.emptyCompanionFullType or "")
-                or nil
-        end
+    local variantSuffix = loadedOnly and "|loaded" or "|loose"
+    local variantKey = key .. variantSuffix
+    if bucket[variantKey] then
         return false
     end
-    bucket[key] = {
-        key = key,
+    bucket[variantKey] = {
+        key = variantKey,
+        canonicalKey = key,
         canonical = key,
         canonicalMediaFullType = tostring(unit.canonicalMediaFullType or key),
         insertedMediaFullType = tostring(unit.insertedMediaFullType or key),
         spawnFullType = tostring(unit.spawnFullType or ""),
         loadedOnly = loadedOnly,
+        variantKind = loadedOnly and "loaded" or "loose",
         carrier = tostring(unit.carrier or ""),
         emptyCompanionFullType = tostring(unit.emptyCompanionFullType or "") ~= "" and tostring(unit.emptyCompanionFullType) or nil,
         hasCompanionCase = unit.hasCompanionCase == true,
         looseZombieRepresentativeFullType = tostring(unit.looseZombieRepresentativeFullType or unit.spawnFullType or unit.canonicalMediaFullType or key),
         insertedZombieMediaFullType = tostring(unit.insertedZombieMediaFullType or unit.insertedMediaFullType or unit.canonicalMediaFullType or key),
         companionZombieCaseFullType = tostring(unit.companionZombieCaseFullType or unit.emptyCompanionFullType or "") ~= "" and tostring(unit.companionZombieCaseFullType or unit.emptyCompanionFullType) or nil,
+        variantWeight = tonumber(unit.variantWeight) or 1.0,
+        isBaseZomboidOST = isBaseZomboidOSTMediaUnit(unit),
         modId = metadata and metadata.modId or "",
         owner = metadata and metadata.owner or ""
     }
@@ -778,6 +772,10 @@ function NMManagedSpawnCatalog.filterBaseZomboidOSTMedia(basePools, ostEnabled)
         end
     end
     return removed
+end
+
+function NMManagedSpawnCatalog.isBaseZomboidOSTMediaFullType(fullType)
+    return isBaseZomboidOSTMediaFullType(fullType)
 end
 
 function NMManagedSpawnCatalog.buildManagedMediaFootprint(basePools, childPools, presenceIndex)

@@ -32,11 +32,15 @@ function NMClientDetachedPlaybackPass.run(player, options)
     local detachedRemoveLogMs = options.detachedRemoveLogMs
     local logTransitionProbe = options.logTransitionProbe
     local logRuntime = options.logRuntime
+    local rememberFastSource = options.rememberFastSource
+    local rememberPlaybackLossSource = options.rememberPlaybackLossSource
+    local emitPlaybackLossProbe = options.emitPlaybackLossProbe
+    local pendingPlayback = options.pendingPlaybackOut or {}
+    local detached = options.detachedOut or {}
 
     local detachedSyncCount = 0
 
     if NMClientPortableDropHandoff and NMClientPortableDropHandoff.collectPendingPlayback then
-        local pendingPlayback = {}
         NMClientPortableDropHandoff.collectPendingPlayback(player, currentInventoryByUuid, pendingPlayback)
         for i = 1, #pendingPlayback do
             local p = pendingPlayback[i]
@@ -47,6 +51,26 @@ function NMClientDetachedPlaybackPass.run(player, options)
                     observeMemoryDuration = observeMemoryDuration
                 })
                 detachedSyncCount = detachedSyncCount + 1
+                if rememberFastSource then
+                    rememberFastSource(p.uuid, p.profile, p.state, p.source, player)
+                end
+                if rememberPlaybackLossSource then
+                    rememberPlaybackLossSource(p.uuid, p.state, p.source, {
+                        mode = tostring(p.source and p.source.context or "drop_pending"),
+                        resolvedOutput = "world"
+                    })
+                end
+                if emitPlaybackLossProbe then
+                    emitPlaybackLossProbe(player, p.uuid, true, "pending_world_sync", {
+                        source = p.source,
+                        mode = tostring(p.source and p.source.context or "drop_pending"),
+                        playbackMode = p.state and p.state.playbackMode or "world",
+                        resolvedOutput = "world",
+                        isOn = p.state and p.state.isOn == true,
+                        isPlaying = p.state and p.state.isPlaying == true,
+                        media = p.state and p.state.mediaFullType
+                    })
+                end
                 consumeAndDispatchTrackFinished(player, p.profile, p.state, nil, p.item, "drop_pending", p.uuid)
                 valid[p.uuid] = true
                 if tostring(p.source.context or "") == "placed"
@@ -62,7 +86,6 @@ function NMClientDetachedPlaybackPass.run(player, options)
         end
     end
 
-    local detached = {}
     local detachedCollectStartedMs = nowRealMs()
     NMClientWorldSourceCache.collectInRange(player, detached)
     observeMemoryDuration("detached_collect_ms", math.max(0, nowRealMs() - detachedCollectStartedMs))
@@ -127,14 +150,15 @@ function NMClientDetachedPlaybackPass.run(player, options)
                     logRuntime(
                         "detached_sync",
                         detachedOrchestration and detachedOrchestration.buildDetachedSyncDetail
-                            and detachedOrchestration.buildDetachedSyncDetail(state, src)
+                            and detachedOrchestration.buildDetachedSyncDetail(player, entry, state, src)
                             or string.format(
-                                "uuid=%s ctx=%s x=%.2f y=%.2f z=%.2f isOn=%s isPlaying=%s media=%s",
+                                "uuid=%s ctx=%s sourceX=%.2f sourceY=%.2f sourceZ=%.2f lastPayloadApplyMs=%s isOn=%s isPlaying=%s media=%s",
                                 tostring(state.deviceUUID),
                                 tostring(src and src.context or "nil"),
                                 tonumber(src and src.x or 0) or 0,
                                 tonumber(src and src.y or 0) or 0,
                                 tonumber(src and src.z or 0) or 0,
+                                tostring(entry and entry._lastPayloadApplyMs or 0),
                                 tostring(state.isOn == true),
                                 tostring(state.isPlaying == true),
                                 tostring(state.mediaFullType or "nil")
@@ -147,6 +171,26 @@ function NMClientDetachedPlaybackPass.run(player, options)
                     observeMemoryDuration = observeMemoryDuration
                 })
                 detachedSyncCount = detachedSyncCount + 1
+                if rememberFastSource then
+                    rememberFastSource(uuid, profile, state, entry and entry.source, player)
+                end
+                if rememberPlaybackLossSource then
+                    rememberPlaybackLossSource(uuid, state, entry and entry.source, {
+                        mode = detachedContext,
+                        resolvedOutput = "world"
+                    })
+                end
+                if emitPlaybackLossProbe then
+                    emitPlaybackLossProbe(player, uuid, true, "detached_world_sync", {
+                        source = entry and entry.source,
+                        mode = detachedContext,
+                        playbackMode = state and state.playbackMode or "world",
+                        resolvedOutput = "world",
+                        isOn = state and state.isOn == true,
+                        isPlaying = state and state.isPlaying == true,
+                        media = state and state.mediaFullType
+                    })
+                end
                 local sourceKind = detachedContext == "vehicle" and "vehicle" or "detached_item"
                 consumeAndDispatchTrackFinished(player, profile, state, entry, nil, sourceKind, uuid)
                 valid[tostring(state.deviceUUID)] = true

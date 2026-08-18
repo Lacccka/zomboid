@@ -21,6 +21,9 @@ end
 
 function BoomboxWindow:update()
     ISPanel.update(self)
+    if math.abs((tonumber(self._nmAppliedFancyScale) or 0.0) - getFancyDeviceUiScale()) >= 0.0001 then
+        self:applyCurrentScaleLayout()
+    end
     local nowMs = NMUiAutoClose.getNowMs()
     local closed = NMUiAutoClose.tickWindowAutoClose(self, {
         nowMs = nowMs,
@@ -83,9 +86,11 @@ function BoomboxWindow:update()
         local press = tonumber(self._nmTopButtonPressOffsetByKind[kind]) or 0
         local holdDown = kind == "play" and self._nmTopButtonDownByKind and self._nmTopButtonDownByKind.play == true
         if holdDown == true then
-            self._nmTopButtonPressOffsetByKind[kind] = TOP_BUTTON_PRESS_OFFSET
+            local pressStep = math.max(1, math.floor((3 * getFancyDeviceUiScale()) + 0.5))
+            self._nmTopButtonPressOffsetByKind[kind] = math.min(TOP_BUTTON_PRESS_OFFSET, press + pressStep)
         elseif press > 0 then
-            press = math.max(0, press - 3)
+            local returnStep = math.max(1, math.floor((3 * getFancyDeviceUiScale()) + 0.5))
+            press = math.max(0, press - returnStep)
             self._nmTopButtonPressOffsetByKind[kind] = press
             if press == 0 then
                 local shouldPlayRelease = self._nmTopButtonReleaseSoundOnReturnByKind == nil

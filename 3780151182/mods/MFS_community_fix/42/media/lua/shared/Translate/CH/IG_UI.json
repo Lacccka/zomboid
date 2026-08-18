@@ -1,4 +1,5 @@
 {
+    "IGUI_CraftCategory_刀匠系统BladesmithSystem": "刀匠系统",
     "IGUI_ZombieLeft": "剩餘殭屍：",
     "IGUI_ZombiesInComing": "牠們來了！",
     "IGUI_ClearIOBox": "IO 容器並非空置，請先取出物品。",
@@ -91,5 +92,10 @@
     "IGUI_Recoilpad": "後座墊",
     "IGUI_CraftCategory_现代枪械系统ModernFirearmsSystem": "現代槍械系統",
     "IGUI_CraftingCategories_Ammunition": "彈藥",
-    "IGUI_NONE": "無"
+    "IGUI_NONE": "無",
+    "IGUI_MFS_GunLight_On": "武器燈：開啟",
+    "IGUI_MFS_GunLight_Off": "武器燈：關閉",
+    "IGUI_MFS_GunLight_NoBattery": "武器燈：電池已耗盡",
+    "IGUI_MFS_GunLight_Depleted": "武器燈電池已耗盡",
+    "IGUI_MFS_GunLight_Low": "武器燈電池電量偏低"
 }

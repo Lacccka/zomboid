@@ -2,6 +2,7 @@ local env = _G.NMMediaSlotEnv
 setfenv(1, env)
 
 require "ui/shared/slots/NMDeviceUiSlotContract"
+require "ui/shared/slots/NMSlotPlaceholderRender"
 
 local AUTHORITATIVE_INSERT_TIMEOUT_MS = 750
 local AUTHORITATIVE_EJECT_TIMEOUT_MS = 1000
@@ -371,95 +372,42 @@ function collectEligibleMediaItems(window)
     return out
 end
 
-function resolveMediaVectorBounds(iconKey)
-    local viewBox = tonumber(NMBatterySlotVectors.viewBox) or 23
-    if tostring(iconKey or "") == "vinyl_placeholder" then
-        return { minX = 0, minY = 0, maxX = viewBox, maxY = viewBox }
-    end
-    return NMBatterySlotVectors.bounds and NMBatterySlotVectors.bounds[iconKey] or nil
-end
-
-function drawEmptyMediaVector(button, iconKey)
-    local icon = NMBatterySlotVectors.icons and NMBatterySlotVectors.icons[iconKey] or nil
-    local bounds = resolveMediaVectorBounds(iconKey)
-    if not (icon and bounds) then return false end
-    local preparedShapes = EMPTY_MEDIA_VECTOR_CACHE[iconKey]
-    if preparedShapes == nil then
-        preparedShapes = {}
-        for i = 1, #icon do
-            preparedShapes[i] = NMVectorDraw.prepareShape(icon[i], NMBatterySlotVectors.viewBox, bounds) or false
-        end
-        EMPTY_MEDIA_VECTOR_CACHE[iconKey] = preparedShapes
-    end
-    local w = tonumber(button.width) or 0
-    local h = tonumber(button.height) or 0
-    local scale = EMPTY_MEDIA_ICON_SCALE
-    local key = tostring(iconKey or "")
-    if key == "cd_placeholder" then
-        scale = EMPTY_MEDIA_ICON_SCALE_CD
-    elseif key == "cassette_placeholder" then
-        scale = EMPTY_MEDIA_ICON_SCALE_CASSETTE
-    end
-    local size = math.max(10, math.floor(math.min(w, h) * scale + 0.5))
-    local left = math.floor((w - size) * 0.5 + 0.5)
-    local top = math.floor((h - size) * 0.5 + 0.5)
-    for i = 1, #preparedShapes do
-        local prepared = preparedShapes[i]
-        if prepared and prepared ~= false then
-            NMVectorDraw.drawPreparedShape(button, prepared, EMPTY_SLOT_VECTOR_COLOR, left, top, size, size)
-        end
-    end
-    return true
-end
-
 function resolveEmptyMediaTexture(iconKey)
     local key = tostring(iconKey or "")
     if key == "" then return nil end
-    if EMPTY_MEDIA_PLACEHOLDER_TEXTURES[key] == nil then
+    local scaleKey = NMFancyDeviceUiScale and NMFancyDeviceUiScale.getTextureScaleKey and NMFancyDeviceUiScale.getTextureScaleKey() or "1x"
+    local cacheKey = key .. "|" .. scaleKey
+    if EMPTY_MEDIA_PLACEHOLDER_TEXTURES[cacheKey] == nil then
         local tex = nil
+        local getFancyTexture = NMFancyDeviceUiScale and NMFancyDeviceUiScale.getTexture or nil
         if key == "cd_placeholder" then
-            tex = getTexture and (
+            tex = getFancyTexture and getFancyTexture("media/textures/UI/UI_NM_SlotEmpty_CD.png") or getTexture and (
                 getTexture("media/textures/UI/UI_NM_SlotEmpty_CD.png")
                 or getTexture("UI/UI_NM_SlotEmpty_CD")
                 or getTexture("UI_NM_SlotEmpty_CD")
             ) or nil
         elseif key == "vinyl_placeholder" then
-            tex = getTexture and (
+            tex = getFancyTexture and getFancyTexture("media/textures/UI/UI_NM_SlotEmpty_Vinyl.png") or getTexture and (
                 getTexture("media/textures/UI/UI_NM_SlotEmpty_Vinyl.png")
                 or getTexture("UI/UI_NM_SlotEmpty_Vinyl")
                 or getTexture("UI_NM_SlotEmpty_Vinyl")
             ) or nil
         else
-            tex = getTexture and (
+            tex = getFancyTexture and getFancyTexture("media/textures/UI/UI_NM_SlotEmpty_Cassette.png") or getTexture and (
                 getTexture("media/textures/UI/UI_NM_SlotEmpty_Cassette.png")
                 or getTexture("UI/UI_NM_SlotEmpty_Cassette")
                 or getTexture("UI_NM_SlotEmpty_Cassette")
             ) or nil
         end
-        EMPTY_MEDIA_PLACEHOLDER_TEXTURES[key] = tex or false
+        EMPTY_MEDIA_PLACEHOLDER_TEXTURES[cacheKey] = tex or false
     end
-    local cached = EMPTY_MEDIA_PLACEHOLDER_TEXTURES[key]
+    local cached = EMPTY_MEDIA_PLACEHOLDER_TEXTURES[cacheKey]
     return cached ~= false and cached or nil
 end
 
 function drawEmptyMediaTexture(button, iconKey)
     local tex = resolveEmptyMediaTexture(iconKey)
-    if not tex then return false end
-    local texW = tex.getWidthOrig and tex:getWidthOrig() or (tex.getWidth and tex:getWidth()) or 32
-    local texH = tex.getHeightOrig and tex:getHeightOrig() or (tex.getHeight and tex:getHeight()) or 32
-    local maxW = (tonumber(button.width) or 0) - 8
-    local maxH = (tonumber(button.height) or 0) - 8
-    local scale = math.min(maxW / texW, maxH / texH)
-    if tostring(iconKey or "") == "cassette_placeholder" then
-        scale = scale * EMPTY_MEDIA_TEXTURE_SCALE_CASSETTE
-    end
-    if scale > 1 then scale = 1 end
-    local drawW = texW * scale
-    local drawH = texH * scale
-    local left = (button.width - drawW) / 2
-    local top = (button.height - drawH) / 2
-    button:drawTextureScaled(tex, left, top, drawW, drawH, 0.55, 0.12, 0.12, 0.12)
-    return true
+    return NMSlotPlaceholderRender and NMSlotPlaceholderRender.drawTexture and NMSlotPlaceholderRender.drawTexture(button, tex) or false
 end
 
 function drawMediaTexture(button, fullType)
@@ -477,8 +425,7 @@ function drawMediaTexture(button, fullType)
     if not tex then return end
     local w = tonumber(button.width) or 0
     local h = tonumber(button.height) or 0
-    -- Match TVM slot item icon sizing lane.
-    local size = math.max(10, math.min(32, math.min(w, h) - 6))
+    local size = math.max(10, math.min(w, h) - 6)
     local left = math.floor((w - size) * 0.5 + 0.5)
     local top = math.floor((h - size) * 0.5 + 0.5)
     button:drawTextureScaledAspect(tex, left, top, size, size, 1.0, 1.0, 1.0, 1.0)

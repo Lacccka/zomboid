@@ -34,6 +34,21 @@ local function refreshVehicleSqlIndex()
     NMServerVehicleSqlIndexCache.refresh()
 end
 
+local function hasRegistryEntries()
+    local worldRegistry = NMServerRegistryState and NMServerRegistryState.worldRegistry or nil
+    if type(worldRegistry) ~= "table" then
+        return false
+    end
+    for _ in pairs(worldRegistry) do
+        return true
+    end
+    return false
+end
+
+function NMServerSourceRefreshTick.hasWorldSources()
+    return hasRegistryEntries()
+end
+
 local function normalizeSourceMode(entry, profile, state)
     local authorityMode = tostring(state and state.authoritativeMode or "off")
     if authorityMode == "vehicle" then
@@ -101,9 +116,9 @@ local function refreshFromAttached(entry, state, playersById, playersByName)
     if not sq then
         return false, "attached_unresolved_square", ownerKey
     end
-    entry.x = sq:getX()
-    entry.y = sq:getY()
-    entry.z = sq:getZ()
+    entry.x = playerObj.getX and tonumber(playerObj:getX()) or sq:getX()
+    entry.y = playerObj.getY and tonumber(playerObj:getY()) or sq:getY()
+    entry.z = playerObj.getZ and tonumber(playerObj:getZ()) or sq:getZ()
     entry.ownerOnlineId = playerObj.getOnlineID and tostring(playerObj:getOnlineID() or "") or tostring(entry.ownerOnlineId or "")
     entry.ownerUsername = playerObj.getUsername and tostring(playerObj:getUsername() or "") or tostring(entry.ownerUsername or "")
     return true, "attached_player", ownerKey
@@ -421,7 +436,7 @@ end
 
 local function broadcastEntryUpdate(entry, op, rebindReason)
     if not (entry and NMServerRegistryBroadcast and NMServerRegistryBroadcast.broadcastEntry) then
-        return
+        return 0
     end
     local function recipients(applyFn)
         local players = getOnlinePlayers and getOnlinePlayers() or nil
@@ -439,15 +454,121 @@ local function broadcastEntryUpdate(entry, op, rebindReason)
     if rebindReason ~= nil then
         entry.rebindReason = tostring(rebindReason)
     end
-    NMServerRegistryBroadcast.broadcastEntry(
+    local sent = NMServerRegistryBroadcast.broadcastEntry(
         NMServerRegistryState.worldRegistry,
         tostring(entry.uuid or ""),
         nil,
         entry.stateSnapshot,
         tostring(op or "upsert"),
-        recipients
+        recipients,
+        {
+            trigger = tostring(rebindReason or "manual")
+        }
     )
     entry.rebindReason = previousReason
+    return tonumber(sent) or 0
+end
+
+local function shouldBroadcastAttachedMovement(entry, state, sourceMode, oldX, oldY, oldZ, newX, newY, newZ, nowMsValue)
+    if tostring(sourceMode or "") ~= "attached" then
+        return false
+    end
+    if not entry or not state then
+        return false
+    end
+    if state.isOn ~= true or state.isPlaying ~= true then
+        return false
+    end
+    local dx = (tonumber(newX) or 0) - (tonumber(oldX) or 0)
+    local dy = (tonumber(newY) or 0) - (tonumber(oldY) or 0)
+    local dz = (tonumber(newZ) or 0) - (tonumber(oldZ) or 0)
+    local movedThisTick = math.sqrt((dx * dx) + (dy * dy) + (dz * dz))
+    if movedThisTick <= 0 then
+        return false
+    end
+
+    local lastX = tonumber(entry._attachedImmediateLastSendX)
+    local lastY = tonumber(entry._attachedImmediateLastSendY)
+    local lastZ = tonumber(entry._attachedImmediateLastSendZ)
+    local movedSinceLastSend = movedThisTick
+    if lastX ~= nil and lastY ~= nil and lastZ ~= nil then
+        local ddx = (tonumber(newX) or 0) - lastX
+        local ddy = (tonumber(newY) or 0) - lastY
+        local ddz = (tonumber(newZ) or 0) - lastZ
+        movedSinceLastSend = math.sqrt((ddx * ddx) + (ddy * ddy) + (ddz * ddz))
+    end
+
+    local lastSendMs = tonumber(entry._attachedImmediateLastSendMs) or 0
+    local elapsedMs = math.max(0, (tonumber(nowMsValue) or 0) - lastSendMs)
+    if movedSinceLastSend >= 0.5 then
+        return true
+    end
+    if movedSinceLastSend >= 0.1 and elapsedMs >= 125 then
+        return true
+    end
+    return false
+end
+
+local function broadcastAttachedMovementIfNeeded(uuid, entry, state, sourceMode, oldX, oldY, oldZ, worldActive, nowMsValue)
+    if not worldActive then
+        return false
+    end
+    if not shouldBroadcastAttachedMovement(entry, state, sourceMode, oldX, oldY, oldZ, entry.x, entry.y, entry.z, nowMsValue) then
+        return false
+    end
+
+    local previousGen = math.max(
+        tonumber(state and state.sourceGeneration) or 0,
+        tonumber(entry and entry.sourceGeneration) or 0,
+        tonumber(entry and entry.sourceEpoch) or 0
+    )
+    state.sourceGeneration = previousGen + 1
+    state.sourceKind = "player"
+    state.sourceX = tonumber(entry.x) or state.sourceX
+    state.sourceY = tonumber(entry.y) or state.sourceY
+    state.sourceZ = tonumber(entry.z) or state.sourceZ
+    entry.sourceEpoch = math.max(tonumber(entry.sourceEpoch) or 0, tonumber(state.sourceGeneration) or 0)
+    entry.sourceGeneration = entry.sourceEpoch
+    entry.stateSnapshot = NMDeviceState.export(state)
+
+    local sent = 0
+    if NMServerRegistryBroadcast and NMServerRegistryBroadcast.broadcastEntry then
+        local function recipients(applyFn)
+            local players = getOnlinePlayers and getOnlinePlayers() or nil
+            if not players then
+                return
+            end
+            for i = 0, players:size() - 1 do
+                local p = players:get(i)
+                if p then
+                    applyFn(p)
+                end
+            end
+        end
+        sent = tonumber(NMServerRegistryBroadcast.broadcastEntry(
+            NMServerRegistryState.worldRegistry,
+            tostring(uuid or ""),
+            nil,
+            entry.stateSnapshot,
+            "upsert",
+            recipients,
+            {
+                trigger = "attached_movement",
+                heartbeatTick = 0
+            }
+        )) or 0
+    end
+
+    if sent > 0 then
+        entry._attachedImmediateLastSendMs = tonumber(nowMsValue) or 0
+        entry._attachedImmediateLastSendX = tonumber(entry.x) or 0
+        entry._attachedImmediateLastSendY = tonumber(entry.y) or 0
+        entry._attachedImmediateLastSendZ = tonumber(entry.z) or 0
+        entry._attachedImmediateLastSendSourceGen = tonumber(entry.sourceGeneration) or 0
+        return true
+    end
+
+    return false
 end
 
 local function refreshFromStateSnapshot(entry, state)
@@ -672,6 +793,7 @@ function NMServerSourceRefreshTick.onTick()
         local profileType = entry and entry.profileType or nil
         local profile = NMDeviceProfiles and profileType and NMDeviceProfiles.getForFullType(profileType) or nil
         if state and profile then
+            local nowMsValue = nowRealMs()
             local oldX = tonumber(entry.x) or 0
             local oldY = tonumber(entry.y) or 0
             local oldZ = tonumber(entry.z) or 0
@@ -771,6 +893,7 @@ function NMServerSourceRefreshTick.onTick()
                 retireVehicleEntry(uuid, entry, resolvedKind)
             else
                 local worldActive = NMRegistryPolicy.shouldKeepWorldSourceState(state)
+                local immediateBroadcast = false
                 if worldActive and sourceMode ~= "off" then
                     local x = asNumber(entry.x)
                     local y = asNumber(entry.y)
@@ -780,7 +903,23 @@ function NMServerSourceRefreshTick.onTick()
                     end
                 end
 
-                SourceRefreshDiagnostics.logRefresh(uuid, sourceMode, oldX, oldY, oldZ, entry.x, entry.y, entry.z, resolvedKind)
+                if worldActive then
+                    immediateBroadcast = broadcastAttachedMovementIfNeeded(
+                        uuid,
+                        entry,
+                        state,
+                        sourceMode,
+                        oldX,
+                        oldY,
+                        oldZ,
+                        worldActive,
+                        nowMsValue
+                    )
+                end
+
+                SourceRefreshDiagnostics.logRefresh(uuid, sourceMode, oldX, oldY, oldZ, entry.x, entry.y, entry.z, resolvedKind, entry, {
+                    immediateBroadcast = immediateBroadcast
+                })
                 NMServerRegistryState.worldRegistry[uuid] = entry
             end
         end

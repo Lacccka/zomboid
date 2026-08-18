@@ -5,6 +5,33 @@ local NMClientRegistrySyncLifecycle = require "sync/registry_sync/NMClientRegist
 local NMClientRegistrySyncMovement = require "sync/registry_sync/NMClientRegistrySyncMovement"
 
 local NMClientRegistrySyncScheduler = {}
+local MOVEMENT_CHECK_CADENCE_SHORT_TICKS = 10
+local MOVEMENT_CHECK_CADENCE_SETTLED_TICKS = 30
+local MOVEMENT_CHECK_CADENCE_IDLE_TICKS = 120
+
+local function scheduleMovementCheck(state, currentTick, cadenceTicks)
+    local cadence = math.max(1, tonumber(cadenceTicks) or MOVEMENT_CHECK_CADENCE_SHORT_TICKS)
+    NMClientRegistrySyncState.setMovementCheckCadenceNormalized(state, cadence)
+    NMClientRegistrySyncState.setResyncCheckNextTickNormalized(
+        state,
+        (tonumber(currentTick) or 0) + cadence
+    )
+end
+
+local function wakeShortMovementCheck(state, currentTick)
+    NMClientRegistrySyncState.wakeMovementCheckNormalized(state, currentTick, MOVEMENT_CHECK_CADENCE_SHORT_TICKS)
+end
+
+local function nextBackoffCadence(currentCadence)
+    local cadence = math.max(1, tonumber(currentCadence) or MOVEMENT_CHECK_CADENCE_SHORT_TICKS)
+    if cadence < MOVEMENT_CHECK_CADENCE_SETTLED_TICKS then
+        return MOVEMENT_CHECK_CADENCE_SETTLED_TICKS
+    end
+    if cadence < MOVEMENT_CHECK_CADENCE_IDLE_TICKS then
+        return MOVEMENT_CHECK_CADENCE_IDLE_TICKS
+    end
+    return MOVEMENT_CHECK_CADENCE_IDLE_TICKS
+end
 
 local function runInitialSync(snapshot, player, timing)
     local state = snapshot.state
@@ -53,35 +80,87 @@ end
 
 local function runMovementResync(snapshot, player, timing)
     local state = snapshot.state
+    if not NMClientRegistrySyncTiming.isDueNow(snapshot.tick, snapshot.resyncNextTick) then
+        NMClientRegistrySyncState.setResyncCheckNextTickNormalized(state, snapshot.resyncNextTick)
+        return
+    end
     local sample = NMClientRegistrySyncMovement.samplePlayerPosition(player)
     if not sample then
+        scheduleMovementCheck(state, snapshot.tick, snapshot.movementCheckCadenceTicks)
         return
     end
     local moved = NMClientRegistrySyncMovement.hasMoved(snapshot, sample, timing.moveDist2)
-    local dueNow = NMClientRegistrySyncTiming.isDueNow(snapshot.tick, snapshot.resyncNextTick)
     local cooldownReady = NMClientRegistrySyncTiming.isCooldownReady(snapshot.resyncLastRequestMs, timing.nowMs, timing.cooldownMs)
-    if moved and state.resyncInFlight ~= true and dueNow and cooldownReady then
+    if moved and state.resyncInFlight ~= true and cooldownReady then
         if NMClientRegistrySyncRequests.sendSyncRequest(player) then
             NMClientRegistrySyncState.markResyncRequestNormalized(state, snapshot.tick, timing.nowMs)
             NMClientRegistrySyncState.setResyncNextTickNormalized(state, snapshot.tick + timing.intervalTicks)
             NMClientRegistrySyncMovement.updatePositionCache(state, sample)
+            wakeShortMovementCheck(state, snapshot.tick + timing.intervalTicks)
+            return
         end
     end
+    if moved and state.resyncInFlight ~= true then
+        scheduleMovementCheck(state, snapshot.tick, MOVEMENT_CHECK_CADENCE_SHORT_TICKS)
+        return
+    end
+    scheduleMovementCheck(state, snapshot.tick, nextBackoffCadence(snapshot.movementCheckCadenceTicks))
+end
+
+function NMClientRegistrySyncScheduler.shouldRunThisTick(state)
+    if not NMCore.isMPClientRuntime() then
+        return false, "sp_runtime"
+    end
+    local snapshot = NMClientRegistrySyncState.snapshot(state)
+    local timeoutTicks = NMRuntimeConfig.getRegistryRequestTimeoutTicks and NMRuntimeConfig.getRegistryRequestTimeoutTicks() or 180
+    if snapshot.state.syncPending == true then
+        if snapshot.state.initialSyncInFlight == true then
+            if NMClientRegistrySyncTiming.isTimeoutReached(snapshot.tick, snapshot.state.initialSyncRequestTick, timeoutTicks) then
+                return true, "initial_sync_timeout"
+            end
+            return false, "initial_sync_in_flight"
+        end
+        if NMClientRegistrySyncTiming.isDueNow(snapshot.tick, snapshot.syncNextTick) then
+            return true, "initial_sync_due"
+        end
+        return false, "initial_sync_wait"
+    end
+    if snapshot.state.inventorySyncPending == true and snapshot.state.inventorySyncSent ~= true then
+        return true, "inventory_sync_pending"
+    end
+    if snapshot.state.resyncInFlight == true then
+        if NMClientRegistrySyncTiming.isTimeoutReached(snapshot.tick, snapshot.state.resyncRequestTick, timeoutTicks) then
+            return true, "resync_timeout"
+        end
+        return false, "resync_in_flight"
+    end
+    if not NMClientRegistrySyncTiming.isDueNow(snapshot.tick, snapshot.resyncNextTick) then
+        return false, "movement_interval_wait"
+    end
+    if NMClientRegistrySyncTiming.isDueNow(snapshot.tick, snapshot.resyncCheckNextTick) then
+        return true, "movement_check_due"
+    end
+    return false, "movement_check_wait"
 end
 
 function NMClientRegistrySyncScheduler.onTick(state, player)
     if not NMCore.isMPClientRuntime() then
-        return
+        return false
     end
-    local snapshot = NMClientRegistrySyncState.advanceTickSnapshot(state)
+    local shouldRun, _reason = NMClientRegistrySyncScheduler.shouldRunThisTick(state)
+    if shouldRun ~= true then
+        return false
+    end
+    local snapshot = NMClientRegistrySyncState.snapshot(state)
     local timing = NMClientRegistrySyncTiming.resolveTickWindow()
     local initialSyncBlocked = runInitialSync(snapshot, player, timing)
     if initialSyncBlocked == true then
-        return
+        return true
     end
     runInventorySync(snapshot, player, timing)
     NMClientRegistrySyncLifecycle.resolveResyncTimeout(snapshot.state, snapshot.tick, timing.timeoutTicks)
     runMovementResync(snapshot, player, timing)
+    return true
 end
 
 return NMClientRegistrySyncScheduler

@@ -117,20 +117,19 @@ function NMClientModeSync.emit(player, item, profile, state, mode)
     slot.attempts = (tonumber(slot.attempts) or 0) + 1
     local retryMs = math.min(5000, 500 * (2 ^ math.max(0, slot.attempts - 1)))
     slot.nextRetryMs = now + retryMs
-    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
-        NMCore.logChannel(
-            "runtime",
-            "mode_sync_emit",
-            string.format(
-                "uuid=%s action=%s mode=%s attempt=%d retryMs=%d",
-                tostring(uuid),
-                tostring(action),
-                tostring(mode or "off"),
-                tonumber(slot.attempts) or 0,
-                tonumber(retryMs) or 0
-            )
+    NMRuntimeProbeAdapter.emit(
+        "runtime",
+        "runtime",
+        "mode_sync_emit",
+        string.format(
+            "uuid=%s action=%s mode=%s attempt=%d retryMs=%d",
+            tostring(uuid),
+            tostring(action),
+            tostring(mode or "off"),
+            tonumber(slot.attempts) or 0,
+            tonumber(retryMs) or 0
         )
-    end
+    )
 end
 
 function NMClientModeSync.emitExplicit(player, item, state, action, sourceMode)

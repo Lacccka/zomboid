@@ -1,3 +1,4 @@
+
 --[[
   Gunpart Tooltip Compactor for EFKDE
   Wraps long weapon compatibility lists to prevent tooltip overflow
@@ -33,7 +34,7 @@ end
 -- {type="simple", text=string, r=number, g=number, b=number}
 -- {type="labelvalue", label=string, value=string, labelR=..., valueR=...}
 -- {type="separator"}
-local function buildCustomTooltipText(item)
+local function buildCustomTooltipText(item, altDown)
     local lines = {}
     
     -- Vanilla light yellow for normal text
@@ -42,6 +43,15 @@ local function buildCustomTooltipText(item)
     
     -- Add basic item info using proper vanilla methods
     table.insert(lines, {type = "simple", text = item:getDisplayName(), r = yellowR, g = yellowG, b = yellowB})
+
+    -- Add full item ID (matches the older custom tooltip behavior)
+    table.insert(lines, {
+        type = "labelvalue",
+        label = "Item ID: ",
+        value = item:getFullType(),
+        labelR = yellowR, labelG = yellowG, labelB = yellowB,
+        valueR = whiteR, valueG = whiteG, valueB = whiteB
+    })
     
     -- Add weight - label in yellow, value in white
     local weight = item:getActualWeight()
@@ -171,8 +181,8 @@ local function buildCustomTooltipText(item)
         end
     end
     
-    -- Get and wrap mount list (only if option is enabled)
-    if GunpartTooltipOptions.shouldShowMountList() then
+    -- Get and wrap mount list only while Alt is held and the option is enabled
+    if altDown and GunpartTooltipOptions.shouldShowMountList() then
 
         local mountOn = item:getMountOn()
         if mountOn and mountOn:size() > 0 then
@@ -291,7 +301,9 @@ function ISToolTipInv:render()
             local mountPoints = self.item:getMountOn()
             if mountPoints and mountPoints:size() > 5 then
                 -- Build and render custom compact tooltip
-                local tooltipLines = buildCustomTooltipText(self.item)
+                -- Preserve the old behavior: the long mount list is shown only while Alt is held.
+                local altDown = isKeyDown(Keyboard.KEY_LMENU) or isKeyDown(Keyboard.KEY_RMENU)
+                local tooltipLines = buildCustomTooltipText(self.item, altDown)
                 
                 if not ISContextMenu.instance or not ISContextMenu.instance.visibleCheck then
                     -- Use vanilla font and calculate size
@@ -379,3 +391,4 @@ function ISToolTipInv:render()
         -- Use vanilla render for everything else
         return original_ISToolTipInv_render(self)
     end
+

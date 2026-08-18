@@ -136,8 +136,7 @@ local function matchesSqlAnchor(candidate, entry, source)
         tostring(entry and entry.vehicleSqlIdHint or ""),
         tostring(entry and entry._authorityVehicleSqlIdHint or ""),
         tostring(source and source.vehicleSqlId or ""),
-        tostring(source and source.vehicleSqlIdHint or ""),
-        tostring(entry and entry.lastResolvedVehicleSqlId or "")
+        tostring(source and source.vehicleSqlIdHint or "")
     }
     for i = 1, #anchors do
         if anchors[i] ~= "" and anchors[i] == candidateSql then

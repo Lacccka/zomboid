@@ -161,8 +161,7 @@ local function injectLoot()
         end
     end
 
-    -- containersWeighted is a flat {name, weight, name, weight, ...} list -
-    -- each container gets its own weight multiplier instead of sharing one
+    -- containersWeighted: flat {name, weight, ...} list, each container gets its own multiplier.
     local function injectWeighted(containersWeighted, items)
         for i = 1, #containersWeighted, 2 do
             local containerName = containersWeighted[i]

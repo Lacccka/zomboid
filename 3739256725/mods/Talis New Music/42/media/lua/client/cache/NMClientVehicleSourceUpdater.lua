@@ -306,6 +306,7 @@ function NMClientVehicleSourceUpdater.update(entry)
     local authoritativeAdvanced = authoritativeGen > previousAuthorityGen
     local authorityHint = tostring(entry._authorityVehicleIdHint or entry.vehicleIdHint or source.vehicleIdHint or "")
     local authoritySqlHint = tostring(entry._authorityVehicleSqlIdHint or entry.vehicleSqlIdHint or source.vehicleSqlIdHint or "")
+    local observedSqlHint = tostring(entry._observedVehicleSqlIdHint or "")
     local previousAuthorityHint = tostring(entry._attachAuthorityHint or "")
     local authorityHintChanged = authorityHint ~= "" and authorityHint ~= previousAuthorityHint
 
@@ -466,7 +467,16 @@ function NMClientVehicleSourceUpdater.update(entry)
         entry.lastGoodX = tonumber(source.x) or prevX
         entry.lastGoodY = tonumber(source.y) or prevY
         entry.lastGoodZ = tonumber(source.z) or prevZ
-        entry.lastResolvedVehicleSqlId = tostring(getSqlId(chosenVehicle))
+        local observedVehicleSqlId = tostring(getSqlId(chosenVehicle))
+        entry.lastObservedVehicleSqlId = observedVehicleSqlId
+        entry._observedVehicleSqlIdHint = observedVehicleSqlId ~= "" and observedVehicleSqlId or observedSqlHint
+        entry.lastResolvedVehicleSqlId = authoritySqlHint ~= "" and authoritySqlHint or observedVehicleSqlId
+        if authoritySqlHint ~= "" then
+            entry.vehicleSqlId = authoritySqlHint
+            entry.vehicleSqlIdHint = authoritySqlHint
+            source.vehicleSqlId = authoritySqlHint
+            source.vehicleSqlIdHint = authoritySqlHint
+        end
 
         if oldRuntimeId == "" and chosenRuntimeId ~= "" then
             logBindingLifecycle(
@@ -511,6 +521,35 @@ function NMClientVehicleSourceUpdater.update(entry)
 
     local attachStatus = resolved and "attached" or "degraded"
     logAttachDecision(entry, attachStatus, reason, tostring(chosenRuntimeId or ""), degraded == true)
+
+    if resolved == true and authoritySqlHint ~= "" and observedSqlHint ~= "" and authoritySqlHint ~= observedSqlHint then
+        entry._vehicleSqlContinuitySig = entry._vehicleSqlContinuitySig or {}
+        entry._vehicleSqlContinuityMs = entry._vehicleSqlContinuityMs or {}
+        local correctionSig = table.concat({
+            tostring(authoritySqlHint),
+            tostring(observedSqlHint),
+            tostring(chosenRuntimeId or "")
+        }, "|")
+        if NMRuntimeProbeAdapter.shouldEmitTransitionOrHeartbeat(
+            entry._vehicleSqlContinuitySig,
+            entry._vehicleSqlContinuityMs,
+            tostring(entry.uuid or ""),
+            correctionSig,
+            NMRuntimeProbeAdapter.longHeartbeatMs()
+        ) then
+            NMCore.logChannel(
+                "runtime",
+                "vehicle_sql_continuity_correction",
+                string.format(
+                    "uuid=%s runtimeId=%s authoritativeSql=%s observedSql=%s action=preserve_authority_sql",
+                    tostring(entry.uuid or ""),
+                    tostring(chosenRuntimeId or ""),
+                    tostring(authoritySqlHint),
+                    tostring(observedSqlHint)
+                )
+            )
+        end
+    end
 
     local snapshotMeta = NMClientVehicleSqlSnapshotResolver
         and NMClientVehicleSqlSnapshotResolver.getSnapshotMeta

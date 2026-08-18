@@ -2,6 +2,7 @@ local env = _G.NMBatterySlotEnv
 setfenv(1, env)
 
 require "ui/shared/slots/NMDeviceUiSlotContract"
+require "ui/shared/slots/NMSlotPlaceholderRender"
 
 local AUTHORITATIVE_EJECT_TIMEOUT_MS = 1000
 
@@ -233,51 +234,17 @@ function openEmptySlotContextMenu(window, button, x, y)
     return true
 end
 
-function drawEmptyBatteryVector(button)
-    local icon = NMBatterySlotVectors.icons and NMBatterySlotVectors.icons.battery or nil
-    local bounds = NMBatterySlotVectors.bounds and NMBatterySlotVectors.bounds.battery or nil
-    if not (icon and bounds) then return end
-    if EMPTY_BATTERY_VECTOR_SHAPES == nil then
-        EMPTY_BATTERY_VECTOR_SHAPES = {}
-        for i = 1, #icon do
-            EMPTY_BATTERY_VECTOR_SHAPES[i] = NMVectorDraw.prepareShape(icon[i], NMBatterySlotVectors.viewBox, bounds) or false
-        end
-    end
-    local w = tonumber(button.width) or 0
-    local h = tonumber(button.height) or 0
-    local size = math.max(10, math.floor(math.min(w, h) * EMPTY_BATTERY_ICON_SCALE + 0.5))
-    local left = math.floor((w - size) * 0.5 + 0.5)
-    local top = math.floor((h - size) * 0.5 + 0.5)
-    for i = 1, #EMPTY_BATTERY_VECTOR_SHAPES do
-        local prepared = EMPTY_BATTERY_VECTOR_SHAPES[i]
-        if prepared and prepared ~= false then
-            NMVectorDraw.drawPreparedShape(button, prepared, EMPTY_SLOT_VECTOR_COLOR, left, top, size, size)
-        end
-    end
-end
-
 function drawEmptyBatteryTexture(button)
-    if not EMPTY_BATTERY_PLACEHOLDER_TEXTURE then
-        EMPTY_BATTERY_PLACEHOLDER_TEXTURE = getTexture and (
-            getTexture("media/textures/UI/UI_NM_SlotEmpty_Battery.png")
-            or getTexture("UI/UI_NM_SlotEmpty_Battery")
-            or getTexture("UI_NM_SlotEmpty_Battery")
-        ) or nil
+    local scaleKey = NMFancyDeviceUiScale and NMFancyDeviceUiScale.getTextureScaleKey and NMFancyDeviceUiScale.getTextureScaleKey() or "1x"
+    if EMPTY_BATTERY_PLACEHOLDER_TEXTURE_SCALE_KEY ~= scaleKey then
+        EMPTY_BATTERY_PLACEHOLDER_TEXTURE = NMFancyDeviceUiScale and NMFancyDeviceUiScale.getTexture
+            and NMFancyDeviceUiScale.getTexture("media/textures/UI/UI_NM_SlotEmpty_Battery.png")
+            or getTexture and (getTexture("media/textures/UI/UI_NM_SlotEmpty_Battery.png") or getTexture("UI/UI_NM_SlotEmpty_Battery") or getTexture("UI_NM_SlotEmpty_Battery"))
+            or nil
+        EMPTY_BATTERY_PLACEHOLDER_TEXTURE_SCALE_KEY = scaleKey
     end
     local tex = EMPTY_BATTERY_PLACEHOLDER_TEXTURE
-    if not tex then return false end
-    local texW = tex.getWidthOrig and tex:getWidthOrig() or (tex.getWidth and tex:getWidth()) or 32
-    local texH = tex.getHeightOrig and tex:getHeightOrig() or (tex.getHeight and tex:getHeight()) or 32
-    local maxW = (tonumber(button.width) or 0) - 8
-    local maxH = (tonumber(button.height) or 0) - 8
-    local scale = math.min(maxW / texW, maxH / texH)
-    if scale > 1 then scale = 1 end
-    local drawW = texW * scale
-    local drawH = texH * scale
-    local left = (button.width - drawW) / 2
-    local top = (button.height - drawH) / 2
-    button:drawTextureScaled(tex, left, top, drawW, drawH, 0.55, 0.12, 0.12, 0.12)
-    return true
+    return NMSlotPlaceholderRender and NMSlotPlaceholderRender.drawTexture and NMSlotPlaceholderRender.drawTexture(button, tex) or false
 end
 
 function drawBatteryTexture(button)
@@ -288,8 +255,7 @@ function drawBatteryTexture(button)
     if not tex then return end
     local w = tonumber(button.width) or 0
     local h = tonumber(button.height) or 0
-    -- Match TVM slot item icon sizing lane.
-    local size = math.max(10, math.min(32, math.min(w, h) - 6))
+    local size = math.max(10, math.min(w, h) - 6)
     local left = math.floor((w - size) * 0.5 + 0.5)
     local top = math.floor((h - size) * 0.5 + 0.5)
     button:drawTextureScaledAspect(tex, left, top, size, size, 1.0, 1.0, 1.0, 1.0)

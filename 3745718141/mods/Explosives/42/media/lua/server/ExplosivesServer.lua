@@ -1,11 +1,7 @@
 if isClient() then return end
 
--- Authoritative counterpart to the client-side grenade/flare throw in
--- GrenadeBallistics.lua. The client already removes the weapon locally
--- for instant UI feedback, but that alone doesn't reliably persist to
--- the server's saved state in MP -- this performs the actual removal
--- on the server's own authoritative inventory, driven by the item ID
--- the client sent.
+-- Authoritative counterpart to the client-side throw in GrenadeBallistics.lua:
+-- client removal is instant local feedback only, this does the real removal server-side.
 local function onClientCommand(module, command, player, args)
     if module ~= "Explosives" then return end
 
@@ -37,12 +33,8 @@ local function onClientCommand(module, command, player, args)
         end
     end
 
-    -- Authoritative counterpart to the placeAsTrap landing path in
-    -- GrenadeBallistics.lua. The client already places its own trap
-    -- locally for instant visual feedback (matching vanilla's own
-    -- ISPlaceTrap:complete()), but that call alone doesn't reliably
-    -- persist in MP when it's made outside a real TimedAction context --
-    -- the trap needs to exist in the server's own authoritative world too.
+    -- Authoritative counterpart to placeAsTrap in GrenadeBallistics.lua: client trap
+    -- placement is local feedback only, doesn't persist in MP outside a TimedAction.
     if command == "PlaceTrap" then
         local square = getCell():getGridSquare(args.x, args.y, args.z)
         if square then
@@ -56,12 +48,9 @@ local function onClientCommand(module, command, player, args)
         end
     end
 
-    -- Authoritative counterpart to the immediate-explosion landing path
-    -- in GrenadeBallistics.lua. Same story as PlaceTrap above: the
-    -- client's own triggerExplosion() call gives instant local FX/sound,
-    -- but side effects like fire-starting don't reliably register
-    -- server-side from outside a TimedAction -- confirmed by this mod's
-    -- own M14TH3Grenade not igniting fires in MP despite working in SP.
+    -- Authoritative counterpart to explodeGrenadeAt in GrenadeBallistics.lua: local
+    -- triggerExplosion() is FX/sound only, side effects like fire-starting need this
+    -- (confirmed via M14TH3Grenade not igniting fires in MP).
     if command == "TriggerExplosion" then
         local square = getCell():getGridSquare(args.x, args.y, args.z)
         if square then
@@ -70,10 +59,8 @@ local function onClientCommand(module, command, player, args)
                 local trap = IsoTrap.new(player, trapItem, getCell(), square)
                 trap:triggerExplosion(false)
             end
-            -- Molotov and FlameTrap ("Fire Bomb") have no ExplosionPower,
-            -- so triggerExplosion() above doesn't ignite anything -- start
-            -- the fire natively, the same call vanilla's own campfire
-            -- system uses (server-side only).
+            -- Molotov/FlameTrap have no ExplosionPower, so triggerExplosion() doesn't
+            -- ignite; start the fire natively (same call as vanilla campfires).
             if args.weaponType == "Base.Molotov" or args.weaponType == "Base.FlameTrap" then
                 IsoFireManager.StartFire(getCell(), square, true, 100, 500)
             end

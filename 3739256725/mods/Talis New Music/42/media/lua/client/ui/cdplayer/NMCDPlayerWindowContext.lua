@@ -92,6 +92,7 @@ function CDPlayerWindow:buildRenderModel()
                 fullType = window:getInsertedMediaFullType(),
                 texture = insertedCDTexture,
                 texturePath = insertedCDTexturePath,
+                scaleTier = NMFancyDeviceUiScale and NMFancyDeviceUiScale.getScaleTier and NMFancyDeviceUiScale.getScaleTier() or "100",
                 visible = insertedCDTexture ~= nil,
                 spin = window:shouldSpinInsertedCD(transport) == true,
                 angle = tonumber(window._nmWorldCDSpinAngle) or 0.0,

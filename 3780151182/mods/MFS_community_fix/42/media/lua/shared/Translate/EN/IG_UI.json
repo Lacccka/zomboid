@@ -1,4 +1,5 @@
 {
+    "IGUI_CraftCategory_刀匠系统BladesmithSystem": "MFS Blade Smith System",
     "IGUI_ZombieLeft": "Zombies remaining:",
     "IGUI_ZombiesInComing": "They're coming!",
     "IGUI_ClearIOBox": "The IO container is not empty, please remove items first.",
@@ -91,5 +92,12 @@
     "IGUI_Recoilpad": "Recoil pad",
     "IGUI_CraftCategory_现代枪械系统ModernFirearmsSystem": "Modern Firearms System",
     "IGUI_CraftingCategories_Ammunition": "Ammmunition",
-    "IGUI_NONE": "None"
+    "IGUI_NONE": "None",
+    "IGUI_MFS_FireMode_Auto": "Fire mode: Auto",
+    "IGUI_MFS_FireMode_Single": "Fire mode: Single",
+    "IGUI_MFS_GunLight_On": "Weapon light: on",
+    "IGUI_MFS_GunLight_Off": "Weapon light: off",
+    "IGUI_MFS_GunLight_NoBattery": "Weapon light: battery is dead",
+    "IGUI_MFS_GunLight_Depleted": "Weapon light battery depleted",
+    "IGUI_MFS_GunLight_Low": "Weapon light battery low"
 }

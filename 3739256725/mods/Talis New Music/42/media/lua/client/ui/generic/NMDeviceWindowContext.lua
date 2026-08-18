@@ -7,6 +7,86 @@ function DeviceWindow:invalidateContextCache()
     NMSlotHostLifecycle.invalidateContextCache(self)
 end
 
+local function uiLifecycleDebugEnabled()
+    return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("ui_lifecycle") == true or false
+end
+
+local function logUiLifecycleProbe(tag, detail)
+    if not (NMCore and NMCore.logChannel and uiLifecycleDebugEnabled()) then
+        return
+    end
+    NMCore.logChannel("ui_lifecycle", tostring(tag or "generic_window"), tostring(detail or ""))
+end
+
+function resolveGenericWindowRegistry()
+    return (env and env.WindowRegistry)
+        or rawget(_G, "NMUiLifecycleWindowRegistry")
+        or rawget(_G, "NMPortableWindowRegistry")
+        or nil
+end
+
+function resolveGenericWindowTargetKey(target)
+    local registry = resolveGenericWindowRegistry()
+    return registry and registry.targetKey and tostring(registry.targetKey(target) or "") or ""
+end
+
+function isGenericWindowVisible(window)
+    if not (window and window.javaObject) then
+        return false
+    end
+    if window.getIsVisible then
+        return window:getIsVisible() == true
+    end
+    if window.isVisible then
+        return window:isVisible() == true
+    end
+    return true
+end
+
+local function collectLiveGenericWindows(playerNum)
+    local windows = {}
+    local seen = {}
+    local registry = resolveGenericWindowRegistry()
+    local registryWindows = registry and registry.collectWindows and registry.collectWindows(env, playerNum) or {}
+    for i = 1, #registryWindows do
+        local win = registryWindows[i]
+        if win and win.javaObject then
+            windows[#windows + 1] = win
+            seen[win] = true
+        end
+    end
+    local live = env and env.liveWindows or nil
+    if type(live) == "table" then
+        for i = #live, 1, -1 do
+            local win = live[i]
+            if not (win and win.javaObject) then
+                table.remove(live, i)
+            elseif tonumber(win.playerNum) == (tonumber(playerNum) or 0) and seen[win] ~= true then
+                windows[#windows + 1] = win
+                seen[win] = true
+            end
+        end
+    end
+    return windows
+end
+
+local function resetTransportVisualState(win, reason)
+    local reset = NMTransportButtonRow and NMTransportButtonRow.resetVisualState and NMTransportButtonRow.resetVisualState(win) == true or false
+    if reset then
+        logUiLifecycleProbe(
+            "generic_window_transport_reset",
+            string.format(
+                "window=%s player=%s targetKey=%s reason=%s",
+                tostring(win),
+                tostring(win and win.playerNum or 0),
+                tostring(resolveGenericWindowTargetKey(win and win.target or nil)),
+                tostring(reason or "")
+            )
+        )
+    end
+    return reset
+end
+
 local function resolveNowMs()
     return (getTimestampMs and tonumber(getTimestampMs()))
         or (getTimeInMillis and tonumber(getTimeInMillis()))
@@ -46,21 +126,21 @@ function DeviceWindow:recordFallback(label)
     if NMUIRenderProbe and NMUIRenderProbe.count then
         NMUIRenderProbe.count(self, "context.fallback", 1)
     end
-    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")
+    if NMCore and NMCore.logChannel and NMRuntimeProbeAdapter and NMRuntimeProbeAdapter.isEnabled and NMRuntimeProbeAdapter.isEnabled("runtime", "ui_context_fallback")
         and NMCore.shouldLogEvery and NMCore.shouldLogEvery("runtimeProbe.uiContextFallback." .. tostring(label or "unknown"), self._nmFrameEpoch or 0, 240) then
         NMCore.logChannel("runtime", "ui_context_fallback", string.format("reason=%s epoch=%s", tostring(label or "unknown"), tostring(self._nmFrameEpoch or 0)))
     end
 end
 
 function DeviceWindow:logFrameDiagnostics()
-    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
+    if not (NMCore and NMCore.logChannel and NMRuntimeProbeAdapter and NMRuntimeProbeAdapter.isEnabled and NMRuntimeProbeAdapter.isEnabled("runtime", "ui_context_frame")) then
         return
     end
     if not (NMCore.shouldLogEvery and NMCore.shouldLogEvery("runtimeProbe.uiContextFrame." .. tostring(self.playerNum or 0), self._nmFrameEpoch or 0, 900)) then
         return
     end
     local target = self.target
-    local targetKey = WindowRegistry and WindowRegistry.targetKey and WindowRegistry.targetKey(target) or ""
+    local targetKey = resolveGenericWindowTargetKey(target)
     NMCore.logChannel(
         "runtime",
         "ui_context_frame",
@@ -99,9 +179,13 @@ function resolveItemContext(self, player)
     end
     if item then
         local profileFast = NMDeviceProfiles.getForItem(item)
-        local stateFast = profileFast and NMDeviceState.ensure(item, profileFast) or nil
+        local localStateFast = profileFast and NMDeviceState.ensure(item, profileFast) or nil
+        local stateFast = localStateFast
+        if localStateFast and NMClientDisplayStateResolver and NMClientDisplayStateResolver.resolveForLiveItem then
+            stateFast = NMClientDisplayStateResolver.resolveForLiveItem(item, localStateFast)
+        end
         if profileFast and stateFast then
-            return { player = player, item = item, profile = profileFast, state = stateFast, kind = "item" }
+            return { player = player, item = item, profile = profileFast, state = stateFast, localState = localStateFast, kind = "item" }
         end
     end
 
@@ -120,12 +204,16 @@ function resolveItemContext(self, player)
     self.target.itemRef = item
 
     local profile = NMDeviceProfiles.getForItem(item)
-    local state = profile and NMDeviceState.ensure(item, profile) or nil
+    local localState = profile and NMDeviceState.ensure(item, profile) or nil
+    local state = localState
+    if localState and NMClientDisplayStateResolver and NMClientDisplayStateResolver.resolveForLiveItem then
+        state = NMClientDisplayStateResolver.resolveForLiveItem(item, localState)
+    end
     if not (profile and state) then
         return nil
     end
 
-    return { player = player, item = item, profile = profile, state = state, kind = "item" }
+    return { player = player, item = item, profile = profile, state = state, localState = localState, kind = "item" }
 end
 
 function resolveVehicleById(vehicleId)
@@ -174,19 +262,23 @@ function resolveVehicleContext(self, player)
     self.target.partRef = part
 
     local profile = NMDeviceProfiles.getVehicleProfile(part)
-    local state = profile and NMDeviceState.ensure(part, profile) or nil
+    local localState = profile and NMDeviceState.ensure(part, profile) or nil
+    local state = localState
+    if localState and NMClientDisplayStateResolver and NMClientDisplayStateResolver.resolve then
+        state = NMClientDisplayStateResolver.resolve(localState)
+    end
     if not (profile and state) then
         return nil
     end
 
-    return { player = player, vehicle = vehicle, part = part, profile = profile, state = state, kind = "vehicle" }
+    return { player = player, vehicle = vehicle, part = part, profile = profile, state = state, localState = localState, kind = "vehicle" }
 end
 
 function targetCacheKey(target)
     if not target then
         return ""
     end
-    return WindowRegistry and WindowRegistry.targetKey and WindowRegistry.targetKey(target) or ""
+    return resolveGenericWindowTargetKey(target)
 end
 
 function resolveContextUncached(self)
@@ -248,12 +340,65 @@ function NMDeviceWindow.invalidateOpenItemWindow(itemId, uuid)
                 }) == true
         end,
         invalidateWindow = function(win)
+            resetTransportVisualState(win, "open_item_window_invalidate")
+            logUiLifecycleProbe(
+                "generic_window_invalidate",
+                string.format(
+                    "window=%s player=%s targetKey=%s mode=item",
+                    tostring(win),
+                    tostring(win and win.playerNum or 0),
+                    tostring(resolveGenericWindowTargetKey(win and win.target or nil))
+                )
+            )
             NMSlotHostLifecycle.invalidateForUiChange(win, {
                 cause = "open_item_window_invalidate",
                 visibility = false,
             })
         end,
     })
+end
+
+function NMDeviceWindow.invalidateOpenVehicleWindow(playerNum, vehicleId, partId)
+    local resolvedPlayerNum = tonumber(playerNum) or 0
+    local targetVehicleId = tostring(vehicleId or "")
+    local targetPartId = tostring(partId or "Radio")
+    if targetVehicleId == "" then
+        return false
+    end
+    local windows = collectLiveGenericWindows(resolvedPlayerNum)
+    local invalidated = false
+    for i = 1, #windows do
+        local win = windows[i]
+        local target = win and win.target or nil
+        if target
+            and target.kind == "vehicle"
+            and tostring(target.vehicleId or "") == targetVehicleId
+            and tostring(target.partId or "Radio") == targetPartId then
+            local deferred = NMSlotHostLifecycle.deferUiRefreshUntilDragEnd
+                and NMSlotHostLifecycle.deferUiRefreshUntilDragEnd(win, {
+                    cause = "open_vehicle_window_invalidate_deferred",
+                    visibility = false,
+                }) == true
+            if not deferred then
+                resetTransportVisualState(win, "open_vehicle_window_invalidate")
+                logUiLifecycleProbe(
+                    "generic_window_invalidate",
+                    string.format(
+                        "window=%s player=%s targetKey=%s mode=vehicle",
+                        tostring(win),
+                        tostring(win and win.playerNum or 0),
+                        tostring(resolveGenericWindowTargetKey(win and win.target or nil))
+                    )
+                )
+                NMSlotHostLifecycle.invalidateForUiChange(win, {
+                    cause = "open_vehicle_window_invalidate",
+                    visibility = false,
+                })
+            end
+            invalidated = true
+        end
+    end
+    return invalidated
 end
 
 function NMDeviceWindow.rebindOpenPortableItemWindow(itemId, uuid)
@@ -267,6 +412,7 @@ function NMDeviceWindow.rebindOpenPortableItemWindow(itemId, uuid)
                 }) == true
         end,
         invalidateWindow = function(win)
+            resetTransportVisualState(win, "open_item_window_rebind")
             NMSlotHostLifecycle.invalidateForUiChange(win, {
                 cause = "open_item_window_rebind",
                 visibility = false,

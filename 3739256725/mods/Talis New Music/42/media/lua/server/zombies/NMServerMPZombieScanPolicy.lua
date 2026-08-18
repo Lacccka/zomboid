@@ -15,40 +15,7 @@ function NMServerMPZombieScanPolicy.shouldRunFallbackScan(ticks, tickInterval)
 end
 
 function NMServerMPZombieScanPolicy.scanAroundCharacter(character, callback, radius, maxZombies)
-    local square = character and character.getCurrentSquare and character:getCurrentSquare() or nil
-    if not square then
-        return 0
-    end
-    local seen = {}
-    local processed = 0
-    local scanRadius = tonumber(radius) or 0
-    local scanMax = tonumber(maxZombies) or 0
-    for x = square:getX() - scanRadius, square:getX() + scanRadius do
-        for y = square:getY() - scanRadius, square:getY() + scanRadius do
-            if processed >= scanMax then
-                return processed
-            end
-            local gridSquare = getCell() and getCell():getGridSquare(x, y, square:getZ()) or nil
-            if gridSquare then
-                local moving = gridSquare:getMovingObjects()
-                for i = 0, moving:size() - 1 do
-                    local zombie = moving:get(i)
-                    local id = zombie and zombie.getObjectID and tostring(zombie:getObjectID() or "") or tostring(zombie)
-                    if not seen[id] and NMServerZombieScanHelpers.isAliveZombie(zombie) then
-                        seen[id] = true
-                        if callback then
-                            callback(zombie)
-                        end
-                        processed = processed + 1
-                        if processed >= scanMax then
-                            return processed
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return processed
+    return NMServerZombieScanHelpers.scanAroundCharacter(character, callback, radius, maxZombies)
 end
 
 local function visitPlayers(players, visitor)

@@ -5,6 +5,14 @@ local payloadLineageSeen = payloadLineageSeen or {}
 local vehicleTruthSeen = vehicleTruthSeen or {}
 local vehicleTruthMsSeen = vehicleTruthMsSeen or {}
 local capabilityMatrixSeen = capabilityMatrixSeen or {}
+local collectCandidateScratch = {}
+
+local function clearArray(tbl)
+    for i = #tbl, 1, -1 do
+        tbl[i] = nil
+    end
+    return tbl
+end
 
 local function nowMs()
     if getTimestampMs then
@@ -21,6 +29,165 @@ local function nowMs()
     return 0
 end
 
+local function formatCoord(value)
+    local n = tonumber(value)
+    if n == nil then
+        return "nil"
+    end
+    return string.format("%.2f", n)
+end
+
+local function quantizeCoord(value, step)
+    local n = tonumber(value)
+    if n == nil then
+        return "nil"
+    end
+    local s = math.max(0.001, tonumber(step) or 1.0)
+    return string.format("%.2f", math.floor((n / s) + 0.5) * s)
+end
+
+local function preserveAuthorityVehicleSql(entry)
+    if type(entry) ~= "table" then
+        return
+    end
+    local authoritySql = tostring(entry._authorityVehicleSqlIdHint or "")
+    if authoritySql == "" then
+        return
+    end
+    entry.vehicleSqlId = authoritySql
+    entry.vehicleSqlIdHint = authoritySql
+    entry.source = entry.source or {}
+    entry.source.vehicleSqlId = authoritySql
+    entry.source.vehicleSqlIdHint = authoritySql
+end
+
+local function shouldLogAttachedPayloadApply(mode)
+    local sourceMode = tostring(mode or "")
+    return sourceMode == "attached" or sourceMode == "stowed"
+end
+
+local function shouldLogPlaybackLossWorldSource(entry, key, signature, minIntervalMs)
+    if not (NMCore and NMCore.logChannel and NMRuntimeProbeAdapter and NMRuntimeProbeAdapter.isEnabled and NMRuntimeProbeAdapter.isEnabled("runtime", "world_source_payload_apply")) then
+        return false
+    end
+    local sigKey = tostring(key or "world_source_probe")
+    entry._playbackLossProbeSig = entry._playbackLossProbeSig or {}
+    entry._playbackLossProbeMs = entry._playbackLossProbeMs or {}
+    local nowStamp = nowMs()
+    local lastSig = tostring(entry._playbackLossProbeSig[sigKey] or "")
+    local lastMs = tonumber(entry._playbackLossProbeMs[sigKey]) or 0
+    local intervalMs = math.max(250, tonumber(minIntervalMs) or 1000)
+    if lastSig ~= tostring(signature or "") or (nowStamp - lastMs) >= intervalMs then
+        entry._playbackLossProbeSig[sigKey] = tostring(signature or "")
+        entry._playbackLossProbeMs[sigKey] = nowStamp
+        return true
+    end
+    return false
+end
+
+local function logWorldSourcePayloadApply(uuid, entry, previousSource, payload, applyTimestampMs)
+    if not (NMCore and NMCore.logChannel and NMRuntimeProbeAdapter and NMRuntimeProbeAdapter.isEnabled and NMRuntimeProbeAdapter.isEnabled("runtime", "world_source_payload_apply")) then
+        return
+    end
+    local currentSource = entry and entry.source or nil
+    if not currentSource then
+        return
+    end
+    local currentContext = tostring(currentSource.context or payload and payload.sourceMode or "unknown")
+    local dx = (tonumber(currentSource.x) or 0) - (tonumber(previousSource and previousSource.x) or 0)
+    local dy = (tonumber(currentSource.y) or 0) - (tonumber(previousSource and previousSource.y) or 0)
+    local dz = (tonumber(currentSource.z) or 0) - (tonumber(previousSource and previousSource.z) or 0)
+    local movedDist = math.sqrt((dx * dx) + (dy * dy) + (dz * dz))
+    local state = entry and entry.stateSnapshot or nil
+    local signature = table.concat({
+        tostring(currentContext),
+        tostring(entry and entry.sourceGeneration or 0),
+        tostring(string.format("%.2f", movedDist)),
+        tostring(string.format("%.2f", tonumber(currentSource.z) or 0)),
+        tostring(state and state.isPlaying == true)
+    }, "|")
+    if shouldLogPlaybackLossWorldSource(entry, "payload_apply." .. tostring(uuid or ""), signature, NMRuntimeProbeAdapter.longHeartbeatMs()) ~= true then
+        return
+    end
+    NMCore.logChannel(
+        "runtime",
+        "world_source_payload_apply",
+        string.format(
+            "uuid=%s ctx=%s prev=%s,%s,%s next=%s,%s,%s moved=%.2f applyMs=%s sourceGen=%s isOn=%s isPlaying=%s media=%s",
+            tostring(uuid or ""),
+            tostring(currentContext),
+            formatCoord(previousSource and previousSource.x),
+            formatCoord(previousSource and previousSource.y),
+            formatCoord(previousSource and previousSource.z),
+            formatCoord(currentSource.x),
+            formatCoord(currentSource.y),
+            formatCoord(currentSource.z),
+            tonumber(movedDist) or 0,
+            tostring(applyTimestampMs or 0),
+            tostring(entry and entry.sourceGeneration or 0),
+            tostring(state and state.isOn == true),
+            tostring(state and state.isPlaying == true),
+            tostring(state and state.mediaFullType or "nil")
+        )
+    )
+end
+
+local function classifyPayloadApply(payload, previousSource, previousAcceptedGen)
+    if payload and payload.rebindReason ~= nil and tostring(payload.rebindReason or "") ~= "" then
+        return "transition_upsert"
+    end
+    local sourceMode = tostring(payload and payload.sourceMode or "")
+    local incomingGen = tonumber(payload and (payload.sourceGeneration or payload.sourceEpoch)) or 0
+    local prevX = tonumber(previousSource and previousSource.x)
+    local prevY = tonumber(previousSource and previousSource.y)
+    local prevZ = tonumber(previousSource and previousSource.z)
+    local nextX = tonumber(payload and payload.x)
+    local nextY = tonumber(payload and payload.y)
+    local nextZ = tonumber(payload and payload.z)
+    if sourceMode == "attached"
+        and prevX ~= nil and prevY ~= nil and prevZ ~= nil
+        and nextX ~= nil and nextY ~= nil and nextZ ~= nil then
+        local dx = nextX - prevX
+        local dy = nextY - prevY
+        local dz = nextZ - prevZ
+        local moved = math.sqrt((dx * dx) + (dy * dy) + (dz * dz))
+        if moved > 0 and incomingGen > (tonumber(previousAcceptedGen) or 0) then
+            return "movement_upsert"
+        end
+    end
+    return "heartbeat_upsert"
+end
+
+local function logAttachedPayloadApply(uuid, entry, previousSource, payload, applyTimestampMs, sessionToken, previousAcceptedGen)
+    if not (NMCore and NMCore.logChannel and NMRuntimeProbeAdapter and NMRuntimeProbeAdapter.isEnabled and NMRuntimeProbeAdapter.isEnabled("runtime", "attached_payload_apply")) then
+        return
+    end
+    local sourceMode = tostring(payload and payload.sourceMode or entry and entry.sourceMode or "")
+    if not shouldLogAttachedPayloadApply(sourceMode) then
+        return
+    end
+    local currentSource = entry and entry.source or {}
+    NMCore.logChannel(
+        "runtime",
+        "attached_payload_apply",
+        string.format(
+            "uuid=%s mode=%s classification=%s prevPos=%s,%s,%s payloadPos=%s,%s,%s applyMs=%s sourceGen=%s sessionToken=%s",
+            tostring(uuid or ""),
+            tostring(sourceMode ~= "" and sourceMode or "nil"),
+            tostring(classifyPayloadApply(payload, previousSource, previousAcceptedGen)),
+            formatCoord(previousSource and previousSource.x),
+            formatCoord(previousSource and previousSource.y),
+            formatCoord(previousSource and previousSource.z),
+            formatCoord(currentSource and currentSource.x),
+            formatCoord(currentSource and currentSource.y),
+            formatCoord(currentSource and currentSource.z),
+            tostring(applyTimestampMs or 0),
+            tostring(entry and entry.sourceGeneration or payload and (payload.sourceGeneration or payload.sourceEpoch) or 0),
+            tostring(sessionToken or "nil")
+        )
+    )
+end
+
 local function clonePayload(payload)
     local out = {}
     for k, v in pairs(payload or {}) do
@@ -29,8 +196,36 @@ local function clonePayload(payload)
     return out
 end
 
+local function buildDisplayTupleSig(sourceGeneration, stateSnapshot)
+    return table.concat({
+        tostring(tonumber(sourceGeneration) or 0),
+        tostring(tonumber(stateSnapshot and stateSnapshot.revision) or 0),
+        tostring(tonumber(stateSnapshot and stateSnapshot.playbackEpoch) or 0),
+        tostring(tonumber(stateSnapshot and stateSnapshot.trackIndex) or 0),
+        tostring(stateSnapshot and stateSnapshot.mediaFullType or "")
+    }, "|")
+end
+
+local function invalidateVehicleWindowForDisplayChange(previousSourceGeneration, previousStateSnapshot, entry, playerNum)
+    if not (entry and tostring(entry.kind or "") == "vehicle" and NMDeviceUI and NMDeviceUI.invalidateOpenVehicleWindow) then
+        return false
+    end
+    local currentStateSnapshot = entry.stateSnapshot or nil
+    local previousSig = buildDisplayTupleSig(previousSourceGeneration, previousStateSnapshot)
+    local currentSig = buildDisplayTupleSig(entry.sourceGeneration, currentStateSnapshot)
+    if previousSig == currentSig then
+        return false
+    end
+    local vehicleId = tostring(entry.vehicleId or entry.vehicleIdHint or entry.source and (entry.source.vehicleId or entry.source.vehicleIdHint) or "")
+    local partId = tostring(entry.partId or entry.source and entry.source.partId or "Radio")
+    if vehicleId == "" then
+        return false
+    end
+    return NMDeviceUI.invalidateOpenVehicleWindow(vehicleId, partId, tonumber(playerNum) or 0) == true
+end
+
 local function logSqlAnchorLineage(uuid, entry, path, reason)
-    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
+    if not (NMCore and NMCore.logChannel and NMRuntimeProbeAdapter and NMRuntimeProbeAdapter.isEnabled and NMRuntimeProbeAdapter.isEnabled("runtime", "sql_anchor_lineage")) then
         return
     end
     local nowStamp = nowMs()
@@ -77,7 +272,8 @@ local function logSqlAnchorLineage(uuid, entry, path, reason)
     end
     entry._lineageSigByPath[key] = sig
     entry._lineageMsByPath[key] = nowStamp
-    NMCore.logChannel(
+    NMRuntimeProbeAdapter.emit(
+        "runtime",
         "runtime",
         "sql_anchor_lineage",
         string.format(
@@ -249,6 +445,9 @@ function NMClientWorldSourceCache.upsertFromPayload(payload, serverSessionToken)
     if uuid == "" then return nil end
 
     local entry = NMClientWorldSourceCache.entries[uuid] or {}
+    local previousSource = entry.source and clonePayload(entry.source) or nil
+    local previousStateSnapshot = entry.stateSnapshot and clonePayload(entry.stateSnapshot) or nil
+    local previousSourceGeneration = tonumber(entry.sourceGeneration) or tonumber(entry.stateSnapshot and entry.stateSnapshot.sourceGeneration) or 0
     local previousAcceptedGen = math.max(
         tonumber(entry._acceptedSourceGeneration) or 0,
         tonumber(entry.sourceEpoch) or 0,
@@ -361,6 +560,7 @@ function NMClientWorldSourceCache.upsertFromPayload(payload, serverSessionToken)
             continuityState = (entry.source and entry.source._vehicleResolved == false) and "DETACHED_CONTINUITY" or "LIVE_RESOLVED"
         end
         entry._vehicleIdentityState = continuityState
+        preserveAuthorityVehicleSql(entry)
     end
     entry._acceptedSourceGeneration = math.max(
         tonumber(entry._acceptedSourceGeneration) or 0,
@@ -368,7 +568,9 @@ function NMClientWorldSourceCache.upsertFromPayload(payload, serverSessionToken)
         tonumber(entry.sourceEpoch) or 0,
         tonumber(entry.stateSnapshot and entry.stateSnapshot.sourceGeneration) or 0
     )
-    entry.lastSeenRealMs = nowMs()
+    local appliedAtMs = nowMs()
+    entry.lastSeenRealMs = appliedAtMs
+    entry._lastPayloadApplyMs = appliedAtMs
     NMClientWorldSourceCache.entries[uuid] = entry
     if tostring(entry.kind or "") == "vehicle"
         and NMClientVehicleSqlSnapshotResolver
@@ -376,6 +578,9 @@ function NMClientWorldSourceCache.upsertFromPayload(payload, serverSessionToken)
         NMClientVehicleSqlSnapshotResolver.markDirty("vehicle_authority_upsert")
     end
     logSqlAnchorLineage(uuid, entry, "client_upsert_payload", tostring(payload and payload.rebindReason or "payload"))
+    logAttachedPayloadApply(uuid, entry, previousSource, payload, appliedAtMs, resolvedSessionToken, previousAcceptedGen)
+    logWorldSourcePayloadApply(uuid, entry, previousSource, payload, appliedAtMs)
+    invalidateVehicleWindowForDisplayChange(previousSourceGeneration, previousStateSnapshot, entry, 0)
     return entry
 end
 
@@ -412,6 +617,7 @@ function NMClientWorldSourceCache.refreshVehicleSource(uuid)
     entry._lastRefreshResolved = resolved
     entry._vehicleSourceResolved = resolved == true
     entry._vehicleResolutionMode = resolutionMode
+    preserveAuthorityVehicleSql(entry)
     if tostring(entry.kind or "") == "vehicle" then
         local nextState = source and source._vehicleResolved == true and "LIVE_RESOLVED" or "DETACHED_CONTINUITY"
         local prevState = tostring(entry._vehicleIdentityState or "")
@@ -483,7 +689,29 @@ function NMClientWorldSourceCache.refreshVehicleSource(uuid)
     end
 
     if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
-        local shouldLog = resolvedChanged or movedDist >= 1.0
+        entry._vehicleSourceRefreshSig = entry._vehicleSourceRefreshSig or {}
+        entry._vehicleSourceRefreshMs = entry._vehicleSourceRefreshMs or {}
+        local shouldLog = resolvedChanged
+            or degraded
+            or NMRuntimeProbeAdapter.shouldEmitBucketedTransitionOrHeartbeat(
+                entry._vehicleSourceRefreshSig,
+                entry._vehicleSourceRefreshMs,
+                tostring(key),
+                {
+                    parts = {
+                        tostring(resolved),
+                        tostring(resolutionMode),
+                        tostring(source.vehicleId or entry.vehicleId or "nil"),
+                        tostring(degraded)
+                    },
+                    x = nx,
+                    y = ny,
+                    z = nz,
+                    coordStep = 8.0,
+                    zStep = 1.0,
+                    intervalMs = NMRuntimeProbeAdapter.longHeartbeatMs()
+                }
+            )
         if shouldLog then
             NMCore.logChannel(
                     "runtime",
@@ -670,17 +898,12 @@ end
 
 function NMClientWorldSourceCache.collectInRange(player, out)
     if not player then return end
+    out = out or {}
 
-    local function distanceSqToPlayer(source)
-        if not (source and player.getX and player.getY) then
-            return 0
-        end
-        local dx = (tonumber(player:getX()) or 0) - (tonumber(source.x) or 0)
-        local dy = (tonumber(player:getY()) or 0) - (tonumber(source.y) or 0)
-        return (dx * dx) + (dy * dy)
-    end
-
-    local worldCandidates = {}
+    local playerX = player.getX and tonumber(player:getX()) or 0
+    local playerY = player.getY and tonumber(player:getY()) or 0
+    local playerZ = player.getZ and tonumber(player:getZ()) or 0
+    local worldCandidates = clearArray(collectCandidateScratch)
 
     for uuid, entry in pairs(NMClientWorldSourceCache.entries) do
         if tostring(entry and entry.kind or "") == "vehicle" then
@@ -691,17 +914,52 @@ function NMClientWorldSourceCache.collectInRange(player, out)
             local profile = NMDeviceProfiles.getForFullType(entry.profileType or entry.itemFullType)
             local inRange = true
             local inFloors = true
+            local range = 0
+            local floors = 0
+            local dz = 0
             if profile then
-                local range = NMDeviceProfiles.getWorldTrackingRange(profile)
+                range = NMDeviceProfiles.getWorldTrackingRange(profile)
                 if range > 0 and player.getX and player.getY then
-                    local dx = (tonumber(player:getX()) or 0) - (tonumber(source.x) or 0)
-                    local dy = (tonumber(player:getY()) or 0) - (tonumber(source.y) or 0)
+                    local dx = playerX - (tonumber(source.x) or 0)
+                    local dy = playerY - (tonumber(source.y) or 0)
                     inRange = ((dx * dx) + (dy * dy)) <= (range * range)
                 end
-                local floors = NMDeviceProfiles.getWorldTrackingFloors(profile)
+                floors = NMDeviceProfiles.getWorldTrackingFloors(profile)
                 if floors > 0 and player.getZ then
-                    local dz = math.abs((tonumber(player:getZ()) or 0) - (tonumber(source.z) or 0))
+                    dz = math.abs(playerZ - (tonumber(source.z) or 0))
                     inFloors = dz <= floors
+                end
+            end
+            local state = entry and entry.stateSnapshot or nil
+            if state and state.isPlaying == true and (inRange ~= true or inFloors ~= true) then
+                local gateSig = table.concat({
+                    tostring(inRange),
+                    tostring(inFloors),
+                    tostring(string.format("%.2f", dz)),
+                    tostring(string.format("%.2f", tonumber(source.z) or 0)),
+                    tostring(string.format("%.2f", playerZ))
+                }, "|")
+                if shouldLogPlaybackLossWorldSource(entry, "collect_gate." .. tostring(uuid), gateSig, 1000) then
+                    NMCore.logChannel(
+                        "runtime",
+                        "world_source_tracking_gate",
+                        string.format(
+                            "uuid=%s ctx=%s inRange=%s inFloors=%s range=%s floors=%s playerZ=%s sourceZ=%s dz=%.2f sourceX=%s sourceY=%s lastPayloadApplyMs=%s media=%s",
+                            tostring(uuid),
+                            tostring(source.context or source.mode or "nil"),
+                            tostring(inRange),
+                            tostring(inFloors),
+                            tostring(range),
+                            tostring(floors),
+                            formatCoord(playerZ),
+                            formatCoord(source.z),
+                            tonumber(dz) or 0,
+                            formatCoord(source.x),
+                            formatCoord(source.y),
+                            tostring(entry and entry._lastPayloadApplyMs or 0),
+                            tostring(state and state.mediaFullType or "nil")
+                        )
+                    )
                 end
             end
             if tostring(entry and entry.kind or "") == "vehicle"
@@ -730,11 +988,13 @@ function NMClientWorldSourceCache.collectInRange(player, out)
                 end
             end
             if inRange and inFloors then
+                local dx = playerX - (tonumber(source.x) or 0)
+                local dy = playerY - (tonumber(source.y) or 0)
                 worldCandidates[#worldCandidates + 1] = {
                     uuid = tostring(uuid),
-                    entry = clonePayload(entry),
+                    entry = entry,
                     profile = profile,
-                    distSq = distanceSqToPlayer(source)
+                    distSq = (dx * dx) + (dy * dy)
                 }
             end
         end
@@ -759,7 +1019,13 @@ function NMClientWorldSourceCache.collectInRange(player, out)
         if keptWorld >= maxWorld then
             break
         end
-        out[#out + 1] = worldCandidates[i]
+        local candidate = worldCandidates[i]
+        out[#out + 1] = {
+            uuid = candidate.uuid,
+            entry = clonePayload(candidate.entry),
+            profile = candidate.profile,
+            distSq = candidate.distSq
+        }
         keptWorld = keptWorld + 1
     end
 

@@ -1,8 +1,6 @@
 require "ISUI/ISButton"
 require "TimedActions/ISBaseTimedAction"
 require "TimedActions/ISTimedActionQueue"
-require "ui/shared/render/NMVectorDraw"
-require "ui/shared/render/NMBatterySlotVectors"
 require "ui/shared/NMSlotButtonStyles"
 require "ui/shared/slots/NMPortableMediaInteraction"
 require "ui/shared/slots/NMSlotHostLifecycle"
@@ -57,7 +55,6 @@ env.SLOT_PROGRESS_FILL = env.SLOT_PROGRESS_FILL or { a = 0.60, r = 0.26, g = 0.7
 env.EMPTY_MEDIA_ICON_SCALE = env.EMPTY_MEDIA_ICON_SCALE or 0.82
 env.EMPTY_MEDIA_ICON_SCALE_CD = env.EMPTY_MEDIA_ICON_SCALE_CD or 0.77
 env.EMPTY_MEDIA_ICON_SCALE_CASSETTE = env.EMPTY_MEDIA_ICON_SCALE_CASSETTE or 0.74
-env.EMPTY_MEDIA_TEXTURE_SCALE_CASSETTE = env.EMPTY_MEDIA_TEXTURE_SCALE_CASSETTE or 0.90
 env.EMPTY_SLOT_VECTOR_COLOR = env.EMPTY_SLOT_VECTOR_COLOR or { r = 0.11, g = 0.11, b = 0.11, a = 1.00 }
 env.EMPTY_MEDIA_VECTOR_CACHE = env.EMPTY_MEDIA_VECTOR_CACHE or {}
 env.EMPTY_MEDIA_PLACEHOLDER_TEXTURES = env.EMPTY_MEDIA_PLACEHOLDER_TEXTURES or {}

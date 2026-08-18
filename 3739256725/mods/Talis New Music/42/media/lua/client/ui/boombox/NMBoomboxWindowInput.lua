@@ -1,12 +1,15 @@
 local env = _G.NMBoomboxWindowEnv
 setfenv(1, env)
 
+local FancySettingsWindow = require "ui/shared/host/NMFancySettingsWindow"
+
 local function localMouse(window)
     return (getMouseX and getMouseX() or 0) - (window.getAbsoluteX and window:getAbsoluteX() or 0),
         (getMouseY and getMouseY() or 0) - (window.getAbsoluteY and window:getAbsoluteY() or 0)
 end
 
 function BoomboxWindow:onMouseDown(x, y)
+    local canInteractWithLid = self.isCollapsed ~= true
     if NMGamepadWindowTracker and NMGamepadWindowTracker.markWindow then
         NMGamepadWindowTracker.markWindow(self, "boombox")
     end
@@ -15,6 +18,10 @@ function BoomboxWindow:onMouseDown(x, y)
     end
     if pointInRect(x, y, self:getCloseRect()) then
         self._nmClosePressed = true
+        return true
+    end
+    if pointInRect(x, y, self:getSettingsRect()) then
+        self._nmSettingsPressed = true
         return true
     end
     if pointInRect(x, y, self:getPowerSwitchBgRect()) then
@@ -32,7 +39,7 @@ function BoomboxWindow:onMouseDown(x, y)
         local topKinds = { "play", "stop", "prev", "next" }
         for i = 1, #topKinds do
             local kind = topKinds[i]
-            if pointInRect(x, y, self:getTopCollapsedButtonRect(kind)) then
+            if pointInRect(x, y, self:getTopCollapsedButtonHitRect(kind)) then
                 self._nmPressedTopButtonKind = kind
                 return true
             end
@@ -56,7 +63,7 @@ function BoomboxWindow:onMouseDown(x, y)
             return true
         end
     end
-    if pointInRect(x, y, self:getLidArrowRect()) then
+    if canInteractWithLid and pointInRect(x, y, self:getLidArrowRect()) then
         self._nmLidArrowPressed = true
         return true
     end
@@ -68,6 +75,7 @@ function BoomboxWindow:onMouseDown(x, y)
 end
 
 function BoomboxWindow:onMouseUp(x, y)
+    local canInteractWithLid = self.isCollapsed ~= true
     if NMSlotHostLifecycle and NMSlotHostLifecycle.noteHostMouseUp then
         NMSlotHostLifecycle.noteHostMouseUp(self, "boombox.onMouseUp")
     end
@@ -78,6 +86,12 @@ function BoomboxWindow:onMouseUp(x, y)
     self._nmClosePressed = false
     if shouldClose then
         self:close()
+        return true
+    end
+    local shouldOpenSettings = self._nmSettingsPressed == true and pointInRect(x, y, self:getSettingsRect())
+    self._nmSettingsPressed = false
+    if shouldOpenSettings then
+        FancySettingsWindow.openForSourceWindow(self)
         return true
     end
     local mainKind = tostring(self._nmPressedMainButtonKind or "")
@@ -92,7 +106,7 @@ function BoomboxWindow:onMouseUp(x, y)
 
     local topKind = tostring(self._nmPressedTopButtonKind or "")
     self._nmPressedTopButtonKind = nil
-    if topKind ~= "" and self.isCollapsed == true and pointInRect(x, y, self:getTopCollapsedButtonRect(topKind)) then
+    if topKind ~= "" and self.isCollapsed == true and pointInRect(x, y, self:getTopCollapsedButtonHitRect(topKind)) then
         if topKind == "play" then return self:handleManualPlayTrigger(true) end
         if topKind == "stop" then return self:handleStopTrigger(true) end
         if topKind == "prev" then return self:handlePrevTrigger(true) end
@@ -113,7 +127,7 @@ function BoomboxWindow:onMouseUp(x, y)
         return self:handleModeTrigger(pressedMode)
     end
 
-    local shouldPressLid = self._nmLidArrowPressed == true and pointInRect(x, y, self:getLidArrowRect())
+    local shouldPressLid = canInteractWithLid and self._nmLidArrowPressed == true and pointInRect(x, y, self:getLidArrowRect())
     self._nmLidArrowPressed = false
     if shouldPressLid then
         if self.isLidManuallyOpen == true then
@@ -127,7 +141,7 @@ function BoomboxWindow:onMouseUp(x, y)
         return true
     end
 
-    if pointInRect(x, y, self:getLidIngressZoneRect()) and self:shouldShowLidIngressZone() then
+    if canInteractWithLid and pointInRect(x, y, self:getLidIngressZoneRect()) and self:shouldShowLidIngressZone() then
         if self:insertDraggedMediaViaLid() == true then
             return true
         end
@@ -147,6 +161,7 @@ function BoomboxWindow:onMouseUpOutside(x, y)
         return true
     end
     self._nmClosePressed = false
+    self._nmSettingsPressed = false
     self._nmPressedMainButtonKind = nil
     self._nmPressedTopButtonKind = nil
     self._nmPressedModeIndex = nil

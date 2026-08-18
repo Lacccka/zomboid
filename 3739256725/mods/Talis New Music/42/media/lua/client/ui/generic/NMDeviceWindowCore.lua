@@ -74,10 +74,71 @@ local function collectPlayerWindows(playerNum)
     return WindowRegistry and WindowRegistry.collectWindows and WindowRegistry.collectWindows(env, playerNum) or {}
 end
 
+local function collectLiveWindows(playerNum)
+    env.liveWindows = env.liveWindows or {}
+    local out = {}
+    local resolvedPlayerNum = tonumber(playerNum)
+    for i = #env.liveWindows, 1, -1 do
+        local win = env.liveWindows[i]
+        if not (win and win.javaObject) then
+            table.remove(env.liveWindows, i)
+        elseif resolvedPlayerNum == nil or tonumber(win.playerNum) == resolvedPlayerNum then
+            out[#out + 1] = win
+        end
+    end
+    return out
+end
+
+local function registerLiveWindow(window)
+    if not window then
+        return
+    end
+    env.liveWindows = env.liveWindows or {}
+    for i = 1, #env.liveWindows do
+        if env.liveWindows[i] == window then
+            return
+        end
+    end
+    env.liveWindows[#env.liveWindows + 1] = window
+end
+
+local function unregisterLiveWindow(window)
+    local windows = env.liveWindows or nil
+    if type(windows) ~= "table" then
+        return
+    end
+    for i = #windows, 1, -1 do
+        if windows[i] == window or not (windows[i] and windows[i].javaObject) then
+            table.remove(windows, i)
+        end
+    end
+end
+
 local function registerWindow(window)
     if WindowRegistry and WindowRegistry.registerWindow then
         WindowRegistry.registerWindow(env, window)
     end
+end
+
+local function resetWindowVisualState(window, reason)
+    if not window then
+        return false
+    end
+    local reset = NMTransportButtonRow and NMTransportButtonRow.resetVisualState and NMTransportButtonRow.resetVisualState(window) == true or false
+    if reset and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("ui_lifecycle") then
+        NMCore.logChannel(
+            "ui_lifecycle",
+            "generic_window_transport_reset",
+            string.format(
+                "window=%s player=%s targetKey=%s reason=%s",
+                tostring(window),
+                tostring(window.playerNum or 0),
+                tostring(WindowRegistry and WindowRegistry.targetKey and WindowRegistry.targetKey(window.target) or ""),
+                tostring(reason or "")
+            )
+        )
+    end
+    return reset
 end
 
 local function logOpenTrace(tag, detail)
@@ -90,7 +151,7 @@ end
 -- Safety net for pre-registry or stale-key windows during UI/session transitions.
 -- Safety net for pre-registry or stale-key vehicle windows during UI/session transitions.
 local function findFallbackOpenVehicleWindow(playerNum, vehicleId, partId)
-    local wins = collectPlayerWindows(playerNum)
+    local wins = collectLiveWindows(playerNum)
     for i = 1, #wins do
         local candidate = wins[i]
         local target = candidate and candidate.target or nil
@@ -102,6 +163,52 @@ local function findFallbackOpenVehicleWindow(playerNum, vehicleId, partId)
         end
     end
     return nil
+end
+
+local function findDuplicateTargetWindows(playerNum, target, keepWindow)
+    local wins = collectLiveWindows(playerNum)
+    local out = {}
+    local targetKey = WindowRegistry and WindowRegistry.targetKey and WindowRegistry.targetKey(target) or ""
+    for i = 1, #wins do
+        local win = wins[i]
+        if win ~= keepWindow then
+            local winKey = WindowRegistry and WindowRegistry.targetKey and WindowRegistry.targetKey(win.target) or ""
+            if targetKey ~= "" and winKey == targetKey then
+                out[#out + 1] = win
+            end
+        end
+    end
+    return out, targetKey
+end
+
+local function closeDuplicateTargetWindows(playerNum, target, keepWindow, reason)
+    local duplicates, targetKey = findDuplicateTargetWindows(playerNum, target, keepWindow)
+    local closed = 0
+    for i = 1, #duplicates do
+        local duplicate = duplicates[i]
+        if duplicate and duplicate.close then
+            duplicate:close()
+            closed = closed + 1
+        elseif duplicate and duplicate.removeFromUIManager then
+            duplicate:removeFromUIManager()
+            unregisterLiveWindow(duplicate)
+            closed = closed + 1
+        end
+    end
+    if closed > 0 then
+        logOpenTrace(
+            "generic_open_dedupe",
+            string.format(
+                "player=%s targetKey=%s keptWindow=%s closed=%s reason=%s",
+                tostring(playerNum or 0),
+                tostring(targetKey or ""),
+                tostring(keepWindow),
+                tostring(closed),
+                tostring(reason or "")
+            )
+        )
+    end
+    return closed > 0
 end
 
 function DeviceWindow:new(x, y, width, height)
@@ -151,6 +258,7 @@ function getOrCreateWindow(playerNum)
     win.playerNum = tonumber(playerNum) or 0
     win:initialise()
     win:addToUIManager()
+    registerLiveWindow(win)
     return win
 end
 
@@ -201,6 +309,9 @@ function NMDeviceWindow.openForItemResolved(playerNum, item, resolvedContext)
         uuid = itemUuid,
         itemRef = item
     }
+    registerLiveWindow(win)
+    closeDuplicateTargetWindows(playerNum, win.target, win, reusedExisting and "reuse_item_window" or "open_item_window")
+    resetWindowVisualState(win, reusedExisting and "reuse_item_window" or "open_item_window")
     win:invalidateContextCache()
     NMSlotHostLifecycle.refreshSlotVisibility(win)
     win.title = NMTranslations.uiStringFormat("WindowTitleFmt", "New Music - %s", tostring(resolveWindowDeviceTitle(profile) or ""))
@@ -284,6 +395,9 @@ function NMDeviceWindow.openForVehicle(playerNum, vehicle, part)
         vehicleRef = vehicle,
         partRef = part
     }
+    registerLiveWindow(win)
+    closeDuplicateTargetWindows(playerNum, win.target, win, reusedExisting and "reuse_vehicle_window" or "open_vehicle_window")
+    resetWindowVisualState(win, reusedExisting and "reuse_vehicle_window" or "open_vehicle_window")
     win:invalidateContextCache()
     NMSlotHostLifecycle.refreshSlotVisibility(win)
     win.title = NMTranslations.uiStringFormat("WindowTitleFmt", "New Music - %s", resolveVehicleDisplayName(vehicle))

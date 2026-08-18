@@ -120,12 +120,12 @@ function NMServerMPZombieAssignmentFlow.onZombieUpdate(zombie)
     )
 end
 
-function NMServerMPZombieAssignmentFlow.onTick()
+function NMServerMPZombieAssignmentFlow.onTick(tickStep)
     if not shouldRun() then
         return
     end
     local diag = NMServerMPZombieAssignmentFlow._diag
-    diag.ticks = (tonumber(diag.ticks) or 0) + 1
+    diag.ticks = (tonumber(diag.ticks) or 0) + math.max(1, tonumber(tickStep) or 1)
 
     local executorDeps = buildExecutorDeps(diag)
     NMServerMPZombieAssignmentExecutor.processPendingSamples(diag, executorDeps)

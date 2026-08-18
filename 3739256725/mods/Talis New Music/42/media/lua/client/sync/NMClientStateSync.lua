@@ -69,8 +69,22 @@ local function logApplyOkDedup(kind, keySig, detail, cooldownMs)
     logApplyResult("client_state_apply_ok", detail)
 end
 
+local function buildStableApplySignature(kind, args, state)
+    return table.concat({
+        tostring(kind or "unknown"),
+        tostring(args and args.uuid or state and state.deviceUUID or "nil"),
+        tostring(args and args.sourceMode or state and state.authoritativeMode or "unknown"),
+        tostring(state and state.mediaFullType or "nil"),
+        tostring(state and state.trackIndex or -1),
+        tostring(state and state.isOn == true),
+        tostring(state and state.isPlaying == true),
+        tostring(args and args.vehicleIdHint or args and args.vehicleId or ""),
+        tostring(args and args.vehicleSqlIdHint or args and args.vehicleSqlId or "")
+    }, "|")
+end
+
 local function logSqlAnchorLineage(uuid, entry, path, reason)
-    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
+    if not (NMCore and NMCore.logChannel and NMRuntimeProbeAdapter and NMRuntimeProbeAdapter.isEnabled and NMRuntimeProbeAdapter.isEnabled("runtime", "sql_anchor_lineage")) then
         return
     end
     local nowMs = nowRealMs()
@@ -110,8 +124,7 @@ local function logSqlAnchorLineage(uuid, entry, path, reason)
         return
     end
     lineageSeen[dedupeKey] = nowMs
-    NMCore.logChannel(
-        "runtime",
+    logApplyResult(
         "sql_anchor_lineage",
         string.format(
             "uuid=%s sourceGen=%s revision=%s playbackEpoch=%s vehicleSqlId=%s vehicleSqlIdHint=%s runtimeVehicleIdHint=%s path=%s reason=%s",
@@ -248,39 +261,24 @@ local function logRehydrateApplySummary(kind, status, args, state, incomingGen, 
     local playbackEpoch = tonumber(state and state.playbackEpoch) or 0
     local trackIndex = tonumber(state and state.trackIndex) or 0
     local statusName = tostring(status or "applied")
+    local sessionKey = table.concat({
+        tostring(kind or "item"),
+        tostring(statusName),
+        tostring(uuid),
+        tostring(session ~= "" and session or "nil")
+    }, "|")
     if statusName == "applied" then
-        local mode = tostring(state and state.authoritativeMode or args and args.sourceMode or "")
-        local sig = table.concat({
-            tostring(kind or "item"),
-            tostring(uuid),
-            tostring(session),
-            tostring(playbackEpoch),
-            tostring(trackIndex),
-            tostring(state and state.isOn == true),
-            tostring(state and state.isPlaying == true),
-            tostring(mode)
-        }, "|")
         local nowMs = nowRealMs()
-        local lastMs = tonumber(rehydrateAppliedSeen[sig]) or 0
-        if lastMs > 0 and (nowMs - lastMs) < NMRuntimeProbeAdapter.shortHeartbeatMs() then
+        local lastMs = tonumber(rehydrateAppliedSeen[sessionKey]) or 0
+        if lastMs > 0 and (nowMs - lastMs) < (NMRuntimeProbeAdapter.longHeartbeatMs and NMRuntimeProbeAdapter.longHeartbeatMs() or 60000) then
             return
         end
-        rehydrateAppliedSeen[sig] = nowMs
+        rehydrateAppliedSeen[sessionKey] = nowMs
     else
-        local sig = table.concat({
-            tostring(kind or "item"),
-            statusName,
-            tostring(uuid),
-            tostring(session),
-            tostring(incomingGen or 0),
-            tostring(incomingRev or 0),
-            tostring(playbackEpoch),
-            tostring(trackIndex)
-        }, "|")
-        if rehydrateSummarySeen[sig] == true then
+        if rehydrateSummarySeen[sessionKey] == true then
             return
         end
-        rehydrateSummarySeen[sig] = true
+        rehydrateSummarySeen[sessionKey] = true
     end
     logApplyResult(
         "rehydrate_apply_summary",
@@ -645,6 +643,9 @@ local function applyItemState(player, args)
     local beforeMode = tostring(state.authoritativeMode or "")
     local beforeSourceGen = tonumber(state.sourceGeneration) or 0
     local beforeRevision = tonumber(state.revision) or 0
+    local beforePlaybackEpoch = tonumber(state.playbackEpoch) or 0
+    local beforeTrackIndex = tonumber(state.trackIndex) or 0
+    local beforeMediaFullType = tostring(state.mediaFullType or "")
     local appliedItemId = tostring(args and args.itemId or "")
     local appliedUuid = tostring(args and args.uuid or "")
     NMDeviceState.import(state, args and args.state or nil)
@@ -655,15 +656,7 @@ local function applyItemState(player, args)
     updateVehicleCacheFromAuthority(args, state)
     logApplyOkDedup(
         "item",
-        table.concat({
-            tostring(args and args.uuid or "nil"),
-            tostring(state.sourceGeneration or 0),
-            tostring(state.revision or 0),
-            tostring(state.playbackEpoch or 0),
-            tostring(state.trackIndex or 0),
-            tostring(state.isOn == true),
-            tostring(state.isPlaying == true)
-        }, "|"),
+        buildStableApplySignature("item", args, state),
         "kind=item itemId="
             .. tostring(args and args.itemId or "nil")
             .. " uuid="
@@ -714,6 +707,10 @@ local function applyItemState(player, args)
             profile = profile,
             beforeMode = beforeMode,
             afterMode = afterMode,
+            beforeRevision = beforeRevision,
+            beforePlaybackEpoch = beforePlaybackEpoch,
+            beforeTrackIndex = beforeTrackIndex,
+            beforeMediaFullType = beforeMediaFullType,
             dormantPortable = dormantPortable
         })
     end
@@ -786,10 +783,12 @@ local function applyVehicleState(args)
     local observedVehicleSqlId = NMVehicleHelpers and NMVehicleHelpers.getVehicleSqlIdString and NMVehicleHelpers.getVehicleSqlIdString(vehicle) or ""
     local incomingVehicleSqlHint = tostring(args and (args.vehicleSqlId or args.vehicleSqlIdHint) or "")
     local divergenceUuid = tostring(incomingUuid ~= "" and incomingUuid or args and args.uuid or "")
+    if cachedEntry and observedVehicleSqlId ~= "" then
+        cachedEntry._observedVehicleSqlIdHint = observedVehicleSqlId
+    end
     if incomingVehicleSqlHint ~= "" and observedVehicleSqlId ~= "" and incomingVehicleSqlHint ~= observedVehicleSqlId then
         local divergeKey = table.concat({
             tostring(divergenceUuid),
-            tostring(incomingSourceGen or 0),
             tostring(incomingVehicleSqlHint),
             tostring(observedVehicleSqlId)
         }, "|")
@@ -929,6 +928,8 @@ local function applyVehicleState(args)
     local beforeSourceGen = tonumber(state.sourceGeneration) or 0
     local beforeRevision = tonumber(state.revision) or 0
     local beforePlaybackEpoch = tonumber(state.playbackEpoch) or 0
+    local beforeTrackIndex = tonumber(state.trackIndex) or 0
+    local beforeMediaFullType = tostring(state.mediaFullType or "")
     local beforeIsOn = state.isOn == true
     local beforeIsPlaying = state.isPlaying == true
     local beforeVehicleId = tostring(state.sourceVehicleId or args and args.vehicleId or "")
@@ -1027,17 +1028,30 @@ local function applyVehicleState(args)
         if tostring(args and args.vehicleSqlIdHint or args and args.vehicleSqlId or "") ~= "" then
             cacheEntry._authorityVehicleSqlIdHint = tostring(args and args.vehicleSqlIdHint or args and args.vehicleSqlId or cacheEntry._authorityVehicleSqlIdHint or "")
         end
+        cacheEntry._observedVehicleSqlIdHint = observedVehicleSqlId ~= "" and tostring(observedVehicleSqlId) or tostring(cacheEntry._observedVehicleSqlIdHint or "")
         cacheEntry._authorityPartIdHint = tostring(args and args.partId or cacheEntry._authorityPartIdHint or "Radio")
         cacheEntry._authorityOwnerIdHint = tostring(args and args.ownerId or cacheEntry._authorityOwnerIdHint or "")
         cacheEntry.ownerId = tostring(args and args.ownerId or cacheEntry.ownerId or "")
         cacheEntry.vehicleIdHint = tostring(args and args.vehicleIdHint or cacheEntry.vehicleIdHint or cacheEntry._authorityVehicleIdHint or "")
-        if tostring(args and args.vehicleSqlIdHint or "") ~= "" then
+        local incomingAuthorityVehicleSqlHint = tostring(args and args.vehicleSqlIdHint or args and args.vehicleSqlId or "")
+        local canAdoptAuthorityVehicleSqlHint = incomingAuthorityVehicleSqlHint ~= ""
+            and (
+                canApplyIdentity
+                or tostring(cacheEntry.vehicleSqlIdHint or "") == ""
+                or tostring(cacheEntry.vehicleSqlId or "") == incomingAuthorityVehicleSqlHint
+                or tostring(cacheEntry.vehicleSqlIdHint or "") == incomingAuthorityVehicleSqlHint
+                or tostring(cacheEntry._observedVehicleSqlIdHint or "") == ""
+                or tostring(cacheEntry._observedVehicleSqlIdHint or "") == incomingAuthorityVehicleSqlHint
+            )
+        if canAdoptAuthorityVehicleSqlHint then
             cacheEntry.vehicleSqlIdHint = tostring(args and args.vehicleSqlIdHint or cacheEntry.vehicleSqlIdHint or cacheEntry._authorityVehicleSqlIdHint or "")
         end
         cacheEntry.rebindReason = rebindReason ~= "" and rebindReason or nil
         if canApplyIdentity and cacheEntry._authorityVehicleIdHint ~= "" then
             cacheEntry.vehicleId = tostring(cacheEntry._authorityVehicleIdHint)
-            cacheEntry.vehicleSqlId = tostring(cacheEntry._authorityVehicleSqlIdHint or cacheEntry.vehicleSqlId or "")
+            if canAdoptAuthorityVehicleSqlHint or tostring(cacheEntry.vehicleSqlId or "") == "" then
+                cacheEntry.vehicleSqlId = tostring(cacheEntry._authorityVehicleSqlIdHint or cacheEntry.vehicleSqlId or "")
+            end
             cacheEntry.partId = tostring(cacheEntry._authorityPartIdHint or cacheEntry.partId or "Radio")
         end
         cacheEntry.sourceMode = tostring(args and args.sourceMode or cacheEntry.sourceMode or "vehicle")
@@ -1082,16 +1096,7 @@ local function applyVehicleState(args)
     end
     logApplyOkDedup(
         "vehicle",
-        table.concat({
-            tostring(traceUuid),
-            tostring(state.sourceGeneration or 0),
-            tostring(state.revision or 0),
-            tostring(state.playbackEpoch or 0),
-            tostring(state.trackIndex or 0),
-            tostring(state.isOn == true),
-            tostring(state.isPlaying == true),
-            tostring(args and args.vehicleSqlId or "")
-        }, "|"),
+        buildStableApplySignature("vehicle", args, state),
         "kind=vehicle vehicleId="
             .. tostring(args and args.vehicleId or "nil")
             .. " vehicleSqlId="
@@ -1207,6 +1212,19 @@ local function applyVehicleState(args)
             tostring(state and state.revision or 0)
         )
     )
+    if NMClientStateApplyFollowUp and NMClientStateApplyFollowUp.refreshVehicleWindowAfterApply then
+        NMClientStateApplyFollowUp.refreshVehicleWindowAfterApply({
+            playerNum = 0,
+            vehicleId = args and args.vehicleId or "",
+            vehicleIdHint = args and args.vehicleIdHint or args and args.vehicleId or "",
+            partId = partId,
+            state = state,
+            beforeRevision = beforeRevision,
+            beforePlaybackEpoch = beforePlaybackEpoch,
+            beforeTrackIndex = beforeTrackIndex,
+            beforeMediaFullType = beforeMediaFullType,
+        })
+    end
     refreshVehicleLootAfterApply(args)
     requestFreshRegistryAfterApply(args, state)
 end
@@ -1220,8 +1238,13 @@ function NMClientStateSync.onServerState(player, args)
     end
     if args.vehicleId ~= nil or args.vehicleSqlId ~= nil or args.vehicleSqlIdHint ~= nil then
         applyVehicleState(args)
+        if NMClientPlaybackTick and NMClientPlaybackTick.requestFullPass then
+            NMClientPlaybackTick.requestFullPass("server_vehicle_state")
+        end
         return
     end
     applyItemState(player, args)
+    if NMClientPlaybackTick and NMClientPlaybackTick.requestFullPass then
+        NMClientPlaybackTick.requestFullPass("server_item_state")
+    end
 end
-

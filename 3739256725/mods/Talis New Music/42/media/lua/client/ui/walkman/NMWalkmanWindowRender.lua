@@ -1,15 +1,31 @@
 local env = _G.NMWalkmanWindowEnv
 setfenv(1, env)
 
+local FancySettingsWindow = require "ui/shared/host/NMFancySettingsWindow"
+
 local function ensureTextureSlot(key, path)
-    UI_TEXTURES[key] = UI_TEXTURES[key] or nil
-    if UI_TEXTURES[key] == nil and getTexture then
-        UI_TEXTURES[key] = getTexture(path) or false
+    local scaleKey = NMFancyDeviceUiScale and NMFancyDeviceUiScale.getTextureScaleKey and NMFancyDeviceUiScale.getTextureScaleKey() or "1x"
+    local cacheKey = tostring(key or "") .. "|" .. scaleKey
+    UI_TEXTURES[cacheKey] = UI_TEXTURES[cacheKey] or nil
+    if UI_TEXTURES[cacheKey] == nil and getTexture then
+        local resolvedPath = NMFancyDeviceUiScale and NMFancyDeviceUiScale.resolveTexturePath and NMFancyDeviceUiScale.resolveTexturePath(path) or path
+        UI_TEXTURES[cacheKey] = getTexture(resolvedPath) or false
     end
-    if UI_TEXTURES[key] == false then
+    if UI_TEXTURES[cacheKey] == false then
         return nil
     end
-    return UI_TEXTURES[key]
+    return UI_TEXTURES[cacheKey]
+end
+
+local function drawTextureScaledAngleSafe(window, texture, rect, angle, alpha, r, g, b)
+    if NMFancyDeviceUiScale and NMFancyDeviceUiScale.drawTextureScaledAngle then
+        return NMFancyDeviceUiScale.drawTextureScaledAngle(window, texture, rect, angle, alpha, r, g, b)
+    end
+    if window and texture and rect and window.drawTextureScaled then
+        window:drawTextureScaled(texture, rect.x, rect.y, rect.w, rect.h, alpha or 1.0, r or 1.0, g or 1.0, b or 1.0)
+        return true
+    end
+    return false
 end
 
 local function getWalkmanChromeTextures()
@@ -58,9 +74,7 @@ function WalkmanWindow:prerender()
     local chromeTextures = getWalkmanChromeTextures()
     if chromeTextures.volumeWheel then
         local wheelRect = self:getVolumeWheelRect()
-        local centerX = wheelRect.x + (wheelRect.w / 2)
-        local centerY = wheelRect.y + (wheelRect.h / 2)
-        self:DrawTextureAngle(chromeTextures.volumeWheel, centerX, centerY, tonumber(model and model.wheelAngle) or 0.0)
+        drawTextureScaledAngleSafe(self, chromeTextures.volumeWheel, wheelRect, tonumber(model and model.wheelAngle) or 0.0)
     end
     if chromeTextures.loopButton then
         local loopRect = self:getLoopButtonRect()
@@ -114,8 +128,8 @@ function WalkmanWindow:prerender()
             if chromeTextures.spool then
                 local leftRect = self:getCassetteSpoolRect(1)
                 local rightRect = self:getCassetteSpoolRect(2)
-                self:DrawTextureAngle(chromeTextures.spool, leftRect.x + (leftRect.w / 2), leftRect.y + (leftRect.h / 2), tonumber(self._nmLeftSpoolAngle) or 0.0)
-                self:DrawTextureAngle(chromeTextures.spool, rightRect.x + (rightRect.w / 2), rightRect.y + (rightRect.h / 2), tonumber(self._nmRightSpoolAngle) or 0.0)
+                drawTextureScaledAngleSafe(self, chromeTextures.spool, leftRect, tonumber(self._nmLeftSpoolAngle) or 0.0)
+                drawTextureScaledAngleSafe(self, chromeTextures.spool, rightRect, tonumber(self._nmRightSpoolAngle) or 0.0)
             end
         end
     end
@@ -148,6 +162,13 @@ function WalkmanWindow:render()
             closeR, closeG, closeB = model.closeTint[1], model.closeTint[2], model.closeTint[3]
         end
         self:drawTextureScaled(overlayTextures.close, closeRect.x, closeRect.y, closeRect.w, closeRect.h, 1.0, closeR, closeG, closeB)
+    end
+    local gearTexture = FancySettingsWindow.getGearTexture and FancySettingsWindow.getGearTexture() or nil
+    if gearTexture then
+        local gearRect = self:getSettingsRect()
+        local gearDrawRect = FancySettingsWindow.getGearDrawRect and FancySettingsWindow.getGearDrawRect(gearRect) or gearRect
+        local gearAlpha, gearR, gearG, gearB = FancySettingsWindow.resolveGearTint(self, model)
+        self:drawTextureScaled(gearTexture, gearDrawRect.x, gearDrawRect.y, gearDrawRect.w, gearDrawRect.h, gearAlpha, gearR, gearG, gearB)
     end
     if model and model.volumeLabelVisible == true then
         local labelRect = model.volumeLabelRect

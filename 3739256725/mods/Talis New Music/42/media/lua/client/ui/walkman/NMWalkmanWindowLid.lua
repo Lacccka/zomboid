@@ -98,6 +98,14 @@ function WalkmanWindow:getCassetteLabelRect()
     }
 end
 
+function WalkmanWindow:getCassetteLabelRectForVariant(variant)
+    local rect = self:getCassetteLabelRect()
+    if tostring(variant or "") == "Lore" then
+        rect.y = rect.y + (tonumber(CASSETTE_LABEL_LORE_OFFSET_Y) or 0)
+    end
+    return rect
+end
+
 function WalkmanWindow:getCassetteSpoolRect(index)
     local spoolIndex = math.floor(tonumber(index) or 1)
     local x = spoolIndex == 2 and CASSETTE_SPOOL_B_X or CASSETTE_SPOOL_A_X

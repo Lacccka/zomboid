@@ -3,6 +3,57 @@
 NMClientStateApplyFollowUp = NMClientStateApplyFollowUp or {}
 
 local rehydrateRefreshSeen = rehydrateRefreshSeen or {}
+local uiRefreshSigSeen = uiRefreshSigSeen or {}
+local uiRefreshMsSeen = uiRefreshMsSeen or {}
+local uiRefreshActionSeen = uiRefreshActionSeen or {}
+
+local function buildDisplayTransitionSig(revision, playbackEpoch, trackIndex, mediaFullType)
+    return table.concat({
+        tostring(tonumber(revision) or 0),
+        tostring(tonumber(playbackEpoch) or 0),
+        tostring(tonumber(trackIndex) or 0),
+        tostring(mediaFullType or "")
+    }, "|")
+end
+
+local function didDisplayTransitionChange(beforeRevision, beforePlaybackEpoch, beforeTrackIndex, beforeMediaFullType, state)
+    local beforeSig = buildDisplayTransitionSig(
+        beforeRevision,
+        beforePlaybackEpoch,
+        beforeTrackIndex,
+        beforeMediaFullType
+    )
+    local afterSig = buildDisplayTransitionSig(
+        state and state.revision,
+        state and state.playbackEpoch,
+        state and state.trackIndex,
+        state and state.mediaFullType
+    )
+    return beforeSig ~= afterSig, beforeSig, afterSig
+end
+
+local function shouldAdoptAuthorityVehicleSqlHint(entry, incomingVehicleSqlIdHint, incomingGen, acceptedGen, allowEqualGenIdentityOverwrite)
+    local incomingHint = tostring(incomingVehicleSqlIdHint or "")
+    if incomingHint == "" then
+        return false
+    end
+    local currentHint = tostring(entry and entry.vehicleSqlIdHint or "")
+    local currentSqlId = tostring(entry and entry.vehicleSqlId or "")
+    local observedHint = tostring(entry and entry._observedVehicleSqlIdHint or "")
+    if currentHint == "" and currentSqlId == "" then
+        return true
+    end
+    if currentHint == incomingHint or currentSqlId == incomingHint then
+        return true
+    end
+    if allowEqualGenIdentityOverwrite or tonumber(incomingGen) > tonumber(acceptedGen) then
+        return true
+    end
+    if observedHint ~= "" and observedHint ~= incomingHint then
+        return false
+    end
+    return false
+end
 
 local function nowRealMs()
     if getTimestampMs then
@@ -63,12 +114,11 @@ local function logVehicleRebindTrace(tag, uuid, detail)
 end
 
 local function logSqlAnchorLineage(uuid, entry, path, reason)
-    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
+    if not (NMCore and NMCore.logChannel and NMRuntimeProbeAdapter and NMRuntimeProbeAdapter.isEnabled and NMRuntimeProbeAdapter.isEnabled("runtime", "sql_anchor_lineage")) then
         return
     end
     local state = entry and entry.stateSnapshot or nil
-    NMCore.logChannel(
-        "runtime",
+    logApplyResult(
         "sql_anchor_lineage",
         string.format(
             "uuid=%s sourceGen=%s revision=%s playbackEpoch=%s vehicleSqlId=%s vehicleSqlIdHint=%s runtimeVehicleIdHint=%s path=%s reason=%s",
@@ -224,6 +274,8 @@ function NMClientStateApplyFollowUp.updateVehicleCacheFromAuthority(args, state)
     local incomingVehicleSqlIdHint = tostring(args and args.vehicleSqlIdHint or incomingVehicleSqlId or "")
     local incomingOwnerId = tostring(args and args.ownerId or "")
     local currentVehicleId = tostring(entry.vehicleId or "")
+    local priorAuthorityVehicleIdHint = tostring(entry._authorityVehicleIdHint or "")
+    local priorAuthorityVehicleSqlIdHint = tostring(entry._authorityVehicleSqlIdHint or "")
     local isResolvedLocally = entry._vehicleSourceResolved == true
         or (entry.source and (entry.source._vehicleResolved == true or entry.source.vehicleResolved == true))
     if incomingGen == acceptedGen
@@ -251,6 +303,9 @@ function NMClientStateApplyFollowUp.updateVehicleCacheFromAuthority(args, state)
     if incomingVehicleIdHint ~= "" then
         entry._authorityVehicleIdHint = incomingVehicleIdHint
     end
+    if incomingVehicleSqlIdHint ~= "" then
+        entry._authorityVehicleSqlIdHint = incomingVehicleSqlIdHint
+    end
     if incomingOwnerId ~= "" then
         entry._authorityOwnerIdHint = incomingOwnerId
         entry.ownerId = incomingOwnerId
@@ -258,8 +313,18 @@ function NMClientStateApplyFollowUp.updateVehicleCacheFromAuthority(args, state)
     if incomingVehicleIdHint ~= "" then
         entry.vehicleIdHint = incomingVehicleIdHint
     end
-    if incomingVehicleSqlIdHint ~= "" then
+    local adoptAuthorityVehicleSql = shouldAdoptAuthorityVehicleSqlHint(
+        entry,
+        incomingVehicleSqlIdHint,
+        incomingGen,
+        acceptedGen,
+        allowEqualGenIdentityOverwrite
+    )
+    if adoptAuthorityVehicleSql then
         entry.vehicleSqlIdHint = incomingVehicleSqlIdHint
+        if tostring(entry.vehicleSqlId or "") == "" then
+            entry.vehicleSqlId = incomingVehicleSqlIdHint
+        end
     end
     entry._authorityPartIdHint = tostring(args and args.partId or entry.partId or "Radio")
     entry.rebindReason = rebindReason ~= "" and rebindReason or nil
@@ -270,19 +335,56 @@ function NMClientStateApplyFollowUp.updateVehicleCacheFromAuthority(args, state)
     if incomingVehicleIdHint ~= "" then
         entry.source.vehicleIdHint = incomingVehicleIdHint
     end
-    if incomingVehicleSqlIdHint ~= "" then
+    if adoptAuthorityVehicleSql then
         entry.source.vehicleSqlIdHint = incomingVehicleSqlIdHint
     end
     if (entry.source.vehicleId == nil or tostring(entry.source.vehicleId or "") == "") and incomingVehicleIdHint ~= "" then
         entry.source.vehicleId = incomingVehicleIdHint ~= "" and incomingVehicleIdHint or incomingVehicleId or entry.vehicleId
     end
-    if (entry.source.vehicleSqlId == nil or tostring(entry.source.vehicleSqlId or "") == "") and incomingVehicleSqlIdHint ~= "" then
+    if (entry.source.vehicleSqlId == nil or tostring(entry.source.vehicleSqlId or "") == "") and adoptAuthorityVehicleSql then
         entry.source.vehicleSqlId = incomingVehicleSqlIdHint ~= "" and incomingVehicleSqlIdHint or incomingVehicleSqlId or entry.vehicleSqlId
     end
-    entry.source._vehicleResolved = false
-    entry.source.vehicleResolved = false
+    local authorityVehicleChanged = (
+        (incomingVehicleIdHint ~= "" and incomingVehicleIdHint ~= priorAuthorityVehicleIdHint)
+        or (incomingVehicleSqlIdHint ~= "" and incomingVehicleSqlIdHint ~= priorAuthorityVehicleSqlIdHint)
+        or rebindReason ~= ""
+    )
+    if authorityVehicleChanged then
+        entry.source._vehicleResolved = false
+        entry.source.vehicleResolved = false
+    end
     NMClientWorldSourceCache.entries[uuid] = entry
     logSqlAnchorLineage(uuid, entry, "client_state_apply_cache_update", "authoritative_apply")
+end
+
+function NMClientStateApplyFollowUp.refreshVehicleWindowAfterApply(apply)
+    local context = type(apply) == "table" and apply or nil
+    if not (context and context.state and NMDeviceUI and NMDeviceUI.invalidateOpenVehicleWindow) then
+        return false
+    end
+    local vehicleId = tostring(context.vehicleIdHint or context.vehicleId or "")
+    local partId = tostring(context.partId or "Radio")
+    if vehicleId == "" then
+        return false
+    end
+    local state = context.state
+    local beforeRevision = tonumber(context.beforeRevision) or 0
+    local beforePlaybackEpoch = tonumber(context.beforePlaybackEpoch) or 0
+    local beforeTrackIndex = tonumber(context.beforeTrackIndex) or 0
+    local beforeMediaFullType = tostring(context.beforeMediaFullType or "")
+    local changed = didDisplayTransitionChange(
+        beforeRevision,
+        beforePlaybackEpoch,
+        beforeTrackIndex,
+        beforeMediaFullType,
+        state
+    )
+    if not changed then
+        return false
+    end
+
+    local invalidated = NMDeviceUI.invalidateOpenVehicleWindow(vehicleId, partId, tonumber(context.playerNum) or 0) == true
+    return invalidated
 end
 
 function NMClientStateApplyFollowUp.refreshUiLifecycleItemWindow(apply)
@@ -295,15 +397,14 @@ function NMClientStateApplyFollowUp.refreshUiLifecycleItemWindow(apply)
     local state = context.state
     local beforeMode = tostring(context.beforeMode or "")
     local afterMode = tostring(context.afterMode or "")
+    local beforeRevision = tonumber(context.beforeRevision) or 0
+    local beforePlaybackEpoch = tonumber(context.beforePlaybackEpoch) or 0
+    local beforeTrackIndex = tonumber(context.beforeTrackIndex) or 0
+    local beforeMediaFullType = tostring(context.beforeMediaFullType or "")
     local profile = context.profile
     local dormantPortable = context.dormantPortable == true
     local logLifecycleDetail = uiLifecycleDebugEnabled()
     local windowsBefore = logLifecycleDetail and inspectUiLifecycleWindows(0) or nil
-    local reboundWindow = false
-    local invalidatedWindow = NMDeviceUI
-        and NMDeviceUI.invalidateOpenItemWindow
-        and NMDeviceUI.invalidateOpenItemWindow(appliedItemId, appliedUuid) == true
-        or false
     local portableTracked = NMDeviceProfiles
         and NMDeviceProfiles.isPortableTrackedProfile
         and NMDeviceProfiles.isPortableTrackedProfile(profile) == true
@@ -312,6 +413,40 @@ function NMClientStateApplyFollowUp.refreshUiLifecycleItemWindow(apply)
         and NMClientPortableDropHandoff
         and NMClientPortableDropHandoff.consumePickupRebind
         and NMClientPortableDropHandoff.consumePickupRebind(appliedUuid) == true
+    local uiActionKey = tostring(appliedUuid ~= "" and appliedUuid or appliedItemId)
+    local uiActionSig = table.concat({
+        tostring(appliedItemId ~= "" and appliedItemId or "nil"),
+        tostring(appliedUuid ~= "" and appliedUuid or "nil"),
+        buildDisplayTransitionSig(
+            state and state.revision,
+            state and state.playbackEpoch,
+            state and state.trackIndex,
+            state and state.mediaFullType
+        ),
+        tostring(state and state.mediaFullType or "nil"),
+        tostring(state and state.isOn == true),
+        tostring(state and state.isPlaying == true),
+        tostring(state and state.trackIndex or -1),
+        tostring(beforeMode),
+        tostring(afterMode),
+        tostring(dormantPortable)
+    }, "|")
+    if beforeMode == afterMode and pickupRebind ~= true and uiRefreshActionSeen[uiActionKey] == uiActionSig then
+        return false, false
+    end
+    local displayChanged = false
+    displayChanged = didDisplayTransitionChange(
+        beforeRevision,
+        beforePlaybackEpoch,
+        beforeTrackIndex,
+        beforeMediaFullType,
+        state
+    )
+    local reboundWindow = false
+    local invalidatedWindow = NMDeviceUI
+        and NMDeviceUI.invalidateOpenItemWindow
+        and NMDeviceUI.invalidateOpenItemWindow(appliedItemId, appliedUuid) == true
+        or false
     if portableTracked
         and not dormantPortable
         and (beforeMode == "placed" or pickupRebind)
@@ -338,16 +473,35 @@ function NMClientStateApplyFollowUp.refreshUiLifecycleItemWindow(apply)
                 .. tostring(reboundWindow)
         )
     end
-    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
-        NMCore.logChannel(
-            "runtime",
+    uiRefreshActionSeen[uiActionKey] = uiActionSig
+    local uiRefreshSig = table.concat({
+        tostring(appliedItemId ~= "" and appliedItemId or "nil"),
+        tostring(appliedUuid ~= "" and appliedUuid or "nil"),
+        tostring(invalidatedWindow),
+        tostring(reboundWindow),
+        tostring(state and state.mediaFullType or "nil"),
+        tostring(beforeMode),
+        tostring(afterMode)
+    }, "|")
+    if NMRuntimeProbeAdapter and NMRuntimeProbeAdapter.shouldEmitTransitionOrHeartbeat
+        and NMRuntimeProbeAdapter.shouldEmitTransitionOrHeartbeat(
+            uiRefreshSigSeen,
+            uiRefreshMsSeen,
+            tostring(appliedUuid ~= "" and appliedUuid or appliedItemId),
+            uiRefreshSig,
+            NMRuntimeProbeAdapter.longHeartbeatMs()
+        ) then
+        logApplyResult(
             "client_item_state_ui_refresh",
             string.format(
-                "itemId=%s uuid=%s invalidated=%s media=%s",
+                "itemId=%s uuid=%s invalidated=%s rebound=%s media=%s fromMode=%s toMode=%s",
                 tostring(appliedItemId ~= "" and appliedItemId or "nil"),
                 tostring(appliedUuid ~= "" and appliedUuid or "nil"),
                 tostring(invalidatedWindow),
-                tostring(state and state.mediaFullType or "nil")
+                tostring(reboundWindow),
+                tostring(state and state.mediaFullType or "nil"),
+                tostring(beforeMode),
+                tostring(afterMode)
             )
         )
     end
@@ -356,12 +510,13 @@ function NMClientStateApplyFollowUp.refreshUiLifecycleItemWindow(apply)
         logUiLifecycleProbe(
             "state_apply_item_refresh",
             string.format(
-                "itemId=%s uuid=%s media=%s invalidated=%s rebound=%s before=%s after=%s",
+                "itemId=%s uuid=%s media=%s invalidated=%s rebound=%s displayChanged=%s before=%s after=%s",
                 tostring(appliedItemId ~= "" and appliedItemId or "nil"),
                 tostring(appliedUuid ~= "" and appliedUuid or "nil"),
                 tostring(state and state.mediaFullType or "nil"),
                 tostring(invalidatedWindow),
                 tostring(reboundWindow),
+                tostring(displayChanged),
                 snapshotsToLine(windowsBefore),
                 snapshotsToLine(windowsAfter)
             )

@@ -23,6 +23,96 @@ local function hasText(value)
     return tostring(value or "") ~= ""
 end
 
+local function sanitizeMediaFields(payload)
+    payload.insertedMediaFullType = hasText(payload.insertedMediaFullType) and tostring(payload.insertedMediaFullType) or nil
+    payload.mediaEjectFullType = hasText(payload.mediaEjectFullType) and tostring(payload.mediaEjectFullType) or payload.insertedMediaFullType
+    payload.caseFullType = hasText(payload.caseFullType) and tostring(payload.caseFullType) or nil
+    payload.caseEmptyType = hasText(payload.caseEmptyType) and tostring(payload.caseEmptyType) or nil
+    if payload.insertedMediaFullType == nil then
+        payload.mediaRecordedMediaIndex = nil
+    end
+end
+
+local function sanitizePayloadForSandbox(payload)
+    if type(payload) ~= "table" then
+        return payload
+    end
+
+    sanitizeMediaFields(payload)
+
+    local ostEnabled = NMRuntimeConfig and NMRuntimeConfig.getZomboidOSTEnabled and NMRuntimeConfig.getZomboidOSTEnabled() == true or false
+    local casesEnabled = not (NMRuntimeConfig and NMRuntimeConfig.getMediaSpawnsWithCasesEnabled)
+        or NMRuntimeConfig.getMediaSpawnsWithCasesEnabled() == true
+    local insertedMediaFullType = tostring(payload.insertedMediaFullType or "")
+    local insertedIsBaseOst = insertedMediaFullType ~= ""
+        and NMManagedSpawnCatalog
+        and NMManagedSpawnCatalog.isBaseZomboidOSTMediaFullType
+        and NMManagedSpawnCatalog.isBaseZomboidOSTMediaFullType(insertedMediaFullType) == true
+        or false
+
+    if not ostEnabled and insertedIsBaseOst then
+        payload.insertedMediaFullType = nil
+        payload.mediaEjectFullType = nil
+        payload.mediaRecordedMediaIndex = nil
+        payload.caseFullType = nil
+        payload.caseEmptyType = nil
+        if payload.deviceEnabled == true then
+            payload.mediaMode = "device_only"
+        else
+            payload.mediaMode = "none"
+        end
+    end
+
+    if not casesEnabled then
+        payload.caseFullType = nil
+        payload.caseEmptyType = nil
+    end
+
+    if payload.mediaMode == "device_with_media" then
+        if not hasText(payload.insertedMediaFullType) then
+            payload.mediaMode = payload.deviceEnabled == true and "device_only" or "none"
+            payload.mediaEjectFullType = nil
+            payload.mediaRecordedMediaIndex = nil
+            payload.caseEmptyType = nil
+        end
+    elseif payload.mediaMode == "media_only" then
+        if not hasText(payload.insertedMediaFullType) then
+            payload.mediaMode = payload.deviceEnabled == true and "device_only" or "none"
+            payload.mediaEjectFullType = nil
+            payload.mediaRecordedMediaIndex = nil
+            payload.caseFullType = nil
+        end
+    elseif payload.mediaMode == "device_only" then
+        payload.insertedMediaFullType = nil
+        payload.mediaEjectFullType = nil
+        payload.mediaRecordedMediaIndex = nil
+        payload.caseFullType = nil
+        payload.caseEmptyType = nil
+    elseif payload.mediaMode ~= "none" then
+        payload.mediaMode = payload.deviceEnabled == true and "device_only" or "none"
+        if payload.mediaMode == "none" then
+            payload.insertedMediaFullType = nil
+            payload.mediaEjectFullType = nil
+            payload.mediaRecordedMediaIndex = nil
+        end
+        payload.caseFullType = nil
+        payload.caseEmptyType = nil
+    end
+
+    if payload.mediaMode == "none" then
+        payload.mediaEnabled = false
+        payload.insertedMediaFullType = nil
+        payload.mediaEjectFullType = nil
+        payload.mediaRecordedMediaIndex = nil
+        payload.caseFullType = nil
+        payload.caseEmptyType = nil
+    else
+        payload.mediaEnabled = payload.mediaEnabled == true or hasText(payload.insertedMediaFullType)
+    end
+
+    return payload
+end
+
 local function mixHash(text, salt)
     local source = tostring(text or "") .. "|" .. tostring(salt or "")
     local total = 0
@@ -72,19 +162,22 @@ end
 
 local function resolveCatalog()
     local ostEnabled = NMRuntimeConfig and NMRuntimeConfig.getZomboidOSTEnabled and NMRuntimeConfig.getZomboidOSTEnabled() == true or false
+    local casesEnabled = not (NMRuntimeConfig and NMRuntimeConfig.getMediaSpawnsWithCasesEnabled)
+        or NMRuntimeConfig.getMediaSpawnsWithCasesEnabled() == true
     local token = tostring(NMRuntimeConfig and NMRuntimeConfig.getBuildContentToken and NMRuntimeConfig.getBuildContentToken() or "")
     local cache = NMZombieMediaPayloadResolver._catalogCache
-    if cache and cache.ostEnabled == ostEnabled and cache.token == token then
+    if cache and cache.ostEnabled == ostEnabled and cache.casesEnabled == casesEnabled and cache.token == token then
         return cache.catalog
     end
     local allItems = getAllItems and getAllItems() or nil
     local catalog = NMManagedSpawnCatalog and NMManagedSpawnCatalog.buildCatalog and NMManagedSpawnCatalog.buildCatalog(allItems, {}) or nil
     if catalog and NMManagedSpawnCatalog and NMManagedSpawnCatalog.filterBaseZomboidOSTMedia then
-        NMManagedSpawnCatalog.filterBaseZomboidOSTMedia(catalog.basePools)
+        NMManagedSpawnCatalog.filterBaseZomboidOSTMedia(catalog.basePools, ostEnabled)
     end
     local combinedMedia = buildCombinedMediaPools(catalog)
     NMZombieMediaPayloadResolver._catalogCache = {
         ostEnabled = ostEnabled,
+        casesEnabled = casesEnabled,
         token = token,
         catalog = {
             managed = catalog,
@@ -186,7 +279,7 @@ function NMZombieMediaPayloadResolver.resolveZombiePayload(selection, zombieId, 
     local payload = buildPayloadBase(variantId, realizedSpec)
     local mediaCategory = payload.mediaCategory
     if mediaCategory == "" then
-        return payload
+        return sanitizePayloadForSandbox(payload)
     end
 
     local mediaRate = resolveMediaRate(mediaCategory)
@@ -199,13 +292,13 @@ function NMZombieMediaPayloadResolver.resolveZombiePayload(selection, zombieId, 
             payload.mediaEjectFullType = payload.insertedMediaFullType
             payload.mediaRecordedMediaIndex = resolveRecordedMediaIndex(payload.insertedMediaFullType)
             payload.caseEmptyType = hasText(mediaUnit.companionZombieCaseFullType) and tostring(mediaUnit.companionZombieCaseFullType) or nil
-            return payload
+            return sanitizePayloadForSandbox(payload)
         end
     end
 
     if payload.deviceEnabled then
         payload.mediaMode = "device_only"
-        return payload
+        return sanitizePayloadForSandbox(payload)
     end
 
     if payload.mediaEnabled then
@@ -216,18 +309,18 @@ function NMZombieMediaPayloadResolver.resolveZombiePayload(selection, zombieId, 
             payload.insertedMediaFullType = hasText(mediaUnit.insertedZombieMediaFullType) and tostring(mediaUnit.insertedZombieMediaFullType) or nil
             payload.mediaEjectFullType = payload.insertedMediaFullType
             payload.mediaRecordedMediaIndex = resolveRecordedMediaIndex(payload.insertedMediaFullType)
-            return payload
+            return sanitizePayloadForSandbox(payload)
         end
     end
 
-    return payload
+    return sanitizePayloadForSandbox(payload)
 end
 
 function NMZombieMediaPayloadResolver.resolveStoredPayload(data)
     if type(data) ~= "table" then
         return nil
     end
-    return {
+    local payload = {
         variantId = tostring(data.variantId or ""),
         mediaCategory = tostring(data.mediaCategory or ""),
         deviceEnabled = data.deviceEnabled == true,
@@ -242,6 +335,11 @@ function NMZombieMediaPayloadResolver.resolveStoredPayload(data)
         batteryPresent = data.batteryPresent == true,
         batteryCharge = tonumber(data.batteryCharge) or 0.0
     }
+    return sanitizePayloadForSandbox(payload)
+end
+
+function NMZombieMediaPayloadResolver.sanitizePayloadForSandbox(payload)
+    return sanitizePayloadForSandbox(payload)
 end
 
 return NMZombieMediaPayloadResolver

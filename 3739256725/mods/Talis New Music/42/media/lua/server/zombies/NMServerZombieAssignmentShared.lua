@@ -16,6 +16,18 @@ function NMServerZombieAssignmentShared.getModData(zombie, deps)
     return fn and fn(zombie) or nil
 end
 
+function NMServerZombieAssignmentShared.getZombieRuntimeId(zombie)
+    local onlineId = zombie and zombie.getOnlineID and zombie:getOnlineID() or nil
+    if tonumber(onlineId) and tonumber(onlineId) >= 0 then
+        return tostring(onlineId)
+    end
+    local objectId = zombie and zombie.getObjectID and zombie:getObjectID() or nil
+    if tonumber(objectId) and tonumber(objectId) >= 0 then
+        return tostring(objectId)
+    end
+    return tostring(zombie or "")
+end
+
 function NMServerZombieAssignmentShared.getSpecForVariantId(variantId)
     return NMZombieDeviceVariantCatalog and NMZombieDeviceVariantCatalog.getSpec and NMZombieDeviceVariantCatalog.getSpec(variantId) or nil
 end
@@ -30,7 +42,7 @@ function NMServerZombieAssignmentShared.resolveSelectionContext(zombie, selectio
         return nil, nil, "ledger_selected_false"
     end
     local zombieId = NMZombieVisualTargetContract and NMZombieVisualTargetContract.getZombieId and NMZombieVisualTargetContract.getZombieId(zombie)
-        or tostring(zombie and zombie.getOnlineID and zombie:getOnlineID() or zombie and zombie.getObjectID and zombie:getObjectID() or "unknown")
+        or NMServerZombieAssignmentShared.getZombieRuntimeId(zombie)
     local baseSpec = NMZombieDeviceVariantCatalog and NMZombieDeviceVariantCatalog.resolveRealization and NMZombieDeviceVariantCatalog.resolveRealization(selection, zombieId) or nil
     if not baseSpec then
         return nil, nil, "unknown_variant"
@@ -39,6 +51,43 @@ function NMServerZombieAssignmentShared.resolveSelectionContext(zombie, selectio
     local spec = shouldRealize == true and baseSpec or nil
     local payload = NMZombieMediaPayloadResolver and NMZombieMediaPayloadResolver.resolveZombiePayload and NMZombieMediaPayloadResolver.resolveZombiePayload(selection, zombieId, spec) or nil
     return spec, payload, shouldRealize == true and nil or "device_disabled"
+end
+
+function NMServerZombieAssignmentShared.summarizePayload(payload)
+    return {
+        mediaMode = tostring(payload and payload.mediaMode or ""),
+        mediaCategory = tostring(payload and payload.mediaCategory or ""),
+        deviceEnabled = payload and payload.deviceEnabled == true or false,
+        mediaEnabled = payload and payload.mediaEnabled == true or false,
+        insertedMediaFullType = tostring(payload and payload.insertedMediaFullType or ""),
+        caseFullType = tostring(payload and payload.caseFullType or ""),
+        caseEmptyType = tostring(payload and payload.caseEmptyType or ""),
+        headphoneItemFullType = tostring(payload and payload.headphoneItemFullType or "")
+    }
+end
+
+function NMServerZombieAssignmentShared.buildRealizationContract(zombie, status, selection, spec, payload, details)
+    local contract = type(details) == "table" and details or {}
+    return {
+        zombieId = NMServerZombieAssignmentShared.getZombieRuntimeId(zombie),
+        selectionStatus = tostring(status or ""),
+        selected = selection and selection.selected == true or false,
+        selectionEpoch = tonumber(selection and selection.selectionEpoch) or 0,
+        selectionSource = tostring(selection and selection.selectionSource or ""),
+        variantId = tostring(spec and spec.variantId or selection and selection.variantId or ""),
+        fullType = tostring(spec and spec.fullType or ""),
+        attachmentLocation = tostring(spec and spec.attachmentLocation or ""),
+        modelAttachmentName = tostring(spec and spec.modelAttachmentName or ""),
+        payload = NMServerZombieAssignmentShared.summarizePayload(payload),
+        proofItemStatus = tostring(contract.proofItemStatus or ""),
+        proofDeviceUUID = tostring(contract.proofDeviceUUID or ""),
+        attachmentStatus = tostring(contract.attachmentStatus or ""),
+        companionCaseStatus = tostring(contract.companionCaseStatus or ""),
+        companionCaseReason = tostring(contract.companionCaseReason or ""),
+        removedCount = tonumber(contract.removedCount) or 0,
+        usedInventoryFallback = contract.usedInventoryFallback == true,
+        needsVisualRefresh = contract.needsVisualRefresh == true
+    }
 end
 
 function NMServerZombieAssignmentShared.findAttachedProofItem(zombie, spec, opts)

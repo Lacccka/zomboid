@@ -47,6 +47,13 @@ function getScreenSize()
     return core and core:getScreenWidth() or 1280, core and core:getScreenHeight() or 720
 end
 
+function getFancyDeviceUiScale()
+    if NMFancyDeviceUiScale and NMFancyDeviceUiScale.getEffectiveScale then
+        return NMFancyDeviceUiScale.getEffectiveScale()
+    end
+    return 1.0
+end
+
 function clamp01(v)
     local n = tonumber(v) or 0.0
     if n < 0.0 then return 0.0 end
@@ -124,7 +131,11 @@ function resolveContextFreshUncached(window)
     end
     window.target.itemRef = item
     local profile = NMDeviceProfiles and NMDeviceProfiles.getForItem and NMDeviceProfiles.getForItem(item) or nil
-    local state = profile and NMDeviceState and NMDeviceState.ensure and NMDeviceState.ensure(item, profile) or nil
+    local localState = profile and NMDeviceState and NMDeviceState.ensure and NMDeviceState.ensure(item, profile) or nil
+    local state = localState
+    if localState and NMClientDisplayStateResolver and NMClientDisplayStateResolver.resolveForLiveItem then
+        state = NMClientDisplayStateResolver.resolveForLiveItem(item, localState)
+    end
     if not (profile and state) then
         return nil
     end
@@ -133,6 +144,7 @@ function resolveContextFreshUncached(window)
         item = item,
         profile = profile,
         state = state,
+        localState = localState,
         kind = "item"
     }
 end
@@ -301,4 +313,56 @@ function attachBoomboxSlots(window)
     window.batterySlot = NMBatterySlot and NMBatterySlot.attach and NMBatterySlot.attach(window, batteryRect.x, batteryRect.y, SLOT_SIZE) or nil
     window.headphoneSlot = NMHeadphoneSlot and NMHeadphoneSlot.attach and NMHeadphoneSlot.attach(window, headphoneRect.x, headphoneRect.y, SLOT_SIZE) or nil
     window._nmSlotsAttached = true
+end
+
+local function updateChildRect(child, x, y, width, height)
+    if not child then
+        return
+    end
+    if child.setX then child:setX(x) else child.x = x end
+    if child.setY then child:setY(y) else child.y = y end
+    if child.setWidth then child:setWidth(width) else child.width = width end
+    if child.setHeight then child:setHeight(height) else child.height = height end
+    if child.setWidthSilent then
+        child:setWidthSilent(width)
+    end
+end
+
+local function reflowBoomboxSlotChildren(window)
+    if not window then
+        return
+    end
+
+    local mediaRect = window:getSlotRect(1)
+    local batteryRect = window:getSlotRect(2)
+    local headphoneRect = window:getSlotRect(3)
+    local batteryEnv = rawget(_G, "NMBatterySlotEnv") or nil
+    local barPadTop = tonumber(batteryEnv and batteryEnv.BAR_PAD_TOP) or 4
+    local barHeight = tonumber(batteryEnv and batteryEnv.BAR_H) or 6
+
+    updateChildRect(window.mediaSlot and window.mediaSlot.button or nil, mediaRect.x, mediaRect.y, SLOT_SIZE, SLOT_SIZE)
+    updateChildRect(window.headphoneSlot and window.headphoneSlot.button or nil, headphoneRect.x, headphoneRect.y, SLOT_SIZE, SLOT_SIZE)
+    updateChildRect(window.batterySlot and window.batterySlot.button or nil, batteryRect.x, batteryRect.y, SLOT_SIZE, SLOT_SIZE)
+    updateChildRect(window.batterySlot and window.batterySlot.bar or nil, batteryRect.x, batteryRect.y + SLOT_SIZE + barPadTop, SLOT_SIZE, barHeight)
+end
+
+function BoomboxWindow:applyCurrentScaleLayout()
+    refreshBoomboxLayoutMetrics()
+    local currentScale = getFancyDeviceUiScale()
+    if math.abs((tonumber(self._nmAppliedFancyScale) or 0.0) - currentScale) < 0.0001 and self.width == PANEL_W and self.height == PANEL_H then
+        return
+    end
+
+    self._nmAppliedFancyScale = currentScale
+    if self.setWidth then self:setWidth(PANEL_W) else self.width = PANEL_W end
+    if self.setHeight then self:setHeight(PANEL_H) else self.height = PANEL_H end
+    self.width = PANEL_W
+    self.height = PANEL_H
+
+    reflowBoomboxSlotChildren(self)
+
+    local clampedX = self:clampWindowX(self:getX())
+    self:setX(clampedX)
+    self._nmExpandedY = self:clampWindowY(self._nmExpandedY or self:getDefaultExpandedY())
+    self:setY(self:getStateY(self.isCollapsed == true))
 end

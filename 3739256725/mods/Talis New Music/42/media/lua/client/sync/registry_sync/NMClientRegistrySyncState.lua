@@ -12,6 +12,8 @@ function NMClientRegistrySyncState.defaults()
         resyncInFlight = false,
         resyncRequestTick = 0,
         resyncNextTick = 0,
+        resyncCheckNextTick = 0,
+        movementCheckCadenceTicks = 10,
         resyncLastRequestMs = 0,
         lastX = nil,
         lastY = nil,
@@ -41,6 +43,15 @@ function NMClientRegistrySyncState.resetInitialSync(state, pending)
     target.inventorySyncSent = false
     target.initialSyncInFlight = false
     target.initialSyncRequestTick = 0
+    target.resyncInFlight = false
+    target.resyncRequestTick = 0
+    target.resyncNextTick = 0
+    target.resyncCheckNextTick = 0
+    target.movementCheckCadenceTicks = 10
+    target.resyncLastRequestMs = 0
+    target.lastX = nil
+    target.lastY = nil
+    target.lastZ = nil
     return target
 end
 
@@ -72,6 +83,8 @@ function NMClientRegistrySyncState.snapshot(state)
         syncAttempts = tonumber(target.syncAttempts) or 0,
         syncNextTick = tonumber(target.syncNextTick) or 0,
         resyncNextTick = tonumber(target.resyncNextTick) or 0,
+        resyncCheckNextTick = tonumber(target.resyncCheckNextTick) or 0,
+        movementCheckCadenceTicks = tonumber(target.movementCheckCadenceTicks) or 10,
         resyncLastRequestMs = tonumber(target.resyncLastRequestMs) or 0,
         lastX = target.lastX ~= nil and (tonumber(target.lastX) or 0) or nil,
         lastY = target.lastY ~= nil and (tonumber(target.lastY) or 0) or nil,
@@ -79,17 +92,18 @@ function NMClientRegistrySyncState.snapshot(state)
     }
 end
 
-function NMClientRegistrySyncState.advanceTickSnapshot(state)
+function NMClientRegistrySyncState.observeSchedulerTick(state, tickStep)
     local target = NMClientRegistrySyncState.ensure(state)
-    target.tick = (tonumber(target.tick) or 0) + 1
-    local snapshot = NMClientRegistrySyncState.snapshot(target)
-    return snapshot
+    target.tick = (tonumber(target.tick) or 0) + math.max(1, tonumber(tickStep) or 1)
+    return target
 end
 
 function NMClientRegistrySyncState.markResyncRequestNormalized(state, tick, nowMs)
     local target = NMClientRegistrySyncState.ensure(state)
     target.resyncInFlight = true
     target.resyncRequestTick = tick
+    target.resyncCheckNextTick = tick
+    target.movementCheckCadenceTicks = 10
     target.resyncLastRequestMs = nowMs
     return target
 end
@@ -115,6 +129,26 @@ end
 function NMClientRegistrySyncState.setResyncNextTickNormalized(state, nextTick)
     local target = NMClientRegistrySyncState.ensure(state)
     target.resyncNextTick = nextTick
+    return target
+end
+
+function NMClientRegistrySyncState.setResyncCheckNextTickNormalized(state, nextTick)
+    local target = NMClientRegistrySyncState.ensure(state)
+    target.resyncCheckNextTick = nextTick
+    return target
+end
+
+function NMClientRegistrySyncState.setMovementCheckCadenceNormalized(state, cadenceTicks)
+    local target = NMClientRegistrySyncState.ensure(state)
+    target.movementCheckCadenceTicks = math.max(1, tonumber(cadenceTicks) or 10)
+    return target
+end
+
+function NMClientRegistrySyncState.wakeMovementCheckNormalized(state, currentTick, cadenceTicks)
+    local target = NMClientRegistrySyncState.setMovementCheckCadenceNormalized(state, cadenceTicks)
+    local wakeTick = tonumber(currentTick) or tonumber(target.tick) or 0
+    target.resyncNextTick = wakeTick
+    target.resyncCheckNextTick = wakeTick
     return target
 end
 

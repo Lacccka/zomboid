@@ -36,7 +36,7 @@ option Explosives.DelayedFuseEnabled {
 option Explosives.DelayedFuseSeconds {
     page = ExplosivesOptions,
     translation = ExplosivesOptions_DelayedFuseSeconds,
-    type = double, min = 0.5, max = 10.0, default = 3.0,
+    type = double, min = 0.5, max = 10.0, default = 4.0,
 }
 
 option Explosives.DebugSpawnKeyEnabled {

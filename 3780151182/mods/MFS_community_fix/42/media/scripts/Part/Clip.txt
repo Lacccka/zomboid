@@ -1284,7 +1284,7 @@ module Gunpart {
                 mesh = 弹匣/Clip_ScarH_cat,
                 texture = GunTexture/ScarH_cat,
             }    
- item Clip_Christine45_cat
+ 	    item Clip_Christine45_cat
             {
                 WorldRender      = FALSE,
                 ItemType         = base:weaponpart,
@@ -1303,7 +1303,7 @@ module Gunpart {
                 mesh = 弹匣/Clip_Christine45_cat,
                 texture = GunTexture/QBZ191_cat,
             }    
-   item Clip_MK12_cat
+   	   item Clip_MK12_cat
             {
                 WorldRender      = FALSE,
                 ItemType         = base:weaponpart,
@@ -1340,6 +1340,25 @@ module Gunpart {
                 cullface = None,
                 mesh = 弹匣/Clip_HK416_cat,
                 texture = GunTexture/Clip_HK416_cat,
+            }
+            item Clip_NoveskeN4_cat
+            {
+                WorldRender      = FALSE,
+                ItemType         = base:weaponpart,
+                DisplayCategory = WeaponPart,
+                DisplayName      = Clip_NoveskeN4_cat,
+                Icon             = Clip_HK416_cat,
+                Weight           = 0.2,
+                MountOn = HK416_cat,
+                PartType         = Clip,
+                WorldStaticModel = Clip_NoveskeN4_cat,
+                Tooltip          = "HK416弹匣",
+            }
+            model Clip_NoveskeN4_cat
+            {
+                cullface = None,
+                mesh = 弹匣/Clip_NoveskeN4_cat,
+                texture = GunTexture/NoveskeN4_cat,
             }
             item Clip_Typhoon_cat
             {

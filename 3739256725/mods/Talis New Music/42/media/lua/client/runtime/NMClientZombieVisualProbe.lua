@@ -1,6 +1,12 @@
 NMClientZombieVisualProbe = NMClientZombieVisualProbe or {}
 NMClientZombieVisualProbe.tick = NMClientZombieVisualProbe.tick or 0
 NMClientZombieVisualProbe._clientVisualStateByZombieId = NMClientZombieVisualProbe._clientVisualStateByZombieId or {}
+NMClientZombieVisualProbe._lastNearbyZombieTick = NMClientZombieVisualProbe._lastNearbyZombieTick or 0
+NMClientZombieVisualProbe._lastRealizeTick = NMClientZombieVisualProbe._lastRealizeTick or 0
+NMClientZombieVisualProbe._pendingAuthorityDrivenRefresh = NMClientZombieVisualProbe._pendingAuthorityDrivenRefresh == true
+NMClientZombieVisualProbe._authorityRefreshUntilTick = NMClientZombieVisualProbe._authorityRefreshUntilTick or 0
+NMClientZombieVisualProbe._lastMaintenanceTick = NMClientZombieVisualProbe._lastMaintenanceTick or 0
+NMClientZombieVisualProbe._lastActiveScanTick = NMClientZombieVisualProbe._lastActiveScanTick or 0
 require "zombies/NMZombieDeviceVariantCatalog"
 
 local MOD_DATA_KEY = "nmZombieWalkmanProof"
@@ -10,7 +16,21 @@ local PROBE_RADIUS = 30
 local PROBE_RADIUS_SQ = PROBE_RADIUS * PROBE_RADIUS
 local AUTHORITY_RECHECK_TICKS = 600
 local FALLBACK_RECHECK_TICKS = 240
+local ACTIVE_NEARBY_WINDOW_TICKS = 30
+local ACTIVE_REALIZE_WINDOW_TICKS = 40
+local AUTHORITY_REFRESH_WINDOW_TICKS = 40
+local ACTIVE_SCAN_INTERVAL_TICKS = 10
+local STALE_VISUAL_STATE_TICKS = 1800
+local VISUAL_STATE_PRUNE_BATCH_SIZE = 256
+local ZOMBIE_VISUAL_DIAG_LOG_INTERVAL_MS = 5000
+local HELPER_DIAG_LOG_INTERVAL_MS = 5000
 local KNOWN_SPECS = NMZombieDeviceVariantCatalog and NMZombieDeviceVariantCatalog.getAllRealizationSpecs and NMZombieDeviceVariantCatalog.getAllRealizationSpecs() or {}
+local diagState = {
+    lastLogMs = 0,
+    counters = {},
+    helperLastLogMs = 0,
+    helperCounters = {}
+}
 
 local function shouldLog()
     return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("zombie_visual") == true
@@ -21,6 +41,110 @@ local function logProof(tag, detail)
         return
     end
     print("[NewMusic] [ZombieProof] " .. tostring(tag or "") .. " " .. tostring(detail or ""))
+end
+
+local function markRecentInterest()
+    NMClientZombieVisualProbe._lastNearbyZombieTick = tonumber(NMClientZombieVisualProbe.tick) or 0
+end
+
+local function markRealizeInterest()
+    NMClientZombieVisualProbe._lastRealizeTick = tonumber(NMClientZombieVisualProbe.tick) or 0
+    NMClientZombieVisualProbe._pendingAuthorityDrivenRefresh = false
+    NMClientZombieVisualProbe._authorityRefreshUntilTick = 0
+end
+
+local function clearRecentInterest()
+    NMClientZombieVisualProbe._lastNearbyZombieTick = 0
+    NMClientZombieVisualProbe._lastRealizeTick = 0
+end
+
+local function nowRealMs()
+    if getTimestampMs then
+        local ms = tonumber(getTimestampMs())
+        if ms then return ms end
+    end
+    if getTimestamp then
+        local ts = tonumber(getTimestamp())
+        if ts then return ts * 1000 end
+    end
+    return 0
+end
+
+local function countDiag(name)
+    if not (NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("memory") == true) then
+        return
+    end
+    local key = tostring(name or "unknown")
+    diagState.counters[key] = (tonumber(diagState.counters[key]) or 0) + 1
+end
+
+local function flushDiag()
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("memory") == true) then
+        return
+    end
+    local nowMs = nowRealMs()
+    if (nowMs - (tonumber(diagState.lastLogMs) or 0)) < ZOMBIE_VISUAL_DIAG_LOG_INTERVAL_MS then
+        return
+    end
+    diagState.lastLogMs = nowMs
+    local parts = {}
+    for name, count in pairs(diagState.counters) do
+        parts[#parts + 1] = string.format("%s=%d", tostring(name), tonumber(count) or 0)
+        diagState.counters[name] = nil
+    end
+    if #parts > 0 then
+        NMCore.logChannel("memory", "zombie_visual_interest", table.concat(parts, " | "))
+    end
+end
+
+local function countHelperDiag(name)
+    if not (NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("memory") == true) then
+        return
+    end
+    local key = tostring(name or "unknown")
+    diagState.helperCounters[key] = (tonumber(diagState.helperCounters[key]) or 0) + 1
+end
+
+local function flushHelperDiag()
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("memory") == true) then
+        return
+    end
+    local nowMs = nowRealMs()
+    if (nowMs - (tonumber(diagState.helperLastLogMs) or 0)) < HELPER_DIAG_LOG_INTERVAL_MS then
+        return
+    end
+    diagState.helperLastLogMs = nowMs
+    local parts = {}
+    for name, count in pairs(diagState.helperCounters) do
+        parts[#parts + 1] = string.format("%s=%d", tostring(name), tonumber(count) or 0)
+        diagState.helperCounters[name] = nil
+    end
+    if #parts > 0 then
+        NMCore.logChannel("memory", "fanout_helper_diag", table.concat(parts, " | "))
+    end
+end
+
+local function requestAuthorityRefreshWindow(ticks)
+    local currentTick = tonumber(NMClientZombieVisualProbe.tick) or 0
+    local duration = math.max(1, tonumber(ticks) or AUTHORITY_REFRESH_WINDOW_TICKS)
+    NMClientZombieVisualProbe._pendingAuthorityDrivenRefresh = true
+    NMClientZombieVisualProbe._authorityRefreshUntilTick = math.max(
+        tonumber(NMClientZombieVisualProbe._authorityRefreshUntilTick) or 0,
+        currentTick + duration
+    )
+end
+
+local function isAuthorityRefreshActive()
+    if NMClientZombieVisualProbe._pendingAuthorityDrivenRefresh ~= true then
+        return false
+    end
+    local currentTick = tonumber(NMClientZombieVisualProbe.tick) or 0
+    if currentTick <= (tonumber(NMClientZombieVisualProbe._authorityRefreshUntilTick) or 0) then
+        return true
+    end
+    NMClientZombieVisualProbe._pendingAuthorityDrivenRefresh = false
+    NMClientZombieVisualProbe._authorityRefreshUntilTick = 0
+    return false
 end
 
 local function shouldRun()
@@ -390,8 +514,10 @@ local function getDecisionStateKey(decision)
 end
 
 local function shouldRealizeDecision(zombieId, decision, collectDiagnostics)
+    countHelperDiag("zombie_probe.shouldRealizeDecision")
     local visualState = NMClientZombieVisualProbe._clientVisualStateByZombieId[zombieId] or {}
     NMClientZombieVisualProbe._clientVisualStateByZombieId[zombieId] = visualState
+    visualState.lastTouchedTick = tonumber(NMClientZombieVisualProbe.tick) or 0
     if collectDiagnostics then
         return true, visualState
     end
@@ -438,6 +564,7 @@ local function applyClientVisualFallback(zombie, decision, counts, attachedItems
 end
 
 local function realizeZombieVisualDecision(zombie, decision, authorityDrivenRuntime, counts, attachedItemsState)
+    countHelperDiag("zombie_probe.realizeZombieVisualDecision")
     local decisionState = type(decision) == "table" and tostring(decision.state or "") or ""
     if decisionState == "selected" or decisionState == "excluded" or decisionState == "pending" then
         return applyAuthoritativeVisualDecision(zombie, decision, counts, attachedItemsState)
@@ -491,13 +618,53 @@ local function makeNearbyZombieCheck(player)
     end
 end
 
+local function pruneClientVisualState(activeSeen)
+    local states = NMClientZombieVisualProbe._clientVisualStateByZombieId or nil
+    if type(states) ~= "table" then
+        return 0
+    end
+    local currentTick = tonumber(NMClientZombieVisualProbe.tick) or 0
+    local pruned = 0
+    local scanned = 0
+    for zombieId, visualState in pairs(states) do
+        scanned = scanned + 1
+        local keepActive = activeSeen and activeSeen[zombieId] == true
+        if keepActive ~= true then
+            local lastTouchedTick = math.max(
+                tonumber(type(visualState) == "table" and visualState.lastTouchedTick or 0) or 0,
+                tonumber(type(visualState) == "table" and visualState.lastScanTick or 0) or 0,
+                tonumber(type(visualState) == "table" and visualState.lastDecisionTick or 0) or 0
+            )
+            if (currentTick - lastTouchedTick) >= STALE_VISUAL_STATE_TICKS then
+                states[zombieId] = nil
+                pruned = pruned + 1
+            end
+        end
+        if scanned >= VISUAL_STATE_PRUNE_BATCH_SIZE and pruned <= 0 then
+            break
+        end
+    end
+    if pruned > 0 and shouldLog() then
+        logProof("client_visual_state_prune", string.format("pruned=%s live=%s", tostring(pruned), tostring(scanned - pruned)))
+    end
+    return pruned
+end
+
 local function scanAroundPlayer(player)
     local allowZombie = makeNearbyZombieCheck(player)
     if not allowZombie then
+        clearRecentInterest()
+        pruneClientVisualState(nil)
+        NMClientZombieVisualProbe._pendingAuthorityDrivenRefresh = false
+        NMClientZombieVisualProbe._authorityRefreshUntilTick = 0
         return
     end
     local zombies = getCell() and getCell():getZombieList() or nil
     if not (zombies and zombies.size) then
+        clearRecentInterest()
+        pruneClientVisualState(nil)
+        NMClientZombieVisualProbe._pendingAuthorityDrivenRefresh = false
+        NMClientZombieVisualProbe._authorityRefreshUntilTick = 0
         return
     end
     local authorityDrivenRuntime = NMClientZombieVisualTargetCache
@@ -520,15 +687,21 @@ local function scanAroundPlayer(player)
         modelBuilt = 0
     }
     local seen = {}
+    local realizedAny = false
     for i = 0, zombies:size() - 1 do
         local zombie = zombies:get(i)
         local zid = getZombieId(zombie)
         if not seen[zid] and isAliveZombie(zombie) and allowZombie(zombie) then
             seen[zid] = true
             counts.nearby = counts.nearby + 1
+            markRecentInterest()
+            local visualState = NMClientZombieVisualProbe._clientVisualStateByZombieId[zid] or {}
+            NMClientZombieVisualProbe._clientVisualStateByZombieId[zid] = visualState
+            visualState.lastTouchedTick = tonumber(NMClientZombieVisualProbe.tick) or 0
             local decision = NMClientZombieVisualTargetCache
                 and NMClientZombieVisualTargetCache.getZombieDecision
                 and NMClientZombieVisualTargetCache.getZombieDecision(zombie) or nil
+            countHelperDiag("zombie_probe.getZombieDecision")
             local shouldRealize, visualState = shouldRealizeDecision(zid, decision, collectDiagnostics)
             local attachedItemsState = nil
             local realizeOutcome = nil
@@ -537,6 +710,7 @@ local function scanAroundPlayer(player)
                 realizeOutcome = realizeZombieVisualDecision(zombie, decision, authorityDrivenRuntime, counts, attachedItemsState)
                 visualState.lastDecisionStateKey = getDecisionStateKey(decision)
                 visualState.lastDecisionTick = tonumber(NMClientZombieVisualProbe.tick) or 0
+                realizedAny = true
             end
             if collectDiagnostics then
                 local md = getProofModData(zombie)
@@ -567,7 +741,16 @@ local function scanAroundPlayer(player)
             end
         end
     end
+    if realizedAny == true then
+        markRealizeInterest()
+    elseif counts.nearby <= 0 then
+        clearRecentInterest()
+        NMClientZombieVisualProbe._pendingAuthorityDrivenRefresh = false
+        NMClientZombieVisualProbe._authorityRefreshUntilTick = 0
+    end
+    pruneClientVisualState(seen)
     if not collectDiagnostics then
+        flushHelperDiag()
         return
     end
     local summary = string.format(
@@ -591,19 +774,74 @@ local function scanAroundPlayer(player)
         NMClientZombieVisualProbe._lastSummary = summary
         logProof("client_visual_probe", summary)
     end
+    flushHelperDiag()
 end
 
-function NMClientZombieVisualProbe.onTick(player)
+function NMClientZombieVisualProbe.hasPendingWork(player)
+    if not shouldRun() or not player then
+        countDiag("inactive")
+        flushDiag()
+        flushHelperDiag()
+        return false
+    end
+    if isAuthorityRefreshActive() == true then
+        countDiag("authority_refresh_window")
+        flushDiag()
+        flushHelperDiag()
+        return true
+    end
+    local currentTick = tonumber(NMClientZombieVisualProbe.tick) or 0
+    if (currentTick - (tonumber(NMClientZombieVisualProbe._lastNearbyZombieTick) or 0)) <= ACTIVE_NEARBY_WINDOW_TICKS then
+        countDiag("nearby_recent")
+        flushDiag()
+        flushHelperDiag()
+        return true
+    end
+    if (currentTick - (tonumber(NMClientZombieVisualProbe._lastRealizeTick) or 0)) <= ACTIVE_REALIZE_WINDOW_TICKS then
+        countDiag("realize_recent")
+        flushDiag()
+        flushHelperDiag()
+        return true
+    end
+    countDiag("idle")
+    flushDiag()
+    flushHelperDiag()
+    return false
+end
+
+function NMClientZombieVisualProbe.observeSchedulerTick(tickStep)
+    NMClientZombieVisualProbe.tick = (tonumber(NMClientZombieVisualProbe.tick) or 0) + math.max(1, tonumber(tickStep) or 1)
+end
+
+function NMClientZombieVisualProbe.shouldRunMaintenance()
+    local currentTick = tonumber(NMClientZombieVisualProbe.tick) or 0
+    return (currentTick - (tonumber(NMClientZombieVisualProbe._lastMaintenanceTick) or 0)) >= PROBE_INTERVAL_TICKS
+end
+
+function NMClientZombieVisualProbe.markAuthorityRefresh(reason)
+    requestAuthorityRefreshWindow(AUTHORITY_REFRESH_WINDOW_TICKS)
+end
+
+function NMClientZombieVisualProbe.onTick(player, tickStep)
     if not shouldRun() then
         return
     end
     if not player then
         return
     end
-    NMClientZombieVisualProbe.tick = (tonumber(NMClientZombieVisualProbe.tick) or 0) + 1
-    if (NMClientZombieVisualProbe.tick % PROBE_INTERVAL_TICKS) ~= 0 then
+    local currentTick = tonumber(NMClientZombieVisualProbe.tick) or 0
+    local authorityRefreshActive = isAuthorityRefreshActive() == true
+    local activeInterest = authorityRefreshActive
+        or (currentTick - (tonumber(NMClientZombieVisualProbe._lastNearbyZombieTick) or 0)) <= ACTIVE_NEARBY_WINDOW_TICKS
+        or (currentTick - (tonumber(NMClientZombieVisualProbe._lastRealizeTick) or 0)) <= ACTIVE_REALIZE_WINDOW_TICKS
+    local shouldRunActiveScan = activeInterest and (currentTick - (tonumber(NMClientZombieVisualProbe._lastActiveScanTick) or 0)) >= ACTIVE_SCAN_INTERVAL_TICKS
+    if not shouldRunActiveScan and not NMClientZombieVisualProbe.shouldRunMaintenance() then
         return
     end
+    if shouldRunActiveScan then
+        NMClientZombieVisualProbe._lastActiveScanTick = currentTick
+    end
+    NMClientZombieVisualProbe._lastMaintenanceTick = currentTick
     scanAroundPlayer(player)
 end
 

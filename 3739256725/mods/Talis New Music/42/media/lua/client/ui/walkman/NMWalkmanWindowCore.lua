@@ -86,6 +86,7 @@ end
 
 -- Safety net for pre-registry or stale-key windows during UI/session transitions.
 function getOrCreateWindow(playerNum)
+    refreshWalkmanLayoutMetrics()
     local screenW, screenH = getScreenSize()
     local x = math.max(0, screenW - PANEL_W - DEFAULT_RIGHT_MARGIN)
     local y = math.max(0, screenH - PANEL_H - EXPANDED_BOTTOM_MARGIN)
@@ -93,6 +94,7 @@ function getOrCreateWindow(playerNum)
     win.playerNum = tonumber(playerNum) or 0
     win:initialise()
     attachWalkmanSlots(win)
+    win:applyCurrentScaleLayout()
     win:addToUIManager()
     return win
 end
@@ -141,6 +143,7 @@ function NMWalkmanWindow.openForItemResolved(playerNum, item, resolvedContext)
     if not win then
         win = getOrCreateWindow(playerNum)
     end
+    win:applyCurrentScaleLayout()
     local currentX = tonumber(win:getX())
     local currentY = tonumber(win._nmExpandedY)
     if not currentX then
@@ -517,7 +520,16 @@ function WalkmanWindow:close()
     unregisterWindow(self)
 end
 
+function WalkmanWindow:resolveSettingsGearTint(model)
+    local tint = model and type(model.closeTint) == "table" and model.closeTint or nil
+    if tint then
+        return 1.0, tint[1], tint[2], tint[3]
+    end
+    return 1.0, 0.78, 0.78, 0.78
+end
+
 function WalkmanWindow:new(x, y, width, height)
+    refreshWalkmanLayoutMetrics()
     local o = ISPanel:new(x, y, width, height)
     setmetatable(o, self)
     self.__index = self
@@ -534,6 +546,7 @@ function WalkmanWindow:new(x, y, width, height)
     o.playerNum = 0
     o.target = nil
     o._nmClosePressed = false
+    o._nmSettingsPressed = false
     o._nmPlayButtonPressed = false
     o._nmPrevButtonPressed = false
     o._nmNextButtonPressed = false
@@ -626,6 +639,7 @@ function WalkmanWindow:new(x, y, width, height)
     o._nmAwaitingAuthoritativeMediaEject = nil
     o._nmAwaitingAuthoritativeMediaInsert = nil
     o._nmSlotsAttached = false
+    o._nmAppliedFancyScale = getFancyDeviceUiScale()
     if NMDeviceUiHost and NMDeviceUiHost.initWindow then
         NMDeviceUiHost.initWindow(o, "walkman")
     end

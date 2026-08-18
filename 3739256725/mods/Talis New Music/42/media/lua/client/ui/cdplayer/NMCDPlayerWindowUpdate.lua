@@ -161,6 +161,9 @@ function CDPlayerWindow:update()
         end
     end
     ISPanel.update(self)
+    if math.abs((tonumber(self._nmAppliedFancyScale) or 0.0) - getFancyDeviceUiScale()) >= 0.0001 then
+        self:applyCurrentScaleLayout()
+    end
 
     local nowMs = NMUiAutoClose.getNowMs()
     updateWorldCDSpin(self, nowMs)

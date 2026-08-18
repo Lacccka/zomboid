@@ -54,7 +54,7 @@ function NMDeviceProfiles.resolveOutputMode(profile, state, context, ignorePlayb
     local ctx = tostring(context or "")
     if ctx == "inventory" then
         mode = profile.inventoryPlaybackMode or "none"
-    elseif ctx == "attached" then
+    elseif ctx == "attached" or ctx == "pickup_pending" then
         mode = profile.attachedPlaybackMode or "none"
         local insertedType = state and state.headphoneItemFullType or nil
         if hasHeadphones(state)

@@ -6,6 +6,7 @@ return function(NMSlotHostLifecycle)
         window._nmRenderModel = nil
         window._nmRenderModelEpoch = nil
         window._nmRenderModelRevisionKey = nil
+        window._nmRenderCache = nil
         window._nmRenderRevision = (tonumber(window._nmRenderRevision) or 0) + 1
     end
 

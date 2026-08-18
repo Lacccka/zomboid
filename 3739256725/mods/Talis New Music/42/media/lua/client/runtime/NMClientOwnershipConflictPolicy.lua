@@ -50,12 +50,6 @@ function NMClientOwnershipConflictPolicy.applyInventoryOwnership(args)
         and NMDeviceProfiles.isPortableTrackedProfile
         and NMDeviceProfiles.isPortableTrackedProfile(profile) == true
     local logTransitionProbe = args and args.logTransitionProbe or nil
-    if conflictChanged and logTransitionProbe then
-        logTransitionProbe(
-            "ownership_conflict_detected",
-            string.format("uuid=%s inventory=true detachedCtx=%s", uuid, detachedContext)
-        )
-    end
 
     local shouldPrune = portableOwnedDetached or (ownershipGate and ownershipGate.shouldPrune == true
         or (detachedOrchestration and detachedOrchestration.shouldPruneDetachedForInventoryOwner
@@ -79,9 +73,9 @@ function NMClientOwnershipConflictPolicy.applyInventoryOwnership(args)
 
     if conflictChanged and logTransitionProbe then
         logTransitionProbe(
-            "detached_skip_inventory_owner",
+            "ownership_conflict_inventory_prune",
             string.format(
-                "uuid=%s detachedCtx=%s portable=%s",
+                "uuid=%s winner=inventory detachedCtx=%s portable=%s action=remove_detached",
                 uuid,
                 detachedContext,
                 tostring(portableOwnedDetached == true)
@@ -104,27 +98,6 @@ function NMClientOwnershipConflictPolicy.applyInventoryOwnership(args)
             detachedRemoveLogMs[detachedLogKey] = nowMs
             logRuntime("detached_track_remove", string.format("uuid=%s reason=inventory_owner", uuid))
         end
-    end
-
-    if conflictChanged and logTransitionProbe then
-        logTransitionProbe(
-            "detached_pruned_inventory_owner",
-            string.format(
-                "uuid=%s detachedCtx=%s portable=%s",
-                uuid,
-                detachedContext,
-                tostring(portableOwnedDetached == true)
-            )
-        )
-        logTransitionProbe(
-            "ownership_conflict_resolved",
-            string.format(
-                "uuid=%s winner=inventory detachedCtx=%s portable=%s",
-                uuid,
-                detachedContext,
-                tostring(portableOwnedDetached == true)
-            )
-        )
     end
 
     return {

@@ -19,6 +19,19 @@ local function shouldLogTrackFinishedConsume(consumed)
     return consumed == true
 end
 
+local function nowRealMs()
+    if NMPlaybackRuntimeCommon and NMPlaybackRuntimeCommon.getNowRealMs then
+        return tonumber(NMPlaybackRuntimeCommon.getNowRealMs()) or 0
+    end
+    if getTimestampMs then
+        return tonumber(getTimestampMs()) or 0
+    end
+    if getTimestamp then
+        return (tonumber(getTimestamp()) or 0) * 1000
+    end
+    return 0
+end
+
 local function logTrackFinishedArgs(kind, uuid, state, args)
     if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_progression")) then
         return
@@ -61,6 +74,18 @@ local function persistDetachedSPSnapshot(uuid, entry, state)
         revision = tonumber(state and state.revision) or 0,
         playbackEpoch = tonumber(state and state.playbackEpoch) or 0
     })
+end
+
+local function requestImmediateDetachedSPRefresh(reason)
+    local why = tostring(reason or "track_finished")
+    if NMClientMainRuntime and NMClientMainRuntime.requestTickGateWake then
+        NMClientMainRuntime.requestTickGateWake("detached_sp_" .. why)
+    end
+    if NMClientPlaybackTick and NMClientPlaybackTick.requestFullPass then
+        NMClientPlaybackTick.requestFullPass("detached_sp_" .. why)
+    elseif NMClientPlaybackTick and NMClientPlaybackTick.markDirty then
+        NMClientPlaybackTick.markDirty("detached_sp_" .. why)
+    end
 end
 
 local function applyDetachedTrackFinishedLocalSP(uuid, profile, state, entry)
@@ -121,6 +146,19 @@ local function applyDetachedTrackFinishedLocalSP(uuid, profile, state, entry)
             })
         end
         persistDetachedSPSnapshot(uuid, entry, state)
+        if NMClientDetachedProgressionUiRefresh and NMClientDetachedProgressionUiRefresh.invalidateDetachedPortableWindow then
+            NMClientDetachedProgressionUiRefresh.invalidateDetachedPortableWindow(
+                uuid,
+                entry and entry.itemId or nil,
+                state,
+                source and (source.context or source.mode) or "placed"
+            )
+        end
+        if NMClientDetachedProgressionUiRefresh and NMClientDetachedProgressionUiRefresh.requestRuntimeRefresh then
+            NMClientDetachedProgressionUiRefresh.requestRuntimeRefresh(uuid, state, "keep")
+        else
+            requestImmediateDetachedSPRefresh("keep")
+        end
         logTrackFinishedDispatch("detached_sp", uuid, "applied=true keep=true")
     else
         NMClientWorldSourceCache.remove(uuid)
@@ -232,17 +270,29 @@ function NMClientTrackFinishedDispatch.consumeAndDispatchTrackFinished(player, p
     end
     if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_progression")
         and shouldLogTrackFinishedConsume(true) then
+        local consumeAtMs = nowRealMs()
+        local confirmedAtMs = tonumber(endedToken and endedToken.confirmedAtMs) or 0
         NMCore.logChannel(
             "playback_progression",
             "track_finished_consume",
             string.format(
-                "uuid=%s sourceKind=%s consumed=true observedDurationMs=%s media=%s epoch=%s track=%s",
+                "uuid=%s sourceKind=%s consumed=true observedDurationMs=%s media=%s epoch=%s track=%s confirmedAtMs=%s consumeAtMs=%s consumeDelayMs=%s firstFalseMs=%s pendingElapsedMs=%s falseCount=%s windowMs=%s falseChecks=%s policy=%s context=%s",
                 tostring(uuid),
                 tostring(sourceKind or "unknown"),
                 tostring(endedToken and endedToken.observedDurationMs or 0),
                 tostring(state and state.mediaFullType or "nil"),
                 tostring(state and state.playbackEpoch or -1),
-                tostring(state and state.trackIndex or -1)
+                tostring(state and state.trackIndex or -1),
+                tostring(endedToken and endedToken.confirmedAtMs or "nil"),
+                tostring(consumeAtMs),
+                tostring(confirmedAtMs > 0 and math.max(0, consumeAtMs - confirmedAtMs) or "nil"),
+                tostring(endedToken and endedToken.firstFalseMs or "nil"),
+                tostring(endedToken and endedToken.pendingElapsedMs or "nil"),
+                tostring(endedToken and endedToken.falseCount or "nil"),
+                tostring(endedToken and endedToken.windowMs or "nil"),
+                tostring(endedToken and endedToken.falseChecks or "nil"),
+                tostring(endedToken and endedToken.policy or "default"),
+                tostring(endedToken and endedToken.context or "unknown")
             )
         )
     end

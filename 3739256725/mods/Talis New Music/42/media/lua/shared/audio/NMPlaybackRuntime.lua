@@ -15,6 +15,8 @@ local runtimeDiag = type(NMPlaybackRuntimeDiagnostics) == "table" and NMPlayback
     snapshot = function(_) return {} end
 }
 runtimeDiag.ensure(NMPlaybackRuntime)
+local ATTACHED_WORLD_SMOOTH_MS = 125
+local ATTACHED_WORLD_SNAP_DIST = 6.0
 
 local function shouldLogLifecycleProbe(tag, uuid, signature, minIntervalMs)
     if runtimeDiag and runtimeDiag.shouldLogLifecycleProbe then
@@ -66,6 +68,42 @@ local function stopEntry(uuid, reason)
     local key = tostring(uuid or "")
     if key == "" then return end
     local active = NMPlaybackRuntime.Active[key]
+    local hasActive = active ~= nil
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+        local context = tostring(active and active.context or "nil")
+        local missingTick = tonumber(NMPlaybackRuntime.MissingSinceTick[key])
+        local missingMs = tonumber(NMPlaybackRuntime.MissingSinceMs[key])
+        if hasActive then
+            NMCore.logChannel(
+                "runtime",
+                "playback_stop_reason",
+                string.format(
+                    "uuid=%s reason=%s context=%s missingTick=%s missingMs=%s",
+                    tostring(key),
+                    tostring(reason or "unknown"),
+                    tostring(context),
+                    tostring(missingTick ~= nil and missingTick or "nil"),
+                    tostring(missingMs ~= nil and missingMs or "nil")
+                )
+            )
+        elseif tostring(reason or "") ~= "not_playing" then
+            local signature = tostring(reason or "unknown") .. "|ignored"
+            if shouldLogLifecycleProbe("playback_stop_ignored", key, signature, 1000) then
+                NMCore.logChannel(
+                    "runtime",
+                    "playback_stop_ignored",
+                    string.format(
+                        "uuid=%s reason=%s context=%s missingTick=%s missingMs=%s",
+                        tostring(key),
+                        tostring(reason or "unknown"),
+                        tostring(context),
+                        tostring(missingTick ~= nil and missingTick or "nil"),
+                        tostring(missingMs ~= nil and missingMs or "nil")
+                    )
+                )
+            end
+        end
+    end
     if runtimeDiag and runtimeDiag.countEvent then
         runtimeDiag.countEvent(NMPlaybackRuntime, "emitter_stops", countActiveChannels(active))
     end
@@ -214,6 +252,18 @@ local function startSoundFromCandidates(emitter, candidates)
     return nil, nil
 end
 
+local function getSourceMode(context, state, source)
+    local sourceMode = tostring(source and (source.sourceMode or source.context) or "")
+    if sourceMode ~= "" then
+        return sourceMode
+    end
+    local authoritativeMode = tostring(state and state.authoritativeMode or "")
+    if authoritativeMode ~= "" then
+        return authoritativeMode
+    end
+    return tostring(context or "")
+end
+
 local function joinCandidates(candidates, maxCount)
     if type(candidates) ~= "table" or #candidates < 1 then
         return ""
@@ -287,7 +337,8 @@ local function makeSingleActive(emitter, soundId, selectedSound, state, source, 
         startedAtMs = NMPlaybackRuntimeCommon.getNowRealMs and NMPlaybackRuntimeCommon.getNowRealMs() or 0,
         lastX = source and tonumber(source.x) or nil,
         lastY = source and tonumber(source.y) or nil,
-        lastZ = source and tonumber(source.z) or nil
+        lastZ = source and tonumber(source.z) or nil,
+        alive = true
     }
 end
 
@@ -353,44 +404,132 @@ local function setChannelVolume(channel, value)
     end
 end
 
-local function setChannelPos(channel, source)
-    if channel and channel.alive and channel.emitter and channel.emitter.setPos and source and source.x and source.y and source.z then
+local function dist3d(ax, ay, az, bx, by, bz)
+    local dx = (tonumber(ax) or 0) - (tonumber(bx) or 0)
+    local dy = (tonumber(ay) or 0) - (tonumber(by) or 0)
+    local dz = (tonumber(az) or 0) - (tonumber(bz) or 0)
+    return math.sqrt((dx * dx) + (dy * dy) + (dz * dz))
+end
+
+local function logChannelPosUpdate(channel, oldX, oldY, oldZ, newX, newY, newZ)
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+        local dist = dist3d(newX, newY, newZ, oldX or newX, oldY or newY, oldZ or newZ)
+        local nowMs = NMPlaybackRuntimeCommon.getNowRealMs and NMPlaybackRuntimeCommon.getNowRealMs() or 0
+        local lastMs = tonumber(channel._lastPosLogMs) or 0
+        if dist >= 1.0 or (nowMs - lastMs) >= 60000 then
+            channel._lastPosLogMs = nowMs
+            NMCore.logChannel(
+                "runtime",
+                "emitter_pos_update",
+                string.format(
+                    "channel=%s old=%.2f,%.2f,%.2f new=%.2f,%.2f,%.2f dist=%.2f",
+                    tostring(channel.channelName or "single"),
+                    tonumber(oldX) or tonumber(newX) or 0,
+                    tonumber(oldY) or tonumber(newY) or 0,
+                    tonumber(oldZ) or tonumber(newZ) or 0,
+                    tonumber(newX) or 0,
+                    tonumber(newY) or 0,
+                    tonumber(newZ) or 0,
+                    dist
+                )
+            )
+        end
+    end
+end
+
+local function applyChannelPos(channel, x, y, z)
+    if channel and channel.alive and channel.emitter and channel.emitter.setPos and x and y and z then
         local oldX = tonumber(channel.lastX)
         local oldY = tonumber(channel.lastY)
         local oldZ = tonumber(channel.lastZ)
-        channel.emitter:setPos(source.x, source.y, source.z)
-        local newX = tonumber(source.x)
-        local newY = tonumber(source.y)
-        local newZ = tonumber(source.z)
+        channel.emitter:setPos(x, y, z)
+        local newX = tonumber(x)
+        local newY = tonumber(y)
+        local newZ = tonumber(z)
         channel.lastX = newX
         channel.lastY = newY
         channel.lastZ = newZ
-        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
-            local dx = (newX or 0) - (oldX or (newX or 0))
-            local dy = (newY or 0) - (oldY or (newY or 0))
-            local dz = (newZ or 0) - (oldZ or (newZ or 0))
-            local dist = math.sqrt((dx * dx) + (dy * dy) + (dz * dz))
-            local nowMs = NMPlaybackRuntimeCommon.getNowRealMs and NMPlaybackRuntimeCommon.getNowRealMs() or 0
-            local lastMs = tonumber(channel._lastPosLogMs) or 0
-            if dist >= 1.0 or (nowMs - lastMs) >= 60000 then
-                channel._lastPosLogMs = nowMs
-                NMCore.logChannel(
-                    "runtime",
-                    "emitter_pos_update",
-                    string.format(
-                        "channel=%s old=%.2f,%.2f,%.2f new=%.2f,%.2f,%.2f dist=%.2f",
-                        tostring(channel.channelName or "single"),
-                        tonumber(oldX) or tonumber(newX) or 0,
-                        tonumber(oldY) or tonumber(newY) or 0,
-                        tonumber(oldZ) or tonumber(newZ) or 0,
-                        tonumber(newX) or 0,
-                        tonumber(newY) or 0,
-                        tonumber(newZ) or 0,
-                        dist
-                    )
-                )
-            end
+        logChannelPosUpdate(channel, oldX, oldY, oldZ, newX, newY, newZ)
+    end
+end
+
+local function clearChannelSmoothing(channel)
+    if not channel then
+        return
+    end
+    channel._smoothTargetX = nil
+    channel._smoothTargetY = nil
+    channel._smoothTargetZ = nil
+    channel._smoothStartX = nil
+    channel._smoothStartY = nil
+    channel._smoothStartZ = nil
+    channel._smoothStartMs = nil
+    channel._smoothSourceMode = nil
+end
+
+local function setChannelPos(channel, source, smoothAttached)
+    if not (channel and channel.alive and channel.emitter and channel.emitter.setPos and source and source.x and source.y and source.z) then
+        return
+    end
+
+    local targetX = tonumber(source.x)
+    local targetY = tonumber(source.y)
+    local targetZ = tonumber(source.z)
+    if not (targetX and targetY and targetZ) then
+        return
+    end
+
+    if smoothAttached ~= true then
+        clearChannelSmoothing(channel)
+        applyChannelPos(channel, targetX, targetY, targetZ)
+        return
+    end
+
+    local nowMs = NMPlaybackRuntimeCommon.getNowRealMs and NMPlaybackRuntimeCommon.getNowRealMs() or 0
+    local mode = tostring(source.sourceMode or source.context or "attached")
+    local modeChanged = tostring(channel._smoothSourceMode or "") ~= mode
+    local targetChanged = targetX ~= tonumber(channel._smoothTargetX)
+        or targetY ~= tonumber(channel._smoothTargetY)
+        or targetZ ~= tonumber(channel._smoothTargetZ)
+
+    if modeChanged or targetChanged then
+        local currentX = tonumber(channel.lastX)
+        local currentY = tonumber(channel.lastY)
+        local currentZ = tonumber(channel.lastZ)
+        if not (currentX and currentY and currentZ)
+            or modeChanged
+            or dist3d(currentX, currentY, currentZ, targetX, targetY, targetZ) >= ATTACHED_WORLD_SNAP_DIST then
+            clearChannelSmoothing(channel)
+            channel._smoothSourceMode = mode
+            applyChannelPos(channel, targetX, targetY, targetZ)
+            return
         end
+
+        channel._smoothSourceMode = mode
+        channel._smoothStartX = currentX
+        channel._smoothStartY = currentY
+        channel._smoothStartZ = currentZ
+        channel._smoothTargetX = targetX
+        channel._smoothTargetY = targetY
+        channel._smoothTargetZ = targetZ
+        channel._smoothStartMs = nowMs
+    end
+
+    local startX = tonumber(channel._smoothStartX) or tonumber(channel.lastX) or targetX
+    local startY = tonumber(channel._smoothStartY) or tonumber(channel.lastY) or targetY
+    local startZ = tonumber(channel._smoothStartZ) or tonumber(channel.lastZ) or targetZ
+    local startedMs = tonumber(channel._smoothStartMs) or nowMs
+    local t = math.min(1.0, math.max(0.0, (nowMs - startedMs) / ATTACHED_WORLD_SMOOTH_MS))
+    local nextX = startX + ((targetX - startX) * t)
+    local nextY = startY + ((targetY - startY) * t)
+    local nextZ = startZ + ((targetZ - startZ) * t)
+
+    applyChannelPos(channel, nextX, nextY, nextZ)
+    if t >= 1.0 then
+        channel._smoothStartX = targetX
+        channel._smoothStartY = targetY
+        channel._smoothStartZ = targetZ
+        channel._smoothStartMs = nowMs
     end
 end
 
@@ -468,8 +607,21 @@ local function isLocalPersonalListenerAllowed(player, state, source)
     return false
 end
 
+local function shouldSmoothAttachedWorldEmitter(player, context, state, source)
+    if getSourceMode(context, state, source) ~= "attached" then
+        return false
+    end
+    if not (NMCore and NMCore.isMPClientRuntime and NMCore.isMPClientRuntime()) then
+        return false
+    end
+    return isLocalPersonalListenerAllowed(player, state, source) ~= true
+end
+
 local routeProbeSigByUuid = routeProbeSigByUuid or {}
 local routeProbeMsByUuid = routeProbeMsByUuid or {}
+local vehicleRouteShapeSigByUuid = vehicleRouteShapeSigByUuid or {}
+local vehicleRouteShapeMsByUuid = vehicleRouteShapeMsByUuid or {}
+local vehicleListenerTruthSigByUuid = vehicleListenerTruthSigByUuid or {}
 
 local function getPlayerSeatDescriptor(player)
     if not player then
@@ -485,25 +637,124 @@ local function getPlayerSeatDescriptor(player)
     return tostring(seat or "unknown"), runtimeId, sqlId
 end
 
-local function shouldUseLocalVehiclePersonalOverride(player, profile, state, source)
-    if tostring(source and (source.context or source.mode) or "") ~= "vehicle" then
-        return false
+local function classifyVehicleListenerMatch(player, source)
+    local seat, listenerVehicleId, listenerVehicleSqlId = getPlayerSeatDescriptor(player)
+    local sourceVehicleId = tostring(source and (source.vehicleId or source.vehicleIdHint) or "")
+    local sourceVehicleSqlId = tostring(source and (source.vehicleSqlId or source.vehicleSqlIdHint) or "")
+    local inVehicleSeat = seat ~= "" and seat ~= "out" and seat ~= "unknown"
+    local runtimeMatched = listenerVehicleId ~= "" and sourceVehicleId ~= "" and listenerVehicleId == sourceVehicleId
+    local sqlMatched = listenerVehicleSqlId ~= "" and sourceVehicleSqlId ~= "" and listenerVehicleSqlId == sourceVehicleSqlId
+    local matched = inVehicleSeat and (runtimeMatched or sqlMatched)
+    local matchKind = "none"
+    if runtimeMatched then
+        matchKind = "runtime"
+    elseif sqlMatched then
+        matchKind = "sql"
+    elseif not inVehicleSeat then
+        matchKind = "seat_out"
+    elseif listenerVehicleId == "" and listenerVehicleSqlId == "" then
+        matchKind = "listener_unanchored"
+    elseif sourceVehicleId == "" and sourceVehicleSqlId == "" then
+        matchKind = "source_unanchored"
+    else
+        matchKind = "mismatch"
+    end
+    return {
+        seat = seat,
+        listenerVehicleId = listenerVehicleId,
+        listenerVehicleSqlId = listenerVehicleSqlId,
+        sourceVehicleId = sourceVehicleId,
+        sourceVehicleSqlId = sourceVehicleSqlId,
+        matched = matched == true,
+        runtimeMatched = runtimeMatched == true,
+        sqlMatched = sqlMatched == true,
+        matchKind = matchKind
+    }
+end
+
+local function resolveVehicleOccupantLocalEligibility(player, profile, source)
+    local context = tostring(source and (source.context or source.mode) or "")
+    if context ~= "vehicle" then
+        return false, "context_not_vehicle", classifyVehicleListenerMatch(player, source)
     end
     if tostring(profile and profile.deviceType or "") ~= "vehicle_radio" then
-        return false
+        return false, "not_vehicle_radio", classifyVehicleListenerMatch(player, source)
     end
-    if not isLocalPersonalListenerAllowed(player, state, source) then
-        return false
+    local match = classifyVehicleListenerMatch(player, source)
+    if match.matched == true then
+        return true, "same_vehicle", match
     end
-    local seat, listenerVehicleId = getPlayerSeatDescriptor(player)
-    if seat == "" or seat == "out" or seat == "unknown" then
-        return false
+    if match.matchKind == "seat_out" then
+        return false, "seat_out", match
     end
-    local sourceVehicleId = tostring(source and (source.vehicleId or source.vehicleIdHint) or "")
-    if listenerVehicleId == "" or sourceVehicleId == "" then
-        return false
+    if match.matchKind == "listener_unanchored" then
+        return false, "listener_unanchored", match
     end
-    return listenerVehicleId == sourceVehicleId
+    if match.matchKind == "source_unanchored" then
+        return false, "source_unanchored", match
+    end
+    return false, "vehicle_mismatch", match
+end
+
+local function noteVehicleListenerTruth(uuid, player, source, localVehiclePersonalOverride, occupantReason, vehicleMatch)
+    local key = tostring(uuid or "")
+    if key == "" then
+        return nil
+    end
+    local match = vehicleMatch or classifyVehicleListenerMatch(player, source)
+    local sig = table.concat({
+        tostring(match.seat),
+        tostring(match.matchKind),
+        tostring(occupantReason or "unknown"),
+        tostring(localVehiclePersonalOverride == true),
+        tostring(match.runtimeMatched == true and match.listenerVehicleId or ""),
+        tostring(match.runtimeMatched == true and match.sourceVehicleId or ""),
+        tostring(match.sqlMatched == true and match.listenerVehicleSqlId or ""),
+        tostring(match.sqlMatched == true and match.sourceVehicleSqlId or "")
+    }, "|")
+    local previous = tostring(vehicleListenerTruthSigByUuid[key] or "")
+    if previous ~= sig then
+        vehicleListenerTruthSigByUuid[key] = sig
+        if previous ~= "" and NMClientPlaybackTick and NMClientPlaybackTick.requestFullPass then
+            NMClientPlaybackTick.requestFullPass("vehicle_listener_truth_change")
+        end
+        if previous ~= "" then
+            logTransitionProbe(
+                "vehicle_listener_path_flip",
+                string.format(
+                    "uuid=%s seat=%s match=%s occupantLocal=%s occupantReason=%s listenerVehicleId=%s listenerVehicleSqlId=%s sourceVehicleId=%s sourceVehicleSqlId=%s",
+                    tostring(key),
+                    tostring(match.seat),
+                    tostring(match.matchKind),
+                    tostring(localVehiclePersonalOverride == true),
+                    tostring(occupantReason or "unknown"),
+                    tostring(match.listenerVehicleId),
+                    tostring(match.listenerVehicleSqlId),
+                    tostring(match.sourceVehicleId),
+                    tostring(match.sourceVehicleSqlId)
+                )
+            )
+        end
+    end
+    return match
+end
+
+local function shouldUseLocalVehiclePersonalOverride(player, profile, state, source)
+    local eligible = resolveVehicleOccupantLocalEligibility(player, profile, source)
+    return eligible == true
+end
+
+local function copyRouteProbeSource(source)
+    if type(source) ~= "table" then
+        return nil
+    end
+    return {
+        mode = source.mode,
+        context = source.context,
+        x = tonumber(source.x),
+        y = tonumber(source.y),
+        z = tonumber(source.z)
+    }
 end
 
 local function quantizeVehicleRouteBucket(value)
@@ -526,7 +777,7 @@ local function classifyDualAudibleRoute(routeWorld, routePersonal)
     return "silent"
 end
 
-local function logVehicleRouteProbe(player, state, source, sig, detail)
+local function logVehicleRouteProbe(player, state, source, sig, detailBuilder)
     if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
         return
     end
@@ -534,8 +785,7 @@ local function logVehicleRouteProbe(player, state, source, sig, detail)
     if uuid == "" then
         return
     end
-    local stableSig = tostring(sig or detail or "")
-    local line = tostring(detail or stableSig)
+    local stableSig = tostring(sig or "")
     local now = NMPlaybackRuntimeCommon and NMPlaybackRuntimeCommon.getNowRealMs and NMPlaybackRuntimeCommon.getNowRealMs() or 0
     local changed = routeProbeSigByUuid[uuid] ~= stableSig
     local lastMs = tonumber(routeProbeMsByUuid[uuid]) or 0
@@ -545,7 +795,361 @@ local function logVehicleRouteProbe(player, state, source, sig, detail)
     end
     routeProbeSigByUuid[uuid] = stableSig
     routeProbeMsByUuid[uuid] = now
+    local line = nil
+    if type(detailBuilder) == "function" then
+        line = tostring(detailBuilder())
+    else
+        line = tostring(detailBuilder or stableSig)
+    end
     NMCore.logChannel("runtime", "vehicle_route_truth", line)
+end
+
+local function updateActiveRouteSnapshot(active, state, source, context, playbackMode, resolvedOutput, localVehiclePersonalOverride)
+    if type(active) ~= "table" then
+        return
+    end
+    active._routeProbeSnapshot = {
+        source = copyRouteProbeSource(source),
+        context = tostring(context or source and source.context or source and source.mode or active.context or "nil"),
+        mode = tostring(context or source and source.context or source and source.mode or "nil"),
+        playbackMode = tostring(playbackMode or "nil"),
+        resolvedOutput = tostring(resolvedOutput or "nil"),
+        localVehiclePersonalOverride = localVehiclePersonalOverride == true,
+        vehicleRouteDecision = tostring(active._lastVehicleRouteDecision or ""),
+        vehicleDualRoutePreserved = active._vehicleDualRoutePreserved == true,
+        isOn = state and state.isOn == true or false,
+        isPlaying = state and state.isPlaying == true or false,
+        media = tostring(state and state.mediaFullType or "nil")
+    }
+end
+
+local function buildVehicleSourceIdentityKey(source)
+    if type(source) ~= "table" then
+        return ""
+    end
+    return table.concat({
+        tostring(source.vehicleIdHint or source.vehicleId or ""),
+        tostring(source.vehicleSqlIdHint or source.vehicleSqlId or ""),
+        tostring(source.partId or "Radio")
+    }, "|")
+end
+
+local function updateActiveAudibleStateSnapshot(
+    active,
+    state,
+    source,
+    context,
+    resolvedOutput,
+    localVehiclePersonalOverride,
+    useDualRender,
+    useWorldOutput
+)
+    if type(active) ~= "table" then
+        return
+    end
+    active._lastResolvedOutputMode = tostring(resolvedOutput or "")
+    active._lastStateIsOn = state and state.isOn == true or false
+    active._lastStateIsPlaying = state and state.isPlaying == true or false
+    active._lastMediaFullType = tostring(state and state.mediaFullType or "")
+    active._lastTrackIndex = tonumber(state and state.trackIndex) or tonumber(active.trackIndex) or -1
+    active._lastPlaybackEpoch = tonumber(state and state.playbackEpoch) or tonumber(active.epoch) or -1
+    active._lastRevision = tonumber(state and state.revision) or tonumber(active._lastRevision) or -1
+    active._lastVehicleSourceIdentity = buildVehicleSourceIdentityKey(source)
+    active._lastContext = tostring(context or active.context or "")
+    active._lastUseDualRender = useDualRender == true
+    active._lastUseWorldOutput = useWorldOutput == true
+    active._localVehiclePersonalOverride = localVehiclePersonalOverride == true
+    active._lastRenderMode = useDualRender == true and "dual" or "single"
+    active._lastEmitterClass = useDualRender == true and "dual" or (useWorldOutput == true and "world" or "personal")
+    active._lastOccupantLocalFlag = localVehiclePersonalOverride == true
+end
+
+local function hasSameVehicleSourceIdentity(active, source)
+    if type(active) ~= "table" then
+        return false
+    end
+    local activeKey = tostring(active._lastVehicleSourceIdentity or "")
+    return activeKey ~= "" and activeKey == buildVehicleSourceIdentityKey(source)
+end
+
+local function getVehicleRouteTransitionSignature(active)
+    if type(active) ~= "table" then
+        return ""
+    end
+    return table.concat({
+        tostring(active._lastRenderMode or (active.mode == "dual" and "dual" or "single")),
+        tostring(active._lastEmitterClass or ((active.isWorldEmitter == true) and "world" or "personal")),
+        tostring(active._lastResolvedOutputMode or ""),
+        tostring(active._lastOccupantLocalFlag == true)
+    }, "|")
+end
+
+local function hasSameVehicleAuthorityTrack(active, state, source)
+    if not (active and state) then
+        return false
+    end
+    if tostring(active.context or active._lastContext or "") ~= "vehicle" then
+        return false
+    end
+    if tostring(active.mediaFullType or active._lastMediaFullType or "") ~= tostring(state.mediaFullType or "") then
+        return false
+    end
+    if (tonumber(active.epoch or active._lastPlaybackEpoch) or -1) ~= (tonumber(state.playbackEpoch) or -1) then
+        return false
+    end
+    if (tonumber(active.trackIndex or active._lastTrackIndex) or -1) ~= (tonumber(state.trackIndex) or -1) then
+        return false
+    end
+    if (active._lastStateIsOn == true) ~= (state.isOn == true) then
+        return false
+    end
+    if (active._lastStateIsPlaying == true) ~= (state.isPlaying == true) then
+        return false
+    end
+    if tostring(active._lastVehicleSourceIdentity or "") ~= buildVehicleSourceIdentityKey(source) then
+        return false
+    end
+    return true
+end
+
+local function logVehicleRouteTransitionDecision(uuid, state, active, decision, tickCount)
+    if not (decision and decision.preserved == true) then
+        return
+    end
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_transition")) then
+        return
+    end
+    local key = table.concat({
+        "transitionProbe.vehicleRoutePreserved",
+        tostring(uuid),
+        tostring(decision.reason or "unknown"),
+        tostring(state and state.playbackEpoch or -1),
+        tostring(state and state.trackIndex or -1)
+    }, ".")
+    if NMCore.shouldLogEvery and not NMCore.shouldLogEvery(key, tonumber(tickCount) or 0, 120) then
+        return
+    end
+    logTransitionProbe(
+        "vehicle_route_transition_preserved",
+        string.format(
+            "uuid=%s reason=%s from=%s toRender=%s toEmitter=%s output=%s occupantLocal=%s",
+            tostring(uuid),
+            tostring(decision.reason or "unknown"),
+            tostring(getVehicleRouteTransitionSignature(active)),
+            tostring(decision.targetRenderMode or "unknown"),
+            tostring(decision.targetEmitterClass or "unknown"),
+            tostring(decision.targetOutputMode or "unknown"),
+            tostring(decision.occupantLocal == true)
+        )
+    )
+end
+
+local function resolveVehicleRenderShapeDecision(active, state, source, audibility, useDualRender, useWorldOutput)
+    if not (state and source and audibility) then
+        return nil
+    end
+    if tostring(source.context or source.mode or active.context or "") ~= "vehicle" then
+        return nil
+    end
+    local decision = {
+        occupantLocal = audibility.localVehiclePersonalOverride == true,
+        targetOutputMode = tostring(audibility.audibility or audibility.outputMode or "personal"),
+        targetRenderMode = useDualRender == true and "dual" or "single",
+        targetEmitterClass = useDualRender == true and "dual" or (useWorldOutput == true and "world" or "personal"),
+        applyDualRender = useDualRender == true,
+        preserveDualRoute = false
+    }
+
+    if not active then
+        if audibility.localVehiclePersonalOverride == true and isVehicleDualEmitterEnabled("vehicle") == true then
+            decision.reason = "vehicle_dual_bootstrap"
+            decision.targetRenderMode = "dual"
+            decision.targetEmitterClass = "dual"
+            decision.applyDualRender = true
+            decision.preserveDualRoute = true
+        end
+        return decision
+    end
+
+    local sameAuthorityTrack = hasSameVehicleAuthorityTrack(active, state, source) == true
+    if sameAuthorityTrack then
+        decision.preserved = true
+        if audibility.localVehiclePersonalOverride == true and active.mode == "dual" and useDualRender ~= true then
+            decision.reason = "same_vehicle_dual_to_personal"
+            decision.preserveDualRoute = true
+            return decision
+        end
+        if active._vehicleDualRoutePreserved == true and active.mode == "dual" and useDualRender ~= true then
+            decision.reason = "vehicle_dual_route_flip_preserved"
+            decision.preserveDualRoute = true
+            return decision
+        end
+        if audibility.localVehiclePersonalOverride == true
+            and active.mode ~= "dual"
+            and active.isWorldEmitter == true
+            and useDualRender ~= true
+            and useWorldOutput ~= true then
+            decision.reason = "same_vehicle_world_single_to_personal_single"
+            return decision
+        end
+    end
+
+    if hasSameVehicleSourceIdentity(active, source) == true and audibility.localVehiclePersonalOverride == true then
+        decision.restartRequired = true
+        decision.reason = "vehicle_authoritative_restart_preserve_dual"
+        decision.targetRenderMode = "dual"
+        decision.targetEmitterClass = "dual"
+        decision.applyDualRender = true
+        decision.preserveDualRoute = true
+        return decision
+    end
+    return nil
+end
+
+local function logRestartSuppressedSameRoute(uuid, state, context)
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_progression")) then
+        return
+    end
+    local nowMs = NMPlaybackRuntimeCommon and NMPlaybackRuntimeCommon.getNowRealMs and NMPlaybackRuntimeCommon.getNowRealMs() or 0
+    local suppressKey = table.concat({
+        "progressionProbe.restartSuppressedSameRoute",
+        tostring(uuid),
+        tostring(state and state.playbackEpoch or -1),
+        tostring(state and state.trackIndex or -1)
+    }, ".")
+    if NMCore.shouldLogEvery and not NMCore.shouldLogEvery(suppressKey, nowMs, 10000) then
+        return
+    end
+    NMCore.logChannel(
+        "playback_progression",
+        "restart_suppressed_same_route",
+        string.format(
+            "uuid=%s context=%s epoch=%s track=%s media=%s isOn=%s isPlaying=%s",
+            tostring(uuid),
+            tostring(context),
+            tostring(state and state.playbackEpoch or -1),
+            tostring(state and state.trackIndex or -1),
+            tostring(state and state.mediaFullType or "nil"),
+            tostring(state and state.isOn == true),
+            tostring(state and state.isPlaying == true)
+        )
+    )
+end
+
+local function logVehicleRouteShapeProbe(uuid, state, active, decision, restart, useDualRender, useWorldOutput, audibility)
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle_route")) then
+        return
+    end
+    local key = tostring(uuid or "")
+    if key == "" then
+        return
+    end
+    local activeMode = tostring(active and active.mode or "none")
+    local activeEmitterClass = "none"
+    if active then
+        if active.mode == "dual" then
+            activeEmitterClass = "dual"
+        elseif active.isWorldEmitter == true then
+            activeEmitterClass = "world"
+        else
+            activeEmitterClass = "personal"
+        end
+    end
+    local routeSig = table.concat({
+        tostring(state and state.playbackEpoch or -1),
+        tostring(state and state.trackIndex or -1),
+        activeMode,
+        activeEmitterClass,
+        tostring(active and active._vehicleDualRoutePreserved == true),
+        tostring(active and active._vehicleRestartRenderShape or "none"),
+        tostring(useDualRender == true),
+        tostring(useWorldOutput == true),
+        tostring(audibility and audibility.localVehiclePersonalOverride == true),
+        tostring(decision and decision.reason or "none"),
+        tostring(restart == true)
+    }, "|")
+    local nowMs = NMPlaybackRuntimeCommon and NMPlaybackRuntimeCommon.getNowRealMs and NMPlaybackRuntimeCommon.getNowRealMs() or 0
+    local changed = tostring(vehicleRouteShapeSigByUuid[key] or "") ~= routeSig
+    local restartSignal = restart == true or (decision and decision.restartRequired == true)
+    local lastMs = tonumber(vehicleRouteShapeMsByUuid[key]) or 0
+    local heartbeat = (nowMs - lastMs) >= 1000
+    if not (changed or restartSignal or heartbeat) then
+        return
+    end
+    vehicleRouteShapeSigByUuid[key] = routeSig
+    vehicleRouteShapeMsByUuid[key] = nowMs
+    NMCore.logChannel(
+        "vehicle_route",
+        "vehicle_route_shape",
+        string.format(
+            "uuid=%s epoch=%s track=%s activeMode=%s activeEmitter=%s useDual=%s useWorld=%s occupantLocal=%s restart=%s decision=%s preserved=%s renderShape=%s",
+            tostring(key),
+            tostring(state and state.playbackEpoch or -1),
+            tostring(state and state.trackIndex or -1),
+            tostring(activeMode),
+            tostring(activeEmitterClass),
+            tostring(useDualRender == true),
+            tostring(useWorldOutput == true),
+            tostring(audibility and audibility.localVehiclePersonalOverride == true),
+            tostring(restart == true),
+            tostring(decision and decision.reason or "none"),
+            tostring(active and active._vehicleDualRoutePreserved == true),
+            tostring(active and active._vehicleRestartRenderShape or "none")
+        )
+    )
+end
+
+function NMPlaybackRuntime.getActiveRouteProbeSnapshot(uuid)
+    local key = tostring(uuid or "")
+    if key == "" then
+        return nil
+    end
+    local active = NMPlaybackRuntime.Active and NMPlaybackRuntime.Active[key] or nil
+    return active and active._routeProbeSnapshot or nil
+end
+
+function NMPlaybackRuntime.clearRecoveredPortableRuntime(uuid, reason)
+    local key = tostring(uuid or "")
+    if key == "" then
+        return false
+    end
+
+    local changed = false
+    if NMPlaybackRuntime.Active[key] ~= nil then
+        NMPlaybackRuntime.forceStop(nil, key, tostring(reason or "corpse_recovered_cleanup"))
+        changed = true
+    end
+
+    if NMPlaybackRuntime.MissingSinceTick[key] ~= nil or NMPlaybackRuntime.MissingSinceMs[key] ~= nil then
+        NMPlaybackRuntime.MissingSinceTick[key] = nil
+        NMPlaybackRuntime.MissingSinceMs[key] = nil
+        changed = true
+    end
+    if NMPlaybackRuntime.PowerTick[key] ~= nil then
+        NMPlaybackRuntime.PowerTick[key] = nil
+        changed = true
+    end
+    if NMPlaybackRuntime.TrackEnded[key] ~= nil
+        or NMPlaybackRuntime.TrackEndPending[key] ~= nil
+        or NMPlaybackRuntime.TrackEndAwaitingAdvance[key] ~= nil then
+        NMPlaybackRuntime.TrackEnded[key] = nil
+        NMPlaybackRuntime.TrackEndPending[key] = nil
+        NMPlaybackRuntime.TrackEndAwaitingAdvance[key] = nil
+        changed = true
+    end
+    if routeProbeSigByUuid[key] ~= nil
+        or routeProbeMsByUuid[key] ~= nil
+        or vehicleRouteShapeSigByUuid[key] ~= nil
+        or vehicleRouteShapeMsByUuid[key] ~= nil
+        or vehicleListenerTruthSigByUuid[key] ~= nil then
+        routeProbeSigByUuid[key] = nil
+        routeProbeMsByUuid[key] = nil
+        vehicleRouteShapeSigByUuid[key] = nil
+        vehicleRouteShapeMsByUuid[key] = nil
+        vehicleListenerTruthSigByUuid[key] = nil
+        changed = true
+    end
+    return changed
 end
 
 function NMPlaybackRuntime.computeLocalListenerAudibility(player, profile, state, source)
@@ -557,7 +1161,7 @@ function NMPlaybackRuntime.computeLocalListenerAudibility(player, profile, state
     local originalOutputMode = NMDeviceProfiles.resolveOutputMode(profile, state, context, false)
     local outputMode = originalOutputMode
     local vehicleOutputCoerced = false
-    local localVehiclePersonalOverride = shouldUseLocalVehiclePersonalOverride(player, profile, state, source)
+    local localVehiclePersonalOverride, occupantReason, vehicleMatch = resolveVehicleOccupantLocalEligibility(player, profile, source)
     if localVehiclePersonalOverride then
         outputMode = "personal"
         vehicleOutputCoerced = outputMode ~= originalOutputMode
@@ -574,7 +1178,11 @@ function NMPlaybackRuntime.computeLocalListenerAudibility(player, profile, state
 
     local personalOwnerAllowed = true
     if outputMode == "personal" then
-        personalOwnerAllowed = isLocalPersonalListenerAllowed(player, state, source)
+        if localVehiclePersonalOverride == true then
+            personalOwnerAllowed = true
+        else
+            personalOwnerAllowed = isLocalPersonalListenerAllowed(player, state, source)
+        end
         if not personalOwnerAllowed then
             effectiveVolume = 0
         end
@@ -609,51 +1217,61 @@ function NMPlaybackRuntime.computeLocalListenerAudibility(player, profile, state
     local personalVolume = NMPlaybackAudibility.computeChannelVolume(profile, state, player, source, "personal", routedPersonal)
     local shouldSuppressVanillaMusic = shouldPlay == true and ((worldVolume > 0.001) or (personalVolume > 0.001))
     if context == "vehicle" then
-        local seat, listenerVehicleId, listenerVehicleSqlId = getPlayerSeatDescriptor(player)
-        local sourceVehicleId = tostring(source and (source.vehicleId or source.vehicleIdHint) or "")
-        local sourceVehicleSqlId = tostring(source and (source.vehicleSqlId or source.vehicleSqlIdHint) or "")
+        local vehicleMatch = noteVehicleListenerTruth(
+            tostring(state and state.deviceUUID or ""),
+            player,
+            source,
+            localVehiclePersonalOverride,
+            occupantReason,
+            vehicleMatch
+        ) or vehicleMatch or classifyVehicleListenerMatch(player, source)
         local owner = tostring(
             (source and (source.ownerId or source.ownerOnlineId or source.ownerUsername))
             or (state and state.sourceOwner)
             or ""
         )
         local routeSig = string.format(
-            "uuid=%s seat=%s listenerVehicleId=%s sourceVehicleId=%s outputOriginal=%s outputCoerced=%s coerced=%s audibility=%s ownerAllowed=%s shouldPlay=%s routeWorld=%.2f routePersonal=%.2f",
+            "uuid=%s seat=%s match=%s occupantLocal=%s occupantReason=%s outputOriginal=%s outputCoerced=%s dual=%s audibility=%s ownerAllowed=%s shouldPlay=%s routeWorld=%.2f routePersonal=%.2f",
             tostring(state and state.deviceUUID or ""),
-            tostring(seat),
-            tostring(listenerVehicleId),
-            tostring(sourceVehicleId),
+            tostring(vehicleMatch.seat),
+            tostring(vehicleMatch.matchKind),
+            tostring(localVehiclePersonalOverride == true),
+            tostring(occupantReason or "unknown"),
             tostring(originalOutputMode),
             tostring(outputMode),
-            tostring(vehicleOutputCoerced == true),
+            tostring(context == "vehicle" and localVehiclePersonalOverride ~= true and isVehicleDualEmitterEnabled(context) == true),
             tostring(routedOutputMode),
             tostring(personalOwnerAllowed == true),
             tostring(shouldPlay == true),
             quantizeVehicleRouteBucket(routedWorld),
             quantizeVehicleRouteBucket(routedPersonal)
         )
-        local routeDetail = string.format(
-            "uuid=%s context=%s seat=%s listenerVehicleId=%s listenerVehicleSqlId=%s sourceVehicleId=%s sourceVehicleSqlId=%s owner=%s outputOriginal=%s outputCoerced=%s coerced=%s audibility=%s ownerAllowed=%s shouldPlay=%s routeWorld=%.3f routePersonal=%.3f worldVolume=%.3f personalVolume=%.3f",
-            tostring(state and state.deviceUUID or ""),
-            tostring(context),
-            tostring(seat),
-            tostring(listenerVehicleId),
-            tostring(listenerVehicleSqlId),
-            tostring(sourceVehicleId),
-            tostring(sourceVehicleSqlId),
-            tostring(owner),
-            tostring(originalOutputMode),
-            tostring(outputMode),
-            tostring(vehicleOutputCoerced == true),
-            tostring(routedOutputMode),
-            tostring(personalOwnerAllowed == true),
-            tostring(shouldPlay == true),
-            tonumber(routedWorld) or 0,
-            tonumber(routedPersonal) or 0,
-            tonumber(worldVolume) or 0,
-            tonumber(personalVolume) or 0
-        )
-        logVehicleRouteProbe(player, state, source, routeSig, routeDetail)
+        logVehicleRouteProbe(player, state, source, routeSig, function()
+            return string.format(
+                "uuid=%s context=%s seat=%s match=%s occupantLocal=%s occupantReason=%s listenerVehicleId=%s listenerVehicleSqlId=%s sourceVehicleId=%s sourceVehicleSqlId=%s owner=%s outputOriginal=%s outputCoerced=%s coerced=%s audibility=%s ownerAllowed=%s shouldPlay=%s routeWorld=%.3f routePersonal=%.3f worldVolume=%.3f personalVolume=%.3f",
+                tostring(state and state.deviceUUID or ""),
+                tostring(context),
+                tostring(vehicleMatch.seat),
+                tostring(vehicleMatch.matchKind),
+                tostring(localVehiclePersonalOverride == true),
+                tostring(occupantReason or "unknown"),
+                tostring(vehicleMatch.listenerVehicleId),
+                tostring(vehicleMatch.listenerVehicleSqlId),
+                tostring(vehicleMatch.sourceVehicleId),
+                tostring(vehicleMatch.sourceVehicleSqlId),
+                tostring(owner),
+                tostring(originalOutputMode),
+                tostring(outputMode),
+                tostring(vehicleOutputCoerced == true),
+                tostring(routedOutputMode),
+                tostring(personalOwnerAllowed == true),
+                tostring(shouldPlay == true),
+                tonumber(routedWorld) or 0,
+                tonumber(routedPersonal) or 0,
+                tonumber(worldVolume) or 0,
+                tonumber(personalVolume) or 0
+            )
+        end)
     end
 
     return {
@@ -673,6 +1291,49 @@ function NMPlaybackRuntime.computeLocalListenerAudibility(player, profile, state
         vehicleOutputCoerced = vehicleOutputCoerced == true,
         localVehiclePersonalOverride = localVehiclePersonalOverride == true
     }
+end
+
+local function shouldSuppressOccupantLocalRestart(active, state, source, audibility, useDualRender, useWorldOutput)
+    if not (active and state and audibility) then
+        return false
+    end
+    if audibility.localVehiclePersonalOverride ~= true then
+        return false
+    end
+    if active._localVehiclePersonalOverride ~= true then
+        return false
+    end
+    if active.mode == "dual" or useDualRender == true or useWorldOutput == true or active.isWorldEmitter == true then
+        return false
+    end
+    if tostring(active.context or "") ~= "vehicle" then
+        return false
+    end
+    if tostring(active.mediaFullType or active._lastMediaFullType or "") ~= tostring(state.mediaFullType or "") then
+        return false
+    end
+    if (tonumber(active.trackIndex or active._lastTrackIndex) or -1) ~= (tonumber(state.trackIndex) or -1) then
+        return false
+    end
+    if (active._lastStateIsOn == true) ~= (state.isOn == true) then
+        return false
+    end
+    if (active._lastStateIsPlaying == true) ~= (state.isPlaying == true) then
+        return false
+    end
+    if tostring(active._lastResolvedOutputMode or "") ~= "personal" then
+        return false
+    end
+    if active._lastUseDualRender == true or active._lastUseWorldOutput == true then
+        return false
+    end
+    if tostring(active._lastContext or active.context or "") ~= "vehicle" then
+        return false
+    end
+    if tostring(active._lastVehicleSourceIdentity or "") ~= buildVehicleSourceIdentityKey(source) then
+        return false
+    end
+    return true
 end
 
 function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
@@ -717,7 +1378,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
     local useWorldOutput = portablePolicy and portablePolicy.singleWorldOutput
         or ((outputMode == "world") or (outputMode == "silent" and context ~= "inventory"))
     local shouldPlay = audibility.shouldPlay == true
-    local useDualVehicle = isVehicleDualEmitterEnabled(context)
+    local useDualVehicle = isVehicleDualEmitterEnabled(context) and (audibility.localVehiclePersonalOverride ~= true)
     local useDualRender = useDualVehicle or (portablePolicy and portablePolicy.dualRender == true)
     local vehicleResolved = not (context == "vehicle" and source and source._vehicleResolved == false)
 
@@ -781,6 +1442,8 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
     end
 
     local active = NMPlaybackRuntime.Active[uuid]
+    local vehicleRenderDecision = resolveVehicleRenderShapeDecision(active, state, source, audibility, useDualRender, useWorldOutput)
+    local effectiveUseDualRender = vehicleRenderDecision and vehicleRenderDecision.applyDualRender == true or useDualRender
     if not shouldPlay then
         if isCorpseRecoveredState(state) then
             logCorpseAudio(
@@ -849,19 +1512,52 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
         end
     end
 
-    local restart = not active or (tonumber(active and active.epoch) or -1) ~= (tonumber(state.playbackEpoch) or -1)
-    if active and active.mode == "dual" and (not useDualRender) then
+    local stateEpoch = tonumber(state and state.playbackEpoch) or -1
+    local activeEpoch = tonumber(active and active.epoch) or -1
+    local epochChanged = active ~= nil and activeEpoch ~= stateEpoch
+    local restart = not active or epochChanged
+    local restartUseDualRender = effectiveUseDualRender
+    if epochChanged and shouldSuppressOccupantLocalRestart(active, state, source, audibility, effectiveUseDualRender, useWorldOutput) then
+        restart = false
+        active.epoch = stateEpoch
+        active.sourceGeneration = tonumber(state and state.sourceGeneration) or tonumber(active.sourceGeneration) or 0
+        active.trackIndex = tonumber(state and state.trackIndex) or tonumber(active.trackIndex) or 1
+        active.mediaFullType = tostring(state and state.mediaFullType or active.mediaFullType or "")
+        updateActiveAudibleStateSnapshot(
+            active,
+            state,
+            source,
+            context,
+            routedOutputMode,
+            audibility.localVehiclePersonalOverride == true,
+            effectiveUseDualRender,
+            useWorldOutput
+        )
+        logRestartSuppressedSameRoute(uuid, state, context)
+    end
+    if active and active.mode == "dual" and (not effectiveUseDualRender)
+        and not (
+            vehicleRenderDecision
+            and (
+                vehicleRenderDecision.reason == "same_vehicle_dual_to_personal"
+                or vehicleRenderDecision.reason == "vehicle_dual_route_flip_preserved"
+            )
+        ) then
         restart = true
     end
-    if active and active.mode ~= "dual" and useDualRender then
+    if active and active.mode ~= "dual" and restartUseDualRender then
         restart = true
     end
     local classFlipNeeded = false
-    if active and active.mode ~= "dual" and (not useDualRender) then
+    if active and active.mode ~= "dual" and (not effectiveUseDualRender) then
         classFlipNeeded = ((active.isWorldEmitter == true) ~= useWorldOutput)
         if classFlipNeeded then
             if tryRetargetEmitterClass(active, useWorldOutput, source, uuid) then
                 classFlipNeeded = false
+                if vehicleRenderDecision and vehicleRenderDecision.reason == "same_vehicle_world_single_to_personal_single" then
+                    active._lastVehicleRouteDecision = tostring(vehicleRenderDecision.reason)
+                    logVehicleRouteTransitionDecision(uuid, state, active, vehicleRenderDecision, tickCount)
+                end
             else
                 local reason = (active and active.emitter and active.emitter.set3D) and "retarget_failed" or "set3d_missing"
                 logTransitionProbe(
@@ -874,10 +1570,18 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
     if classFlipNeeded then
         restart = true
     end
+    if active and vehicleRenderDecision and vehicleRenderDecision.preserved == true then
+        restart = false
+        active._lastVehicleRouteDecision = tostring(vehicleRenderDecision.reason)
+        logVehicleRouteTransitionDecision(uuid, state, active, vehicleRenderDecision, tickCount)
+    elseif active and (not vehicleRenderDecision or vehicleRenderDecision.reason == nil) then
+        active._lastVehicleRouteDecision = nil
+    end
 
     if active and active.mode == "dual" then
         updateDualCompatFields(active)
     end
+    logVehicleRouteShapeProbe(uuid, state, active, vehicleRenderDecision, restart, restartUseDualRender, useWorldOutput, audibility)
 
     local trackEndActive = active
     local trackEndMonitorChannel = "single"
@@ -907,8 +1611,9 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
         local pending = NMPlaybackRuntime.TrackEndPending[uuid]
         local ended = NMPlaybackRuntime.TrackEnded[uuid]
         local awaiting = NMPlaybackRuntime.TrackEndAwaitingAdvance[uuid]
+        local shouldMonitor = pending ~= nil or awaiting ~= nil or ended ~= nil
         local logKey = "progressionProbe.portableMonitor." .. tostring(uuid) .. ":" .. tostring(stateEpoch) .. ":" .. tostring(stateTrack)
-        if NMCore.shouldLogEvery(logKey, tonumber(tickCount) or 0, 120) then
+        if shouldMonitor and NMCore.shouldLogEvery(logKey, tonumber(tickCount) or 0, 240) then
             logPortableTrackProgression(
                 uuid,
                 string.format(
@@ -935,7 +1640,10 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
             uuid,
             state,
             trackEndActive,
-            profile) then
+            profile,
+            context,
+            source) then
+            local endedToken = NMPlaybackRuntime.TrackEnded[uuid]
             logPortableTrackProgression(
                 uuid,
                 string.format(
@@ -953,11 +1661,19 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                     "playback_progression",
                     "client_track_end_token_set",
                     string.format(
-                        "uuid=%s context=%s token=%s:%s",
+                        "uuid=%s context=%s token=%s:%s setAtMs=%s firstFalseMs=%s pendingElapsedMs=%s falseCount=%s windowMs=%s falseChecks=%s policy=%s observedDurationMs=%s",
                         tostring(uuid),
                         tostring(context),
                         tostring(state and state.playbackEpoch or -1),
-                        tostring(state and state.trackIndex or -1)
+                        tostring(state and state.trackIndex or -1),
+                        tostring(endedToken and endedToken.confirmedAtMs or "nil"),
+                        tostring(endedToken and endedToken.firstFalseMs or "nil"),
+                        tostring(endedToken and endedToken.pendingElapsedMs or "nil"),
+                        tostring(endedToken and endedToken.falseCount or "nil"),
+                        tostring(endedToken and endedToken.windowMs or "nil"),
+                        tostring(endedToken and endedToken.falseChecks or "nil"),
+                        tostring(endedToken and endedToken.policy or "default"),
+                        tostring(endedToken and endedToken.observedDurationMs or "nil")
                     )
                 )
             end
@@ -972,7 +1688,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
             local stateEpoch = tonumber(state and state.playbackEpoch) or -1
             local stateTrack = tonumber(state and state.trackIndex) or -1
             local logKey = "progressionProbe.portableMonitorProgress." .. tostring(uuid) .. ":" .. tostring(stateEpoch) .. ":" .. tostring(stateTrack)
-            if NMCore.shouldLogEvery(logKey, tonumber(tickCount) or 0, 180) then
+            if (pending ~= nil or awaiting ~= nil) and NMCore.shouldLogEvery(logKey, tonumber(tickCount) or 0, 300) then
                 logPortableTrackProgression(
                     uuid,
                     string.format(
@@ -991,6 +1707,26 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
     end
 
     if restart then
+        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_progression") then
+            local awaiting = NMPlaybackRuntime.TrackEndAwaitingAdvance[uuid]
+            local nowMs = NMPlaybackRuntimeCommon and NMPlaybackRuntimeCommon.getNowRealMs and NMPlaybackRuntimeCommon.getNowRealMs() or 0
+            local restartDelayMs = awaiting and awaiting.setAtMs and math.max(0, nowMs - tonumber(awaiting.setAtMs)) or nil
+            NMCore.logChannel(
+                "playback_progression",
+                "client_track_restart",
+                string.format(
+                    "uuid=%s context=%s epoch=%s track=%s restartAtMs=%s delayFromTokenMs=%s awaiting=%s policy=%s",
+                    tostring(uuid),
+                    tostring(context),
+                    tostring(state and state.playbackEpoch or -1),
+                    tostring(state and state.trackIndex or -1),
+                    tostring(nowMs),
+                    tostring(restartDelayMs or "nil"),
+                    tostring(awaiting ~= nil),
+                    tostring(awaiting and awaiting.policy or "none")
+                )
+            )
+        end
         stopEntry(uuid, "restart")
 
         local track, resolved = getCurrentTrack(state)
@@ -1038,12 +1774,12 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                     joinCandidates(candidates, 8),
                     tostring(context),
                     tostring(routedOutputMode),
-                    tostring(useDualRender == true)
+                    tostring(restartUseDualRender == true)
                 )
             )
         end
 
-        if useDualRender then
+        if restartUseDualRender then
             local worldChan, worldErr = startPlaybackChannel(player, source, true, candidates, "world")
             local personalChan, personalErr = startPlaybackChannel(player, source, false, candidates, "personal")
             local worldAlive = worldChan ~= nil
@@ -1095,7 +1831,8 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                 lastX = source and tonumber(source.x) or nil,
                 lastY = source and tonumber(source.y) or nil,
                 lastZ = source and tonumber(source.z) or nil,
-                lastGainRoute = nil
+                lastGainRoute = nil,
+                _vehicleDualRoutePreserved = vehicleRenderDecision and vehicleRenderDecision.preserveDualRoute == true or false
             }
             if active.world then
                 active.world.startedAtMs = active.startedAtMs
@@ -1103,6 +1840,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
             if active.personal then
                 active.personal.startedAtMs = active.startedAtMs
             end
+            active._vehicleRestartRenderShape = active._vehicleDualRoutePreserved == true and "dual_muted_world_personal" or nil
             updateDualCompatFields(active)
             NMPlaybackRuntime.Active[uuid] = active
             if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
@@ -1116,7 +1854,13 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                     tostring(active.epoch or 0),
                     tostring(active.trackIndex or 0),
                     tostring(active.sourceGeneration or 0),
-                    tostring(useDualVehicle == true and "vehicle" or (portablePolicy and portablePolicy.dualRender == true and "portable" or "unknown")),
+                    tostring(
+                        active._vehicleDualRoutePreserved == true
+                            and (
+                                vehicleRenderDecision and vehicleRenderDecision.reason or "vehicle_preserved_dual"
+                            )
+                            or (useDualVehicle == true and "vehicle" or (portablePolicy and portablePolicy.dualRender == true and "portable" or "unknown"))
+                    ),
                     tostring(listenerSeat),
                     tostring(listenerVehicleId),
                     tostring(listenerVehicleSqlId),
@@ -1270,6 +2014,8 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                 (resolved and resolved.tracks and #resolved.tracks) or 1,
                 isWorldEmitter == true
             )
+            active._vehicleDualRoutePreserved = false
+            active._vehicleRestartRenderShape = nil
             NMPlaybackRuntime.Active[uuid] = active
             if runtimeDiag and runtimeDiag.countEvent then
                 runtimeDiag.countEvent(NMPlaybackRuntime, "emitter_starts", 1)
@@ -1297,22 +2043,33 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
         return
     end
     active.context = context
+    active.mediaFullType = tostring(state and state.mediaFullType or active.mediaFullType or "")
+    updateActiveRouteSnapshot(
+        active,
+        state,
+        source,
+        context,
+        audibility.localVehiclePersonalOverride == true and "personal" or tostring(state and state.playbackMode or routedOutputMode),
+        routedOutputMode,
+        audibility.localVehiclePersonalOverride == true
+    )
+    updateActiveAudibleStateSnapshot(
+        active,
+        state,
+        source,
+        context,
+        routedOutputMode,
+        audibility.localVehiclePersonalOverride == true,
+        useDualRender,
+        useWorldOutput
+    )
+
+    local smoothAttachedWorld = shouldSmoothAttachedWorldEmitter(player, context, state, source)
 
     if active.mode == "dual" then
-        setChannelPos(active.world, source)
-        local routedWorld = 0
-        local routedPersonal = 0
-        if portablePolicy then
-            routedWorld = portablePolicy.routeWorld
-            routedPersonal = portablePolicy.routePersonal
-        elseif outputMode == "world" then
-            routedWorld = effectiveVolume
-            if context == "vehicle" then
-                routedPersonal = effectiveVolume
-            end
-        elseif outputMode == "personal" then
-            routedPersonal = effectiveVolume
-        end
+        setChannelPos(active.world, source, smoothAttachedWorld)
+        local routedWorld = tonumber(audibility.routeWorld) or 0
+        local routedPersonal = tonumber(audibility.routePersonal) or 0
         local routeWorld = NMPlaybackAudibility.computeChannelVolume(profile, state, player, source, "world", routedWorld)
         local routePersonal = NMPlaybackAudibility.computeChannelVolume(profile, state, player, source, "personal", routedPersonal)
         setChannelVolume(active.world, routeWorld)
@@ -1470,14 +2227,11 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
         runtimeDiag.updateVehicleEmitter(NMPlaybackRuntime, uuid, active, source, context)
     elseif active.emitter and active.soundId then
         if active.isWorldEmitter and source and source.x and source.y and source.z and active.emitter.setPos then
-            active.emitter:setPos(source.x, source.y, source.z)
-            active.lastX = tonumber(source.x) or active.lastX
-            active.lastY = tonumber(source.y) or active.lastY
-            active.lastZ = tonumber(source.z) or active.lastZ
+            setChannelPos(active, source, smoothAttachedWorld)
             runtimeDiag.updateVehicleEmitter(NMPlaybackRuntime, uuid, active, source, context)
         end
         if active.emitter.setVolume then
-            local routed = active.isWorldEmitter and effectiveVolume or ((routedOutputMode == "personal") and effectiveVolume or 0)
+            local routed = active.isWorldEmitter and (tonumber(audibility.routeWorld) or 0) or (tonumber(audibility.routePersonal) or 0)
             local channelKind = active.isWorldEmitter and "world" or "personal"
             local resolvedVolume = NMPlaybackAudibility.computeChannelVolume(profile, state, player, source, channelKind, routed)
             active.emitter:setVolume(active.soundId, resolvedVolume)
@@ -1485,6 +2239,47 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
     end
 
 end
+
+function NMPlaybackRuntime.updateActiveEmitterPositionOnly(player, uuid, state, source)
+    local key = tostring(uuid or state and state.deviceUUID or "")
+    if key == "" then
+        return false
+    end
+    local active = NMPlaybackRuntime.Active and NMPlaybackRuntime.Active[key] or nil
+    if not active or not source or not (source.x and source.y and source.z) then
+        return false
+    end
+
+    local context = source.context or source.mode or active.context
+    active.context = context
+    if active._localVehiclePersonalOverride == true then
+        return false
+    end
+    local smoothAttachedWorld = shouldSmoothAttachedWorldEmitter(player, context, state, source)
+
+    if active.mode == "dual" then
+        if active.world and active.world.alive then
+            setChannelPos(active.world, source, smoothAttachedWorld)
+            updateDualCompatFields(active)
+            if runtimeDiag and runtimeDiag.updateVehicleEmitter then
+                runtimeDiag.updateVehicleEmitter(NMPlaybackRuntime, key, active, source, context)
+            end
+            return true
+        end
+        return false
+    end
+
+    if active.isWorldEmitter and active.emitter and active.soundId and active.emitter.setPos then
+        setChannelPos(active, source, smoothAttachedWorld)
+        if runtimeDiag and runtimeDiag.updateVehicleEmitter then
+            runtimeDiag.updateVehicleEmitter(NMPlaybackRuntime, key, active, source, context)
+        end
+        return true
+    end
+
+    return false
+end
+
 function NMPlaybackRuntime.getDiagnosticsSnapshot()
     return runtimeDiag.snapshot(NMPlaybackRuntime)
 end
@@ -1499,6 +2294,21 @@ function NMPlaybackRuntime.stopMissing(player, validUUIDs, tickNow)
     local grace = math.max(1, tonumber(NMRuntimeConfig.get("emitterMissingGraceTicks", 60)) or 60)
     for uuid, _ in pairs(NMPlaybackRuntime.Active) do
         if validUUIDs and validUUIDs[uuid] then
+            local since = tonumber(NMPlaybackRuntime.MissingSinceTick[uuid])
+            local sinceMs = tonumber(NMPlaybackRuntime.MissingSinceMs[uuid])
+            if since ~= nil and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+                NMCore.logChannel(
+                    "runtime",
+                    "playback_missing_cleared",
+                    string.format(
+                        "uuid=%s missingSinceTick=%s missingForTicks=%s missingSinceMs=%s",
+                        tostring(uuid),
+                        tostring(since),
+                        tostring(now - since),
+                        tostring(sinceMs ~= nil and sinceMs or "nil")
+                    )
+                )
+            end
             NMPlaybackRuntime.MissingSinceTick[uuid] = nil
             NMPlaybackRuntime.MissingSinceMs[uuid] = nil
         else
@@ -1506,11 +2316,32 @@ function NMPlaybackRuntime.stopMissing(player, validUUIDs, tickNow)
             local sinceMs = tonumber(NMPlaybackRuntime.MissingSinceMs[uuid])
             if since == nil then
                 NMPlaybackRuntime.MissingSinceTick[uuid] = now
+                if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+                    NMCore.logChannel(
+                        "runtime",
+                        "playback_missing_started",
+                        string.format("uuid=%s tick=%s grace=%s", tostring(uuid), tostring(now), tostring(grace))
+                    )
+                end
             end
             if sinceMs == nil then
                 NMPlaybackRuntime.MissingSinceMs[uuid] = nowMs
             end
             if since ~= nil and (now - since) >= grace then
+                if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+                    NMCore.logChannel(
+                        "runtime",
+                        "playback_missing_timeout",
+                        string.format(
+                            "uuid=%s missingSinceTick=%s missingForTicks=%s missingSinceMs=%s grace=%s",
+                            tostring(uuid),
+                            tostring(since),
+                            tostring(now - since),
+                            tostring(sinceMs ~= nil and sinceMs or "nil"),
+                            tostring(grace)
+                        )
+                    )
+                end
                 NMPlaybackRuntime.MissingSinceTick[uuid] = nil
                 NMPlaybackRuntime.MissingSinceMs[uuid] = nil
                 if runtimeDiag and runtimeDiag.countEvent then

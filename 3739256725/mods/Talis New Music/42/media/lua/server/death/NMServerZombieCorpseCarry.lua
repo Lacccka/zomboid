@@ -629,8 +629,12 @@ local function reconcilePendingCorpseSquares()
     return reconciled
 end
 
+function NMServerZombieCorpseCarry.hasPendingWork()
+    return (tonumber(NMServerZombieCorpseCarry._pendingCount) or 0) > 0
+end
+
 function NMServerZombieCorpseCarry.onTick()
-    if (NMServerZombieCorpseCarry._pendingCount or 0) <= 0 then
+    if not NMServerZombieCorpseCarry.hasPendingWork() then
         return
     end
     NMServerZombieCorpseCarry._tickCounter = (tonumber(NMServerZombieCorpseCarry._tickCounter) or 0) + 1

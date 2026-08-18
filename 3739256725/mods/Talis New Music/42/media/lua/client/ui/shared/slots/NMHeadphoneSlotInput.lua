@@ -461,7 +461,6 @@ function NMHeadphoneSlot.attach(window, x, y, size)
                 local maxW = self.width - 8
                 local maxH = self.height - 8
                 local scale = math.min(maxW / texW, maxH / texH)
-                if scale > 1 then scale = 1 end
                 local drawW = texW * scale
                 local drawH = texH * scale
                 local dx = (self.width - drawW) / 2

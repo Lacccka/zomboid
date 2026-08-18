@@ -1,8 +1,6 @@
 require "ISUI/ISButton"
 require "TimedActions/ISBaseTimedAction"
 require "TimedActions/ISTimedActionQueue"
-require "ui/shared/render/NMVectorDraw"
-require "ui/shared/render/NMBatterySlotVectors"
 require "ui/shared/NMSlotButtonStyles"
 require "ui/shared/slots/NMSlotHostLifecycle"
 require "ui/shared/slots/NMPortableSlotHoverResolver"

@@ -122,6 +122,30 @@ local function nowMs(window)
         or 0
 end
 
+local function clearPressArmed(btn)
+    if not btn then
+        return
+    end
+    btn._nmPressArmed = false
+end
+
+local function clearFlick(btn)
+    if not btn then
+        return
+    end
+    btn._nmFlickUntil = 0
+end
+
+local function shouldClearOrphanedPress(btn)
+    if not (btn and btn._nmPressArmed == true) then
+        return false
+    end
+    if isMouseButtonDown and isMouseButtonDown(0) == true then
+        return false
+    end
+    return true
+end
+
 function NMTransportButtonRow.buildRenderState(window, frame)
     local transport = getTransportState(window, frame)
     local resolved = frame and frame.resolved or getResolvedContext(window)
@@ -225,9 +249,9 @@ local function makeButton(window, x, y, role)
     btn.backgroundColorPressed = { r = 0, g = 0, b = 0, a = 0 }
     btn.backgroundColorEnabled = { r = 0, g = 0, b = 0, a = 0 }
     btn.enable = true
-    btn.pressed = false
     btn._nmRole = role
     btn._nmFlickUntil = 0
+    btn._nmPressArmed = false
     window:addChild(btn)
     return btn
 end
@@ -278,6 +302,9 @@ local function bindRender(window, btn)
     local role = btn._nmRole
     btn.render = function(self)
         local perfStart = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(window) or nil
+        if shouldClearOrphanedPress(self) then
+            clearPressArmed(self)
+        end
         self:setTitle("")
         local renderState = window.getRenderState and window:getRenderState("transport") or nil
         local buttonState = renderState and renderState.buttons and renderState.buttons[role] or nil
@@ -299,12 +326,12 @@ end
 local function bindInput(window, btn)
     local role = btn._nmRole
     btn.onMouseDown = function(self, x, y)
-        self.pressed = true
+        self._nmPressArmed = true
         return true
     end
     btn.onMouseUp = function(self, x, y)
-        local process = self.pressed == true
-        self.pressed = false
+        local process = self._nmPressArmed == true
+        clearPressArmed(self)
         if not process then
             return true
         end
@@ -319,7 +346,7 @@ local function bindInput(window, btn)
         return true
     end
     btn.onMouseUpOutside = function(self, x, y)
-        self.pressed = false
+        clearPressArmed(self)
         return true
     end
 end
@@ -346,6 +373,23 @@ function NMTransportButtonRow.attach(window, x, y)
         width = (#ORDER * BTN_W) + ((#ORDER - 1) * BTN_GAP),
         height = BTN_H
     }
+end
+
+function NMTransportButtonRow.resetVisualState(window)
+    local buttons = window and window.transportRow and window.transportRow.buttons or nil
+    if type(buttons) ~= "table" then
+        return false
+    end
+    local changed = false
+    for i = 1, #buttons do
+        local btn = buttons[i]
+        if btn and (btn._nmPressArmed == true or tonumber(btn._nmFlickUntil or 0) > 0) then
+            clearPressArmed(btn)
+            clearFlick(btn)
+            changed = true
+        end
+    end
+    return changed
 end
 
 NMTransportButtonRow.playButtonClick = playButtonClick

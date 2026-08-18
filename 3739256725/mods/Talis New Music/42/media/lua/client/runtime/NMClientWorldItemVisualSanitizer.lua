@@ -1,9 +1,62 @@
 NMClientWorldItemVisualSanitizer = NMClientWorldItemVisualSanitizer or {}
+NMClientWorldItemVisualSanitizer._diag = NMClientWorldItemVisualSanitizer._diag or {
+    lastLogMs = 0,
+    counters = {}
+}
 
 local pendingWorldSync = {}
 local SWEEP_INTERVAL_TICKS = 30
 local SWEEP_RADIUS = 12
+local SWEEP_BUDGET_SQUARES = 45
 local RETRY_TICKS = 60
+local activeSweep = nil
+local UI_INVALIDATION_DIAG_INTERVAL_MS = 5000
+
+local function nowRealMs()
+    if getTimestampMs then
+        local ms = tonumber(getTimestampMs())
+        if ms then return ms end
+    end
+    if getTimestamp then
+        local ts = tonumber(getTimestamp())
+        if ts then return ts * 1000 end
+    end
+    return 0
+end
+
+local function countUiInvalidation(name)
+    if not (NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("memory") == true) then
+        return
+    end
+    local key = tostring(name or "unknown")
+    NMClientWorldItemVisualSanitizer._diag.counters[key] = (tonumber(NMClientWorldItemVisualSanitizer._diag.counters[key]) or 0) + 1
+end
+
+local function flushUiInvalidationDiag()
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("memory") == true) then
+        return
+    end
+    local nowMs = nowRealMs()
+    if (nowMs - (tonumber(NMClientWorldItemVisualSanitizer._diag.lastLogMs) or 0)) < UI_INVALIDATION_DIAG_INTERVAL_MS then
+        return
+    end
+    NMClientWorldItemVisualSanitizer._diag.lastLogMs = nowMs
+    local parts = {}
+    for name, count in pairs(NMClientWorldItemVisualSanitizer._diag.counters) do
+        parts[#parts + 1] = string.format("%s=%d", tostring(name), tonumber(count) or 0)
+        NMClientWorldItemVisualSanitizer._diag.counters[name] = nil
+    end
+    if #parts > 0 then
+        NMCore.logChannel("memory", "client_ui_invalidation_diag", table.concat(parts, " | "))
+    end
+end
+
+local function mapHasAny(tbl)
+    for _ in pairs(tbl) do
+        return true
+    end
+    return false
+end
 
 local function logRuntime(tag, detail)
     if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
@@ -29,6 +82,7 @@ local function queuePendingWorld(obj, reason)
         ticks = RETRY_TICKS,
         reason = tostring(reason or "pending")
     }
+    NMClientWorldItemVisualSanitizer._pendingNearbySweep = true
 end
 
 local function sanitizeWorldObject(obj, reason)
@@ -56,37 +110,85 @@ local function sanitizeWorldObject(obj, reason)
     return ok == true
 end
 
-local function sweepNearbyWorldItems(player)
+local function startNearbyWorldSweep(player)
     local square = player and player.getCurrentSquare and player:getCurrentSquare() or nil
     local cell = getCell and getCell() or nil
     if not square or not cell then
-        return 0
+        activeSweep = nil
+        return false
     end
 
-    local processed = 0
     local sx = square:getX()
     local sy = square:getY()
     local sz = square:getZ()
+    activeSweep = {
+        cell = cell,
+        minX = sx - SWEEP_RADIUS,
+        maxX = sx + SWEEP_RADIUS,
+        minY = sy - SWEEP_RADIUS,
+        maxY = sy + SWEEP_RADIUS,
+        x = sx - SWEEP_RADIUS,
+        y = sy - SWEEP_RADIUS,
+        z = sz,
+        processed = 0
+    }
+    return true
+end
 
-    for x = sx - SWEEP_RADIUS, sx + SWEEP_RADIUS do
-        for y = sy - SWEEP_RADIUS, sy + SWEEP_RADIUS do
-            local gridSquare = cell:getGridSquare(x, y, sz)
-            if gridSquare and gridSquare.getWorldObjects then
-                local worldObjects = gridSquare:getWorldObjects()
-                for i = 0, worldObjects:size() - 1 do
-                    local obj = worldObjects:get(i)
-                    if isWorldInventoryObject(obj) then
-                        local fullType = getWorldItemFullType(obj)
-                        if NMWorldItemVisuals.isRelevantFullType(fullType) then
-                            sanitizeWorldObject(obj, "nearby_sweep")
-                            processed = processed + 1
-                        end
-                    end
+local function processSweepSquare(sweep)
+    local gridSquare = sweep.cell:getGridSquare(sweep.x, sweep.y, sweep.z)
+    local processed = 0
+    if gridSquare and gridSquare.getWorldObjects then
+        local worldObjects = gridSquare:getWorldObjects()
+        for i = 0, worldObjects:size() - 1 do
+            local obj = worldObjects:get(i)
+            if isWorldInventoryObject(obj) then
+                local fullType = getWorldItemFullType(obj)
+                if NMWorldItemVisuals.isRelevantFullType(fullType) then
+                    sanitizeWorldObject(obj, "nearby_sweep")
+                    processed = processed + 1
                 end
             end
         end
     end
     return processed
+end
+
+local function advanceSweepCursor(sweep)
+    sweep.y = sweep.y + 1
+    if sweep.y > sweep.maxY then
+        sweep.y = sweep.minY
+        sweep.x = sweep.x + 1
+    end
+    return sweep.x <= sweep.maxX
+end
+
+local function continueNearbyWorldSweep()
+    local sweep = activeSweep
+    if not (sweep and sweep.cell) then
+        return 0
+    end
+
+    local processed = 0
+    local visitedSquares = 0
+    while activeSweep and visitedSquares < SWEEP_BUDGET_SQUARES do
+        local squareProcessed = processSweepSquare(sweep)
+        processed = processed + squareProcessed
+        sweep.processed = (tonumber(sweep.processed) or 0) + squareProcessed
+        visitedSquares = visitedSquares + 1
+        if not advanceSweepCursor(sweep) then
+            activeSweep = nil
+            break
+        end
+    end
+    return processed
+end
+
+local function maybeStartNearbyWorldSweep(player)
+    if activeSweep then
+        return
+    end
+    startNearbyWorldSweep(player)
 end
 
 function NMClientWorldItemVisualSanitizer.onObjectAdded(obj)
@@ -100,11 +202,23 @@ function NMClientWorldItemVisualSanitizer.onObjectAdded(obj)
     if not sanitizeWorldObject(obj, "object_added") then
         queuePendingWorld(obj, "object_added_retry")
     end
+    NMClientWorldItemVisualSanitizer._pendingNearbySweep = true
 end
 
-function NMClientWorldItemVisualSanitizer.onTick(player)
-    NMClientWorldItemVisualSanitizer._tickCounter = (tonumber(NMClientWorldItemVisualSanitizer._tickCounter) or 0) + 1
+function NMClientWorldItemVisualSanitizer.requestNearbySweep(_reason)
+    countUiInvalidation("world_sanitizer_request")
+    countUiInvalidation("world_sanitizer_request_" .. tostring(_reason or "unknown"))
+    NMClientWorldItemVisualSanitizer._pendingNearbySweep = true
+    flushUiInvalidationDiag()
+end
 
+function NMClientWorldItemVisualSanitizer.hasPendingWork()
+    return activeSweep ~= nil
+        or NMClientWorldItemVisualSanitizer._pendingNearbySweep == true
+        or mapHasAny(pendingWorldSync)
+end
+
+function NMClientWorldItemVisualSanitizer.runPendingRetries()
     for obj, entry in pairs(pendingWorldSync) do
         if not isWorldInventoryObject(obj) then
             pendingWorldSync[obj] = nil
@@ -115,16 +229,22 @@ function NMClientWorldItemVisualSanitizer.onTick(player)
             end
         end
     end
+end
 
-    if NMClientWorldItemVisualSanitizer._tickCounter == 1
-        or (NMClientWorldItemVisualSanitizer._tickCounter % SWEEP_INTERVAL_TICKS) == 0 then
-        sweepNearbyWorldItems(player)
+function NMClientWorldItemVisualSanitizer.runNearbySweep(player)
+    if NMClientWorldItemVisualSanitizer._pendingNearbySweep == true and not activeSweep then
+        maybeStartNearbyWorldSweep(player)
+        if activeSweep then
+            NMClientWorldItemVisualSanitizer._pendingNearbySweep = false
+        end
     end
+    return continueNearbyWorldSweep()
 end
 
 function NMClientWorldItemVisualSanitizer.onGameStart()
     pendingWorldSync = {}
-    NMClientWorldItemVisualSanitizer._tickCounter = 0
+    activeSweep = nil
+    NMClientWorldItemVisualSanitizer._pendingNearbySweep = true
 end
 
 return NMClientWorldItemVisualSanitizer

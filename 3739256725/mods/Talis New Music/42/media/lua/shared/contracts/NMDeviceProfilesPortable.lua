@@ -33,6 +33,7 @@ function NMDeviceProfiles.isPortableTrackedContext(profile, context)
     end
     local normalized = tostring(context or "")
     return normalized == "attached"
+        or normalized == "pickup_pending"
         or normalized == "stowed"
         or normalized == "placed"
         or normalized == "drop_pending"
@@ -44,6 +45,9 @@ function NMDeviceProfiles.resolvePortableTrackedAction(profile, mode)
     end
     local normalized = tostring(mode or "off")
     if normalized == "attached" then
+        return "sync_portable_attached"
+    end
+    if normalized == "pickup_pending" then
         return "sync_portable_attached"
     end
     if normalized == "placed" then

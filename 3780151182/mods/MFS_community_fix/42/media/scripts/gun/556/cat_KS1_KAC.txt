@@ -154,7 +154,7 @@ module Base
         ModelWeaponPart = Gunpart.Clip_QBZ191_cat Gunpart.Clip_QBZ191_cat,
         ModelWeaponPart = Gunpart.Clip_ar_10_cat Gunpart.Clip_ar_10_cat,
         ModelWeaponPart = Gunpart.Clip_Beowulf_cat Gunpart.Clip_Beowulf_cat,
-        ModelWeaponPart = Gunpart.Clip_KS1_KAC_cat Gunpart.Clip_KS1_KAC_cat,
+        ModelWeaponPart = Gunpart.Clip_KS1_KAC_cat Gunpart.Clip_KS1_KAC_cat Clip Clip,
         ModelWeaponPart = Gunpart.Clip_KrissVector_cat Gunpart.Clip_KrissVector_cat,
         ModelWeaponPart = Gunpart.Clip_M82_cat Gunpart.Clip_M82_cat,
         ModelWeaponPart = Gunpart.Clip_MK12_cat Gunpart.Clip_MK12_cat,
@@ -255,9 +255,9 @@ attachment muzzle
             offset = 0 -0.0 -0.0,
             rotate = 0.0 0.0 0.0,
          }
-         attachment Clip
+        attachment Clip
         {
-            offset = 0 -0.015 -0.0,
+            offset = 0 0.0 0.0,
             rotate = 0.0 0.0 0.0,
          }
         attachment R_Scope

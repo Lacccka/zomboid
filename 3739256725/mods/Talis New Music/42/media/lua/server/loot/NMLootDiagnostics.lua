@@ -158,6 +158,19 @@ function diagnostics.formatSourceCategorySummary(sourceRecord)
     )
 end
 
+function diagnostics.formatResolvedRouteCounts(routeRecord)
+    if type(routeRecord) ~= "table" then
+        return "none"
+    end
+    return string.format(
+        "media={%s} loose={%s} loaded={%s} devices={%s}",
+        diagnostics.formatCountMap(routeRecord.media or {}, MEDIA_CATEGORY_ORDER),
+        diagnostics.formatCountMap(routeRecord.loose or {}, MEDIA_CATEGORY_ORDER),
+        diagnostics.formatCountMap(routeRecord.loaded or {}, MEDIA_CATEGORY_ORDER),
+        diagnostics.formatCountMap(routeRecord.devices or {}, DEVICE_CATEGORY_ORDER)
+    )
+end
+
 local function shouldEmitSandboxLootLog(distributionAuditEnabled, tag)
     if distributionAuditEnabled then
         return true
@@ -184,8 +197,9 @@ end
 function diagnostics.emitSandboxLootSummary(context)
     local distributionAuditEnabled = context.distributionAuditEnabled == true
     local rawSandboxLoot = context.rawSandboxLoot
+    local lootPolicy = context.lootPolicy
     local resolvedRateFormatter = function(category)
-        return NMLootSandboxSettings.resolveCategoryRate(category)
+        return NMLootSandboxSettings.resolveCategoryRate(category, lootPolicy)
     end
 
     logLoot(distributionAuditEnabled, "sandbox.loot raw sandbox settings", diagnostics.formatRawSandboxLootSettings(rawSandboxLoot))
@@ -255,6 +269,16 @@ function diagnostics.emitSandboxLootSummary(context)
     logLoot(distributionAuditEnabled, "sandbox.loot base zomboid ost filtered", tostring(context.filteredBaseZomboidOST))
     logLoot(
         distributionAuditEnabled,
+        "sandbox.loot resolved pools",
+        string.format(
+            "standard={%s} globalBackfill={%s} storeTopUp={%s}",
+            diagnostics.formatResolvedRouteCounts(context.resolvedPoolCounts and context.resolvedPoolCounts.standard or nil),
+            diagnostics.formatResolvedRouteCounts(context.resolvedPoolCounts and context.resolvedPoolCounts.globalBackfill or nil),
+            diagnostics.formatResolvedRouteCounts(context.resolvedPoolCounts and context.resolvedPoolCounts.storeTopUp or nil)
+        )
+    )
+    logLoot(
+        distributionAuditEnabled,
         "sandbox.loot managed media footprint",
         string.format(
             "uniqueManaged=%s presentInMerged=%s byCategory={%s} presentByCategory={%s} oversizedRisk=%s:%s",
@@ -303,13 +327,19 @@ function diagnostics.emitSandboxLootSummary(context)
         distributionAuditEnabled,
         "sandbox.loot route summary",
         string.format(
-            "standard={source=%s mediaRawWeights=%s mediaShares=%s totalMediaBudget=%.3f} backfill={removedCDs=%s removedCDPlayers=%s mediaMultiplier=%.3f deviceMultiplier=%.3f mediaRawWeights=%s mediaShares=%s deviceRawWeights=%s deviceShares=%s} topup={mediaShares=%s deviceBias=%s} diagnostics={%s}",
+            "standard={source=%s mediaRawWeights=%s mediaShares=%s compensatedRawWeights=%s compensatedShares=%s totalMediaBudget=%.3f} backfill={removedCDs=%s removedCDPlayers=%s mediaMultiplier=%.3f deviceMultiplier=%.3f mediaRawWeights=%s mediaShares=%s compensatedRawWeights=%s compensatedShares=%s deviceRawWeights=%s deviceShares=%s} topup={mediaShares=%s deviceBias=%s} diagnostics={%s}",
             diagnostics.formatSourceCategorySummary(context.injected and context.injected.bySource and context.injected.bySource.standard or nil),
             diagnostics.formatCategoryFloatMap(MEDIA_CATEGORY_ORDER, function(category)
                 return context.standardRoute and context.standardRoute.mediaRawWeights and context.standardRoute.mediaRawWeights[category] or 0
             end),
             diagnostics.formatCategoryFloatMap(MEDIA_CATEGORY_ORDER, function(category)
                 return context.standardRoute and context.standardRoute.mediaShares and context.standardRoute.mediaShares[category] or 0
+            end),
+            diagnostics.formatCategoryFloatMap(MEDIA_CATEGORY_ORDER, function(category)
+                return context.standardRoute and context.standardRoute.compensatedMediaRawWeights and context.standardRoute.compensatedMediaRawWeights[category] or 0
+            end),
+            diagnostics.formatCategoryFloatMap(MEDIA_CATEGORY_ORDER, function(category)
+                return context.standardRoute and context.standardRoute.compensatedMediaShares and context.standardRoute.compensatedMediaShares[category] or 0
             end),
             tonumber(context.standardRoute and context.standardRoute.totalMediaBudget) or 0,
             tostring(tonumber(context.backfill and context.backfill.removedVanillaCDs) or 0),
@@ -321,6 +351,12 @@ function diagnostics.emitSandboxLootSummary(context)
             end),
             diagnostics.formatCategoryFloatMap(MEDIA_CATEGORY_ORDER, function(category)
                 return context.backfill and context.backfill.mediaShares and context.backfill.mediaShares[category] or 0
+            end),
+            diagnostics.formatCategoryFloatMap(MEDIA_CATEGORY_ORDER, function(category)
+                return context.backfill and context.backfill.compensatedMediaRawWeights and context.backfill.compensatedMediaRawWeights[category] or 0
+            end),
+            diagnostics.formatCategoryFloatMap(MEDIA_CATEGORY_ORDER, function(category)
+                return context.backfill and context.backfill.compensatedMediaShares and context.backfill.compensatedMediaShares[category] or 0
             end),
             diagnostics.formatCategoryFloatMap(DEVICE_CATEGORY_ORDER, function(category)
                 return context.backfill and context.backfill.deviceRawWeights and context.backfill.deviceRawWeights[category] or 0
@@ -337,7 +373,6 @@ function diagnostics.emitSandboxLootSummary(context)
             diagnostics.formatBudgetDiagnosticsSummary(context.budgetDiagnostics, CATEGORY_ORDER)
         )
     )
-
     logLoot(distributionAuditEnabled, "sandbox.loot base category counts", diagnostics.formatCountMap(context.baseCategoryCounts))
     logLoot(distributionAuditEnabled, "sandbox.loot child category counts", diagnostics.formatCountMap(context.childPoolCounts, MEDIA_CATEGORY_ORDER))
     logLoot(distributionAuditEnabled, "sandbox.loot base present counts", diagnostics.formatCountMap(context.basePresentCounts))
@@ -387,7 +422,7 @@ function diagnostics.emitSandboxLootSummary(context)
         distributionAuditEnabled,
         "sandbox.loot music store top-up",
         string.format(
-            "sharesMedia={%s} biasDevices={%s} normal={source=%s mediaRawWeights={%s} mediaShares={%s} totalMediaBudget=%.3f} backfill={removedCDs=%s removedCDPlayers=%s mediaMultiplier=%.3f deviceMultiplier=%.3f mediaRawWeights={%s} mediaShares={%s} deviceRawWeights={%s} deviceShares={%s} source=%s} topup={%s}",
+            "sharesMedia={%s} biasDevices={%s} normal={source=%s mediaRawWeights={%s} mediaShares={%s} compensatedRawWeights={%s} compensatedShares={%s} totalMediaBudget=%.3f} backfill={removedCDs=%s removedCDPlayers=%s mediaMultiplier=%.3f deviceMultiplier=%.3f mediaRawWeights={%s} mediaShares={%s} compensatedRawWeights={%s} compensatedShares={%s} deviceRawWeights={%s} deviceShares={%s} source=%s} topup={%s}",
             diagnostics.formatCategoryFloatMap(MEDIA_CATEGORY_ORDER, function(category)
                 return context.storeTopUp and context.storeTopUp.mediaShares and context.storeTopUp.mediaShares[category] or 0
             end),
@@ -401,6 +436,12 @@ function diagnostics.emitSandboxLootSummary(context)
             diagnostics.formatCategoryFloatMap(MEDIA_CATEGORY_ORDER, function(category)
                 return context.standardRoute and context.standardRoute.mediaShares and context.standardRoute.mediaShares[category] or 0
             end),
+            diagnostics.formatCategoryFloatMap(MEDIA_CATEGORY_ORDER, function(category)
+                return context.standardRoute and context.standardRoute.compensatedMediaRawWeights and context.standardRoute.compensatedMediaRawWeights[category] or 0
+            end),
+            diagnostics.formatCategoryFloatMap(MEDIA_CATEGORY_ORDER, function(category)
+                return context.standardRoute and context.standardRoute.compensatedMediaShares and context.standardRoute.compensatedMediaShares[category] or 0
+            end),
             tonumber(context.standardRoute and context.standardRoute.totalMediaBudget) or 0,
             tostring(tonumber(context.backfill and context.backfill.removedVanillaCDs) or 0),
             tostring(tonumber(context.backfill and context.backfill.removedVanillaCDPlayers) or 0),
@@ -411,6 +452,12 @@ function diagnostics.emitSandboxLootSummary(context)
             end),
             diagnostics.formatCategoryFloatMap(MEDIA_CATEGORY_ORDER, function(category)
                 return context.backfill and context.backfill.mediaShares and context.backfill.mediaShares[category] or 0
+            end),
+            diagnostics.formatCategoryFloatMap(MEDIA_CATEGORY_ORDER, function(category)
+                return context.backfill and context.backfill.compensatedMediaRawWeights and context.backfill.compensatedMediaRawWeights[category] or 0
+            end),
+            diagnostics.formatCategoryFloatMap(MEDIA_CATEGORY_ORDER, function(category)
+                return context.backfill and context.backfill.compensatedMediaShares and context.backfill.compensatedMediaShares[category] or 0
             end),
             diagnostics.formatCategoryFloatMap(DEVICE_CATEGORY_ORDER, function(category)
                 return context.backfill and context.backfill.deviceRawWeights and context.backfill.deviceRawWeights[category] or 0

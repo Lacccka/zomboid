@@ -388,6 +388,21 @@ local function handleAttachedOwnerPresence(entry, state, nowMsValue)
     end
     return false
 end
+
+local function hasRegistryEntries()
+    local worldRegistry = NMServerRegistryState and NMServerRegistryState.worldRegistry or nil
+    if type(worldRegistry) ~= "table" then
+        return false
+    end
+    for _ in pairs(worldRegistry) do
+        return true
+    end
+    return false
+end
+
+function NMServerVehicleTrackSchedulerTick.hasWorldSources()
+    return hasRegistryEntries()
+end
 local function publishEntryState(entry, state)
     entry.stateSnapshot = NMDeviceState.export(state)
     NMServerRegistryBroadcast.broadcastEntry(

@@ -7,35 +7,99 @@ require "zombies/NMServerZombieScanHelpers"
 require "zombies/NMServerZombieAssignmentShared"
 require "zombies/NMServerZombieAssignmentApplyShared"
 require "zombies/NMServerZombieAssignmentOutcomeShared"
+require "zombies/NMServerSPZombieIntakeQueue"
+require "zombies/NMServerSPZombieAssignmentEligibility"
 
 local STRATEGY_NAME = "sp_runtime_attach"
 local HEARTBEAT_TICKS = 900
-local SCAN_INTERVAL_TICKS = 120
+local SCAN_INTERVAL_TICKS = 30
 local SCAN_RADIUS_SQ = 50 * 50
+local SCAN_RADIUS_TILES = 50
 local SCAN_ZOMBIE_LIMIT = 32
 local SCAN_PLAYER_LIMIT = 4
+local ACTIVE_QUEUE_WAKE_INTERVAL_TICKS = 10
+local ACTIVE_DRAIN_LIMIT = 24
+local MAINTENANCE_DRAIN_LIMIT = 32
 local FAILED_RETRY_TICKS = 600
 local LOADED_SWEEP_LIMIT = 12
+local ACTIVE_ELIGIBLE_WINDOW_TICKS = 180
+local ACTIVE_PROCESSED_WINDOW_TICKS = 240
+local NEARBY_IDLE_WINDOW_TICKS = 30
+local COOLDOWN_INTEREST_WINDOW_TICKS = 20
+local RECENT_SETTLED_SKIP_TICKS = 90
+local IDLE_DRAIN_BACKOFF_TICKS = 45
+local UPDATE_RETRY_TICKS = 45
+local FAILED_UPDATE_RETRY_TICKS = 120
+local UPDATE_STATELESS_RETRY_TICKS = 90
+local UPDATE_DIAG_LOG_INTERVAL_MS = 5000
+local HELPER_DIAG_LOG_INTERVAL_MS = 5000
 
 NMServerSPZombieAssignmentFlow._diag = NMServerSPZombieAssignmentFlow._diag or {
     ticks = 0,
-    updateCalls = 0,
-    attachAttempts = 0,
-    attachSuccess = 0,
-    attachFailure = 0,
-    locationFailures = 0,
+    drainEligible = 0,
+    drainAttempted = 0,
+    drainIneligibleSkip = 0,
+    drainSettledSkip = 0,
+    drainCooldownSkip = 0,
+    queueProcessed = 0,
+    queueDequeued = 0,
+    queueCadenceWait = 0,
+    queueLingering = 0,
     scanCalls = 0,
     scanCandidates = 0,
     scanNearby = 0,
     scanLoadedSweep = 0,
+    scanEnqueued = 0,
     listCursor = 0,
+    attachAttempts = 0,
+    attachSuccess = 0,
+    attachFailure = 0,
+    locationFailures = 0,
     attachInventoryFallback = 0,
     attachExcluded = 0,
     attachExcludedScrubbed = 0,
-    lastReportedAttachSuccess = 0,
-    lastReportedAttachFailure = 0,
-    lastReportedAttachFallback = 0,
-    attachSuppressed = 0
+    attachSuppressed = 0,
+    recentNearbyPlayerTick = 0,
+    recentEligibleAttachTick = 0,
+    recentProcessedScanTick = 0,
+    recentIdleDrainTick = 0,
+    nextRetryPendingTick = 0,
+    zeroEligibleDrainStreak = 0,
+    interestQueuePending = 0,
+    interestEligibleRecent = 0,
+    interestProcessedRecent = 0,
+    interestCooldownPending = 0,
+    interestNearbyIdle = 0,
+    interestBackoffIdle = 0,
+    interestMaintenanceOnly = 0,
+    hasActiveWorkHits = 0,
+    stateActiveAttachWorkWins = 0,
+    stateActiveRecentProcessingWins = 0,
+    stateActiveCooldownPendingWins = 0,
+    stateQueuePendingWins = 0,
+    stateBackoffIdleWins = 0,
+    stateNearbyButIdleWins = 0,
+    stateMaintenanceOnlyWins = 0,
+    stateTieQueueVsAttach = 0,
+    stateTieQueueVsProcessed = 0,
+    stateTieQueueVsCooldown = 0,
+    stateTieAttachVsProcessed = 0,
+    stateTieAttachVsCooldown = 0,
+    stateTieProcessedVsCooldown = 0,
+    stateActiveAttachAge = 0,
+    stateRecentProcessedAge = 0,
+    stateRecentIdleDrainAge = 0,
+    stateNextRetryAge = 0,
+    eligibleDecisionSeen = 0,
+    attachAttemptTicked = 0,
+    attachSuccessTicked = 0,
+    attachFailureTicked = 0,
+    processedWithoutAttach = 0,
+    pendingQueueCount = 0,
+    pendingQueueOldestAge = 0,
+    lastDiagLogMs = 0,
+    helperLastDiagLogMs = 0,
+    helperCounters = {}
 }
 
 local function canRunAuthoritativeMutation()
@@ -53,6 +117,10 @@ local function shouldRun()
         and NMZombieLiveStrategy
         and NMZombieLiveStrategy.shouldRunSPRuntimeAttach
         and NMZombieLiveStrategy.shouldRunSPRuntimeAttach() == true
+end
+
+local function memoryDiagEnabled()
+    return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("memory") == true
 end
 
 local function shouldLogProofVerbose()
@@ -75,6 +143,10 @@ local function isAliveZombie(zombie)
 end
 
 local function getModData(holder)
+    if memoryDiagEnabled() then
+        local diag = NMServerSPZombieAssignmentFlow._diag
+        diag.helperCounters["sp_shared.getModData"] = (tonumber(diag.helperCounters["sp_shared.getModData"]) or 0) + 1
+    end
     return NMServerZombieAssignmentShared.getModData(holder)
 end
 
@@ -86,6 +158,43 @@ local function collectCandidatePlayers()
     })
 end
 
+local function collectScanPlayers()
+    local players = collectCandidatePlayers() or {}
+    if #players > 0 then
+        return players
+    end
+    local out = {}
+    local seen = {}
+    local localPlayer = getPlayer and getPlayer() or nil
+    if localPlayer then
+        out[#out + 1] = localPlayer
+        seen[localPlayer] = true
+    end
+    for i = 0, SCAN_PLAYER_LIMIT - 1 do
+        local player = getSpecificPlayer and getSpecificPlayer(i) or nil
+        if player and not seen[player] then
+            out[#out + 1] = player
+            seen[player] = true
+            if #out >= SCAN_PLAYER_LIMIT then
+                break
+            end
+        end
+    end
+    return out
+end
+
+local function hasPlayerAnchor()
+    if getPlayer and getPlayer() then
+        return true
+    end
+    for i = 0, SCAN_PLAYER_LIMIT - 1 do
+        if getSpecificPlayer and getSpecificPlayer(i) then
+            return true
+        end
+    end
+    return false
+end
+
 local function isZombieNearAnyPlayer(zombie, players)
     return NMServerZombieScanHelpers.isZombieNearAnyPlayer(zombie, players, SCAN_RADIUS_SQ)
 end
@@ -95,10 +204,18 @@ local function getSpecForVariantId(variantId)
 end
 
 local function getStampedVariantSpec(zombie)
+    if memoryDiagEnabled() then
+        local diag = NMServerSPZombieAssignmentFlow._diag
+        diag.helperCounters["sp_shared.getStampedVariantSpec"] = (tonumber(diag.helperCounters["sp_shared.getStampedVariantSpec"]) or 0) + 1
+    end
     return NMServerZombieAssignmentShared.getStampedVariantSpec(zombie)
 end
 
 local function findAttachedProofItem(zombie, spec)
+    if memoryDiagEnabled() then
+        local diag = NMServerSPZombieAssignmentFlow._diag
+        diag.helperCounters["sp_shared.findAttachedProofItem"] = (tonumber(diag.helperCounters["sp_shared.findAttachedProofItem"]) or 0) + 1
+    end
     local item, meta = NMServerZombieAssignmentShared.findAttachedProofItem(zombie, spec, { allowInventoryFallback = true })
     if meta and meta.usedInventoryFallback == true then
         NMServerSPZombieAssignmentFlow._diag.attachInventoryFallback = (NMServerSPZombieAssignmentFlow._diag.attachInventoryFallback or 0) + 1
@@ -107,6 +224,10 @@ local function findAttachedProofItem(zombie, spec)
 end
 
 local function findInventoryProofItem(zombie, spec)
+    if memoryDiagEnabled() then
+        local diag = NMServerSPZombieAssignmentFlow._diag
+        diag.helperCounters["sp_shared.findInventoryProofItem"] = (tonumber(diag.helperCounters["sp_shared.findInventoryProofItem"]) or 0) + 1
+    end
     return NMServerZombieAssignmentShared.findInventoryProofItem(zombie, spec)
 end
 
@@ -156,64 +277,270 @@ local function stampAttachedOutcome(zombie, outcome)
     })
 end
 
-local function shouldAttemptAttach(zombie)
-    local md = getModData(zombie)
-    local status = tostring(md and md.status or "")
-    local spec = getStampedVariantSpec(zombie)
-    local mediaMode = tostring(md and md.mediaMode or "")
-    if status == "attached" then
-        local selected = md and md.selected == true
-        local selectionSource = tostring(md and md.selectionSource or "")
-        if selected and selectionSource == "server_ledger" and spec and findAttachedProofItem(zombie, spec) and mediaMode ~= "" then
-            return false
+local function markRecentTick(fieldName)
+    local diag = NMServerSPZombieAssignmentFlow._diag
+    diag[tostring(fieldName or "")] = tonumber(diag.ticks) or 0
+end
+
+local function getRecentDelta(currentTick, value)
+    local recentTick = tonumber(value) or 0
+    if recentTick <= 0 then
+        return math.huge
+    end
+    return currentTick - recentTick
+end
+
+local function nowRealMs()
+    if getTimestampMs then
+        local ms = tonumber(getTimestampMs())
+        if ms then
+            return ms
         end
-        return true
     end
-    if status == "media_only" then
-        return mediaMode == ""
-    end
-    if status == "excluded" or status == "suppressed" then
-        if spec and (findAttachedProofItem(zombie, spec) or findInventoryProofItem(zombie, spec)) then
-            return true
+    if getTimestamp then
+        local ts = tonumber(getTimestamp())
+        if ts then
+            return ts * 1000
         end
-        return false
     end
-    if status ~= "failed" then
-        return true
+    return 0
+end
+
+local function flushUpdateDiag()
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("memory") == true) then
+        return
     end
-    local currentTick = tonumber(NMServerSPZombieAssignmentFlow._diag and NMServerSPZombieAssignmentFlow._diag.ticks or 0) or 0
-    local lastAttemptTick = tonumber(md and md.lastAttemptTick or 0) or 0
-    return (currentTick - lastAttemptTick) >= FAILED_RETRY_TICKS
+    local diag = NMServerSPZombieAssignmentFlow._diag
+    local nowMs = nowRealMs()
+    if (nowMs - (tonumber(diag.lastDiagLogMs) or 0)) < UPDATE_DIAG_LOG_INTERVAL_MS then
+        return
+    end
+    diag.lastDiagLogMs = nowMs
+    NMCore.logChannel(
+        "memory",
+        "sp_zombie_update_diag",
+        string.format(
+            "drainEligible=%s drainAttempted=%s drainIneligibleSkip=%s drainSettledSkip=%s drainCooldownSkip=%s queueProcessed=%s queueDequeued=%s queueCadenceWait=%s queueLingering=%s scanEnqueued=%s interestQueuePending=%s interestEligibleRecent=%s interestProcessedRecent=%s interestCooldownPending=%s interestNearbyIdle=%s interestBackoffIdle=%s interestMaintenanceOnly=%s pendingQueueCount=%s pendingQueueOldestAge=%s eligibleDecisionSeen=%s attachAttemptTicked=%s attachSuccessTicked=%s attachFailureTicked=%s processedWithoutAttach=%s",
+            tostring(diag.drainEligible or 0),
+            tostring(diag.drainAttempted or 0),
+            tostring(diag.drainIneligibleSkip or 0),
+            tostring(diag.drainSettledSkip or 0),
+            tostring(diag.drainCooldownSkip or 0),
+            tostring(diag.queueProcessed or 0),
+            tostring(diag.queueDequeued or 0),
+            tostring(diag.queueCadenceWait or 0),
+            tostring(diag.queueLingering or 0),
+            tostring(diag.scanEnqueued or 0),
+            tostring(diag.interestQueuePending or 0),
+            tostring(diag.interestEligibleRecent or 0),
+            tostring(diag.interestProcessedRecent or 0),
+            tostring(diag.interestCooldownPending or 0),
+            tostring(diag.interestNearbyIdle or 0),
+            tostring(diag.interestBackoffIdle or 0),
+            tostring(diag.interestMaintenanceOnly or 0),
+            tostring(diag.pendingQueueCount or 0),
+            tostring(diag.pendingQueueOldestAge or 0),
+            tostring(diag.eligibleDecisionSeen or 0),
+            tostring(diag.attachAttemptTicked or 0),
+            tostring(diag.attachSuccessTicked or 0),
+            tostring(diag.attachFailureTicked or 0),
+            tostring(diag.processedWithoutAttach or 0)
+        )
+    )
+    NMCore.logChannel(
+        "memory",
+        "sp_zombie_interest_diag",
+        string.format(
+            "hasActiveWorkHits=%s stateQueuePendingWins=%s stateActiveAttachWorkWins=%s stateActiveRecentProcessingWins=%s stateActiveCooldownPendingWins=%s stateBackoffIdleWins=%s stateNearbyButIdleWins=%s stateMaintenanceOnlyWins=%s stateTieQueueVsAttach=%s stateTieQueueVsProcessed=%s stateTieQueueVsCooldown=%s stateTieAttachVsProcessed=%s stateTieAttachVsCooldown=%s stateTieProcessedVsCooldown=%s activeAttachAge=%s recentProcessedAge=%s recentIdleDrainAge=%s nextRetryAge=%s",
+            tostring(diag.hasActiveWorkHits or 0),
+            tostring(diag.stateQueuePendingWins or 0),
+            tostring(diag.stateActiveAttachWorkWins or 0),
+            tostring(diag.stateActiveRecentProcessingWins or 0),
+            tostring(diag.stateActiveCooldownPendingWins or 0),
+            tostring(diag.stateBackoffIdleWins or 0),
+            tostring(diag.stateNearbyButIdleWins or 0),
+            tostring(diag.stateMaintenanceOnlyWins or 0),
+            tostring(diag.stateTieQueueVsAttach or 0),
+            tostring(diag.stateTieQueueVsProcessed or 0),
+            tostring(diag.stateTieQueueVsCooldown or 0),
+            tostring(diag.stateTieAttachVsProcessed or 0),
+            tostring(diag.stateTieAttachVsCooldown or 0),
+            tostring(diag.stateTieProcessedVsCooldown or 0),
+            tostring(diag.stateActiveAttachAge or 0),
+            tostring(diag.stateRecentProcessedAge or 0),
+            tostring(diag.stateRecentIdleDrainAge or 0),
+            tostring(diag.stateNextRetryAge or 0)
+        )
+    )
+    diag.drainEligible = 0
+    diag.drainAttempted = 0
+    diag.drainIneligibleSkip = 0
+    diag.drainSettledSkip = 0
+    diag.drainCooldownSkip = 0
+    diag.queueProcessed = 0
+    diag.queueDequeued = 0
+    diag.queueCadenceWait = 0
+    diag.queueLingering = 0
+    diag.scanEnqueued = 0
+    diag.interestQueuePending = 0
+    diag.interestEligibleRecent = 0
+    diag.interestProcessedRecent = 0
+    diag.interestCooldownPending = 0
+    diag.interestNearbyIdle = 0
+    diag.interestBackoffIdle = 0
+    diag.interestMaintenanceOnly = 0
+    diag.hasActiveWorkHits = 0
+    diag.stateQueuePendingWins = 0
+    diag.stateActiveAttachWorkWins = 0
+    diag.stateActiveRecentProcessingWins = 0
+    diag.stateActiveCooldownPendingWins = 0
+    diag.stateBackoffIdleWins = 0
+    diag.stateNearbyButIdleWins = 0
+    diag.stateMaintenanceOnlyWins = 0
+    diag.stateTieQueueVsAttach = 0
+    diag.stateTieQueueVsProcessed = 0
+    diag.stateTieQueueVsCooldown = 0
+    diag.stateTieAttachVsProcessed = 0
+    diag.stateTieAttachVsCooldown = 0
+    diag.stateTieProcessedVsCooldown = 0
+    diag.stateActiveAttachAge = 0
+    diag.stateRecentProcessedAge = 0
+    diag.stateRecentIdleDrainAge = 0
+    diag.stateNextRetryAge = 0
+    diag.eligibleDecisionSeen = 0
+    diag.attachAttemptTicked = 0
+    diag.attachSuccessTicked = 0
+    diag.attachFailureTicked = 0
+    diag.processedWithoutAttach = 0
+    diag.pendingQueueCount = 0
+    diag.pendingQueueOldestAge = 0
+end
+
+local function flushHelperDiag()
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("memory") == true) then
+        return
+    end
+    local diag = NMServerSPZombieAssignmentFlow._diag
+    local nowMs = nowRealMs()
+    if (nowMs - (tonumber(diag.helperLastDiagLogMs) or 0)) < HELPER_DIAG_LOG_INTERVAL_MS then
+        return
+    end
+    diag.helperLastDiagLogMs = nowMs
+    local parts = {}
+    for name, count in pairs(diag.helperCounters) do
+        parts[#parts + 1] = string.format("%s=%d", tostring(name), tonumber(count) or 0)
+        diag.helperCounters[name] = nil
+    end
+    if #parts > 0 then
+        NMCore.logChannel("memory", "fanout_helper_diag", table.concat(parts, " | "))
+    end
 end
 
 local function countZombiesWithModulo(zombies, startIndex, count, visitor)
     return NMServerZombieScanHelpers.countZombiesWithModulo(zombies, startIndex, count, visitor)
 end
 
-local function ensureZombieHasProofDevice(zombie)
+local function scanNearbyCharacterZombies(character, callback, maxZombies)
+    return NMServerZombieScanHelpers.scanAroundCharacter(character, callback, SCAN_RADIUS_TILES, maxZombies)
+end
+
+local noteDrainSkip
+
+local function buildEligibilityDeps(zombieKey)
+    local diag = NMServerSPZombieAssignmentFlow._diag
+    return {
+        zombieKey = zombieKey,
+        nowTick = tonumber(diag and diag.ticks or 0) or 0,
+        failedRetryTicks = FAILED_RETRY_TICKS,
+        failedUpdateRetryTicks = FAILED_UPDATE_RETRY_TICKS,
+        updateRetryTicks = UPDATE_RETRY_TICKS,
+        statelessRetryTicks = UPDATE_STATELESS_RETRY_TICKS,
+        getModData = getModData,
+        getStampedVariantSpec = getStampedVariantSpec,
+        findAttachedProofItem = findAttachedProofItem,
+        findInventoryProofItem = findInventoryProofItem,
+        getRecentAttemptTick = function(key)
+            return NMServerSPZombieIntakeQueue.getRecentAttemptTick(NMServerSPZombieAssignmentFlow, key)
+        end
+    }
+end
+
+local function noteRecentSettledSkip()
+    local diag = NMServerSPZombieAssignmentFlow._diag
+    if memoryDiagEnabled() then
+        diag.helperCounters["sp_skip_recent_settled"] = (tonumber(diag.helperCounters["sp_skip_recent_settled"]) or 0) + 1
+    end
+end
+
+local function recordRecentSettledTick(zombieKey)
+    NMServerSPZombieIntakeQueue.recordRecentSettledTick(
+        NMServerSPZombieAssignmentFlow,
+        zombieKey,
+        tonumber(NMServerSPZombieAssignmentFlow._diag and NMServerSPZombieAssignmentFlow._diag.ticks or 0) or 0
+    )
+end
+
+local function clearRecentSettledTick(zombieKey)
+    NMServerSPZombieIntakeQueue.clearRecentSettledTick(NMServerSPZombieAssignmentFlow, zombieKey)
+end
+
+local function shouldSkipZombieCheaply(zombieKey)
+    local diag = NMServerSPZombieAssignmentFlow._diag
+    local currentTick = tonumber(diag and diag.ticks or 0) or 0
+    local recentSettledTick = NMServerSPZombieIntakeQueue.getRecentSettledTick(NMServerSPZombieAssignmentFlow, zombieKey)
+    if recentSettledTick > 0 and (currentTick - recentSettledTick) < RECENT_SETTLED_SKIP_TICKS then
+        noteDrainSkip("settled")
+        noteRecentSettledSkip()
+        return false, "settled"
+    end
+    local lastRecentAttempt = NMServerSPZombieIntakeQueue.getRecentAttemptTick(NMServerSPZombieAssignmentFlow, zombieKey)
+    if lastRecentAttempt > 0 and (currentTick - lastRecentAttempt) < UPDATE_RETRY_TICKS then
+        noteDrainSkip("cooldown")
+        local nextRetryTick = lastRecentAttempt + UPDATE_RETRY_TICKS
+        local existing = tonumber(diag.nextRetryPendingTick or 0) or 0
+        if existing <= 0 or nextRetryTick < existing then
+            diag.nextRetryPendingTick = nextRetryTick
+        end
+        return false, "cooldown"
+    end
+    return true, "eligible"
+end
+
+local function ensureZombieHasProofDevice(zombie, zombieKey)
     NMServerSPZombieAssignmentFlow._diag.attachAttempts = (NMServerSPZombieAssignmentFlow._diag.attachAttempts or 0) + 1
-    -- Invariant: SP orchestrates scan/retry policy only; shared apply owns assignment mutation, payload finalization, and companion-case registration.
     local outcome = NMServerZombieAssignmentApplyShared.applyAssignment(zombie, {
         strategyName = STRATEGY_NAME,
         allowAttachedInventoryFallback = true,
         companionCaseSource = "sp_runtime_attach",
         companionCaseRuntimeLabel = "sp"
     })
+    local realization = outcome and outcome.realization or nil
     if outcome.status == "suppressed" then
+        clearRecentSettledTick(zombieKey)
         NMServerSPZombieAssignmentFlow._diag.attachSuppressed = (NMServerSPZombieAssignmentFlow._diag.attachSuppressed or 0) + 1
+        NMServerSPZombieAssignmentFlow._diag.attachFailureTicked = (NMServerSPZombieAssignmentFlow._diag.attachFailureTicked or 0) + 1
         stampSelectionOutcome(zombie, getSpecForVariantId(outcome.selection and outcome.selection.variantId or ""), outcome)
+        if shouldLogProofVerbose() and realization then
+            logProof("sp_realization_contract", string.format("zombie=%s status=%s proof=%s attachment=%s companion=%s", tostring(realization.zombieId or ""), tostring(realization.selectionStatus or ""), tostring(realization.proofItemStatus or ""), tostring(realization.attachmentStatus or ""), tostring(realization.companionCaseStatus or "")))
+        end
         return false
     end
     if outcome.status == "excluded" or outcome.status == "media_only" then
+        clearRecentSettledTick(zombieKey)
         NMServerSPZombieAssignmentFlow._diag.attachExcluded = (NMServerSPZombieAssignmentFlow._diag.attachExcluded or 0) + 1
         NMServerSPZombieAssignmentFlow._diag.attachExcludedScrubbed = (NMServerSPZombieAssignmentFlow._diag.attachExcludedScrubbed or 0) + (tonumber(outcome.removedCount) or 0)
+        NMServerSPZombieAssignmentFlow._diag.attachFailureTicked = (NMServerSPZombieAssignmentFlow._diag.attachFailureTicked or 0) + 1
         stampSelectionOutcome(zombie, getSpecForVariantId(outcome.selection and outcome.selection.variantId or ""), outcome)
+        if shouldLogProofVerbose() and realization then
+            logProof("sp_realization_contract", string.format("zombie=%s status=%s proof=%s attachment=%s companion=%s", tostring(realization.zombieId or ""), tostring(realization.selectionStatus or ""), tostring(realization.proofItemStatus or ""), tostring(realization.attachmentStatus or ""), tostring(realization.companionCaseStatus or "")))
+        end
         return false
     end
-
     if not outcome.ok and outcome.reason == "missing_proof_location" then
+        clearRecentSettledTick(zombieKey)
         NMServerSPZombieAssignmentFlow._diag.attachFailure = (NMServerSPZombieAssignmentFlow._diag.attachFailure or 0) + 1
         NMServerSPZombieAssignmentFlow._diag.locationFailures = (NMServerSPZombieAssignmentFlow._diag.locationFailures or 0) + 1
+        NMServerSPZombieAssignmentFlow._diag.attachFailureTicked = (NMServerSPZombieAssignmentFlow._diag.attachFailureTicked or 0) + 1
         stampFailedOutcome(zombie, {
             spec = outcome.spec,
             selection = outcome.selection,
@@ -232,11 +559,15 @@ local function ensureZombieHasProofDevice(zombie)
             ),
             true
         )
+        if shouldLogProofVerbose() and realization then
+            logProof("sp_realization_contract", string.format("zombie=%s status=%s proof=%s attachment=%s companion=%s", tostring(realization.zombieId or ""), tostring(realization.selectionStatus or ""), tostring(realization.proofItemStatus or ""), tostring(realization.attachmentStatus or ""), tostring(realization.companionCaseStatus or "")))
+        end
         return false
     end
-
     if not outcome.ok then
+        clearRecentSettledTick(zombieKey)
         NMServerSPZombieAssignmentFlow._diag.attachFailure = (NMServerSPZombieAssignmentFlow._diag.attachFailure or 0) + 1
+        NMServerSPZombieAssignmentFlow._diag.attachFailureTicked = (NMServerSPZombieAssignmentFlow._diag.attachFailureTicked or 0) + 1
         stampFailedOutcome(zombie, outcome)
         logProof(
             "attach_failed",
@@ -248,15 +579,87 @@ local function ensureZombieHasProofDevice(zombie)
             ),
             true
         )
+        if shouldLogProofVerbose() and realization then
+            logProof("sp_realization_contract", string.format("zombie=%s status=%s proof=%s attachment=%s companion=%s", tostring(realization.zombieId or ""), tostring(realization.selectionStatus or ""), tostring(realization.proofItemStatus or ""), tostring(realization.attachmentStatus or ""), tostring(realization.companionCaseStatus or "")))
+        end
         return false
     end
-
     if outcome.usedInventoryFallback == true then
         NMServerSPZombieAssignmentFlow._diag.attachInventoryFallback = (NMServerSPZombieAssignmentFlow._diag.attachInventoryFallback or 0) + 1
     end
+    recordRecentSettledTick(zombieKey)
     NMServerSPZombieAssignmentFlow._diag.attachSuccess = (NMServerSPZombieAssignmentFlow._diag.attachSuccess or 0) + 1
+    NMServerSPZombieAssignmentFlow._diag.attachSuccessTicked = (NMServerSPZombieAssignmentFlow._diag.attachSuccessTicked or 0) + 1
     stampAttachedOutcome(zombie, outcome)
+    if shouldLogProofVerbose() and realization then
+        logProof("sp_realization_contract", string.format("zombie=%s status=%s proof=%s attachment=%s companion=%s", tostring(realization.zombieId or ""), tostring(realization.selectionStatus or ""), tostring(realization.proofItemStatus or ""), tostring(realization.attachmentStatus or ""), tostring(realization.companionCaseStatus or "")))
+    end
     return true
+end
+
+noteDrainSkip = function(reason)
+    local diag = NMServerSPZombieAssignmentFlow._diag
+    if reason == "settled" then
+        diag.drainSettledSkip = (diag.drainSettledSkip or 0) + 1
+    elseif reason == "ineligible" then
+        diag.drainIneligibleSkip = (diag.drainIneligibleSkip or 0) + 1
+    elseif reason == "cooldown" then
+        diag.drainCooldownSkip = (diag.drainCooldownSkip or 0) + 1
+    end
+end
+
+local function shouldProcessZombie(zombie, zombieKey)
+    local allowedPrecheck, precheckReason = shouldSkipZombieCheaply(zombieKey)
+    if allowedPrecheck ~= true then
+        return false
+    end
+    local allowed, reason, _, _, nextRetryTick = NMServerSPZombieAssignmentEligibility.evaluateZombie(zombie, buildEligibilityDeps(zombieKey))
+    if allowed ~= true then
+        noteDrainSkip(reason)
+        if reason == "settled" then
+            recordRecentSettledTick(zombieKey)
+        else
+            clearRecentSettledTick(zombieKey)
+        end
+        if reason == "cooldown" and tonumber(nextRetryTick or 0) > 0 then
+            local diag = NMServerSPZombieAssignmentFlow._diag
+            local existing = tonumber(diag.nextRetryPendingTick or 0) or 0
+            if existing <= 0 or tonumber(nextRetryTick) < existing then
+                diag.nextRetryPendingTick = tonumber(nextRetryTick) or 0
+            end
+        end
+        return false
+    end
+    local diag = NMServerSPZombieAssignmentFlow._diag
+    clearRecentSettledTick(zombieKey)
+    diag.drainEligible = (diag.drainEligible or 0) + 1
+    diag.eligibleDecisionSeen = (diag.eligibleDecisionSeen or 0) + 1
+    return true
+end
+
+local function applyDiscoveredZombie(zombie, zombieKey)
+    local diag = NMServerSPZombieAssignmentFlow._diag
+    diag.drainAttempted = (diag.drainAttempted or 0) + 1
+    diag.attachAttemptTicked = (diag.attachAttemptTicked or 0) + 1
+    clearRecentSettledTick(zombieKey)
+    NMServerSPZombieIntakeQueue.recordAttemptTick(NMServerSPZombieAssignmentFlow, zombieKey, diag.ticks)
+    markRecentTick("recentEligibleAttachTick")
+    ensureZombieHasProofDevice(zombie, zombieKey)
+end
+
+local function tryProcessZombie(zombie, source)
+    local diag = NMServerSPZombieAssignmentFlow._diag
+    local zombieKey = NMServerSPZombieIntakeQueue.getStableZombieQueueKey(zombie)
+    if zombieKey == "" then
+        return false, "missing_key"
+    end
+    if shouldProcessZombie(zombie, zombieKey) ~= true then
+        return false, "ineligible"
+    end
+    diag.scanEnqueued = (diag.scanEnqueued or 0) + 1
+    applyDiscoveredZombie(zombie, zombieKey)
+    markRecentTick("recentProcessedScanTick")
+    return true, tostring(source or "scan")
 end
 
 function NMServerSPZombieAssignmentFlow.onZombieUpdate(zombie)
@@ -264,72 +667,169 @@ function NMServerSPZombieAssignmentFlow.onZombieUpdate(zombie)
         return
     end
     if not isAliveZombie(zombie) then
+        flushUpdateDiag()
+        flushHelperDiag()
         return
     end
-    NMServerSPZombieAssignmentFlow._diag.updateCalls = (NMServerSPZombieAssignmentFlow._diag.updateCalls or 0) + 1
-    if not shouldAttemptAttach(zombie) then
-        return
+    -- SP intentionally uses scan-based intake; keep the executor hook shape without
+    -- reintroducing update-fanout-specific attribution noise into the active path.
+    if memoryDiagEnabled() then
+        local diag = NMServerSPZombieAssignmentFlow._diag
+        diag.helperCounters["sp_onZombieUpdate_ignored"] = (tonumber(diag.helperCounters["sp_onZombieUpdate_ignored"]) or 0) + 1
     end
-
-    ensureZombieHasProofDevice(zombie)
+    flushUpdateDiag()
+    flushHelperDiag()
 end
 
-function NMServerSPZombieAssignmentFlow.onTick()
+function NMServerSPZombieAssignmentFlow.hasActiveWork()
+    if not shouldRun() then
+        return false
+    end
+    local diag = NMServerSPZombieAssignmentFlow._diag
+    local currentTick = tonumber(diag.ticks) or 0
+    local activeAttachAge = getRecentDelta(currentTick, diag.recentEligibleAttachTick)
+    local activeProcessedAge = getRecentDelta(currentTick, diag.recentProcessedScanTick)
+    local nearbyInterestAge = getRecentDelta(currentTick, diag.recentNearbyPlayerTick)
+    local nextRetryTick = tonumber(diag.nextRetryPendingTick) or 0
+    local hasNearbyInterest = nearbyInterestAge <= NEARBY_IDLE_WINDOW_TICKS
+    local retryDueSoon = nextRetryTick > 0 and math.max(0, nextRetryTick - currentTick) <= FAILED_UPDATE_RETRY_TICKS
+    local hasAttachInterest = activeAttachAge <= ACTIVE_ELIGIBLE_WINDOW_TICKS
+    local hasProcessedInterest = activeProcessedAge <= ACTIVE_PROCESSED_WINDOW_TICKS
+    local isActive = hasAttachInterest or hasProcessedInterest or hasNearbyInterest or retryDueSoon
+    if isActive then
+        diag.hasActiveWorkHits = (diag.hasActiveWorkHits or 0) + 1
+    end
+    return isActive
+end
+
+function NMServerSPZombieAssignmentFlow.hasMaintenanceWork()
+    if not shouldRun() then
+        return false
+    end
+    local diag = NMServerSPZombieAssignmentFlow._diag
+    local currentTick = tonumber(diag.ticks) or 0
+    local nextRetryTick = tonumber(diag.nextRetryPendingTick) or 0
+    local retryDueSoon = nextRetryTick > 0 and math.max(0, nextRetryTick - currentTick) <= FAILED_UPDATE_RETRY_TICKS
+    if retryDueSoon then
+        return true
+    end
+    if hasPlayerAnchor() ~= true then
+        return false
+    end
+    local recentIdleDrainAge = getRecentDelta(currentTick, diag.recentIdleDrainTick)
+    if recentIdleDrainAge == math.huge then
+        return true
+    end
+    return recentIdleDrainAge >= IDLE_DRAIN_BACKOFF_TICKS
+end
+
+function NMServerSPZombieAssignmentFlow.observeSchedulerTick(tickStep)
+    local diag = NMServerSPZombieAssignmentFlow._diag
+    diag.ticks = (tonumber(diag.ticks) or 0) + math.max(1, tonumber(tickStep) or 1)
+end
+
+function NMServerSPZombieAssignmentFlow.getSchedulingState()
+    if not shouldRun() then
+        return "maintenance_only"
+    end
+    local diag = NMServerSPZombieAssignmentFlow._diag
+    local currentTick = tonumber(diag.ticks) or 0
+    local activeAttachAge = getRecentDelta(currentTick, diag.recentEligibleAttachTick)
+    local activeProcessedAge = getRecentDelta(currentTick, diag.recentProcessedScanTick)
+    local nearbyInterestAge = getRecentDelta(currentTick, diag.recentNearbyPlayerTick)
+    local nextRetryTick = tonumber(diag.nextRetryPendingTick) or 0
+    local nextRetryAge = nextRetryTick > 0 and math.max(0, nextRetryTick - currentTick) or 0
+    local activeAttach = activeAttachAge <= ACTIVE_ELIGIBLE_WINDOW_TICKS or nearbyInterestAge <= NEARBY_IDLE_WINDOW_TICKS
+    local activeProcessed = activeProcessedAge <= ACTIVE_PROCESSED_WINDOW_TICKS
+    local cooldownPending = nextRetryTick > 0 and nextRetryAge <= COOLDOWN_INTEREST_WINDOW_TICKS
+    local maintenanceEligible = NMServerSPZombieAssignmentFlow.hasMaintenanceWork and NMServerSPZombieAssignmentFlow.hasMaintenanceWork() == true
+    diag.stateActiveAttachAge = activeAttachAge ~= math.huge and activeAttachAge or -1
+    diag.stateRecentProcessedAge = activeProcessedAge ~= math.huge and activeProcessedAge or -1
+    local recentIdleDrainAge = getRecentDelta(currentTick, diag.recentIdleDrainTick)
+    diag.stateRecentIdleDrainAge = recentIdleDrainAge ~= math.huge and recentIdleDrainAge or -1
+    diag.stateNextRetryAge = nextRetryAge
+    diag.pendingQueueCount = 0
+    diag.pendingQueueOldestAge = 0
+    if activeAttach then
+        diag.stateActiveAttachWorkWins = (diag.stateActiveAttachWorkWins or 0) + 1
+        return "active_attach_work"
+    end
+    if activeProcessed then
+        diag.stateActiveRecentProcessingWins = (diag.stateActiveRecentProcessingWins or 0) + 1
+        return "active_recent_processing"
+    end
+    if cooldownPending then
+        diag.stateActiveCooldownPendingWins = (diag.stateActiveCooldownPendingWins or 0) + 1
+        return "active_cooldown_pending"
+    end
+    if maintenanceEligible then
+        diag.stateBackoffIdleWins = (diag.stateBackoffIdleWins or 0) + 1
+        return "maintenance_backoff_due"
+    end
+    diag.stateMaintenanceOnlyWins = (diag.stateMaintenanceOnlyWins or 0) + 1
+    return "maintenance_only"
+end
+
+function NMServerSPZombieAssignmentFlow.onTick(tickStep)
     if not shouldRun() then
         return
     end
     local diag = NMServerSPZombieAssignmentFlow._diag
-    diag.ticks = (tonumber(diag.ticks) or 0) + 1
+    diag.nextRetryPendingTick = 0
     if (diag.ticks % SCAN_INTERVAL_TICKS) == 0 then
-        local players = collectCandidatePlayers()
-        local cell = getCell and getCell() or nil
-        local zombies = cell and cell.getZombieList and cell:getZombieList() or nil
+        local players = collectScanPlayers()
         diag.scanCalls = (diag.scanCalls or 0) + 1
-        if zombies and zombies.size and #players > 0 then
-            local processed = 0
-            local nearby = 0
-            local candidates = 0
-            local loadedSweepProcessed = 0
-            local total = zombies:size()
-            local startIndex = tonumber(diag.listCursor or 0) or 0
-            countZombiesWithModulo(zombies, startIndex, total, function(zombie)
-                if isAliveZombie(zombie) then
-                    candidates = candidates + 1
-                    if isZombieNearAnyPlayer(zombie, players) then
-                        nearby = nearby + 1
-                        if processed < SCAN_ZOMBIE_LIMIT and shouldAttemptAttach(zombie) then
-                            processed = processed + 1
-                            ensureZombieHasProofDevice(zombie)
+        if memoryDiagEnabled() then
+            diag.helperCounters["sp_scan.playerAnchors." .. tostring(#players)] = (tonumber(diag.helperCounters["sp_scan.playerAnchors." .. tostring(#players)]) or 0) + 1
+        end
+        if #players > 0 then
+            local attemptsRemaining = (tonumber(tickStep) or 0) <= 30 and ACTIVE_DRAIN_LIMIT or MAINTENANCE_DRAIN_LIMIT
+            local directApplied = 0
+            local discoveredNearby = 0
+            local scannedSquares = 0
+            local scanPlayer = players[1]
+            if scanPlayer then
+                scannedSquares = scanNearbyCharacterZombies(scanPlayer, function(zombie)
+                    discoveredNearby = discoveredNearby + 1
+                    if attemptsRemaining > 0 and directApplied < SCAN_ZOMBIE_LIMIT then
+                        local applied = tryProcessZombie(zombie, "scan_nearby_square")
+                        if applied == true then
+                            directApplied = directApplied + 1
+                            attemptsRemaining = attemptsRemaining - 1
                         end
                     end
+                end, SCAN_ZOMBIE_LIMIT)
+                if memoryDiagEnabled() then
+                    local key = "sp_scan.discoveredNearby." .. tostring(discoveredNearby)
+                    diag.helperCounters[key] = (tonumber(diag.helperCounters[key]) or 0) + 1
                 end
-            end)
-            diag.listCursor = total > 0 and ((startIndex + LOADED_SWEEP_LIMIT) % total) or 0
-            if processed < SCAN_ZOMBIE_LIMIT and total > 0 then
-                countZombiesWithModulo(zombies, startIndex, LOADED_SWEEP_LIMIT, function(zombie)
-                    if processed >= SCAN_ZOMBIE_LIMIT then
-                        return
-                    end
-                    if isAliveZombie(zombie) and shouldAttemptAttach(zombie) and not isZombieNearAnyPlayer(zombie, players) then
-                        processed = processed + 1
-                        loadedSweepProcessed = loadedSweepProcessed + 1
-                        ensureZombieHasProofDevice(zombie)
-                    end
-                end)
             end
-            diag.scanCandidates = (diag.scanCandidates or 0) + candidates
-            diag.scanNearby = (diag.scanNearby or 0) + nearby
-            diag.scanLoadedSweep = (diag.scanLoadedSweep or 0) + loadedSweepProcessed
-            diag.lastReportedAttachSuccess = diag.attachSuccess or 0
-            diag.lastReportedAttachFailure = diag.attachFailure or 0
-            diag.lastReportedAttachFallback = diag.attachInventoryFallback or 0
-        else
-            diag.scanCandidates = (diag.scanCandidates or 0) + 0
+            diag.scanCandidates = (diag.scanCandidates or 0) + discoveredNearby
+            diag.scanNearby = (diag.scanNearby or 0) + discoveredNearby
+            diag.scanLoadedSweep = (diag.scanLoadedSweep or 0) + 0
+            markRecentTick("recentIdleDrainTick")
+            if discoveredNearby > 0 then
+                markRecentTick("recentNearbyPlayerTick")
+            end
+            if memoryDiagEnabled() then
+                local key = "sp_scan.squarePasses." .. tostring(scannedSquares)
+                diag.helperCounters[key] = (tonumber(diag.helperCounters[key]) or 0) + 1
+            end
+            if directApplied > 0 then
+                markRecentTick("recentProcessedScanTick")
+            end
+        elseif memoryDiagEnabled() then
+            local key = string.format("sp_scan.empty players=%s", tostring(#players))
+            diag.helperCounters[key] = (tonumber(diag.helperCounters[key]) or 0) + 1
         end
     end
     if (diag.ticks % HEARTBEAT_TICKS) ~= 0 then
+        flushUpdateDiag()
+        flushHelperDiag()
         return
     end
+    flushUpdateDiag()
+    flushHelperDiag()
 end
 
 return NMServerSPZombieAssignmentFlow

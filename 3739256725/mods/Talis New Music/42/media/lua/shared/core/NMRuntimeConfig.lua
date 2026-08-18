@@ -62,7 +62,7 @@ local function clampNumber(value, minValue, maxValue)
 end
 
 local values = {
-    buildContentToken = "2026.08.14.1",
+    buildContentToken = "2026.08.17.1",
     worldTrackingCap = 1500,
     registryStaleTicks = 7200,
     registryHeartbeatIntervalTicks = 120,
@@ -88,8 +88,6 @@ local values = {
     trackEndPendingFalseChecksByDeviceType = {},
     zombieLiveVisualStrategySP = "sp_runtime_attach",
     zombieLiveVisualStrategyMP = "mp_assignment_flow",
-    -- Keep boot defaults quiet; targeted subsystem probes can be enabled
-    -- explicitly when validating a focused runtime path.
     debugSubsystems = {
         core = false,
         intent = false,
@@ -108,9 +106,14 @@ local values = {
         loot = false,
         loot_probe = false,
         ui_render = false,
+        ui_refresh = false,
         ui_auto_close = false,
         ui_lifecycle = false,
-        slot = false
+        slot = false,
+        runtime_apply = false,
+        runtime_route = false,
+        vehicle_identity = false,
+        vehicle_route = false
     },
     enableVehicleEmitterDiagnostics = true,
     vehicleEmitterJumpWarnDistance = 12,
@@ -152,15 +155,26 @@ function NMRuntimeConfig.getBuildContentToken()
 end
 
 function NMRuntimeConfig.getFancyUIEnabled()
-    local fromSandbox = resolveSandboxBoolean("FancyUI")
-    if fromSandbox ~= nil then
-        return fromSandbox == true
+    if NMClientModOptions and NMClientModOptions.getFancyUIEnabled then
+        return NMClientModOptions.getFancyUIEnabled() ~= false
     end
     return values.fancyUIEnabled ~= false
 end
 
+function NMRuntimeConfig.setFancyUIEnabled(enabled)
+    values.fancyUIEnabled = enabled ~= false
+end
+
 function NMRuntimeConfig.setShowTrackNumberPrefix(enabled)
     values.showTrackNumberPrefix = enabled ~= false
+end
+
+function NMRuntimeConfig.setFancyDeviceUiScaleMultiplier(multiplier)
+    local numeric = tonumber(multiplier)
+    if numeric == nil then
+        numeric = 1.0
+    end
+    values.fancyDeviceUiScaleMultiplier = NMCore and NMCore.clamp and NMCore.clamp(numeric, 0.5, 2.0) or math.max(0.5, math.min(2.0, numeric))
 end
 
 function NMRuntimeConfig.setNewMusicMasterVolume(volume)
@@ -190,6 +204,20 @@ function NMRuntimeConfig.getShowTrackNumberPrefix()
         return NMClientModOptions.getShowTrackNumberPrefix() ~= false
     end
     return values.showTrackNumberPrefix ~= false
+end
+
+function NMRuntimeConfig.getFancyDeviceUiScaleMultiplier()
+    if NMClientModOptions and NMClientModOptions.getFancyDeviceUiScaleMultiplier then
+        local value = tonumber(NMClientModOptions.getFancyDeviceUiScaleMultiplier())
+        if value ~= nil then
+            return NMCore and NMCore.clamp and NMCore.clamp(value, 0.5, 2.0) or math.max(0.5, math.min(2.0, value))
+        end
+    end
+    local fallback = tonumber(values.fancyDeviceUiScaleMultiplier)
+    if fallback ~= nil then
+        return NMCore and NMCore.clamp and NMCore.clamp(fallback, 0.5, 2.0) or math.max(0.5, math.min(2.0, fallback))
+    end
+    return 1.0
 end
 
 function NMRuntimeConfig.set(key, value)

@@ -37,7 +37,7 @@
 
 if isClient() then return end
 
-local PZKZones = require 'utils/pzkZonesFunction'
+local PZKZones = require 'pzkUtils/pzkZonesFunction'
 
 local function Registry()
   if PZKZones then
@@ -998,7 +998,7 @@ PZKZones.addZone("ranger", "ParkingStall", 6116, 8047, 0, 5, 3, "E", PzkVanillaP
   end
 end
 
-Events.OnPostMapLoad.Add(Registry)
+Events.OnLoadMapZones.Add(Registry)
 
 
 

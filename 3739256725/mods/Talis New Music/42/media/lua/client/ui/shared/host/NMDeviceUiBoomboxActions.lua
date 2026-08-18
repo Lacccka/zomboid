@@ -7,6 +7,16 @@ local VALID_POLICIES = {
     shuffle = true,
 }
 
+local function hasUsablePower(state)
+    if not state then
+        return false
+    end
+    if state.batteryPresent == nil then
+        return true
+    end
+    return state.batteryPresent == true and (tonumber(state.batteryCharge) or 0) > 0
+end
+
 function NMDeviceUiBoomboxActions.execute(window, action, payload, context)
     local ctx = context or {}
     local state = ctx.state
@@ -18,12 +28,26 @@ function NMDeviceUiBoomboxActions.execute(window, action, payload, context)
     if action == "play" then
         local trackCount = ctx.resolveTrackCount and ctx.resolveTrackCount() or 0
         if not (state and state.isOn == true) then
+            if hasUsablePower(state) ~= true then
+                return false, "battery_unavailable"
+            end
             local ok, reason = dispatch("power_on", {})
             if ok ~= true then
                 return ok, reason
             end
         end
         return dispatch("play", { trackCount = trackCount })
+    end
+
+    if action == "power_on" then
+        if hasUsablePower(state) ~= true then
+            return false, "battery_unavailable"
+        end
+        return dispatch("power_on", {})
+    end
+
+    if action == "power_off" then
+        return dispatch("power_off", {})
     end
 
     if action == "stop" then

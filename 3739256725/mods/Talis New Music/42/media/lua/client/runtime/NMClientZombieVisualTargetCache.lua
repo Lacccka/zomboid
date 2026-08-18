@@ -8,6 +8,7 @@ NMClientZombieVisualTargetCache._targetCount = NMClientZombieVisualTargetCache._
 NMClientZombieVisualTargetCache._staleLoggedRevision = NMClientZombieVisualTargetCache._staleLoggedRevision or 0
 NMClientZombieVisualTargetCache._staleLoggedAge = NMClientZombieVisualTargetCache._staleLoggedAge or 0
 NMClientZombieVisualTargetCache._targets = NMClientZombieVisualTargetCache._targets or {}
+NMClientZombieVisualTargetCache._lastChangedCount = NMClientZombieVisualTargetCache._lastChangedCount or 0
 
 local function shouldLog()
     return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("zombie_visual") == true
@@ -114,6 +115,7 @@ local function buildUnknownDecision(zombie)
 end
 
 local function receiveTargetSnapshot(args)
+    local previousTargets = NMClientZombieVisualTargetCache._targets or {}
     NMClientZombieVisualTargetCache._ttlTicks = tonumber(args and args.ttlTicks) or tonumber(NMZombieVisualTargetContract and NMZombieVisualTargetContract.ClientCacheTtlTicks) or 0
     NMClientZombieVisualTargetCache._receivedTick = tonumber(NMClientZombieVisualTargetCache._tick) or 0
     NMClientZombieVisualTargetCache._hasSnapshot = true
@@ -121,9 +123,24 @@ local function receiveTargetSnapshot(args)
     clearTargets()
     local records = args and args.targetRecords or nil
     NMClientZombieVisualTargetCache._targets = NMZombieVisualTargetContract and NMZombieVisualTargetContract.buildTargetSnapshotLookup and NMZombieVisualTargetContract.buildTargetSnapshotLookup(records) or {}
+    local changedCount = 0
     for _ in pairs(NMClientZombieVisualTargetCache._targets) do
         NMClientZombieVisualTargetCache._targetCount = (tonumber(NMClientZombieVisualTargetCache._targetCount) or 0) + 1
     end
+    for zombieId, record in pairs(NMClientZombieVisualTargetCache._targets) do
+        local previous = previousTargets[zombieId]
+        local sameVariant = tostring(previous and previous.variantId or "") == tostring(record and record.variantId or "")
+        local sameType = tostring(previous and previous.fullType or "") == tostring(record and record.fullType or "")
+        if not (sameVariant and sameType) then
+            changedCount = changedCount + 1
+        end
+    end
+    for zombieId, _ in pairs(previousTargets) do
+        if NMClientZombieVisualTargetCache._targets[zombieId] == nil then
+            changedCount = changedCount + 1
+        end
+    end
+    NMClientZombieVisualTargetCache._lastChangedCount = changedCount
 end
 
 function NMClientZombieVisualTargetCache.onServerCommand(command, args)
@@ -136,12 +153,19 @@ function NMClientZombieVisualTargetCache.onServerCommand(command, args)
     end
     NMClientZombieVisualTargetCache._revision = revision
     receiveTargetSnapshot(args)
+    if NMClientMainRuntime and NMClientMainRuntime.requestVisualRefresh then
+        NMClientMainRuntime.requestVisualRefresh("zombie_target_snapshot")
+    end
+    if NMClientMainRuntime and NMClientMainRuntime.markAuthorityRefresh then
+        NMClientMainRuntime.markAuthorityRefresh("zombie_target_snapshot")
+    end
     logSummary(
         "target_cache_update",
         string.format(
-            "revision=%s targets=%s candidates=%s published=%s",
+            "revision=%s targets=%s changed=%s candidates=%s published=%s",
             tostring(revision),
             tostring(NMClientZombieVisualTargetCache._targetCount or 0),
+            tostring(NMClientZombieVisualTargetCache._lastChangedCount or 0),
             tostring(args and args.targetCandidates or 0),
             tostring(args and args.targetPublished or 0)
         )
@@ -149,8 +173,8 @@ function NMClientZombieVisualTargetCache.onServerCommand(command, args)
     return true
 end
 
-function NMClientZombieVisualTargetCache.onTick()
-    NMClientZombieVisualTargetCache._tick = (tonumber(NMClientZombieVisualTargetCache._tick) or 0) + 1
+function NMClientZombieVisualTargetCache.onTick(tickStep)
+    NMClientZombieVisualTargetCache._tick = (tonumber(NMClientZombieVisualTargetCache._tick) or 0) + math.max(1, tonumber(tickStep) or 1)
     if not isMPClientRuntime() then
         return
     end
@@ -186,6 +210,16 @@ function NMClientZombieVisualTargetCache.onTick()
             tostring(ttl)
         )
     )
+end
+
+function NMClientZombieVisualTargetCache.hasPendingWork()
+    if not isMPClientRuntime() then
+        return false
+    end
+    if (tonumber(NMClientZombieVisualTargetCache._revision) or 0) <= 0 then
+        return false
+    end
+    return (tonumber(NMClientZombieVisualTargetCache._ttlTicks) or 0) > 0
 end
 
 function NMClientZombieVisualTargetCache.getZombieDecision(zombie)

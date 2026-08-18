@@ -722,9 +722,7 @@ function NMMediaSlot.attach(window, x, y, size)
             self.tooltip = renderState and renderState.tooltip or tostring(fullType)
         else
             local placeholderKey = renderState and renderState.placeholderKey or resolvePlaceholderKey(window)
-            if not drawEmptyMediaVector(self, placeholderKey) then
-                drawEmptyMediaTexture(self, placeholderKey)
-            end
+            drawEmptyMediaTexture(self, placeholderKey)
             self.tooltip = renderState and renderState.tooltip or resolveEmptyInsertTooltip(window)
         end
         if NMUIRenderProbe and NMUIRenderProbe.endWindow then

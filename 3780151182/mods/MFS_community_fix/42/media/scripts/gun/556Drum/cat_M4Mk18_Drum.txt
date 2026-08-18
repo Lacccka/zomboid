@@ -12,7 +12,7 @@ module Base
         MinSightRange = 2,
         MaxSightRange = 20.0,
         MaxRange = 35,
-        WeaponSprite = M4Mk18_cat_Drum,
+        WeaponSprite = M4Mk18_cat_Drum_Held,
         SoundVolume = 35,
         MinAngle = 0.965,
         ItemType = base:weapon,
@@ -228,6 +228,47 @@ module Base
 	    texture = GunTexture/M4Mk18_cat,
         cullface = None,
 attachment muzzle
+        {
+            offset = 0 0.59 0.03,
+            rotate = 90.0000 180.0000 0.0000,
+        }
+        attachment Canon
+        {
+            offset = 0 -0.08 0.0,
+            rotate = 0.0 0.0 0.0,
+         }
+        attachment Stock
+        {
+            offset = 0 0.0 0.006,
+            rotate = 0.0 0.0 0.0,
+         }
+        attachment Grip
+        {
+            offset = 0 -0.0 -0.0,
+            rotate = 0.0 0.0 0.0,
+         }
+        attachment R_Scope
+        {
+            offset = 0.0 0.0 0.0,
+            rotate = 0.0000 0.0000 0.0000,
+        }
+        attachment L_Scope
+        {
+            offset = 0.0 0.0 0.0,
+            rotate = 0.0000 0.0000 0.0000,
+        }
+        attachment Stool
+        {
+            offset = 0.0 0.0 0.0,
+            rotate = 0.0000 0.0000 0.0000,
+        }
+    }
+    model M4Mk18_cat_Drum_Held
+	{
+	    mesh = mirrored_gun/M4Mk18_cat_Held,
+	    texture = GunTexture/M4Mk18_cat,
+        cullface = None,
+	attachment muzzle
         {
             offset = 0 0.59 0.03,
             rotate = 90.0000 180.0000 0.0000,

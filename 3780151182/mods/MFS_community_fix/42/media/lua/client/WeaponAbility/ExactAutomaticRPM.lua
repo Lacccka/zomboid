@@ -20,6 +20,12 @@ local calibrationByWeapon = setmetatable({}, { __mode = "k" })
 
 MFSRPMOptimizationDiagnostics = {
     version = "RC5A-Test2",
+    -- 08/15/2026: routine per-equip logging is OFF for release. The counters
+    -- below still accumulate, so a live session can be inspected from the debug
+    -- console without a rebuild. Set VERBOSE = true to restore the equip lines.
+    -- The "recovered weapon=" line below is NOT gated - it only fires when some
+    -- other system has clobbered the runtime cyclic, which is real signal.
+    VERBOSE = false,
     equipChecks = 0,
     swingChecks = 0,
     resolves = 0,
@@ -161,7 +167,7 @@ local function applyExactRPM(weapon, reason)
 
     -- One line per equip/first encounter, never one line per shot. An ordinary
     -- swing produces output only if another system changed the runtime cyclic.
-    if reason ~= "swing" then
+    if reason ~= "swing" and OptDiag.VERBOSE then
         print("[MFS RPM OPT] equip weapon=" .. tostring(cached.weaponType)
             .. " cyclic=" .. tostring(cached.cyclic)
             .. " cyclicWrite=" .. tostring(cyclicWritten)
@@ -184,7 +190,9 @@ local function onWeaponSwing(_, weapon)
     applyExactRPM(weapon, "swing")
 end
 
-print("[MFS RPM OPT] RC5A-Test2 idempotent resolver loaded categories=" ..
-    tostring(AWCWF_RPMCalibration and #AWCWF_RPMCalibration or 0))
+if MFSRPMOptimizationDiagnostics.VERBOSE then
+    print("[MFS RPM OPT] RC5A-Test2 idempotent resolver loaded categories=" ..
+        tostring(AWCWF_RPMCalibration and #AWCWF_RPMCalibration or 0))
+end
 Events.OnPlayerUpdate.Add(onPlayerUpdate)
 Events.OnWeaponSwing.Add(onWeaponSwing)

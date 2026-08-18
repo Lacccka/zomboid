@@ -1,3 +1,5 @@
+require "runtime/NMClientPlacedWorldCandidate"
+
 NMClientSPDropReconcile = NMClientSPDropReconcile or {}
 
 local function detachGroundPersonalHeadphones(state)
@@ -9,12 +11,16 @@ local function detachGroundPersonalHeadphones(state)
     return true
 end
 
-local function upsertLocalPlacedTrackedContinuity(item, state, profileType, key)
+local function upsertLocalPlacedTrackedContinuity(item, state, profileType, key, placedCandidate)
     if not (item and state and NMClientWorldSourceCache and NMClientWorldSourceCache.upsertFromPayload) then
         return false
     end
-    local worldItem = item.getWorldItem and item:getWorldItem() or nil
-    local square = worldItem and worldItem.getSquare and worldItem:getSquare() or nil
+    local sourceItem = placedCandidate and placedCandidate.item or item
+    local square = placedCandidate and placedCandidate.square or nil
+    if not square then
+        local worldItem = sourceItem and sourceItem.getWorldItem and sourceItem:getWorldItem() or nil
+        square = worldItem and worldItem.getSquare and worldItem:getSquare() or nil
+    end
     if not square then
         return false
     end
@@ -29,13 +35,28 @@ local function upsertLocalPlacedTrackedContinuity(item, state, profileType, key)
         x = square:getX() + 0.5,
         y = square:getY() + 0.5,
         z = square:getZ(),
-        itemId = NMCore.itemId and NMCore.itemId(item) or nil,
-        itemFullType = item and item.getFullType and item:getFullType() or nil,
+        itemId = NMCore.itemId and NMCore.itemId(sourceItem) or nil,
+        itemFullType = sourceItem and sourceItem.getFullType and sourceItem:getFullType() or nil,
         sourceEpoch = tonumber(state.sourceGeneration) or 0,
         sourceGeneration = tonumber(state.sourceGeneration) or 0,
         ownerId = tostring(state.sourceOwner or "")
     })
     return true
+end
+
+local function requestImmediateDropRefresh(reason)
+    local why = tostring(reason or "sp_drop_reconcile")
+    if NMClientMainRuntime and NMClientMainRuntime.requestTickGateWake then
+        NMClientMainRuntime.requestTickGateWake("sp_drop_" .. why)
+    end
+    if NMClientPlaybackTick and NMClientPlaybackTick.requestFullPass then
+        NMClientPlaybackTick.requestFullPass("sp_drop_" .. why)
+    elseif NMClientPlaybackTick and NMClientPlaybackTick.markDirty then
+        NMClientPlaybackTick.markDirty("sp_drop_" .. why)
+    end
+    if NMClientMainRuntime and NMClientMainRuntime.requestVisualRefresh then
+        NMClientMainRuntime.requestVisualRefresh("sp_drop_" .. why)
+    end
 end
 
 function NMClientSPDropReconcile.reconcile(args)
@@ -59,8 +80,10 @@ function NMClientSPDropReconcile.reconcile(args)
                 local profile = item and NMDeviceProfiles.getForItem and NMDeviceProfiles.getForItem(item) or nil
                 local state = item and profile and NMDeviceState.ensure and NMDeviceState.ensure(item, profile) or nil
                 local shouldKeep = state and NMRegistryPolicy and NMRegistryPolicy.shouldKeepWorldSourceState and NMRegistryPolicy.shouldKeepWorldSourceState(state) or false
-                local worldItem = item and item.getWorldItem and item:getWorldItem() or nil
-                local square = worldItem and worldItem.getSquare and worldItem:getSquare() or nil
+                local placedCandidate = NMClientPlacedWorldCandidate and NMClientPlacedWorldCandidate.resolve
+                    and NMClientPlacedWorldCandidate.resolve(player, item, key)
+                    or nil
+                local square = placedCandidate and placedCandidate.square or nil
                 if state then
                     detachGroundPersonalHeadphones(state)
                 end
@@ -76,9 +99,11 @@ function NMClientSPDropReconcile.reconcile(args)
                         item,
                         state,
                         item and item.getFullType and item:getFullType() or nil,
-                        key
+                        key,
+                        placedCandidate
                     )
                     NMClientModeSync.emitExplicit(player, item, state, "sync_portable_placed", "placed")
+                    requestImmediateDropRefresh("mp_portable_placed")
                 elseif profile
                     and state
                     and state.isOn == true
@@ -115,26 +140,23 @@ function NMClientSPDropReconcile.reconcile(args)
                 local item = prevItem
                 local profile = item and NMDeviceProfiles.getForItem and NMDeviceProfiles.getForItem(item) or nil
                 local state = item and profile and NMDeviceState.ensure and NMDeviceState.ensure(item, profile) or nil
-                local worldItem = item and item.getWorldItem and item:getWorldItem() or nil
-                local square = worldItem and worldItem.getSquare and worldItem:getSquare() or nil
+                local placedCandidate = NMClientPlacedWorldCandidate and NMClientPlacedWorldCandidate.resolve
+                    and NMClientPlacedWorldCandidate.resolve(player, item, key)
+                    or nil
+                local square = placedCandidate and placedCandidate.square or nil
+                local sourceItem = placedCandidate and placedCandidate.item or item
                 if state then
                     detachGroundPersonalHeadphones(state)
                 end
                 if profile and state and square and NMDeviceProfiles.isPortableTrackedProfile and NMDeviceProfiles.isPortableTrackedProfile(profile) and state.isOn == true and state.isPlaying == true then
                     state.playbackMode = "world"
-                    NMClientWorldSourceCache.upsertFromPayload({
-                        uuid = key,
-                        kind = "item",
-                        profileType = item and item.getFullType and item:getFullType() or nil,
-                        state = state,
-                        sourceMode = "placed",
-                        x = square:getX() + 0.5,
-                        y = square:getY() + 0.5,
-                        z = square:getZ(),
-                        itemId = NMCore.itemId and NMCore.itemId(item) or nil,
-                        itemFullType = item and item.getFullType and item:getFullType() or nil,
-                        sourceEpoch = tonumber(state.sourceGeneration) or 0
-                    })
+                    upsertLocalPlacedTrackedContinuity(
+                        item,
+                        state,
+                        item and item.getFullType and item:getFullType() or nil,
+                        key,
+                        placedCandidate
+                    )
                     NMWorldRegistrySnapshot.upsertSP({
                         kind = "item",
                         uuid = key,
@@ -144,12 +166,13 @@ function NMClientSPDropReconcile.reconcile(args)
                         x = square:getX() + 0.5,
                         y = square:getY() + 0.5,
                         z = square:getZ(),
-                        itemId = NMCore.itemId and NMCore.itemId(item) or nil,
-                        itemFullType = item and item.getFullType and item:getFullType() or nil,
+                        itemId = NMCore.itemId and NMCore.itemId(sourceItem) or nil,
+                        itemFullType = sourceItem and sourceItem.getFullType and sourceItem:getFullType() or nil,
                         state = NMDeviceState.export(state),
                         revision = tonumber(state.revision) or 0,
                         playbackEpoch = tonumber(state.playbackEpoch) or 0
                     })
+                    requestImmediateDropRefresh("sp_portable_placed")
                 elseif profile and state and square and NMDeviceProfiles.canPlacedWorldPlayback(profile) then
                     state.playbackMode = "world"
                     NMClientWorldSourceCache.upsertFromPayload({
@@ -161,8 +184,8 @@ function NMClientSPDropReconcile.reconcile(args)
                         x = square:getX() + 0.5,
                         y = square:getY() + 0.5,
                         z = square:getZ(),
-                        itemId = NMCore.itemId and NMCore.itemId(item) or nil,
-                        itemFullType = item and item.getFullType and item:getFullType() or nil,
+                        itemId = NMCore.itemId and NMCore.itemId(sourceItem) or nil,
+                        itemFullType = sourceItem and sourceItem.getFullType and sourceItem:getFullType() or nil,
                         sourceEpoch = tonumber(state.sourceGeneration) or 0
                     })
                     NMWorldRegistrySnapshot.upsertSP({
@@ -174,12 +197,13 @@ function NMClientSPDropReconcile.reconcile(args)
                         x = square:getX() + 0.5,
                         y = square:getY() + 0.5,
                         z = square:getZ(),
-                        itemId = NMCore.itemId and NMCore.itemId(item) or nil,
-                        itemFullType = item and item.getFullType and item:getFullType() or nil,
+                        itemId = NMCore.itemId and NMCore.itemId(sourceItem) or nil,
+                        itemFullType = sourceItem and sourceItem.getFullType and sourceItem:getFullType() or nil,
                         state = NMDeviceState.export(state),
                         revision = tonumber(state.revision) or 0,
                         playbackEpoch = tonumber(state.playbackEpoch) or 0
                     })
+                    requestImmediateDropRefresh("sp_world_placed")
                     if logTransitionProbe then
                         logTransitionProbe(
                             "ownership_conflict_resolved",

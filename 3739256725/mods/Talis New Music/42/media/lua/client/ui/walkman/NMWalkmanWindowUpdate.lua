@@ -47,6 +47,9 @@ function WalkmanWindow:update()
         end
     end
     ISPanel.update(self)
+    if math.abs((tonumber(self._nmAppliedFancyScale) or 0.0) - getFancyDeviceUiScale()) >= 0.0001 then
+        self:applyCurrentScaleLayout()
+    end
 
     local nowMs = NMUiAutoClose.getNowMs()
     local closed = NMUiAutoClose.tickWindowAutoClose(self, {
@@ -84,7 +87,7 @@ function WalkmanWindow:update()
     if self._nmWheelDragging ~= true then
         self:syncVolumeWheelFromState(false)
     end
-    self:syncPlayButtonFromTransport(nil, nil, true, false)
+    self:syncPlayButtonFromTransport(nil, nil, false, false)
     self:syncLidFromMedia(false)
 
     if self.isLidAnimating == true then

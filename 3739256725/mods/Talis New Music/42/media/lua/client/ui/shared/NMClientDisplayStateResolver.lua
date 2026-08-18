@@ -35,7 +35,7 @@ local function monotonicTupleIsNewer(localState, snap)
     return snapEpoch >= localEpoch
 end
 
-function NMClientDisplayStateResolver.resolve(localState)
+local function resolveMergedDisplayState(localState)
     if type(localState) ~= "table" then
         return localState
     end
@@ -57,6 +57,21 @@ function NMClientDisplayStateResolver.resolve(localState)
     local merged = cloneState(localState)
     NMDeviceState.import(merged, snap)
     return merged
+end
+
+function NMClientDisplayStateResolver.resolve(localState)
+    return resolveMergedDisplayState(localState)
+end
+
+function NMClientDisplayStateResolver.resolveForLiveItem(item, localState)
+    if type(localState) ~= "table" then
+        return localState
+    end
+    local worldItem = item and item.getWorldItem and item:getWorldItem() or nil
+    if not worldItem then
+        return localState
+    end
+    return resolveMergedDisplayState(localState)
 end
 
 return NMClientDisplayStateResolver

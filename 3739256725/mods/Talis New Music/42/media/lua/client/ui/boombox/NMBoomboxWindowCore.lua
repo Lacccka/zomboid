@@ -2,6 +2,7 @@ local env = _G.NMBoomboxWindowEnv
 setfenv(1, env)
 
 local UiLifecycleItemWindows = require "ui/shared/host/NMUiLifecycleItemWindows"
+require "ui/shared/NMReadoutTextResolver"
 
 local function isFancyUIEnabled()
     if NMRuntimeConfig and NMRuntimeConfig.getFancyUIEnabled then
@@ -41,7 +42,45 @@ local function unregisterWindow(window)
     end
 end
 
+local function resolveLabelText(state)
+    if NMReadoutTextResolver and NMReadoutTextResolver.resolveReadoutText then
+        return tostring(NMReadoutTextResolver.resolveReadoutText(state) or "")
+    end
+    return ""
+end
+
+local function buildWindowInspectionSnapshot(win)
+    if not (win and win.target and win.target.kind == "item") then
+        return nil
+    end
+    local resolved = win.resolveContextCached and win:resolveContextCached() or nil
+    local state = resolved and resolved.state or nil
+    local localState = resolved and resolved.localState or state
+    return {
+        playerNum = tonumber(win.playerNum) or 0,
+        itemId = tostring(win.target.itemId or ""),
+        uuid = tostring(win.target.uuid or ""),
+        hasItemRef = win.target.itemRef ~= nil,
+        mediaTimedAction = tostring(win._nmMediaSlotTimedProgress and win._nmMediaSlotTimedProgress.action or ""),
+        pendingMediaFullType = tostring(win._nmPendingMediaSlotFullType or ""),
+        awaitingMediaInsert = win.isAwaitingAuthoritativeMediaInsert and win:isAwaitingAuthoritativeMediaInsert() == true or false,
+        awaitingMediaEject = win.isAwaitingAuthoritativeMediaEject and win:isAwaitingAuthoritativeMediaEject() == true or false,
+        uiFamily = "boombox",
+        displayTrackIndex = tonumber(state and state.trackIndex) or 0,
+        displayLabelText = resolveLabelText(state),
+        resolvedTrackIndex = tonumber(state and state.trackIndex) or 0,
+        resolvedLabelText = resolveLabelText(state),
+        localTrackIndex = tonumber(localState and localState.trackIndex) or 0,
+        localLabelText = resolveLabelText(localState),
+        playbackEpoch = tonumber(state and state.playbackEpoch) or 0,
+        contextRevision = tonumber(win._nmContextRevision) or 0,
+        renderRevision = tonumber(win._nmRenderRevision) or 0,
+        contextCacheReused = win._nmContextCache ~= nil
+    }
+end
+
 local function getOrCreateWindow(playerNum)
+    refreshBoomboxLayoutMetrics()
     local screenW, screenH = getScreenSize()
     local x = math.max(0, screenW - PANEL_W - DEFAULT_RIGHT_MARGIN)
     local y = math.max(0, screenH - PANEL_H - EXPANDED_BOTTOM_MARGIN)
@@ -49,6 +88,7 @@ local function getOrCreateWindow(playerNum)
     win.playerNum = tonumber(playerNum) or 0
     win:initialise()
     attachBoomboxSlots(win)
+    win:applyCurrentScaleLayout()
     win:addToUIManager()
     return win
 end
@@ -72,6 +112,7 @@ function NMBoomboxWindow.openForItemResolved(playerNum, item, resolvedContext)
     if not win then
         win = getOrCreateWindow(playerNum)
     end
+    win:applyCurrentScaleLayout()
     local currentX = tonumber(win:getX())
     local currentY = tonumber(win._nmExpandedY)
     if not currentX then
@@ -96,6 +137,7 @@ function NMBoomboxWindow.openForItemResolved(playerNum, item, resolvedContext)
     win.isLidManuallyOpen = true
     win._nmHasObservedPlayState = false
     win._nmAuthoritativePlayDown = false
+    win._nmLocalPlayPresentationLatched = false
     win._nmMainButtonDownByKind.play = false
     win._nmTopButtonDownByKind.play = false
     win._nmHasObservedPowerState = false
@@ -312,6 +354,13 @@ function NMBoomboxWindow.rebindOpenPortableItemWindow(itemId, uuid)
 end
 
 function NMBoomboxWindow.inspectOpenItemWindowTarget(playerNum)
+    local wins = collectPlayerWindows(playerNum)
+    for i = 1, #wins do
+        local snap = buildWindowInspectionSnapshot(wins[i])
+        if snap then
+            return snap
+        end
+    end
     return UiLifecycleItemWindows.inspectOpenItemWindowTarget(env, playerNum)
 end
 
@@ -344,7 +393,16 @@ function BoomboxWindow:close()
     unregisterWindow(self)
 end
 
+function BoomboxWindow:resolveSettingsGearTint(model)
+    local variant = tostring(model and model.variant or "")
+    if variant == "Oddbolt" or variant == "Black" then
+        return 1.0, 1.0, 1.0, 1.0
+    end
+    return 1.0, CLOSE_TINT.r, CLOSE_TINT.g, CLOSE_TINT.b
+end
+
 function BoomboxWindow:new(x, y, width, height)
+    refreshBoomboxLayoutMetrics()
     local o = ISPanel:new(x, y, width, height)
     setmetatable(o, self)
     self.__index = self
@@ -392,6 +450,7 @@ function BoomboxWindow:new(x, y, width, height)
     o._nmAwaitingAuthoritativeMediaInsert = nil
     o._nmSlotsAttached = false
     o._nmClosePressed = false
+    o._nmSettingsPressed = false
     o._nmPressedMainButtonKind = nil
     o._nmPressedTopButtonKind = nil
     o._nmPressedModeIndex = nil
@@ -399,6 +458,7 @@ function BoomboxWindow:new(x, y, width, height)
     o._nmMainButtonDownByKind = { play = false }
     o._nmMainButtonPulseByKind = {}
     o._nmTopButtonDownByKind = { play = false }
+    o._nmLocalPlayPresentationLatched = false
     o._nmTopButtonCurrentOffsetByKind = { play = TOP_BUTTON_RETRACT_Y, stop = TOP_BUTTON_RETRACT_Y, prev = TOP_BUTTON_RETRACT_Y, next = TOP_BUTTON_RETRACT_Y }
     o._nmTopButtonPressOffsetByKind = { play = 0, stop = 0, prev = 0, next = 0 }
     o._nmTopButtonReleaseSoundOnReturnByKind = { play = false, stop = true, prev = true, next = true }
@@ -432,6 +492,7 @@ function BoomboxWindow:new(x, y, width, height)
     o._nmPowerSwitchOn = false
     o._nmPowerSwitchPendingOn = nil
     o._nmPowerSwitchPendingUntilMs = 0
+    o._nmAppliedFancyScale = getFancyDeviceUiScale()
     if NMDeviceUiHost and NMDeviceUiHost.initWindow then
         NMDeviceUiHost.initWindow(o, "boombox")
     end

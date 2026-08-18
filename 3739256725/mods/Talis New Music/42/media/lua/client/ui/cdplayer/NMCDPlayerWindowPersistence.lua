@@ -84,6 +84,9 @@ function NMCDPlayerWindow.queuePersistedRestore(playerNum)
     if not isFancyUIEnabled() then
         return
     end
+    if NMClientMainRuntime and NMClientMainRuntime.requestTickGateWake then
+        NMClientMainRuntime.requestTickGateWake("cdplayer_restore_queue")
+    end
     local key = tostring(tonumber(playerNum) or 0)
     pendingRestoreByPlayer[key] = {
         playerNum = tonumber(playerNum) or 0,
@@ -136,4 +139,11 @@ function NMCDPlayerWindow.tickPersistedRestore()
             pendingRestoreByPlayer[key] = nil
         end
     end
+end
+
+function NMCDPlayerWindow.hasPendingPersistedRestore()
+    for _ in pairs(pendingRestoreByPlayer) do
+        return true
+    end
+    return false
 end

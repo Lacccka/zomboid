@@ -1,22 +1,28 @@
 NMLootSandboxSettings = NMLootSandboxSettings or {}
 
 local settings = NMLootSandboxSettings
+local resolvePolicyCategoryRate = nil
 
 settings.BASE_MEDIA_DEFAULT = 0.6
 settings.BASE_DEVICE_DEFAULT = 0.6
+settings.BASELINE_FEEL_NO_BOOST_RATE = 0.1
+settings.MEDIA_BASELINE_FEEL_MULTIPLIER = 1.0
+settings.MEDIA_ROUTE_BASELINE_TARGET_RATE = 2.4
+settings.DEVICE_BASELINE_FEEL_MULTIPLIER = 1.8
 settings.DEVICE_INTENSITY_MULTIPLIER = 0.25
 settings.VEHICLE_RESPONSE_BASE = 0.18
 settings.VEHICLE_RESPONSE_EXPONENT = 0.72
 settings.MEDIA_DIRECT_SPAWN_SCALE_BASE = 0.5
 settings.DEVICE_DIRECT_SPAWN_SCALE_BASE = 0.125
-settings.MEDIA_FALLBACK_DEFAULT_BUDGET = 0.0375
+settings.DEVICE_HIGH_RATE_MAX_MULTIPLIER = 2.0
+settings.MEDIA_FALLBACK_DEFAULT_BUDGET = 0.055
 settings.MEDIA_FALLBACK_LOW_RATE_EXPONENT = 1.35
 settings.MEDIA_FALLBACK_HIGH_RATE_EXPONENT = 1.1
-settings.MEDIA_FALLBACK_HIGH_RATE_BUDGET_MAX = 1.85
+settings.MEDIA_FALLBACK_HIGH_RATE_BUDGET_MAX = 3.75
 settings.MEDIA_HIGH_RATE_RICHNESS_EXPONENT = 0.9
-settings.MEDIA_STANDARD_PROCEDURAL_ABUNDANCE_MAX = 3.35
-settings.MEDIA_STANDARD_VEHICLE_ABUNDANCE_MAX = 2.05
-settings.MEDIA_STORE_TOPUP_BUDGET_MAX = 2.1
+settings.MEDIA_STANDARD_PROCEDURAL_ABUNDANCE_MAX = 6.5
+settings.MEDIA_STANDARD_VEHICLE_ABUNDANCE_MAX = 4.0
+settings.MEDIA_STORE_TOPUP_BUDGET_MAX = 5.75
 settings.MEDIA_UNIFIED_POOL_SIZE_EXPONENT = 0.95
 settings.MEDIA_STORE_BIAS_TINY_POOL_EXPONENT = 1.15
 settings.MUSIC_STORE_TOPUP_REFERENCE_RATE = 0.6
@@ -75,9 +81,23 @@ settings.DEVICE_SCALAR_PROFILES = {
 }
 
 settings.MEDIA_UNIFIED_CATEGORY_BIAS = {
-    cassettes = 1.00,
+    cassettes = 1.15,
     vinyl = 0.82,
-    cds = 0.92
+    cds = 1.00
+}
+
+settings.MEDIA_BASELINE_TARGET_SHARES = {
+    cassettes = 1.0,
+    vinyl = 1.0,
+    cds = 1.0
+}
+
+settings.MEDIA_BASELINE_BALANCE_MAX_RATE = settings.BASE_MEDIA_DEFAULT
+
+settings.MEDIA_HIGH_RATE_SHARE_COMPENSATION = {
+    cassettes = 1.00,
+    vinyl = 1.55,
+    cds = 1.00
 }
 
 settings.DEVICE_UNIFIED_CATEGORY_BIAS = {
@@ -94,15 +114,15 @@ settings.MUSIC_STORE_MEDIA_MIN_PRESENCE_UNITS = {
 }
 
 settings.MEDIA_REPRESENTATIVE_PROCEDURAL_LANE_MULTIPLIERS = {
-    cassettes = 1.0,
-    vinyl = 1.0,
-    cds = 1.0
+    cassettes = 1.10,
+    vinyl = 1.10,
+    cds = 1.10
 }
 
 settings.MEDIA_REPRESENTATIVE_MAIL_LANE_MULTIPLIERS = {
-    cassettes = 1.0,
-    vinyl = 1.0,
-    cds = 1.0
+    cassettes = 1.05,
+    vinyl = 1.05,
+    cds = 1.05
 }
 
 settings.MUSIC_STORE_TARGET_ORDER = {
@@ -173,9 +193,9 @@ settings.MUSIC_STORE_CATEGORY_FLOOR_BUDGETS = {
 }
 
 settings.MUSIC_STORE_MEDIA_TOPUP_BIAS = {
-    cassettes = 0.15,
-    vinyl = 0.70,
-    cds = 0.15
+    cassettes = 0.24,
+    vinyl = 0.58,
+    cds = 0.18
 }
 
 settings.MUSIC_STORE_DEVICE_TOPUP_BIAS = {
@@ -195,11 +215,11 @@ settings.MUSIC_STORE_TOPUP_TARGET_FLOORS = {
     recordplayer = 10.0
 }
 
-settings.VANILLA_MEDIA_BACKFILL_ENTRY_DIVISOR = 90.0
-settings.VANILLA_DEVICE_BACKFILL_ENTRY_DIVISOR = 80.0
-settings.VANILLA_MEDIA_BACKFILL_SCALE = 0.90
-settings.VANILLA_DEVICE_BACKFILL_SCALE = 0.85
-settings.VANILLA_BACKFILL_MAX_MULTIPLIER = 1.25
+settings.VANILLA_MEDIA_BACKFILL_ENTRY_DIVISOR = 60.0
+settings.VANILLA_DEVICE_BACKFILL_ENTRY_DIVISOR = 65.0
+settings.VANILLA_MEDIA_BACKFILL_SCALE = 1.75
+settings.VANILLA_DEVICE_BACKFILL_SCALE = 0.95
+settings.VANILLA_BACKFILL_MAX_MULTIPLIER = 2.5
 
 local function clamp(value, minValue, maxValue)
     local n = tonumber(value) or 0
@@ -217,6 +237,89 @@ local function pow(base, exponent)
         return math.pow(base, exponent)
     end
     return (tonumber(base) or 0) ^ (tonumber(exponent) or 0)
+end
+
+local function buildMatchedRateKey(rate)
+    return string.format("%.4f", tonumber(rate) or 0)
+end
+
+local function applyMatchedRateTargetShareBalance(order, weights, rates, poolSizes, targetShares, maxBalancedRate)
+    if type(targetShares) ~= "table" then
+        return weights
+    end
+
+    local maxRate = tonumber(maxBalancedRate) or settings.BASE_MEDIA_DEFAULT
+    local groups = {}
+    for i = 1, #(order or {}) do
+        local category = order[i]
+        local weight = tonumber(weights and weights[category]) or 0
+        local rate = tonumber(rates and rates[category]) or 0
+        local poolSize = tonumber(poolSizes and poolSizes[category]) or 0
+        if weight > 0 and rate > 0 and rate <= maxRate and poolSize > 0 then
+            local key = buildMatchedRateKey(rate)
+            groups[key] = groups[key] or {}
+            groups[key][#groups[key] + 1] = category
+        end
+    end
+
+    for _, group in pairs(groups) do
+        if #group > 1 then
+            local groupWeightTotal = 0
+            local targetTotal = 0
+            for i = 1, #group do
+                local category = group[i]
+                groupWeightTotal = groupWeightTotal + (tonumber(weights[category]) or 0)
+                targetTotal = targetTotal + math.max(0, tonumber(targetShares[category]) or 0)
+            end
+            if groupWeightTotal > 0 and targetTotal > 0 then
+                for i = 1, #group do
+                    local category = group[i]
+                    local targetShare = math.max(0, tonumber(targetShares[category]) or 0)
+                    weights[category] = groupWeightTotal * (targetShare / targetTotal)
+                end
+            end
+        end
+    end
+
+    return weights
+end
+
+local function resolveBaselineFeelMultiplier(rate, baseRate, multiplier)
+    local r = tonumber(rate) or 0
+    local base = tonumber(baseRate) or 0
+    local boost = tonumber(multiplier) or 1.0
+    local floorRate = clamp(tonumber(settings.BASELINE_FEEL_NO_BOOST_RATE) or 0, 0.0, base)
+    if r <= 0 or base <= 0 or boost <= 1.0 or r > base then
+        return 1.0
+    end
+    if r <= floorRate or floorRate >= base then
+        return 1.0
+    end
+    local t = clamp((r - floorRate) / (base - floorRate), 0.0, 1.0)
+    return 1.0 + ((boost - 1.0) * t)
+end
+
+local function resolveEffectiveMediaRouteRate(rate)
+    local r = clamp(rate, 0.0, 4.0)
+    if r <= 0 then
+        return 0
+    end
+
+    local baseRate = math.max(0.0001, tonumber(settings.BASE_MEDIA_DEFAULT) or 0.6)
+    local floorRate = clamp(tonumber(settings.BASELINE_FEEL_NO_BOOST_RATE) or 0.1, 0.0, baseRate)
+    local targetRate = clamp(tonumber(settings.MEDIA_ROUTE_BASELINE_TARGET_RATE) or baseRate, baseRate, 4.0)
+
+    if r <= floorRate or targetRate <= baseRate then
+        return r
+    end
+
+    if r <= baseRate then
+        local t = clamp((r - floorRate) / math.max(0.0001, baseRate - floorRate), 0.0, 1.0)
+        return floorRate + ((targetRate - floorRate) * t)
+    end
+
+    local t = clamp((r - baseRate) / math.max(0.0001, 4.0 - baseRate), 0.0, 1.0)
+    return targetRate + ((4.0 - targetRate) * t)
 end
 
 local function resolveSandboxPage()
@@ -243,6 +346,14 @@ function settings.getRawSandboxLootSettings()
         recordplayer = page and page.RecordPlayerSpawnRate or nil,
         _pagePresent = page ~= nil
     }
+end
+
+function settings.setPolicyRateResolver(resolver)
+    if type(resolver) == "function" then
+        resolvePolicyCategoryRate = resolver
+        return
+    end
+    resolvePolicyCategoryRate = nil
 end
 
 function settings.resolveLootBuildZomboidOSTSetting()
@@ -280,7 +391,19 @@ function settings.resolveLootBuildZomboidOSTSetting()
     }
 end
 
-function settings.resolveCategoryRate(category)
+function settings.resolveCategoryRate(category, lootPolicy)
+    if type(resolvePolicyCategoryRate) == "function" then
+        local overridden = resolvePolicyCategoryRate(lootPolicy, category)
+        if overridden ~= nil then
+            return overridden
+        end
+    end
+    if type(lootPolicy) == "table" and type(lootPolicy.rates) == "table" then
+        local key = tostring(category or "")
+        if lootPolicy.rates[key] ~= nil then
+            return tonumber(lootPolicy.rates[key]) or 0
+        end
+    end
     if category == "cassettes" then
         return NMRuntimeConfig.getCassettesSpawnRate() or settings.BASE_MEDIA_DEFAULT
     end
@@ -308,13 +431,17 @@ end
 function settings.resolveCategoryMultiplier(category)
     local rate = clamp(settings.resolveCategoryRate(category), 0.0, 4.0)
     local baseRate = settings.BASE_MEDIA_DEFAULT
+    local baselineFeel = settings.MEDIA_BASELINE_FEEL_MULTIPLIER
     if category == "walkman" or category == "boombox" or category == "cdplayer" or category == "recordplayer" then
         baseRate = settings.BASE_DEVICE_DEFAULT
+        baselineFeel = settings.DEVICE_BASELINE_FEEL_MULTIPLIER
+    else
+        rate = resolveEffectiveMediaRouteRate(rate)
     end
     if tonumber(baseRate) == nil or baseRate <= 0 then
         baseRate = settings.BASE_MEDIA_DEFAULT
     end
-    return rate / baseRate
+    return (rate / baseRate) * resolveBaselineFeelMultiplier(rate, baseRate, baselineFeel)
 end
 
 function settings.resolveDirectSpawnScalar(rate, defaultRate, baseScale)
@@ -344,19 +471,25 @@ function settings.resolveStandardDeviceScalar(category, rate)
             local highRateT = clamp((rate - settings.BASE_DEVICE_DEFAULT) / (4.0 - settings.BASE_DEVICE_DEFAULT), 0.0, 1.0)
             scalar = scalar * (1.0 + ((highRateBonus - 1.0) * highRateT))
         end
+        local highRateT = clamp((rate - settings.BASE_DEVICE_DEFAULT) / (4.0 - settings.BASE_DEVICE_DEFAULT), 0.0, 1.0)
+        local maxMultiplier = math.max(1.0, tonumber(settings.DEVICE_HIGH_RATE_MAX_MULTIPLIER) or 1.0)
+        scalar = scalar * (1.0 + ((maxMultiplier - 1.0) * highRateT))
     end
+    scalar = scalar * resolveBaselineFeelMultiplier(rate, settings.BASE_DEVICE_DEFAULT, settings.DEVICE_BASELINE_FEEL_MULTIPLIER)
     return scalar
 end
 
 function settings.resolveMediaFallbackBudgetScalar(rate)
-    local r = clamp(rate, 0.0, 4.0)
+    local r = resolveEffectiveMediaRouteRate(rate)
     if r <= 0 then
         return 0
     end
 
     if r <= settings.BASE_MEDIA_DEFAULT then
         local normalized = r / settings.BASE_MEDIA_DEFAULT
-        return settings.MEDIA_FALLBACK_DEFAULT_BUDGET * pow(normalized, settings.MEDIA_FALLBACK_LOW_RATE_EXPONENT)
+        return settings.MEDIA_FALLBACK_DEFAULT_BUDGET
+            * pow(normalized, settings.MEDIA_FALLBACK_LOW_RATE_EXPONENT)
+            * resolveBaselineFeelMultiplier(r, settings.BASE_MEDIA_DEFAULT, settings.MEDIA_BASELINE_FEEL_MULTIPLIER)
     end
 
     local maxScalar = settings.resolveDirectSpawnScalar(4.0, settings.BASE_MEDIA_DEFAULT, settings.MEDIA_DIRECT_SPAWN_SCALE_BASE)
@@ -397,8 +530,29 @@ function settings.resolveMediaStoreTopUpBudgetBoost(rate)
     return settings.scaleMediaHighRateMultiplier(rate, settings.MEDIA_STORE_TOPUP_BUDGET_MAX)
 end
 
-function settings.computeUnifiedCategoryShares(order, poolResolver, rateResolver, biasMap)
+function settings.resolveMediaHighRateShareCompensation(category, rate)
+    local key = tostring(category or "")
+    if settings.isMediaCategory(key) ~= true then
+        return 1.0
+    end
+    if clamp(rate, 0.0, 4.0) <= settings.BASE_MEDIA_DEFAULT then
+        return 1.0
+    end
+    local maxCompensation = tonumber(settings.MEDIA_HIGH_RATE_SHARE_COMPENSATION[key]) or 1.0
+    if maxCompensation <= 1.0 then
+        return 1.0
+    end
+    local richness = settings.resolveMediaHighRateRichness(rate)
+    if richness <= 0 then
+        return 1.0
+    end
+    return 1.0 + ((maxCompensation - 1.0) * richness)
+end
+
+function settings.computeUnifiedCategoryShares(order, poolResolver, rateResolver, biasMap, weightMultiplierResolver, targetShareMap, maxBalancedRate)
     local weights = {}
+    local rates = {}
+    local poolSizes = {}
     local total = 0
     for i = 1, #(order or {}) do
         local category = order[i]
@@ -407,10 +561,19 @@ function settings.computeUnifiedCategoryShares(order, poolResolver, rateResolver
         local weight = 0
         if rate > 0 and poolSize > 0 then
             local bias = tonumber(biasMap and biasMap[category]) or 0
-            weight = rate * bias * pow(poolSize, settings.MEDIA_UNIFIED_POOL_SIZE_EXPONENT)
+            local extraMultiplier = tonumber(weightMultiplierResolver and weightMultiplierResolver(category, rate, poolSize) or 1.0) or 1.0
+            weight = rate * bias * pow(poolSize, settings.MEDIA_UNIFIED_POOL_SIZE_EXPONENT) * extraMultiplier
         end
         weights[category] = weight
-        total = total + weight
+        rates[category] = rate
+        poolSizes[category] = poolSize
+    end
+
+    weights = applyMatchedRateTargetShareBalance(order, weights, rates, poolSizes, targetShareMap, maxBalancedRate)
+
+    for i = 1, #(order or {}) do
+        local category = order[i]
+        total = total + (tonumber(weights[category]) or 0)
     end
 
     local shares = {}
@@ -425,34 +588,56 @@ function settings.computeUnifiedCategoryShares(order, poolResolver, rateResolver
     return shares, weights, total
 end
 
-function settings.computeUnifiedMediaCategoryShares(mediaPool, orderedUnitsForCategory)
+function settings.computeUnifiedMediaCategoryShares(mediaPool, orderedUnitsForCategory, lootPolicy)
     return settings.computeUnifiedCategoryShares(
         settings.MEDIA_CATEGORY_ORDER,
         function(category)
             return #orderedUnitsForCategory(mediaPool, category)
         end,
         function(category)
-            return settings.resolveCategoryRate(category)
+            return resolveEffectiveMediaRouteRate(settings.resolveCategoryRate(category, lootPolicy))
         end,
-        settings.MEDIA_UNIFIED_CATEGORY_BIAS
+        settings.MEDIA_UNIFIED_CATEGORY_BIAS,
+        nil,
+        settings.MEDIA_BASELINE_TARGET_SHARES,
+        resolveEffectiveMediaRouteRate(settings.MEDIA_BASELINE_BALANCE_MAX_RATE)
     )
 end
 
-function settings.computeUnifiedDeviceCategoryShares(devicePool, orderedUnitsForCategory)
+function settings.computeStandardBackfillMediaCategoryShares(mediaPool, orderedUnitsForCategory, lootPolicy)
+    return settings.computeUnifiedCategoryShares(
+        settings.MEDIA_CATEGORY_ORDER,
+        function(category)
+            return #orderedUnitsForCategory(mediaPool, category)
+        end,
+        function(category)
+            return resolveEffectiveMediaRouteRate(settings.resolveCategoryRate(category, lootPolicy))
+        end,
+        settings.MEDIA_UNIFIED_CATEGORY_BIAS,
+        function(category)
+            local rawRate = settings.resolveCategoryRate(category, lootPolicy)
+            return settings.resolveMediaHighRateShareCompensation(category, rawRate)
+        end,
+        settings.MEDIA_BASELINE_TARGET_SHARES,
+        resolveEffectiveMediaRouteRate(settings.MEDIA_BASELINE_BALANCE_MAX_RATE)
+    )
+end
+
+function settings.computeUnifiedDeviceCategoryShares(devicePool, orderedUnitsForCategory, lootPolicy)
     return settings.computeUnifiedCategoryShares(
         settings.DEVICE_CATEGORY_ORDER,
         function(category)
             return #orderedUnitsForCategory(devicePool, category)
         end,
         function(category)
-            return settings.resolveCategoryRate(category)
+            return settings.resolveCategoryRate(category, lootPolicy)
         end,
         settings.DEVICE_UNIFIED_CATEGORY_BIAS
     )
 end
 
-function settings.computeMusicStoreMediaShares(mediaPool, orderedUnitsForCategory)
-    local baseShares = settings.computeUnifiedMediaCategoryShares(mediaPool, orderedUnitsForCategory)
+function settings.computeMusicStoreMediaShares(mediaPool, orderedUnitsForCategory, lootPolicy)
+    local baseShares = settings.computeUnifiedMediaCategoryShares(mediaPool, orderedUnitsForCategory, lootPolicy)
     local weights = {}
     local total = 0
     for i = 1, #settings.MEDIA_CATEGORY_ORDER do
@@ -498,7 +683,13 @@ function settings.normalizePlayableRate(rate)
         return 0
     end
     if r <= settings.BASE_MEDIA_DEFAULT then
-        return (r / settings.BASE_MEDIA_DEFAULT) * settings.VEHICLE_RESPONSE_BASE
+        return clamp(
+            (r / settings.BASE_MEDIA_DEFAULT)
+                * settings.VEHICLE_RESPONSE_BASE
+                * resolveBaselineFeelMultiplier(r, settings.BASE_MEDIA_DEFAULT, settings.MEDIA_BASELINE_FEEL_MULTIPLIER),
+            0.0,
+            1.0
+        )
     end
     local t = (r - settings.BASE_MEDIA_DEFAULT) / (4.0 - settings.BASE_MEDIA_DEFAULT)
     return clamp(

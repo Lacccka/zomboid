@@ -102,6 +102,13 @@ function getScreenSize()
     return sw, sh
 end
 
+function getFancyDeviceUiScale()
+    if NMFancyDeviceUiScale and NMFancyDeviceUiScale.getEffectiveScale then
+        return NMFancyDeviceUiScale.getEffectiveScale()
+    end
+    return 1.0
+end
+
 function clamp01(v)
     local n = tonumber(v) or 0.0
     if n < 0.0 then return 0.0 end
@@ -185,7 +192,11 @@ function resolveContextFreshUncached(window)
     end
     window.target.itemRef = item
     local profile = NMDeviceProfiles and NMDeviceProfiles.getForItem and NMDeviceProfiles.getForItem(item) or nil
-    local state = profile and NMDeviceState and NMDeviceState.ensure and NMDeviceState.ensure(item, profile) or nil
+    local localState = profile and NMDeviceState and NMDeviceState.ensure and NMDeviceState.ensure(item, profile) or nil
+    local state = localState
+    if localState and NMClientDisplayStateResolver and NMClientDisplayStateResolver.resolveForLiveItem then
+        state = NMClientDisplayStateResolver.resolveForLiveItem(item, localState)
+    end
     if not (profile and state) then
         return nil
     end
@@ -194,6 +205,7 @@ function resolveContextFreshUncached(window)
         item = item,
         profile = profile,
         state = state,
+        localState = localState,
         kind = "item"
     }
 end
@@ -470,4 +482,62 @@ if not hasEntries(HEADER_ROW_SPANS) then
 elseif tostring(HEADER_ROW_SPANS._nmVersion or "") ~= tostring(HEADER_SPAN_VERSION or "") then
     HEADER_ROW_SPANS = buildHeaderRowSpans()
     HEADER_ROW_SPANS._nmVersion = HEADER_SPAN_VERSION
+end
+
+local function updateChildRect(child, x, y, width, height)
+    if not child then
+        return
+    end
+    if child.setX then child:setX(x) else child.x = x end
+    if child.setY then child:setY(y) else child.y = y end
+    if child.setWidth then child:setWidth(width) else child.width = width end
+    if child.setHeight then child:setHeight(height) else child.height = height end
+    if child.setWidthSilent then
+        child:setWidthSilent(width)
+    end
+end
+
+local function reflowCDPlayerChildren(window)
+    if not window then
+        return
+    end
+    local mediaRect = window:getMediaSlotRect()
+    local headphoneRect = window:getHeadphoneSlotRect()
+    local batteryRect = window:getBatterySlotRect()
+    local meterRect = window:getBatteryMeterRect()
+    local viewportRect = window:getDisplayViewportRect()
+
+    updateChildRect(window.mediaSlot and window.mediaSlot.button or nil, mediaRect.x, mediaRect.y, SLOT_SIZE, SLOT_SIZE)
+    updateChildRect(window.headphoneSlot and window.headphoneSlot.button or nil, headphoneRect.x, headphoneRect.y, SLOT_SIZE, SLOT_SIZE)
+    updateChildRect(window.batterySlot and window.batterySlot.button or nil, batteryRect.x, batteryRect.y, SLOT_SIZE, SLOT_SIZE)
+    updateChildRect(window.cdplayerBatteryMeter, meterRect.x, meterRect.y, meterRect.w, meterRect.h)
+    updateChildRect(window.displaySongLabelPanel, viewportRect.x, viewportRect.y, viewportRect.w, viewportRect.h)
+    updateChildRect(window.displayClockPanel, viewportRect.x, viewportRect.y, viewportRect.w, viewportRect.h)
+end
+
+function CDPlayerWindow:applyCurrentScaleLayout()
+    refreshCDPlayerLayoutMetrics()
+    HEADER_ROW_SPANS = buildHeaderRowSpans()
+    HEADER_ROW_SPANS._nmVersion = HEADER_SPAN_VERSION
+
+    local currentScale = getFancyDeviceUiScale()
+    if math.abs((tonumber(self._nmAppliedFancyScale) or 0.0) - currentScale) < 0.0001 and self.width == PANEL_W and self.height == PANEL_H then
+        return
+    end
+
+    self._nmAppliedFancyScale = currentScale
+    if self.setWidth then self:setWidth(PANEL_W) else self.width = PANEL_W end
+    if self.setHeight then self:setHeight(PANEL_H) else self.height = PANEL_H end
+    self.width = PANEL_W
+    self.height = PANEL_H
+    self.lidCurrentY = self.isLidOpen == true and LID_OPEN_Y or LID_CLOSED_Y
+    self.lidCurrentH = self.isLidOpen == true and LID_OPEN_H or LID_CLOSED_H
+
+    reflowCDPlayerChildren(self)
+
+    local clampedX = self:clampWindowX(self:getX())
+    self:setX(clampedX)
+    self._nmExpandedY = self:clampWindowY(self._nmExpandedY or self:getExpandedY())
+    self:setY(self:getStateY(self.isCollapsed == true))
+    self:updateClosedLidSlotVisibility()
 end

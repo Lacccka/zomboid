@@ -1,8 +1,7 @@
 Events.OnFillContainer.Add(function(roomName, containerType, container)
     if not container then return end
 
-    -- Skip ItemPickerContainer previews (used for backpack icon rendering, NPC inventories, etc.)
-    -- getItems() throws on this container type; check the type string first to avoid the exception entirely.
+    -- Skip ItemPickerContainer previews: getItems() throws on this container type.
     if tostring(container):find("ItemPickerContainer") then return end
 
     local items = container:getItems()

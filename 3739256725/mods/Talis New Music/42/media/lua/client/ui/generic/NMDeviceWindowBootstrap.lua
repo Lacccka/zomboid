@@ -13,6 +13,7 @@ end
 env.NMDeviceWindow = _G.NMDeviceWindow
 env.DeviceWindow = env.DeviceWindow or ISCollapsableWindow:derive("NMDeviceWindow")
 env.windowsByPlayer = env.windowsByPlayer or {}
+env.liveWindows = env.liveWindows or {}
 env.WindowRegistry = env.WindowRegistry or PortableWindowRegistry
 env.EDGE_PAD = env.EDGE_PAD or 20
 env.MODULE_GAP = env.MODULE_GAP or 16
@@ -38,7 +39,6 @@ env.UI_PREWARM_TEXTURE_PATHS = env.UI_PREWARM_TEXTURE_PATHS or {
     "media/textures/UI/UI_NM_SlotEmpty_CD.png",
     "media/textures/UI/UI_NM_SlotEmpty_Vinyl.png",
     "media/textures/UI/UI_NM_SlotEmpty_Headphones.png",
-    "media/textures/UI/UI_NM_SlotEmpty_Headphone.png",
     "media/textures/UI/UI_NM_ButtonBaseIn.png",
     "media/textures/UI/UI_NM_ButtonBaseOut.png",
     "media/textures/UI/UI_NM_Play.png",

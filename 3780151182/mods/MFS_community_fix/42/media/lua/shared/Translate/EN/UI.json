@@ -1,13 +1,25 @@
 {
-    "UI_optionscreen_binding_KeySetting_AWCWF": "Escape From Kentucky Key Settings",
+    "UI_optionscreen_binding_KeySetting_AWCWF": "Modern Firearm System Key Settings",
     "UI_optionscreen_binding_LauchGrenadelauncherat": "Launch Attached Device",
     "UI_optionscreen_binding_OpenWindownCat": "Open Weapon Console",
     "UI_optionscreen_binding_GunLineDown": "Switch Tactical Stance",
     "UI_optionscreen_binding_SwtichLightSet": "Toggle Light Mode",
+    "UI_optionscreen_binding_SwitchFireModeCat": "Switch Fire Mode",
     "UI_GunpartTooltip_ModOptions_Title": "Gunpart Tooltip",
     "UI_GunpartTooltip_ModOptions_Display": "Display Options",
     "UI_GunpartTooltip_EnableCompact": "Enable Compact Tooltip",
     "UI_GunpartTooltip_EnableCompact_tooltip": "Use compact custom tooltip for weapon parts with many mount points",
     "UI_GunpartTooltip_ShowMountList": "Show Weapon Compatibility",
-    "UI_GunpartTooltip_ShowMountList_tooltip": "Display weapon compatibility list in gunpart tooltips"
+    "UI_GunpartTooltip_ShowMountList_tooltip": "Display weapon compatibility list in gunpart tooltips",
+    "UI_options_AWCWF_title": "Modern Firearms System Extra Settings",
+    "UI_options_AWCWF_section_general": "General",
+    "UI_options_AWCWF_desc_general": "Additional Modern Firearms System settings. Configure controls in the game's Key Bindings page.",
+    "UI_options_AWCWF_section_weapon_sounds": "Weapon Sounds",
+    "UI_options_AWCWF_desc_weapon_sounds": "Configure MFS gunshot and reload sounds independently from other game audio.",
+    "UI_options_AWCWF_enable_new_gunshot": "Enable New Gunshot Sounds",
+    "UI_options_AWCWF_enable_new_gunshot_tooltip": "Use the layered MFS gunshot sound system. Disable this to use the weapon's standard firing sound.",
+    "UI_options_AWCWF_weapon_shot_volume": "Weapon Shot Volume",
+    "UI_options_AWCWF_weapon_shot_volume_tooltip": "Adjust MFS gunshot volume. 0 mutes it, 1 is the default, and 2 is double volume.",
+    "UI_options_AWCWF_weapon_reload_volume": "Weapon Reload Volume",
+    "UI_options_AWCWF_weapon_reload_volume_tooltip": "Adjust MFS reload volume. 0 mutes it, 1 is the default, and 2 is double volume."
 }

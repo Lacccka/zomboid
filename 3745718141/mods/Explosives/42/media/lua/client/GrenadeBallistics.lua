@@ -11,10 +11,7 @@ GrenadeBallistic._pendingThrow = nil
 local DROP_MODE_FLOOR_THRESHOLD = 3
 local DROP_GRAVITY = 5 -- tunable, floor-units per second^2 (not real gravity)
 
--- Delayed-fuse grenades always bounce once grounded, straight along the
--- original throw direction. Bounce energy starts from how far the grenade
--- was thrown, damping each hop until it drops below the threshold, at
--- which point it settles in place and arms for the rest of the fuse.
+-- Bounce state (delayed-fuse only): energy damps each hop until below threshold, then settles.
 local BOUNCE_ENERGY_DAMPING = 0.45 -- tunable, energy fraction retained per bounce
 local BOUNCE_ENERGY_THRESHOLD = 1.2 -- tunable, tiles; below this it settles instead of bouncing again
 local BOUNCE_DISTANCE_FACTOR = 0.15 -- tunable, tiles traveled per unit of bounce energy
@@ -23,15 +20,8 @@ local BOUNCE_MIN_FLIGHT_TIME = 0.15 -- tunable, seconds, keeps bounce hops snapp
 local BOUNCE_ANGLE_SPREAD_DEG = 15 -- tunable, +/- degrees of random drift applied each bounce
 local BOUNCE_ENERGY_SCALE = 1.5 -- tunable, converts (impact height / weight) into bounce-energy tiles
 
--- ===============================================================
--- Ground target marker: the vanilla throw reticle (circle + a line
--- rising from it) is meant for direct-line weapons, not a real arced
--- trajectory, and players read the line's tip as the landing point
--- rather than the circle underneath it. Draw our own flat ground-plane
--- marker at the actual landing square instead. Uses two pre-colored
--- textures rather than runtime tinting since there's no color-tint
--- draw call available here.
--- ===============================================================
+-- Custom ground-plane target marker (vanilla reticle reads wrong for arced throws).
+-- Pre-colored textures, no runtime tint draw call available.
 local TARGET_MARKER_TEX_IN_RANGE = "media/textures/FX/target_marker_green.png"
 local TARGET_MARKER_TEX_OUT_OF_RANGE = "media/textures/FX/target_marker_red.png"
 local TARGET_MARKER_WIDTH = 128
@@ -98,8 +88,7 @@ local GRENADE_CONFIGS = {
     },
 }
 
--- FlareBurning throws with the same physics as an unlit Flare -- only
--- the item type differs, so both can be thrown/aimed the same way.
+-- FlareBurning shares physics with unlit Flare, only the item type differs.
 local FLARE_CONFIG = {
     speed = 12,
     arcHeightFactor = 0.12,
@@ -110,10 +99,7 @@ local FLARE_CONFIG = {
 GRENADE_CONFIGS["Explosives.Flare"] = FLARE_CONFIG
 GRENADE_CONFIGS["Explosives.FlareBurning"] = FLARE_CONFIG
 
--- This mod's own mines/Claymore land as an armed placed trap instead of
--- exploding on impact -- same placeAsTrap handling as the vanilla
--- sensor/remote bombs, always on (not gated behind VanillaBallisticsEnabled,
--- since these are this mod's own items, not vanilla ones).
+-- Mines/Claymore land as placed traps, not gated behind VanillaBallisticsEnabled (own items, not vanilla).
 local MINE_THROW_CONFIG = {
     speed = 10, arcHeightFactor = 0.1, limitRange = 20, throwReleaseMs = 500,
     placeAsTrap = true,
@@ -122,16 +108,10 @@ GRENADE_CONFIGS["Explosives.M14Mine"] = MINE_THROW_CONFIG
 GRENADE_CONFIGS["Explosives.M18a1Claymore"] = MINE_THROW_CONFIG
 GRENADE_CONFIGS["Explosives.M18a1ClaymoreRemote"] = MINE_THROW_CONFIG
 
--- ===============================================================
--- Optional: apply this mod's ballistic arc + target marker to vanilla
--- throwables too, gated behind the VanillaBallisticsEnabled sandbox
--- option (off by default) so vanilla behavior is unaffected unless a
--- server/player explicitly turns it on. Merged into GRENADE_CONFIGS at
--- OnGameStart, once SandboxVars is guaranteed to be populated.
--- ===============================================================
+-- Vanilla throwable configs, gated behind VanillaBallisticsEnabled sandbox option.
+-- Merged into GRENADE_CONFIGS at OnGameStart, once SandboxVars is populated.
 local VANILLA_GRENADE_CONFIGS = {
-    -- Base versions explode immediately on impact, same as this mod's
-    -- own grenades.
+    -- Base versions explode immediately on impact
     ["Base.PipeBomb"] = {
         speed = 10, arcHeightFactor = 0.1, limitRange = 20, throwReleaseMs = 500,
         fxPrefix = "explosion_", fxFrames = 12, fxSize = 314, fxDuration = 40,
@@ -140,35 +120,25 @@ local VANILLA_GRENADE_CONFIGS = {
         speed = 10, arcHeightFactor = 0.1, limitRange = 20, throwReleaseMs = 500,
         fxPrefix = "explosion_", fxFrames = 12, fxSize = 274, fxDuration = 40,
     },
-    -- No ExplosionPower/Range on this item -- triggerExplosion() still
-    -- fires natively and applies FireStartingEnergy/Chance/Range itself,
-    -- the same mechanism this mod's own M14TH3Grenade already relies on.
+    -- No ExplosionPower/Range; triggerExplosion() applies FireStartingEnergy/Chance natively (like M14TH3Grenade).
     ["Base.Molotov"] = {
         speed = 10, arcHeightFactor = 0.1, limitRange = 20, throwReleaseMs = 500,
         fxPrefix = "explosion_", fxFrames = 12, fxSize = 250, fxDuration = 40,
     },
-    -- SmokeBomb has no ExplosionPower either -- native triggerExplosion()
-    -- handles its smoke/noise release itself. No fxPrefix on purpose: a
-    -- fire-blast animation would look wrong for smoke, and there's no
-    -- dedicated smoke FX yet, so this skips the custom FX overlay (see
-    -- the fxPrefix guard around the ExplosionFX.spawn call below).
+    -- No ExplosionPower; native triggerExplosion() handles smoke/noise. No fxPrefix on purpose (no smoke FX yet).
     ["Base.SmokeBomb"] = {
         speed = 10, arcHeightFactor = 0.1, limitRange = 20, throwReleaseMs = 500,
     },
-    -- FlameTrap ("Fire Bomb") has no ExplosionPower either, same as
-    -- Molotov -- needs the same IsoFireManager.StartFire fire-start (see
-    -- the Base.FlameTrap check next to the Base.Molotov one below).
+    -- No ExplosionPower, same fire-start as Molotov (see Base.Molotov check above).
     ["Base.FlameTrap"] = {
         speed = 10, arcHeightFactor = 0.1, limitRange = 20, throwReleaseMs = 500,
         fxPrefix = "explosion_", fxFrames = 12, fxSize = 250, fxDuration = 40,
     },
-    -- NoiseTrap is a pure noise/distraction item, no ExplosionPower and
-    -- no fire -- same no-fxPrefix treatment as SmokeBomb.
+    -- Pure noise item, no ExplosionPower/fire, no fxPrefix (like SmokeBomb).
     ["Base.NoiseTrap"] = {
         speed = 10, arcHeightFactor = 0.1, limitRange = 20, throwReleaseMs = 500,
     },
-    -- Firecracker/Firecracker_Crafted have no placed/sensor/remote variants
-    -- at all -- always explode (make noise) on impact, no dedicated FX.
+    -- No placed/sensor/remote variants; always explodes on impact, no dedicated FX.
     ["Base.Firecracker"] = {
         speed = 12, arcHeightFactor = 0.12, limitRange = 20, throwReleaseMs = 500,
     },
@@ -176,11 +146,41 @@ local VANILLA_GRENADE_CONFIGS = {
         speed = 12, arcHeightFactor = 0.12, limitRange = 20, throwReleaseMs = 500,
     },
 }
--- Sensor/Remote/Triggered versions just land as an armed placed trap
--- (like a manually placed mine) instead of exploding on impact -- native
--- sensor/timer/remote logic takes over from there. MineExplosionFX.lua
--- catches the eventual detonation for FX (SmokeBomb/NoiseTrap variants
--- excluded there too, for the same no-dedicated-FX reason as above).
+
+-- Third-party grenades registered under the vanilla Base module. Kept separate from
+-- VANILLA_GRENADE_CONFIGS for clarity. Harmless if the mod isn't installed (key never matches).
+local OTHER_MOD_GRENADE_CONFIGS = {
+    -- Rain's Firearms & Gun Parts (Workshop 3773858287): Base.Grenade, explodes like Base.PipeBomb.
+    ["Base.Grenade"] = {
+        speed = 11, arcHeightFactor = 0.11, limitRange = 18, throwReleaseMs = 500,
+        fxPrefix = "explosion_", fxFrames = 12, fxSize = 392, fxDuration = 40,
+    },
+    -- Guns of Marz
+    ["MarzGuns.M67"] = {
+        speed = 11, arcHeightFactor = 0.11, limitRange = 18, throwReleaseMs = 500,
+        fxPrefix = "explosion_", fxFrames = 12, fxSize = 392, fxDuration = 40,
+    },
+    ["MarzGuns.M18"] = {
+        speed = 10, arcHeightFactor = 0.1, limitRange = 15, throwReleaseMs = 500,
+    },
+    ["MarzGuns.M14_Incendiary"] = {
+        speed = 10, arcHeightFactor = 0.1, limitRange = 18, throwReleaseMs = 500,
+        fxPrefix = "explosion_", fxFrames = 12, fxSize = 250, fxDuration = 40,
+    },
+    ["MarzGuns.40mm_HE_Explosion"] = {
+        speed = 9, arcHeightFactor = 0.1, limitRange = 14, throwReleaseMs = 500,
+        fxPrefix = "explosion_", fxFrames = 12, fxSize = 250, fxDuration = 40,
+    },
+    ["MarzGuns.40mm_Incendiary_Explosion"] = {
+        speed = 9, arcHeightFactor = 0.1, limitRange = 14, throwReleaseMs = 500,
+        fxPrefix = "explosion_", fxFrames = 12, fxSize = 250, fxDuration = 40,
+    },
+}
+for fullType, cfg in pairs(OTHER_MOD_GRENADE_CONFIGS) do
+    VANILLA_GRENADE_CONFIGS[fullType] = cfg
+end
+
+-- Sensor/Remote/Triggered variants land as placed traps; native logic + MineExplosionFX.lua handle detonation/FX.
 local PLACE_AS_TRAP_CONFIG = {
     speed = 10, arcHeightFactor = 0.1, limitRange = 20, throwReleaseMs = 500,
     placeAsTrap = true,
@@ -203,13 +203,7 @@ Events.OnGameStart.Add(function()
     end
 end)
 
--- ===============================================================
--- Range scales a bit with the thrown item's actual Weight -- lighter
--- items fly further, heavier ones land closer, on top of this mod's
--- per-item base limitRange and the player's Strength bonus. Kept
--- modest (a few tiles across this mod's full weight range of 0.05 to
--- 1.5) rather than dominating the throw feel.
--- ===============================================================
+-- Range scales with item weight (lighter flies further), on top of limitRange + Strength bonus. Kept modest.
 local WEIGHT_RANGE_BASELINE = 0.6 -- weight at which limitRange applies unmodified
 local WEIGHT_RANGE_SENSITIVITY = 8 -- tiles of range change per 1.0 weight difference
 local MIN_LIMIT_RANGE = 10
@@ -220,12 +214,7 @@ local function getWeightAdjustedLimitRange(cfg, weight)
     return math.max(MIN_LIMIT_RANGE, cfg.limitRange + delta)
 end
 
--- ===============================================================
--- Max horizontal throw range for this weapon/floor-drop combo.
--- Shared between the actual throw (which clamps to it) and the aim
--- preview marker (which needs to know in-range vs out-of-range before
--- the throw happens) -- kept as one function so they can't drift apart.
--- ===============================================================
+-- Max throw range; shared by the actual throw and the aim preview marker so they can't drift apart.
 local function calculateMaxRange(player, cfg, floorsDown, weight)
     local limitRange = getWeightAdjustedLimitRange(cfg, weight)
     local strength = player:getPerkLevel(Perks.Strength)
@@ -234,9 +223,7 @@ local function calculateMaxRange(player, cfg, floorsDown, weight)
 
     local isDrop = floorsDown >= DROP_MODE_FLOOR_THRESHOLD
     if isDrop then
-        -- Steep drop: reach = speed * fall time (oblong projectiles don't
-        -- lose much horizontal speed to drag). Never below flatRange --
-        -- extra airtime from falling can only add distance, not remove it.
+        -- Steep drop: reach = speed * fall time. Never below flatRange.
         local flightTime = math.sqrt(2 * floorsDown / DROP_GRAVITY)
         return isDrop, math.max(flatRange, cfg.speed * flightTime)
     end
@@ -244,13 +231,7 @@ local function calculateMaxRange(player, cfg, floorsDown, weight)
     return isDrop, flatRange
 end
 
--- ===============================================================
--- UIManager.getLastPicked() is the same depth-correct "what's under the
--- cursor" the engine uses for hover/highlight -- unlike the old flat
--- ground-plane pickSquare heuristic, it correctly tells apart wall sprites
--- on different floors and switches to the roof once the cursor passes a
--- wall's top edge. No pick this frame = no valid target, period.
--- ===============================================================
+-- getLastPicked() is the engine's own depth-correct cursor pick (replaces the old flat pickSquare heuristic).
 local function isWallObject(obj)
     if not obj then return false end
     local ok, sprite = pcall(function() return obj:getSprite() end)
@@ -260,19 +241,14 @@ local function isWallObject(obj)
     return props:has("WallN") or props:has("WallW") or props:has("WallNW")
 end
 
--- Mid-flight safety net: since the throw is no longer rejected just because
--- getCanSee failed, a wall between the player and the target needs to stop
--- the grenade itself (checked per-frame in the projectile update loop).
--- Windows smash instead of blocking -- a thrown grenade doesn't lose
--- meaningful momentum punching through glass.
+-- Mid-flight wall check (getCanSee no longer blocks throws, so walls must stop the grenade itself).
+-- Windows smash instead of block -- a thrown grenade doesn't lose meaningful momentum through glass.
 local function squareHasWall(sq)
     if not sq then return false end
     local objects = sq:getObjects()
     if not objects then return false end
     local blocked = false
-    -- Collect windows first, then smash -- smashWindow() mutates this same
-    -- object list, and iterating a PZArrayList while it shrinks under you
-    -- throws IndexOutOfBounds (same issue as shatterNearbyWindows below).
+    -- Collect windows first, then smash: smashWindow() mutates this list mid-iteration (IndexOutOfBounds otherwise).
     local windows = {}
     for i = 0, objects:size() - 1 do
         local obj = objects:get(i)
@@ -292,9 +268,7 @@ local function squareHasWall(sq)
     return blocked
 end
 
--- Second return value: whether the picked object itself is a wall sprite
--- (WallN/WallW/WallNW) -- used to gate the post-impact ground-fall check
--- to actual wall hits only, not every elevated target (trees, roof edges).
+-- 2nd return: is the pick a wall sprite? Gates the post-impact ground-fall check to real wall hits only.
 local function getLastPickedSquare()
     local ok, lastPicked = pcall(function() return UIManager.getLastPicked() end)
     if not ok or not lastPicked then return nil, false end
@@ -303,9 +277,7 @@ local function getLastPickedSquare()
     return nil, false
 end
 
--- ===============================================================
 -- Prepare throw and suppress vanilla throwable
--- ===============================================================
 local function OnWeaponSwing()
     local player = getPlayer()
     if not player then return end
@@ -318,10 +290,7 @@ local function OnWeaponSwing()
     local targetSq = GrenadeBallistic._validTargetSq
     if not targetSq then return end
 
-    -- Prefer the precise impact position (ground X/Y plus estimated click
-    -- height on the picked object, e.g. partway up a pole) computed every
-    -- aim frame -- falls back to the plain square center/floor if that
-    -- somehow wasn't set (shouldn't happen while targetSq is valid).
+    -- Prefer the precise impact position computed each aim frame; falls back to square center/floor.
     local targetX = GrenadeBallistic._validImpactX or (targetSq:getX() + 0.5)
     local targetY = GrenadeBallistic._validImpactY or (targetSq:getY() + 0.5)
     local targetZ = GrenadeBallistic._validImpactZ or targetSq:getZ()
@@ -338,18 +307,14 @@ local function OnWeaponSwing()
         config = cfg,
         ignited = weapon:getFullType() == "Explosives.FlareBurning",
         ignitedAtGameHours = weapon:getModData().ignitedAtGameHours,
-        -- Carried over to the placed trap on landing (placeAsTrap path)
-        -- so a remote controller already paired to this specific item
-        -- still triggers it -- instanceItem() at landing creates a fresh
-        -- item that otherwise wouldn't have this pairing.
+        -- Carried to the placed trap so an already-paired remote still triggers it
+        -- (a fresh item on landing has no pairing otherwise).
         remoteControlID = weapon:getRemoteControlID(),
         remoteRange = weapon:getRemoteRange(),
         throwTime = getTimestampMs(),
     }
 
-    -- Local removal is instant client-side feedback only -- it doesn't
-    -- reliably persist to the server's saved state in MP, so the actual
-    -- authoritative removal is requested from the server via ExplosivesServer.lua.
+    -- Local removal is instant client feedback only; server removal via ExplosivesServer.lua is authoritative.
     local weaponID = weapon:getID()
     player:getInventory():RemoveOneOf(weapon:getFullType())
     player:setPrimaryHandItem(nil)
@@ -361,9 +326,7 @@ local function OnWeaponSwing()
 end
 Events.OnWeaponSwing.Add(OnWeaponSwing)
 
--- ============================================================
 -- Launch projectile after throw animation delay
--- ============================================================
 Events.OnPlayerUpdate.Add(function(player)
     local pending = GrenadeBallistic._pendingThrow
     if not pending then return end
@@ -420,17 +383,11 @@ Events.OnPlayerUpdate.Add(function(player)
     local item = startSq:AddWorldInventoryItem(instanceItem(pending.weaponType), 0, 0, 0, false)
     if not item then return end
 
-    -- Marks this as still mid-flight so FlareHandler.lua's ground scanner
-    -- doesn't mistake the flying WorldInventoryItem (it's still technically
-    -- sitting on a square every frame, just manually repositioned) for a
-    -- landed flare.
+    -- Marks mid-flight so FlareHandler.lua's ground scanner doesn't mistake it for a landed flare.
     item:getModData().flying = true
 
     item:setWorldZRotation(dir * 360 / (2 * math.pi))
-    -- No setWorldScale() override -- each item's own model defines its
-    -- correct world-object scale (this mod's own items have none, i.e.
-    -- the native 1.0 default; vanilla items like PipeBomb define their
-    -- own, e.g. 0.6). An override here would fight that per-item value.
+    -- No setWorldScale() override: each item's model already defines its own correct scale.
     local wi = item:getWorldItem()
     if wi then
         wi:setIgnoreRemoveSandbox(true)
@@ -466,11 +423,9 @@ Events.OnPlayerUpdate.Add(function(player)
         remoteControlID = pending.remoteControlID,
         remoteRange = pending.remoteRange,
         flightLight = nil,
-        -- Delayed-fuse bounce state: initial energy from how far it fell
-        -- (arc height, or drop distance for the steep-drop mode) relative
-        -- to its own weight -- a heavier item absorbs more of the impact
-        -- and bounces less. Direction is the flight path's own horizontal
-        -- heading.
+        -- Throw-release timestamp; docks the delayed-fuse countdown by flight/bounce time (see fuse-arming below).
+        releaseTimeMs = getTimestampMs(),
+        -- Bounce energy: fall height / weight (heavier bounces less). Direction = flight path heading.
         bounceEnergy = ((isDrop and dropDistance or arcHeight) / math.max(0.05, pending.weight or 0.5)) * BOUNCE_ENERGY_SCALE,
         throwDirX = dist > 0 and (pending.targetX - startX) / dist or 0,
         throwDirY = dist > 0 and (pending.targetY - startY) / dist or 0,
@@ -479,12 +434,7 @@ Events.OnPlayerUpdate.Add(function(player)
     getSoundManager():PlayWorldSound("PipeBombThrow", player:getCurrentSquare(), 0, 50, 1.0, true)
 end)
 
--- ===============================================================
--- Delayed fuse: gated behind DelayedFuseEnabled and scoped to this
--- mod's own grenades only (cfg.own), not vanilla throwables or this
--- mod's mines/Claymores (already land as placed traps) or Flare
--- (already lands lit, no explosion at all).
--- ===============================================================
+-- Delayed fuse: gated behind DelayedFuseEnabled, own grenades only (not vanilla/mines/Claymore/Flare).
 local function getFuseDelaySeconds(cfg)
     if not cfg or not cfg.own then return nil end
     if not (SandboxVars.Explosives and SandboxVars.Explosives.DelayedFuseEnabled) then return nil end
@@ -493,10 +443,7 @@ local function getFuseDelaySeconds(cfg)
     return seconds
 end
 
--- Blast radius shatters nearby windows (same radius zombies take damage
--- in, plus the floor above/below) on top of the native ExplosionPower/Range
--- damage -- purely cosmetic glass breaking, not a damage/knockback effect
--- of its own.
+-- Shatters nearby windows (same radius as zombie damage, +/- one floor). Purely cosmetic.
 local function shatterNearbyWindows(square, radius)
     if not square or not radius or radius <= 0 then return end
     local cell = getCell()
@@ -507,9 +454,7 @@ local function shatterNearbyWindows(square, radius)
                 local sq = cell:getGridSquare(cx + dx, cy + dy, cz + dz)
                 local objects = sq and sq:getObjects()
                 if objects then
-                    -- Collect first, then smash -- smashWindow() mutates
-                    -- this same object list, and iterating a PZArrayList
-                    -- while it shrinks under you throws IndexOutOfBounds.
+                    -- Collect first, then smash: smashWindow() mutates this list mid-iteration.
                     local windows = {}
                     for i = 0, objects:size() - 1 do
                         local obj = objects:get(i)
@@ -528,11 +473,8 @@ local function shatterNearbyWindows(square, radius)
     end
 end
 
--- Same idea as shatterNearbyWindows but for vehicles -- found via
--- sq:getMovingObjects() + instanceof BaseVehicle (vanilla's own
--- ISVehicleTrailerUtils.getTowableVehicleNear uses the same pattern).
--- A vehicle spans multiple squares, hence the `seen` dedupe. window:hit()
--- is the actual break call -- smashCarWindow() is just an anim/sound cue.
+-- Same as shatterNearbyWindows but for vehicles. `seen` dedupes multi-square vehicles.
+-- window:hit() is the actual break call; smashCarWindow() is just an anim/sound cue.
 local function shatterNearbyCarWindows(square, radius)
     if not square or not radius or radius <= 0 then return end
     local player = getPlayer()
@@ -563,8 +505,7 @@ local function shatterNearbyCarWindows(square, radius)
     end
 end
 
--- Shared by the immediate-explosion path and the delayed-fuse countdown
--- below, so both stay in sync instead of duplicating the FX/trap/command logic.
+-- Shared by immediate-explosion and delayed-fuse paths, avoids duplicating FX/trap/command logic.
 local function explodeGrenadeAt(weaponType, config, square, worldX, worldY, worldZ)
     if config.fxPrefix then
         ExplosionFX.spawn(worldX, worldY, worldZ, config)
@@ -585,10 +526,7 @@ local function explodeGrenadeAt(weaponType, config, square, worldX, worldY, worl
         end
     end
 
-    -- Local trigger above is instant client-side FX/sound only -- side
-    -- effects (fire-starting, damage) don't reliably persist server-side
-    -- from outside a TimedAction. The server performs its own authoritative
-    -- trigger via ExplosivesServer.lua.
+    -- Local trigger is instant client FX/sound only; server trigger via ExplosivesServer.lua is authoritative.
     if isClient() then
         sendClientCommand(getPlayer(), "Explosives", "TriggerExplosion", {
             weaponType = weaponType,
@@ -599,8 +537,7 @@ local function explodeGrenadeAt(weaponType, config, square, worldX, worldY, worl
     end
 end
 
--- Lands the grenade as a visible, armed WorldInventoryItem and queues it in
--- _armedGrenades instead of exploding immediately.
+-- Lands the grenade as a visible, armed WorldInventoryItem and queues it in _armedGrenades instead of exploding immediately.
 local function armGrenadeAt(weaponType, config, square, worldX, worldY, worldZ, fuseSeconds)
     local landedItem = square and square:AddWorldInventoryItem(instanceItem(weaponType), 0, 0, 0, false) or nil
     local landedWi = nil
@@ -609,10 +546,7 @@ local function armGrenadeAt(weaponType, config, square, worldX, worldY, worldZ, 
         if landedWi then
             landedWi:setIgnoreRemoveSandbox(true)
             landedWi:setExtendedPlacement(false)
-            -- AddWorldInventoryItem above always places at the square's
-            -- center (0,0,0 offset) -- reposition to the actual landing
-            -- spot (worldX/Y/Z), same as the live projectile's offX/Y/Z,
-            -- otherwise it visibly snaps to the tile center on landing.
+            -- AddWorldInventoryItem places at square center by default; reposition to actual landing spot or it snaps visibly.
             if landedWi:getSquare() then
                 landedWi:setOffX(worldX - landedWi:getSquare():getX())
                 landedWi:setOffY(worldY - landedWi:getSquare():getY())
@@ -623,8 +557,7 @@ local function armGrenadeAt(weaponType, config, square, worldX, worldY, worldZ, 
     end
 
     table.insert(GrenadeBallistic._armedGrenades, {
-        -- WorldItem, not the InventoryItem -- removeFromSquare()/removeFromWorld()
-        -- only exist on the world-side object, same as _activeProjectiles' proj.item.
+        -- WorldItem, not InventoryItem: removeFromSquare/removeFromWorld only exist there.
         item = landedWi,
         weaponType = weaponType,
         config = config,
@@ -652,12 +585,7 @@ end
 
 local IMPACT_MARKER_SIZE = 10 -- small dot, deliberately much smaller than the ground marker
 
--- Estimates how high up (world Z, ABOVE baseZ -- baseZ is already the
--- picked square's own Z, which itself already reflects roughly which floor
--- was clicked, not always 0) the mouse's actual screen position
--- corresponds to. Z is linear with screen Y in the iso projection, so
--- sampling ToScreen at two known Z values on the same X/Y gives an exact
--- pixels-per-Z scale to compare the real mouse position against.
+-- Estimates click height above baseZ: Z is linear with screen Y, so two ToScreen samples give pixels-per-Z.
 local function estimateClickHeightOffset(mouseX, mouseY, groundX, groundY, baseZ)
     local zoom = getCore():getZoom(0)
     local scaledMouseY = mouseY * zoom
@@ -683,11 +611,7 @@ local function drawImpactMarker(worldX, worldY, worldZ)
         1, 1, 1, 1) -- texture is already red-colored, no extra tint needed
 end
 
--- The floor a collision is detected on often has no actual floor surface to
--- land on there (e.g. the collision square is just the outside face of a
--- tall wall that runs straight down to true ground, with nothing beside it
--- at that height) -- scan downward from startFloor for the first floor that
--- does have a real floor tile, falling back to 0 (true ground) if none found.
+-- Collision floor often has no floor tile there (e.g. outside face of a tall wall); scan down for a real floor, fallback 0.
 local function findGroundBelow(x, y, startFloor)
     local cell = getCell()
     for floor = startFloor, 0, -1 do
@@ -699,19 +623,13 @@ local function findGroundBelow(x, y, startFloor)
     return 0
 end
 
--- ============================================================
 -- Render tick: track aim target + update projectiles
--- ============================================================
 local function onPostRender()
     local player = getPlayer()
     if not player then return end
 
-    -- Fully invalid state -- no throw possible this frame. Set at the top
-    -- and only overridden below once we have a real, visible target, so
-    -- every early-out path (not aiming, nothing picked, no line of sight)
-    -- leaves a consistent "can't throw" state instead of stale values from
-    -- a previous frame (that stale-state bug is what caused throws to fly
-    -- into nowhere while the red marker was showing).
+    -- Reset to invalid state each frame; prevents stale values from a previous frame
+    -- (was causing throws to fly into nowhere while the red marker was showing).
     GrenadeBallistic._validTargetSq = false
     GrenadeBallistic._validFloorsDown = 0
     GrenadeBallistic._validImpactX = nil
@@ -726,25 +644,19 @@ local function onPostRender()
         local mouseY = getMouseY()
         local pickedSq, pickedIsWall = getLastPickedSquare()
 
-        -- No line-of-sight gate here -- getCanSee rejected legitimate
-        -- throws too often. Whatever getLastPicked resolves to (incl. Z)
-        -- is used as the target; mid-flight wall collision below is the
-        -- real safety net for anything actually in the way.
+        -- No line-of-sight gate: getCanSee rejected too many legit throws.
+        -- Mid-flight wall check below is the real safety net.
         if pickedSq then
             local cfg = GRENADE_CONFIGS[weapon:getFullType()]
 
-            -- follow the mouse continuously instead of snapping to the
-            -- target square's center -- that only changes tile-to-tile,
-            -- which made the marker visibly jump instead of gliding.
+            -- Follow mouse continuously (snapping to tile center made the marker jump instead of glide).
             local zoom = getCore():getZoom(0)
             local worldX, worldY = ISCoordConversion.ToWorld(mouseX * zoom, mouseY * zoom, pickedSq:getZ())
             local markerX = worldX or (pickedSq:getX() + 0.5)
             local markerY = worldY or (pickedSq:getY() + 0.5)
 
             local dist = IsoUtils.DistanceTo(player:getX(), player:getY(), markerX, markerY)
-            -- Floors below the player -- was hardcoded to 0 before, so
-            -- downward throws always used the flat range formula instead
-            -- of drop-mode.
+            -- Was hardcoded to 0 before, breaking drop-mode for downward throws.
             local floorsDown = math.max(0, math.floor(player:getZ() - pickedSq:getZ()))
             local isDrop, maxRange = calculateMaxRange(player, cfg, floorsDown, weapon:getWeight())
             local inRange = dist <= maxRange
@@ -763,26 +675,17 @@ local function onPostRender()
                 markerY = player:getY() + math.sin(angle) * maxRange
             end
 
-            -- getCanSee is display-only now (red marker as a heads-up),
-            -- it no longer blocks the throw itself.
+            -- getCanSee is display-only now (red marker as a heads-up), it no longer blocks the throw itself.
             local canSeeTarget = pickedSq:getCanSee(player:getPlayerNum())
             drawTargetMarker(markerX, markerY, pickedSq:getZ(), inRange and canSeeTarget)
 
-            -- Where on the picked object's vertical extent the mouse
-            -- actually clicked (e.g. partway up a pole), not just its
-            -- ground square -- this is the real throw target, not just a
-            -- debug visualization.
+            -- Real throw target: where on the picked object's vertical extent the mouse clicked, not just ground square.
             local clickHeightOffset = estimateClickHeightOffset(mouseX, mouseY, markerX, markerY, pickedSq:getZ())
-            -- Sanity clamp -- pixelsPerZ can get tiny (near-zero) at some
-            -- zoom/angle combos, which would otherwise blow this up into an
-            -- absurd Z and break getOrCreateGridSquare() downstream.
+            -- Clamp: pixelsPerZ can get tiny at some zoom/angles, blowing this up to an absurd Z otherwise.
             clickHeightOffset = math.max(-2, math.min(10, clickHeightOffset))
 
-            -- Always intercept, even out of range -- markerX/Y is already
-            -- clamped to maxRange above. Gating this on inRange let vanilla
-            -- take over (no fuse) whenever a throw exceeded range;
-            -- OnPlayerUpdate re-clamps targetX/Y/targetSq to the real throw
-            -- origin anyway, so the unclamped pickedSq here is harmless.
+            -- Always intercept even out-of-range (gating on inRange let vanilla take over);
+            -- OnPlayerUpdate re-clamps targetX/Y/targetSq to the real throw origin anyway.
             GrenadeBallistic._validTargetSq = pickedSq
             GrenadeBallistic._validImpactX = markerX
             GrenadeBallistic._validImpactY = markerY
@@ -794,10 +697,7 @@ local function onPostRender()
                 drawImpactMarker(markerX, markerY, pickedSq:getZ() + clickHeightOffset)
             end
         else
-            -- Nothing valid to throw at (no pick, or no line of sight) --
-            -- still show the big red "can't throw here" marker, following
-            -- the mouse on a flat plane at the player's own floor purely
-            -- for placement (this is display-only, never used as a target).
+            -- No valid target: still show the red marker on a flat plane, display-only.
             local zoom = getCore():getZoom(0)
             local worldX, worldY = ISCoordConversion.ToWorld(getMouseX() * zoom, getMouseY() * zoom, player:getZ())
             if worldX and worldY then
@@ -819,8 +719,7 @@ local function onPostRender()
 
         local currX = proj.startX + (proj.targetX - proj.startX) * t
         local currY = proj.startY + (proj.targetY - proj.startY) * t
-        -- grenadeHeight: the grenade's actual visible height right now
-        -- (includes the parabolic arc bump).
+        -- Current visible height, includes the parabolic arc bump.
         local grenadeHeight
 
         if proj.isDrop then
@@ -831,9 +730,7 @@ local function onPostRender()
             grenadeHeight = flightPathHeight + arcBump
         end
 
-        -- Mid-flight wall collision -- not checked during an already-active
-        -- post-hit fall (proj.isDrop), since that fall happens right at a
-        -- wall's own column and would otherwise re-trigger immediately.
+        -- Skip during an active post-hit fall (proj.isDrop) -- that fall is at the wall's own column, would re-trigger.
         if t < 1.0 and not proj.isDrop then
             local wallSq = getCell():getGridSquare(math.floor(currX), math.floor(currY), math.floor(grenadeHeight))
             if wallSq and squareHasWall(wallSq) then
@@ -890,18 +787,12 @@ local function onPostRender()
             else
                 local fuseSeconds = getFuseDelaySeconds(proj.config)
                 if fuseSeconds then
-                    -- Delayed-fuse grenades hitting a wall above ground
-                    -- level would sit floating mid-air for the whole fuse;
-                    -- fall to real ground first. Gated to wall hits only
-                    -- (not trees/roof edges). Non-fused throws skip this
-                    -- and detonate right at the impact point.
+                    -- Wall hits above ground level would float mid-air for the whole fuse;
+                    -- fall to real ground first (wall hits only, not trees/roof edges).
                     if not proj.postHitFalling and proj.targetSq and proj.hitWall then
                         local targetFloor = proj.targetSq:getZ()
                         if targetFloor > 0 then
-                            -- Use the wall's own square, not the smooth mouse-
-                            -- projected impact X/Y -- those can land a hair
-                            -- off the wall's actual tile and made the fall
-                            -- drift sideways instead of dropping straight down.
+                            -- Use the wall's own square, not the mouse-projected X/Y (was drifting sideways instead of dropping straight).
                             local gx, gy = proj.targetSq:getX(), proj.targetSq:getY()
                             local realFloor = findGroundBelow(gx, gy, targetFloor)
                             if realFloor < targetFloor then
@@ -909,11 +800,8 @@ local function onPostRender()
                                 local fallLandingSq = getCell():getGridSquare(gx, gy, realFloor) or proj.targetSq
 
                                 proj.postHitFalling = true
-                                -- Keep X/Y at the arc's visual end
-                                -- (proj.targetX/Y) -- snapping to the wall
-                                -- tile's center caused a visible sideways
-                                -- jump. gx/gy above is only for picking the
-                                -- floor to fall to, not for repositioning.
+                                -- Keep X/Y at arc's visual end (snapping to wall tile center caused a jump);
+                                -- gx/gy above only picks the fall floor, not for repositioning.
                                 proj.startX = proj.targetX
                                 proj.startY = proj.targetY
                                 proj.flightStartHeight = grenadeHeight
@@ -933,17 +821,11 @@ local function onPostRender()
                         end
                     end
 
-                    -- Bounce once actually grounded (not mid-fall): straight
-                    -- along the original throw direction, energy damped each
-                    -- hop until it drops below the threshold, then it
-                    -- settles and arms like before.
+                    -- Bounce once grounded (not mid-fall): damp energy each hop until below threshold, then settle+arm.
                     if not convertedToFall then
                         local bounceEnergy = (proj.bounceEnergy or 0) * BOUNCE_ENERGY_DAMPING
                         if bounceEnergy > BOUNCE_ENERGY_THRESHOLD and (proj.throwDirX ~= 0 or proj.throwDirY ~= 0) then
-                            -- Drift the direction a little each bounce instead
-                            -- of a perfectly straight line -- cumulative, so
-                            -- later bounces can keep drifting further off
-                            -- the original throw heading.
+                            -- Cumulative angle drift per bounce, so it can wander further off the original heading.
                             local driftAngle = ZombRand(-BOUNCE_ANGLE_SPREAD_DEG, BOUNCE_ANGLE_SPREAD_DEG) * (math.pi / 180)
                             local cosA, sinA = math.cos(driftAngle), math.sin(driftAngle)
                             local dirX = proj.throwDirX * cosA - proj.throwDirY * sinA
@@ -977,7 +859,11 @@ local function onPostRender()
                                     bounceEnergy, bounceDist, newTargetX, newTargetY, landFloor))
                             end
                         else
-                            armGrenadeAt(proj.weaponType, proj.config, proj.targetSq, proj.targetX, proj.targetY, proj.flightTargetHeight, fuseSeconds)
+                            -- Fuse timer conceptually starts at release, not landing: flight/bounce time eats into it.
+                            -- If already expired, detonates instantly on settling instead of the full DelayedFuseSeconds.
+                            local elapsedSinceRelease = (getTimestampMs() - (proj.releaseTimeMs or getTimestampMs())) / 1000
+                            local remainingFuse = math.max(0, fuseSeconds - elapsedSinceRelease)
+                            armGrenadeAt(proj.weaponType, proj.config, proj.targetSq, proj.targetX, proj.targetY, proj.flightTargetHeight, remainingFuse)
                         end
                     end
                 else

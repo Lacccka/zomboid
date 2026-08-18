@@ -3,6 +3,8 @@ require "ui/shared/host/NMFancyWindowTooltipHost"
 local env = _G.NMCDPlayerWindowEnv
 setfenv(1, env)
 
+local FancySettingsWindow = require "ui/shared/host/NMFancySettingsWindow"
+
 local BUTTON_KINDS = {
     "prev",
     "vol_up",
@@ -340,6 +342,9 @@ function CDPlayerWindow:getPlayStopTooltip(transport)
 end
 
 function CDPlayerWindow:getHoverTooltipAt(x, y)
+    if pointInRect(x, y, self:getSettingsRect()) then
+        return FancySettingsWindow.getSettingsTooltipText()
+    end
     if pointInRect(x, y, self:getInteractiveButtonHitRect("prev")) then
         return NMTranslations.ui("PreviousTrack", "Previous Track")
     end

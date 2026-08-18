@@ -71,6 +71,31 @@ function NMZombieAudioVisualSupport.pushZombieVisualReplication(zombie, wornItem
     end
 end
 
+function NMZombieAudioVisualSupport.buildCompanionCaseContract(payload, state)
+    payload = NMZombieMediaPayloadResolver and NMZombieMediaPayloadResolver.sanitizePayloadForSandbox
+        and NMZombieMediaPayloadResolver.sanitizePayloadForSandbox(payload)
+        or payload
+    local mediaMode = tostring(payload and payload.mediaMode or "")
+    local caseEmptyType = tostring(payload and payload.caseEmptyType or "")
+    local caseFullType = tostring(payload and payload.caseFullType or "")
+    local deviceUUID = tostring(state and state.deviceUUID or "")
+    if mediaMode == "device_with_media" and caseEmptyType ~= "" and deviceUUID ~= "" then
+        return {
+            mode = "device_with_media",
+            fullType = caseEmptyType,
+            deviceUUID = deviceUUID
+        }
+    end
+    if mediaMode == "media_only" and caseFullType ~= "" then
+        return {
+            mode = "media_only",
+            fullType = caseFullType,
+            deviceUUID = ""
+        }
+    end
+    return nil
+end
+
 function NMZombieAudioVisualSupport.findAttachedProofItem(zombie, spec)
     local resolved = resolveSpec(spec)
     local attached = zombie and zombie.getAttachedItems and zombie:getAttachedItems() or nil
@@ -296,6 +321,9 @@ function NMZombieAudioVisualSupport.stampCorpseCaseIntent(zombie, payload)
     if not zombie then
         return
     end
+    payload = NMZombieMediaPayloadResolver and NMZombieMediaPayloadResolver.sanitizePayloadForSandbox
+        and NMZombieMediaPayloadResolver.sanitizePayloadForSandbox(payload)
+        or payload
     if payload and tostring(payload.mediaMode or "") == "media_only" then
         NMZombieMediaPayloadRuntime.stampCorpseLooseLoot(zombie, payload)
         return
@@ -304,6 +332,9 @@ function NMZombieAudioVisualSupport.stampCorpseCaseIntent(zombie, payload)
 end
 
 function NMZombieAudioVisualSupport.registerManagedCompanionCase(zombie, payload, state, source, runtimeLabel)
+    payload = NMZombieMediaPayloadResolver and NMZombieMediaPayloadResolver.sanitizePayloadForSandbox
+        and NMZombieMediaPayloadResolver.sanitizePayloadForSandbox(payload)
+        or payload
     local md = getProofModData(zombie)
     local mediaMode = tostring(payload and payload.mediaMode or "")
     local sourceLabel = tostring(source or "")
@@ -406,6 +437,9 @@ function NMZombieAudioVisualSupport.registerManagedCompanionCase(zombie, payload
 end
 
 function NMZombieAudioVisualSupport.recordCompanionCaseRegistrationFailure(zombie, payload, state, source, runtimeLabel, reason)
+    payload = NMZombieMediaPayloadResolver and NMZombieMediaPayloadResolver.sanitizePayloadForSandbox
+        and NMZombieMediaPayloadResolver.sanitizePayloadForSandbox(payload)
+        or payload
     local md = getProofModData(zombie)
     if not md then
         return false
@@ -563,6 +597,9 @@ function NMZombieAudioVisualSupport.stampZombieStatus(zombie, spec, params)
     local item = options.item
     local state = item and NMDeviceState and NMDeviceState.peek and NMDeviceState.peek(item) or nil
     local payload = options.payload or NMZombieMediaPayloadResolver.resolveStoredPayload(options)
+    payload = NMZombieMediaPayloadResolver and NMZombieMediaPayloadResolver.sanitizePayloadForSandbox
+        and NMZombieMediaPayloadResolver.sanitizePayloadForSandbox(payload)
+        or payload
     md.status = tostring(options.status or "")
     md.variantId = tostring(resolved.variantId or md.variantId or "none")
     md.fullType = item and item.getFullType and tostring(item:getFullType() or "") or resolved.fullType
@@ -611,14 +648,13 @@ function NMZombieAudioVisualSupport.stampZombieStatus(zombie, spec, params)
     md.corpseCompanionMode = nil
     md.corpseCompanionFullType = nil
     md.corpseCompanionDeviceUUID = nil
-    if md.mediaMode == "device_with_media" and tostring(md.caseEmptyType or "") ~= "" and tostring(md.deviceUUID or "") ~= "" then
-        md.corpseCompanionMode = "device_with_media"
-        md.corpseCompanionFullType = tostring(md.caseEmptyType)
-        md.corpseCompanionDeviceUUID = tostring(md.deviceUUID)
-    elseif md.mediaMode == "media_only" and tostring(md.caseFullType or "") ~= "" then
-        md.corpseCompanionMode = "media_only"
-        md.corpseCompanionFullType = tostring(md.caseFullType)
-        md.corpseCompanionDeviceUUID = ""
+    local companionCaseContract = NMZombieAudioVisualSupport.buildCompanionCaseContract(payload, {
+        deviceUUID = md.deviceUUID
+    })
+    if companionCaseContract then
+        md.corpseCompanionMode = tostring(companionCaseContract.mode or "")
+        md.corpseCompanionFullType = tostring(companionCaseContract.fullType or "")
+        md.corpseCompanionDeviceUUID = tostring(companionCaseContract.deviceUUID or "")
     end
     NMZombieAudioVisualSupport.applySelectionFields(md, options.selection, options.strategyName)
     transmitIfPossible(zombie)

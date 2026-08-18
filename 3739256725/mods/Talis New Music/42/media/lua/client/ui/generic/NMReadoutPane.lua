@@ -20,19 +20,9 @@ function NMReadoutPane.buildRenderState(window, frame)
     local resolved = frame and frame.resolved or (window and window.resolveContextCached and window:resolveContextCached()) or nil
     local state = resolved and resolved.state or nil
     local contentW = math.max(1, (PANE_W - ((BORDER + RING) * 2)) - (TEXT_PAD * 2))
-    local frameKey = table.concat({
-        tostring(state and state.revision or ""),
-        tostring(state and state.playbackEpoch or ""),
-        tostring(state and state.mediaFullType or ""),
-        tostring(state and state.currentTrackIndex or ""),
-        tostring(state and state.isPlaying or ""),
-        tostring(contentW)
-    }, "|")
-    local fullText = NMUIRenderCache.getFrameValue(window, "nm_readout_full_text", frameKey, function()
-        return NMReadoutTextResolver and NMReadoutTextResolver.resolveReadoutText
-            and NMReadoutTextResolver.resolveReadoutText(state)
-            or NMTranslations.ui("NoMediaNoSong", "No Media | No Song")
-    end)
+    local fullText = NMReadoutTextResolver and NMReadoutTextResolver.resolveReadoutText
+        and NMReadoutTextResolver.resolveReadoutText(state)
+        or NMTranslations.ui("NoMediaNoSong", "No Media | No Song")
     return {
         fullText = fullText,
         contentW = contentW,
@@ -82,7 +72,8 @@ function NMReadoutPane.attach(window, x, y)
         if textY < (innerY + TEXT_PAD) then
             textY = innerY + TEXT_PAD
         end
-        self:drawText(tostring(textState and textState.text or ""), innerX + TEXT_PAD, textY, TEXT.r, TEXT.g, TEXT.b, TEXT.a, UIFont.Small)
+        local drawnText = tostring(textState and textState.text or "")
+        self:drawText(drawnText, innerX + TEXT_PAD, textY, TEXT.r, TEXT.g, TEXT.b, TEXT.a, UIFont.Small)
         if NMUIRenderProbe and NMUIRenderProbe.endWindow then
             NMUIRenderProbe.endWindow(window, "widget.readout.render", perfStart)
         end

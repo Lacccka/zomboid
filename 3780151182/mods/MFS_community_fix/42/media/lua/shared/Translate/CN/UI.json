@@ -1,0 +1,19 @@
+{
+    "UI_optionscreen_binding_KeySetting_AWCWF": "现代枪械系统按键设置",
+    "UI_optionscreen_binding_LauchGrenadelauncherat": "发射附加装置",
+    "UI_optionscreen_binding_OpenWindownCat": "打开武器面板",
+    "UI_optionscreen_binding_GunLineDown": "切换战术姿态",
+    "UI_optionscreen_binding_SwtichLightSet": "切换灯光模式",
+    "UI_optionscreen_binding_SwitchFireModeCat": "切换射击模式",
+    "UI_options_AWCWF_title": "现代枪械系统额外设置",
+    "UI_options_AWCWF_section_general": "通用设置",
+    "UI_options_AWCWF_desc_general": "现代枪械系统的额外设置。请在游戏的按键绑定页面中配置操作按键。",
+    "UI_options_AWCWF_section_weapon_sounds": "武器音效",
+    "UI_options_AWCWF_desc_weapon_sounds": "独立于其他游戏音效调整 MFS 枪声和换弹音效。",
+    "UI_options_AWCWF_enable_new_gunshot": "启用新版枪声",
+    "UI_options_AWCWF_enable_new_gunshot_tooltip": "使用 MFS 分层枪声音效系统。关闭后将使用武器的标准射击音效。",
+    "UI_options_AWCWF_weapon_shot_volume": "武器射击音量",
+    "UI_options_AWCWF_weapon_shot_volume_tooltip": "调整 MFS 枪声音量。0 为静音，1 为默认音量，2 为双倍音量。",
+    "UI_options_AWCWF_weapon_reload_volume": "武器换弹音量",
+    "UI_options_AWCWF_weapon_reload_volume_tooltip": "调整 MFS 换弹音量。0 为静音，1 为默认音量，2 为双倍音量。"
+}

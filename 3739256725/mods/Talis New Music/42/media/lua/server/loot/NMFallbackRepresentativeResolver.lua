@@ -1,6 +1,7 @@
 require "slot/NMWorldItemVisuals"
 require "loot/NMManagedSpawnCatalog"
 require "loot/NMLootDebugHelpers"
+require "loot/NMLootResolvedPools"
 
 NMFallbackRepresentativeResolver = NMFallbackRepresentativeResolver or {}
 
@@ -10,6 +11,20 @@ local MEDIA_CATEGORY_ORDER = NMManagedSpawnCatalog.getMediaCategoryOrder and NMM
     or { "cassettes", "vinyl", "cds" }
 local DEVICE_CATEGORY_ORDER = NMManagedSpawnCatalog.getDeviceCategoryOrder and NMManagedSpawnCatalog.getDeviceCategoryOrder()
     or { "walkman", "boombox", "cdplayer", "recordplayer" }
+local ROUTE_ORDER = NMLootResolvedPools.getRouteOrder and NMLootResolvedPools.getRouteOrder()
+    or { "standard", "globalBackfill", "storeTopUp" }
+
+local MAX_PLACEHOLDER_REPLACEMENTS_PER_CONTAINER = 16
+local DIRECT_RECOVERY_ALLOWS_DEVICES = false
+local DIRECT_REALIZATION_CATEGORY_ORDER = {
+    cassettes = { "cassettes", "cds", "vinyl" },
+    cds = { "cds", "cassettes", "vinyl" },
+    vinyl = { "vinyl", "cds", "cassettes" },
+    walkman = { "walkman", "cdplayer", "boombox", "recordplayer" },
+    boombox = { "boombox", "cdplayer", "walkman", "recordplayer" },
+    cdplayer = { "cdplayer", "walkman", "boombox", "recordplayer" },
+    recordplayer = { "recordplayer", "boombox", "cdplayer", "walkman" }
+}
 
 local REPRESENTATIVE_BY_CATEGORY_SOURCE = {
     standard = {
@@ -64,248 +79,49 @@ for source, mapping in pairs(DEVICE_PLACEHOLDER_BY_CATEGORY_SOURCE) do
     end
 end
 
-local function toLower(value)
-    return string.lower(tostring(value or ""))
-end
-
-local function logLoot(tag, detail)
-    if NMLootDebugHelpers and NMLootDebugHelpers.logLoot then
-        NMLootDebugHelpers.logLoot(tag or "fallback", detail or "")
+local function newRouteBuckets()
+    local routes = {}
+    for i = 1, #ROUTE_ORDER do
+        local route = ROUTE_ORDER[i]
+        routes[route] = {
+            media = {},
+            devices = {}
+        }
+        for j = 1, #MEDIA_CATEGORY_ORDER do
+            routes[route].media[MEDIA_CATEGORY_ORDER[j]] = {}
+        end
+        for j = 1, #DEVICE_CATEGORY_ORDER do
+            routes[route].devices[DEVICE_CATEGORY_ORDER[j]] = {}
+        end
     end
+    return routes
 end
 
 local function newState()
     return {
         configured = false,
-        byCategory = {},
+        cacheKey = "",
+        policy = {
+            casesEnabled = true,
+            ostEnabled = true
+        },
+        routes = newRouteBuckets(),
         replacementStats = {
             replaced = 0,
-            failed = 0
+            failed = 0,
+            policyRejected = 0,
+            policySkipped = 0,
+            capped = 0
         }
     }
 end
 
 local state = newState()
 
-local function newCategoryState(units)
-    local discovered = {}
-    local remaining = {}
-    local remainingPosition = {}
-    for i = 1, #(units or {}) do
-        remaining[i] = i
-        remainingPosition[i] = i
+local function logLoot(tag, detail)
+    if NMLootDebugHelpers and NMLootDebugHelpers.logLoot then
+        NMLootDebugHelpers.logLoot(tag or "fallback", detail or "")
     end
-    return {
-        units = units or {},
-        total = #(units or {}),
-        discovered = discovered,
-        remaining = remaining,
-        remainingPosition = remainingPosition,
-        discoveredCount = 0,
-        resolvedCount = 0,
-        newDiscoveries = 0,
-        repeatResolutions = 0
-    }
-end
-
-local function getUnitWeight(unit)
-    local weight = tonumber(unit and unit.variantWeight) or 1.0
-    if weight <= 0 then
-        return 0
-    end
-    return weight
-end
-
-local function getTotalWeightForIndexes(units, indexes)
-    local total = 0
-    for i = 1, #(indexes or {}) do
-        total = total + getUnitWeight(units and units[indexes[i]] or nil)
-    end
-    return total
-end
-
-local function getTotalWeight(units)
-    local total = 0
-    for i = 1, #(units or {}) do
-        total = total + getUnitWeight(units[i])
-    end
-    return total
-end
-
-local function randomWeightedRoll(totalWeight)
-    if totalWeight <= 0 then
-        return 0
-    end
-    if ZombRandFloat then
-        return ZombRandFloat(0.0, totalWeight)
-    end
-    if ZombRand then
-        return (ZombRand(1000000) / 1000000) * totalWeight
-    end
-    return math.random() * totalWeight
-end
-
-local function swap(array, a, b)
-    local tmp = array[a]
-    array[a] = array[b]
-    array[b] = tmp
-end
-
-local function shuffleArray(array)
-    for i = #array, 2, -1 do
-        local swapIndex = (ZombRand and (ZombRand(i) + 1)) or i
-        swap(array, i, swapIndex)
-    end
-end
-
-local function rebuildRemaining(categoryState)
-    local remaining = {}
-    local remainingPosition = {}
-    for i = 1, categoryState.total do
-        if categoryState.discovered[i] ~= true then
-            remaining[#remaining + 1] = i
-        end
-    end
-    shuffleArray(remaining)
-    for i = 1, #remaining do
-        remainingPosition[remaining[i]] = i
-    end
-    categoryState.remaining = remaining
-    categoryState.remainingPosition = remainingPosition
-end
-
-local function markDiscovered(categoryState, index)
-    if categoryState.discovered[index] == true then
-        return false
-    end
-    categoryState.discovered[index] = true
-    categoryState.discoveredCount = categoryState.discoveredCount + 1
-
-    local position = categoryState.remainingPosition[index]
-    if position then
-        local lastIndex = #categoryState.remaining
-        local movedValue = categoryState.remaining[lastIndex]
-        categoryState.remaining[position] = movedValue
-        categoryState.remaining[lastIndex] = nil
-        categoryState.remainingPosition[index] = nil
-        if movedValue ~= nil then
-            categoryState.remainingPosition[movedValue] = position
-        end
-    end
-    return true
-end
-
-local function chooseUndiscovered(categoryState)
-    if #categoryState.remaining < 1 then
-        return nil
-    end
-    local totalWeight = getTotalWeightForIndexes(categoryState.units, categoryState.remaining)
-    if totalWeight <= 0 then
-        local pickIndex = #categoryState.remaining
-        local chosen = categoryState.remaining[pickIndex]
-        categoryState.remaining[pickIndex] = nil
-        categoryState.remainingPosition[chosen] = nil
-        return chosen
-    end
-
-    local roll = randomWeightedRoll(totalWeight)
-    local running = 0
-    for i = 1, #categoryState.remaining do
-        local chosen = categoryState.remaining[i]
-        running = running + getUnitWeight(categoryState.units and categoryState.units[chosen] or nil)
-        if roll < running or i == #categoryState.remaining then
-            local lastIndex = #categoryState.remaining
-            local movedValue = categoryState.remaining[lastIndex]
-            categoryState.remaining[i] = movedValue
-            categoryState.remaining[lastIndex] = nil
-            categoryState.remainingPosition[chosen] = nil
-            if movedValue ~= nil then
-                categoryState.remainingPosition[movedValue] = i
-            end
-            return chosen
-        end
-    end
-
-    return nil
-end
-
-local function chooseWeightedIndexFromList(units, indexes)
-    local count = #(indexes or {})
-    if count < 1 then
-        return nil
-    end
-
-    local totalWeight = getTotalWeightForIndexes(units, indexes)
-    if totalWeight <= 0 then
-        local pickIndex = (ZombRand and (ZombRand(count) + 1)) or count
-        return indexes[pickIndex]
-    end
-
-    local roll = randomWeightedRoll(totalWeight)
-    local running = 0
-    for i = 1, count do
-        local chosen = indexes[i]
-        running = running + getUnitWeight(units and units[chosen] or nil)
-        if roll < running or i == count then
-            return chosen
-        end
-    end
-
-    return indexes[count]
-end
-
-local function collectAvailableIndexes(categoryState, excludedIndexes)
-    local available = {}
-    local total = tonumber(categoryState and categoryState.total) or 0
-    for i = 1, total do
-        if not (excludedIndexes and excludedIndexes[i] == true) then
-            available[#available + 1] = i
-        end
-    end
-    return available
-end
-
-local function chooseContainerLocalUniqueIndex(categoryState, excludedIndexes)
-    local available = collectAvailableIndexes(categoryState, excludedIndexes)
-    if #available < 1 then
-        return nil
-    end
-    return chooseWeightedIndexFromList(categoryState and categoryState.units, available)
-end
-
-local function chooseIndex(categoryState)
-    local total = tonumber(categoryState and categoryState.total) or 0
-    if total < 1 then
-        return nil
-    end
-
-    local remainingCount = #(categoryState.remaining or {})
-    if remainingCount > 0 then
-        local chooseFresh = true
-        if remainingCount < total then
-            local threshold = math.floor((remainingCount / total) * 1000)
-            chooseFresh = not ZombRand or ZombRand(1000) < threshold
-        end
-        if chooseFresh then
-            return chooseUndiscovered(categoryState)
-        end
-    end
-
-    local totalWeight = getTotalWeight(categoryState and categoryState.units)
-    if totalWeight <= 0 then
-        return (ZombRand and (ZombRand(total) + 1)) or 1
-    end
-
-    local roll = randomWeightedRoll(totalWeight)
-    local running = 0
-    for i = 1, total do
-        running = running + getUnitWeight(categoryState.units[i])
-        if roll < running or i == total then
-            return i
-        end
-    end
-
-    return total
 end
 
 local function addResolvedItem(container, fullType)
@@ -333,28 +149,87 @@ local function removeContainerItem(container, item)
     return false
 end
 
-local function resolveSelectedUnit(category, selectionSession)
-    local categoryState = state.byCategory[category]
-    local localCategory = selectionSession
-        and selectionSession.byCategory
-        and selectionSession.byCategory[category]
-        or nil
-    local index = nil
-    if localCategory then
-        index = chooseContainerLocalUniqueIndex(categoryState, localCategory.chosenIndexes)
+local function getRouteUnits(source, kind, category)
+    local routeState = state.routes[tostring(source or "standard")] or state.routes.standard
+    local resolvedKind = tostring(kind or "media")
+    if resolvedKind == "device" then
+        resolvedKind = "devices"
+    elseif resolvedKind == "media" then
+        resolvedKind = "media"
     end
-    if index == nil then
-        index = chooseIndex(categoryState)
-    end
-    local unit = index and categoryState and categoryState.units and categoryState.units[index] or nil
-    return categoryState, index, unit
+    local bucket = routeState and routeState[resolvedKind] or nil
+    return bucket and bucket[tostring(category or "")] or nil
 end
 
-function resolver.addResolvedItemForCategory(container, category)
-    return resolver.addResolvedItemForCategoryFromSource(container, category, "standard")
+local function normalizeSourceKey(source)
+    local sourceKey = tostring(source or "standard")
+    if state.routes[sourceKey] == nil then
+        return "standard"
+    end
+    return sourceKey
 end
 
-local function stampResolvedItemSource(item, category, source)
+local function getAuthorityProfile(routeClass)
+    local resolvedRouteClass = tostring(routeClass or "")
+    local authority = state.realizationAuthority or nil
+    return authority and authority.profiles and authority.profiles[resolvedRouteClass] or nil
+end
+
+local function hasAuthorityProfileAttempts(routeClass)
+    local profile = getAuthorityProfile(routeClass)
+    local attempts = profile and profile.attempts or nil
+    return type(attempts) == "table" and #attempts > 0
+end
+
+local function isAllowedMediaUnit(unit)
+    if type(unit) ~= "table" then
+        return false
+    end
+    if state.policy.ostEnabled ~= true and unit.isBaseZomboidOST == true then
+        return false
+    end
+    if state.policy.casesEnabled ~= true and (unit.loadedOnly == true or unit.hasCompanionCase == true) then
+        return false
+    end
+    return tostring(unit.spawnFullType or "") ~= ""
+end
+
+local function chooseWeightedUnit(units, excluded)
+    local candidateIndexes = {}
+    local totalWeight = 0
+    for i = 1, #(units or {}) do
+        if not (excluded and excluded[i] == true) then
+            local unit = units[i]
+            local weight = tonumber(unit and unit.variantWeight) or 1.0
+            if weight > 0 then
+                candidateIndexes[#candidateIndexes + 1] = i
+                totalWeight = totalWeight + weight
+            end
+        end
+    end
+    if #candidateIndexes < 1 then
+        return nil, nil
+    end
+    if totalWeight <= 0 then
+        local pick = (ZombRand and (ZombRand(#candidateIndexes) + 1)) or 1
+        local index = candidateIndexes[pick]
+        return index, units[index]
+    end
+    local roll = ZombRandFloat and ZombRandFloat(0.0, totalWeight) or math.random() * totalWeight
+    local running = 0
+    for i = 1, #candidateIndexes do
+        local index = candidateIndexes[i]
+        local unit = units[index]
+        running = running + (tonumber(unit and unit.variantWeight) or 1.0)
+        if roll < running or i == #candidateIndexes then
+            return index, unit
+        end
+    end
+    local fallbackIndex = candidateIndexes[#candidateIndexes]
+    return fallbackIndex, units[fallbackIndex]
+end
+
+local function stampResolvedItem(item, category, source, unit, placeholderFullType, context)
     if not (item and item.getModData) then
         return
     end
@@ -365,141 +240,315 @@ local function stampResolvedItemSource(item, category, source)
     modData.nmLootResolved = true
     modData.nmLootCategory = tostring(category or "")
     modData.nmLootSource = tostring(source or "standard")
-end
-
-local function markSessionPick(selectionSession, category, index, wasRepeat)
-    if not (selectionSession and category and index) then
-        return
-    end
-    local byCategory = selectionSession.byCategory or {}
-    local localCategory = byCategory[category]
-    if not localCategory then
-        localCategory = {
-            chosenIndexes = {},
-            placeholders = 0,
-            uniquePicks = 0,
-            repeatPicks = 0
-        }
-        byCategory[category] = localCategory
-        selectionSession.byCategory = byCategory
-    end
-
-    if localCategory.chosenIndexes[index] ~= true then
-        localCategory.chosenIndexes[index] = true
-        localCategory.uniquePicks = localCategory.uniquePicks + 1
-    elseif wasRepeat == true then
-        localCategory.repeatPicks = localCategory.repeatPicks + 1
+    modData.nmLootPlaceholderFullType = tostring(placeholderFullType or "")
+    modData.nmLootResolvedFullType = tostring(item.getFullType and item:getFullType() or "")
+    modData.nmLootResolvedLoadedOnly = type(unit) == "table" and unit.loadedOnly == true or false
+    modData.nmLootResolvedOwner = tostring(unit and unit.owner or "")
+    if type(context) == "table" then
+        modData.nmLootRoomName = tostring(context.roomName or "")
+        modData.nmLootContainerType = tostring(context.containerType or "")
+        modData.nmLootRouteClass = tostring(context.routeClass or "")
     end
 end
 
-local function logReplacementSession(container, selectionSession)
-    if not selectionSession or not selectionSession.byCategory then
-        return
-    end
-
-    local containerShape = tostring(container or "nil")
-    for i = 1, #MEDIA_CATEGORY_ORDER do
-        local category = MEDIA_CATEGORY_ORDER[i]
-        local localCategory = selectionSession.byCategory[category]
-        if category == "vinyl" and localCategory and (tonumber(localCategory.placeholders) or 0) > 0 then
-            local detail = string.format(
-                "category=%s placeholders=%s unique=%s repeats=%s shape=%s",
-                tostring(category),
-                tostring(tonumber(localCategory.placeholders) or 0),
-                tostring(tonumber(localCategory.uniquePicks) or 0),
-                tostring(tonumber(localCategory.repeatPicks) or 0),
-                containerShape
-            )
-            if NMLootDebugHelpers and NMLootDebugHelpers.logLootThrottled then
-                NMLootDebugHelpers.logLootThrottled(
-                    "fallback.replace_container",
-                    string.format(
-                        "%s|%s|%s|%s",
-                        tostring(category),
-                        tostring(tonumber(localCategory.placeholders) or 0),
-                        tostring(tonumber(localCategory.uniquePicks) or 0),
-                        containerShape
-                    ),
-                    "fallback.replace_container",
-                    detail
-                )
-            else
-                logLoot("fallback.replace_container", detail)
+local function logConfiguredPools()
+    for i = 1, #ROUTE_ORDER do
+        local route = ROUTE_ORDER[i]
+        for j = 1, #MEDIA_CATEGORY_ORDER do
+            local category = MEDIA_CATEGORY_ORDER[j]
+            local units = getRouteUnits(route, "media", category) or {}
+            local loose = 0
+            local loaded = 0
+            local ost = 0
+            for k = 1, #units do
+                if units[k].loadedOnly == true then
+                    loaded = loaded + 1
+                else
+                    loose = loose + 1
+                end
+                if units[k].isBaseZomboidOST == true then
+                    ost = ost + 1
+                end
             end
+            logLoot(
+                "fallback.policy_pool",
+                string.format(
+                    "route=%s category=%s cacheKey=%s casesEnabled=%s ostEnabled=%s total=%s loose=%s loaded=%s ost=%s",
+                    tostring(route),
+                    tostring(category),
+                    tostring(state.cacheKey or ""),
+                    tostring(state.policy.casesEnabled),
+                    tostring(state.policy.ostEnabled),
+                    tostring(#units),
+                    tostring(loose),
+                    tostring(loaded),
+                    tostring(ost)
+                )
+            )
         end
     end
 end
 
-local function ensureSelectionSessionCategory(selectionSession, category)
-    if not selectionSession then
-        return nil
+local function resolveMediaUnit(source, category, selectionSession)
+    local units = getRouteUnits(source, "media", category) or {}
+    local sessionKey = tostring(source or "standard") .. "|" .. tostring(category or "")
+    local sessionState = selectionSession[sessionKey]
+    if not sessionState then
+        sessionState = { chosen = {} }
+        selectionSession[sessionKey] = sessionState
     end
-    selectionSession.byCategory = selectionSession.byCategory or {}
-    selectionSession.byCategory[category] = selectionSession.byCategory[category] or {
-        chosenIndexes = {},
-        placeholders = 0,
-        uniquePicks = 0,
-        repeatPicks = 0
-    }
-    return selectionSession.byCategory[category]
+    local index, unit = chooseWeightedUnit(units, sessionState.chosen)
+    if unit == nil then
+        index, unit = chooseWeightedUnit(units, nil)
+    end
+    if not isAllowedMediaUnit(unit) then
+        state.replacementStats.policyRejected = state.replacementStats.policyRejected + 1
+        return nil, nil
+    end
+    if index then
+        sessionState.chosen[index] = true
+    end
+    return index, unit
 end
 
-function resolver.addResolvedItemForCategoryFromSource(container, category, source, selectionSession)
-    local categoryState, index, unit = resolveSelectedUnit(category, selectionSession)
+local function resolveDeviceUnit(source, category)
+    local units = getRouteUnits(source, "device", category) or {}
+    return chooseWeightedUnit(units, nil)
+end
+
+local function addResolvedItemForKind(container, kind, category, source, selectionSession, context, placeholderFullType)
+    local sourceKey = normalizeSourceKey(source)
+    if tostring(kind or "media") == "device" then
+        return resolver.addResolvedDeviceItemForCategory(container, category, sourceKey, context)
+    end
+    return resolver.addResolvedItemForCategoryFromSource(
+        container,
+        category,
+        sourceKey,
+        selectionSession or {},
+        context,
+        placeholderFullType
+    )
+end
+
+function resolver.addResolvedItemForCategory(container, category)
+    return resolver.addResolvedItemForCategoryFromSource(container, category, "standard")
+end
+
+function resolver.addResolvedItemForCategoryFromSource(container, category, source, selectionSession, context, placeholderFullType)
+    local _, unit = resolveMediaUnit(source, category, selectionSession or {})
     local resolvedType = tostring(unit and unit.spawnFullType or "")
     if resolvedType == "" then
+        state.replacementStats.policySkipped = state.replacementStats.policySkipped + 1
         state.replacementStats.failed = state.replacementStats.failed + 1
+        logLoot(
+            "fallback.replace_decision",
+            string.format(
+                "outcome=skipped_no_allowed_unit source=%s category=%s placeholder=%s %s",
+                tostring(source or ""),
+                tostring(category or ""),
+                tostring(placeholderFullType or ""),
+                NMLootDebugHelpers and NMLootDebugHelpers.formatContainerContext and NMLootDebugHelpers.formatContainerContext(context) or tostring(context and context.shape or "nil")
+            )
+        )
         return nil
     end
-
     local added = addResolvedItem(container, resolvedType)
     if not added then
         state.replacementStats.failed = state.replacementStats.failed + 1
         return nil
     end
-    stampResolvedItemSource(added, category, source)
-
+    stampResolvedItem(added, category, source, unit, placeholderFullType, context)
     if sendAddItemToContainer then
         pcall(sendAddItemToContainer, container, added)
     end
-    categoryState.resolvedCount = categoryState.resolvedCount + 1
-    local wasFresh = markDiscovered(categoryState, index)
-    if wasFresh then
-        categoryState.newDiscoveries = categoryState.newDiscoveries + 1
-    else
-        categoryState.repeatResolutions = categoryState.repeatResolutions + 1
-    end
-    markSessionPick(selectionSession, category, index, not wasFresh)
     state.replacementStats.replaced = state.replacementStats.replaced + 1
     return added
 end
 
-function resolver.addResolvedDeviceItemForCategory(container, category, source)
-    local categoryState, index, unit = resolveSelectedUnit(category)
+function resolver.addResolvedDeviceItemForCategory(container, category, source, context)
+    local _, unit = resolveDeviceUnit(source, category)
     local resolvedType = tostring(unit and unit.spawnFullType or "")
     if resolvedType == "" then
         state.replacementStats.failed = state.replacementStats.failed + 1
         return nil
     end
-
     local added = addResolvedItem(container, resolvedType)
     if not added then
         state.replacementStats.failed = state.replacementStats.failed + 1
         return nil
     end
-    stampResolvedItemSource(added, category, source)
-
+    stampResolvedItem(added, category, source, unit, "", context)
     if sendAddItemToContainer then
         pcall(sendAddItemToContainer, container, added)
     end
-    categoryState.resolvedCount = categoryState.resolvedCount + 1
-    if markDiscovered(categoryState, index) then
-        categoryState.newDiscoveries = categoryState.newDiscoveries + 1
-    else
-        categoryState.repeatResolutions = categoryState.repeatResolutions + 1
-    end
     state.replacementStats.replaced = state.replacementStats.replaced + 1
     return added
+end
+
+local function buildAvailableMediaCategoriesForRoute(source, categoryShares)
+    local candidates = {}
+    local totalWeight = 0
+    for i = 1, #MEDIA_CATEGORY_ORDER do
+        local category = MEDIA_CATEGORY_ORDER[i]
+        local weight = tonumber(categoryShares and categoryShares[category]) or 0
+        if weight > 0 and #(getRouteUnits(source, "media", category) or {}) > 0 then
+            candidates[#candidates + 1] = {
+                category = category,
+                weight = weight
+            }
+            totalWeight = totalWeight + weight
+        end
+    end
+    return candidates, totalWeight
+end
+
+local function buildAvailableDeviceCategoriesForRoute(source, categoryShares)
+    local candidates = {}
+    local totalWeight = 0
+    for i = 1, #DEVICE_CATEGORY_ORDER do
+        local category = DEVICE_CATEGORY_ORDER[i]
+        local weight = tonumber(categoryShares and categoryShares[category]) or 0
+        if weight > 0 and #(getRouteUnits(source, "device", category) or {}) > 0 then
+            candidates[#candidates + 1] = {
+                category = category,
+                weight = weight
+            }
+            totalWeight = totalWeight + weight
+        end
+    end
+    return candidates, totalWeight
+end
+
+local function pickWeightedCategory(candidates, totalWeight)
+    if #candidates < 1 then
+        return nil
+    end
+    if totalWeight <= 0 then
+        local pick = (ZombRand and (ZombRand(#candidates) + 1)) or 1
+        return candidates[pick].category
+    end
+    local roll = ZombRandFloat and ZombRandFloat(0.0, totalWeight) or math.random() * totalWeight
+    local running = 0
+    for i = 1, #candidates do
+        running = running + (tonumber(candidates[i].weight) or 0)
+        if roll < running or i == #candidates then
+            return candidates[i].category
+        end
+    end
+    return candidates[#candidates].category
+end
+
+local function buildRecoveryOrder(candidates, preferredCategory)
+    local ordered = {}
+    local used = {}
+    if preferredCategory ~= nil and preferredCategory ~= "" then
+        ordered[#ordered + 1] = preferredCategory
+        used[preferredCategory] = true
+    end
+    table.sort(candidates, function(a, b)
+        return (tonumber(a.weight) or 0) > (tonumber(b.weight) or 0)
+    end)
+    for i = 1, #candidates do
+        local category = tostring(candidates[i].category or "")
+        if category ~= "" and used[category] ~= true then
+            ordered[#ordered + 1] = category
+            used[category] = true
+        end
+    end
+    return ordered
+end
+
+function resolver.recoverLiveContainerFromAuthority(container, context)
+    if not state.configured then
+        return nil, "not_configured"
+    end
+    if not (container and container.getItems) then
+        return nil, "invalid_container"
+    end
+
+    local routeClass = tostring(context and context.routeClass or "")
+    local authority = state.realizationAuthority or nil
+    local profile = authority and authority.profiles and authority.profiles[routeClass] or nil
+    if type(profile) ~= "table" then
+        return nil, "no_authority_profile"
+    end
+
+    local addedCount = 0
+    local addedDetails = {}
+    local selectionSession = {}
+    local attempts = type(profile.attempts) == "table" and profile.attempts or {}
+    if #attempts < 1 then
+        return nil, "no_authority_budget"
+    end
+
+    for i = 1, #attempts do
+        local attempt = attempts[i]
+        local sourceKey = normalizeSourceKey(attempt and attempt.route or "standard")
+        local kind = tostring(attempt and attempt.kind or "media")
+        local maxAdds = math.max(0, tonumber(attempt and attempt.maxAdds) or 0)
+        if maxAdds > 0 and (kind ~= "device" or DIRECT_RECOVERY_ALLOWS_DEVICES == true) then
+            for addIndex = 1, maxAdds do
+                local candidates = nil
+                local totalWeight = 0
+                if kind == "device" then
+                    candidates, totalWeight = buildAvailableDeviceCategoriesForRoute(sourceKey, attempt.categoryShares)
+                else
+                    candidates, totalWeight = buildAvailableMediaCategoriesForRoute(sourceKey, attempt.categoryShares)
+                end
+                local preferredCategory = pickWeightedCategory(candidates, totalWeight)
+                local recoveryOrder = buildRecoveryOrder(candidates, preferredCategory)
+                local added = nil
+                local chosenCategory = nil
+                for j = 1, #recoveryOrder do
+                    local category = recoveryOrder[j]
+                    added = addResolvedItemForKind(container, kind, category, sourceKey, selectionSession, context, "")
+                    if added then
+                        chosenCategory = category
+                        break
+                    end
+                end
+                if added then
+                    addedCount = addedCount + 1
+                    addedDetails[#addedDetails + 1] = table.concat({
+                        tostring(sourceKey),
+                        tostring(kind),
+                        tostring(chosenCategory or ""),
+                        tostring(addIndex),
+                        tostring(maxAdds)
+                    }, ":")
+                else
+                    break
+                end
+            end
+        end
+    end
+
+    if addedCount < 1 then
+        return nil, "no_allowed_unit"
+    end
+
+    return {
+        addedCount = addedCount,
+        detail = table.concat(addedDetails, ","),
+        source = tostring(attempts[1] and attempts[1].route or "")
+    }, nil
+end
+
+function resolver.hasAuthorityProfile(routeClass)
+    return hasAuthorityProfileAttempts(routeClass)
+end
+
+function resolver.canRecoverManagedLootForRoute(routeClass)
+    local resolvedRouteClass = tostring(routeClass or "")
+    if resolvedRouteClass == "" or resolvedRouteClass == "other" then
+        return hasAuthorityProfileAttempts(resolvedRouteClass)
+    end
+    return hasAuthorityProfileAttempts(resolvedRouteClass)
+end
+
+function resolver.canRouteContainManagedPlaceholders(routeClass)
+    return resolver.canRecoverManagedLootForRoute(routeClass)
 end
 
 function resolver.getRepresentativeFullType(category, source)
@@ -519,43 +568,48 @@ function resolver.isRepresentativeFullType(fullType)
     return metadata and metadata.category or nil
 end
 
-function resolver.configure(mediaPool, devicePool)
+function resolver.configure(config)
     state = newState()
-    for i = 1, #MEDIA_CATEGORY_ORDER do
-        local category = MEDIA_CATEGORY_ORDER[i]
-        local units = NMManagedSpawnCatalog.orderedMediaUnitsForCategory(
-            { media = mediaPool or {} },
-            category
-        )
-        state.byCategory[category] = newCategoryState(units)
-        rebuildRemaining(state.byCategory[category])
+    local resolved = config and config.routes and config or nil
+    if not resolved then
+        resolved = NMLootResolvedPools.build({
+            fallbackMediaPool = config or {},
+            fallbackDevicePool = {}
+        })
     end
-    for i = 1, #DEVICE_CATEGORY_ORDER do
-        local category = DEVICE_CATEGORY_ORDER[i]
-        local units = NMManagedSpawnCatalog.orderedDeviceUnitsForCategory(
-            { devices = devicePool or {} },
-            category
-        )
-        state.byCategory[category] = newCategoryState(units)
-        rebuildRemaining(state.byCategory[category])
+    state.policy = resolved.policy or state.policy
+    state.cacheKey = tostring(resolved.cacheKey or "")
+    state.realizationAuthority = resolved.realizationAuthority or {}
+    for i = 1, #ROUTE_ORDER do
+        local route = ROUTE_ORDER[i]
+        local routeConfig = resolved.routes and resolved.routes[route] or nil
+        for j = 1, #MEDIA_CATEGORY_ORDER do
+            local category = MEDIA_CATEGORY_ORDER[j]
+            state.routes[route].media[category] = routeConfig and routeConfig.media and routeConfig.media[category] or {}
+        end
+        for j = 1, #DEVICE_CATEGORY_ORDER do
+            local category = DEVICE_CATEGORY_ORDER[j]
+            state.routes[route].devices[category] = routeConfig and routeConfig.devices and routeConfig.devices[category] or {}
+        end
     end
     state.configured = true
+    logConfiguredPools()
 end
 
-function resolver.replaceRepresentativesInContainer(container)
+function resolver.replaceRepresentativesInContainer(container, context)
     if not state.configured then
         return 0
     end
-
+    local routeClass = tostring(context and context.routeClass or "")
+    if resolver.canRouteContainManagedPlaceholders(routeClass) ~= true then
+        return 0
+    end
     local resolvedContainer, items = NMLootDebugHelpers.resolveMutableContainer(container, "fallback.skip_container")
     if not (resolvedContainer and items and items.size and items.get) then
         return 0
     end
 
     local representatives = {}
-    local selectionSession = {
-        byCategory = {}
-    }
     for i = 0, items:size() - 1 do
         local item = items:get(i)
         local fullType = item and item.getFullType and tostring(item:getFullType() or "") or ""
@@ -563,43 +617,47 @@ function resolver.replaceRepresentativesInContainer(container)
         if metadata then
             representatives[#representatives + 1] = {
                 item = item,
-                metadata = metadata
+                metadata = metadata,
+                placeholderFullType = fullType
             }
-            if metadata.kind == "media" then
-                local localCategory = ensureSelectionSessionCategory(selectionSession, metadata.category)
-                if localCategory then
-                    localCategory.placeholders = (tonumber(localCategory.placeholders) or 0) + 1
-                end
-            end
         end
     end
 
+    if #representatives > MAX_PLACEHOLDER_REPLACEMENTS_PER_CONTAINER then
+        state.replacementStats.capped = state.replacementStats.capped + (#representatives - MAX_PLACEHOLDER_REPLACEMENTS_PER_CONTAINER)
+        logLoot(
+            "fallback.container_cap",
+            string.format(
+                "count=%s cap=%s %s",
+                tostring(#representatives),
+                tostring(MAX_PLACEHOLDER_REPLACEMENTS_PER_CONTAINER),
+                NMLootDebugHelpers and NMLootDebugHelpers.formatContainerContext and NMLootDebugHelpers.formatContainerContext(context) or tostring(context and context.shape or "nil")
+            )
+        )
+    end
+
     local replaced = 0
-    for i = 1, #representatives do
+    local selectionSession = {}
+    local limit = math.min(#representatives, MAX_PLACEHOLDER_REPLACEMENTS_PER_CONTAINER)
+    for i = 1, limit do
         local rep = representatives[i]
         local added = nil
         if rep.metadata.kind == "device" then
             added = resolver.addResolvedDeviceItemForCategory(resolvedContainer, rep.metadata.category, rep.metadata.source)
-            if added then
-                removeContainerItem(resolvedContainer, rep.item)
-            end
         else
             added = resolver.addResolvedItemForCategoryFromSource(
                 resolvedContainer,
                 rep.metadata.category,
                 rep.metadata.source,
-                selectionSession
+                selectionSession,
+                context,
+                rep.placeholderFullType
             )
-            if added then
-                removeContainerItem(resolvedContainer, rep.item)
-            end
         end
         if added then
+            removeContainerItem(resolvedContainer, rep.item)
             replaced = replaced + 1
         end
-    end
-    if replaced > 0 then
-        logReplacementSession(resolvedContainer, selectionSession)
     end
     return replaced
 end
@@ -608,19 +666,24 @@ function resolver.getCoverageSnapshot()
     local snapshot = {
         replacementStats = {
             replaced = state.replacementStats.replaced,
-            failed = state.replacementStats.failed
+            failed = state.replacementStats.failed,
+            capped = state.replacementStats.capped
         }
     }
-    for i = 1, #MEDIA_CATEGORY_ORDER do
-        local category = MEDIA_CATEGORY_ORDER[i]
-        local categoryState = state.byCategory[category]
-        snapshot[category] = {
-            total = tonumber(categoryState and categoryState.total) or 0,
-            discovered = tonumber(categoryState and categoryState.discoveredCount) or 0,
-            resolved = tonumber(categoryState and categoryState.resolvedCount) or 0,
-            repeats = tonumber(categoryState and categoryState.repeatResolutions) or 0,
-            fresh = tonumber(categoryState and categoryState.newDiscoveries) or 0
+    for i = 1, #ROUTE_ORDER do
+        local route = ROUTE_ORDER[i]
+        snapshot[route] = {
+            media = {},
+            devices = {}
         }
+        for j = 1, #MEDIA_CATEGORY_ORDER do
+            local category = MEDIA_CATEGORY_ORDER[j]
+            snapshot[route].media[category] = #(state.routes[route].media[category] or {})
+        end
+        for j = 1, #DEVICE_CATEGORY_ORDER do
+            local category = DEVICE_CATEGORY_ORDER[j]
+            snapshot[route].devices[category] = #(state.routes[route].devices[category] or {})
+        end
     end
     return snapshot
 end
@@ -628,13 +691,20 @@ end
 function resolver.getReplacementStats()
     return {
         replaced = state.replacementStats.replaced,
-        failed = state.replacementStats.failed
+        failed = state.replacementStats.failed,
+        policyRejected = state.replacementStats.policyRejected,
+        policySkipped = state.replacementStats.policySkipped,
+        capped = state.replacementStats.capped
     }
 end
 
-function resolver.getCategoryPoolSize(category)
-    local categoryState = state.byCategory[tostring(category or "")]
-    return tonumber(categoryState and categoryState.total) or 0
+function resolver.getCategoryPoolSize(category, source)
+    local units = getRouteUnits(source or "standard", "media", category)
+    return #(units or {})
+end
+
+function resolver.getCacheKey()
+    return tostring(state.cacheKey or "")
 end
 
 return resolver

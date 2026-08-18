@@ -27,6 +27,33 @@ local function formatCoord(value)
     return string.format("%.2f", n)
 end
 
+local function isSubsystemEnabled(name)
+    return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled(name)
+end
+
+local function isAttachedRefreshDebugEnabled(mode)
+    if tostring(mode or "") == "attached" or tostring(mode or "") == "stowed" then
+        return isSubsystemEnabled("runtime") or isSubsystemEnabled("registry")
+    end
+    return isSubsystemEnabled("vehicle")
+end
+
+local function calculateMovedDistance(oldX, oldY, oldZ, newX, newY, newZ)
+    local ox = tonumber(oldX)
+    local oy = tonumber(oldY)
+    local oz = tonumber(oldZ)
+    local nx = tonumber(newX)
+    local ny = tonumber(newY)
+    local nz = tonumber(newZ)
+    if ox == nil or oy == nil or oz == nil or nx == nil or ny == nil or nz == nil then
+        return 0
+    end
+    local dx = nx - ox
+    local dy = ny - oy
+    local dz = nz - oz
+    return math.sqrt((dx * dx) + (dy * dy) + (dz * dz))
+end
+
 local function quantizeCoord(value, step)
     local n = tonumber(value)
     if not n then
@@ -54,15 +81,14 @@ local function parseRefreshSignature(signature)
     return mode, resolved, tonumber(xq), tonumber(yq), tonumber(zq)
 end
 
-local function shouldLogRefreshChange(uuid, signature)
+local function shouldLogRefreshChange(uuid, signature, mode, movedDist)
     local nowMs = nowRealMs()
-    local minChangeLogMs = 15000
-    local heartbeatMs = 30000
+    local isAttachedMode = tostring(mode or "") == "attached" or tostring(mode or "") == "stowed"
+    local heartbeatMs = isAttachedMode and 30000 or 45000
     NMServerRegistryState.sourceRefreshSignature = NMServerRegistryState.sourceRefreshSignature or {}
     NMServerRegistryState.sourceRefreshLastLogMs = NMServerRegistryState.sourceRefreshLastLogMs or {}
 
     local prev = NMServerRegistryState.sourceRefreshSignature[uuid]
-    local prevMs = tonumber(NMServerRegistryState.sourceRefreshLastLogMs[uuid]) or 0
     if prev == nil then
         NMServerRegistryState.sourceRefreshSignature[uuid] = signature
         NMServerRegistryState.sourceRefreshLastLogMs[uuid] = nowMs
@@ -76,22 +102,13 @@ local function shouldLogRefreshChange(uuid, signature)
         NMServerRegistryState.sourceRefreshLastLogMs[uuid] = nowMs
         return true
     end
-    local changed = prev ~= signature
-    local elapsed = nowMs - prevMs
-    if changed and elapsed >= minChangeLogMs then
-        NMServerRegistryState.sourceRefreshSignature[uuid] = signature
-        NMServerRegistryState.sourceRefreshLastLogMs[uuid] = nowMs
-        return true
-    end
-    if elapsed >= heartbeatMs then
-        NMServerRegistryState.sourceRefreshSignature[uuid] = signature
-        NMServerRegistryState.sourceRefreshLastLogMs[uuid] = nowMs
-        return true
-    end
-    if changed then
-        NMServerRegistryState.sourceRefreshSignature[uuid] = signature
-    end
-    return false
+    return NMRuntimeProbeAdapter and NMRuntimeProbeAdapter.shouldEmitTransitionOrHeartbeat(
+        NMServerRegistryState.sourceRefreshSignature,
+        NMServerRegistryState.sourceRefreshLastLogMs,
+        uuid,
+        signature,
+        heartbeatMs
+    ) == true
 end
 
 function NMServerSourceRefreshDiagnostics.logVehicleResolveAttempt(uuid, entry, result)
@@ -149,7 +166,7 @@ function NMServerSourceRefreshDiagnostics.logVehicleResolveAttempt(uuid, entry, 
 end
 
 function NMServerSourceRefreshDiagnostics.logVehicleIdentitySnapshot(entry, uuid, stage, result)
-    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
+    if not (NMCore and NMCore.logChannel and NMRuntimeProbeAdapter and NMRuntimeProbeAdapter.isEnabled and NMRuntimeProbeAdapter.isEnabled("vehicle", "vehicle_identity_snapshot")) then
         return
     end
     if not entry then
@@ -187,7 +204,7 @@ function NMServerSourceRefreshDiagnostics.logVehicleIdentitySnapshot(entry, uuid
 
     local previousSig = tostring(entry._vehicleIdentitySnapshotSig or "")
     local previousMs = tonumber(entry._vehicleIdentitySnapshotMs) or 0
-    local heartbeatMs = 30000
+    local heartbeatMs = 120000
     if signature == previousSig and (now - previousMs) < heartbeatMs then
         return
     end
@@ -221,34 +238,45 @@ function NMServerSourceRefreshDiagnostics.logVehicleIdentitySnapshot(entry, uuid
     )
 end
 
-function NMServerSourceRefreshDiagnostics.logRefresh(uuid, mode, oldX, oldY, oldZ, newX, newY, newZ, resolvedKind)
-    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")) then
+function NMServerSourceRefreshDiagnostics.logRefresh(uuid, mode, oldX, oldY, oldZ, newX, newY, newZ, resolvedKind, entry, options)
+    if not (NMCore and NMCore.logChannel and isAttachedRefreshDebugEnabled(mode)) then
         return
     end
+    local movedDist = calculateMovedDistance(oldX, oldY, oldZ, newX, newY, newZ)
     local signature = table.concat({
         tostring(mode or ""),
         tostring(resolvedKind or ""),
-        quantizeCoord(newX, 1.0),
-        quantizeCoord(newY, 1.0),
+        quantizeCoord(newX, 8.0),
+        quantizeCoord(newY, 8.0),
         quantizeCoord(newZ, 1.0)
     }, "|")
-    if not shouldLogRefreshChange(uuid, signature) then
+    if not shouldLogRefreshChange(uuid, signature, mode, movedDist) then
         return
     end
+    local sourceGen = tonumber(entry and (entry.sourceGeneration or entry.sourceEpoch)) or 0
+    local ownerId = tostring(entry and (entry.ownerOnlineId or entry.ownerId) or "")
+    local ownerName = tostring(entry and entry.ownerUsername or "")
+    local emittedChannel = (tostring(mode or "") == "attached" or tostring(mode or "") == "stowed") and ((isSubsystemEnabled("registry") and "registry") or "runtime") or "vehicle"
+    local immediateBroadcast = options and options.immediateBroadcast == true
     NMCore.logChannel(
-        "vehicle",
+        emittedChannel,
         "server_source_refresh",
         string.format(
-            "uuid=%s mode=%s resolved=%s old=%.2f,%.2f,%.2f new=%.2f,%.2f,%.2f",
+            "uuid=%s mode=%s resolved=%s ownerId=%s ownerName=%s old=%.2f,%.2f,%.2f new=%.2f,%.2f,%.2f moved=%.2f sourceGen=%s immediateBroadcast=%s",
             tostring(uuid),
             tostring(mode),
             tostring(resolvedKind),
+            tostring(ownerId ~= "" and ownerId or "nil"),
+            tostring(ownerName ~= "" and ownerName or "nil"),
             tonumber(oldX) or 0,
             tonumber(oldY) or 0,
             tonumber(oldZ) or 0,
             tonumber(newX) or 0,
             tonumber(newY) or 0,
-            tonumber(newZ) or 0
+            tonumber(newZ) or 0,
+            tonumber(movedDist) or 0,
+            tostring(sourceGen),
+            tostring(immediateBroadcast)
         )
     )
 end

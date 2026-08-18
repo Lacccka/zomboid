@@ -1,10 +1,7 @@
 require "PZAPI/ExplosivesOptions"
 
--- Lets testers spawn a single flashbang directly into their inventory without
--- switching to full debug mode, so trajectory/collision testing (walls,
--- fences, vegetation whitelist reports) doesn't require burning a rare,
--- non-craftable grenade found through normal loot. Flashbang specifically,
--- since it can't hurt the tester or damage the surroundings while testing.
+-- Lets testers spawn a flashbang without full debug mode, for trajectory/collision testing.
+-- Flashbang specifically: harmless to the tester and surroundings.
 local function onKeyPressed(key)
     if not (SandboxVars.Explosives and SandboxVars.Explosives.DebugSpawnKeyEnabled) then return end
     if not ExplosivesOptions or not ExplosivesOptions.debugSpawnKey then return end

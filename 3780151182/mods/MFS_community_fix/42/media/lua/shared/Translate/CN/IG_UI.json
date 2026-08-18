@@ -1,4 +1,10 @@
 {
+ "IGUI_CraftCategory_刀匠系统BladesmithSystem": "刀匠系统",
  "IGUI_CraftCategory_现代枪械系统ModernFirearmsSystem": "现代枪械系统",
- "IGUI_CraftingCategories_Ammunition": "弹药"
+ "IGUI_CraftingCategories_Ammunition": "弹药",
+ "IGUI_MFS_GunLight_On": "武器灯：开启",
+ "IGUI_MFS_GunLight_Off": "武器灯：关闭",
+ "IGUI_MFS_GunLight_NoBattery": "武器灯：电池已耗尽",
+ "IGUI_MFS_GunLight_Depleted": "武器灯电池已耗尽",
+ "IGUI_MFS_GunLight_Low": "武器灯电池电量偏低"
 }

@@ -1142,6 +1142,10 @@ local function performClientIntentDispatch(player, args, options)
         return false, "normalize_failed:" .. tostring(normalizedErr or "unknown")
     end
 
+    if NMClientPlaybackTick and NMClientPlaybackTick.requestFullPass then
+        NMClientPlaybackTick.requestFullPass("client_intent")
+    end
+
     local isMpRuntime = NMCore.isMPClientRuntime and NMCore.isMPClientRuntime()
     if isMpRuntime and sendClientCommand then
         if onSend then

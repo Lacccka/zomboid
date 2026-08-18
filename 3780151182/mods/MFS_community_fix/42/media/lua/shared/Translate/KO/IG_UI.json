@@ -86,5 +86,10 @@
     "IGUI_ItemCat_Misc": "무기 부착물 - 기타",
     "IGUI_ItemCat_Skin": "무기 부착물 - 외관 (쓸모없음)",
     "IGUI_FixItem": "수리 키트 사용",
-    "IGUI_Recoilpad": "반동 패드"
+    "IGUI_Recoilpad": "반동 패드",
+    "IGUI_MFS_GunLight_On": "무기 조명: 켜짐",
+    "IGUI_MFS_GunLight_Off": "무기 조명: 꺼짐",
+    "IGUI_MFS_GunLight_NoBattery": "무기 조명: 배터리가 없습니다",
+    "IGUI_MFS_GunLight_Depleted": "무기 조명 배터리가 소모되었습니다",
+    "IGUI_MFS_GunLight_Low": "무기 조명 배터리 부족"
 }

@@ -165,4 +165,53 @@ function helpers.classifyRouteContext(roomName, containerType, classKey)
     return "other"
 end
 
+function helpers.describeMinimalContainerContext(roomName, containerType, classKey)
+    local resolvedRoom = tostring(roomName or "")
+    local resolvedType = tostring(containerType or "")
+    local routeClass = helpers.classifyRouteContext(resolvedRoom, resolvedType, classKey)
+    return {
+        roomName = resolvedRoom,
+        containerType = resolvedType,
+        routeClass = routeClass
+    }
+end
+
+function helpers.describeFullContainerContext(roomName, containerType, container, classKey)
+    local context = helpers.describeMinimalContainerContext(roomName, containerType, classKey)
+    local parent = container and container.getParent and container:getParent() or nil
+    local square = parent and parent.getSquare and parent:getSquare() or nil
+    local x = square and square.getX and square:getX() or nil
+    local y = square and square.getY and square:getY() or nil
+    local z = square and square.getZ and square:getZ() or nil
+    local parentType = parent and parent.getObjectName and tostring(parent:getObjectName() or "") or tostring(parent or "")
+    context.parentType = parentType
+    context.x = x
+    context.y = y
+    context.z = z
+    context.shape = tostring(container or "nil")
+    return context
+end
+
+function helpers.describeContainerContext(roomName, containerType, container, classKey)
+    return helpers.describeFullContainerContext(roomName, containerType, container, classKey)
+end
+
+function helpers.formatContainerContext(context)
+    local data = type(context) == "table" and context or {}
+    local x = data.x ~= nil and tostring(data.x) or "?"
+    local y = data.y ~= nil and tostring(data.y) or "?"
+    local z = data.z ~= nil and tostring(data.z) or "?"
+    return string.format(
+        "room=%s type=%s class=%s parent=%s pos=%s,%s,%s shape=%s",
+        tostring(data.roomName or ""),
+        tostring(data.containerType or ""),
+        tostring(data.routeClass or ""),
+        tostring(data.parentType or ""),
+        x,
+        y,
+        z,
+        tostring(data.shape or "nil")
+    )
+end
+
 return NMLootDebugHelpers

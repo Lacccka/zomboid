@@ -1,7 +1,8 @@
+
 require('Vehicles/ISUI/ISUI3DScene')
-require "UI/Weapon_Inspect_Theme"
-require "Gun_Vars/Weapon_Ability/AWCWF_Gun_Shot_Profiles"
-require "Gun_Vars/AWCWF_Weapon_With_Bolt_Anim"
+--require "UI/Weapon_Inspect_Theme" --currently no related file/function supported, comment out  08/15/2026
+require "Gun_Vars/Weapon_Ability/AWCWF_Gun_Shot_Profiles" 
+--require "Gun_Vars/AWCWF_Weapon_With_Bolt_Anim" --currently no related file/function supported, comment out  08/15/2026
 WeaponScene = ISUI3DScene:derive("WeaponScene")
 
 function WeaponScene:prerenderEditor()
@@ -241,95 +242,99 @@ local function AWCWF_SetInspectBoltPosition(scene, anim, ratio)
         anim.baseY + ((offset.y or 0) * ratio), anim.baseZ + ((offset.z or 0) * ratio))
 end
 
-local function AWCWF_UpdateInspectBoltAnim(scene)
-    local anim = scene.inspectBoltAnim
-    if not anim then
-        return
-    end
+-- local function AWCWF_UpdateInspectBoltAnim(scene)
+--     local anim = scene.inspectBoltAnim
+--     if not anim then
+--         return
+--     end
 
-    anim.tick = anim.tick + 1
-    local rackEnd = anim.rackTick
-    local waitEnd = rackEnd + anim.waitTick
-    local doneTick = waitEnd + anim.returnTick
+--     anim.tick = anim.tick + 1
+--     local rackEnd = anim.rackTick
+--     local waitEnd = rackEnd + anim.waitTick
+--     local doneTick = waitEnd + anim.returnTick
 
-    if anim.tick <= rackEnd then
-        AWCWF_SetInspectBoltPosition(scene, anim, anim.tick / rackEnd)
-        return
-    end
+--     if anim.tick <= rackEnd then
+--         AWCWF_SetInspectBoltPosition(scene, anim, anim.tick / rackEnd)
+--         return
+--     end
 
-    if anim.tick <= waitEnd then
-        AWCWF_SetInspectBoltPosition(scene, anim, 1)
-        return
-    end
+--     if anim.tick <= waitEnd then
+--         AWCWF_SetInspectBoltPosition(scene, anim, 1)
+--         return
+--     end
 
-    if anim.tick <= doneTick then
-        local returnProgress = (anim.tick - waitEnd) / anim.returnTick
-        AWCWF_SetInspectBoltPosition(scene, anim, 1 - returnProgress)
-        return
-    end
+--     if anim.tick <= doneTick then
+--         local returnProgress = (anim.tick - waitEnd) / anim.returnTick
+--         AWCWF_SetInspectBoltPosition(scene, anim, 1 - returnProgress)
+--         return
+--     end
 
-    AWCWF_SetInspectBoltPosition(scene, anim, 0)
-    scene.inspectBoltAnim = nil
-end
+--     AWCWF_SetInspectBoltPosition(scene, anim, 0)
+--     scene.inspectBoltAnim = nil
+-- end
 
-function WeaponScene:addRecoilImpulse()
-    local recoil = WeaponInspect_Theme.recoil
-    if not recoil then
-        return
-    end
+-- function WeaponScene:addRecoilImpulse()
+--     local recoil = WeaponInspect_Theme.recoil
+--     if not recoil then
+--         return
+--     end
 
-    local weapon = AWCWF_GetInspectWeapon(self)
-    local hasShootableRound = AWCWF_HasInspectShootableRound(weapon)
+--     local weapon = AWCWF_GetInspectWeapon(self)
+--     local hasShootableRound = AWCWF_HasInspectShootableRound(weapon)
 
-    self.recoilPitch = math.min((self.recoilPitch or 0) + (recoil.pitchImpulse or 0), recoil.maxPitch or 0)
-    local yaw = (self.recoilYaw or 0) + AWCWF_GetRecoilYawImpulse(self, recoil)
-    local maxYaw = recoil.maxYaw or 0
-    if yaw > maxYaw then
-        yaw = maxYaw
-    elseif yaw < -maxYaw then
-        yaw = -maxYaw
-    end
-    self.recoilYaw = yaw
-    AWCWF_PlayInspectGunshot(self)
-    if hasShootableRound then
-        AWCWF_StartInspectBoltAnim(self, weapon)
-    end
-end
+--     self.recoilPitch = math.min((self.recoilPitch or 0) + (recoil.pitchImpulse or 0), recoil.maxPitch or 0)
+--     local yaw = (self.recoilYaw or 0) + AWCWF_GetRecoilYawImpulse(self, recoil)
+--     local maxYaw = recoil.maxYaw or 0
+--     if yaw > maxYaw then
+--         yaw = maxYaw
+--     elseif yaw < -maxYaw then
+--         yaw = -maxYaw
+--     end
+--     self.recoilYaw = yaw
+--     AWCWF_PlayInspectGunshot(self)
+--     if hasShootableRound then
+--         AWCWF_StartInspectBoltAnim(self, weapon)
+--     end
+-- end
 
-function WeaponScene:updateRecoilFeedback()
-    local recoil = WeaponInspect_Theme.recoil
-    if not recoil then
-        return 0, 0
-    end
+-- function WeaponScene:updateRecoilFeedback()
+--     local recoil = WeaponInspect_Theme.recoil
+--     if not recoil then
+--         return 0, 0
+--     end
 
-    self.recoilFrame = (self.recoilFrame or 0) + 1
-    if self.recoilActive and self.recoilFrame >= (recoil.interval or 1) then
-        self.recoilFrame = 0
-        self:addRecoilImpulse()
-    end
+--     self.recoilFrame = (self.recoilFrame or 0) + 1
+--     if self.recoilActive and self.recoilFrame >= (recoil.interval or 1) then
+--         self.recoilFrame = 0
+--         self:addRecoilImpulse()
+--     end
 
-    local recovery = recoil.recovery or 0
-    self.recoilPitch = (self.recoilPitch or 0) * recovery
-    self.recoilYaw = (self.recoilYaw or 0) * recovery
+--     local recovery = recoil.recovery or 0
+--     self.recoilPitch = (self.recoilPitch or 0) * recovery
+--     self.recoilYaw = (self.recoilYaw or 0) * recovery
 
-    local threshold = recoil.settleThreshold or 0
-    if math.abs(self.recoilPitch) < threshold then
-        self.recoilPitch = 0
-    end
-    if math.abs(self.recoilYaw) < threshold then
-        self.recoilYaw = 0
-    end
+--     local threshold = recoil.settleThreshold or 0
+--     if math.abs(self.recoilPitch) < threshold then
+--         self.recoilPitch = 0
+--     end
+--     if math.abs(self.recoilYaw) < threshold then
+--         self.recoilYaw = 0
+--     end
 
-    return self.recoilPitch or 0, self.recoilYaw or 0
-end
+--     return self.recoilPitch or 0, self.recoilYaw or 0
+-- end
 function WeaponScene:render()
     ISUI3DScene.render(self)
     if self.startRotate then
         self.rotationZ = self.rotationZ + 0.5
     end
-    AWCWF_UpdateInspectBoltAnim(self)
-    local recoilPitch, recoilYaw = self:updateRecoilFeedback()
-    self.javaObject:fromLua3("setViewRotation", self.rotationX - recoilPitch, self.rotationY + recoilYaw, self.rotationZ)
+    --AWCWF_UpdateInspectBoltAnim(self)
+    --local recoilPitch, recoilYaw = self:updateRecoilFeedback()
+    -- 08/15/2026: recoil feedback disabled above (WeaponInspect_Theme never
+    -- shipped, so it was always a no-op). The offsets are dropped rather than
+    -- passed as nil - recoilPitch/recoilYaw no longer exist, and subtracting a
+    -- nil here would throw every rendered frame.
+    self.javaObject:fromLua3("setViewRotation", self.rotationX, self.rotationY, self.rotationZ)
 end
 function WeaponScene:onMouseUp()
     -- Future restore point for drag rotation / gizmo editing:

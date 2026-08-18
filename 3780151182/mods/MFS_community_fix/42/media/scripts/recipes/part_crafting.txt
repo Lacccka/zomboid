@@ -797,19 +797,17 @@ module Base
     craftRecipe MFS_Forge_XY_OF
     {
         time = 550, timedAction = HammerMetalStanding, AllowBatchCraft = false,
-        SkillRequired = Blacksmith:4;MetalWelding:3;Reloading:3, xpAward = Blacksmith:40;MetalWelding:10,
-        Tags = Forge, category = 现代枪械系统ModernFirearmsSystem,
+        SkillRequired = Blacksmith:0;MetalWelding:1;Reloading:3, xpAward = MetalWelding:10,
+        Tags = AnySurfaceCraft, category = 现代枪械系统ModernFirearmsSystem,
         inputs
-        {
-            item 2 tags[base:charcoal] mode:destroy,
-            item 1 [Base.SteelBarQuarter] mode:destroy,
-            item 1 [Base.MetalPipe] mode:destroy,
-            item 1 [Base.part2_cat] mode:destroy,
-            item 1 [Base.part4_cat] mode:destroy,
-            item 1 tags[base:smithinghammer] mode:keep flags[Prop1;MayDegradeLight],
-            item 1 tags[base:metalworkingpliers;base:tongs] mode:keep flags[Prop2;MayDegradeLight],
-            item 1 tags[base:metalworkingchisel] mode:keep flags[MayDegradeLight],
-            item 1 tags[base:file] mode:keep flags[MayDegradeLight],
+        {   
+            item 1 [Base.DuctTape] mode:destroy,
+            item 1 [Base.TinCanEmpty] mode:destroy,
+            item 1 [Base.ScrapMetal] mode:destroy,
+            item 2 [Base.Screws] mode:destroy,
+            item 1 tags[base:screwdriver] mode:keep flags[Prop2;MayDegradeLight],
+            item 1 tags[base:hammer] mode:keep flags[MayDegradeVeryLight],
+
         }
         outputs { item 1 Gunpart.XY_OF, }
     }

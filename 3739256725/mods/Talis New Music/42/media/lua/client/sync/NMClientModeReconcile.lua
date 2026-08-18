@@ -1,3 +1,5 @@
+require "runtime/NMClientPlacedWorldCandidate"
+
 -- Client-side mode candidate reconcile for attached/placed/stowed transitions.
 NMClientModeReconcile = NMClientModeReconcile or {}
 NMClientModeReconcile.authority = NMClientModeReconcile.authority or {}
@@ -13,11 +15,96 @@ local function getSlot(uuid)
             mode = "off",
             sourceGeneration = 0,
             noCarryStreak = 0,
-            lastTick = 0
+            lastTick = 0,
+            noSquareSinceMs = 0,
+            placedCandidateSig = "",
+            placedCandidateLastLogMs = 0
         }
         NMClientModeReconcile.authority[key] = slot
     end
     return slot
+end
+
+local function nowMs()
+    if getTimestampMs then
+        local ms = tonumber(getTimestampMs())
+        if ms then return ms end
+    end
+    if getTimestamp then
+        local ts = tonumber(getTimestamp())
+        if ts then return ts * 1000 end
+    end
+    return 0
+end
+
+local function logStowedCandidateProbe(slot, uuid, item, candidate, chosenMode, elapsedMs)
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
+        return
+    end
+    local itemWorld = item and item.getWorldItem and item:getWorldItem() or nil
+    local itemSquare = itemWorld and itemWorld.getSquare and itemWorld:getSquare() or nil
+    local candidateSquare = candidate and candidate.square or nil
+    local matchKind = tostring(candidate and candidate.matchKind or "none")
+    local signature = table.concat({
+        matchKind,
+        tostring(chosenMode or "off"),
+        tostring(NMRuntimeProbeAdapter and NMRuntimeProbeAdapter.quantizeCoord and NMRuntimeProbeAdapter.quantizeCoord(candidateSquare and candidateSquare:getX() or nil, 2.0) or (candidateSquare and candidateSquare:getX() or "nil")),
+        tostring(NMRuntimeProbeAdapter and NMRuntimeProbeAdapter.quantizeCoord and NMRuntimeProbeAdapter.quantizeCoord(candidateSquare and candidateSquare:getY() or nil, 2.0) or (candidateSquare and candidateSquare:getY() or "nil")),
+        tostring(NMRuntimeProbeAdapter and NMRuntimeProbeAdapter.quantizeCoord and NMRuntimeProbeAdapter.quantizeCoord(candidateSquare and candidateSquare:getZ() or nil, 1.0) or (candidateSquare and candidateSquare:getZ() or "nil"))
+    }, "|")
+    local currentMs = nowMs()
+    local changed = tostring(slot.placedCandidateSig or "") ~= signature
+    local withinTransitionWindow = math.max(0, tonumber(elapsedMs) or 0) <= 5000
+    local heartbeatMs = withinTransitionWindow and 4000 or (NMRuntimeProbeAdapter and NMRuntimeProbeAdapter.longHeartbeatMs and NMRuntimeProbeAdapter.longHeartbeatMs() or 60000)
+    local heartbeat = (currentMs - (tonumber(slot.placedCandidateLastLogMs) or 0)) >= heartbeatMs
+    if not (changed or heartbeat) then
+        return
+    end
+    slot.placedCandidateSig = signature
+    slot.placedCandidateLastLogMs = currentMs
+    NMCore.logChannel(
+        "runtime",
+        "stowed_candidate_probe",
+        string.format(
+            "uuid=%s directWorldItem=%s directSquare=%s candidate=%s match=%s chosenMode=%s elapsedMs=%s candidatePos=%s,%s,%s",
+            tostring(uuid or ""),
+            tostring(itemWorld ~= nil),
+            tostring(itemSquare ~= nil),
+            tostring(candidate ~= nil),
+            tostring(matchKind),
+            tostring(chosenMode or "off"),
+            tostring(math.max(0, tonumber(elapsedMs) or 0)),
+            tostring(candidateSquare and candidateSquare:getX() or "nil"),
+            tostring(candidateSquare and candidateSquare:getY() or "nil"),
+            tostring(candidateSquare and candidateSquare:getZ() or "nil")
+        )
+    )
+end
+
+local function logAttachedPlacedOverrideProbe(uuid, item, candidate, chosenMode)
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
+        return
+    end
+    local itemWorld = item and item.getWorldItem and item:getWorldItem() or nil
+    local itemSquare = itemWorld and itemWorld.getSquare and itemWorld:getSquare() or nil
+    local candidateSquare = candidate and candidate.square or nil
+    NMCore.logChannel(
+        "runtime",
+        "attached_placed_override_probe",
+        string.format(
+            "uuid=%s attachedProof=%s directWorldItem=%s directSquare=%s candidate=%s match=%s chosenMode=%s candidatePos=%s,%s,%s",
+            tostring(uuid or ""),
+            tostring(true),
+            tostring(itemWorld ~= nil),
+            tostring(itemSquare ~= nil),
+            tostring(candidate ~= nil),
+            tostring(candidate and candidate.matchKind or "none"),
+            tostring(chosenMode or "attached"),
+            tostring(candidateSquare and candidateSquare:getX() or "nil"),
+            tostring(candidateSquare and candidateSquare:getY() or "nil"),
+            tostring(candidateSquare and candidateSquare:getZ() or "nil")
+        )
+    )
 end
 
 local function isAttached(player, item, uuid)
@@ -70,6 +157,27 @@ function NMClientModeReconcile.resolveModeForItem(player, item, profile, state)
     else
         slot.noCarryStreak = (tonumber(slot.noCarryStreak) or 0) + 1
     end
+    if attached or square then
+        slot.noSquareSinceMs = 0
+        slot.placedCandidateSig = ""
+    end
+
+    if attached
+        and (not square)
+        and NMCore
+        and NMCore.isMPClientRuntime
+        and NMCore.isMPClientRuntime() ~= true
+        and NMDeviceProfiles.isPortableTrackedProfile(profile) then
+        local attachedCandidate = NMClientPlacedWorldCandidate and NMClientPlacedWorldCandidate.resolve
+            and NMClientPlacedWorldCandidate.resolve(player, item, uuid)
+            or nil
+        if attachedCandidate
+            and attachedCandidate.hasSquare == true
+            and tostring(attachedCandidate.matchKind or "") == "uuid_world_match" then
+            logAttachedPlacedOverrideProbe(uuid, item, attachedCandidate, "placed")
+            return "placed"
+        end
+    end
 
     if attached and (NMDeviceProfiles.canAnyWorldPlayback(profile) or NMDeviceProfiles.isPortableTrackedProfile(profile)) then
         return "attached"
@@ -86,6 +194,28 @@ function NMClientModeReconcile.resolveModeForItem(player, item, profile, state)
         return "drop_pending"
     end
     if (not attached) and (not square) and (NMDeviceProfiles.canAnyWorldPlayback(profile) or NMDeviceProfiles.isPortableTrackedProfile(profile)) then
+        if NMDeviceProfiles.isPortableTrackedProfile(profile) then
+            local pickupBridge = NMClientPortableDropHandoff
+                and NMClientPortableDropHandoff.resolvePickupBridge
+                and NMClientPortableDropHandoff.resolvePickupBridge(player, item, profile, state, attached, square)
+                or nil
+            if pickupBridge then
+                return "pickup_pending"
+            end
+            local observedSinceMs = tonumber(slot.noSquareSinceMs) or 0
+            if observedSinceMs <= 0 then
+                observedSinceMs = nowMs()
+                slot.noSquareSinceMs = observedSinceMs
+            end
+            local candidate = NMClientPlacedWorldCandidate and NMClientPlacedWorldCandidate.resolve
+                and NMClientPlacedWorldCandidate.resolve(player, item, uuid)
+                or nil
+            local chosenMode = candidate and "placed" or "stowed"
+            logStowedCandidateProbe(slot, uuid, item, candidate, chosenMode, nowMs() - observedSinceMs)
+            if candidate and candidate.hasSquare == true then
+                return "placed"
+            end
+        end
         return "stowed"
     end
     return "off"

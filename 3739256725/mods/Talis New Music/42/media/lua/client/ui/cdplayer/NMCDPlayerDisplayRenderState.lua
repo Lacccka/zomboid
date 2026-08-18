@@ -31,26 +31,35 @@ local function getDisplayModeIconTexture(policy)
     elseif key == "shuffle" then
         texturePath = DISPLAY_MODE_ICON_SHUFFLE_TEXTURE_PATH
     end
-    local cache = ensureDisplayIconTextureCache()
-    if cache[key] == nil and getTexture then
-        cache[key] = getTexture(texturePath) or false
+    if NMFancyDeviceUiScale and NMFancyDeviceUiScale.resolveTexturePath then
+        texturePath = NMFancyDeviceUiScale.resolveTexturePath(texturePath)
     end
-    if cache[key] == false then
+    local cache = ensureDisplayIconTextureCache()
+    local cacheKey = key .. "|" .. tostring(texturePath or "")
+    if cache[cacheKey] == nil and getTexture then
+        cache[cacheKey] = getTexture(texturePath) or false
+    end
+    if cache[cacheKey] == false then
         return nil
     end
-    return cache[key]
+    return cache[cacheKey]
 end
 
 local function getDisplayBatteryTexture(stageKey)
     local key = tostring(stageKey or "00")
-    local cache = ensureDisplayBatteryTextureCache()
-    if cache[key] == nil and getTexture then
-        cache[key] = getTexture("media/textures/UI/CDPlayer/NM_UI_CDPlayer_Display_Battery_" .. key .. ".png") or false
+    local texturePath = "media/textures/UI/CDPlayer/NM_UI_CDPlayer_Display_Battery_" .. key .. ".png"
+    if NMFancyDeviceUiScale and NMFancyDeviceUiScale.resolveTexturePath then
+        texturePath = NMFancyDeviceUiScale.resolveTexturePath(texturePath)
     end
-    if cache[key] == false then
+    local cache = ensureDisplayBatteryTextureCache()
+    local cacheKey = key .. "|" .. tostring(texturePath or "")
+    if cache[cacheKey] == nil and getTexture then
+        cache[cacheKey] = getTexture(texturePath) or false
+    end
+    if cache[cacheKey] == false then
         return nil
     end
-    return cache[key]
+    return cache[cacheKey]
 end
 
 local function formatDisplayClockText()

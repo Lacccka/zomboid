@@ -1,13 +1,9 @@
 require "client/ExplosionFX"
 
--- Explosion FX for placed traps -- this mod's own mines (M14Mine,
--- M18a1Claymore, M18a1ClaymoreRemote) plus vanilla PipeBomb/Aerosolbomb/
--- FlameTrap sensor and remote variants -- reusing the same frame-based
--- explosion animation the thrown grenades use. These are all placed
--- traps triggered natively by vanilla's own sensor/timer/remote logic
--- (b42.20 fixed the native sensor bug that used to require a manual
--- workaround for mines), so this only needs to catch the moment of
--- detonation via Events.OnThrowableExplode, not simulate the trigger itself.
+-- Explosion FX for placed traps (own mines + vanilla PipeBomb/Aerosolbomb/FlameTrap
+-- sensor/remote variants), reusing the thrown-grenade animation. Native sensor/timer/
+-- remote logic handles triggering (b42.20 fixed the sensor bug); this just catches
+-- detonation via Events.OnThrowableExplode.
 local MINE_FX = {
     M14Mine = {
         fxPrefix = "explosion_",
@@ -24,11 +20,8 @@ local MINE_FX = {
 }
 MINE_FX.M18a1ClaymoreRemote = MINE_FX.M18a1Claymore
 
--- Vanilla PipeBomb/Aerosolbomb sensor and remote variants explode the
--- same way whether they were placed directly (vanilla, always possible)
--- or landed via this mod's optional ballistic arc (VanillaBallisticsEnabled
--- sandbox option) -- either way this is just cosmetic FX for a detonation
--- that already happens, so it's not gated behind that option.
+-- Same FX whether placed directly (vanilla) or landed via VanillaBallisticsEnabled;
+-- purely cosmetic, not gated behind that option.
 local PIPEBOMB_FX = {
     fxPrefix = "explosion_",
     fxFrames = 12,
@@ -62,10 +55,7 @@ MINE_FX.FlameTrapSensorV2 = FLAMETRAP_FX
 MINE_FX.FlameTrapSensorV3 = FLAMETRAP_FX
 MINE_FX.FlameTrapRemote = FLAMETRAP_FX
 MINE_FX.FlameTrapTriggered = FLAMETRAP_FX
--- SmokeBomb and NoiseTrap (Sensor/Remote/Triggered) deliberately have no
--- entry here -- no dedicated smoke/noise FX exists yet, so their
--- detonation stays silent on the custom-FX side (native smoke/noise
--- effects still happen either way).
+-- SmokeBomb/NoiseTrap variants have no entry: no dedicated FX yet (native smoke/noise still happens).
 
 if Events.OnThrowableExplode then
     Events.OnThrowableExplode.Add(function(throwable, sq)

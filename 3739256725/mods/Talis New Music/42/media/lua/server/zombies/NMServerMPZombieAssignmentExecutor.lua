@@ -162,6 +162,30 @@ local function markResolved(deps, zombie, spec, item, source, reason, payload)
     end
 end
 
+local function noteRealization(deps, zombie, outcome)
+    local realization = outcome and outcome.realization or nil
+    if NMServerZombieVisualTargetPublisher and NMServerZombieVisualTargetPublisher.noteRealizationChanged then
+        NMServerZombieVisualTargetPublisher.noteRealizationChanged(zombie, realization)
+    end
+    if realization and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("zombie_assignment") == true then
+        NMCore.logChannel(
+            "zombie_assignment",
+            "mp_realization_contract",
+            string.format(
+                "zombie=%s status=%s variant=%s mediaMode=%s proof=%s attachment=%s companion=%s refresh=%s",
+                tostring(realization.zombieId or ""),
+                tostring(realization.selectionStatus or ""),
+                tostring(realization.variantId or ""),
+                tostring(realization.payload and realization.payload.mediaMode or ""),
+                tostring(realization.proofItemStatus or ""),
+                tostring(realization.attachmentStatus or ""),
+                tostring(realization.companionCaseStatus or ""),
+                tostring(realization.needsVisualRefresh == true)
+            )
+        )
+    end
+end
+
 local function markSelectionState(deps, zombie, spec, source, selection, status, reason, payload)
     NMServerZombieAssignmentOutcomeShared.stampSelectionState(zombie, spec, {
         status = tostring(status or "excluded"),
@@ -202,22 +226,26 @@ function NMServerMPZombieAssignmentExecutor.applyAssignmentOutcome(zombie, sourc
     if outcome.status == "suppressed" then
         diag.attachSuppressed = (diag.attachSuppressed or 0) + 1
         markSelectionState(deps, zombie, getSpecForVariantId(outcome.selection and outcome.selection.variantId or ""), source, outcome.selection, outcome.status, outcome.reason, outcome.payload)
+        noteRealization(deps, zombie, outcome)
         return false
     end
     if outcome.status == "excluded" or outcome.status == "media_only" then
         diag.attachExcluded = (diag.attachExcluded or 0) + 1
         diag.attachExcludedScrubbed = (diag.attachExcludedScrubbed or 0) + (tonumber(outcome.removedCount) or 0)
         markSelectionState(deps, zombie, getSpecForVariantId(outcome.selection and outcome.selection.variantId or ""), source, outcome.selection, outcome.status, outcome.reason, outcome.payload)
+        noteRealization(deps, zombie, outcome)
         return false
     end
     if not outcome.ok then
         markFailed(deps, zombie, outcome.spec, outcome.reason, source, outcome.payload)
         diag.attachFailure = (diag.attachFailure or 0) + 1
+        noteRealization(deps, zombie, outcome)
         return false
     end
     diag.attachSuccess = (diag.attachSuccess or 0) + 1
     diag.strategyAssignments = (diag.strategyAssignments or 0) + 1
     markResolved(deps, zombie, outcome.spec, outcome.item, source, nil, outcome.payload)
+    noteRealization(deps, zombie, outcome)
     sampleAttachmentLifecycle(
         diag,
         zombie,

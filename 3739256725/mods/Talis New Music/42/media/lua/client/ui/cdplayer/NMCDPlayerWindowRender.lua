@@ -1,14 +1,32 @@
 local env = _G.NMCDPlayerWindowEnv
 setfenv(1, env)
 
-local function ensureTextureValue(cache, key, path)
-    if cache[key] == nil and getTexture then
-        cache[key] = path and (getTexture(path) or false) or false
+local FancySettingsWindow = require "ui/shared/host/NMFancySettingsWindow"
+
+local function drawTextureScaledAngleSafe(window, texture, rect, angle, alpha, r, g, b)
+    if NMFancyDeviceUiScale and NMFancyDeviceUiScale.drawTextureScaledAngle then
+        return NMFancyDeviceUiScale.drawTextureScaledAngle(window, texture, rect, angle, alpha, r, g, b)
     end
-    if cache[key] == false then
+    if window and texture and rect and window.drawTextureScaled then
+        window:drawTextureScaled(texture, rect.x, rect.y, rect.w, rect.h, alpha or 1.0, r or 1.0, g or 1.0, b or 1.0)
+        return true
+    end
+    return false
+end
+
+local function ensureTextureValue(cache, key, path)
+    local resolvedPath = path
+    if NMFancyDeviceUiScale and NMFancyDeviceUiScale.resolveTexturePath then
+        resolvedPath = NMFancyDeviceUiScale.resolveTexturePath(path)
+    end
+    local cacheKey = tostring(key or "") .. "|" .. tostring(resolvedPath or "")
+    if cache[cacheKey] == nil and getTexture then
+        cache[cacheKey] = resolvedPath and (getTexture(resolvedPath) or false) or false
+    end
+    if cache[cacheKey] == false then
         return nil
     end
-    return cache[key]
+    return cache[cacheKey]
 end
 
 local FRONT_VARIANTS = {
@@ -314,12 +332,7 @@ function CDPlayerWindow:prerender()
     end
     if chromeTextures.hold then
         local holdRect = self:getHoldButtonRect()
-        self:DrawTextureAngle(
-            chromeTextures.hold,
-            holdRect.x + (holdRect.w / 2),
-            holdRect.y + (holdRect.h / 2),
-            tonumber(self._nmHoldButtonAngle) or HOLD_BUTTON_ANGLE_UPRIGHT
-        )
+        drawTextureScaledAngleSafe(self, chromeTextures.hold, holdRect, tonumber(self._nmHoldButtonAngle) or HOLD_BUTTON_ANGLE_UPRIGHT)
     end
     if chromeTextures.open then
         local openRect = self:getOpenButtonRect()
@@ -364,13 +377,7 @@ function CDPlayerWindow:prerender()
         if insertedCDTexture then
             local cdRect = insertedCDState.rect
             if insertedCDState.spin == true then
-                local centerX, centerY = getRectCenterForOddSizedTexture(cdRect)
-                self:DrawTextureAngle(
-                    insertedCDTexture,
-                    centerX,
-                    centerY,
-                    tonumber(insertedCDState.angle) or 0.0
-                )
+                drawTextureScaledAngleSafe(self, insertedCDTexture, cdRect, tonumber(insertedCDState.angle) or 0.0)
             else
                 self:drawTextureScaled(insertedCDTexture, cdRect.x, cdRect.y, cdRect.w, cdRect.h, 1.0, 1.0, 1.0, 1.0)
             end
@@ -450,6 +457,13 @@ function CDPlayerWindow:render()
             closeG,
             closeB
         )
+    end
+    local gearTexture = FancySettingsWindow.getGearTexture and FancySettingsWindow.getGearTexture() or nil
+    if gearTexture then
+        local gearRect = self:getSettingsRect()
+        local gearDrawRect = FancySettingsWindow.getGearDrawRect and FancySettingsWindow.getGearDrawRect(gearRect) or gearRect
+        local gearAlpha, gearR, gearG, gearB = FancySettingsWindow.resolveGearTint(self, model)
+        self:drawTextureScaled(gearTexture, gearDrawRect.x, gearDrawRect.y, gearDrawRect.w, gearDrawRect.h, gearAlpha, gearR, gearG, gearB)
     end
     if self.logFrameDiagnostics then
         self:logFrameDiagnostics()

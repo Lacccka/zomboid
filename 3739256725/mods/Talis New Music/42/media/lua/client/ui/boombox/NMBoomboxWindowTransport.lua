@@ -3,6 +3,8 @@ require "ui/shared/host/NMFancyWindowTooltipHost"
 local env = _G.NMBoomboxWindowEnv
 setfenv(1, env)
 
+local FancySettingsWindow = require "ui/shared/host/NMFancySettingsWindow"
+
 local MODE_BY_INDEX = { "loop_song", "loop_album", "shuffle" }
 
 local function getTransportState(window, resolved)
@@ -92,6 +94,10 @@ end
 function BoomboxWindow:buildTransportState(resolved)
     local ctx = resolved or self:resolveContextCached()
     local state = ctx and ctx.state or nil
+    local hasUsablePower = true
+    if state and state.batteryPresent ~= nil then
+        hasUsablePower = state.batteryPresent == true and (tonumber(state.batteryCharge) or 0) > 0
+    end
     return {
         isPlaying = state and state.isPlaying == true,
         isOn = state and state.isOn == true,
@@ -99,7 +105,18 @@ function BoomboxWindow:buildTransportState(resolved)
         playbackPolicy = tostring(state and state.playbackPolicy or "autoplay"),
         volume = clamp01(state and state.volume or 1.0),
         hasMedia = self:hasInsertedCassette() == true,
+        hasUsablePower = hasUsablePower == true,
     }
+end
+
+local function canStartRealPlayback(transport)
+    return transport
+        and transport.hasUsablePower == true
+        and (tonumber(transport.trackCount) or 0) > 0
+end
+
+local function canPowerOnFromTransport(transport)
+    return transport and transport.hasUsablePower == true
 end
 
 local function resolveObservedPowerState(window, resolved)
@@ -122,9 +139,11 @@ function BoomboxWindow:syncPowerSwitchFromTransport(resolved, snap)
     local pendingUntil = tonumber(self._nmPowerSwitchPendingUntilMs) or 0
     local pendingActive = pendingUntil > nowMs
     local pendingOn = self._nmPowerSwitchPendingOn == true
+    local suppressTransitionSound = false
     if pendingActive == true and shouldBeOn ~= pendingOn then
         shouldBeOn = pendingOn
     else
+        suppressTransitionSound = self._nmPowerSwitchPendingOn ~= nil and shouldBeOn ~= pendingOn
         self._nmPowerSwitchPendingOn = nil
         self._nmPowerSwitchPendingUntilMs = 0
     end
@@ -136,7 +155,9 @@ function BoomboxWindow:syncPowerSwitchFromTransport(resolved, snap)
     self._nmHasObservedPowerState = true
     if previous ~= shouldBeOn then
         self._nmPowerSwitchOn = shouldBeOn
-        playBoomboxSoundEvent(self, "boombox_button_pop")
+        if suppressTransitionSound ~= true then
+            playBoomboxSoundEvent(self, "boombox_button_pop")
+        end
     end
     return shouldBeOn
 end
@@ -157,6 +178,9 @@ function BoomboxWindow:getHoverTooltipAt(x, y)
     if pointInRect(x, y, self:getCloseRect()) then
         return "Close"
     end
+    if pointInRect(x, y, self:getSettingsRect()) then
+        return FancySettingsWindow.getSettingsTooltipText()
+    end
     if pointInRect(x, y, self:getVolumeBgRect()) then
         return self:getVolumeLabelText()
     end
@@ -176,7 +200,7 @@ function BoomboxWindow:getHoverTooltipAt(x, y)
     if self.isCollapsed == true then
         for i = 1, 4 do
             local kind = ({ "play", "stop", "prev", "next" })[i]
-            if pointInRect(x, y, self:getTopCollapsedButtonRect(kind)) then
+            if pointInRect(x, y, self:getTopCollapsedButtonHitRect(kind)) then
                 return ({ play = "Play", stop = "Stop", prev = "Previous Track", next = "Next Track" })[kind]
             end
         end
@@ -292,9 +316,15 @@ end
 
 function BoomboxWindow:syncPlayButtonFromTransport(resolved, snap)
     local transportState = getControlTransportState(self, resolved)
-    local shouldBeDown = transportState and transportState.isPlaying == true
-    local previous = self._nmAuthoritativePlayDown == true
-    self._nmAuthoritativePlayDown = shouldBeDown
+    local authoritativeDown = transportState and transportState.isPlaying == true
+    if authoritativeDown == true then
+        self:clearLocalPlayPresentation(false)
+    end
+    local shouldBeDown = authoritativeDown or self._nmLocalPlayPresentationLatched == true
+    local previousAuthoritative = self._nmAuthoritativePlayDown == true
+    local visualMainDown = self._nmMainButtonDownByKind.play == true
+    local visualTopDown = self._nmTopButtonDownByKind and self._nmTopButtonDownByKind.play == true or false
+    self._nmAuthoritativePlayDown = authoritativeDown
     if snap == true or self._nmHasObservedPlayState ~= true then
         self._nmHasObservedPlayState = true
         self._nmMainButtonDownByKind.play = shouldBeDown
@@ -302,7 +332,7 @@ function BoomboxWindow:syncPlayButtonFromTransport(resolved, snap)
         return transportState
     end
     self._nmHasObservedPlayState = true
-    if previous ~= shouldBeDown then
+    if previousAuthoritative ~= authoritativeDown or visualMainDown ~= shouldBeDown or visualTopDown ~= shouldBeDown then
         self._nmMainButtonDownByKind.play = shouldBeDown
         self:setTopPlayButtonDown(shouldBeDown)
     end
@@ -339,14 +369,41 @@ function BoomboxWindow:setTopPlayButtonDown(down)
     end
 end
 
+function BoomboxWindow:clearLocalPlayPresentation(syncVisuals)
+    self._nmLocalPlayPresentationLatched = false
+    if syncVisuals == true and self._nmAuthoritativePlayDown ~= true then
+        self:setPlayButtonDown(false, false)
+        self:setTopPlayButtonDown(false)
+    end
+end
+
+function BoomboxWindow:latchLocalPlayPresentation(fromCollapsed)
+    self._nmLocalPlayPresentationLatched = true
+    self._nmMainButtonPulseByKind.play = nil
+    self:setPlayButtonDown(true, true)
+    self:setTopPlayButtonDown(true)
+    if fromCollapsed == true then
+        self._nmTopButtonPressOffsetByKind.play = TOP_BUTTON_PRESS_OFFSET
+    end
+    return true
+end
+
 function BoomboxWindow:handlePowerSwitchTrigger()
     local resolved = self:resolveContextCached()
+    local transport = getControlTransportState(self, resolved)
     local currentOn = resolveObservedPowerState(self, resolved)
     local targetOn = currentOn ~= true
+    if targetOn and canPowerOnFromTransport(transport) ~= true then
+        return false
+    end
     local action = targetOn and "power_on" or "power_off"
     local ok = self:executeUiControl(action, {})
     if ok == true then
-        self:setPendingPowerSwitchState(targetOn)
+        if targetOn then
+            self:setPendingPowerSwitchState(true)
+        else
+            self:setPendingPowerSwitchState(false)
+        end
         playBoomboxSoundEvent(self, "boombox_button_pop")
     end
     return ok == true
@@ -354,12 +411,15 @@ end
 
 function BoomboxWindow:handleManualPlayTrigger(fromCollapsed)
     local transport = getControlTransportState(self)
-    if self:hasInsertedCassette() ~= true then
-        self:startMainButtonFlick("play")
+    -- The boombox "play" controls can present a local latch without changing
+    -- the authoritative power switch or transport state when playback is impossible.
+    if self:hasInsertedCassette() ~= true or canStartRealPlayback(transport) ~= true then
+        self:latchLocalPlayPresentation(fromCollapsed)
         return true
     end
     local ok = self:executeUiControl("play", { trackCount = tonumber(transport and transport.trackCount) or 0 })
     if ok == true then
+        self:clearLocalPlayPresentation(false)
         self:setPlayButtonDown(true, true)
         self:setTopPlayButtonDown(true)
         self:setPendingPowerSwitchState(true)
@@ -372,6 +432,15 @@ function BoomboxWindow:handleManualPlayTrigger(fromCollapsed)
 end
 
 function BoomboxWindow:handleStopTrigger(fromCollapsed)
+    if self._nmLocalPlayPresentationLatched == true and self._nmAuthoritativePlayDown ~= true then
+        self:clearLocalPlayPresentation(true)
+        if fromCollapsed == true then
+            self:pressTopButton("stop", false, true)
+        else
+            self:startMainButtonFlick("stop")
+        end
+        return true
+    end
     if self:hasInsertedCassette() ~= true then
         if fromCollapsed == true then
             self:pressTopButton("stop", false, true)
@@ -382,6 +451,7 @@ function BoomboxWindow:handleStopTrigger(fromCollapsed)
     end
     local ok = self:executeUiControl("stop", {})
     if ok == true then
+        self:clearLocalPlayPresentation(false)
         self:executeUiControl("power_off", {})
         self:setPlayButtonDown(false, fromCollapsed ~= true)
         self:setTopPlayButtonDown(false)

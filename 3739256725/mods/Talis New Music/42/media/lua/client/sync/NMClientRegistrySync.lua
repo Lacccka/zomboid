@@ -11,6 +11,14 @@ function NMClientRegistrySync.requestInitialSync()
     NMClientRegistrySyncState.resetInitialSync(NMClientRegistrySync.state, NMCore.isMPClientRuntime())
 end
 
+function NMClientRegistrySync.observeSchedulerTick(tickStep)
+    NMClientRegistrySyncState.observeSchedulerTick(NMClientRegistrySync.state, tickStep)
+end
+
+function NMClientRegistrySync.shouldRunThisTick()
+    return NMClientRegistrySyncScheduler.shouldRunThisTick(NMClientRegistrySync.state)
+end
+
 function NMClientRegistrySync.requestNow(player, reason)
     return NMClientRegistrySyncRequests.requestNow(NMClientRegistrySync.state, player, reason)
 end
@@ -20,6 +28,6 @@ function NMClientRegistrySync.onServerCommand(command, args)
 end
 
 function NMClientRegistrySync.onTick(player)
-    NMClientRegistrySyncScheduler.onTick(NMClientRegistrySync.state, player)
+    return NMClientRegistrySyncScheduler.onTick(NMClientRegistrySync.state, player)
 end
 

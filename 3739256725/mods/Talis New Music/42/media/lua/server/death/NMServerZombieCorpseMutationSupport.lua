@@ -204,12 +204,40 @@ function NMServerZombieCorpseMutationSupport.new(deps)
         return wantedCount
     end
 
+    local function buildSanitizedCorpseLooseLoot(record)
+        local sanitizedPayload = type(record) == "table"
+            and record.payload
+            and NMZombieMediaPayloadResolver
+            and NMZombieMediaPayloadResolver.sanitizePayloadForSandbox
+            and NMZombieMediaPayloadResolver.sanitizePayloadForSandbox(record.payload)
+            or nil
+        if sanitizedPayload and NMZombieMediaPayloadRuntime and NMZombieMediaPayloadRuntime.buildCorpseLooseLootFullTypes then
+            return NMZombieMediaPayloadRuntime.buildCorpseLooseLootFullTypes(sanitizedPayload)
+        end
+        return type(record and record.corpseLooseLootFullTypes) == "table" and record.corpseLooseLootFullTypes or {}
+    end
+
+    local function resolveSanitizedCompanionContract(record)
+        local sanitizedPayload = type(record) == "table"
+            and record.payload
+            and NMZombieMediaPayloadResolver
+            and NMZombieMediaPayloadResolver.sanitizePayloadForSandbox
+            and NMZombieMediaPayloadResolver.sanitizePayloadForSandbox(record.payload)
+            or nil
+        if sanitizedPayload and NMZombieAudioVisualSupport and NMZombieAudioVisualSupport.buildCompanionCaseContract then
+            return NMZombieAudioVisualSupport.buildCompanionCaseContract(sanitizedPayload, {
+                deviceUUID = tostring(record and record.deviceUUID or "")
+            })
+        end
+        return type(record and record.companionCaseContract) == "table" and record.companionCaseContract or nil
+    end
+
     local function syncCorpsePayload(container, record)
         if not (container and record) then
             return
         end
-        local explicitLooseLoot = type(record.corpseLooseLootFullTypes) == "table" and record.corpseLooseLootFullTypes or {}
-        local companionContract = type(record.companionCaseContract) == "table" and record.companionCaseContract or nil
+        local explicitLooseLoot = buildSanitizedCorpseLooseLoot(record)
+        local companionContract = resolveSanitizedCompanionContract(record)
         local candidates = collectCorpsePayloadCandidates(explicitLooseLoot, companionContract)
 
         for fullType in pairs(candidates) do
@@ -229,7 +257,7 @@ function NMServerZombieCorpseMutationSupport.new(deps)
     end
 
     local function logCompanionCaseOutcome(record, outcome)
-        local contract = type(record and record.companionCaseContract) == "table" and record.companionCaseContract or nil
+        local contract = resolveSanitizedCompanionContract(record)
         local expectedUuid = tostring(contract and contract.deviceUUID or "")
         local expectedCase = tostring(contract and contract.fullType or "")
         logProof(
@@ -241,7 +269,7 @@ function NMServerZombieCorpseMutationSupport.new(deps)
 
     local function validateInheritedCompanionLoot(container, record)
         -- Canonical explicit companion case contract validation.
-        local companionContract = type(record and record.companionCaseContract) == "table" and record.companionCaseContract or nil
+        local companionContract = resolveSanitizedCompanionContract(record)
         if not companionContract then
             return true
         end
@@ -327,7 +355,7 @@ function NMServerZombieCorpseMutationSupport.new(deps)
         -- Phase ordering:
         -- reconcile corpse payload first, then realize/validate companion-case behavior.
         syncCorpsePayload(container, record)
-        local companionContract = type(record.companionCaseContract) == "table" and record.companionCaseContract or nil
+        local companionContract = resolveSanitizedCompanionContract(record)
         if companionContract and companionContract.mode == "device_with_media" then
             syncCanonicalInheritedCompanionCase(container, record, companionContract)
             return validateInheritedCompanionLoot(container, record)
@@ -529,7 +557,7 @@ function NMServerZombieCorpseMutationSupport.new(deps)
         end
         root.nmZombieLoot = root.nmZombieLoot or {}
         root.nmZombieLoot.corpseLooseLootFullTypes = {}
-        local looseLoot = type(record and record.corpseLooseLootFullTypes) == "table" and record.corpseLooseLootFullTypes or {}
+        local looseLoot = buildSanitizedCorpseLooseLoot(record)
         for i = 1, #looseLoot do
             root.nmZombieLoot.corpseLooseLootFullTypes[#root.nmZombieLoot.corpseLooseLootFullTypes + 1] = looseLoot[i]
         end
@@ -547,6 +575,9 @@ function NMServerZombieCorpseMutationSupport.new(deps)
         if type(md) ~= "table" then
             return
         end
+        payload = NMZombieMediaPayloadResolver and NMZombieMediaPayloadResolver.sanitizePayloadForSandbox
+            and NMZombieMediaPayloadResolver.sanitizePayloadForSandbox(payload)
+            or payload
         if type(payload) ~= "table" then
             md.mediaCategory = nil
             md.deviceEnabled = nil
@@ -589,6 +620,9 @@ function NMServerZombieCorpseMutationSupport.new(deps)
         if type(md) ~= "table" then
             return
         end
+        if type(record) == "table" and NMZombieMediaPayloadResolver and NMZombieMediaPayloadResolver.sanitizePayloadForSandbox then
+            record.payload = NMZombieMediaPayloadResolver.sanitizePayloadForSandbox(record.payload)
+        end
         -- Corpse settlement stamping is the last explicit corpse transfer phase.
         md.corpseSettled = true
         md.corpseHadProof = carried == true
@@ -600,7 +634,7 @@ function NMServerZombieCorpseMutationSupport.new(deps)
         md.status = resolveSettledCorpseStatus(record, carried)
         applyCorpsePayloadMetadata(md, record and record.payload or nil)
         -- Canonical explicit companion case contract metadata is stamped separately from payload-derived metadata.
-        local companionContract = type(record and record.companionCaseContract) == "table" and record.companionCaseContract or nil
+        local companionContract = resolveSanitizedCompanionContract(record)
         applyCorpseCompanionMetadata(md, companionContract)
     end
 

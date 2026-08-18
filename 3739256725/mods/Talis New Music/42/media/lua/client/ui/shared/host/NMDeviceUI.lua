@@ -331,6 +331,25 @@ function NMDeviceUI.invalidateOpenItemWindow(itemId, uuid)
     return invalidated
 end
 
+function NMDeviceUI.invalidateOpenVehicleWindow(vehicleId, partId, playerNum)
+    local resolvedPlayerNum = tonumber(playerNum) or 0
+    local invalidated = NMDeviceWindow
+        and NMDeviceWindow.invalidateOpenVehicleWindow
+        and NMDeviceWindow.invalidateOpenVehicleWindow(resolvedPlayerNum, vehicleId, partId) == true
+        or false
+    logUiLifecycleDispatch(
+        "invalidate_vehicle",
+        string.format(
+            "player=%s vehicleId=%s partId=%s invalidated=%s",
+            tostring(resolvedPlayerNum),
+            tostring(vehicleId or ""),
+            tostring(partId or "Radio"),
+            tostring(invalidated)
+        )
+    )
+    return invalidated
+end
+
 function NMDeviceUI.rebindOpenItemWindow(itemId, uuid)
     local playerNum = 0
     local before = collectUiLifecycleSnapshots(playerNum)

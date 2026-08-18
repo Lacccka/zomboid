@@ -218,22 +218,6 @@ function Fix.open(player, expectedWeaponId)
 end
 
 function Fix.getInspectKey()
-    local configuredKey = nil
-
-    pcall(function()
-        if PZAPI and PZAPI.ModOptions then
-            local options = PZAPI.ModOptions:getOptions("AWCWF_42_Patch")
-            local option = options and options:getOption("keybind_inspect_window") or nil
-            if option then
-                configuredKey = tonumber(option:getValue())
-            end
-        end
-    end)
-
-    if configuredKey then
-        return configuredKey
-    end
-
     local core = getCore and getCore() or nil
     return core and core:getKey("OpenWindownCat") or nil
 end

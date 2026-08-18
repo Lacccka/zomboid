@@ -4,38 +4,87 @@ setfenv(1, env)
 local MAIN_BUTTON_ORDER = { "play", "stop", "prev", "next", "eject" }
 local TOP_BUTTON_ORDER = { "play", "stop", "prev", "next" }
 
-function BoomboxWindow:getHeaderRect()
-    return { x = HEADER_X, y = HEADER_Y, w = HEADER_W, h = HEADER_H }
+local function buildTopCollapsedButtonRect(kind, y, h)
+    local idx = math.max(1, 1)
+    for i = 1, #TOP_BUTTON_ORDER do
+        if TOP_BUTTON_ORDER[i] == kind then
+            idx = i
+            break
+        end
+    end
+    return {
+        x = TOP_BUTTON_X + ((idx - 1) * (TOP_BUTTON_W + TOP_BUTTON_GAP_X)),
+        y = tonumber(y) or 0,
+        w = TOP_BUTTON_W,
+        h = tonumber(h) or TOP_BUTTON_H,
+    }
 end
 
-function BoomboxWindow:getHeaderLeftStripRect()
+local function getCollapsedTopButtonInsetY()
+    local desiredPeek = tonumber(TOP_BUTTON_PEEK_EXPOSE) or 0
+    local shellTopY = tonumber(BASE_Y) or 0
+    return math.max(0, desiredPeek - shellTopY)
+end
+
+local function getCollapsedCanvasOffsetY(window, forceCollapsed)
+    if forceCollapsed == true or (window and window.isCollapsed == true) then
+        return getCollapsedTopButtonInsetY()
+    end
+    return 0
+end
+
+function BoomboxWindow:getCanvasOffsetY(forceCollapsed)
+    return getCollapsedCanvasOffsetY(self, forceCollapsed)
+end
+
+function BoomboxWindow:getHeaderRect(forceCollapsed)
+    local offsetY = getCollapsedCanvasOffsetY(self, forceCollapsed)
+    return { x = HEADER_X, y = HEADER_Y + offsetY, w = HEADER_W, h = HEADER_H }
+end
+
+function BoomboxWindow:getHeaderLeftStripRect(forceCollapsed)
+    local offsetY = getCollapsedCanvasOffsetY(self, forceCollapsed)
     return {
         x = BASE_X,
-        y = HEADER_Y,
+        y = HEADER_Y + offsetY,
         w = HEADER_SIDE_STRIP_W,
-        h = math.max(0, (BASE_Y + BASE_H) - HEADER_Y)
+        h = math.max(0, ((BASE_Y + BASE_H) + offsetY) - (HEADER_Y + offsetY))
     }
 end
 
-function BoomboxWindow:getHeaderRightStripRect()
+function BoomboxWindow:getHeaderRightStripRect(forceCollapsed)
+    local offsetY = getCollapsedCanvasOffsetY(self, forceCollapsed)
     return {
         x = (BASE_X + BASE_W) - HEADER_SIDE_STRIP_W,
-        y = HEADER_Y,
+        y = HEADER_Y + offsetY,
         w = HEADER_SIDE_STRIP_W,
-        h = math.max(0, (BASE_Y + BASE_H) - HEADER_Y)
+        h = math.max(0, ((BASE_Y + BASE_H) + offsetY) - (HEADER_Y + offsetY))
     }
 end
 
-function BoomboxWindow:getCloseRect()
-    return { x = CLOSE_X, y = CLOSE_Y, w = CLOSE_W, h = CLOSE_H }
+function BoomboxWindow:getCloseRect(forceCollapsed)
+    local offsetY = getCollapsedCanvasOffsetY(self, forceCollapsed)
+    return { x = CLOSE_X, y = CLOSE_Y + offsetY, w = CLOSE_W, h = CLOSE_H }
 end
 
-function BoomboxWindow:getPowerSwitchBgRect()
-    return { x = POWER_BG_X, y = POWER_BG_Y, w = POWER_BG_W, h = POWER_BG_H }
+function BoomboxWindow:getSettingsRect(forceCollapsed)
+    local closeRect = self:getCloseRect(forceCollapsed)
+    return {
+        x = closeRect.x,
+        y = closeRect.y + closeRect.h + SETTINGS_GAP_Y,
+        w = closeRect.w,
+        h = closeRect.h
+    }
 end
 
-function BoomboxWindow:getPowerSwitchSlideRect(isOn)
-    local slideY = POWER_BG_Y + POWER_SLIDE_OFFSET_Y - ((isOn == true) and POWER_SLIDE_TRAVEL_Y or 0)
+function BoomboxWindow:getPowerSwitchBgRect(forceCollapsed)
+    local offsetY = getCollapsedCanvasOffsetY(self, forceCollapsed)
+    return { x = POWER_BG_X, y = POWER_BG_Y + offsetY, w = POWER_BG_W, h = POWER_BG_H }
+end
+
+function BoomboxWindow:getPowerSwitchSlideRect(isOn, forceCollapsed)
+    local offsetY = getCollapsedCanvasOffsetY(self, forceCollapsed)
+    local slideY = POWER_BG_Y + offsetY + POWER_SLIDE_OFFSET_Y - ((isOn == true) and POWER_SLIDE_TRAVEL_Y or 0)
     return {
         x = POWER_BG_X + POWER_SLIDE_OFFSET_X,
         y = slideY,
@@ -46,8 +95,13 @@ end
 
 function BoomboxWindow:getCollapsedVisibleHeight()
     local baseVisibleHeight = 30
-    local topButtonVisibleHeight = TOP_BUTTON_CANVAS_INSET_Y + TOP_BUTTON_H + 2
-    return math.max(baseVisibleHeight, topButtonVisibleHeight)
+    local closeRect = self:getCloseRect(true)
+    local settingsRect = self:getSettingsRect(true)
+    local chromeBottom = math.max(
+        closeRect.y + closeRect.h,
+        settingsRect.y + settingsRect.h
+    )
+    return math.max(baseVisibleHeight, chromeBottom)
 end
 
 function BoomboxWindow:getDefaultExpandedY()
@@ -174,6 +228,18 @@ function BoomboxWindow:getTopButtonIndex(kind)
     return 1
 end
 
+function BoomboxWindow:getTopCollapsedButtonAnchorY()
+    local desiredPeek = tonumber(TOP_BUTTON_PEEK_EXPOSE) or 0
+    local popOffset = tonumber(TOP_BUTTON_POP_Y) or 0
+    return (tonumber(BASE_Y) or 0) - desiredPeek - popOffset
+end
+
+function BoomboxWindow:getTopCollapsedButtonVisualOffset(kind)
+    local currentOffset = tonumber(self._nmTopButtonCurrentOffsetByKind and self._nmTopButtonCurrentOffsetByKind[kind]) or TOP_BUTTON_RETRACT_Y
+    local pressOffset = tonumber(self._nmTopButtonPressOffsetByKind and self._nmTopButtonPressOffsetByKind[kind]) or 0
+    return currentOffset + pressOffset
+end
+
 function BoomboxWindow:getMainButtonRect(kind)
     local idx = self:getMainButtonIndex(kind)
     return {
@@ -184,16 +250,25 @@ function BoomboxWindow:getMainButtonRect(kind)
     }
 end
 
+function BoomboxWindow:getTopCollapsedButtonVisualRect(kind)
+    local anchorY = self:getTopCollapsedButtonAnchorY()
+    local visualOffset = self:getTopCollapsedButtonVisualOffset(kind)
+    return buildTopCollapsedButtonRect(kind, anchorY + visualOffset + getCollapsedCanvasOffsetY(self), TOP_BUTTON_H)
+end
+
+function BoomboxWindow:getTopCollapsedButtonHitRect(kind)
+    local visualRect = self:getTopCollapsedButtonVisualRect(kind)
+    local hitTopY = math.max(0, math.floor((tonumber(visualRect.y) or 0) + 0.5))
+    local hitBottomY = math.ceil((tonumber(visualRect.y) or 0) + (tonumber(visualRect.h) or 0))
+    local minHitHeight = tonumber(TOP_BUTTON_MIN_HIT_H) or 0
+    hitBottomY = math.max(hitBottomY, hitTopY + minHitHeight)
+    hitBottomY = math.min(math.floor(tonumber(self.height) or 0), hitBottomY)
+    local hitHeight = math.max(1, hitBottomY - hitTopY)
+    return buildTopCollapsedButtonRect(kind, hitTopY, hitHeight)
+end
+
 function BoomboxWindow:getTopCollapsedButtonRect(kind)
-    local idx = self:getTopButtonIndex(kind)
-    local offset = tonumber(self._nmTopButtonCurrentOffsetByKind and self._nmTopButtonCurrentOffsetByKind[kind]) or TOP_BUTTON_RETRACT_Y
-    local press = tonumber(self._nmTopButtonPressOffsetByKind and self._nmTopButtonPressOffsetByKind[kind]) or 0
-    return {
-        x = TOP_BUTTON_X + ((idx - 1) * (TOP_BUTTON_W + TOP_BUTTON_GAP_X)),
-        y = TOP_BUTTON_CANVAS_INSET_Y + offset + press,
-        w = TOP_BUTTON_W,
-        h = TOP_BUTTON_H
-    }
+    return self:getTopCollapsedButtonVisualRect(kind)
 end
 
 function BoomboxWindow:getModeButtonRect(index)

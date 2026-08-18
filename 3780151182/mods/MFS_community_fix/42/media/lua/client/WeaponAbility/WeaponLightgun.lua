@@ -1,0 +1,39 @@
+-- MFS community fix: neutered replacement for the upstream WeaponLightgun.lua.
+--
+-- The upstream file registers an OnPlayerUpdate handler that forces the weapon
+-- light on whenever the player aims a gun with a "Light" part attached:
+--
+--     setTorchCone(true); setLightDistance(30); setLightStrength(9)
+--
+-- with no on/off state, no hotkey and no battery check. That is the "flashlight
+-- is always on when aiming" behaviour this patch fixes. Control of the weapon
+-- light now lives entirely in:
+--
+--     client/PartAbility/LaserAndLight/MFSWeaponLightControl.lua
+--
+-- WHY THIS FILE IS EMPTY RATHER THAN CORRECTED
+-- --------------------------------------------
+-- Which of these two files "wins" depends on the install model, and we support
+-- both, so this file must be inert in either case:
+--
+--   Separate-mod install (current Workshop model)
+--       Per MFS_ARCHIVE_POLICY.txt, a Lua file present in both mods is not
+--       shadowed - BOTH copies execute. The upstream handler therefore still
+--       runs, and nothing written here could remove it: it is registered as a
+--       local function, so there is no reference to hand to
+--       Events.OnPlayerUpdate.Remove. MFSWeaponLightControl.lua instead runs
+--       after it every frame and corrects the torch state. This file does
+--       nothing and is simply harmless.
+--
+--   Overlay install (legacy "extract over MFS")
+--       Files really are replaced on disk, so this file genuinely removes the
+--       upstream handler and MFSWeaponLightControl.lua is the only writer.
+--
+-- Keep this file free of side-effecting calls. It carries zero, so it does not
+-- appear in the build tool's "OVERRIDING Lua with side effects" list.
+--
+-- Do not re-add an OnPlayerUpdate handler here. Adjust MFSWeaponLightControl.lua
+-- instead - light distance and strength are configurable there via
+-- MFSWeaponLightControl.DEFAULT_PROFILE and .PROFILES.
+
+MFSWeaponLightgunNeutered = true

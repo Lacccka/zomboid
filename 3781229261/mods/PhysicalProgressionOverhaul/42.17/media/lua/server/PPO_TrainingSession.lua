@@ -144,7 +144,7 @@ function TrainingSession.trainingDirections(manager, character)
     if definition == nil then return result end
 
     for _, direction in ipairs(DIRECTIONS) do
-        if definition.loadRate[direction] ~= nil then
+        if definition.loadPerRepeat[direction] ~= nil then
             result[direction] = true
         end
     end
@@ -242,7 +242,12 @@ function TrainingSession.acceptRepeat(manager, character, token)
             if type(token.loadMinutes) == "table" then
                 covered = positiveOr(token.loadMinutes[direction], 0)
             end
+            local worked = 0
+            if type(token.workMinutes) == "table" then
+                worked = positiveOr(token.workMinutes[direction], 0)
+            end
             session.coveredMinutes = session.coveredMinutes + covered
+            session.workMinutes = session.workMinutes + worked
             session.acceptedRepeats = session.acceptedRepeats + 1
             session.loadReturnSum = session.loadReturnSum + loadReturn
             if regularity ~= nil then
@@ -265,10 +270,15 @@ local function finalizeDirection(character, direction, settings,
     local component = PPO.ExerciseState.getComponent(character, direction)
     local session = component.session
 
+    -- Work, not the clock: fifty repetitions are fifty repetitions whether the
+    -- animation rate or the day length made them take ten minutes or twenty.
     local durationQuality = PPO.AdaptationMath.durationQuality(
-        session.activeTrainingMinutes,
+        session.workMinutes,
         settings.MinimumTrainingMinutes,
         settings.FullQualityTrainingMinutes)
+    -- Coverage stays on the clock pair. It asks whether the action's own
+    -- minutes were accounted for, which is a different question from how much
+    -- work happened inside them.
     local coverageQuality = PPO.AdaptationMath.coverageQuality(
         session.coveredMinutes,
         session.activeTrainingMinutes,
@@ -328,19 +338,16 @@ local function finalizeDirection(character, direction, settings,
     }
 end
 
--- A repetition charges its span when its token is built, so the span between
--- the last token and the end of the action would otherwise never be charged.
--- That tail is real time — the last repetition's animation plus the stop — and
--- therefore more game minutes the shorter the day, which is exactly how the
--- DayLength dependence the rebalance removed crept back in. The live run of
--- 2026-07-28 measured one nominal twenty-minute squat session charging 0.5563
--- at DayLength 2 against 0.6515 at DayLength 5.
+-- A repetition charges its own load when its token is minted, so the span
+-- between the last token and the end of the action buys nothing: the tail is
+-- elapsed time, not work. It is still charged to `coveredMinutes`, because the
+-- coverage gate compares charged minutes against the action's whole duration
+-- and an uncharged tail would read as a gap the character never had.
 --
 -- Only a direction that already accepted a repetition in this fragment is
 -- charged, so an action whose every repetition was rejected still covers
--- nothing and gains nothing: coverage stays an integrity gate. The span goes
--- through the same consume path as any other, so it obeys the derived ceiling
--- and can never be charged twice.
+-- nothing. The span goes through the same consume path as any other, so it
+-- obeys the derived ceiling and can never be charged twice.
 local function chargeFragmentTail(manager, character, fragment)
     if fragment == nil then return end
 
@@ -349,7 +356,7 @@ local function chargeFragmentTail(manager, character, fragment)
 
     local charged = false
     for _, direction in ipairs(DIRECTIONS) do
-        if definition.loadRate[direction] ~= nil
+        if definition.loadPerRepeat[direction] ~= nil
                 and fragment.accepted[direction] > 0 then
             charged = true
         end
@@ -365,16 +372,13 @@ local function chargeFragmentTail(manager, character, fragment)
     local state = PPO.ExerciseState.get(character)
     if state == nil then return end
 
-    local stimulus = {}
     for _, direction in ipairs(DIRECTIONS) do
-        local rate = definition.loadRate[direction]
-        if rate ~= nil and fragment.accepted[direction] > 0 then
-            stimulus[direction] = rate * tail
+        if definition.loadPerRepeat[direction] ~= nil
+                and fragment.accepted[direction] > 0 then
             local session = state[direction].session
             session.coveredMinutes = session.coveredMinutes + tail
         end
     end
-    PPO.ExerciseState.applyAcceptedRepeat(character, stimulus)
 end
 
 function TrainingSession.finishFragment(manager, character, allowFinalize)
@@ -412,7 +416,7 @@ function TrainingSession.finishFragment(manager, character, allowFinalize)
             covered = session.coveredMinutes / session.activeTrainingMinutes
         end
         local qualified = PPO.AdaptationMath.reachedThreshold(
-                session.activeTrainingMinutes, minimumMinutes, 0.5)
+                session.workMinutes, minimumMinutes, 0.5)
             and PPO.AdaptationMath.reachedThreshold(
                 covered, minimumCoverage, nil)
         session.qualified = qualified

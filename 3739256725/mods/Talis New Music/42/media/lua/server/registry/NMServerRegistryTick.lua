@@ -51,9 +51,9 @@ local function broadcastSnapshot(entry, op)
     end
 end
 
-local function broadcastUpsertIfChanged(worldRegistry, uuid, entry)
+local function broadcastUpsertIfChanged(worldRegistry, uuid, entry, tickNow)
     if not entry then
-        return
+        return 0
     end
     local function recipients(applyFn)
         local players = getOnlinePlayers and getOnlinePlayers() or nil
@@ -67,13 +67,17 @@ local function broadcastUpsertIfChanged(worldRegistry, uuid, entry)
             end
         end
     end
-    NMServerRegistryBroadcast.broadcastEntry(
+    return NMServerRegistryBroadcast.broadcastEntry(
         worldRegistry,
         tostring(uuid or ""),
         nil,
         entry.stateSnapshot,
         "upsert",
-        recipients
+        recipients,
+        {
+            trigger = "heartbeat",
+            heartbeatTick = tonumber(tickNow) or 0
+        }
     )
 end
 
@@ -122,6 +126,17 @@ local function shouldPurgePortableOwnerGhost(entry, profile)
     end
     local item = NMInventoryHelpers and NMInventoryHelpers.findItemByUuid and NMInventoryHelpers.findItemByUuid(inv, uuid) or nil
     return item == nil
+end
+
+function NMServerRegistryTick.hasWorldSources()
+    local worldRegistry = NMServerRegistryState and NMServerRegistryState.worldRegistry or nil
+    if type(worldRegistry) ~= "table" then
+        return false
+    end
+    for _ in pairs(worldRegistry) do
+        return true
+    end
+    return false
 end
 
 function NMServerRegistryTick.onTick()
@@ -191,7 +206,7 @@ function NMServerRegistryTick.onTick()
 
             if NMServerRegistryState.worldRegistry[uuid] ~= nil then
                 active[uuid] = true
-                broadcastUpsertIfChanged(NMServerRegistryState.worldRegistry, uuid, entry)
+                broadcastUpsertIfChanged(NMServerRegistryState.worldRegistry, uuid, entry, tickNow)
             end
         end
     end

@@ -34,6 +34,51 @@ local function GetSurfaceOffset (x, y, z)
 end
 
 -- objects
+function BanditBasePlacements.Tent(x, y, z)
+    local sprites = {
+        ["green"] = {
+            {x = 0, y = 0, z = 0, sprite = "camping_04_99"},
+            {x = 1, y = 0, z = 0, sprite = "camping_04_103"},
+            {x = 0, y = 1, z = 0, sprite = "camping_04_98"},
+            {x = 1, y = 1, z = 0, sprite = "camping_04_102"},
+            {x = 0, y = 2, z = 0, sprite = "camping_04_97"},
+            {x = 1, y = 2, z = 0, sprite = "camping_04_101"},
+            {x = 0, y = 3, z = 0, sprite = "camping_04_96"},
+            {x = 1, y = 3, z = 0, sprite = "camping_04_100"},
+        },
+        ["blue"] = {
+            {x = 0, y = 0, z = 0, sprite = "camping_04_35"},
+            {x = 1, y = 0, z = 0, sprite = "camping_04_39"},
+            {x = 0, y = 1, z = 0, sprite = "camping_04_34"},
+            {x = 1, y = 1, z = 0, sprite = "camping_04_38"},
+            {x = 0, y = 2, z = 0, sprite = "camping_04_33"},
+            {x = 1, y = 2, z = 0, sprite = "camping_04_37"},
+            {x = 0, y = 3, z = 0, sprite = "camping_04_32"},
+            {x = 1, y = 3, z = 0, sprite = "camping_04_36"},
+        },
+        ["yellow"] = {
+            {x = 0, y = 0, z = 0, sprite = "camping_04_3"},
+            {x = 1, y = 0, z = 0, sprite = "camping_04_7"},
+            {x = 0, y = 1, z = 0, sprite = "camping_04_2"},
+            {x = 1, y = 1, z = 0, sprite = "camping_04_6"},
+            {x = 0, y = 2, z = 0, sprite = "camping_04_1"},
+            {x = 1, y = 2, z = 0, sprite = "camping_04_5"},
+            {x = 0, y = 3, z = 0, sprite = "camping_04_0"},
+            {x = 1, y = 3, z = 0, sprite = "camping_04_4"},
+        }
+    }
+
+    local color = BanditUtils.Choice({"green", "blue", "yellow"})
+
+    for _, s in pairs(sprites[color]) do
+        local square = GetOrCreateSquare(x + s.x, y + s.y, z + s.z)
+        if square then
+            local obj = IsoObject.new(square, s.sprite, "")
+            square:AddSpecialObject(obj)
+            obj:transmitCompleteItemToClients()
+        end
+    end
+end
 
 function BanditBasePlacements.Matress(x, y, z)
 
@@ -243,8 +288,11 @@ function BanditBasePlacements.WaterContainer (sprite, x, y, z, items)
     if not square then return end
 
     obj = IsoThumpable.new(cell, square, sprite, false, {})
-    obj:setWaterAmount(100+ZombRand(260))
-    obj:setTaintedWater(true)
+    square:AddSpecialObject(obj)
+    if obj:getFluidContainer() then 
+        obj:addFluid(FluidType.TaintedWater, 100 + ZombRand(260)) 
+    end
+
     square:AddSpecialObject(obj)
 end
 
@@ -312,7 +360,12 @@ function BanditBasePlacements.Blood (x, y, z, q)
     for i=1, q do
         local bx = x + ZombRandFloat(0.1, 0.9)
         local by = y + ZombRandFloat(0.1, 0.9)
-        square:getChunk():addBloodSplat(bx, by, surfaceOffset, ZombRand(20))
+
+        local chunk = square:getChunk()
+        if chunk then 
+            chunk:addBloodSplat(bx, by, surfaceOffset, ZombRand(20))
+        end
+
         -- square:DoSplat
     end
 end
