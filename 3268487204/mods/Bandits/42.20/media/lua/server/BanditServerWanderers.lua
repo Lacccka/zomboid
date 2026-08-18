@@ -9,6 +9,12 @@ BanditServer.Wanderers.destinations = {
         z = 0
     },
     {
+        name = "March Ridge Bunker",
+        x = 9923, 
+        y = 12624,
+        z = 0
+    },
+    {
         name = "March Ridge Center Gas Station",
         x = 10144,
         y = 12802,
@@ -147,6 +153,12 @@ BanditServer.Wanderers.destinations = {
         z = 0
     },
     {
+        name = "Fallas Church",
+        x = 7220, 
+        y = 8536,
+        z = 0
+    },
+    {
         name = "Rosewood Police",
         x = 8071,
         y = 11727,
@@ -177,6 +189,12 @@ BanditServer.Wanderers.destinations = {
         z = 0
     },
     {
+        name = "Rosewood Prison",
+        x = 7666, 
+        y = 11793,
+        z = 0
+    },
+    {
         name = "Echo Creek Center",
         x = 3579,
         y = 10913,
@@ -188,7 +206,90 @@ BanditServer.Wanderers.destinations = {
         y = 10922,
         z = 0
     },
-
+    {
+        name = "Ekron Industrial Area",
+        x = 1917,
+        y = 10773,
+        z = 0
+    },
+    {
+        name = "Ekron Community College",
+        x = 790,  
+        y = 9835,
+        z = 0
+    },
+    {
+        name = "Sanatorium",
+        x = 4065, 
+        y = 6522,
+        z = 0
+    },
+    {
+        name = "Coalfield",
+        x = 3455,
+        y = 8194,
+        z = 0
+    },
+    {
+        name = "Louisville Border Camp",
+        x = 12512, 
+        y = 4267,
+        z = 0
+    },
+    {
+        name = "Crossroads Mall",
+        x = 13943, 
+        y = 5830,
+        z = 0
+    },
+    {
+        name = "Irvington Speedway",
+        x = 911, 
+        y = 13043,
+        z = 0
+    },
+    {
+        name = "Irvington Town Hall",
+        x = 2457, 
+        y = 14078,
+        z = 0
+    },
+    {
+        name = "Irvington Gun Club",
+        x = 1856, 
+        y = 14164,
+        z = 0
+    },
+    {
+        name = "Brandenburg Mansion",
+        x = 1264, 
+        y = 7381,
+        z = 0
+    },
+    {
+        name = "Brandenburg P.S. Delilah",
+        x = 2046, 
+        y = 5688,
+        z = 0
+    },
+    {
+        name = "Brandenburg Community Center",
+        x = 1848, 
+        y = 5943,
+        z = 0
+    },
+    {
+        name = "Brandenburg Airfield",
+        x = 941,
+        y = 6115,
+        z = 0
+    },
+    {
+        name = "Military Research Facility",
+        x = 5558,  
+        y = 12480,
+        z = 0
+    }
 }
 
 BanditServer.Wanderers.speed = 4
