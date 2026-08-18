@@ -7,6 +7,7 @@ on:
     paths:
       - '3403870858/mods/Lifestyle/common/media/lua/shared/Translate/EN/**'
       - '3403870858/mods/Lifestyle/common/media/lua/client/Helper/HSMng.lua'
+      - '3403870858/mods/Lifestyle/common/media/lua/client/XpSystem/ISUI/LSSOSkills.lua'
       - '3403870858/mods/Lifestyle/common/media/perks.txt'
       - 'LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/perks.txt'
       - 'LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/client/zzz_LCC_LifestyleYogaProgress.lua'
@@ -18,6 +19,7 @@ on:
     paths:
       - '3403870858/mods/Lifestyle/common/media/lua/shared/Translate/EN/**'
       - '3403870858/mods/Lifestyle/common/media/lua/client/Helper/HSMng.lua'
+      - '3403870858/mods/Lifestyle/common/media/lua/client/XpSystem/ISUI/LSSOSkills.lua'
       - '3403870858/mods/Lifestyle/common/media/perks.txt'
       - 'LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/perks.txt'
       - 'LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/client/zzz_LCC_LifestyleYogaProgress.lua'
