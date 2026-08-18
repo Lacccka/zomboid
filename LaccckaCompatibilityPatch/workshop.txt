@@ -1,6 +1,6 @@
 version=1
 id=3782987959
 title=Lacccka B42.20 Compatibility Patch
-description=Compatibility fixes for a Project Zomboid Build 42.20 multiplayer mod set, including Russian translation for Bandits.
+description=Cross-platform compatibility fixes for Project Zomboid Build 42.20 multiplayer on Windows and Linux, including Bandits dedicated-server fixes and Russian localization. Linux Bandits AnimSets support uses the documented server preflight launcher from the repository.
 tags=Build 42;Multiplayer
 visibility=public
