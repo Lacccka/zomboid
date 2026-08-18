@@ -1,0 +1,4 @@
+LCC_RU = {
+    LCC_YogaProgress = "Йога: уровень %1 <LINE> Опыт: %2 / %3",
+    LCC_YogaProgress_Max = "Йога: уровень %1 <LINE> Мастерство достигнуто",
+}
