@@ -38,6 +38,7 @@ local function installBathFix()
 
     Guard.install {
         id = FEATURE,
+        reinstall = true,
         validate = function()
             if type(BathTubFunctions) ~= "table" or type(BathTubFunctions.walkToFront) ~= "function" then
                 return false, "BathTubFunctions.walkToFront is unavailable"

@@ -108,7 +108,7 @@ function Guard.install(spec)
     local id = tostring(spec.id or "unknown")
     local state = getState(id)
 
-    if state.installed then
+    if state.installed and not spec.reinstall then
         return true
     end
     if state.enabled == false then

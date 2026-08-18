@@ -58,7 +58,6 @@ def extract_block(text: str, block_header: str) -> str:
 
 
 def parse_source_yoga_thresholds(text: str) -> list[int]:
-    # HSMng maps current hidden level 0..9 to XP required for the next level.
     match = re.search(r"local\s+function\s+getNewValues\s*\([^)]*\)(.*?)return\s*\{level,0,t\[level\]\}", text, re.S)
     if not match:
         fail("Lifestyle getNewValues() table was not found")
@@ -131,14 +130,9 @@ def main() -> int:
         if not re.search(r"\bpassive\s*=\s*false\s*,", yoga_block):
             fail("Yoga proxy must be non-passive to stay with Lifestyle skills")
 
-        # Upstream Lifestyle must still not have a normal Yoga perk; if it gains
-        # one, our proxy would duplicate it and should be removed/reworked.
         if re.search(r"(?m)^\s*perk\s+Yoga\s*$", source_perks):
             fail("Lifestyle now defines a normal Yoga perk; compatibility proxy would duplicate it")
 
-        # The proxy wraps Lifestyle's own Skills-panel override, so changes to
-        # that upstream implementation are relevant even if HiddenSkills itself
-        # stays stable.
         upstream_skills_contract = (
             "ISCharacterInfo.loadPerk = function",
             "PerkFactory.PerkList",
@@ -150,9 +144,12 @@ def main() -> int:
         if missing_upstream_ui:
             fail(f"Lifestyle Skills-panel contract changed: {missing_upstream_ui}")
 
+        # The runtime proxy is now intentionally routed through LCCGuard. Check
+        # capabilities rather than requiring the old unguarded source spelling.
         required_ui_contract = (
-            'require "Helper/HSMng"',
-            'HiddenSkills.getSkill, character, "Yoga"',
+            'Guard.safeRequire(FEATURE, "Helper/HSMng")',
+            'HiddenSkills.getSkill',
+            'Guard.protect(',
             'Perks.Yoga',
             'function LCCYogaSkillProgressBar:onMouseUp',
             'ISSkillProgressBar.new = function',
@@ -186,6 +183,7 @@ def main() -> int:
     print(f"Hidden Yoga thresholds: {source_xp}")
     print("Storage: LSHiddenSkills.Yoga remains authoritative")
     print("UI: non-passive proxy under Lifestyle, click leveling blocked")
+    print("Runtime: Yoga compatibility paths are isolated by LCCGuard")
     print("Upstream: Lifestyle Skills-panel override contract is still compatible")
     print("RU: skill, tutorial, tooltip and wellness menu keys present")
     return 0
