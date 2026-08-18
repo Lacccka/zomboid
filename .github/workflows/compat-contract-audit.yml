@@ -17,10 +17,13 @@ on:
       - ".github/workflows/compat-contract-audit.yml"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Verify compatibility contracts
         run: python3 tools/audit_compat_contracts.py
