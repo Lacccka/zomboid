@@ -54,11 +54,13 @@ SKIP_FILES = {"language.txt"}
 
 # Some ContextMenu entries are canonical song titles. They are intentionally
 # left in their original spelling instead of being translated/transliterated.
-# Missing RU entries for these keys are therefore valid fallbacks, not gaps in
-# the Russian UI localization.
+# Lifestyle currently exposes them through both numbered media IDs and the
+# dedicated duet-song menu. Missing RU entries for these keys are therefore
+# valid fallbacks, not gaps in the Russian UI localization.
 IGNORED_KEY_PATTERNS: dict[str, tuple[re.Pattern[str], ...]] = {
     "ContextMenu": (
         re.compile(r"^ContextMenu_\d{2}_\d{2}_[A-Z0-9]+$"),
+        re.compile(r"^ContextMenu_Duet_.+$"),
     ),
 }
 
