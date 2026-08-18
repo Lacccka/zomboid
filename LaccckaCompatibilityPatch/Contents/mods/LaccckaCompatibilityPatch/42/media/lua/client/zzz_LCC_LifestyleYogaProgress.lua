@@ -6,6 +6,7 @@
 -- Lifestyle's own progression logic are not migrated or duplicated.
 
 require "XpSystem/ISUI/ISSkillProgressBar"
+require "XpSystem/ISUI/ISCharacterInfo"
 require "Helper/HSMng"
 
 if LCC_LifestyleYogaProgressInstalled then return end
@@ -21,6 +22,7 @@ local FILLED_G = 0.89
 local FILLED_B = 0.38
 
 local originalNew = ISSkillProgressBar.new
+local originalLoadPerk = ISCharacterInfo and ISCharacterInfo.loadPerk
 
 LCCYogaSkillProgressBar = ISSkillProgressBar:derive("LCCYogaSkillProgressBar")
 
@@ -60,12 +62,23 @@ local function getYogaDescription()
         or lccGetTextOrNull("Tooltip_Yoga_Option")
 end
 
+local function isYogaEnabled()
+    -- Lifestyle treats Yoga as part of the Meditation/Yoga feature divider.
+    -- If the option is unavailable (older/newer Lifestyle build), keep the
+    -- row visible rather than guessing that the feature is disabled.
+    if SandboxVars and SandboxVars.Text and SandboxVars.Text.DividerMeditationNew ~= nil then
+        return SandboxVars.Text.DividerMeditationNew == true
+    end
+    return true
+end
+
 function LCCYogaSkillProgressBar:syncHiddenYoga()
     local skill = HiddenSkills.getSkill(self.char, "Yoga")
     if not skill then
         self.level = 0
         self.xp = 0
         self.xpForLvl = 100
+        self._lccYogaInitialized = true
         return
     end
 
@@ -81,10 +94,13 @@ function LCCYogaSkillProgressBar:syncHiddenYoga()
         self.xp = self.xpForLvl
     end
 
-    if oldLevel ~= self.level and self.parent then
+    -- Do not play a fake level-up animation every time the character panel is
+    -- reconstructed. Only report a level change after this proxy was synced once.
+    if self._lccYogaInitialized and oldLevel ~= self.level and self.parent then
         self.parent.lastLeveledUpPerk = self.perk
         self.parent.lastLevelUpTime = 1
     end
+    self._lccYogaInitialized = true
 end
 
 function LCCYogaSkillProgressBar:renderPerkRect()
@@ -157,6 +173,7 @@ local function newYogaProgressBar(x, y, width, height, playerNum, perk, parent)
     local o = originalNew(ISSkillProgressBar, x, y, width, height, playerNum, perk, parent)
     setmetatable(o, LCCYogaSkillProgressBar)
     LCCYogaSkillProgressBar.__index = LCCYogaSkillProgressBar
+    o._lccYogaInitialized = false
     o:syncHiddenYoga()
     return o
 end
@@ -166,6 +183,27 @@ ISSkillProgressBar.new = function(self, x, y, width, height, playerNum, perk, pa
         return newYogaProgressBar(x, y, width, height, playerNum, perk, parent)
     end
     return originalNew(self, x, y, width, height, playerNum, perk, parent)
+end
+
+-- Lifestyle hides Meditation when its Meditation/Yoga feature divider is off.
+-- Its original list predates the hidden Yoga skill becoming visible, so mirror
+-- the same rule for our proxy row.
+if originalLoadPerk then
+    ISCharacterInfo.loadPerk = function(self)
+        local perks = originalLoadPerk(self)
+        if isYogaEnabled() then return perks end
+
+        for _, children in pairs(perks) do
+            if type(children) == "table" then
+                for i = #children, 1, -1 do
+                    if isYogaPerk(children[i]) then
+                        table.remove(children, i)
+                    end
+                end
+            end
+        end
+        return perks
+    end
 end
 
 print("[LaccckaCompatibilityPatch] Lifestyle Yoga progress UI installed")
