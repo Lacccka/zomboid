@@ -1,0 +1,36 @@
+name: Lifestyle translation audit
+
+on:
+  push:
+    branches:
+      - agent/b42-20-compatibility-patch
+    paths:
+      - '3403870858/mods/Lifestyle/common/media/lua/shared/Translate/EN/**'
+      - 'LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/shared/Translate/RU/**'
+      - 'tools/audit_lifestyle_translation.py'
+      - '.github/workflows/lifestyle-translation-audit.yml'
+  pull_request:
+    paths:
+      - '3403870858/mods/Lifestyle/common/media/lua/shared/Translate/EN/**'
+      - 'LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/shared/Translate/RU/**'
+      - 'tools/audit_lifestyle_translation.py'
+      - '.github/workflows/lifestyle-translation-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Audit Lifestyle Russian translation
+        run: python3 tools/audit_lifestyle_translation.py
