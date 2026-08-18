@@ -1,4 +1,4 @@
-name: Lifestyle translation audit
+name: Lifestyle translation and Yoga proxy audit
 
 on:
   push:
@@ -6,14 +6,24 @@ on:
       - agent/b42-20-compatibility-patch
     paths:
       - '3403870858/mods/Lifestyle/common/media/lua/shared/Translate/EN/**'
+      - '3403870858/mods/Lifestyle/common/media/lua/client/Helper/HSMng.lua'
+      - '3403870858/mods/Lifestyle/common/media/perks.txt'
+      - 'LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/perks.txt'
+      - 'LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/client/zzz_LCC_LifestyleYogaProgress.lua'
       - 'LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/shared/Translate/RU/**'
       - 'tools/audit_lifestyle_translation.py'
+      - 'tools/audit_lifestyle_yoga_proxy.py'
       - '.github/workflows/lifestyle-translation-audit.yml'
   pull_request:
     paths:
       - '3403870858/mods/Lifestyle/common/media/lua/shared/Translate/EN/**'
+      - '3403870858/mods/Lifestyle/common/media/lua/client/Helper/HSMng.lua'
+      - '3403870858/mods/Lifestyle/common/media/perks.txt'
+      - 'LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/perks.txt'
+      - 'LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/client/zzz_LCC_LifestyleYogaProgress.lua'
       - 'LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/shared/Translate/RU/**'
       - 'tools/audit_lifestyle_translation.py'
+      - 'tools/audit_lifestyle_yoga_proxy.py'
       - '.github/workflows/lifestyle-translation-audit.yml'
   workflow_dispatch:
 
@@ -32,8 +42,8 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Compile audit script
-        run: python3 -m py_compile tools/audit_lifestyle_translation.py
+      - name: Compile audit scripts
+        run: python3 -m py_compile tools/audit_lifestyle_translation.py tools/audit_lifestyle_yoga_proxy.py
 
       - name: Validate translation JSON syntax
         shell: bash
@@ -48,3 +58,6 @@ jobs:
 
       - name: Audit Lifestyle Russian translation
         run: python3 tools/audit_lifestyle_translation.py
+
+      - name: Audit Lifestyle Yoga proxy contract
+        run: python3 tools/audit_lifestyle_yoga_proxy.py
