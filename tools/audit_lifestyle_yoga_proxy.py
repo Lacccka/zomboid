@@ -19,6 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_HS = ROOT / "3403870858/mods/Lifestyle/common/media/lua/client/Helper/HSMng.lua"
+SOURCE_SKILLS_UI = ROOT / "3403870858/mods/Lifestyle/common/media/lua/client/XpSystem/ISUI/LSSOSkills.lua"
 SOURCE_PERKS = ROOT / "3403870858/mods/Lifestyle/common/media/perks.txt"
 PATCH_PERKS = ROOT / "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/perks.txt"
 PATCH_UI = ROOT / "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/client/zzz_LCC_LifestyleYogaProgress.lua"
@@ -107,6 +108,7 @@ def has_translation_key(category: str, key: str) -> bool:
 def main() -> int:
     try:
         source_hs = read(SOURCE_HS)
+        source_skills_ui = read(SOURCE_SKILLS_UI)
         source_perks = read(SOURCE_PERKS)
         patch_perks = read(PATCH_PERKS)
         patch_ui = read(PATCH_UI)
@@ -133,6 +135,20 @@ def main() -> int:
         # one, our proxy would duplicate it and should be removed/reworked.
         if re.search(r"(?m)^\s*perk\s+Yoga\s*$", source_perks):
             fail("Lifestyle now defines a normal Yoga perk; compatibility proxy would duplicate it")
+
+        # The proxy wraps Lifestyle's own Skills-panel override, so changes to
+        # that upstream implementation are relevant even if HiddenSkills itself
+        # stays stable.
+        upstream_skills_contract = (
+            "ISCharacterInfo.loadPerk = function",
+            "PerkFactory.PerkList",
+            "perk:getParent()",
+            "DividerMeditationNew",
+            'skill="Meditation"',
+        )
+        missing_upstream_ui = [needle for needle in upstream_skills_contract if needle not in source_skills_ui]
+        if missing_upstream_ui:
+            fail(f"Lifestyle Skills-panel contract changed: {missing_upstream_ui}")
 
         required_ui_contract = (
             'require "Helper/HSMng"',
@@ -170,6 +186,7 @@ def main() -> int:
     print(f"Hidden Yoga thresholds: {source_xp}")
     print("Storage: LSHiddenSkills.Yoga remains authoritative")
     print("UI: non-passive proxy under Lifestyle, click leveling blocked")
+    print("Upstream: Lifestyle Skills-panel override contract is still compatible")
     print("RU: skill, tutorial, tooltip and wellness menu keys present")
     return 0
 
