@@ -33,7 +33,8 @@ permissions:
   contents: read
 
 jobs:
-  audit:
+  translation:
+    name: Lifestyle Russian translation
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -44,8 +45,8 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Compile audit scripts
-        run: python3 -m py_compile tools/audit_lifestyle_translation.py tools/audit_lifestyle_yoga_proxy.py
+      - name: Compile translation audit
+        run: python3 -m py_compile tools/audit_lifestyle_translation.py
 
       - name: Validate translation JSON syntax
         shell: bash
@@ -60,6 +61,21 @@ jobs:
 
       - name: Audit Lifestyle Russian translation
         run: python3 tools/audit_lifestyle_translation.py
+
+  yoga:
+    name: Lifestyle Yoga proxy contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile Yoga proxy audit
+        run: python3 -m py_compile tools/audit_lifestyle_yoga_proxy.py
 
       - name: Audit Lifestyle Yoga proxy contract
         run: python3 tools/audit_lifestyle_yoga_proxy.py
