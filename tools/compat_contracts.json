@@ -35,6 +35,42 @@
         "removeZombieFromCaches(id)",
         "Events.OnZombieUpdate.Add(onZombieUpdate)"
       ]
+    },
+    {
+      "id": "bandits.water-farm-action",
+      "kind": "full-override",
+      "upstream_path": "3268487204/mods/Bandits/42.20/media/lua/shared/ZombieActions/ZAWaterFarm.lua",
+      "patch_path": "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/shared/ZombieActions/ZAWaterFarm.lua",
+      "expected_upstream_blob_sha": "457c6d3ce6c9ae79bb86eb0697f06813625ca39e",
+      "required_upstream_fragments": [
+        "ZombieActions.WaterFarm.onStart",
+        "ZombieActions.WaterFarm.onWorking",
+        "ZombieActions.WaterFarm.onComplete",
+        "CFarmingSystem.instance:sendCommand"
+      ],
+      "required_patch_fragments": [
+        "local FEATURE = \"bandits.water-farm-action\"",
+        "Guard.protect(FEATURE, phase, callback, zombie, task)",
+        "ZombieActions.WaterFarm.onComplete"
+      ]
+    },
+    {
+      "id": "bandits.stomp-plant-action",
+      "kind": "full-override",
+      "upstream_path": "3268487204/mods/Bandits/42.20/media/lua/shared/ZombieActions/ZAStompPlant.lua",
+      "patch_path": "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/shared/ZombieActions/ZAStompPlant.lua",
+      "expected_upstream_blob_sha": "bbeb2887b3ec22307a44b824ec5f1563f3e12a75",
+      "required_upstream_fragments": [
+        "ZombieActions.StompPlant.onStart",
+        "ZombieActions.StompPlant.onWorking",
+        "ZombieActions.StompPlant.onComplete",
+        "CFarmingSystem.instance:sendCommand"
+      ],
+      "required_patch_fragments": [
+        "local FEATURE = \"bandits.stomp-plant-action\"",
+        "Guard.protect(FEATURE, phase, callback, zombie, task)",
+        "ZombieActions.StompPlant.onComplete"
+      ]
     }
   ]
 }

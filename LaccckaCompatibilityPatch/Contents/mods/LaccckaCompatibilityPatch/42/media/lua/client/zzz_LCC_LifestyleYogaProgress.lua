@@ -5,223 +5,278 @@
 -- The perk declared by this patch is only a UI proxy, so existing saves and
 -- Lifestyle's own progression logic are not migrated or duplicated.
 
-require "XpSystem/ISUI/ISSkillProgressBar"
-require "XpSystem/ISUI/ISCharacterInfo"
-require "Helper/HSMng"
+local Guard = require "LCC/Guard"
+local FEATURE = "lifestyle.yoga-progress-ui"
 
+Guard.safeRequire(FEATURE, "XpSystem/ISUI/ISSkillProgressBar")
+Guard.safeRequire(FEATURE, "XpSystem/ISUI/ISCharacterInfo")
+Guard.safeRequire(FEATURE, "Helper/HSMng")
+if not Guard.isEnabled(FEATURE) then return end
 if LCC_LifestyleYogaProgressInstalled then return end
-if not ISSkillProgressBar or not HiddenSkills then return end
-LCC_LifestyleYogaProgressInstalled = true
 
-local FONT_HGT_SMALL = getTextManager():getFontHeight(UIFont.Small)
-local SKILL_POINT_HGT = math.floor((FONT_HGT_SMALL + 6) / 2)
-local SKILL_POINT_SPACING = getCore():getOptionFontSizeReal()
-
-local FILLED_R = 1.00
-local FILLED_G = 0.89
-local FILLED_B = 0.38
-
-local originalNew = ISSkillProgressBar.new
-local originalLoadPerk = ISCharacterInfo and ISCharacterInfo.loadPerk
-local yogaReadWarningShown = false
-
-LCCYogaSkillProgressBar = ISSkillProgressBar:derive("LCCYogaSkillProgressBar")
-
-local function isYogaPerk(perk)
-    if not perk then return false end
-    if Perks and Perks.Yoga and perk.getType and perk:getType() == Perks.Yoga then return true end
-    if perk.getName then
-        local name = perk:getName()
-        return name == "Yoga" or name == "Йога"
-    end
-    return false
-end
-
-local function clamp(value, minValue, maxValue)
-    if value < minValue then return minValue end
-    if value > maxValue then return maxValue end
-    return value
-end
-
-local function lccGetTextOrNull(key)
-    if getTextOrNull then
-        return getTextOrNull(key)
-    end
-    local value = getText(key)
-    if value == key then return nil end
-    return value
-end
-
-local function getYogaName()
-    return lccGetTextOrNull("IGUI_perks_Yoga")
-        or lccGetTextOrNull("UI_LSHS_Yoga")
-        or "Yoga"
-end
-
-local function getYogaDescription()
-    return lccGetTextOrNull("IGUI_perks_Yoga_Description")
-        or lccGetTextOrNull("Tooltip_Yoga_Option")
-end
-
-local function isYogaEnabled()
-    -- Lifestyle treats Yoga as part of the Meditation/Yoga feature divider.
-    -- If the option is unavailable (older/newer Lifestyle build), keep the
-    -- row visible rather than guessing that the feature is disabled.
-    if SandboxVars and SandboxVars.Text and SandboxVars.Text.DividerMeditationNew ~= nil then
-        return SandboxVars.Text.DividerMeditationNew == true
-    end
-    return true
-end
-
-local function getHiddenYogaSkill(character)
-    if not character or not HiddenSkills or not HiddenSkills.getSkill then
-        return nil
-    end
-
-    local ok, skill = pcall(HiddenSkills.getSkill, character, "Yoga")
-    if ok then
-        return skill
-    end
-
-    if not yogaReadWarningShown then
-        yogaReadWarningShown = true
-        print("[LaccckaCompatibilityPatch] WARNING: failed to read Lifestyle HiddenSkills.Yoga: " .. tostring(skill))
-    end
-    return nil
-end
-
-function LCCYogaSkillProgressBar:syncHiddenYoga()
-    local skill = getHiddenYogaSkill(self.char)
-    if not skill then
-        self.level = 0
-        self.xp = 0
-        self.xpForLvl = 100
-        self._lccYogaInitialized = true
-        return
-    end
-
-    local oldLevel = self.level or 0
-    self.level = clamp(math.floor(tonumber(skill[1]) or 0), 0, 10)
-    self.xp = math.max(0, tonumber(skill[2]) or 0)
-    self.xpForLvl = math.max(1, tonumber(skill[3]) or 100)
-
-    if self.level >= 10 then
-        self.xp = 0
-        self.xpForLvl = 1
-    elseif self.xp > self.xpForLvl then
-        self.xp = self.xpForLvl
-    end
-
-    -- Do not play a fake level-up animation every time the character panel is
-    -- reconstructed. Only report a level change after this proxy was synced once.
-    if self._lccYogaInitialized and oldLevel ~= self.level and self.parent then
-        self.parent.lastLeveledUpPerk = self.perk
-        self.parent.lastLevelUpTime = 1
-    end
-    self._lccYogaInitialized = true
-end
-
-function LCCYogaSkillProgressBar:renderPerkRect()
-    self:syncHiddenYoga()
-
-    local x = 0
-    local y = 0
-
-    -- Completed levels.
-    for _ = 0, self.level - 1 do
-        self:drawTextureScaled(self.SkillUnitFilled, x, y, SKILL_POINT_HGT, SKILL_POINT_HGT, 1, FILLED_R, FILLED_G, FILLED_B)
-        self:drawTextureScaled(self.SkillUnitBorder, x, y, SKILL_POINT_HGT, SKILL_POINT_HGT, 1, FILLED_R, FILLED_G, FILLED_B)
-        x = x + SKILL_POINT_HGT + SKILL_POINT_SPACING
-    end
-
-    -- Current level progress.
-    if self.level < 10 then
-        local percentProgress = clamp((self.xp / self.xpForLvl) * 100, 0, 100)
-        local sliceWidth = SKILL_POINT_HGT / 100
-
-        self:drawTextureScaled(self.SkillUnitBorder, x, y, SKILL_POINT_HGT, SKILL_POINT_HGT, 1, 0.4, 0.4, 0.4)
-        if percentProgress > 0 then
-            self:drawTextureScaled(self.SkillUnitFilled, x, y, sliceWidth * percentProgress, SKILL_POINT_HGT, 1, 0.4, 0.4, 0.4)
+Guard.install {
+    id = FEATURE,
+    validate = function()
+        if type(ISSkillProgressBar) ~= "table" or type(ISSkillProgressBar.new) ~= "function" then
+            return false, "ISSkillProgressBar.new is unavailable"
         end
-        x = x + SKILL_POINT_HGT + SKILL_POINT_SPACING
-    end
-
-    -- Locked levels.
-    for _ = self.level + 1, 9 do
-        self:drawTextureScaled(self.SkillUnitBorder, x, y, SKILL_POINT_HGT, SKILL_POINT_HGT, 1, 0.2, 0.2, 0.2)
-        x = x + SKILL_POINT_HGT + SKILL_POINT_SPACING
-    end
-end
-
-function LCCYogaSkillProgressBar:updateTooltip(lvlSelected)
-    self:syncHiddenYoga()
-
-    lvlSelected = clamp(math.floor(tonumber(lvlSelected) or self.level), 0, 9)
-    self.message = getYogaName() .. " " .. xpSystemText.lvl .. " " .. tostring(lvlSelected + 1)
-
-    if lvlSelected < self.level then
-        self.message = self.message .. " <LINE> " .. xpSystemText.unlocked
-    elseif lvlSelected == self.level then
-        if self.level >= 10 then
-            self.message = self.message .. " <LINE> " .. xpSystemText.unlocked
-        else
-            self.message = self.message .. " <LINE> " .. getText("IGUI_XP_tooltipxp", round(self.xp, 2), self.xpForLvl)
+        if type(ISSkillProgressBar.derive) ~= "function" then
+            return false, "ISSkillProgressBar.derive is unavailable"
         end
-    else
-        self.message = self.message .. " <LINE> " .. xpSystemText.locked
-    end
+        if type(HiddenSkills) ~= "table" or type(HiddenSkills.getSkill) ~= "function" then
+            return false, "Lifestyle HiddenSkills.getSkill is unavailable"
+        end
+        return true
+    end,
+    install = function()
+        local FONT_HGT_SMALL = getTextManager():getFontHeight(UIFont.Small)
+        local SKILL_POINT_HGT = math.floor((FONT_HGT_SMALL + 6) / 2)
+        local SKILL_POINT_SPACING = getCore():getOptionFontSizeReal()
 
-    local description = getYogaDescription()
-    if description and description ~= "" then
-        self.message = self.message .. " <LINE><LINE> " .. description
-    end
+        local FILLED_R = 1.00
+        local FILLED_G = 0.89
+        local FILLED_B = 0.38
 
-    local levelDescription = lccGetTextOrNull("IGUI_perks_Yoga_Description" .. tostring(lvlSelected + 1))
-    if levelDescription and levelDescription ~= "" then
-        self.message = self.message .. " <LINE><LINE> " .. levelDescription
-    end
-end
+        local originalNew = ISSkillProgressBar.new
+        local originalRenderPerkRect = ISSkillProgressBar.renderPerkRect
+        local originalUpdateTooltip = ISSkillProgressBar.updateTooltip
+        local originalLoadPerk = ISCharacterInfo and ISCharacterInfo.loadPerk
 
--- Hidden Yoga levels automatically; clicking the proxy bar must never call
--- LevelPerk() on the UI-only Perks.Yoga entry.
-function LCCYogaSkillProgressBar:onMouseUp(x, y)
-end
+        LCCYogaSkillProgressBar = ISSkillProgressBar:derive("LCCYogaSkillProgressBar")
 
-local function newYogaProgressBar(x, y, width, height, playerNum, perk, parent)
-    local o = originalNew(ISSkillProgressBar, x, y, width, height, playerNum, perk, parent)
-    setmetatable(o, LCCYogaSkillProgressBar)
-    LCCYogaSkillProgressBar.__index = LCCYogaSkillProgressBar
-    o._lccYogaInitialized = false
-    o:syncHiddenYoga()
-    return o
-end
+        local function isYogaPerk(perk)
+            if not perk then return false end
+            if Perks and Perks.Yoga and perk.getType and perk:getType() == Perks.Yoga then return true end
+            if perk.getName then
+                local name = perk:getName()
+                return name == "Yoga" or name == "Йога"
+            end
+            return false
+        end
 
-ISSkillProgressBar.new = function(self, x, y, width, height, playerNum, perk, parent)
-    if isYogaPerk(perk) then
-        return newYogaProgressBar(x, y, width, height, playerNum, perk, parent)
-    end
-    return originalNew(self, x, y, width, height, playerNum, perk, parent)
-end
+        local function clamp(value, minValue, maxValue)
+            if value < minValue then return minValue end
+            if value > maxValue then return maxValue end
+            return value
+        end
 
--- Lifestyle hides Meditation when its Meditation/Yoga feature divider is off.
--- Its original list predates the hidden Yoga skill becoming visible, so mirror
--- the same rule for our proxy row.
-if originalLoadPerk then
-    ISCharacterInfo.loadPerk = function(self)
-        local perks = originalLoadPerk(self)
-        if isYogaEnabled() then return perks end
+        local function lccGetTextOrNull(key)
+            if getTextOrNull then
+                return getTextOrNull(key)
+            end
+            local value = getText(key)
+            if value == key then return nil end
+            return value
+        end
 
-        for _, children in pairs(perks) do
-            if type(children) == "table" then
-                for i = #children, 1, -1 do
-                    if isYogaPerk(children[i]) then
-                        table.remove(children, i)
+        local function getYogaName()
+            return lccGetTextOrNull("IGUI_perks_Yoga")
+                or lccGetTextOrNull("UI_LSHS_Yoga")
+                or "Yoga"
+        end
+
+        local function getYogaDescription()
+            return lccGetTextOrNull("IGUI_perks_Yoga_Description")
+                or lccGetTextOrNull("Tooltip_Yoga_Option")
+        end
+
+        local function isYogaEnabled()
+            if SandboxVars and SandboxVars.Text and SandboxVars.Text.DividerMeditationNew ~= nil then
+                return SandboxVars.Text.DividerMeditationNew == true
+            end
+            return true
+        end
+
+        local function getHiddenYogaSkill(character)
+            if not character then return nil end
+            local ok, skill = Guard.protect(
+                FEATURE,
+                "Lifestyle HiddenSkills.getSkill",
+                HiddenSkills.getSkill,
+                character,
+                "Yoga"
+            )
+            if not ok then return nil end
+            return skill
+        end
+
+        local function syncHiddenYoga(self)
+            local skill = getHiddenYogaSkill(self.char)
+            if not skill then
+                self.level = 0
+                self.xp = 0
+                self.xpForLvl = 100
+                self._lccYogaInitialized = true
+                return
+            end
+
+            local oldLevel = self.level or 0
+            self.level = clamp(math.floor(tonumber(skill[1]) or 0), 0, 10)
+            self.xp = math.max(0, tonumber(skill[2]) or 0)
+            self.xpForLvl = math.max(1, tonumber(skill[3]) or 100)
+
+            if self.level >= 10 then
+                self.xp = 0
+                self.xpForLvl = 1
+            elseif self.xp > self.xpForLvl then
+                self.xp = self.xpForLvl
+            end
+
+            if self._lccYogaInitialized and oldLevel ~= self.level and self.parent then
+                self.parent.lastLeveledUpPerk = self.perk
+                self.parent.lastLevelUpTime = 1
+            end
+            self._lccYogaInitialized = true
+        end
+
+        function LCCYogaSkillProgressBar:syncHiddenYoga()
+            if not Guard.isEnabled(FEATURE) then return end
+            Guard.protect(FEATURE, "sync Yoga progress", syncHiddenYoga, self)
+        end
+
+        local function renderYoga(self)
+            syncHiddenYoga(self)
+
+            local x = 0
+            local y = 0
+
+            for _ = 0, self.level - 1 do
+                self:drawTextureScaled(self.SkillUnitFilled, x, y, SKILL_POINT_HGT, SKILL_POINT_HGT, 1, FILLED_R, FILLED_G, FILLED_B)
+                self:drawTextureScaled(self.SkillUnitBorder, x, y, SKILL_POINT_HGT, SKILL_POINT_HGT, 1, FILLED_R, FILLED_G, FILLED_B)
+                x = x + SKILL_POINT_HGT + SKILL_POINT_SPACING
+            end
+
+            if self.level < 10 then
+                local percentProgress = clamp((self.xp / self.xpForLvl) * 100, 0, 100)
+                local sliceWidth = SKILL_POINT_HGT / 100
+
+                self:drawTextureScaled(self.SkillUnitBorder, x, y, SKILL_POINT_HGT, SKILL_POINT_HGT, 1, 0.4, 0.4, 0.4)
+                if percentProgress > 0 then
+                    self:drawTextureScaled(self.SkillUnitFilled, x, y, sliceWidth * percentProgress, SKILL_POINT_HGT, 1, 0.4, 0.4, 0.4)
+                end
+                x = x + SKILL_POINT_HGT + SKILL_POINT_SPACING
+            end
+
+            for _ = self.level + 1, 9 do
+                self:drawTextureScaled(self.SkillUnitBorder, x, y, SKILL_POINT_HGT, SKILL_POINT_HGT, 1, 0.2, 0.2, 0.2)
+                x = x + SKILL_POINT_HGT + SKILL_POINT_SPACING
+            end
+        end
+
+        function LCCYogaSkillProgressBar:renderPerkRect()
+            if Guard.isEnabled(FEATURE) then
+                local ok = Guard.protect(FEATURE, "render Yoga progress", renderYoga, self)
+                if ok then return end
+            end
+            if originalRenderPerkRect then
+                return originalRenderPerkRect(self)
+            end
+        end
+
+        local function updateYogaTooltip(self, lvlSelected)
+            syncHiddenYoga(self)
+
+            lvlSelected = clamp(math.floor(tonumber(lvlSelected) or self.level), 0, 9)
+            self.message = getYogaName() .. " " .. xpSystemText.lvl .. " " .. tostring(lvlSelected + 1)
+
+            if lvlSelected < self.level then
+                self.message = self.message .. " <LINE> " .. xpSystemText.unlocked
+            elseif lvlSelected == self.level then
+                if self.level >= 10 then
+                    self.message = self.message .. " <LINE> " .. xpSystemText.unlocked
+                else
+                    self.message = self.message .. " <LINE> " .. getText("IGUI_XP_tooltipxp", round(self.xp, 2), self.xpForLvl)
+                end
+            else
+                self.message = self.message .. " <LINE> " .. xpSystemText.locked
+            end
+
+            local description = getYogaDescription()
+            if description and description ~= "" then
+                self.message = self.message .. " <LINE><LINE> " .. description
+            end
+
+            local levelDescription = lccGetTextOrNull("IGUI_perks_Yoga_Description" .. tostring(lvlSelected + 1))
+            if levelDescription and levelDescription ~= "" then
+                self.message = self.message .. " <LINE><LINE> " .. levelDescription
+            end
+        end
+
+        function LCCYogaSkillProgressBar:updateTooltip(lvlSelected)
+            if Guard.isEnabled(FEATURE) then
+                local ok = Guard.protect(FEATURE, "update Yoga tooltip", updateYogaTooltip, self, lvlSelected)
+                if ok then return end
+            end
+            if originalUpdateTooltip then
+                return originalUpdateTooltip(self, lvlSelected)
+            end
+        end
+
+        -- Hidden Yoga levels automatically; never call LevelPerk() on the UI proxy.
+        function LCCYogaSkillProgressBar:onMouseUp(x, y)
+        end
+
+        local function newYogaProgressBar(x, y, width, height, playerNum, perk, parent)
+            local o = originalNew(ISSkillProgressBar, x, y, width, height, playerNum, perk, parent)
+            setmetatable(o, LCCYogaSkillProgressBar)
+            LCCYogaSkillProgressBar.__index = LCCYogaSkillProgressBar
+            o._lccYogaInitialized = false
+            syncHiddenYoga(o)
+            return o
+        end
+
+        ISSkillProgressBar.new = function(self, x, y, width, height, playerNum, perk, parent)
+            if Guard.isEnabled(FEATURE) then
+                local identified, yoga = Guard.protect(FEATURE, "identify Yoga perk", isYogaPerk, perk)
+                if identified and yoga then
+                    local ok, progressBar = Guard.protect(
+                        FEATURE,
+                        "create Yoga progress bar",
+                        newYogaProgressBar,
+                        x,
+                        y,
+                        width,
+                        height,
+                        playerNum,
+                        perk,
+                        parent
+                    )
+                    if ok and progressBar and Guard.isEnabled(FEATURE) then
+                        return progressBar
                     end
                 end
             end
+            return originalNew(self, x, y, width, height, playerNum, perk, parent)
         end
-        return perks
-    end
-end
 
-print("[LaccckaCompatibilityPatch] Lifestyle Yoga progress UI installed")
+        if originalLoadPerk then
+            local function filterYogaPerk(perks)
+                if isYogaEnabled() then return perks end
+
+                for _, children in pairs(perks) do
+                    if type(children) == "table" then
+                        for i = #children, 1, -1 do
+                            if isYogaPerk(children[i]) then
+                                table.remove(children, i)
+                            end
+                        end
+                    end
+                end
+                return perks
+            end
+
+            ISCharacterInfo.loadPerk = function(self)
+                -- Original Lifestyle/base behavior is intentionally outside pcall.
+                local perks = originalLoadPerk(self)
+                if not Guard.isEnabled(FEATURE) then return perks end
+
+                local ok, filtered = Guard.protect(FEATURE, "filter Yoga skill row", filterYogaPerk, perks)
+                if ok and filtered then return filtered end
+                return perks
+            end
+        end
+
+        LCC_LifestyleYogaProgressInstalled = true
+        print("[LaccckaCompatibilityPatch] Lifestyle Yoga progress UI installed with LCCGuard")
+    end,
+}
