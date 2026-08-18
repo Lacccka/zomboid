@@ -2,11 +2,13 @@ VERSION = 1,
 
 -- UI-only proxy perk for Lifestyle's hidden Yoga skill.
 -- Gameplay XP/level remains authoritative in HiddenSkills (LSHiddenSkills.Yoga).
+-- Keep it non-passive so it is grouped with Meditation and the other
+-- Lifestyle skills in the normal character Skills panel.
 perk Yoga
 {
     parent = Lifestyle,
     translation = Yoga,
-    passive = true,
+    passive = false,
     xp1 = 100,
     xp2 = 250,
     xp3 = 500,
