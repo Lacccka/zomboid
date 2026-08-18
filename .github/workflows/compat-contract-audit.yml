@@ -5,6 +5,9 @@ on:
     paths:
       - "3268487204/mods/Bandits/42.20/media/lua/**"
       - "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/**"
+      - "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/perks.txt"
+      - "server/linux/start-server.sh"
+      - ".gitattributes"
       - "tools/compat_contracts.json"
       - "tools/audit_compat_contracts.py"
       - ".github/workflows/compat-contract-audit.yml"
@@ -12,6 +15,9 @@ on:
     paths:
       - "3268487204/mods/Bandits/42.20/media/lua/**"
       - "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/**"
+      - "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/perks.txt"
+      - "server/linux/start-server.sh"
+      - ".gitattributes"
       - "tools/compat_contracts.json"
       - "tools/audit_compat_contracts.py"
       - ".github/workflows/compat-contract-audit.yml"
@@ -27,3 +33,13 @@ jobs:
       - uses: actions/checkout@v6
       - name: Verify compatibility contracts
         run: python3 tools/audit_compat_contracts.py
+      - name: Verify cross-platform patch invariants
+        shell: bash
+        run: |
+          if grep -nE '^[[:space:]]*--' LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/perks.txt; then
+            echo 'perks.txt uses Lua-style comments that the B42 CustomPerks parser rejects'
+            exit 1
+          fi
+          bash -n server/linux/start-server.sh
+          grep -F 'ensure_case_alias "${workshop_mods}/bandits" "${bandits}" "Bandits"' server/linux/start-server.sh
+          grep -F 'ensure_case_alias "${media}/animsets" "${media}/AnimSets" "AnimSets"' server/linux/start-server.sh
