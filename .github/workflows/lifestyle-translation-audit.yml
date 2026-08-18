@@ -32,5 +32,19 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Compile audit script
+        run: python3 -m py_compile tools/audit_lifestyle_translation.py
+
+      - name: Validate translation JSON syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            python3 -m json.tool "$file" >/dev/null
+          done < <(find \
+            3403870858/mods/Lifestyle/common/media/lua/shared/Translate/EN \
+            LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/shared/Translate/RU \
+            -type f -name '*.json' -print0)
+
       - name: Audit Lifestyle Russian translation
         run: python3 tools/audit_lifestyle_translation.py
