@@ -92,17 +92,18 @@ jobs:
               print(summary[:140])
           PY
           )"
+            diagnostic_context="$(printf '%s' "$diagnostic" | tr -cs 'A-Za-z0-9._:-' '_' | cut -c1-72)"
 
             gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
               -f state=failure \
-              -f context='lcc/translation-diagnostic' \
+              -f context="lcc/translation/${diagnostic_context}" \
               -f description="$diagnostic" >/dev/null
             exit "$audit_status"
           fi
 
           gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=success \
-            -f context='lcc/translation-diagnostic' \
+            -f context='lcc/translation/ok' \
             -f description='Lifestyle Russian translation audit passed' >/dev/null
 
   yoga:
