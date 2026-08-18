@@ -36,6 +36,15 @@ local function clamp(value, minValue, maxValue)
     return value
 end
 
+local function lccGetTextOrNull(key)
+    if getTextOrNull then
+        return getTextOrNull(key)
+    end
+    local value = getText(key)
+    if value == key then return nil end
+    return value
+end
+
 function LCCYogaSkillProgressBar:syncHiddenYoga()
     local skill = HiddenSkills.getSkill(self.char, "Yoga")
     if not skill then
@@ -114,12 +123,12 @@ function LCCYogaSkillProgressBar:updateTooltip(lvlSelected)
         self.message = self.message .. " <LINE> " .. xpSystemText.locked
     end
 
-    local description = getTextOrNull("IGUI_perks_Yoga_Description")
+    local description = lccGetTextOrNull("IGUI_perks_Yoga_Description")
     if description and description ~= "" then
         self.message = self.message .. " <LINE><LINE> " .. description
     end
 
-    local levelDescription = getTextOrNull("IGUI_perks_Yoga_Description" .. tostring(lvlSelected + 1))
+    local levelDescription = lccGetTextOrNull("IGUI_perks_Yoga_Description" .. tostring(lvlSelected + 1))
     if levelDescription and levelDescription ~= "" then
         self.message = self.message .. " <LINE><LINE> " .. levelDescription
     end
