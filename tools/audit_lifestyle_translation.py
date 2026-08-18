@@ -56,17 +56,27 @@ SKIP_FILES = {"language.txt"}
 #   IGUI_RU = {
 #       IGUI_Foo = "...",
 #   }
-# We only need the keys for coverage auditing, so parsing the full Lua syntax
-# is deliberately avoided.
-LEGACY_KEY_RE = re.compile(r"^\s*([A-Za-z0-9_:.\-]+)\s*=\s*["]", re.MULTILINE)
+# Only keys are required for coverage auditing, so parsing full Lua syntax is
+# deliberately avoided. Restrict the match to assignments whose value starts
+# with a double-quoted string to avoid matching table names.
+LEGACY_KEY_RE = re.compile(r'^\s*([A-Za-z0-9_:.\-]+)\s*=\s*"', re.MULTILINE)
+
+# Project Zomboid translation strings use positional placeholders such as %1,
+# %2 and escaped percent markers %% . A translated key can technically exist
+# while still being broken at runtime if one of those placeholders is lost.
+PLACEHOLDER_RE = re.compile(r"%(?:%|\d+)")
 
 
-def load_json_keys(path: Path) -> set[str]:
+def load_json(path: Path) -> dict[str, object]:
     with path.open("r", encoding="utf-8-sig") as fh:
         data = json.load(fh)
     if not isinstance(data, dict):
         raise ValueError(f"{path}: expected a JSON object")
-    return set(data)
+    return data
+
+
+def load_json_keys(path: Path) -> set[str]:
+    return set(load_json(path))
 
 
 def load_legacy_keys(path: Path) -> set[str]:
@@ -101,6 +111,36 @@ def short_paths(paths: Iterable[Path]) -> str:
     return ", ".join(result) if result else "<none>"
 
 
+def placeholders(value: object) -> list[str]:
+    if not isinstance(value, str):
+        return []
+    return sorted(PLACEHOLDER_RE.findall(value))
+
+
+def audit_json_placeholders(category: str, en_data: dict[str, object]) -> list[str]:
+    """Return placeholder mismatches for keys present in the RU JSON file.
+
+    Legacy *_RU.txt files are intentionally excluded here because extracting
+    complete Lua string values safely would require a real Lua parser. Key
+    coverage still includes those files.
+    """
+    ru_json_path = PATCH_RU / f"{category}.json"
+    if not ru_json_path.is_file():
+        return []
+
+    ru_data = load_json(ru_json_path)
+    problems: list[str] = []
+    for key in sorted(set(en_data) & set(ru_data)):
+        en_tokens = placeholders(en_data[key])
+        ru_tokens = placeholders(ru_data[key])
+        if en_tokens != ru_tokens:
+            problems.append(
+                f"{key}: EN placeholders {en_tokens or '<none>'} != "
+                f"RU placeholders {ru_tokens or '<none>'}"
+            )
+    return problems
+
+
 def main() -> int:
     if not LIFESTYLE_EN.is_dir():
         print(f"ERROR: Lifestyle EN directory not found: {LIFESTYLE_EN}", file=sys.stderr)
@@ -113,6 +153,7 @@ def main() -> int:
     total_ru = 0
     total_missing = 0
     total_extra = 0
+    total_placeholder_errors = 0
     failures: list[str] = []
 
     print("Lifestyle Russian translation coverage")
@@ -124,8 +165,10 @@ def main() -> int:
 
         category = en_path.stem
         try:
-            en_keys = load_json_keys(en_path)
+            en_data = load_json(en_path)
+            en_keys = set(en_data)
             ru_keys, ru_sources = collect_ru_keys(category)
+            placeholder_errors = audit_json_placeholders(category, en_data)
         except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
             failures.append(f"{category}: {exc}")
             continue
@@ -137,9 +180,10 @@ def main() -> int:
         total_ru += len(en_keys & ru_keys)
         total_missing += len(missing)
         total_extra += len(extra)
+        total_placeholder_errors += len(placeholder_errors)
 
         coverage = 100.0 if not en_keys else (len(en_keys & ru_keys) / len(en_keys)) * 100.0
-        marker = "OK" if not missing else "MISS"
+        marker = "OK" if not missing and not placeholder_errors else "MISS"
         print(
             f"[{marker:4}] {category:16} "
             f"{len(en_keys & ru_keys):4}/{len(en_keys):4} "
@@ -151,6 +195,11 @@ def main() -> int:
             for key in missing:
                 print(f"         {key}")
 
+        if placeholder_errors:
+            print("       Placeholder mismatches:")
+            for problem in placeholder_errors:
+                print(f"         {problem}")
+
         # Extra keys are not necessarily errors because the compatibility patch
         # also translates other mods and custom patch-only strings. Keep them
         # visible without failing the audit.
@@ -161,6 +210,7 @@ def main() -> int:
     coverage = 100.0 if not total_en else (total_ru / total_en) * 100.0
     print(f"Covered: {total_ru}/{total_en} ({coverage:.2f}%)")
     print(f"Missing: {total_missing}")
+    print(f"Placeholder mismatches: {total_placeholder_errors}")
     print(f"Extra/custom: {total_extra}")
 
     if failures:
@@ -169,7 +219,7 @@ def main() -> int:
             print(f"  {failure}", file=sys.stderr)
         return 2
 
-    return 1 if total_missing else 0
+    return 1 if total_missing or total_placeholder_errors else 0
 
 
 if __name__ == "__main__":
