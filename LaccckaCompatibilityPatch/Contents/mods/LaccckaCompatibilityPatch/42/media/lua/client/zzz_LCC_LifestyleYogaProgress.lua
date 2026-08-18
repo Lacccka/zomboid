@@ -23,6 +23,7 @@ local FILLED_B = 0.38
 
 local originalNew = ISSkillProgressBar.new
 local originalLoadPerk = ISCharacterInfo and ISCharacterInfo.loadPerk
+local yogaReadWarningShown = false
 
 LCCYogaSkillProgressBar = ISSkillProgressBar:derive("LCCYogaSkillProgressBar")
 
@@ -72,8 +73,25 @@ local function isYogaEnabled()
     return true
 end
 
+local function getHiddenYogaSkill(character)
+    if not character or not HiddenSkills or not HiddenSkills.getSkill then
+        return nil
+    end
+
+    local ok, skill = pcall(HiddenSkills.getSkill, character, "Yoga")
+    if ok then
+        return skill
+    end
+
+    if not yogaReadWarningShown then
+        yogaReadWarningShown = true
+        print("[LaccckaCompatibilityPatch] WARNING: failed to read Lifestyle HiddenSkills.Yoga: " .. tostring(skill))
+    end
+    return nil
+end
+
 function LCCYogaSkillProgressBar:syncHiddenYoga()
-    local skill = HiddenSkills.getSkill(self.char, "Yoga")
+    local skill = getHiddenYogaSkill(self.char)
     if not skill then
         self.level = 0
         self.xp = 0
