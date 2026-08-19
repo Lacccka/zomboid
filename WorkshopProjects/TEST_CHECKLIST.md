@@ -6,68 +6,85 @@ The monolithic `LaccckaCompatibilityPatch` remains the source/regression package
 
 1. Run `python3 tools/audit_workshop_split.py`.
 2. Run `python3 tools/audit_wellness_proxy.py`.
-3. Run the existing compatibility-contract and Lifestyle translation audits.
-4. Confirm all READY runtime projects have unique Mod IDs, active `workshop.txt`, empty Workshop `id=`, and `visibility=unlisted` before first upload.
-5. Confirm `LCCB4220BanditsRU` and `LCCB4220LifestyleRU` have `workshop.txt.DISABLED` only.
+3. Run the existing compatibility-contract and translation audits.
+4. Confirm all **12 READY projects** have unique Mod IDs, active `workshop.txt`, empty Workshop `id=`, and `visibility=unlisted` before first upload.
+5. Confirm no READY project has `workshop.txt.DISABLED`.
 6. Confirm the deprecated `LCCB4220ThirdPartyRU` project does not exist.
-7. Confirm the Bandits runtime split contains none of: `BanditZombie.lua`, `BanditServerWanderers.lua`, `ZAStompPlant.lua`, `ZAWaterFarm.lua`.
-8. Confirm the Bandits cache/farming/empty-server guards exist.
+7. Confirm the Survivor AI runtime split contains none of: `BanditZombie.lua`, `BanditServerWanderers.lua`, `ZAStompPlant.lua`, `ZAWaterFarm.lua`.
+8. Confirm the cache/farming/empty-server guards exist and the empty-server guard does not require `isClient()`.
 9. Confirm Wellness `media/perks.txt` declares exactly one perk: `Yoga`, `parent = Lifestyle`, with `xp1..xp10 = 0`.
 10. Confirm `zzy_LCC_LifestyleYogaContract.lua` exists and validates `Perks.Yoga:getParent()` against `Lifestyle`.
-11. Confirm Workshop descriptions for Bandits/Lifestyle/PZK/Chimera name and credit their targets and state that original content is not bundled.
-12. Confirm `LCCB4220BanditsRU/.../IG_UI.json` matches `Bandits/.../RU/IG_UI_ru.json` byte-for-byte.
-13. Confirm `LCCB4220LifestyleRU/42/.../RU/IG_UI.json` does not exist; that blob belongs only to BanditsRU.
+11. Confirm public `title=` values remain target-neutral while direct compatibility descriptions contain target/author credits.
+12. Confirm `LCCB4220BanditsRU/.../IG_UI.json` matches the isolated target-side RU `IG_UI` snapshot byte-for-byte.
+13. Confirm `LCCB4220LifestyleRU/42/.../RU/IG_UI.json` does not exist; survivor dialogue remains isolated in its own translation item.
 
-## Runtime smoke test
+## Runtime smoke-test setup
 
 1. Start from the same server/mod set that currently works with `LaccckaB4220Compat`.
-2. Remove `LaccckaB4220Compat` from `Mods=` for the split test.
-3. Add only the split runtime projects being tested, after their original dependencies.
+2. Remove `LaccckaB4220Compat` from `Mods=` for the split runtime test.
+3. Add only the split projects being tested, after their original dependencies.
 4. Keep server/world settings unchanged for the first comparison.
 5. Compare startup Lua errors and `[LCC][Guard]` diagnostics with the monolithic baseline.
 6. Join from a client and test the exact feature owned by each enabled module.
-7. Keep every new runtime Workshop item unlisted until its feature checks pass.
+7. Keep every Workshop item unlisted until its specific smoke test passes.
 
-## General feature checks
+## General runtime checks
 
-- Firearms bridge: no dedicated-server cursor error; ranged weapon part render state remains correct on client.
-- SVU/Tsar bridge: legacy `ATA2Tuning2` require resolves to the B42 implementation.
-- zRe bridge: old root `BodyLocations` import resolves without carrying a copied vanilla implementation.
-- Aegis guard: invalid transfer actions fail safely; valid actions still call the original validator.
-- Legacy callback bridge: old recipe-magazine callback delegates only when the old callback is absent.
-- RU skill descriptions: vanilla/B42 skill descriptions display in Russian; no Lifestyle names/descriptions are supplied by this project.
+- Firearms Placement Bridge: no dedicated-server cursor error; ranged weapon part render state remains correct on client.
+- Vehicle API Bridge: legacy `ATA2Tuning2` require resolves to the current implementation.
+- Vaccine API Bridge: old root `BodyLocations` import resolves without carrying a copied implementation.
+- Inventory Safety Guard: invalid transfer actions fail safely; valid actions still call the installed original validator.
+- Legacy Callback Bridge: old recipe-magazine callback delegates only when the legacy callback is absent.
+- RU Skill Descriptions: vanilla/B42 skill descriptions display in Russian without supplying wellness/hobby descriptions.
 
-## Bandits runtime split
+## Survivor AI Stability
 
-- Connect a client, move through a dense zombie/bandit area and confirm no stale/squareless cache failure returns.
+- Connect a client, move through a dense zombie/NPC area and confirm no stale/squareless cache failure returns.
 - Wait through at least one `EveryOneMinute` cache rebuild and confirm the post-flush sweep does not break cache counts.
-- Exercise watering/stomping tasks and verify transient/missing Farming states fail safely while normal states still call installed Bandits callbacks.
+- Exercise watering/stomping tasks and verify transient/missing Farming states fail safely while normal states still call installed callbacks.
 - With a player online, wait through an `EveryTenMinutes` tick and confirm normal wanderer scheduling sees the real clan table.
 - Disconnect all players, leave the dedicated server empty through an `EveryTenMinutes` tick, and confirm the previous nil-day comparison does not return.
 - Reconnect and confirm the real clan list/wanderer scheduling is restored immediately.
+- Treat any unexpected `[LCC][Guard][DISABLED][bandits.*]` line as a regression.
 
-## Lifestyle runtime split
+## Wellness Compatibility
 
-- Confirm `LifestyleHobbies` loads before `LCCB4220WellnessCompat` and the `Lifestyle` parent perk exists when the LCC `Yoga` proxy is registered.
-- Confirm startup/client log contains `[LCC][Wellness] Yoga CustomPerk contract OK: parent=Lifestyle`; any `[LCC][Guard][DISABLED][lifestyle.yoga-progress-ui]` line must be treated as a failed Yoga contract test.
+- Confirm the wellness/hobby dependency loads before `LCCB4220WellnessCompat` and the `Lifestyle` parent perk exists when the LCC `Yoga` proxy is resolved.
+- Confirm startup/client log contains `[LCC][Wellness] Yoga CustomPerk contract OK: parent=Lifestyle`.
+- Treat `[LCC][Guard][DISABLED][lifestyle.yoga-progress-ui]` as a failed Yoga contract test.
 - Confirm the Skills panel shows Yoga without duplicating/replacing Lifestyle, Art, Cleaning, Dancing, Meditation, or Music.
-- Confirm Yoga level/progress match Lifestyle `HiddenSkills` across reconnect/reload and no vanilla XP is awarded to the proxy.
+- Confirm Yoga level/progress match `HiddenSkills` across reconnect/reload and no vanilla XP is awarded to the proxy.
 - Confirm level 10, disabled-Yoga sandbox configuration, and tooltip rendering behave correctly.
-- Test bathtub approach from east and west; all unrelated cases must delegate to Lifestyle.
-- Test shower/bathtub shared/server loading to confirm placeholders do not override real client functions.
+- Test bathtub approach from east and west; unrelated cases must delegate to the installed original behavior.
+- Test shower/bathtub shared/server loading and confirm placeholders do not override real client functions.
 
-## PZK/SVU runtime split
+## Vehicle Integration Bridge
 
-- Exercise vehicle part menus, water-tank integration, PZK zones and SVU support with original dependencies installed separately.
+- Exercise vehicle part menus, water-tank integration, zones and vehicle-upgrade support with original dependencies installed separately.
 - Confirm legacy requires resolve to current B42.20 modules without duplicate module/state creation.
 
-## Chimera runtime split
+## Outfit Menu Safety
 
 - Test both affected ghillie types and confirm extra-menu arrays normalize correctly.
 - Test unrelated clothing items and verify the wrapper delegates without changing their context menus.
 
-## Translation boundary
+## Translation Workshop items
 
-- `LCCB4220BanditsRU` stays upload-disabled even though provenance is exact; resolve translation publication permission/rights separately.
-- `LCCB4220LifestyleRU` stays upload-disabled until translation permission/publication rights and final key-level provenance are documented.
-- Do not use either translation project as a dependency for source-clean runtime fixes.
+### Survivor Dialogue RU
+
+- Enable `LCCB4220BanditsRU` after its original dependency.
+- Confirm representative NPC speech/UI strings render in Russian and JSON loads without errors.
+- Confirm runtime stability fixes are not required for the translation item itself.
+- Keep it unlisted until the translation smoke test passes.
+
+### Wellness & Hobbies RU
+
+- Enable `LCCB4220LifestyleRU` after its original dependency.
+- Run the existing Lifestyle translation coverage/placeholder audit.
+- Check skill descriptions, tooltips, moodles, context menus, recipes, sandbox/UI strings and representative moveables in game.
+- Confirm Survivor Dialogue strings are not supplied by this item.
+- Keep it unlisted until the translation smoke test passes.
+
+## Workshop rollout
+
+After a project passes its test, assign its real Workshop ID and record it before changing server `WorkshopItems=` / `Mods=`. Replace the monolithic patch incrementally rather than switching every split module at once.
