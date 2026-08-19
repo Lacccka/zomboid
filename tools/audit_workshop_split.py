@@ -19,7 +19,6 @@ pairs = {
     "LCCB4220SkillDescriptionsRU/Contents/mods/LCCB4220SkillDescriptionsRU/42/media/lua/shared/Translate/RU/ZZ_LCC_VanillaPerks_RU.txt": "42/media/lua/shared/Translate/RU/ZZ_LCC_VanillaPerks_RU.txt",
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/shared/LCC/Guard.lua": "42/media/lua/shared/LCC/Guard.lua",
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/client/ISUI/ISCharacterScreen.lua": "42/media/lua/client/ISUI/ISCharacterScreen.lua",
-    "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/server/BanditServerWanderers.lua": "42/media/lua/server/BanditServerWanderers.lua",
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua": "42/media/lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua",
     "LCCB4220WellnessCompat/Contents/mods/LCCB4220WellnessCompat/42/media/lua/shared/LCC/Guard.lua": "42/media/lua/shared/LCC/Guard.lua",
     "LCCB4220WellnessCompat/Contents/mods/LCCB4220WellnessCompat/42/media/lua/client/zzz_LCC_LifestyleBathFix.lua": "42/media/lua/client/zzz_LCC_LifestyleBathFix.lua",
@@ -50,10 +49,12 @@ for name in ["IG_UI.json", "Moveables.json", "Tooltip.json"]:
 split_owned_required = [
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/client/zzz_LCC_BanditsZombieCacheGuard.lua",
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/shared/zzz_LCC_BanditsFarmingGuard.lua",
+    "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/server/zzz_LCC_BanditsEmptyServerWandererGuard.lua",
 ]
 
 forbidden_bandits_copies = [
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/client/BanditZombie.lua",
+    "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/server/BanditServerWanderers.lua",
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/shared/ZombieActions/ZAStompPlant.lua",
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/shared/ZombieActions/ZAWaterFarm.lua",
 ]
@@ -62,8 +63,9 @@ ready = {
     "LCCB4220FirearmsBridge", "LCCB4220SVUTsarBridge", "LCCB4220zReBridge",
     "LCCB4220AegisGuard", "LCCB4220LegacyCallbacks", "LCCB4220SkillDescriptionsRU",
 }
+review = {"LCCB4220SurvivorAIStability"}
 blocked = {
-    "LCCB4220SurvivorAIStability", "LCCB4220WellnessCompat", "LCCB4220PZKBridge",
+    "LCCB4220WellnessCompat", "LCCB4220PZKBridge",
     "LCCB4220OutfitMenuSafety", "LCCB4220ThirdPartyRU",
 }
 
@@ -94,11 +96,11 @@ for project in sorted(ready):
     if (WP / project / "workshop.txt.DISABLED").exists():
         errors.append(f"READY project unexpectedly has disabled descriptor: {project}")
 
-for project in sorted(blocked):
+for project in sorted(review | blocked):
     if (WP / project / "workshop.txt").exists():
-        errors.append(f"BLOCKED project must not have active workshop.txt: {project}")
+        errors.append(f"review/BLOCKED project must not have active workshop.txt: {project}")
     if not (WP / project / "workshop.txt.DISABLED").is_file():
-        errors.append(f"BLOCKED project lacks workshop.txt.DISABLED: {project}")
+        errors.append(f"review/BLOCKED project lacks workshop.txt.DISABLED: {project}")
 
 vanilla_project = WP / "LCCB4220SkillDescriptionsRU"
 if any(p.name == "ZZ_LCC_Perks_RU.txt" for p in vanilla_project.rglob("*")):
@@ -113,5 +115,5 @@ if errors:
 print(
     f"Workshop split audit OK: {len(pairs)} mirrored source files; "
     f"{len(split_owned_required)} split-owned refactors; {len(ready)} ready projects; "
-    f"{len(blocked)} blocked projects"
+    f"{len(review)} review projects; {len(blocked)} blocked projects"
 )

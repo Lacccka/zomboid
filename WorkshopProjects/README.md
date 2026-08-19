@@ -8,10 +8,11 @@ The original monolithic patch remains untouched and is the development/reference
 
 Projects are separated by target/function so one Workshop review, permission question, or upstream change does not block unrelated fixes.
 
-Two publication states are used:
+Three publication states are used:
 
 - **READY_FOR_UNLISTED_TEST** — contains LCC-authored compatibility code (or LCC-authored vanilla/B42 localization) and does not redistribute the target mod. A real `workshop.txt` is present with an empty Workshop ID and `visibility=unlisted` for initial testing.
-- **BLOCKED_PENDING_PERMISSION** — technically split and testable from the local `Contents/mods` directory, but intentionally has no active `workshop.txt`. `workshop.txt.DISABLED` is documentation only and must not be renamed/uploaded until the listed permission issue is resolved or the implementation is refactored to a publication-safe form.
+- **TECHNICALLY_CLEAN_PERMISSION_REVIEW** — the split contains only LCC-authored compatibility code/shims, but author-specific terms or prior communication still need explicit review. It remains upload-disabled with `workshop.txt.DISABLED`.
+- **BLOCKED_PENDING_PERMISSION** — publication is explicitly blocked by known extension/translation restrictions or third-party material. `workshop.txt.DISABLED` must not be activated until permission/evidence covers the project.
 
 `Unlisted` is not a permission bypass. It is only the initial visibility for projects that pass the publication audit.
 
@@ -26,9 +27,12 @@ Two publication states are used:
 - `LCCB4220LegacyCallbacks` — generic Build 42 legacy item callback bridge.
 - `LCCB4220SkillDescriptionsRU` — LCC-authored Russian descriptions for vanilla/Build 42 skills only.
 
+### TECHNICALLY_CLEAN_PERMISSION_REVIEW
+
+- `LCCB4220SurvivorAIStability` — Bandits compatibility. All four former full-file source overrides have now been replaced in the split by LCC-authored guards/wrappers. Upload remains disabled pending current author-policy review and runtime regression testing.
+
 ### BLOCKED_PENDING_PERMISSION
 
-- `LCCB4220SurvivorAIStability` — Bandits compatibility. Three former full-file copies are now LCC-owned post-load guards; one strict full-file wanderer override still blocks Workshop publication.
 - `LCCB4220WellnessCompat` — Lifestyle runtime/Yoga compatibility; the upstream author requires permission for extensions.
 - `LCCB4220PZKBridge` — PZK compatibility shims; upstream extension policy requires permission.
 - `LCCB4220OutfitMenuSafety` — Chimera runtime compatibility; kept blocked because the author's historical permission policy is restrictive.

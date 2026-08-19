@@ -34,21 +34,21 @@ The monolithic patch is not deleted or modified by this split. Most runtime file
 
 Lifestyle-specific `ZZ_LCC_Perks_RU.txt` is deliberately excluded from this publishable vanilla/B42 project.
 
-## LCCB4220SurvivorAIStability — BLOCKED
+## LCCB4220SurvivorAIStability — PERMISSION REVIEW
 
-Mirrored/reference-derived files still used by the split:
+Mirrored LCC-authored files still shared with the monolithic package:
 
 - `42/media/lua/client/ISUI/ISCharacterScreen.lua` — tiny legacy module-path shim.
-- `42/media/lua/server/BanditServerWanderers.lua` — **remaining full-file override / publication blocker**.
-- `42/media/lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua` — LCC-authored dedicated-server shim mirrored from the monolith.
+- `42/media/lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua` — dedicated-server lookup shim.
 - `42/media/lua/shared/LCC/Guard.lua`.
 
 Split-only LCC-authored publication refactors:
 
-- `42/media/lua/client/zzz_LCC_BanditsZombieCacheGuard.lua` — post-update/post-flush cleanup; replaces the split copy of `BanditZombie.lua`.
-- `42/media/lua/shared/zzz_LCC_BanditsFarmingGuard.lua` — precheck wrappers around installed Bandits farming callbacks; replaces split copies of `ZAStompPlant.lua` and `ZAWaterFarm.lua`.
+- `42/media/lua/client/zzz_LCC_BanditsZombieCacheGuard.lua` — post-update/post-flush cleanup; replaces the split copy of upstream `BanditZombie.lua`.
+- `42/media/lua/shared/zzz_LCC_BanditsFarmingGuard.lua` — precheck wrappers around installed Bandits farming callbacks; replaces split copies of upstream `ZAStompPlant.lua` and `ZAWaterFarm.lua`.
+- `42/media/lua/server/zzz_LCC_BanditsEmptyServerWandererGuard.lua` — returns an empty temporary clan view only on an empty MP server, allowing the original local wanderer orchestrator to skip its unsafe nil-day tick; replaces the split copy of upstream `BanditServerWanderers.lua`.
 
-The monolithic patch intentionally retains its existing full overrides as the known runtime baseline. Only the publication split is being minimized at this stage.
+The split now contains no full Bandits Lua source override. The monolithic patch intentionally retains its existing full overrides as the known runtime baseline. Workshop upload remains disabled until author-specific permission/policy review and runtime regression testing are complete.
 
 ## LCCB4220WellnessCompat — BLOCKED
 

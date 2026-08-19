@@ -7,9 +7,9 @@ The monolithic `LaccckaCompatibilityPatch` remains the source/reference package.
 1. Run `python3 tools/audit_workshop_split.py`.
 2. Run the existing compatibility-contract and Lifestyle translation audits.
 3. Confirm each READY project has a unique Mod ID and an active `workshop.txt` with an empty Workshop `id=` before first upload.
-4. Confirm each BLOCKED project has `workshop.txt.DISABLED` only.
-5. Confirm the Bandits split does **not** contain `BanditZombie.lua`, `ZAStompPlant.lua` or `ZAWaterFarm.lua`.
-6. Confirm `BanditServerWanderers.lua` is still marked as the sole Bandits full-file blocker.
+4. Confirm each permission-review/BLOCKED project has `workshop.txt.DISABLED` only.
+5. Confirm the Bandits split contains none of the upstream full-file overrides: `BanditZombie.lua`, `BanditServerWanderers.lua`, `ZAStompPlant.lua`, `ZAWaterFarm.lua`.
+6. Confirm the three split-only Bandits guard files exist.
 
 ## Runtime smoke test
 
@@ -19,7 +19,7 @@ The monolithic `LaccckaCompatibilityPatch` remains the source/reference package.
 4. Keep server/world settings unchanged for the first comparison.
 5. Compare startup Lua errors and `[LCC][Guard]` diagnostics with the monolithic baseline.
 6. Join from a client and test the exact feature owned by each enabled module.
-7. Do not assign Workshop IDs to permission-blocked projects.
+7. Do not assign Workshop IDs to permission-review or permission-blocked projects.
 
 ## Feature checks
 
@@ -35,7 +35,9 @@ The monolithic `LaccckaCompatibilityPatch` remains the source/reference package.
 - Connect a client, move through a dense zombie/bandit area and confirm no stale/squareless cache failure returns in combat/update code.
 - Wait through at least one `EveryOneMinute` cache rebuild and confirm the post-flush sweep does not break Bandit/Zombie cache counts.
 - Exercise Bandits watering/stomping tasks and verify absent/transient `CFarmingSystem.instance` states return safely while normal Farming states still execute the original Bandits callbacks.
-- Leave the dedicated server empty through an `EveryTenMinutes` tick and verify the remaining `BanditServerWanderers.lua` override still prevents the `day` nil comparison.
+- With at least one player online, wait through an `EveryTenMinutes` tick and confirm normal wanderer scheduling still sees the real clan table.
+- Disconnect all players, leave the dedicated server empty through an `EveryTenMinutes` tick and confirm `bandits.wanderers-empty-server` suppresses only that empty-server clan iteration without the previous nil-day comparison.
+- Reconnect and confirm the real clan list/wanderer scheduling is immediately restored.
 - Review `[LCC][Guard][bandits.*]` diagnostics for unexpected disabled features.
 
-Permission-blocked modules should be tested locally from `Contents/mods` only until their publication status is resolved.
+Permission-review/blocked modules should be tested locally from `Contents/mods` only until their publication status is resolved.
