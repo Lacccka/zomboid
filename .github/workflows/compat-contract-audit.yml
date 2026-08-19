@@ -61,17 +61,32 @@ jobs:
 
           grep -F '"${media_dir}/animsets"' server/linux/start-server.sh >/dev/null
           grep -F '"${mods_dir}/${lowercase_name}"' server/linux/start-server.sh >/dev/null
+          grep -F 'ensure_casefold_tree_aliases' server/linux/start-server.sh >/dev/null
+          grep -F 'start_case_alias_keeper' server/linux/start-server.sh >/dev/null
+          grep -F 'launcher.log' server/linux/start-server.sh >/dev/null
+          grep -F '42.20/media' server/linux/start-server.sh >/dev/null
 
-          RU_PERKS='LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/shared/Translate/RU/ZZ_LCC_Perks_RU.txt'
+          RU_LIFESTYLE='LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/shared/Translate/RU/ZZ_LCC_Perks_RU.txt'
           for key in Art Cleaning Dancing Meditation Music Yoga; do
-            grep -F "IGUI_perks_${key}_Description" "${RU_PERKS}" >/dev/null
+            grep -F "IGUI_perks_${key}_Description" "${RU_LIFESTYLE}" >/dev/null
           done
 
-          grep -F '3 ур.:' "${RU_PERKS}" >/dev/null
-          grep -F '6 ур.:' "${RU_PERKS}" >/dev/null
-          grep -F '10 ур.:' "${RU_PERKS}" >/dev/null
+          grep -F '3 ур.:' "${RU_LIFESTYLE}" >/dev/null
+          grep -F '6 ур.:' "${RU_LIFESTYLE}" >/dev/null
+          grep -F '10 ур.:' "${RU_LIFESTYLE}" >/dev/null
 
-          if grep -Ei 'hidden skill|technical skill|скрыт(ый|ого).*навык|техническ(ий|ого).*навык' "${RU_PERKS}"; then
+          RU_VANILLA='LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/shared/Translate/RU/ZZ_LCC_VanillaPerks_RU.txt'
+          for key in \
+            Fitness Strength Sprinting Lightfooted Nimble Sneaking \
+            Blunt SmallBlunt LongBlade SmallBlade Axe Spear Maintenance \
+            Aiming Reloading Carpentry Cooking Farming Doctor Electricity \
+            Mechanics MetalWelding Tailoring Fishing Trapping Foraging \
+            Blacksmith Masonry Pottery FlintKnapping Carving Glassmaking \
+            Husbandry Butchering Tracking; do
+            grep -F "IGUI_perks_${key}_Description" "${RU_VANILLA}" >/dev/null
+          done
+
+          if grep -Ei 'hidden skill|technical skill|proxy perk|скрыт(ый|ого).*навык|техническ(ий|ого).*навык' "${RU_LIFESTYLE}" "${RU_VANILLA}"; then
             echo 'Player-facing perk descriptions contain implementation jargon'
             exit 1
           fi
