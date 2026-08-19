@@ -8,9 +8,9 @@ The monolithic patch remains the development/regression baseline. Workshop proje
 
 A runtime compatibility project is eligible for **READY_FOR_UNLISTED_TEST** when its Workshop payload contains only LCC-authored code/localization, requires original mods separately, and does not redistribute their source/assets. LCC hooks/wrappers/shims may interact with installed target APIs/types; the target relationship must be explicit and credited in the Workshop description.
 
-`BLOCKED_PENDING_PERMISSION` is reserved for payloads that actually contain permission-sensitive third-party material, currently the mod-specific translation project.
+**BLOCKED_PENDING_PERMISSION** is reserved for payloads that contain permission-sensitive mod-specific translated text or whose translation provenance is not complete.
 
-`Unlisted` is not a permission bypass. It is the controlled first-test visibility for source-clean items; target terms and the Project Zomboid/Steam policies must still be re-checked before public visibility.
+`Unlisted` is not a permission bypass. It is the controlled first-test visibility for source-clean runtime items; target terms and the Project Zomboid/Steam policies must still be re-checked before public visibility.
 
 ## READY_FOR_UNLISTED_TEST
 
@@ -27,7 +27,8 @@ A runtime compatibility project is eligible for **READY_FOR_UNLISTED_TEST** when
 
 ## BLOCKED_PENDING_PERMISSION
 
-- `LCCB4220ThirdPartyRU` — mod-specific Russian localization. Keep disabled until translation permissions/rights for the relevant target material are documented.
+- `LCCB4220BanditsRU` — isolated Bandits Russian `IG_UI` translation. Provenance is exact, but translation publication rights/permission are not yet documented.
+- `LCCB4220ThirdPartyRU` — remaining mod-specific RU staging after Bandits extraction. Mostly Lifestyle-oriented, but key-level provenance is still being classified.
 
 ## Linux launcher
 
@@ -36,10 +37,10 @@ A runtime compatibility project is eligible for **READY_FOR_UNLISTED_TEST** when
 ## Before public visibility
 
 1. Run `python3 tools/audit_workshop_split.py` plus the existing compatibility/translation audits.
-2. Test the module unlisted with the original target mod installed separately.
+2. Test the runtime module unlisted with the original target mod installed separately.
 3. Never enable the equivalent monolithic patch at the same time during A/B testing.
-4. Keep the target mod/author clearly credited and mark the LCC module unofficial.
+4. Keep the target mod/author clearly credited and mark every LCC module unofficial.
 5. Re-check the current target Workshop page and official PZ/Steam policies.
-6. Keep translations separated from runtime patches unless their publication rights are clear.
+6. Keep mod-specific translations upload-disabled until their rights/provenance are clear.
 
 See `PUBLICATION_AUDIT.md`, `SPLIT_MANIFEST.md`, and `TEST_CHECKLIST.md` for the exact boundary and test plan.
