@@ -1,6 +1,6 @@
 version=1
 id=
-title=LCC Russian Localization - Extensions
-description=DO NOT UPLOAD: third-party translation permissions required. Local split of the current LCC mod-specific Russian localization for regression testing.
+title=LCC Russian Localization - Unclassified Extensions
+description=DO NOT UPLOAD: remaining mod-specific Russian translation staging after Bandits extraction. Key-level provenance and translation permissions/rights are not complete.
 tags=Build 42;Translation
 visibility=private
