@@ -1,6 +1,6 @@
 version=1
 id=0
 title=Lacccka B42 Runtime Fixes
-description=Targeted source-clean runtime compatibility hooks for selected third-party Project Zomboid Build 42 mods. Do not use this patch unless you are sure it is required by your setup. This item contains LCC-authored hooks/shims only; original mod Lua files and assets are not included and the original mods must be installed separately.
+description=Targeted source-clean runtime compatibility hooks for selected third-party Project Zomboid Build 42 mods. Do not use this patch unless you are sure it is required by your setup. The original mods are not included and must be installed separately; no original third-party Lua files or assets are bundled.
 tags=Build 42;Multiplayer;Utilities
 visibility=public
