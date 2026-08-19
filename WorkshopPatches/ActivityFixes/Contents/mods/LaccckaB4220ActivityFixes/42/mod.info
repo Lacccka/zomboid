@@ -2,6 +2,6 @@ name=Lacccka B42 Activity Fixes
 id=LaccckaB4220ActivityFixes
 author=Lacccka
 description=Targeted gameplay and activity compatibility fixes for selected Build 42 mods. Lacccka B42 Patch Core is strongly recommended; without Core this patch runs in degraded fallback mode and correct operation is not guaranteed. Patch files only; original mods are not included.
-modversion=1.1.3
+modversion=1.1.4
 versionMin=42.20.0
 loadafter=\LaccckaB4220PatchCore,\LifestyleHobbies
