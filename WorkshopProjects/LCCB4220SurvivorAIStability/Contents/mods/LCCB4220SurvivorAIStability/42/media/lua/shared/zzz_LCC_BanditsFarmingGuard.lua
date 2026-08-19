@@ -44,9 +44,14 @@ local function installSkipWrapper(feature, target, methodName, shouldSkip)
     target[methodName] = function(...)
         if Guard.isEnabled(feature) then
             local ok, skip = Guard.protect(feature, methodName .. " precheck", shouldSkip, ...)
-            if not ok or skip then
+            if ok and skip then
+                -- The precheck positively identified a transient/unsupported B42
+                -- state that the compatibility fix is meant to neutralize.
                 return true
             end
+            -- If the LCC precheck itself failed, Guard.protect disabled this
+            -- feature. Fall through to the installed original callback instead
+            -- of changing upstream behavior because our own hook broke.
         end
 
         -- Keep the real Bandits callback outside Guard.protect: upstream errors
