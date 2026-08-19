@@ -1,7 +1,0 @@
-name=LCC Russian Localization - Unclassified Extensions
-id=LCCB4220ThirdPartyRU
-author=Lacccka
-description=Permission-gated staging for remaining mod-specific Russian translations after Bandits localization was isolated. Not publication-ready until key provenance is complete.
-modversion=1.1.0
-versionMin=42.20.0
-loadafter=\LifestyleHobbies

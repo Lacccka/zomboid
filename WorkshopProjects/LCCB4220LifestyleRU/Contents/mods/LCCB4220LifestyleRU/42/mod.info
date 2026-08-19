@@ -1,0 +1,7 @@
+name=LCC B42.20 Lifestyle Russian Localization
+id=LCCB4220LifestyleRU
+author=Lacccka
+description=Permission-gated Russian localization staging for Lifestyle: Hobbies and LCC compatibility strings. Requires LifestyleHobbies; publication remains disabled pending translation rights/provenance review.
+modversion=1.0.0
+versionMin=42.20.0
+loadafter=\LifestyleHobbies
