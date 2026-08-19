@@ -1,60 +1,67 @@
 # Workshop publication audit
 
-This is an engineering/publication safety checklist, not legal advice.
+This is an engineering/publication-safety interpretation, not legal advice. Re-check the current Project Zomboid Modding Policy, Steam Subscriber Agreement, and target Workshop pages before changing an item from unlisted to public.
 
-The split follows two rules:
+## Boundary used by this split
 
-1. Project Zomboid's published modding policy requires modders to obtain the necessary permissions for third-party materials and says unlisted publication does not remove permission requirements.
-2. A compatibility item should contain LCC-authored code/localization only, keep the original mod separate, identify the compatibility relationship, and avoid presenting itself as official.
+The publication split follows a content-based rule:
+
+1. Third-party source code, models, textures, sounds, copied text, or other third-party materials must not be shipped without the rights/permission required for that material.
+2. An independent LCC compatibility item may require an original mod separately and interact with its installed API/types through LCC-authored hooks, wrappers, guards, and path shims without repacking the original item.
+3. Any substantial/direct compatibility relationship must be clearly credited in the Workshop description; neutral functional titles must never conceal the target relationship.
+4. Modpacks/reuploads remain a different case and are intentionally not used here.
+5. Third-party translations remain permission-sensitive and are isolated from runtime compatibility code.
+6. The abandoned/broken-mod rules still require respecting explicit expansion/reupload directions in that context.
 
 ## Current project status
 
 | Project | Status | Reason |
 |---|---|---|
-| `LCCB4220FirearmsBridge` | READY_FOR_UNLISTED_TEST | LCC-authored runtime wrapper; no MFS assets/source redistributed. |
-| `LCCB4220SVUTsarBridge` | READY_FOR_UNLISTED_TEST | LCC-authored legacy-path shim. Current audit found SVU3 permits third-party support work and no separate TsarLib prohibition relevant to this shim. |
-| `LCCB4220zReBridge` | READY_FOR_UNLISTED_TEST | LCC-authored vanilla API path shim; no zRe source redistributed. |
-| `LCCB4220AegisGuard` | READY_FOR_UNLISTED_TEST | LCC-authored wrapper around the inventory transfer validation path; no Aegis source redistributed. |
-| `LCCB4220LegacyCallbacks` | READY_FOR_UNLISTED_TEST | Generic LCC-authored Build 42 compatibility bridge. |
-| `LCCB4220SkillDescriptionsRU` | READY_FOR_UNLISTED_TEST | Contains only LCC-authored Russian descriptions for vanilla/Build 42 skills. Lifestyle-specific descriptions are intentionally excluded. |
-| `LCCB4220SurvivorAIStability` | TECHNICALLY_CLEAN_PERMISSION_REVIEW | The split no longer redistributes Bandits Lua source: all four former full-file overrides are replaced by LCC-authored guards/shims. Upload remains disabled because prior author communication/permission context is restrictive and must be reviewed/documented before publication. |
-| `LCCB4220WellnessCompat` | BLOCKED_PENDING_PERMISSION | Lifestyle permissions require express permission for extensions; Yoga/bath compatibility is an extension. |
-| `LCCB4220PZKBridge` | BLOCKED_PENDING_PERMISSION | PZK extension policy requires permission even though the current implementation is mostly LCC-authored path shims. |
-| `LCCB4220OutfitMenuSafety` | BLOCKED_PENDING_PERMISSION | Chimera's historical permission policy is restrictive. Keep blocked until current permission is documented. |
-| `LCCB4220ThirdPartyRU` | BLOCKED_PENDING_PERMISSION | Translation material relates to third-party mods (notably Lifestyle/Bandits). Keep blocked until the relevant permissions are documented. |
+| `LCCB4220FirearmsBridge` | READY_FOR_UNLISTED_TEST | LCC runtime wrapper; no MFS source/assets redistributed. |
+| `LCCB4220SVUTsarBridge` | READY_FOR_UNLISTED_TEST | LCC legacy-path/API shims only. |
+| `LCCB4220zReBridge` | READY_FOR_UNLISTED_TEST | LCC vanilla API path shim only. |
+| `LCCB4220AegisGuard` | READY_FOR_UNLISTED_TEST | LCC wrapper around installed runtime API; no Aegis source redistributed. |
+| `LCCB4220LegacyCallbacks` | READY_FOR_UNLISTED_TEST | Generic LCC Build 42 compatibility bridge. |
+| `LCCB4220SkillDescriptionsRU` | READY_FOR_UNLISTED_TEST | LCC-authored vanilla/B42 Russian skill descriptions only. |
+| `LCCB4220SurvivorAIStability` | READY_FOR_UNLISTED_TEST | All four former Bandits full-file overrides were removed from the split and replaced by LCC-authored guards/shims. |
+| `LCCB4220WellnessCompat` | READY_FOR_UNLISTED_TEST | LCC bath/shower/Yoga wrappers only; `perks.txt` declares only an LCC Yoga UI proxy and no longer reproduces Lifestyle perk blocks. |
+| `LCCB4220PZKBridge` | READY_FOR_UNLISTED_TEST | LCC path/API shims only; no PZK vehicle/source/assets are repacked. |
+| `LCCB4220OutfitMenuSafety` | READY_FOR_UNLISTED_TEST | LCC runtime wrapper only; no Chimera clothing/source/assets are repacked. |
+| `LCCB4220ThirdPartyRU` | BLOCKED_PENDING_PERMISSION | Contains mod-specific translated text. Keep disabled until the relevant translation rights/permissions are documented. |
 
-## Bandits refactor progress
+## Target-specific notes
 
-The publication split no longer carries these upstream Bandits files:
+### Bandits
 
-- `BanditZombie.lua`;
-- `BanditServerWanderers.lua`;
-- `ZombieActions/ZAStompPlant.lua`;
-- `ZombieActions/ZAWaterFarm.lua`.
+Current target: `[B42] Bandits NPC`, Workshop `3268487204`, author Slayer. The target page states that the author's work must not be reuploaded without written permission. This split does not reupload Bandits Lua or assets: `BanditZombie.lua`, `BanditServerWanderers.lua`, `ZAStompPlant.lua`, and `ZAWaterFarm.lua` are explicitly forbidden by CI.
 
-They are replaced only in the split by LCC-authored guards/wrappers. The monolithic `LaccckaCompatibilityPatch` deliberately retains its tested overrides as the known regression baseline.
+The replacements are LCC-authored post-load guards that operate on the separately installed `Bandits2` dependency.
 
-The empty-server wanderer fix now wraps the public `BanditCustom.ClanGetAll()` API. In multiplayer with zero online players it returns an empty temporary table, making the original wanderer scheduler's clan loop a no-op while its player-derived `day` is unavailable. With a player online, and in single-player, it delegates to the original function unchanged.
+### Lifestyle
 
-This removes the source-redistribution blocker; it does **not** automatically grant publication permission. Keep the Workshop descriptor disabled until author-specific policy/communication is reviewed and the split-only behavior is runtime-tested.
+Current target: `Lifestyle: Hobbies`, Workshop `3403870858`, credited to Mopop and Angry. Its Workshop page asks for permission to add to/extend/alter the mod. This split does not alter or redistribute the Lifestyle item itself: it is a separate dependency-driven compatibility item containing LCC-authored runtime code.
+
+To remove the last copied declaration structure, split `perks.txt` now defines only `Yoga`. Its XP thresholds are zero because the UI proxy reads the real Yoga level/XP directly from Lifestyle `HiddenSkills` storage. Lifestyle translations are not bundled here.
+
+Because the target page uses broad extension language, re-check this classification before public visibility even though the Workshop payload itself contains no Lifestyle source/assets/translations.
+
+### PZK VLC
+
+Current target: PZK VLC, Workshop `3217685049`, PZK Forge. The target page prohibits repacking and states restrictions on modifying/extending the original mod. This split does not repack or edit PZK files; its payload is limited to independent LCC path/API shims requiring the original PZK/SVU/Tsar dependencies separately.
+
+### Federal Ranger's Chimera
+
+Current B42 target: `Federal Ranger's [Chimera]`, Workshop `3766693411`, author EtherealShigure. The current B42 page audited here does not carry the old B41 page's `On Lockdown` permission text. Regardless, this split contains only an LCC runtime wrapper and no Chimera clothing/source/assets.
 
 ## Publication rules
 
-- Do not use a neutral title to conceal what a module patches. Neutral functional titles are fine, but the Workshop description must name/credit the target relationship.
-- Do not bundle original Workshop directories, models, textures, sounds, Lua source, or other third-party assets unless explicit permission covers that redistribution.
-- `Required Items`/dependencies are not permission by themselves.
-- `visibility=unlisted` is for controlled testing of projects that already pass the audit; it is not a bypass for permission requirements.
-- Permission evidence should be saved in this repository before a blocked/review project is enabled for Workshop upload.
-- If upstream permissions change, re-audit before public release.
+- Never bundle original Workshop directories or third-party source/assets into these compatibility items.
+- Keep direct target names/authors in Workshop descriptions and mark every module unofficial.
+- Keep `visibility=unlisted` until the exact runtime feature passes smoke testing.
+- Do not enable a split project together with the equivalent monolithic `LaccckaB4220Compat` during A/B tests.
+- Do not move third-party translations into runtime projects merely to make them publishable.
+- If a target author or moderation team disputes the independent-patch classification, stop public distribution of that module while the issue is resolved; do not attempt to conceal the relationship.
 
 ## Permission evidence
 
-When permission is obtained, add a file under `WorkshopProjects/permissions/` containing:
-
-- target mod and author;
-- date;
-- what was requested (compatibility fix / extension / translation / redistribution if any);
-- the author's response or durable link/screenshot reference;
-- which LCC Workshop project(s) the permission covers.
-
-Only after that should a disabled Workshop descriptor be replaced by an active `workshop.txt`.
+For translations or any future case that actually includes third-party material, store evidence under `WorkshopProjects/permissions/` with the target mod/author, date, requested scope, response/link, and covered LCC project(s).
