@@ -6,17 +6,19 @@ The monolithic `LaccckaCompatibilityPatch` remains the source/regression package
 
 1. Run `python3 tools/audit_workshop_split.py`.
 2. Run `python3 tools/audit_wellness_proxy.py`.
-3. Run the existing compatibility-contract and translation audits.
-4. Confirm all **12 READY projects** have unique Mod IDs, active `workshop.txt`, empty Workshop `id=`, and `visibility=unlisted` before first upload.
-5. Confirm no READY project has `workshop.txt.DISABLED`.
-6. Confirm the deprecated `LCCB4220ThirdPartyRU` project does not exist.
-7. Confirm the Survivor AI runtime split contains none of: `BanditZombie.lua`, `BanditServerWanderers.lua`, `ZAStompPlant.lua`, `ZAWaterFarm.lua`.
-8. Confirm the cache/farming/empty-server guards exist and the empty-server guard does not require `isClient()`.
-9. Confirm Wellness `media/perks.txt` declares exactly one perk: `Yoga`, `parent = Lifestyle`, with `xp1..xp10 = 0`.
-10. Confirm `zzy_LCC_LifestyleYogaContract.lua` exists and validates `Perks.Yoga:getParent()` against `Lifestyle`.
-11. Confirm public `title=` values remain target-neutral while direct compatibility descriptions contain target/author credits.
-12. Confirm `LCCB4220BanditsRU/.../IG_UI.json` matches the isolated target-side RU `IG_UI` snapshot byte-for-byte.
-13. Confirm `LCCB4220LifestyleRU/42/.../RU/IG_UI.json` does not exist; survivor dialogue remains isolated in its own translation item.
+3. Run `python3 tools/audit_survivor_ai_guards.py`.
+4. Run the existing compatibility-contract and translation audits.
+5. Confirm all **12 READY projects** have unique Mod IDs, active `workshop.txt`, empty Workshop `id=`, and `visibility=unlisted` before first upload.
+6. Confirm no READY project has `workshop.txt.DISABLED`.
+7. Confirm the deprecated `LCCB4220ThirdPartyRU` project does not exist.
+8. Confirm the Survivor AI runtime split contains none of: `BanditZombie.lua`, `BanditUpdate.lua`, `BanditServerWanderers.lua`, `ZAStompPlant.lua`, `ZAWaterFarm.lua`.
+9. Confirm the cache/update, farming and empty-server guards exist; the empty-server guard must not require `isClient()`.
+10. Confirm the cache/update guard wraps the installed global compatibility predicate and preserves the original predicate for normal zombies.
+11. Confirm Wellness `media/perks.txt` declares exactly one perk: `Yoga`, `parent = Lifestyle`, with `xp1..xp10 = 0`.
+12. Confirm `zzy_LCC_LifestyleYogaContract.lua` exists and validates `Perks.Yoga:getParent()` against `Lifestyle`.
+13. Confirm public `title=` values remain target-neutral while direct compatibility descriptions contain target/author credits.
+14. Confirm `LCCB4220BanditsRU/.../IG_UI.json` matches the isolated target-side RU `IG_UI` snapshot byte-for-byte.
+15. Confirm `LCCB4220LifestyleRU/42/.../RU/IG_UI.json` does not exist; survivor dialogue remains isolated in its own translation item.
 
 ## Runtime smoke-test setup
 
@@ -40,6 +42,8 @@ The monolithic `LaccckaCompatibilityPatch` remains the source/regression package
 ## Survivor AI Stability
 
 - Connect a client, move through a dense zombie/NPC area and confirm no stale/squareless cache failure returns.
+- Force or observe a despawn/devirtualization transition and confirm a zombie with no square exits the installed update consumer before combat code, then disappears from LCC-observed caches.
+- Confirm normal zombies still call the installed `BanditCompatibility.IsReanimatedForGrappleOnly` predicate and continue through normal update behavior.
 - Wait through at least one `EveryOneMinute` cache rebuild and confirm the post-flush sweep does not break cache counts.
 - Exercise watering/stomping tasks and verify transient/missing Farming states fail safely while normal states still call installed callbacks.
 - With a player online, wait through an `EveryTenMinutes` tick and confirm normal wanderer scheduling sees the real clan table.
@@ -62,6 +66,7 @@ The monolithic `LaccckaCompatibilityPatch` remains the source/regression package
 
 - Exercise vehicle part menus, water-tank integration, zones and vehicle-upgrade support with original dependencies installed separately.
 - Confirm legacy requires resolve to current B42.20 modules without duplicate module/state creation.
+- Temporarily test without the optional support module and confirm the split bridge fails soft through `LCCGuard` rather than aborting the entire compatibility item.
 
 ## Outfit Menu Safety
 
