@@ -37,8 +37,7 @@ pairs = {
     "LCCB4220OutfitMenuSafety/Contents/mods/LCCB4220OutfitMenuSafety/42/media/lua/client/zzz_LCC_ChimeraGhillieFix.lua": "42/media/lua/client/zzz_LCC_ChimeraGhillieFix.lua",
 }
 
-# Permission-gated Lifestyle translation staging mirrors the monolithic translation baseline,
-# except the proven Bandits IG_UI blob which is isolated into LCCB4220BanditsRU.
+# Translation Workshop projects stay separate by compatibility target/provenance.
 lifestyle_translation_files = [
     "ContextMenu.json", "Farming.json", "IG_UI_RU.txt", "ItemName.json",
     "Mod.json", "Moodles.json", "Moveables.json", "Moveables_RU.txt", "Recipes.json",
@@ -67,16 +66,22 @@ ready = {
     "LCCB4220FirearmsBridge", "LCCB4220SVUTsarBridge", "LCCB4220zReBridge",
     "LCCB4220AegisGuard", "LCCB4220LegacyCallbacks", "LCCB4220SkillDescriptionsRU",
     "LCCB4220SurvivorAIStability", "LCCB4220WellnessCompat", "LCCB4220PZKBridge",
-    "LCCB4220OutfitMenuSafety",
+    "LCCB4220OutfitMenuSafety", "LCCB4220BanditsRU", "LCCB4220LifestyleRU",
 }
-blocked = {"LCCB4220BanditsRU", "LCCB4220LifestyleRU"}
 
 credit_markers = {
     "LCCB4220SurvivorAIStability": ("Bandits", "Slayer"),
     "LCCB4220WellnessCompat": ("Lifestyle", "Mopop", "Angry"),
     "LCCB4220PZKBridge": ("PZK", "PZK Forge"),
     "LCCB4220OutfitMenuSafety": ("Chimera", "EtherealShigure"),
+    "LCCB4220BanditsRU": ("Bandits", "Slayer"),
+    "LCCB4220LifestyleRU": ("Lifestyle", "Mopop", "Angry"),
 }
+
+# Public titles are functional LCC names. Target names belong in description/credits, not title=.
+forbidden_title_markers = (
+    "Bandits", "Lifestyle", "PZK", "Chimera", "Aegis", "SVU", "Tsar", "zRe"
+)
 
 errors = []
 for dst_rel, src_rel in sorted(pairs.items()):
@@ -97,23 +102,23 @@ for rel in split_owned_required:
 
 for rel in forbidden_bandits_copies:
     if (WP / rel).exists():
-        errors.append(f"Bandits split must not redistribute upstream override: {rel}")
+        errors.append(f"survivor AI split must not redistribute upstream override: {rel}")
 
-# Bandits translation provenance is exact and intentionally isolated.
+# Survivor-dialogue translation provenance stays isolated.
 bandits_ru_source = ROOT / "3268487204/mods/Bandits/42.20/media/lua/shared/Translate/RU/IG_UI_ru.json"
 bandits_ru_split = WP / "LCCB4220BanditsRU/Contents/mods/LCCB4220BanditsRU/42/media/lua/shared/Translate/RU/IG_UI.json"
 if not bandits_ru_source.is_file() or not bandits_ru_split.is_file():
-    errors.append("Bandits RU provenance source/split file is missing")
+    errors.append("survivor-dialogue RU provenance source/split file is missing")
 elif bandits_ru_source.read_bytes() != bandits_ru_split.read_bytes():
-    errors.append("Bandits RU split no longer matches the isolated target-side RU snapshot")
+    errors.append("survivor-dialogue RU split no longer matches the isolated target-side RU snapshot")
 
 lifestyle_bandits_mix = WP / "LCCB4220LifestyleRU/Contents/mods/LCCB4220LifestyleRU/42/media/lua/shared/Translate/RU/IG_UI.json"
 if lifestyle_bandits_mix.exists():
-    errors.append("Bandits IG_UI translation must not be bundled in LCCB4220LifestyleRU")
+    errors.append("survivor-dialogue IG_UI translation must not be bundled in wellness/hobbies RU")
 if (WP / "LCCB4220ThirdPartyRU").exists():
     errors.append("deprecated mixed LCCB4220ThirdPartyRU project must not return")
 
-# Lifestyle runtime split may declare only our Yoga proxy; all upstream Lifestyle perk blocks stay upstream.
+# Wellness runtime split may declare only our Yoga proxy; all upstream perk blocks stay upstream.
 wellness_perks = WP / "LCCB4220WellnessCompat/Contents/mods/LCCB4220WellnessCompat/42/media/perks.txt"
 if wellness_perks.is_file():
     text = wellness_perks.read_text(encoding="utf-8")
@@ -138,24 +143,28 @@ for project in sorted(ready):
         errors.append(f"READY project must remain unlisted until smoke-tested: {project}")
     if not re.search(r"(?m)^id=\s*$", text):
         errors.append(f"READY project should have empty Workshop id before first upload: {project}")
+    title_match = re.search(r"(?m)^title=(.+)$", text)
+    if not title_match:
+        errors.append(f"READY project lacks title=: {project}")
+    else:
+        title = title_match.group(1)
+        for marker in forbidden_title_markers:
+            if marker.lower() in title.lower():
+                errors.append(f"public title for {project} must stay target-neutral; found marker: {marker}")
 
 for project, markers in credit_markers.items():
     descriptor = WP / project / "workshop.txt"
     if descriptor.is_file():
         text = descriptor.read_text(encoding="utf-8")
+        description_match = re.search(r"(?m)^description=(.+)$", text)
+        description = description_match.group(1) if description_match else ""
         for marker in markers:
-            if marker not in text:
+            if marker not in description:
                 errors.append(f"Workshop description for {project} must credit/name relationship marker: {marker}")
-
-for project in sorted(blocked):
-    if (WP / project / "workshop.txt").exists():
-        errors.append(f"BLOCKED project must not have active workshop.txt: {project}")
-    if not (WP / project / "workshop.txt.DISABLED").is_file():
-        errors.append(f"BLOCKED project lacks workshop.txt.DISABLED: {project}")
 
 vanilla_project = WP / "LCCB4220SkillDescriptionsRU"
 if any(p.name == "ZZ_LCC_Perks_RU.txt" for p in vanilla_project.rglob("*")):
-    errors.append("vanilla/B42 skill project must not contain Lifestyle ZZ_LCC_Perks_RU.txt")
+    errors.append("vanilla/B42 skill project must not contain wellness/hobbies ZZ_LCC_Perks_RU.txt")
 
 if errors:
     print("Workshop split audit FAILED:")
@@ -166,5 +175,5 @@ if errors:
 print(
     f"Workshop split audit OK: {len(pairs)} mirrored source files; "
     f"{len(split_owned_required)} split-owned refactors; {len(ready)} ready projects; "
-    f"{len(blocked)} blocked translation projects"
+    "0 blocked projects"
 )
