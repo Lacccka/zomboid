@@ -1,0 +1,7 @@
+name=LCC B42.20 Vehicle Integration Bridge
+id=LCCB4220PZKBridge
+author=Lacccka
+description=Local/testing split of LCC PZK/SVU compatibility path shims. Workshop publication is blocked pending permission.
+modversion=1.0.0
+versionMin=42.20.0
+loadafter=\PZKCarzoneWorkshop,\PzkVanillaPlusCarPack,\StandardizedVehicleUpgrades3Core,\tsarslib

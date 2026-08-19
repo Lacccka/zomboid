@@ -1,0 +1,6 @@
+version=1
+id=
+title=LCC B42.20 Survivor AI Stability
+description=DO NOT UPLOAD: permission/refactor required. Local split of the current LCC Bandits compatibility fixes for regression testing.
+tags=Build 42;Multiplayer
+visibility=private

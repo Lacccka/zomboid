@@ -1,0 +1,7 @@
+name=LCC B42.20 Outfit Menu Safety
+id=LCCB4220OutfitMenuSafety
+author=Lacccka
+description=Local/testing split of the LCC Chimera ghillie extra-menu compatibility wrapper. Workshop publication is blocked pending permission evidence.
+modversion=1.0.0
+versionMin=42.20.0
+loadafter=\Federal_Rangers_Chimera

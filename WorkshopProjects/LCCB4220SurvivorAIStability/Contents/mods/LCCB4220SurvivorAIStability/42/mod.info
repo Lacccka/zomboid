@@ -1,0 +1,7 @@
+name=LCC B42.20 Survivor AI Stability
+id=LCCB4220SurvivorAIStability
+author=Lacccka
+description=Local/testing split of LCC Bandits compatibility fixes. Workshop publication is blocked pending permission or removal of upstream full-file overrides.
+modversion=1.0.0
+versionMin=42.20.0
+loadafter=\Bandits2

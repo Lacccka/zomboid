@@ -1,0 +1,6 @@
+version=1
+id=
+title=LCC B42.20 Wellness Compatibility
+description=DO NOT UPLOAD: permission required for the target Lifestyle extension. Local split for regression testing only.
+tags=Build 42;Multiplayer
+visibility=private

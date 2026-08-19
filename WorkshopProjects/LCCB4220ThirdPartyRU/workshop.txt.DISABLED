@@ -1,0 +1,6 @@
+version=1
+id=
+title=LCC Russian Localization - Extensions
+description=DO NOT UPLOAD: third-party translation permissions required. Local split of the current LCC mod-specific Russian localization for regression testing.
+tags=Build 42;Translation
+visibility=private

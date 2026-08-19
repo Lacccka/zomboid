@@ -1,0 +1,7 @@
+name=LCC Russian Localization - Extensions
+id=LCCB4220ThirdPartyRU
+author=Lacccka
+description=Local/testing split of LCC Russian localization for supported third-party mods. Workshop publication is blocked pending permission evidence.
+modversion=1.0.0
+versionMin=42.20.0
+loadafter=\Bandits2,\LifestyleHobbies
