@@ -17,22 +17,33 @@ if not Guard.isEnabled(FEATURE) then return end
 local lastId
 local lastZombie
 
-local function getZombieId(zombie)
+local function getZombieIdSafe(zombie)
     if not zombie then return nil end
-    return BanditUtils.GetZombieID(zombie)
+    local getId = BanditUtils and BanditUtils.GetZombieID
+    if type(getId) ~= "function" then return nil end
+
+    -- A cached Java object can become invalid between server updates during
+    -- devirtualization. A stale fast-path reference must become a cache miss,
+    -- never a new compatibility-patch crash.
+    local ok, id = pcall(getId, zombie)
+    if not ok then return nil end
+    return id
 end
 
 local function lookupZombie(id)
     if id == nil then return nil end
 
-    if lastId == id and lastZombie and getZombieId(lastZombie) == id then
-        return lastZombie
+    if lastId == id and lastZombie then
+        if getZombieIdSafe(lastZombie) == id then
+            return lastZombie
+        end
+        lastId, lastZombie = nil, nil
     end
 
     -- Future-proof against Bandits re-enabling its own server cache.
     if type(BanditServerZombie) == "table" and type(BanditServerZombie.Cache) == "table" then
         local cached = BanditServerZombie.Cache[id]
-        if cached and getZombieId(cached) == id then
+        if cached and getZombieIdSafe(cached) == id then
             lastId, lastZombie = id, cached
             return cached
         end
@@ -46,15 +57,12 @@ local function lookupZombie(id)
 
     for i = 0, zombies:size() - 1 do
         local zombie = zombies:get(i)
-        if zombie and getZombieId(zombie) == id then
+        if zombie and getZombieIdSafe(zombie) == id then
             lastId, lastZombie = id, zombie
             return zombie
         end
     end
 
-    if lastId == id then
-        lastId, lastZombie = nil, nil
-    end
     return nil
 end
 
