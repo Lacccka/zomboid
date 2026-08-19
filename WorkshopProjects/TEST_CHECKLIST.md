@@ -5,16 +5,18 @@ The monolithic `LaccckaCompatibilityPatch` remains the source/regression package
 ## Static checks
 
 1. Run `python3 tools/audit_workshop_split.py`.
-2. Run the existing compatibility-contract and Lifestyle translation audits.
-3. Confirm all READY runtime projects have unique Mod IDs, active `workshop.txt`, empty Workshop `id=`, and `visibility=unlisted` before first upload.
-4. Confirm `LCCB4220BanditsRU` and `LCCB4220LifestyleRU` have `workshop.txt.DISABLED` only.
-5. Confirm the deprecated `LCCB4220ThirdPartyRU` project does not exist.
-6. Confirm the Bandits runtime split contains none of: `BanditZombie.lua`, `BanditServerWanderers.lua`, `ZAStompPlant.lua`, `ZAWaterFarm.lua`.
-7. Confirm the Bandits cache/farming/empty-server guards exist.
-8. Confirm Wellness `media/perks.txt` declares exactly one perk: `Yoga`, with `xp1..xp10 = 0`.
-9. Confirm Workshop descriptions for Bandits/Lifestyle/PZK/Chimera name and credit their targets and state that original content is not bundled.
-10. Confirm `LCCB4220BanditsRU/.../IG_UI.json` matches `Bandits/.../RU/IG_UI_ru.json` byte-for-byte.
-11. Confirm `LCCB4220LifestyleRU/42/.../RU/IG_UI.json` does not exist; that blob belongs only to BanditsRU.
+2. Run `python3 tools/audit_wellness_proxy.py`.
+3. Run the existing compatibility-contract and Lifestyle translation audits.
+4. Confirm all READY runtime projects have unique Mod IDs, active `workshop.txt`, empty Workshop `id=`, and `visibility=unlisted` before first upload.
+5. Confirm `LCCB4220BanditsRU` and `LCCB4220LifestyleRU` have `workshop.txt.DISABLED` only.
+6. Confirm the deprecated `LCCB4220ThirdPartyRU` project does not exist.
+7. Confirm the Bandits runtime split contains none of: `BanditZombie.lua`, `BanditServerWanderers.lua`, `ZAStompPlant.lua`, `ZAWaterFarm.lua`.
+8. Confirm the Bandits cache/farming/empty-server guards exist.
+9. Confirm Wellness `media/perks.txt` declares exactly one perk: `Yoga`, `parent = Lifestyle`, with `xp1..xp10 = 0`.
+10. Confirm `zzy_LCC_LifestyleYogaContract.lua` exists and validates `Perks.Yoga:getParent()` against `Lifestyle`.
+11. Confirm Workshop descriptions for Bandits/Lifestyle/PZK/Chimera name and credit their targets and state that original content is not bundled.
+12. Confirm `LCCB4220BanditsRU/.../IG_UI.json` matches `Bandits/.../RU/IG_UI_ru.json` byte-for-byte.
+13. Confirm `LCCB4220LifestyleRU/42/.../RU/IG_UI.json` does not exist; that blob belongs only to BanditsRU.
 
 ## Runtime smoke test
 
@@ -47,6 +49,7 @@ The monolithic `LaccckaCompatibilityPatch` remains the source/regression package
 ## Lifestyle runtime split
 
 - Confirm `LifestyleHobbies` loads before `LCCB4220WellnessCompat` and the `Lifestyle` parent perk exists when the LCC `Yoga` proxy is registered.
+- Confirm startup/client log contains `[LCC][Wellness] Yoga CustomPerk contract OK: parent=Lifestyle`; any `[LCC][Guard][DISABLED][lifestyle.yoga-progress-ui]` line must be treated as a failed Yoga contract test.
 - Confirm the Skills panel shows Yoga without duplicating/replacing Lifestyle, Art, Cleaning, Dancing, Meditation, or Music.
 - Confirm Yoga level/progress match Lifestyle `HiddenSkills` across reconnect/reload and no vanilla XP is awarded to the proxy.
 - Confirm level 10, disabled-Yoga sandbox configuration, and tooltip rendering behave correctly.
