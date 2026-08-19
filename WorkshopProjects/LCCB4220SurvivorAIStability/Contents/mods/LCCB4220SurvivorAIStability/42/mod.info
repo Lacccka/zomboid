@@ -1,7 +1,7 @@
 name=LCC B42.20 Survivor AI Stability
 id=LCCB4220SurvivorAIStability
 author=Lacccka
-description=Local/testing split of LCC-authored Bandits B42.20 compatibility guards and legacy-path shims. The split no longer redistributes Bandits Lua source; Workshop upload remains disabled pending a final permission/policy review and runtime regression test.
-modversion=1.2.0
+description=Unofficial LCC-authored Build 42.20 compatibility guards for Bandits NPC. Requires Bandits2; no Bandits source code, assets, or translations are included.
+modversion=1.3.0
 versionMin=42.20.0
 loadafter=\Bandits2
