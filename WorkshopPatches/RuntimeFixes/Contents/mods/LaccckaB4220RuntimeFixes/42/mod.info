@@ -1,0 +1,8 @@
+name=Lacccka B42 Runtime Fixes
+id=LaccckaB4220RuntimeFixes
+author=Lacccka
+description=Targeted runtime compatibility fixes for selected Build 42 mods. Do not use unless you are sure this patch is required. Patch files only; original mods are not included.
+modversion=1.0.0
+versionMin=42.20.0
+require=\LaccckaB4220PatchCore
+loadafter=\Bandits2
