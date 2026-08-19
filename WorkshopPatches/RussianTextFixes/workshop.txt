@@ -1,6 +1,6 @@
 version=1
-id=0
+id=3786176120
 title=Lacccka B42 Russian Text Fixes
 description=Russian localization and interface text fixes for selected third-party Project Zomboid Build 42 mods and supported UI keys. Do not use this patch unless you are sure it is required by your setup. This item contains patch/localization files only; the original mods are not included and must be installed separately.
-tags=Build 42;Translation;Utilities
+tags=Build 42
 visibility=public

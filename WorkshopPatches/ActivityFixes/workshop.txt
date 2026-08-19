@@ -1,6 +1,6 @@
 version=1
-id=0
+id=3786175725
 title=Lacccka B42 Activity Fixes
 description=Targeted gameplay and activity compatibility fixes for selected third-party Project Zomboid Build 42 mods. Do not use this patch unless you are sure it is required by your setup. This item contains patch files only; the original mods are not included and must be installed separately.
-tags=Build 42;Multiplayer;Utilities
+tags=Build 42;Multiplayer
 visibility=public

@@ -1,6 +1,6 @@
 version=1
-id=0
+id=3786175808
 title=Lacccka B42 Compatibility Bridges
 description=Targeted legacy API and module-path compatibility bridges for selected third-party Project Zomboid Build 42 mods. Do not use this patch unless you are sure it is required by your setup. This item contains patch files only; the original mods are not included and must be installed separately.
-tags=Build 42;Multiplayer;Utilities
+tags=Build 42;Multiplayer
 visibility=public
