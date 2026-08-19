@@ -94,3 +94,18 @@ jobs:
             echo 'Player-facing perk descriptions contain implementation jargon'
             exit 1
           fi
+
+          # B42 loads JSON translation maps from the language directory. Keep
+          # the runtime skill-description map valid and make sure the client UI
+          # wrapper that renders those descriptions is present.
+          RU_SKILLS_JSON='LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/shared/Translate/RU/LCC_SkillDescriptions.json'
+          python3 -m json.tool "${RU_SKILLS_JSON}" >/dev/null
+          for key in Fitness Strength Meditation Music Yoga; do
+            grep -F "\"IGUI_perks_${key}_Description\"" "${RU_SKILLS_JSON}" >/dev/null
+          done
+
+          SKILL_UI='LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/client/zzz_LCC_SkillDescriptions.lua'
+          grep -F 'local FEATURE = "ui.skill-descriptions"' "${SKILL_UI}" >/dev/null
+          grep -F 'originalUpdateTooltip(self, lvlSelected)' "${SKILL_UI}" >/dev/null
+          grep -F 'perk:getId()' "${SKILL_UI}" >/dev/null
+          grep -F 'IGUI_perks_' "${SKILL_UI}" >/dev/null
