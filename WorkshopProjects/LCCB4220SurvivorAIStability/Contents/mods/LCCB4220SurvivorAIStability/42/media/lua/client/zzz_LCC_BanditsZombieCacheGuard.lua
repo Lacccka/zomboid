@@ -8,6 +8,12 @@ if isServer() then return end
 local Guard = require "LCC/Guard"
 local FEATURE = "bandits.zombie-square-guard"
 
+-- Resolve the runtime tables from the separately installed Bandits2 dependency.
+-- If Bandits already loaded them, require() simply returns the cached module.
+Guard.safeRequire(FEATURE, "BanditUtils")
+Guard.safeRequire(FEATURE, "BanditZombie")
+if not Guard.isEnabled(FEATURE) then return end
+
 local function removeFromCaches(id)
     if not BanditZombie or id == nil then return end
     if type(BanditZombie.Cache) == "table" then BanditZombie.Cache[id] = nil end
@@ -91,9 +97,9 @@ Guard.install {
             end
         end)
 
-        -- Bandits rebuilds all caches every minute. Registering after Bandits
-        -- makes this sweep run after that rebuild and prevents reintroduction of
-        -- squareless objects that did not receive another OnZombieUpdate tick.
+        -- Bandits rebuilds all caches every minute. Registering from the later
+        -- compatibility mod makes this sweep run after the normal Bandits
+        -- rebuild in the supported load order.
         Events.EveryOneMinute.Add(function()
             if Guard.isEnabled(FEATURE) then
                 Guard.protect(FEATURE, "post-flush sweep", sweepCaches)
