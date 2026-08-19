@@ -2,31 +2,38 @@
 
 This directory is a publication-oriented split of `LaccckaCompatibilityPatch` for Project Zomboid Build 42.20.x.
 
-The monolithic patch remains the development/regression baseline. Runtime projects are separated by target/function so one upstream change or Workshop review does not block unrelated fixes. Translation projects are separated from runtime code and remain permission-gated.
+The monolithic patch remains the development/regression baseline. Runtime fixes and localization are separated into focused Workshop projects so each item can be tested and updated independently.
 
-## Safety model
+## Packaging model
 
-A runtime compatibility project is **READY_FOR_UNLISTED_TEST** when its Workshop payload contains only LCC-authored code/localization, requires original mods separately, and does not redistribute their source/assets. LCC hooks/wrappers/shims may interact with installed target APIs/types; the target relationship must remain explicit and credited.
+All 12 split projects are **READY_FOR_UNLISTED_TEST**.
 
-**BLOCKED_PENDING_PERMISSION** is used for mod-specific translated text. `Unlisted` is not a permission bypass; it is only controlled first-test visibility for source-clean runtime items.
+- Public Workshop titles are neutral LCC functional names and do not contain target-mod names.
+- When a project directly works with another mod, its Workshop **description** still names/credits that compatibility target and requires it separately.
+- Runtime projects contain LCC-authored hooks, wrappers, guards, path/API shims, or vanilla/B42 localization; they do not repack target Lua/assets.
+- Translation projects are separate Workshop items and remain independent from runtime compatibility projects.
+- Every new item stays `visibility=unlisted` with an empty Workshop `id=` until its smoke test passes.
 
 ## READY_FOR_UNLISTED_TEST
 
-- `LCCB4220FirearmsBridge` — MFS 3D placement compatibility wrapper.
-- `LCCB4220SVUTsarBridge` — SVU3/TsarLib legacy API path bridge.
-- `LCCB4220zReBridge` — zRe legacy `BodyLocations` path bridge.
-- `LCCB4220AegisGuard` — Aegis inventory-transfer guard.
+- `LCCB4220FirearmsBridge` — **LCC B42.20 Firearms Placement Bridge**; 3D placement compatibility wrapper.
+- `LCCB4220SVUTsarBridge` — **LCC B42.20 Vehicle API Bridge**; legacy vehicle API/path bridge.
+- `LCCB4220zReBridge` — **LCC B42.20 Vaccine API Bridge**; legacy body-location API bridge.
+- `LCCB4220AegisGuard` — **LCC B42.20 Inventory Safety Guard**; inventory-transfer validation guard.
 - `LCCB4220LegacyCallbacks` — generic Build 42 legacy callback bridge.
-- `LCCB4220SkillDescriptionsRU` — LCC-authored vanilla/Build 42 Russian skill descriptions only.
-- `LCCB4220SurvivorAIStability` — independent Bandits runtime guards; no Bandits source/assets bundled.
-- `LCCB4220WellnessCompat` — independent Lifestyle bath/shower/Yoga runtime compatibility; no Lifestyle source/assets/translations bundled.
-- `LCCB4220PZKBridge` — independent PZK/SVU/Tsar path/API shims; no PZK vehicle/source/assets bundled.
-- `LCCB4220OutfitMenuSafety` — independent Chimera runtime wrapper; no Chimera source/clothing assets bundled.
+- `LCCB4220SkillDescriptionsRU` — LCC-authored vanilla/Build 42 Russian skill descriptions.
+- `LCCB4220SurvivorAIStability` — **LCC B42.20 Survivor AI Stability**; source-clean NPC/survivor runtime guards.
+- `LCCB4220WellnessCompat` — **LCC B42.20 Wellness Compatibility**; bath/shower/Yoga compatibility.
+- `LCCB4220PZKBridge` — **LCC B42.20 Vehicle Integration Bridge**; legacy vehicle integration path/API shims.
+- `LCCB4220OutfitMenuSafety` — **LCC B42.20 Outfit Menu Safety**; clothing extra-menu normalization wrapper.
+- `LCCB4220BanditsRU` — **LCC B42.20 Survivor Dialogue RU**; standalone Russian survivor/NPC dialogue localization.
+- `LCCB4220LifestyleRU` — **LCC B42.20 Wellness & Hobbies RU**; standalone Russian wellness/hobby localization plus LCC strings.
 
-## BLOCKED_PENDING_PERMISSION
+## Source-clean runtime rules
 
-- `LCCB4220BanditsRU` — isolated Bandits Russian `IG_UI` translation. Provenance is exact, but translation publication rights/permission are not yet documented.
-- `LCCB4220LifestyleRU` — isolated Lifestyle-oriented Russian localization staging. Bandits content is excluded; publication remains disabled until translation rights/permission and final key-level provenance are documented.
+The Bandits-oriented runtime split contains none of the former full upstream overrides (`BanditZombie.lua`, `BanditServerWanderers.lua`, `ZAStompPlant.lua`, `ZAWaterFarm.lua`). The Wellness runtime split declares only the LCC `Yoga` UI proxy in `perks.txt` and validates the resolved `Lifestyle` parent at runtime.
+
+`tools/audit_workshop_split.py` enforces source-clean packaging, target-neutral public titles, explicit descriptions/credits, translation separation, dedicated-server semantics, and the Yoga proxy contract. `tools/audit_wellness_proxy.py` provides a focused Wellness check.
 
 ## Linux launcher
 
@@ -34,11 +41,11 @@ A runtime compatibility project is **READY_FOR_UNLISTED_TEST** when its Workshop
 
 ## Before public visibility
 
-1. Run `python3 tools/audit_workshop_split.py` plus the existing compatibility/translation audits.
-2. Test runtime modules unlisted with original target mods installed separately.
-3. Never enable equivalent monolithic and split runtime fixes together during A/B testing.
-4. Keep target mod/author credits explicit and mark LCC modules unofficial.
-5. Re-check current target Workshop pages and official PZ/Steam policies.
-6. Keep mod-specific translations upload-disabled until their rights/provenance are clear.
+1. Run `python3 tools/audit_workshop_split.py` and `python3 tools/audit_wellness_proxy.py` plus the existing compatibility/translation audits.
+2. Test each split item unlisted with original dependencies installed separately.
+3. Never enable an equivalent split runtime project together with `LaccckaB4220Compat` during A/B testing.
+4. Keep target credits/dependency details in descriptions even though public titles are neutral.
+5. Assign real Workshop IDs only after the relevant smoke test succeeds.
+6. Change visibility from unlisted only after dedicated-server/client regression testing.
 
 See `PUBLICATION_AUDIT.md`, `SPLIT_MANIFEST.md`, and `TEST_CHECKLIST.md`.
