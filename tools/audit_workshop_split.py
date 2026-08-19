@@ -53,6 +53,7 @@ split_owned_required = [
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/shared/zzz_LCC_BanditsFarmingGuard.lua",
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/server/zzz_LCC_BanditsEmptyServerWandererGuard.lua",
     "LCCB4220WellnessCompat/Contents/mods/LCCB4220WellnessCompat/42/media/perks.txt",
+    "LCCB4220WellnessCompat/Contents/mods/LCCB4220WellnessCompat/42/media/lua/client/zzy_LCC_LifestyleYogaContract.lua",
 ]
 
 forbidden_bandits_copies = [
@@ -104,6 +105,20 @@ for rel in forbidden_bandits_copies:
     if (WP / rel).exists():
         errors.append(f"survivor AI split must not redistribute upstream override: {rel}")
 
+# Empty-server guard must target dedicated-server semantics. Current Bandits server code
+# explicitly skips updateGroups when isClient() is true, so this guard must never require
+# client state in order to detect an empty dedicated MP server.
+empty_server_guard = WP / "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/server/zzz_LCC_BanditsEmptyServerWandererGuard.lua"
+if empty_server_guard.is_file():
+    text = empty_server_guard.read_text(encoding="utf-8")
+    if "isClient()" in text:
+        errors.append("empty-server wanderer guard must not require client state on dedicated server")
+    for marker in ('world:getGameMode() ~= "Multiplayer"', "getOnlinePlayers()", "players:size() == 0"):
+        if marker not in text:
+            errors.append(f"empty-server wanderer guard missing dedicated-MP contract marker: {marker}")
+else:
+    errors.append("missing empty-server wanderer guard")
+
 # Survivor-dialogue translation provenance stays isolated.
 bandits_ru_source = ROOT / "3268487204/mods/Bandits/42.20/media/lua/shared/Translate/RU/IG_UI_ru.json"
 bandits_ru_split = WP / "LCCB4220BanditsRU/Contents/mods/LCCB4220BanditsRU/42/media/lua/shared/Translate/RU/IG_UI.json"
@@ -125,6 +140,8 @@ if wellness_perks.is_file():
     perk_names = re.findall(r"(?m)^\s*perk\s+([A-Za-z0-9_]+)\s*$", text)
     if perk_names != ["Yoga"]:
         errors.append(f"Wellness split perks.txt must declare only Yoga; found: {perk_names}")
+    if not re.search(r"(?m)^\s*parent\s*=\s*Lifestyle\s*,?\s*$", text):
+        errors.append("Wellness Yoga proxy parent must be Lifestyle")
     for key in ("xp1", "xp2", "xp3", "xp4", "xp5", "xp6", "xp7", "xp8", "xp9", "xp10"):
         if not re.search(rf"(?m)^\s*{key}\s*=\s*0,?\s*$", text):
             errors.append(f"Wellness Yoga proxy must keep {key}=0 and read real XP from HiddenSkills")
