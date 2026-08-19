@@ -1,14 +1,62 @@
--- Bandits 42.20 uses BanditZombie.GetInstanceById() from BanditServerCommands.lua,
--- but BanditZombie.lua belongs to media/lua/client and is not available on a
--- dedicated server. Provide only the missing lookup contract so the server-side
--- brain sync can complete instead of throwing "GetInstanceById of non-table: null".
+-- Source-clean dedicated-server lookup bridge for Bandits 42.20.
 --
--- Returning nil preserves the behavior that is already intended by the caller:
--- updating ItemsToSpawnAtDeath is conditional on a live local IsoZombie lookup.
+-- BanditServerCommands calls BanditZombie.GetInstanceById(), but BanditZombie.lua
+-- is a client script and therefore does not provide that API on a dedicated
+-- server. Bandits also defines BanditServerZombie.Cache, but its own cache update
+-- event is currently disabled. Provide the missing contract without importing
+-- either upstream file: use the server cache if populated, otherwise resolve the
+-- active IsoZombie on demand from the server cell.
 if not isServer() then return end
 
 local Guard = require "LCC/Guard"
 local FEATURE = "bandits.dedicated-zombie-lookup"
+
+Guard.safeRequire(FEATURE, "BanditUtils")
+if not Guard.isEnabled(FEATURE) then return end
+
+local lastId
+local lastZombie
+
+local function getZombieId(zombie)
+    if not zombie then return nil end
+    return BanditUtils.GetZombieID(zombie)
+end
+
+local function lookupZombie(id)
+    if id == nil then return nil end
+
+    if lastId == id and lastZombie and getZombieId(lastZombie) == id then
+        return lastZombie
+    end
+
+    -- Future-proof against Bandits re-enabling its own server cache.
+    if type(BanditServerZombie) == "table" and type(BanditServerZombie.Cache) == "table" then
+        local cached = BanditServerZombie.Cache[id]
+        if cached and getZombieId(cached) == id then
+            lastId, lastZombie = id, cached
+            return cached
+        end
+    end
+
+    local cell = getCell()
+    if not cell then return nil end
+
+    local zombies = cell:getZombieList()
+    if not zombies then return nil end
+
+    for i = 0, zombies:size() - 1 do
+        local zombie = zombies:get(i)
+        if zombie and getZombieId(zombie) == id then
+            lastId, lastZombie = id, zombie
+            return zombie
+        end
+    end
+
+    if lastId == id then
+        lastId, lastZombie = nil, nil
+    end
+    return nil
+end
 
 Guard.install {
     id = FEATURE,
@@ -16,16 +64,20 @@ Guard.install {
         if BanditZombie ~= nil and type(BanditZombie) ~= "table" then
             return false, "BanditZombie exists but is not a table"
         end
+        if type(BanditUtils) ~= "table" or type(BanditUtils.GetZombieID) ~= "function" then
+            return false, "BanditUtils.GetZombieID is unavailable"
+        end
+        if type(getCell) ~= "function" then
+            return false, "getCell is unavailable"
+        end
         return true
     end,
     install = function()
         BanditZombie = BanditZombie or {}
 
-        -- If Bandits restores the server-side API itself, leave it untouched.
+        -- Leave a future native server implementation authoritative.
         if not BanditZombie.GetInstanceById then
-            BanditZombie.GetInstanceById = function(id)
-                return nil
-            end
+            BanditZombie.GetInstanceById = lookupZombie
         end
     end,
 }
