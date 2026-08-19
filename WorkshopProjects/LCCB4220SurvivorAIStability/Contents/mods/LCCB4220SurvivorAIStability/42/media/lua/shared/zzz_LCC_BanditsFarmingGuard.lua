@@ -9,6 +9,11 @@ local Guard = require "LCC/Guard"
 local WATER = "bandits.water-farm-action"
 local STOMP = "bandits.stomp-plant-action"
 
+-- Load the callbacks from the separately installed Bandits2 dependency before
+-- wrapping them. require() is idempotent when Bandits already loaded the files.
+Guard.safeRequire(WATER, "ZombieActions/ZAWaterFarm")
+Guard.safeRequire(STOMP, "ZombieActions/ZAStompPlant")
+
 local supportedWaterItems = {
     ["farming.WateredCanFull"] = true,
     ["farming.WateredCan"] = true,
