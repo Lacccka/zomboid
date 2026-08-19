@@ -1,0 +1,7 @@
+name=LCC B42.20 Bandits Russian Localization
+id=LCCB4220BanditsRU
+author=Lacccka
+description=Permission-gated Russian localization staging for Bandits NPC. Requires Bandits2; contains translation material only.
+modversion=1.0.0
+versionMin=42.20.0
+loadafter=\Bandits2
