@@ -1,0 +1,6 @@
+version=1
+id=
+title=LCC B42.20 Survivor AI Stability
+description=Unofficial independent compatibility patch for [B42] Bandits NPC by Slayer. Requires the original Bandits2 Workshop item; no Bandits source code, assets, models, textures, sounds, or translations are included. Provides LCC-authored Build 42.20 dedicated-server, cache, farming, and legacy-path guards.
+tags=Build 42;Multiplayer
+visibility=unlisted
