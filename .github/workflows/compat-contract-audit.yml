@@ -43,10 +43,14 @@ jobs:
             exit 1
           fi
 
-          # Our Yoga registration must preserve every Lifestyle perk from the
-          # upstream perks.txt rather than replacing the file with Yoga alone.
-          for perk in Lifestyle Art Cleaning Dancing Meditation Music Yoga; do
-            grep -E "^perk[[:space:]]+${perk}$" "${PERKS}" >/dev/null
+          # Lifestyle owns its normal perk registration. LCC must register only
+          # the Yoga UI proxy; copying upstream perks here creates duplicate rows.
+          grep -E '^perk[[:space:]]+Yoga$' "${PERKS}" >/dev/null
+          for perk in Lifestyle Art Cleaning Dancing Meditation Music; do
+            if grep -E "^perk[[:space:]]+${perk}$" "${PERKS}" >/dev/null; then
+              echo "LCC perks.txt must not re-register upstream Lifestyle perk: ${perk}"
+              exit 1
+            fi
           done
 
           bash -n server/linux/start-server.sh
