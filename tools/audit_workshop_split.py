@@ -18,12 +18,9 @@ pairs = {
     "LCCB4220LegacyCallbacks/Contents/mods/LCCB4220LegacyCallbacks/42/media/lua/shared/zzz_LCC_LegacyItemCallbacks.lua": "42/media/lua/shared/zzz_LCC_LegacyItemCallbacks.lua",
     "LCCB4220SkillDescriptionsRU/Contents/mods/LCCB4220SkillDescriptionsRU/42/media/lua/shared/Translate/RU/ZZ_LCC_VanillaPerks_RU.txt": "42/media/lua/shared/Translate/RU/ZZ_LCC_VanillaPerks_RU.txt",
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/shared/LCC/Guard.lua": "42/media/lua/shared/LCC/Guard.lua",
-    "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/client/BanditZombie.lua": "42/media/lua/client/BanditZombie.lua",
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/client/ISUI/ISCharacterScreen.lua": "42/media/lua/client/ISUI/ISCharacterScreen.lua",
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/server/BanditServerWanderers.lua": "42/media/lua/server/BanditServerWanderers.lua",
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua": "42/media/lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua",
-    "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/shared/ZombieActions/ZAStompPlant.lua": "42/media/lua/shared/ZombieActions/ZAStompPlant.lua",
-    "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/shared/ZombieActions/ZAWaterFarm.lua": "42/media/lua/shared/ZombieActions/ZAWaterFarm.lua",
     "LCCB4220WellnessCompat/Contents/mods/LCCB4220WellnessCompat/42/media/lua/shared/LCC/Guard.lua": "42/media/lua/shared/LCC/Guard.lua",
     "LCCB4220WellnessCompat/Contents/mods/LCCB4220WellnessCompat/42/media/lua/client/zzz_LCC_LifestyleBathFix.lua": "42/media/lua/client/zzz_LCC_LifestyleBathFix.lua",
     "LCCB4220WellnessCompat/Contents/mods/LCCB4220WellnessCompat/42/media/lua/client/zzz_LCC_LifestyleYogaProgress.lua": "42/media/lua/client/zzz_LCC_LifestyleYogaProgress.lua",
@@ -50,6 +47,17 @@ for name in translation_files:
 for name in ["IG_UI.json", "Moveables.json", "Tooltip.json"]:
     pairs[f"LCCB4220ThirdPartyRU/Contents/mods/LCCB4220ThirdPartyRU/common/media/lua/shared/Translate/RU/{name}"] = f"common/media/lua/shared/Translate/RU/{name}"
 
+split_owned_required = [
+    "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/client/zzz_LCC_BanditsZombieCacheGuard.lua",
+    "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/shared/zzz_LCC_BanditsFarmingGuard.lua",
+]
+
+forbidden_bandits_copies = [
+    "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/client/BanditZombie.lua",
+    "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/shared/ZombieActions/ZAStompPlant.lua",
+    "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/shared/ZombieActions/ZAWaterFarm.lua",
+]
+
 ready = {
     "LCCB4220FirearmsBridge", "LCCB4220SVUTsarBridge", "LCCB4220zReBridge",
     "LCCB4220AegisGuard", "LCCB4220LegacyCallbacks", "LCCB4220SkillDescriptionsRU",
@@ -72,6 +80,14 @@ for dst_rel, src_rel in sorted(pairs.items()):
     if src.read_bytes() != dst.read_bytes():
         errors.append(f"split copy differs from source: {dst_rel} <- {src_rel}")
 
+for rel in split_owned_required:
+    if not (WP / rel).is_file():
+        errors.append(f"missing split-owned publication refactor: {rel}")
+
+for rel in forbidden_bandits_copies:
+    if (WP / rel).exists():
+        errors.append(f"Bandits split must not redistribute refactored upstream file: {rel}")
+
 for project in sorted(ready):
     if not (WP / project / "workshop.txt").is_file():
         errors.append(f"READY project lacks workshop.txt: {project}")
@@ -84,7 +100,6 @@ for project in sorted(blocked):
     if not (WP / project / "workshop.txt.DISABLED").is_file():
         errors.append(f"BLOCKED project lacks workshop.txt.DISABLED: {project}")
 
-# Ensure the standalone vanilla/B42 description item cannot silently pick up the Lifestyle descriptions.
 vanilla_project = WP / "LCCB4220SkillDescriptionsRU"
 if any(p.name == "ZZ_LCC_Perks_RU.txt" for p in vanilla_project.rglob("*")):
     errors.append("vanilla/B42 skill project must not contain Lifestyle ZZ_LCC_Perks_RU.txt")
@@ -95,4 +110,8 @@ if errors:
         print(f" - {error}")
     sys.exit(1)
 
-print(f"Workshop split audit OK: {len(pairs)} source files mirrored; {len(ready)} ready projects; {len(blocked)} blocked projects")
+print(
+    f"Workshop split audit OK: {len(pairs)} mirrored source files; "
+    f"{len(split_owned_required)} split-owned refactors; {len(ready)} ready projects; "
+    f"{len(blocked)} blocked projects"
+)

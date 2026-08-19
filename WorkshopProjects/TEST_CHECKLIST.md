@@ -8,6 +8,8 @@ The monolithic `LaccckaCompatibilityPatch` remains the source/reference package.
 2. Run the existing compatibility-contract and Lifestyle translation audits.
 3. Confirm each READY project has a unique Mod ID and an active `workshop.txt` with an empty Workshop `id=` before first upload.
 4. Confirm each BLOCKED project has `workshop.txt.DISABLED` only.
+5. Confirm the Bandits split does **not** contain `BanditZombie.lua`, `ZAStompPlant.lua` or `ZAWaterFarm.lua`.
+6. Confirm `BanditServerWanderers.lua` is still marked as the sole Bandits full-file blocker.
 
 ## Runtime smoke test
 
@@ -27,5 +29,13 @@ The monolithic `LaccckaCompatibilityPatch` remains the source/reference package.
 - Aegis guard: invalid transfer actions fail safely; valid actions still call the original validator.
 - Legacy callback bridge: old recipe-magazine callback delegates only when the old callback is absent.
 - RU skill descriptions: vanilla/B42 skill descriptions display in Russian; no Lifestyle names/descriptions are supplied by this project.
+
+### Bandits split-only refactor
+
+- Connect a client, move through a dense zombie/bandit area and confirm no stale/squareless cache failure returns in combat/update code.
+- Wait through at least one `EveryOneMinute` cache rebuild and confirm the post-flush sweep does not break Bandit/Zombie cache counts.
+- Exercise Bandits watering/stomping tasks and verify absent/transient `CFarmingSystem.instance` states return safely while normal Farming states still execute the original Bandits callbacks.
+- Leave the dedicated server empty through an `EveryTenMinutes` tick and verify the remaining `BanditServerWanderers.lua` override still prevents the `day` nil comparison.
+- Review `[LCC][Guard][bandits.*]` diagnostics for unexpected disabled features.
 
 Permission-blocked modules should be tested locally from `Contents/mods` only until their publication status is resolved.

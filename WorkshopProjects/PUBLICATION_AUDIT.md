@@ -17,11 +17,23 @@ The split follows two rules:
 | `LCCB4220AegisGuard` | READY_FOR_UNLISTED_TEST | LCC-authored wrapper around the inventory transfer validation path; no Aegis source redistributed. |
 | `LCCB4220LegacyCallbacks` | READY_FOR_UNLISTED_TEST | Generic LCC-authored Build 42 compatibility bridge. |
 | `LCCB4220SkillDescriptionsRU` | READY_FOR_UNLISTED_TEST | Contains only LCC-authored Russian descriptions for vanilla/Build 42 skills. Lifestyle-specific descriptions are intentionally excluded. |
-| `LCCB4220SurvivorAIStability` | BLOCKED_PENDING_PERMISSION | Contains Bandits full-file overrides tracked by strict upstream contracts. Do not publish without permission or a refactor that removes redistributed third-party source. |
+| `LCCB4220SurvivorAIStability` | BLOCKED_PENDING_PERMISSION | Refactored three previous Bandits full-file copies into LCC-owned post-load guards. One full-file override remains for the local `BanditServerWanderers` orchestrator, so publication stays blocked until that last redistribution is removed or permission is documented. |
 | `LCCB4220WellnessCompat` | BLOCKED_PENDING_PERMISSION | Lifestyle permissions require express permission for extensions; Yoga/bath compatibility is an extension. |
 | `LCCB4220PZKBridge` | BLOCKED_PENDING_PERMISSION | PZK extension policy requires permission even though the current implementation is mostly LCC-authored path shims. |
 | `LCCB4220OutfitMenuSafety` | BLOCKED_PENDING_PERMISSION | Chimera's historical permission policy is restrictive. Keep blocked until current permission is documented. |
 | `LCCB4220ThirdPartyRU` | BLOCKED_PENDING_PERMISSION | Translation material relates to third-party mods (notably Lifestyle/Bandits). Keep blocked until the relevant permissions are documented. |
+
+## Bandits refactor progress
+
+The split project no longer carries these upstream Bandits files:
+
+- `BanditZombie.lua`;
+- `ZombieActions/ZAStompPlant.lua`;
+- `ZombieActions/ZAWaterFarm.lua`.
+
+Their split-only replacements are LCC-authored event/wrapper code. The monolithic `LaccckaCompatibilityPatch` remains unchanged as the known regression baseline.
+
+The remaining Bandits publication blocker is `BanditServerWanderers.lua`. Do not attempt to hide that relationship through naming or visibility; either remove the full-file override with a tested non-redistributing implementation or obtain permission covering it.
 
 ## Publication rules
 

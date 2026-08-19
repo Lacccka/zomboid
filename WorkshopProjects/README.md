@@ -4,7 +4,7 @@ This directory is a publication-oriented split of `LaccckaCompatibilityPatch` fo
 
 ## Safety model
 
-The original monolithic patch remains untouched and is the development/reference implementation. Files copied into the projects below reuse the exact Git blobs from the working patch wherever possible; splitting the package must not change runtime behavior.
+The original monolithic patch remains untouched and is the development/reference implementation. Most runtime files are mirrored byte-for-byte. Where a mirrored third-party full-file override can be replaced safely, the split project may instead contain a smaller LCC-authored shim/wrapper; those deliberate divergences are documented in `SPLIT_MANIFEST.md` and checked by `tools/audit_workshop_split.py`.
 
 Projects are separated by target/function so one Workshop review, permission question, or upstream change does not block unrelated fixes.
 
@@ -28,7 +28,7 @@ Two publication states are used:
 
 ### BLOCKED_PENDING_PERMISSION
 
-- `LCCB4220SurvivorAIStability` — Bandits compatibility. Includes strict full-file overrides; do not upload without permission or a later refactor that removes third-party code redistribution.
+- `LCCB4220SurvivorAIStability` — Bandits compatibility. Three former full-file copies are now LCC-owned post-load guards; one strict full-file wanderer override still blocks Workshop publication.
 - `LCCB4220WellnessCompat` — Lifestyle runtime/Yoga compatibility; the upstream author requires permission for extensions.
 - `LCCB4220PZKBridge` — PZK compatibility shims; upstream extension policy requires permission.
 - `LCCB4220OutfitMenuSafety` — Chimera runtime compatibility; kept blocked because the author's historical permission policy is restrictive.
@@ -47,4 +47,4 @@ Two publication states are used:
 5. Never describe an LCC module as official.
 6. Run the compatibility audits and a dedicated-server/client smoke test before changing visibility from unlisted to public.
 
-See `SPLIT_MANIFEST.md` for the exact source-to-project file mapping.
+See `SPLIT_MANIFEST.md` for the exact source-to-project file mapping and deliberate publication refactors.
