@@ -3,7 +3,7 @@
 -- BanditServerCommands calls BanditZombie.GetInstanceById(), but BanditZombie.lua
 -- is a client script and therefore does not provide that API on a dedicated
 -- server. Bandits contains an experimental BanditServerZombie cache, but its
--- updater performs a full getZombieList() rebuild and is disabled upstream.
+-- updater performs a complete server-zombie-list rebuild and is disabled upstream.
 --
 -- Do not restore that global scan here. Keep an O(1) registry containing only
 -- live Bandits that pass through existing server-side Bandit functions.
