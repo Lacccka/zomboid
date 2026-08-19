@@ -32,7 +32,6 @@ pairs = {
     "LCCB4220PZKBridge/Contents/mods/LCCB4220PZKBridge/42/media/lua/client/Vehicle/ISVehiclePartMenu.lua": "42/media/lua/client/Vehicle/ISVehiclePartMenu.lua",
     "LCCB4220PZKBridge/Contents/mods/LCCB4220PZKBridge/42/media/lua/shared/ISBaseTimedAction.lua": "42/media/lua/shared/ISBaseTimedAction.lua",
     "LCCB4220PZKBridge/Contents/mods/LCCB4220PZKBridge/42/media/lua/server/utils/pzkZonesFunction.lua": "42/media/lua/server/utils/pzkZonesFunction.lua",
-    "LCCB4220PZKBridge/Contents/mods/LCCB4220PZKBridge/42/media/lua/shared/SVU3_PZKVLCCars_Stuffs.lua": "42/media/lua/shared/SVU3_PZKVLCCars_Stuffs.lua",
     "LCCB4220OutfitMenuSafety/Contents/mods/LCCB4220OutfitMenuSafety/42/media/lua/shared/LCC/Guard.lua": "42/media/lua/shared/LCC/Guard.lua",
     "LCCB4220OutfitMenuSafety/Contents/mods/LCCB4220OutfitMenuSafety/42/media/lua/client/zzz_LCC_ChimeraGhillieFix.lua": "42/media/lua/client/zzz_LCC_ChimeraGhillieFix.lua",
 }
@@ -54,6 +53,7 @@ split_owned_required = [
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/server/zzz_LCC_BanditsEmptyServerWandererGuard.lua",
     "LCCB4220WellnessCompat/Contents/mods/LCCB4220WellnessCompat/42/media/perks.txt",
     "LCCB4220WellnessCompat/Contents/mods/LCCB4220WellnessCompat/42/media/lua/client/zzy_LCC_LifestyleYogaContract.lua",
+    "LCCB4220PZKBridge/Contents/mods/LCCB4220PZKBridge/42/media/lua/shared/SVU3_PZKVLCCars_Stuffs.lua",
 ]
 
 forbidden_bandits_copies = [
@@ -105,9 +105,7 @@ for rel in forbidden_bandits_copies:
     if (WP / rel).exists():
         errors.append(f"survivor AI split must not redistribute upstream override: {rel}")
 
-# Empty-server guard must target dedicated-server semantics. Current Bandits server code
-# explicitly skips updateGroups when isClient() is true, so this guard must never require
-# client state in order to detect an empty dedicated MP server.
+# Empty-server guard must target dedicated-server semantics.
 empty_server_guard = WP / "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/server/zzz_LCC_BanditsEmptyServerWandererGuard.lua"
 if empty_server_guard.is_file():
     text = empty_server_guard.read_text(encoding="utf-8")
@@ -118,6 +116,17 @@ if empty_server_guard.is_file():
             errors.append(f"empty-server wanderer guard missing dedicated-MP contract marker: {marker}")
 else:
     errors.append("missing empty-server wanderer guard")
+
+# The split-owned optional vehicle-support shim must fail soft instead of turning
+# a renamed/missing support module into a hard bridge-load failure.
+vehicle_support_shim = WP / "LCCB4220PZKBridge/Contents/mods/LCCB4220PZKBridge/42/media/lua/shared/SVU3_PZKVLCCars_Stuffs.lua"
+if vehicle_support_shim.is_file():
+    text = vehicle_support_shim.read_text(encoding="utf-8")
+    for marker in ('require "LCC/Guard"', 'Guard.safeRequire(FEATURE, "OtherModsSupport/SVU3_PZKVLCCars_Stuffs", {})', "return module or"):
+        if marker not in text:
+            errors.append(f"vehicle support shim missing fail-soft marker: {marker}")
+else:
+    errors.append("missing split-owned vehicle support shim")
 
 # Survivor-dialogue translation provenance stays isolated.
 bandits_ru_source = ROOT / "3268487204/mods/Bandits/42.20/media/lua/shared/Translate/RU/IG_UI_ru.json"
