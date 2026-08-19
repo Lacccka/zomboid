@@ -100,10 +100,15 @@ if [[ -f "$runtime_farming" ]]; then
 fi
 
 if [[ -f "$runtime_dedicated" ]]; then
-    grep -Fq 'BanditZombie.GetInstanceById = lookupZombie' "$runtime_dedicated" || error "RuntimeFixes dedicated guard must install real lookup contract"
+    grep -Fq 'BanditZombie.GetInstanceById = lookupZombie' "$runtime_dedicated" || error "RuntimeFixes dedicated guard must install lookup contract"
     grep -Fq 'BanditServerZombie.Cache' "$runtime_dedicated" || error "RuntimeFixes dedicated lookup lost optional native server-cache path"
-    grep -Fq 'getZombieList()' "$runtime_dedicated" || error "RuntimeFixes dedicated lookup lost on-demand server fallback"
+    grep -Fq 'Guard.wrapBefore(FEATURE, Bandit, "ApplyVisuals", registerZombie)' "$runtime_dedicated" || error "RuntimeFixes dedicated lookup lost server Bandit registration hook"
+    grep -Fq 'Guard.wrapBefore(FEATURE, Bandit, "UpdateItemsToSpawnAtDeath", registerZombie)' "$runtime_dedicated" || error "RuntimeFixes dedicated lookup lost death-item registration hook"
+    grep -Fq 'Events.EveryOneMinute.Add(pruneRegistry)' "$runtime_dedicated" || error "RuntimeFixes dedicated registry lost stale-entry pruning"
     grep -Fq 'pcall(getId, zombie)' "$runtime_dedicated" || error "RuntimeFixes dedicated lookup lost stale-IsoZombie protection"
+    if grep -Fq 'getZombieList()' "$runtime_dedicated"; then
+        error "RuntimeFixes dedicated lookup must not scan the complete server zombie list"
+    fi
 fi
 
 # Activity fixes.
@@ -157,6 +162,15 @@ declare -A expected_ids=(
     [RussianTextFixes]="LaccckaB4220RussianText"
 )
 
+declare -A expected_workshop_ids=(
+    [PatchCore]="3786175901"
+    [RuntimeFixes]="3786175979"
+    [ActivityFixes]="3786175725"
+    [CompatibilityBridges]="3786175808"
+    [SafetyFixes]="3786176221"
+    [RussianTextFixes]="3786176120"
+)
+
 seen_ids=""
 for folder in "${!expected_ids[@]}"; do
     id="${expected_ids[$folder]}"
@@ -170,7 +184,7 @@ for folder in "${!expected_ids[@]}"; do
     grep -Fxq 'versionMin=42.20.0' "$modinfo" || error "$folder: versionMin must stay on 42.20.0"
     grep -Fqi 'Do not use' "$workshop" || error "$folder: Workshop warning is missing"
     grep -Eqi 'original mod(s| Lua files| files)?.*not included|original mods are not included' "$workshop" || error "$folder: no-bundled-mods disclaimer is missing"
-    grep -Fxq 'id=0' "$workshop" || error "$folder: staging Workshop ID must remain 0 until publication"
+    grep -Fxq "id=${expected_workshop_ids[$folder]}" "$workshop" || error "$folder: wrong published Workshop ID"
 
     if grep -Fqx "$id" <<<"$seen_ids"; then
         error "$folder: duplicate mod ID $id"
