@@ -1,6 +1,6 @@
 version=1
 id=3786175901
 title=Lacccka B42 Patch Core
-description=Shared support files for selected Project Zomboid Build 42 compatibility patches. Do not use this item unless you are sure it is required by your setup or by another patch. This item contains patch support files only; the original mods are not included and must be installed separately.
+description=Recommended shared guarded-support files for selected Project Zomboid Build 42 compatibility patches. Functional patches can start without Core in DEGRADED fallback mode, but correct operation is not guaranteed without it. Do not use this item unless you are sure it is required by your setup or by another patch. This item contains patch support files only; the original mods are not included and must be installed separately.
 tags=Build 42;Multiplayer
 visibility=public

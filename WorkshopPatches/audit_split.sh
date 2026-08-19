@@ -31,8 +31,6 @@ same() {
     fi
 }
 
-# Mark a historical monolith override as intentionally represented by a
-# source-clean wrapper instead of a byte-for-byte copy in the public split.
 account_only() {
     local src_rel="$1"
     local src="$MONO/42/media/$src_rel"
@@ -50,8 +48,36 @@ safety="$SPLIT/SafetyFixes/Contents/mods/LaccckaB4220SafetyFixes/42/media"
 text42="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/media"
 text_common="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/common"
 
-# Shared patch helper.
+# Shared patch helper. CoreGuard is a unique entrypoint so the functional
+# bootstrap can explicitly prefer Patch Core even though each patch also owns a
+# fallback module at the legacy LCC/Guard path.
 same "lua/shared/LCC/Guard.lua" "$core/lua/shared/LCC/Guard.lua"
+core_guard="$core/lua/shared/LCC/CoreGuard.lua"
+[[ -f "$core_guard" ]] || error "PatchCore CoreGuard entrypoint is missing"
+if [[ -f "$core_guard" ]] && ! cmp -s "$core/lua/shared/LCC/Guard.lua" "$core_guard"; then
+    error "PatchCore CoreGuard must stay byte-for-byte equivalent to Guard.lua"
+fi
+
+runtime_guard="$runtime/lua/shared/LCC/Guard.lua"
+activity_guard="$activity/lua/shared/LCC/Guard.lua"
+bridges_guard="$bridges/lua/shared/LCC/Guard.lua"
+safety_guard="$safety/lua/shared/LCC/Guard.lua"
+
+for guard in "$runtime_guard" "$activity_guard" "$bridges_guard" "$safety_guard"; do
+    [[ -f "$guard" ]] || { error "optional Guard bootstrap missing: ${guard#$ROOT/}"; continue; }
+    grep -Fq 'pcall(require, "LCC/CoreGuard")' "$guard" || error "Guard bootstrap does not prefer PatchCore: ${guard#$ROOT/}"
+    grep -Fq 'DEGRADED' "$guard" || error "Guard bootstrap lost degraded fallback: ${guard#$ROOT/}"
+done
+
+if [[ -f "$runtime_guard" && -f "$activity_guard" ]] && ! cmp -s "$runtime_guard" "$activity_guard"; then
+    error "functional Guard bootstraps must remain identical"
+fi
+if [[ -f "$runtime_guard" && -f "$bridges_guard" ]] && ! cmp -s "$runtime_guard" "$bridges_guard"; then
+    error "functional Guard bootstraps must remain identical"
+fi
+if [[ -f "$runtime_guard" && -f "$safety_guard" ]] && ! cmp -s "$runtime_guard" "$safety_guard"; then
+    error "functional Guard bootstraps must remain identical"
+fi
 
 # Runtime fixes: historical full-file overrides are accounted for but MUST NOT
 # be copied into the public split. ISCharacterScreen is an LCC path shim.
@@ -195,7 +221,12 @@ done
 for folder in RuntimeFixes ActivityFixes CompatibilityBridges SafetyFixes; do
     id="${expected_ids[$folder]}"
     modinfo="$SPLIT/$folder/Contents/mods/$id/42/mod.info"
-    grep -Fxq 'require=\LaccckaB4220PatchCore' "$modinfo" || error "$folder: PatchCore dependency missing"
+
+    if grep -Eq '^require=.*LaccckaB4220PatchCore' "$modinfo"; then
+        error "$folder: PatchCore must remain a soft dependency, not require="
+    fi
+    grep -Eq '^loadafter=.*\\LaccckaB4220PatchCore' "$modinfo" || error "$folder: PatchCore soft load-order dependency missing"
+    grep -Fqi 'strongly recommended' "$modinfo" || error "$folder: optional PatchCore warning missing from mod.info"
 done
 
 if (( fail != 0 )); then

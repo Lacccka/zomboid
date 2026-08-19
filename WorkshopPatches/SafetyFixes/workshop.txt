@@ -1,6 +1,6 @@
 version=1
 id=3786176221
 title=Lacccka B42 Safety Fixes
-description=Targeted defensive runtime and UI compatibility fixes for selected third-party Project Zomboid Build 42 mods. Do not use this patch unless you are sure it is required by your setup. This item contains patch files only; the original mods are not included and must be installed separately.
+description=Targeted defensive runtime and UI compatibility fixes for selected third-party Project Zomboid Build 42 mods. Lacccka B42 Patch Core is strongly recommended. Without Core this patch can start in DEGRADED fallback mode, but correct operation is not guaranteed. Do not use this patch unless you are sure it is required by your setup. This item contains patch files only; the original mods are not included and must be installed separately.
 tags=Build 42;Multiplayer
 visibility=public

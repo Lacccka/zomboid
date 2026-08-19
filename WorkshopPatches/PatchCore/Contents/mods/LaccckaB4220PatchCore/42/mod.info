@@ -1,6 +1,6 @@
 name=Lacccka B42 Patch Core
 id=LaccckaB4220PatchCore
 author=Lacccka
-description=Shared support layer for selected Build 42 compatibility patches. Do not use unless you are sure it is required. Patch support files only; original mods are not included.
-modversion=1.0.0
+description=Recommended shared guarded-support layer for selected Build 42 compatibility patches. Functional patches can start without it in degraded fallback mode, but correct operation is not guaranteed without Core. Patch support files only; original mods are not included.
+modversion=1.1.0
 versionMin=42.20.0

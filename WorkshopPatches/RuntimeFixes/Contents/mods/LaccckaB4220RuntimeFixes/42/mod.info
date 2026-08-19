@@ -1,8 +1,7 @@
 name=Lacccka B42 Runtime Fixes
 id=LaccckaB4220RuntimeFixes
 author=Lacccka
-description=Source-clean targeted runtime compatibility hooks for selected Build 42 mods. Do not use unless you are sure this patch is required. No original third-party Lua files are bundled.
-modversion=1.1.1
+description=Source-clean targeted runtime compatibility hooks for selected Build 42 mods. Lacccka B42 Patch Core is strongly recommended; without Core this patch runs in degraded fallback mode and correct operation is not guaranteed. No original third-party Lua files are bundled.
+modversion=1.2.0
 versionMin=42.20.0
-require=\LaccckaB4220PatchCore
-loadafter=\Bandits2
+loadafter=\LaccckaB4220PatchCore,\Bandits2

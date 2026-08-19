@@ -14,7 +14,7 @@ Every item must keep this warning in its Workshop description:
 
 | Folder | Mod ID | Public title | Internal scope |
 | --- | --- | --- | --- |
-| `PatchCore` | `LaccckaB4220PatchCore` | Lacccka B42 Patch Core | Shared guarded-patch helper used by the functional patches. |
+| `PatchCore` | `LaccckaB4220PatchCore` | Lacccka B42 Patch Core | Recommended shared guarded-patch helper used by the functional patches. |
 | `RuntimeFixes` | `LaccckaB4220RuntimeFixes` | Lacccka B42 Runtime Fixes | Source-clean Bandits runtime / dedicated-server / zombie-action compatibility hooks. |
 | `ActivityFixes` | `LaccckaB4220ActivityFixes` | Lacccka B42 Activity Fixes | Lifestyle hygiene, Yoga/progression and perk compatibility fixes. |
 | `CompatibilityBridges` | `LaccckaB4220CompatBridges` | Lacccka B42 Compatibility Bridges | Build 42 legacy module/API redirects used by weapon, vehicle and framework mods. |
@@ -23,9 +23,17 @@ Every item must keep this warning in its Workshop description:
 
 ## Dependency model
 
-`RuntimeFixes`, `ActivityFixes`, `CompatibilityBridges`, and `SafetyFixes` require `LaccckaB4220PatchCore`. `RussianTextFixes` is standalone.
+`RuntimeFixes`, `ActivityFixes`, `CompatibilityBridges`, and `SafetyFixes` use `LaccckaB4220PatchCore` as a **recommended soft dependency**. `RussianTextFixes` remains completely standalone.
 
-The dependency is declared with the Build 42 `mod.info` `require=` field so a functional patch cannot be enabled without its helper. Upstream mods are deliberately not hard-required by these generic patch items because the fixes are guarded/late-loaded and the public rule is to install a patch only for a setup that needs it.
+The functional patches no longer use the Build 42 `mod.info` `require=` field for Patch Core, because that field makes Core a hard blocker before any fallback Lua can run. Instead, each functional patch declares Patch Core in `loadafter=` and ships the same small `LCC/Guard.lua` bootstrap:
+
+1. it first tries the Core-only `LCC/CoreGuard` entrypoint;
+2. if Core is present and compatible, the shared guard is returned and the patch runs in `GUARDED` mode;
+3. if Core is absent or incompatible, a local shared fallback is returned and the patch runs in `DEGRADED` mode.
+
+`DEGRADED` mode is intentionally best-effort. The functional fixes remain loadable, but correct behavior and failure isolation are not guaranteed without Patch Core. The fallback exists so a missing/unavailable Core Workshop item does not automatically make every functional patch unloadable.
+
+Upstream mods are deliberately not hard-required by these generic patch items because the fixes are guarded/late-loaded and the public rule is to install a patch only for a setup that needs it.
 
 ## RuntimeFixes source-clean contract
 
@@ -43,13 +51,13 @@ The grouped audit must fail if `BanditZombie.lua`, `BanditServerWanderers.lua`, 
 
 The monolithic compatibility patch remains a private regression baseline and can contain historical full-file overrides. Those files are not automatically suitable for public Workshop publication.
 
-Each split item must be reviewed on its own publication contract. In particular, `RuntimeFixes` is intentionally source-clean and does not redistribute Bandits Lua source or assets.
+Each split item must be reviewed on its own publication contract. In particular, `RuntimeFixes` is intentionally source-clean and does not redistribute Bandits Lua source or assets. The optional-Guard bootstrap and degraded fallback are LCC-authored support code.
 
 ## Publishing
 
 Each child directory is a separate Workshop staging directory with its own `workshop.txt` and `Contents/mods/.../42/mod.info`.
 
-`workshop.txt` uses `id=0` as a staging placeholder. Replace it with the assigned Workshop item ID after the first upload. Add a per-item `preview.png` before publishing; binary preview assets are intentionally not duplicated as part of this source split.
+Each published item keeps its assigned Workshop ID in `workshop.txt`. Add or replace `preview.png` as needed before publishing.
 
 ## Migration rule
 
