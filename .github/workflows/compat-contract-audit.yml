@@ -6,6 +6,7 @@ on:
       - "3268487204/mods/Bandits/42.20/media/lua/**"
       - "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/**"
       - "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/perks.txt"
+      - "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/common/media/lua/shared/Translate/RU/**"
       - "server/linux/start-server.sh"
       - ".gitattributes"
       - "tools/compat_contracts.json"
@@ -16,6 +17,7 @@ on:
       - "3268487204/mods/Bandits/42.20/media/lua/**"
       - "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/**"
       - "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/perks.txt"
+      - "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/common/media/lua/shared/Translate/RU/**"
       - "server/linux/start-server.sh"
       - ".gitattributes"
       - "tools/compat_contracts.json"
@@ -40,6 +42,26 @@ jobs:
             echo 'perks.txt uses Lua-style comments that the B42 CustomPerks parser rejects'
             exit 1
           fi
+
           bash -n server/linux/start-server.sh
-          grep -F 'ensure_case_alias "${workshop_mods}/bandits" "${bandits}" "Bandits"' server/linux/start-server.sh
-          grep -F 'ensure_case_alias "${media}/animsets" "${media}/AnimSets" "AnimSets"' server/linux/start-server.sh
+
+          for mod_name in \
+            'Bandits' \
+            'Lifestyle' \
+            'Escape from Kentucky4215' \
+            'tsarslib'; do
+            grep -F '"'"${mod_name}"'"' server/linux/start-server.sh >/dev/null
+          done
+
+          grep -F '"${media_dir}/animsets"' server/linux/start-server.sh >/dev/null
+          grep -F '"${mods_dir}/${lowercase_name}"' server/linux/start-server.sh >/dev/null
+
+          RU_PERKS='LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/common/media/lua/shared/Translate/RU/IG_UI_RU.txt'
+          for key in Art Cleaning Dancing Meditation Music Yoga; do
+            grep -F "IGUI_perks_${key}_Description" "${RU_PERKS}" >/dev/null
+          done
+
+          if grep -Ei 'hidden skill|technical skill|скрыт(ый|ого).*навык|техническ(ий|ого).*навык' "${RU_PERKS}"; then
+            echo 'Player-facing perk descriptions contain implementation jargon'
+            exit 1
+          fi
