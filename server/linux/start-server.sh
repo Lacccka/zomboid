@@ -65,12 +65,10 @@ ensure_case_alias() {
 
     CASE_ALIAS_CREATED=0
 
+    # -ef is handled by bash and follows symlinks. Avoid spawning readlink -f
+    # twice for every alias: Lifestyle alone has more than a thousand entries.
     if [[ -L "${alias_path}" ]]; then
-        local alias_real target_real
-        alias_real="$(readlink -f -- "${alias_path}" 2>/dev/null || true)"
-        target_real="$(readlink -f -- "${target_path}" 2>/dev/null || true)"
-
-        if [[ -n "${alias_real}" && -n "${target_real}" && "${alias_real}" == "${target_real}" ]]; then
+        if [[ "${alias_path}" -ef "${target_path}" ]]; then
             return 0
         fi
 
@@ -123,17 +121,21 @@ find_workshop_mod_dir() {
 ensure_casefold_tree_aliases() {
     local tree_root="$1"
     local created=0
-    local path base lower alias_path
+    local path base lower parent alias_path
 
     while IFS= read -r -d '' path; do
         [[ "${path}" == "${tree_root}" ]] && continue
 
-        base="$(basename -- "${path}")"
+        # Parameter expansion is deliberately used instead of basename/dirname.
+        # The preflight checks ~1200 mixed-case entries, so external utilities
+        # here made a no-op restart take ~30 seconds.
+        base="${path##*/}"
         lower="${base,,}"
 
         [[ "${base}" == "${lower}" ]] && continue
 
-        alias_path="$(dirname -- "${path}")/${lower}"
+        parent="${path%/*}"
+        alias_path="${parent}/${lower}"
         ensure_case_alias "${alias_path}" "${path}" "${base}" true || return 1
 
         if (( CASE_ALIAS_CREATED == 1 )); then
@@ -166,7 +168,7 @@ ensure_linux_mod_case_compat() {
     fi
 
     local mods_dir lowercase_name
-    mods_dir="$(dirname -- "${mod_dir}")"
+    mods_dir="${mod_dir%/*}"
     lowercase_name="${mod_name,,}"
 
     # The B42.20 XML resolver can lowercase the mod directory itself.
@@ -241,14 +243,14 @@ start_case_alias_keeper() {
     [[ "$(uname -s 2>/dev/null || true)" == "Linux" ]] || return 0
 
     (
-        local elapsed=0
+        local deadline=$((SECONDS + CASE_ALIAS_KEEPER_SECONDS))
 
         # Project Zomboid performs its own Workshop pass after the launcher has
         # started. If Steam refreshes a mod directory, symlinks inside it can be
-        # removed. Recreate only missing aliases during the startup window.
-        while (( elapsed < CASE_ALIAS_KEEPER_SECONDS )); do
+        # removed. Use a wall-clock deadline: the previous iteration counter did
+        # not include time spent checking the filesystem and could run >180s.
+        while (( SECONDS < deadline )); do
             sleep "${CASE_ALIAS_KEEPER_INTERVAL}"
-            elapsed=$((elapsed + CASE_ALIAS_KEEPER_INTERVAL))
             ensure_linux_case_compatibility "keeper" true || {
                 lcc_log WARN "Case-alias keeper encountered a conflict; will retry."
             }
