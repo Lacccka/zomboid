@@ -40,13 +40,15 @@ Guard.install {
         local originalNew = ISSkillProgressBar.new
         local originalRenderPerkRect = ISSkillProgressBar.renderPerkRect
         local originalUpdateTooltip = ISSkillProgressBar.updateTooltip
-        local originalLoadPerk = ISCharacterInfo and ISCharacterInfo.loadPerk
+
+        local YOGA_DESCRIPTION_RU = "Прокачивается выполнением поз во время занятий йогой; сложные позы дают больше опыта. <LINE> Каждая завершённая поза уменьшает боль и мышечное перенапряжение. <LINE> 1 ур.: Шавасана начинает давать эффект «Дзен», временно повышающий получение опыта Физподготовки, Силы, Медитации и Йоги. <LINE> С ростом навыка открываются более сложные позы, увеличивается число поз за занятие и снижается шанс неудачи. <LINE> 10 ур.: неудачи при выполнении поз исчезают. <LINE> Завершайте занятие Шавасаной: она даёт дополнительный опыт; прерывание занятия может снять часть текущего опыта."
 
         LCCYogaSkillProgressBar = ISSkillProgressBar:derive("LCCYogaSkillProgressBar")
 
         local function isYogaPerk(perk)
             if not perk then return false end
             if Perks and Perks.Yoga and perk.getType and perk:getType() == Perks.Yoga then return true end
+            if perk.getId and tostring(perk:getId()) == "Yoga" then return true end
             if perk.getName then
                 local name = perk:getName()
                 return name == "Yoga" or name == "Йога"
@@ -76,15 +78,15 @@ Guard.install {
         end
 
         local function getYogaDescription()
+            -- The Lifestyle RU translation does not provide a reliable Yoga
+            -- description key in B42.20. When the UI is Russian, use the patch's
+            -- concise progression-oriented description directly. Other languages
+            -- keep using whatever description Lifestyle/the base translator has.
+            if getYogaName() == "Йога" then
+                return YOGA_DESCRIPTION_RU
+            end
             return lccGetTextOrNull("IGUI_perks_Yoga_Description")
                 or lccGetTextOrNull("Tooltip_Yoga_Option")
-        end
-
-        local function isYogaEnabled()
-            if SandboxVars and SandboxVars.Text and SandboxVars.Text.DividerMeditationNew ~= nil then
-                return SandboxVars.Text.DividerMeditationNew == true
-            end
-            return true
         end
 
         local function getHiddenYogaSkill(character)
@@ -249,32 +251,11 @@ Guard.install {
             return originalNew(self, x, y, width, height, playerNum, perk, parent)
         end
 
-        if originalLoadPerk then
-            local function filterYogaPerk(perks)
-                if isYogaEnabled() then return perks end
-
-                for _, children in pairs(perks) do
-                    if type(children) == "table" then
-                        for i = #children, 1, -1 do
-                            if isYogaPerk(children[i]) then
-                                table.remove(children, i)
-                            end
-                        end
-                    end
-                end
-                return perks
-            end
-
-            ISCharacterInfo.loadPerk = function(self)
-                -- Original Lifestyle/base behavior is intentionally outside pcall.
-                local perks = originalLoadPerk(self)
-                if not Guard.isEnabled(FEATURE) then return perks end
-
-                local ok, filtered = Guard.protect(FEATURE, "filter Yoga skill row", filterYogaPerk, perks)
-                if ok and filtered then return filtered end
-                return perks
-            end
-        end
+        -- Do not filter the Yoga proxy out of ISCharacterInfo.loadPerk. The
+        -- entire purpose of this compatibility layer is to expose Lifestyle's
+        -- hidden Yoga progression in the normal Skills panel. The previous
+        -- DividerMeditationNew check could remove Yoga completely on valid
+        -- B42.20 sandbox configurations.
 
         LCC_LifestyleYogaProgressInstalled = true
         print("[LaccckaCompatibilityPatch] Lifestyle Yoga progress UI installed with LCCGuard")
