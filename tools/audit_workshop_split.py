@@ -37,8 +37,9 @@ pairs = {
     "LCCB4220OutfitMenuSafety/Contents/mods/LCCB4220OutfitMenuSafety/42/media/lua/client/zzz_LCC_ChimeraGhillieFix.lua": "42/media/lua/client/zzz_LCC_ChimeraGhillieFix.lua",
 }
 
+# Unclassified/mod-specific translation staging after the Bandits translation was isolated.
 translation_files = [
-    "ContextMenu.json", "Farming.json", "IG_UI.json", "IG_UI_RU.txt", "ItemName.json",
+    "ContextMenu.json", "Farming.json", "IG_UI_RU.txt", "ItemName.json",
     "Mod.json", "Moodles.json", "Moveables.json", "Moveables_RU.txt", "Recipes.json",
     "Recorded_Media.json", "Sandbox.json", "Tooltip.json", "UI.json", "ZZ_LCC_Perks_RU.txt",
 ]
@@ -47,7 +48,6 @@ for name in translation_files:
 for name in ["IG_UI.json", "Moveables.json", "Tooltip.json"]:
     pairs[f"LCCB4220ThirdPartyRU/Contents/mods/LCCB4220ThirdPartyRU/common/media/lua/shared/Translate/RU/{name}"] = f"common/media/lua/shared/Translate/RU/{name}"
 
-# Deliberate publication-safe divergences from the monolithic regression package.
 split_owned_required = [
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/client/zzz_LCC_BanditsZombieCacheGuard.lua",
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/shared/zzz_LCC_BanditsFarmingGuard.lua",
@@ -68,9 +68,8 @@ ready = {
     "LCCB4220SurvivorAIStability", "LCCB4220WellnessCompat", "LCCB4220PZKBridge",
     "LCCB4220OutfitMenuSafety",
 }
-blocked = {"LCCB4220ThirdPartyRU"}
+blocked = {"LCCB4220BanditsRU", "LCCB4220ThirdPartyRU"}
 
-# Direct compatibility relationships must remain explicit even when titles are neutral.
 credit_markers = {
     "LCCB4220SurvivorAIStability": ("Bandits", "Slayer"),
     "LCCB4220WellnessCompat": ("Lifestyle", "Mopop", "Angry"),
@@ -99,13 +98,25 @@ for rel in forbidden_bandits_copies:
     if (WP / rel).exists():
         errors.append(f"Bandits split must not redistribute upstream override: {rel}")
 
+# Bandits translation provenance is known exactly: the split blob must equal the target-side RU snapshot.
+bandits_ru_source = ROOT / "3268487204/mods/Bandits/42.20/media/lua/shared/Translate/RU/IG_UI_ru.json"
+bandits_ru_split = WP / "LCCB4220BanditsRU/Contents/mods/LCCB4220BanditsRU/42/media/lua/shared/Translate/RU/IG_UI.json"
+if not bandits_ru_source.is_file() or not bandits_ru_split.is_file():
+    errors.append("Bandits RU provenance source/split file is missing")
+elif bandits_ru_source.read_bytes() != bandits_ru_split.read_bytes():
+    errors.append("Bandits RU split no longer matches the isolated target-side RU snapshot")
+
+old_mixed_bandits = WP / "LCCB4220ThirdPartyRU/Contents/mods/LCCB4220ThirdPartyRU/42/media/lua/shared/Translate/RU/IG_UI.json"
+if old_mixed_bandits.exists():
+    errors.append("Bandits IG_UI translation must stay isolated from LCCB4220ThirdPartyRU")
+
 # Lifestyle split may declare only our Yoga proxy; all upstream Lifestyle perk blocks stay upstream.
 wellness_perks = WP / "LCCB4220WellnessCompat/Contents/mods/LCCB4220WellnessCompat/42/media/perks.txt"
 if wellness_perks.is_file():
-    perk_names = re.findall(r"(?m)^\s*perk\s+([A-Za-z0-9_]+)\s*$", wellness_perks.read_text(encoding="utf-8"))
+    text = wellness_perks.read_text(encoding="utf-8")
+    perk_names = re.findall(r"(?m)^\s*perk\s+([A-Za-z0-9_]+)\s*$", text)
     if perk_names != ["Yoga"]:
         errors.append(f"Wellness split perks.txt must declare only Yoga; found: {perk_names}")
-    text = wellness_perks.read_text(encoding="utf-8")
     for key in ("xp1", "xp2", "xp3", "xp4", "xp5", "xp6", "xp7", "xp8", "xp9", "xp10"):
         if not re.search(rf"(?m)^\s*{key}\s*=\s*0,?\s*$", text):
             errors.append(f"Wellness Yoga proxy must keep {key}=0 and read real XP from HiddenSkills")
@@ -152,5 +163,5 @@ if errors:
 print(
     f"Workshop split audit OK: {len(pairs)} mirrored source files; "
     f"{len(split_owned_required)} split-owned refactors; {len(ready)} ready projects; "
-    f"{len(blocked)} blocked translation project(s)"
+    f"{len(blocked)} blocked translation projects"
 )
