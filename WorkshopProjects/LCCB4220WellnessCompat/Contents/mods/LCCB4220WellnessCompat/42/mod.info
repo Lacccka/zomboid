@@ -1,7 +1,7 @@
 name=LCC B42.20 Wellness Compatibility
 id=LCCB4220WellnessCompat
 author=Lacccka
-description=Local/testing split of LCC Lifestyle bath/shower and Yoga compatibility. Workshop publication is blocked pending permission.
-modversion=1.0.0
+description=Unofficial LCC-authored B42.20 compatibility patch for Lifestyle: Hobbies. Requires LifestyleHobbies; no Lifestyle source, assets, or translations are included.
+modversion=1.1.0
 versionMin=42.20.0
 loadafter=\LifestyleHobbies
