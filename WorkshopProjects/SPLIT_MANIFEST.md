@@ -2,102 +2,99 @@
 
 Source/reference package: `LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch`.
 
-The monolithic patch is not deleted or modified by this split. Most runtime files below are mirrored byte-for-byte and checked by `tools/audit_workshop_split.py`. Project-specific `mod.info`, README and Workshop descriptors are new packaging metadata. A small number of publication-oriented refactors intentionally replace redistributed third-party source with LCC-authored wrappers; those files are explicitly marked below.
+The monolithic patch is not deleted or modified by this publication split. Files marked **mirrored** remain byte-for-byte copies of LCC-authored compatibility files in the monolith. Files marked **split-owned refactor** intentionally diverge to remove third-party full-file/declaration copies while preserving the compatibility contract.
 
 ## LCCB4220FirearmsBridge
 
-- `42/media/lua/server/BuildingObjects/ISPlace3DItemCursor_Fix.lua`
-- `42/media/lua/shared/LCC/Guard.lua`
+- `42/media/lua/server/BuildingObjects/ISPlace3DItemCursor_Fix.lua` — mirrored.
+- `42/media/lua/shared/LCC/Guard.lua` — mirrored.
 
 ## LCCB4220SVUTsarBridge
 
-- `42/media/lua/server/Tuning2/ATA2Tuning2.lua`
-- `42/media/lua/shared/LCC/Guard.lua`
+- `42/media/lua/server/Tuning2/ATA2Tuning2.lua` — mirrored path shim.
+- `42/media/lua/shared/LCC/Guard.lua` — mirrored.
 
 ## LCCB4220zReBridge
 
-- `42/media/lua/shared/BodyLocations.lua`
-- `42/media/lua/shared/LCC/Guard.lua`
+- `42/media/lua/shared/BodyLocations.lua` — mirrored path shim.
+- `42/media/lua/shared/LCC/Guard.lua` — mirrored.
 
 ## LCCB4220AegisGuard
 
-- `42/media/lua/client/zzz_LCC_AegisTransferGuard.lua`
-- `42/media/lua/shared/LCC/Guard.lua`
+- `42/media/lua/client/zzz_LCC_AegisTransferGuard.lua` — mirrored wrapper.
+- `42/media/lua/shared/LCC/Guard.lua` — mirrored.
 
 ## LCCB4220LegacyCallbacks
 
-- `42/media/lua/shared/zzz_LCC_LegacyItemCallbacks.lua`
+- `42/media/lua/shared/zzz_LCC_LegacyItemCallbacks.lua` — mirrored generic callback bridge.
 
 ## LCCB4220SkillDescriptionsRU
 
-- `42/media/lua/shared/Translate/RU/ZZ_LCC_VanillaPerks_RU.txt`
+- `42/media/lua/shared/Translate/RU/ZZ_LCC_VanillaPerks_RU.txt` — mirrored LCC-authored vanilla/B42 descriptions.
 
-Lifestyle-specific `ZZ_LCC_Perks_RU.txt` is deliberately excluded from this publishable vanilla/B42 project.
+Lifestyle-specific `ZZ_LCC_Perks_RU.txt` is deliberately excluded.
 
-## LCCB4220SurvivorAIStability — PERMISSION REVIEW
+## LCCB4220SurvivorAIStability — READY
 
-Mirrored LCC-authored files still shared with the monolithic package:
+Mirrored LCC-authored files:
 
-- `42/media/lua/client/ISUI/ISCharacterScreen.lua` — tiny legacy module-path shim.
+- `42/media/lua/client/ISUI/ISCharacterScreen.lua` — legacy B42.20 path shim.
 - `42/media/lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua` — dedicated-server lookup shim.
 - `42/media/lua/shared/LCC/Guard.lua`.
 
-Split-only LCC-authored publication refactors:
+Split-owned refactors:
 
-- `42/media/lua/client/zzz_LCC_BanditsZombieCacheGuard.lua` — post-update/post-flush cleanup; replaces the split copy of upstream `BanditZombie.lua`.
-- `42/media/lua/shared/zzz_LCC_BanditsFarmingGuard.lua` — precheck wrappers around installed Bandits farming callbacks; replaces split copies of upstream `ZAStompPlant.lua` and `ZAWaterFarm.lua`.
-- `42/media/lua/server/zzz_LCC_BanditsEmptyServerWandererGuard.lua` — returns an empty temporary clan view only on an empty MP server, allowing the original local wanderer orchestrator to skip its unsafe nil-day tick; replaces the split copy of upstream `BanditServerWanderers.lua`.
+- `42/media/lua/client/zzz_LCC_BanditsZombieCacheGuard.lua` — replaces the publication copy of upstream `BanditZombie.lua`.
+- `42/media/lua/shared/zzz_LCC_BanditsFarmingGuard.lua` — replaces publication copies of upstream `ZAStompPlant.lua` and `ZAWaterFarm.lua`.
+- `42/media/lua/server/zzz_LCC_BanditsEmptyServerWandererGuard.lua` — replaces the publication copy of upstream `BanditServerWanderers.lua` by guarding the installed public `BanditCustom.ClanGetAll()` API only on an empty MP server.
 
-The split now contains no full Bandits Lua source override. The monolithic patch intentionally retains its existing full overrides as the known runtime baseline. Workshop upload remains disabled until author-specific permission/policy review and runtime regression testing are complete.
+The split contains none of those four upstream Bandits files. CI forbids them from returning.
 
-## LCCB4220WellnessCompat — BLOCKED
+## LCCB4220WellnessCompat — READY
 
-- `42/media/lua/client/zzz_LCC_LifestyleBathFix.lua`
-- `42/media/lua/client/zzz_LCC_LifestyleYogaProgress.lua`
-- `42/media/lua/shared/Hygiene/BathTubFunctions.lua`
-- `42/media/lua/shared/Hygiene/ShowerFunctions.lua`
-- `42/media/lua/shared/LCC/Guard.lua`
-- `42/media/perks.txt`
+Mirrored LCC-authored compatibility files:
 
-## LCCB4220PZKBridge — BLOCKED
+- `42/media/lua/client/zzz_LCC_LifestyleBathFix.lua`.
+- `42/media/lua/client/zzz_LCC_LifestyleYogaProgress.lua`.
+- `42/media/lua/shared/Hygiene/BathTubFunctions.lua`.
+- `42/media/lua/shared/Hygiene/ShowerFunctions.lua`.
+- `42/media/lua/shared/LCC/Guard.lua`.
 
-- `42/media/lua/client/Vehicle/ISUI/ISVehiclePartMenu.lua`
-- `42/media/lua/client/Vehicle/ISVehiclePartMenu.lua`
-- `42/media/lua/shared/ISBaseTimedAction.lua`
-- `42/media/lua/server/utils/pzkZonesFunction.lua`
-- `42/media/lua/shared/SVU3_PZKVLCCars_Stuffs.lua`
-- `42/media/lua/shared/LCC/Guard.lua`
+Split-owned refactor:
 
-## LCCB4220OutfitMenuSafety — BLOCKED
+- `42/media/perks.txt` — declares only the `Yoga` UI proxy with zero XP thresholds. It no longer mirrors the monolith's combined Lifestyle/Art/Cleaning/Dancing/Meditation/Music declarations. Authoritative Yoga level/XP is read from installed Lifestyle `HiddenSkills` storage by the LCC UI wrapper.
 
-- `42/media/lua/client/zzz_LCC_ChimeraGhillieFix.lua`
-- `42/media/lua/shared/LCC/Guard.lua`
+No Lifestyle translations are bundled in this runtime item.
+
+## LCCB4220PZKBridge — READY
+
+All files are LCC-authored shims mirrored from the monolith:
+
+- `42/media/lua/client/Vehicle/ISUI/ISVehiclePartMenu.lua`.
+- `42/media/lua/client/Vehicle/ISVehiclePartMenu.lua`.
+- `42/media/lua/shared/ISBaseTimedAction.lua`.
+- `42/media/lua/server/utils/pzkZonesFunction.lua`.
+- `42/media/lua/shared/SVU3_PZKVLCCars_Stuffs.lua`.
+- `42/media/lua/shared/LCC/Guard.lua`.
+
+No PZK vehicle/source/assets are bundled.
+
+## LCCB4220OutfitMenuSafety — READY
+
+- `42/media/lua/client/zzz_LCC_ChimeraGhillieFix.lua` — mirrored LCC runtime wrapper.
+- `42/media/lua/shared/LCC/Guard.lua` — mirrored.
+
+No Chimera source/clothing assets are bundled.
 
 ## LCCB4220ThirdPartyRU — BLOCKED
 
-Mirrors all current third-party/mod-specific Russian localization from the monolithic patch while excluding `ZZ_LCC_VanillaPerks_RU.txt`:
+This project remains a byte-for-byte isolation of the current mod-specific translation material from the monolithic patch, excluding `ZZ_LCC_VanillaPerks_RU.txt`. It is deliberately not made publishable until the relevant translation permissions/rights are audited per target.
 
-- `42/media/lua/shared/Translate/RU/ContextMenu.json`
-- `42/media/lua/shared/Translate/RU/Farming.json`
-- `42/media/lua/shared/Translate/RU/IG_UI.json`
-- `42/media/lua/shared/Translate/RU/IG_UI_RU.txt`
-- `42/media/lua/shared/Translate/RU/ItemName.json`
-- `42/media/lua/shared/Translate/RU/Mod.json`
-- `42/media/lua/shared/Translate/RU/Moodles.json`
-- `42/media/lua/shared/Translate/RU/Moveables.json`
-- `42/media/lua/shared/Translate/RU/Moveables_RU.txt`
-- `42/media/lua/shared/Translate/RU/Recipes.json`
-- `42/media/lua/shared/Translate/RU/Recorded_Media.json`
-- `42/media/lua/shared/Translate/RU/Sandbox.json`
-- `42/media/lua/shared/Translate/RU/Tooltip.json`
-- `42/media/lua/shared/Translate/RU/UI.json`
-- `42/media/lua/shared/Translate/RU/ZZ_LCC_Perks_RU.txt`
-- `common/media/lua/shared/Translate/RU/IG_UI.json`
-- `common/media/lua/shared/Translate/RU/Moveables.json`
-- `common/media/lua/shared/Translate/RU/Tooltip.json`
+Current files include the 42.x RU JSON/TXT translation set plus the common `IG_UI.json`, `Moveables.json`, and `Tooltip.json` mirrors.
 
 ## Not moved into Workshop projects
 
-- `server/linux/start-server.sh` and other server tooling: remains server-side repository tooling.
-- Original Workshop source folders (`3217685049`, `3268487204`, etc.): remain reference/upstream snapshots and are never bundled by these projects.
-- Original monolithic `42/mod.info`: replaced by project-specific IDs/load order metadata.
+- `server/linux/start-server.sh` and other server tooling.
+- Original Workshop source folders (`3217685049`, `3268487204`, etc.).
+- Third-party models, textures, sounds, vehicle data, clothing assets, and original Lua source.
+- Original monolithic `42/mod.info`; every split has its own Mod ID/load metadata.
