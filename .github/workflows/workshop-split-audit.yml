@@ -5,6 +5,7 @@ on:
     paths:
       - 'LaccckaCompatibilityPatch/**'
       - 'WorkshopProjects/**'
+      - 'WorkshopPatches/**'
       - 'tools/audit_workshop_split.py'
       - 'tools/audit_wellness_proxy.py'
       - 'tools/audit_survivor_ai_guards.py'
@@ -13,6 +14,7 @@ on:
     paths:
       - 'LaccckaCompatibilityPatch/**'
       - 'WorkshopProjects/**'
+      - 'WorkshopPatches/**'
       - 'tools/audit_workshop_split.py'
       - 'tools/audit_wellness_proxy.py'
       - 'tools/audit_survivor_ai_guards.py'
@@ -26,8 +28,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
-      - name: Verify split Workshop projects
+      - name: Verify existing Workshop projects
         run: python3 tools/audit_workshop_split.py
+      - name: Verify new grouped Workshop patches
+        run: bash WorkshopPatches/audit_split.sh
       - name: Verify Wellness Yoga proxy contract
         run: python3 tools/audit_wellness_proxy.py
       - name: Verify Survivor AI guard contracts
