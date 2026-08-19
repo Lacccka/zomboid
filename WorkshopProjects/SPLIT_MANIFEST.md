@@ -2,7 +2,7 @@
 
 Source/reference package: `LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch`.
 
-The monolithic patch is not deleted or modified by this publication split. **Mirrored** files remain byte-for-byte copies of LCC-authored compatibility files in the monolith. **Split-owned refactors** intentionally diverge to remove third-party full-file/declaration copies while preserving compatibility behavior.
+The monolithic patch is not deleted or modified by this publication split. **Mirrored** files remain byte-for-byte copies of LCC-authored compatibility files in the monolith. **Split-owned refactors** intentionally diverge to remove third-party full-file/declaration copies or hard-failure compatibility paths while preserving behavior.
 
 All projects below are **READY_FOR_UNLISTED_TEST**. Public Workshop titles are neutral LCC functional names; direct target/dependency names remain in descriptions/credits.
 
@@ -39,7 +39,7 @@ Mirrored LCC-authored files:
 
 Split-owned refactors:
 - `zzz_LCC_BanditsZombieCacheGuard.lua` replaces the publication copy of upstream `BanditZombie.lua`.
-- `zzz_LCC_BanditsFarmingGuard.lua` replaces publication copies of upstream `ZAStompPlant.lua` and `ZAWaterFarm.lua`.
+- `zzz_LCC_BanditsFarmingGuard.lua` replaces publication copies of upstream `ZAStompPlant.lua` and `ZAWaterFarm.lua`. LCC precheck failures fail open to the installed original callbacks.
 - `zzz_LCC_BanditsEmptyServerWandererGuard.lua` replaces the publication copy of upstream `BanditServerWanderers.lua` by guarding installed `BanditCustom.ClanGetAll()` only on an empty multiplayer server.
 
 The empty-server guard uses `getOnlinePlayers()` on server state and intentionally does not require `isClient()`. CI forbids all four former upstream override files from returning to the split.
@@ -61,13 +61,15 @@ Authoritative Yoga level/XP remains in installed `HiddenSkills` storage. No well
 
 ### LCCB4220PZKBridge — LCC B42.20 Vehicle Integration Bridge
 
-All files are LCC-authored shims mirrored from the monolith:
+Mirrored LCC-authored path shims:
 - `client/Vehicle/ISUI/ISVehiclePartMenu.lua`.
 - `client/Vehicle/ISVehiclePartMenu.lua`.
 - `shared/ISBaseTimedAction.lua`.
 - `server/utils/pzkZonesFunction.lua`.
-- `shared/SVU3_PZKVLCCars_Stuffs.lua`.
 - `shared/LCC/Guard.lua`.
+
+Split-owned refactor:
+- `shared/SVU3_PZKVLCCars_Stuffs.lua` now resolves the installed support module through `Guard.safeRequire()` and returns a safe fallback if that optional support path is removed/renamed. The monolithic raw-require version remains unchanged as the regression baseline.
 
 No vehicle/source/assets from target mods are bundled.
 
