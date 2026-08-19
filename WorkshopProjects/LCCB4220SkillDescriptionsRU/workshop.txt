@@ -1,0 +1,6 @@
+version=1
+id=
+title=LCC Russian Skill Descriptions - Build 42
+description=Russian player-facing descriptions for vanilla and Build 42 skills authored for LCC. Third-party mod translations are not included. Initial visibility is unlisted for validation.
+tags=Build 42;Translation
+visibility=unlisted

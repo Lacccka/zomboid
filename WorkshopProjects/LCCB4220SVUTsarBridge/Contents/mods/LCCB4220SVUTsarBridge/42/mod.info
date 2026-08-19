@@ -1,0 +1,7 @@
+name=LCC B42.20 Vehicle API Bridge
+id=LCCB4220SVUTsarBridge
+author=Lacccka
+description=Unofficial Build 42.20 legacy API/path bridge for installed SVU3/TsarLib integrations. Original mods are required separately and are not redistributed.
+modversion=1.0.0
+versionMin=42.20.0
+loadafter=\tsarslib,\StandardizedVehicleUpgrades3Core

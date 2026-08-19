@@ -1,0 +1,7 @@
+name=LCC B42.20 Firearms Placement Bridge
+id=LCCB4220FirearmsBridge
+author=Lacccka
+description=Unofficial Build 42.20 compatibility wrapper for the installed firearms placement stack. Original mods are required separately and are not redistributed.
+modversion=1.0.0
+versionMin=42.20.0
+loadafter=\ModernFirearmsSystem,\MFS_community_fix
