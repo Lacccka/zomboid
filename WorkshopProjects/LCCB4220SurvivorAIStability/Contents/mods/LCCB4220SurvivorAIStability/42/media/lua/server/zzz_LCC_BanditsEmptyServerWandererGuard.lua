@@ -4,13 +4,17 @@
 -- registration. The upstream orchestrator obtains clan data through the public
 -- BanditCustom.ClanGetAll() API. On an empty multiplayer server it has no
 -- player-derived `day`, so iterating any wanderer clan can compare nil to the
--- configured day range. Returning an empty read-only view for this one runtime
--- state makes that scheduler tick a no-op without replacing upstream source.
+-- configured day range. Returning an empty view for this one runtime state
+-- makes that scheduler tick a no-op without replacing upstream source.
 if not isServer() then return end
 
 local Guard = require "LCC/Guard"
 local FEATURE = "bandits.wanderers-empty-server"
-local EMPTY_CLANS = {}
+
+-- Resolve BanditCustom from the separately installed Bandits2 dependency before
+-- wrapping its public API. This removes reliance on incidental filename order.
+Guard.safeRequire(FEATURE, "BanditCustom")
+if not Guard.isEnabled(FEATURE) then return end
 
 local function isEmptyMultiplayerServer()
     local world = getWorld()
@@ -49,7 +53,9 @@ Guard.install {
                     isEmptyMultiplayerServer
                 )
                 if ok and emptyServer then
-                    return EMPTY_CLANS
+                    -- Return a fresh table so no unrelated empty-server caller can
+                    -- mutate shared guard state. The Bandits orchestrator only reads it.
+                    return {}
                 end
             end
 
