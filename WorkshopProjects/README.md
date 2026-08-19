@@ -31,9 +31,15 @@ All 12 split projects are **READY_FOR_UNLISTED_TEST**.
 
 ## Source-clean runtime rules
 
-The Bandits-oriented runtime split contains none of the former full upstream overrides (`BanditZombie.lua`, `BanditServerWanderers.lua`, `ZAStompPlant.lua`, `ZAWaterFarm.lua`). The Wellness runtime split declares only the LCC `Yoga` UI proxy in `perks.txt` and validates the resolved `Lifestyle` parent at runtime.
+The Survivor AI runtime split contains none of the former full upstream overrides (`BanditZombie.lua`, `BanditServerWanderers.lua`, `ZAStompPlant.lua`, `ZAWaterFarm.lua`). Its Farming wrappers fail open to installed original callbacks if an LCC precheck itself breaks. The empty-server guard targets dedicated multiplayer semantics and does not require client state.
 
-`tools/audit_workshop_split.py` enforces source-clean packaging, target-neutral public titles, explicit descriptions/credits, translation separation, dedicated-server semantics, and the Yoga proxy contract. `tools/audit_wellness_proxy.py` provides a focused Wellness check.
+The Wellness runtime split declares only the LCC `Yoga` UI proxy in `perks.txt` and validates the resolved `Lifestyle` parent at runtime.
+
+Audits:
+
+- `tools/audit_workshop_split.py` — packaging, neutral titles, credits, source/translation boundaries and core contracts.
+- `tools/audit_wellness_proxy.py` — Yoga-only CustomPerk declaration and runtime parent contract.
+- `tools/audit_survivor_ai_guards.py` — source-clean Survivor AI guards, dedicated-MP behavior and Farming fail-open semantics.
 
 ## Linux launcher
 
@@ -41,7 +47,7 @@ The Bandits-oriented runtime split contains none of the former full upstream ove
 
 ## Before public visibility
 
-1. Run `python3 tools/audit_workshop_split.py` and `python3 tools/audit_wellness_proxy.py` plus the existing compatibility/translation audits.
+1. Run `python3 tools/audit_workshop_split.py`, `python3 tools/audit_wellness_proxy.py`, and `python3 tools/audit_survivor_ai_guards.py`, plus the existing compatibility/translation audits.
 2. Test each split item unlisted with original dependencies installed separately.
 3. Never enable an equivalent split runtime project together with `LaccckaB4220Compat` during A/B testing.
 4. Keep target credits/dependency details in descriptions even though public titles are neutral.
