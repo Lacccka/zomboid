@@ -1,0 +1,50 @@
+# LCC Workshop Projects
+
+This directory is a publication-oriented split of `LaccckaCompatibilityPatch` for Project Zomboid Build 42.20.x.
+
+## Safety model
+
+The original monolithic patch remains untouched and is the development/reference implementation. Files copied into the projects below reuse the exact Git blobs from the working patch wherever possible; splitting the package must not change runtime behavior.
+
+Projects are separated by target/function so one Workshop review, permission question, or upstream change does not block unrelated fixes.
+
+Two publication states are used:
+
+- **READY_FOR_UNLISTED_TEST** — contains LCC-authored compatibility code (or LCC-authored vanilla/B42 localization) and does not redistribute the target mod. A real `workshop.txt` is present with an empty Workshop ID and `visibility=unlisted` for initial testing.
+- **BLOCKED_PENDING_PERMISSION** — technically split and testable from the local `Contents/mods` directory, but intentionally has no active `workshop.txt`. `workshop.txt.DISABLED` is documentation only and must not be renamed/uploaded until the listed permission issue is resolved or the implementation is refactored to a publication-safe form.
+
+`Unlisted` is not a permission bypass. It is only the initial visibility for projects that pass the publication audit.
+
+## Projects
+
+### READY_FOR_UNLISTED_TEST
+
+- `LCCB4220FirearmsBridge` — MFS 3D placement compatibility wrapper.
+- `LCCB4220SVUTsarBridge` — SVU3/TsarLib legacy API path bridge.
+- `LCCB4220zReBridge` — zRe legacy `BodyLocations` path bridge.
+- `LCCB4220AegisGuard` — inventory-transfer nil-container guard used with Aegis.
+- `LCCB4220LegacyCallbacks` — generic Build 42 legacy item callback bridge.
+- `LCCB4220SkillDescriptionsRU` — LCC-authored Russian descriptions for vanilla/Build 42 skills only.
+
+### BLOCKED_PENDING_PERMISSION
+
+- `LCCB4220SurvivorAIStability` — Bandits compatibility. Includes strict full-file overrides; do not upload without permission or a later refactor that removes third-party code redistribution.
+- `LCCB4220WellnessCompat` — Lifestyle runtime/Yoga compatibility; the upstream author requires permission for extensions.
+- `LCCB4220PZKBridge` — PZK compatibility shims; upstream extension policy requires permission.
+- `LCCB4220OutfitMenuSafety` — Chimera runtime compatibility; kept blocked because the author's historical permission policy is restrictive.
+- `LCCB4220ThirdPartyRU` — third-party Russian localization currently combining Lifestyle/Bandits-related translation material; keep blocked until the relevant permissions are documented.
+
+## Linux launcher
+
+`server/linux/start-server.sh` remains repository/server tooling and is intentionally not duplicated into Workshop items. Its case-sensitivity preflight operates on installed Workshop content and should continue to be maintained separately.
+
+## Before publishing anything
+
+1. Check `PUBLICATION_AUDIT.md`.
+2. Confirm the target mod's current permissions have not changed.
+3. Keep the original mod as a dependency; never bundle its Workshop directory/assets.
+4. Credit the target mod/author in the Workshop description when the project has a direct compatibility relationship.
+5. Never describe an LCC module as official.
+6. Run the compatibility audits and a dedicated-server/client smoke test before changing visibility from unlisted to public.
+
+See `SPLIT_MANIFEST.md` for the exact source-to-project file mapping.
