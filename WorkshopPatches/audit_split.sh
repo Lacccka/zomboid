@@ -103,6 +103,7 @@ if [[ -f "$runtime_dedicated" ]]; then
     grep -Fq 'BanditZombie.GetInstanceById = lookupZombie' "$runtime_dedicated" || error "RuntimeFixes dedicated guard must install real lookup contract"
     grep -Fq 'BanditServerZombie.Cache' "$runtime_dedicated" || error "RuntimeFixes dedicated lookup lost optional native server-cache path"
     grep -Fq 'getZombieList()' "$runtime_dedicated" || error "RuntimeFixes dedicated lookup lost on-demand server fallback"
+    grep -Fq 'pcall(getId, zombie)' "$runtime_dedicated" || error "RuntimeFixes dedicated lookup lost stale-IsoZombie protection"
 fi
 
 # Activity fixes.
