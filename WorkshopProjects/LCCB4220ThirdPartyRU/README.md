@@ -1,7 +1,11 @@
-# LCC Russian Localization — Third-party Extensions
+# LCC Russian Localization — Unclassified Extensions
 
 Status: **BLOCKED_PENDING_PERMISSION**.
 
-This project preserves the current mod-specific Russian localization from the monolithic patch for local regression testing. It is deliberately separated from `LCCB4220SkillDescriptionsRU`, which contains only LCC-authored vanilla/Build 42 skill descriptions.
+This is the remaining mod-specific Russian translation staging area after the proven Bandits `IG_UI` translation was isolated into `LCCB4220BanditsRU`.
 
-Current translation material includes Lifestyle/Bandits-related content and therefore must not be uploaded until the relevant permissions are documented. Canonical original song titles remain unchanged exactly as in the monolithic patch.
+The remaining files are primarily used by the existing Lifestyle translation coverage audit, but some categories may still contain extra/custom keys. Until key-level provenance is complete, this project must not be presented as a clean Lifestyle-only package and must not be uploaded.
+
+`LCCB4220SkillDescriptionsRU` remains separate and contains only LCC-authored vanilla/Build 42 skill descriptions. Canonical original song titles intentionally left untranslated by the existing Lifestyle audit remain unchanged.
+
+Next step: classify each remaining key/category against the current Lifestyle EN set, then move proven Lifestyle translation material into its own permission-gated localization project and isolate any true extra/custom keys separately.
