@@ -93,10 +93,13 @@ find_workshop_mod_dir() {
 ensure_linux_mod_case_compat() {
     local mod_name="$1"
     local mod_dir
+    local find_rc
 
-    if ! mod_dir="$(find_workshop_mod_dir "${mod_name}")"; then
-        local rc=$?
-        if (( rc == 2 )); then
+    mod_dir="$(find_workshop_mod_dir "${mod_name}")"
+    find_rc=$?
+
+    if (( find_rc != 0 )); then
+        if (( find_rc == 2 )); then
             return 1
         fi
         echo "[LCC][Linux][WARN] Workshop mod not installed yet: ${mod_name}"
