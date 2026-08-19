@@ -2,7 +2,7 @@
 
 Source/reference package: `LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch`.
 
-The monolithic patch is not deleted or modified by this publication split. Files marked **mirrored** remain byte-for-byte copies of LCC-authored compatibility files in the monolith. Files marked **split-owned refactor** intentionally diverge to remove third-party full-file/declaration copies while preserving the compatibility contract.
+The monolithic patch is not deleted or modified by this publication split. **Mirrored** files remain byte-for-byte copies of LCC-authored compatibility files in the monolith. **Split-owned refactors** intentionally diverge to remove third-party full-file/declaration copies while preserving compatibility behavior.
 
 ## Runtime projects
 
@@ -27,8 +27,6 @@ The monolithic patch is not deleted or modified by this publication split. Files
 
 ### LCCB4220SkillDescriptionsRU
 - `42/media/lua/shared/Translate/RU/ZZ_LCC_VanillaPerks_RU.txt` — mirrored LCC-authored vanilla/B42 descriptions.
-
-Lifestyle-specific `ZZ_LCC_Perks_RU.txt` is deliberately excluded.
 
 ### LCCB4220SurvivorAIStability — READY
 
@@ -82,12 +80,13 @@ No Chimera source/clothing assets are bundled.
 
 - `42/media/lua/shared/Translate/RU/IG_UI.json` — isolated Bandits translation blob.
 
-Its content is byte-for-byte identical to `3268487204/mods/Bandits/42.20/media/lua/shared/Translate/RU/IG_UI_ru.json`. CI compares the split directly against that target-side snapshot. It is intentionally upload-disabled pending translation publication permission/rights.
+Content is byte-for-byte identical to `3268487204/mods/Bandits/42.20/media/lua/shared/Translate/RU/IG_UI_ru.json`. CI compares the split directly against that target-side snapshot. Upload stays disabled pending translation publication permission/rights.
 
-### LCCB4220ThirdPartyRU — BLOCKED / UNCLASSIFIED
+### LCCB4220LifestyleRU — BLOCKED
 
-The previous mixed project no longer contains the Bandits `42/.../IG_UI.json`. Remaining 42.x categories are:
+The remaining Lifestyle-oriented RU staging was moved from the deprecated `LCCB4220ThirdPartyRU` project without rewriting its translation subtrees.
 
+42.x RU categories:
 - `ContextMenu.json`
 - `Farming.json`
 - `IG_UI_RU.txt`
@@ -103,12 +102,14 @@ The previous mixed project no longer contains the Bandits `42/.../IG_UI.json`. R
 - `UI.json`
 - `ZZ_LCC_Perks_RU.txt`
 
-Common RU mirrors still staged here:
-- `common/.../IG_UI.json`
-- `common/.../Moveables.json`
-- `common/.../Tooltip.json`
+Common RU categories:
+- `IG_UI.json`
+- `Moveables.json`
+- `Tooltip.json`
 
-These are primarily used by the Lifestyle translation audit, but key-level provenance is not yet complete because extra/custom keys are allowed by that audit. Do not publish this project as a Lifestyle-only item yet.
+The Bandits `42/.../IG_UI.json` is not present. The existing Lifestyle translation audit consumes these categories, but because it allows extra/custom keys the project remains permission/provenance-gated and must not be uploaded yet.
+
+The deprecated `LCCB4220ThirdPartyRU` project has been removed and CI forbids its return.
 
 ## Not moved into Workshop projects
 
