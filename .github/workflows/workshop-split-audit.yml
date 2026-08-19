@@ -7,6 +7,7 @@ on:
       - 'WorkshopProjects/**'
       - 'tools/audit_workshop_split.py'
       - 'tools/audit_wellness_proxy.py'
+      - 'tools/audit_survivor_ai_guards.py'
       - '.github/workflows/workshop-split-audit.yml'
   pull_request:
     paths:
@@ -14,6 +15,7 @@ on:
       - 'WorkshopProjects/**'
       - 'tools/audit_workshop_split.py'
       - 'tools/audit_wellness_proxy.py'
+      - 'tools/audit_survivor_ai_guards.py'
       - '.github/workflows/workshop-split-audit.yml'
 
 jobs:
@@ -28,3 +30,5 @@ jobs:
         run: python3 tools/audit_workshop_split.py
       - name: Verify Wellness Yoga proxy contract
         run: python3 tools/audit_wellness_proxy.py
+      - name: Verify Survivor AI guard contracts
+        run: python3 tools/audit_survivor_ai_guards.py
