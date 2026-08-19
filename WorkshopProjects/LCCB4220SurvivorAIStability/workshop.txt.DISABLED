@@ -1,6 +1,0 @@
-version=1
-id=
-title=LCC B42.20 Survivor AI Stability
-description=DO NOT UPLOAD YET: LCC-authored Bandits compatibility guards only; no Bandits Lua source is redistributed in this split. Keep disabled until current permission/policy review and runtime regression testing are complete.
-tags=Build 42;Multiplayer
-visibility=private
