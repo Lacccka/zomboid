@@ -49,13 +49,20 @@ if CACHE.is_file():
     text = CACHE.read_text(encoding="utf-8")
     for marker in (
         "if isServer() then return end",
+        'Guard.safeRequire(FEATURE, "BanditCompatibility")',
+        "BanditCompatibility.IsReanimatedForGrappleOnly = function",
+        "BanditCompatibility.__LCCSquarelessUpdateGate",
+        "if Guard.isEnabled(FEATURE) and zombie and not getSquareSafe(zombie) then",
+        "removeTransientZombie(zombie)",
+        "return true",
+        "return originalIsReanimated(zombie, ...)",
         "Events.OnZombieUpdate.Add",
         "Events.EveryOneMinute.Add",
         "removeFromCaches",
         "recountLightCaches",
     ):
         if marker not in text:
-            errors.append(f"cache guard missing marker: {marker}")
+            errors.append(f"cache/update guard missing marker: {marker}")
 
 if DEDICATED.is_file():
     text = DEDICATED.read_text(encoding="utf-8")
@@ -73,6 +80,7 @@ for forbidden in (
     BASE / "server/BanditServerWanderers.lua",
     BASE / "shared/ZombieActions/ZAStompPlant.lua",
     BASE / "shared/ZombieActions/ZAWaterFarm.lua",
+    BASE / "client/BanditUpdate.lua",
 ):
     if forbidden.exists():
         errors.append(f"full upstream override must not return: {forbidden.relative_to(ROOT)}")
@@ -83,4 +91,4 @@ if errors:
         print(f" - {error}")
     sys.exit(1)
 
-print("Survivor AI guard audit OK: source-clean, dedicated-MP safe, farming wrappers fail open")
+print("Survivor AI guard audit OK: source-clean, squareless-consumer gated, dedicated-MP safe, farming wrappers fail open")
