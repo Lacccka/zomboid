@@ -31,6 +31,17 @@ same() {
     fi
 }
 
+# Mark a historical monolith override as intentionally represented by a
+# source-clean wrapper instead of a byte-for-byte copy in the public split.
+account_only() {
+    local src_rel="$1"
+    local src="$MONO/42/media/$src_rel"
+    mapped_sources+=("$src_rel")
+    if [[ ! -f "$src" ]]; then
+        error "missing historical monolith source: $src_rel"
+    fi
+}
+
 core="$SPLIT/PatchCore/Contents/mods/LaccckaB4220PatchCore/42/media"
 runtime="$SPLIT/RuntimeFixes/Contents/mods/LaccckaB4220RuntimeFixes/42/media"
 activity="$SPLIT/ActivityFixes/Contents/mods/LaccckaB4220ActivityFixes/42/media"
@@ -42,13 +53,57 @@ text_common="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/commo
 # Shared patch helper.
 same "lua/shared/LCC/Guard.lua" "$core/lua/shared/LCC/Guard.lua"
 
-# Runtime fixes.
-same "lua/client/BanditZombie.lua" "$runtime/lua/client/BanditZombie.lua"
+# Runtime fixes: historical full-file overrides are accounted for but MUST NOT
+# be copied into the public split. ISCharacterScreen is an LCC path shim.
+account_only "lua/client/BanditZombie.lua"
 same "lua/client/ISUI/ISCharacterScreen.lua" "$runtime/lua/client/ISUI/ISCharacterScreen.lua"
-same "lua/server/BanditServerWanderers.lua" "$runtime/lua/server/BanditServerWanderers.lua"
-same "lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua" "$runtime/lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua"
-same "lua/shared/ZombieActions/ZAStompPlant.lua" "$runtime/lua/shared/ZombieActions/ZAStompPlant.lua"
-same "lua/shared/ZombieActions/ZAWaterFarm.lua" "$runtime/lua/shared/ZombieActions/ZAWaterFarm.lua"
+account_only "lua/server/BanditServerWanderers.lua"
+account_only "lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua"
+account_only "lua/shared/ZombieActions/ZAStompPlant.lua"
+account_only "lua/shared/ZombieActions/ZAWaterFarm.lua"
+
+runtime_cache="$runtime/lua/client/zzz_LCC_BanditsZombieCacheGuard.lua"
+runtime_empty="$runtime/lua/server/zzz_LCC_BanditsEmptyServerWandererGuard.lua"
+runtime_dedicated="$runtime/lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua"
+runtime_farming="$runtime/lua/shared/zzz_LCC_BanditsFarmingGuard.lua"
+
+for path in "$runtime_cache" "$runtime_empty" "$runtime_dedicated" "$runtime_farming"; do
+    [[ -f "$path" ]] || error "RuntimeFixes source-clean guard missing: ${path#$ROOT/}"
+done
+
+for forbidden in \
+    "$runtime/lua/client/BanditZombie.lua" \
+    "$runtime/lua/server/BanditServerWanderers.lua" \
+    "$runtime/lua/shared/ZombieActions/ZAStompPlant.lua" \
+    "$runtime/lua/shared/ZombieActions/ZAWaterFarm.lua" \
+    "$runtime/lua/client/BanditUpdate.lua"; do
+    [[ ! -e "$forbidden" ]] || error "RuntimeFixes must not bundle upstream Bandits source: ${forbidden#$ROOT/}"
+done
+
+if [[ -f "$runtime_empty" ]]; then
+    grep -Fq 'BanditCustom.ClanGetAll = function' "$runtime_empty" || error "RuntimeFixes empty-server guard lost ClanGetAll wrapper"
+    grep -Fq 'players:size() == 0' "$runtime_empty" || error "RuntimeFixes empty-server guard lost zero-player condition"
+    grep -Fq 'return originalClanGetAll(...)' "$runtime_empty" || error "RuntimeFixes empty-server guard must preserve normal ClanGetAll behavior"
+fi
+
+if [[ -f "$runtime_cache" ]]; then
+    grep -Fq 'BanditCompatibility.IsReanimatedForGrappleOnly = function' "$runtime_cache" || error "RuntimeFixes cache guard lost BanditUpdate early-return seam"
+    grep -Fq 'not getSquareSafe(zombie)' "$runtime_cache" || error "RuntimeFixes cache guard lost squareless predicate"
+    grep -Fq 'Events.OnZombieUpdate.Add' "$runtime_cache" || error "RuntimeFixes cache guard lost post-update cleanup"
+    grep -Fq 'Events.EveryOneMinute.Add' "$runtime_cache" || error "RuntimeFixes cache guard lost post-flush sweep"
+fi
+
+if [[ -f "$runtime_farming" ]]; then
+    grep -Fq 'return original(...)' "$runtime_farming" || error "RuntimeFixes farming wrappers must preserve original callbacks"
+    grep -Fq 'shouldSkipWaterComplete' "$runtime_farming" || error "RuntimeFixes farming guard must finish invalid water tasks cleanly"
+    grep -Fq 'CFarmingSystem.instance' "$runtime_farming" || error "RuntimeFixes farming guard lost B42 farming availability check"
+fi
+
+if [[ -f "$runtime_dedicated" ]]; then
+    grep -Fq 'BanditZombie.GetInstanceById = lookupZombie' "$runtime_dedicated" || error "RuntimeFixes dedicated guard must install real lookup contract"
+    grep -Fq 'BanditServerZombie.Cache' "$runtime_dedicated" || error "RuntimeFixes dedicated lookup lost optional native server-cache path"
+    grep -Fq 'getZombieList()' "$runtime_dedicated" || error "RuntimeFixes dedicated lookup lost on-demand server fallback"
+fi
 
 # Activity fixes.
 same "lua/client/zzz_LCC_LifestyleBathFix.lua" "$activity/lua/client/zzz_LCC_LifestyleBathFix.lua"
@@ -113,7 +168,7 @@ for folder in "${!expected_ids[@]}"; do
     grep -Fxq "id=$id" "$modinfo" || error "$folder: wrong mod ID"
     grep -Fxq 'versionMin=42.20.0' "$modinfo" || error "$folder: versionMin must stay on 42.20.0"
     grep -Fqi 'Do not use' "$workshop" || error "$folder: Workshop warning is missing"
-    grep -Fqi 'original mods are not included' "$workshop" || error "$folder: no-bundled-mods disclaimer is missing"
+    grep -Eqi 'original mod(s| Lua files| files)?.*not included|original mods are not included' "$workshop" || error "$folder: no-bundled-mods disclaimer is missing"
     grep -Fxq 'id=0' "$workshop" || error "$folder: staging Workshop ID must remain 0 until publication"
 
     if grep -Fqx "$id" <<<"$seen_ids"; then
