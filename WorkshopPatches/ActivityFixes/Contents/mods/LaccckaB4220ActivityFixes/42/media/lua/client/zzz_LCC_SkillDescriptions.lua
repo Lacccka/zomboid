@@ -81,8 +81,7 @@ Guard.install {
         }
 
         -- Explicit fallback for the Russian B42 names that have historically
-        -- moved between internal ids. This is only a fallback after id and
-        -- translation-based matching, not the primary lookup path.
+        -- moved between internal ids.
         local DISPLAY_NAME_ALIASES = {
             ["Лёгкий шаг"] = { "Lightfoot", "Lightfooted" },
             ["Бег"] = { "Sprinting", "Running" },
@@ -94,7 +93,27 @@ Guard.install {
             ["Медицина"] = { "Doctor", "FirstAid", "Medical", "Medicine" },
         }
 
+        -- Build 42.20 does not load arbitrary translation filenames as IGUI
+        -- dictionaries. The dedicated RussianTextFixes files named
+        -- ZZ_LCC_*_RU.txt therefore cannot be relied on for these entries.
+        -- Keep a small UI-only fallback here for the exact Russian skill names
+        -- that are missing from the active IGUI dictionary. Yoga is also
+        -- intentionally overridden here so its tooltip uses the concise
+        -- progression-oriented wording instead of Lifestyle's older text.
+        local DISPLAY_DESCRIPTION_OVERRIDES = {
+            ["Лёгкий шаг"] = "Уменьшает шум от передвижения. <LINE> Чем выше навык, тем тише обычные шаги и тем меньше вероятность привлечь зомби звуком движения.",
+            ["Бег"] = "Повышает эффективность бега. <LINE> Прокачивается во время бега. <LINE> С ростом навыка персонаж быстрее передвигается бегом и эффективнее расходует выносливость.",
+            ["Уход за животными"] = "Повышает навыки обращения с домашними животными. <LINE> Прокачивается при уходе за животными и выполнении связанных действий. <LINE> С ростом навыка становится проще оценивать их состояние и эффективнее использовать возможности животноводства.",
+            ["Короткое режущее"] = "Повышает владение коротким режущим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак.",
+            ["Короткое дробящее"] = "Повышает владение коротким дробящим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак.",
+            ["Длинное режущее"] = "Повышает владение длинным режущим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак.",
+            ["Длинное дробящее"] = "Повышает владение длинным дробящим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак.",
+            ["Медицина"] = "Повышает эффективность медицинской помощи. <LINE> Прокачивается при лечении травм и выполнении медицинских процедур. <LINE> С ростом навыка персонаж лучше определяет состояние ран и эффективнее оказывает помощь.",
+            ["Йога"] = "Прокачивается выполнением поз во время занятий йогой; сложные позы дают больше опыта. <LINE> Каждая завершённая поза уменьшает боль и мышечное перенапряжение. <LINE> 1 ур.: Шавасана начинает давать эффект «Дзен», временно повышающий получение опыта Физподготовки, Силы, Медитации и Йоги. <LINE> С ростом навыка открываются более сложные позы, увеличивается число поз за занятие и снижается шанс неудачи. <LINE> 10 ур.: неудачи при выполнении поз исчезают. <LINE> Завершайте занятие Шавасаной: она даёт дополнительный опыт; прерывание занятия может снять часть текущего опыта.",
+        }
+
         local missingLogged = {}
+        local overrideLogged = {}
 
         local function lccGetTextOrNull(key)
             if getTextOrNull then
@@ -191,6 +210,13 @@ Guard.install {
             return nil
         end
 
+        local function getDisplayDescriptionOverride(perk)
+            if not perk or not perk.getName then return nil end
+            local localizedName = perk:getName()
+            if localizedName == nil then return nil end
+            return DISPLAY_DESCRIPTION_OVERRIDES[tostring(localizedName)]
+        end
+
         local function replacePlain(text, needle, replacement)
             if type(text) ~= "string" or type(needle) ~= "string" or needle == "" then
                 return text, false
@@ -215,11 +241,26 @@ Guard.install {
             print("[LCC][SkillDescriptions][MISS] id=" .. tostring(id) .. " name=" .. tostring(name))
         end
 
+        local function logOverride(perk)
+            local id = getPerkId(perk) or "?"
+            local name = perk and perk.getName and perk:getName() or "?"
+            local marker = tostring(id) .. "|" .. tostring(name)
+            if overrideLogged[marker] then return end
+            overrideLogged[marker] = true
+            print("[LCC][SkillDescriptions][OVERRIDE] id=" .. tostring(id) .. " name=" .. tostring(name))
+        end
+
         local function repairSkillDescription(self, lvlSelected)
             if not self or not self.perk or type(self.message) ~= "string" or self.message == "" then return end
 
             local candidates = getDescriptionCandidates(self.perk)
-            local description = findDescription(candidates, "_Description")
+            local description = getDisplayDescriptionOverride(self.perk)
+            if description then
+                logOverride(self.perk)
+            else
+                description = findDescription(candidates, "_Description")
+            end
+
             if not description then
                 logMissingDescription(self.perk)
                 return
@@ -230,12 +271,32 @@ Guard.install {
                 local wrongKey = "IGUI_perks_" .. tostring(localizedName) .. "_Description"
                 local wrongTranslation = lccGetTextOrNull(wrongKey)
 
-                if not wrongTranslation or wrongTranslation == "" then
-                    local repaired, replaced = replacePlain(self.message, wrongKey, description)
-                    self.message = repaired
-                    if not replaced then
-                        self.message = appendUnique(self.message, description)
+                -- Even if another translation supplies an older description,
+                -- the explicit Russian override above must win for these names.
+                local repaired, replaced = replacePlain(self.message, wrongKey, description)
+                self.message = repaired
+
+                if not replaced then
+                    -- The upstream tooltip may already contain a translated
+                    -- description (not the key). Replace known candidate texts
+                    -- before falling back to appending the corrected wording.
+                    if candidates then
+                        for i = 1, #candidates do
+                            local oldDescription = lccGetTextOrNull("IGUI_perks_" .. candidates[i] .. "_Description")
+                            if oldDescription and oldDescription ~= "" and oldDescription ~= description then
+                                local candidateRepaired, candidateReplaced = replacePlain(self.message, oldDescription, description)
+                                if candidateReplaced then
+                                    self.message = candidateRepaired
+                                    replaced = true
+                                    break
+                                end
+                            end
+                        end
                     end
+                end
+
+                if not replaced and (not wrongTranslation or wrongTranslation == "" or description == getDisplayDescriptionOverride(self.perk)) then
+                    self.message = appendUnique(self.message, description)
                 end
             end
 
