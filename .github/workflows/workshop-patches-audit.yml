@@ -1,0 +1,22 @@
+name: Grouped Workshop patches audit
+
+on:
+  push:
+    paths:
+      - 'LaccckaCompatibilityPatch/**'
+      - 'WorkshopPatches/**'
+      - '.github/workflows/workshop-patches-audit.yml'
+  pull_request:
+    paths:
+      - 'LaccckaCompatibilityPatch/**'
+      - 'WorkshopPatches/**'
+      - '.github/workflows/workshop-patches-audit.yml'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify grouped Workshop patch split
+        shell: bash
+        run: bash WorkshopPatches/audit_split.sh
