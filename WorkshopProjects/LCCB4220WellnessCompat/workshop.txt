@@ -1,0 +1,6 @@
+version=1
+id=
+title=LCC B42.20 Wellness Compatibility
+description=Unofficial independent compatibility patch for Lifestyle: Hobbies by Mopop and Angry. Requires the original LifestyleHobbies Workshop item; no Lifestyle source, assets, or translations are included. Adds LCC-authored B42.20 bath/shower guards and a Yoga skill UI proxy.
+tags=Build 42;Multiplayer
+visibility=unlisted
