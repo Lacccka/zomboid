@@ -1,6 +1,0 @@
-version=1
-id=
-title=LCC B42.20 Vaccine API Bridge
-description=Unofficial LCC Build 42.20 API path bridge for an installed vaccine framework. Contains only LCC compatibility code; the original target mod is not included. Initial visibility is unlisted for validation.
-tags=Build 42;Multiplayer
-visibility=unlisted

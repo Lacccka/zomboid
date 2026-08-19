@@ -1,7 +1,0 @@
-name=LCC B42.20 Survivor Dialogue RU
-id=LCCB4220BanditsRU
-author=Lacccka
-description=Russian localization add-on for installed survivor/NPC content. Compatibility target and credit: [B42] Bandits NPC by Slayer. Requires Bandits2; original mod content is installed separately and is not bundled here.
-modversion=1.1.0
-versionMin=42.20.0
-loadafter=\Bandits2

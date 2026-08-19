@@ -1,6 +1,0 @@
-version=1
-id=
-title=LCC B42.20 Legacy Callback Bridge
-description=LCC compatibility bridge for legacy item callbacks moved in Build 42.19+. Does not bundle third-party mods. Initial visibility is unlisted for validation.
-tags=Build 42;Multiplayer
-visibility=unlisted

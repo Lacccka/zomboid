@@ -1,6 +1,0 @@
-name=LCC B42.20 Legacy Callback Bridge
-id=LCCB4220LegacyCallbacks
-author=Lacccka
-description=Build 42.19+ compatibility bridge for legacy recipe-magazine item callbacks. Does not redistribute third-party mods.
-modversion=1.0.0
-versionMin=42.20.0

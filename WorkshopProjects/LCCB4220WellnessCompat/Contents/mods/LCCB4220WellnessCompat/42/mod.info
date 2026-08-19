@@ -1,7 +1,0 @@
-name=LCC B42.20 Wellness Compatibility
-id=LCCB4220WellnessCompat
-author=Lacccka
-description=Unofficial LCC-authored B42.20 compatibility patch for Lifestyle: Hobbies. Requires LifestyleHobbies; no Lifestyle source, assets, or translations are included.
-modversion=1.2.0
-versionMin=42.20.0
-loadafter=\LifestyleHobbies

@@ -1,7 +1,0 @@
-name=LCC B42.20 Survivor AI Stability
-id=LCCB4220SurvivorAIStability
-author=Lacccka
-description=Unofficial LCC-authored Build 42.20 compatibility guards for Bandits NPC. Requires Bandits2; no Bandits source code, assets, or translations are included.
-modversion=1.4.0
-versionMin=42.20.0
-loadafter=\Bandits2

@@ -1,7 +1,0 @@
-name=LCC B42.20 Outfit Menu Safety
-id=LCCB4220OutfitMenuSafety
-author=Lacccka
-description=Unofficial LCC-authored Build 42.20 runtime compatibility guard for Federal Ranger's Chimera. Requires Federal_Rangers_Chimera; no Chimera source or assets are included.
-modversion=1.1.0
-versionMin=42.20.0
-loadafter=\Federal_Rangers_Chimera

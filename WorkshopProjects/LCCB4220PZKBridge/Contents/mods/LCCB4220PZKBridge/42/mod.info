@@ -1,7 +1,0 @@
-name=LCC B42.20 Vehicle Integration Bridge
-id=LCCB4220PZKBridge
-author=Lacccka
-description=Unofficial LCC-authored Build 42.20 compatibility shims for PZK VLC/SVU integration. Requires the original PZK and related vehicle mods; no third-party source/assets are included.
-modversion=1.2.0
-versionMin=42.20.0
-loadafter=\PZKCarzoneWorkshop,\PzkVanillaPlusCarPack,\StandardizedVehicleUpgrades3Core,\tsarslib

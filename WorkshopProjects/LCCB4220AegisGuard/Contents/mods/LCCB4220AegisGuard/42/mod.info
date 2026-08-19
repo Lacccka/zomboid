@@ -1,7 +1,0 @@
-name=LCC B42.20 Inventory Safety Guard
-id=LCCB4220AegisGuard
-author=Lacccka
-description=Unofficial Build 42.20 nil-container compatibility guard for the installed Aegis-related inventory path. Original mods are required separately and are not redistributed.
-modversion=1.0.0
-versionMin=42.20.0
-loadafter=\AP

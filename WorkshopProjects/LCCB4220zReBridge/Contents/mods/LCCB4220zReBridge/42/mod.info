@@ -1,7 +1,0 @@
-name=LCC B42.20 Vaccine API Bridge
-id=LCCB4220zReBridge
-author=Lacccka
-description=Unofficial Build 42.20 legacy BodyLocations path bridge for the installed zRe framework. Original mods are required separately and are not redistributed.
-modversion=1.0.0
-versionMin=42.20.0
-loadafter=\zReFRAMEWORK

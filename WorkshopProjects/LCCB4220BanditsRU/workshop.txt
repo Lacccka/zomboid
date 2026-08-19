@@ -1,6 +1,0 @@
-version=1
-id=
-title=LCC B42.20 Survivor Dialogue RU
-description=Russian localization add-on for survivor/NPC dialogue. Compatibility target and credit: [B42] Bandits NPC by Slayer. Requires the original mod separately; this item contains localization only and does not bundle the original mod's Lua/assets.
-tags=Build 42;Multiplayer;Translation
-visibility=unlisted

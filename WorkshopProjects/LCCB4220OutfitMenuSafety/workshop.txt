@@ -1,6 +1,0 @@
-version=1
-id=
-title=LCC B42.20 Outfit Menu Safety
-description=Unofficial independent compatibility patch for Federal Ranger's [Chimera] by EtherealShigure. Requires the original Chimera Workshop item; no Chimera source, clothing assets, models, textures, or sounds are included. Provides an LCC-authored Build 42.20 runtime guard for the ghillie extra-menu data.
-tags=Build 42;Multiplayer
-visibility=unlisted
