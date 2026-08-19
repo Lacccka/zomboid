@@ -1,0 +1,6 @@
+version=1
+id=
+title=LCC B42.20 Wellness & Hobbies RU
+description=Russian localization add-on for wellness/hobby systems and LCC compatibility strings. Compatibility target and credit: Lifestyle: Hobbies by Mopop and Angry. Requires the original mod separately; this item contains localization only and does not bundle the original mod's Lua/assets.
+tags=Build 42;Translation
+visibility=unlisted
