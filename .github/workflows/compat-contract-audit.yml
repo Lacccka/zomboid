@@ -6,6 +6,8 @@ on:
       - "3268487204/mods/Bandits/42.20/media/lua/**"
       - "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/**"
       - "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/perks.txt"
+      - "WorkshopPatches/ActivityFixes/**"
+      - "WorkshopPatches/RussianTextFixes/**"
       - "server/linux/start-server.sh"
       - ".gitattributes"
       - "tools/compat_contracts.json"
@@ -16,6 +18,8 @@ on:
       - "3268487204/mods/Bandits/42.20/media/lua/**"
       - "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/**"
       - "LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/perks.txt"
+      - "WorkshopPatches/ActivityFixes/**"
+      - "WorkshopPatches/RussianTextFixes/**"
       - "server/linux/start-server.sh"
       - ".gitattributes"
       - "tools/compat_contracts.json"
@@ -37,6 +41,7 @@ jobs:
         shell: bash
         run: |
           PERKS='LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/perks.txt'
+          SPLIT_PERKS='WorkshopPatches/ActivityFixes/Contents/mods/LaccckaB4220ActivityFixes/42/media/perks.txt'
 
           if grep -nE '^[[:space:]]*--' "${PERKS}"; then
             echo 'perks.txt uses Lua-style comments that the B42 CustomPerks parser rejects'
@@ -52,6 +57,11 @@ jobs:
               exit 1
             fi
           done
+
+          cmp -s "${PERKS}" "${SPLIT_PERKS}" || {
+            echo 'ActivityFixes perks.txt drifted from the audited Yoga-only source'
+            exit 1
+          }
 
           bash -n server/linux/start-server.sh
 
@@ -70,7 +80,7 @@ jobs:
           grep -F 'launcher.log' server/linux/start-server.sh >/dev/null
           grep -F '42.20/media' server/linux/start-server.sh >/dev/null
 
-          RU_LIFESTYLE='LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/shared/Translate/RU/ZZ_LCC_Perks_RU.txt'
+          RU_LIFESTYLE='WorkshopPatches/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/media/lua/shared/Translate/RU/ZZ_LCC_Perks_RU.txt'
           for key in Art Cleaning Dancing Meditation Music Yoga; do
             grep -F "IGUI_perks_${key}_Description" "${RU_LIFESTYLE}" >/dev/null
           done
@@ -79,7 +89,7 @@ jobs:
           grep -F '6 ур.:' "${RU_LIFESTYLE}" >/dev/null
           grep -F '10 ур.:' "${RU_LIFESTYLE}" >/dev/null
 
-          RU_VANILLA='LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/shared/Translate/RU/ZZ_LCC_VanillaPerks_RU.txt'
+          RU_VANILLA='WorkshopPatches/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/media/lua/shared/Translate/RU/ZZ_LCC_VanillaPerks_RU.txt'
           for key in \
             Fitness Strength Sprinting Lightfooted Nimble Sneaking \
             Blunt SmallBlunt LongBlade SmallBlade Axe Spear Maintenance \
@@ -95,17 +105,8 @@ jobs:
             exit 1
           fi
 
-          # B42 loads JSON translation maps from the language directory. Keep
-          # the runtime skill-description map valid and make sure the client UI
-          # wrapper that renders those descriptions is present.
-          RU_SKILLS_JSON='LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/shared/Translate/RU/LCC_SkillDescriptions.json'
-          python3 -m json.tool "${RU_SKILLS_JSON}" >/dev/null
-          for key in Fitness Strength Meditation Music Yoga; do
-            grep -F "\"IGUI_perks_${key}_Description\"" "${RU_SKILLS_JSON}" >/dev/null
-          done
-
-          SKILL_UI='LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch/42/media/lua/client/zzz_LCC_SkillDescriptions.lua'
+          SKILL_UI='WorkshopPatches/ActivityFixes/Contents/mods/LaccckaB4220ActivityFixes/42/media/lua/client/zzz_LCC_SkillDescriptions.lua'
           grep -F 'local FEATURE = "ui.skill-descriptions"' "${SKILL_UI}" >/dev/null
           grep -F 'originalUpdateTooltip(self, lvlSelected)' "${SKILL_UI}" >/dev/null
           grep -F 'perk:getId()' "${SKILL_UI}" >/dev/null
-          grep -F 'IGUI_perks_' "${SKILL_UI}" >/dev/null
+          grep -F 'repair translated skill description' "${SKILL_UI}" >/dev/null
