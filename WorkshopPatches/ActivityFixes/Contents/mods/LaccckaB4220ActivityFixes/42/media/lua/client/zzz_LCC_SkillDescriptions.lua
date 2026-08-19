@@ -62,9 +62,6 @@ Guard.install {
             LongBlunt = { "Blunt" },
         }
 
-        -- IDs for which RussianTextFixes provides (or intentionally aliases)
-        -- descriptions. Matching their translated IGUI_perks_* names gives us a
-        -- stable fallback even when B42 changes the Java-side Perk id.
         local KNOWN_DESCRIPTION_IDS = {
             "Fitness", "Strength",
             "Sprinting", "Running", "Lightfoot", "Lightfooted", "Nimble", "Sneak", "Sneaking",
@@ -80,8 +77,6 @@ Guard.install {
             "Art", "Cleaning", "Dancing", "Meditation", "Music", "Yoga",
         }
 
-        -- Explicit fallback for the Russian B42 names that have historically
-        -- moved between internal ids.
         local DISPLAY_NAME_ALIASES = {
             ["Лёгкий шаг"] = { "Lightfoot", "Lightfooted" },
             ["Бег"] = { "Sprinting", "Running" },
@@ -93,23 +88,40 @@ Guard.install {
             ["Медицина"] = { "Doctor", "FirstAid", "Medical", "Medicine" },
         }
 
-        -- Build 42.20 does not load arbitrary translation filenames as IGUI
-        -- dictionaries. The dedicated RussianTextFixes files named
-        -- ZZ_LCC_*_RU.txt therefore cannot be relied on for these entries.
-        -- Keep a small UI-only fallback here for the exact Russian skill names
-        -- that are missing from the active IGUI dictionary. Yoga is also
-        -- intentionally overridden here so its tooltip uses the concise
-        -- progression-oriented wording instead of Lifestyle's older text.
+        -- B42.20 exposes stable Java perk ids for the vanilla skills below even
+        -- when the localized display name cannot be mapped back through the
+        -- Translator. These direct Russian fallbacks deliberately key on the id,
+        -- not on the translated name. This avoids the remaining LongBlade,
+        -- Doctor, weapon-family and Husbandry misses seen in MP.
+        local ID_DESCRIPTION_OVERRIDES_RU = {
+            Husbandry = "Повышает навыки обращения с домашними животными. <LINE> Прокачивается при уходе за животными и выполнении связанных действий. <LINE> С ростом навыка становится проще оценивать их состояние и эффективнее использовать возможности животноводства.",
+            AnimalCare = "Повышает навыки обращения с домашними животными. <LINE> Прокачивается при уходе за животными и выполнении связанных действий. <LINE> С ростом навыка становится проще оценивать их состояние и эффективнее использовать возможности животноводства.",
+            AnimalHusbandry = "Повышает навыки обращения с домашними животными. <LINE> Прокачивается при уходе за животными и выполнении связанных действий. <LINE> С ростом навыка становится проще оценивать их состояние и эффективнее использовать возможности животноводства.",
+            AnimalHandling = "Повышает навыки обращения с домашними животными. <LINE> Прокачивается при уходе за животными и выполнении связанных действий. <LINE> С ростом навыка становится проще оценивать их состояние и эффективнее использовать возможности животноводства.",
+
+            SmallBlade = "Повышает владение коротким режущим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак.",
+            ShortBlade = "Повышает владение коротким режущим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак.",
+            SmallBlunt = "Повышает владение коротким дробящим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак.",
+            ShortBlunt = "Повышает владение коротким дробящим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак.",
+            LongBlade = "Повышает владение длинным режущим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак.",
+            Blunt = "Повышает владение длинным дробящим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак.",
+            LongBlunt = "Повышает владение длинным дробящим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак.",
+
+            Doctor = "Повышает эффективность медицинской помощи. <LINE> Прокачивается при лечении травм и выполнении медицинских процедур. <LINE> С ростом навыка персонаж лучше определяет состояние ран и эффективнее оказывает помощь.",
+            FirstAid = "Повышает эффективность медицинской помощи. <LINE> Прокачивается при лечении травм и выполнении медицинских процедур. <LINE> С ростом навыка персонаж лучше определяет состояние ран и эффективнее оказывает помощь.",
+            Medical = "Повышает эффективность медицинской помощи. <LINE> Прокачивается при лечении травм и выполнении медицинских процедур. <LINE> С ростом навыка персонаж лучше определяет состояние ран и эффективнее оказывает помощь.",
+            Medicine = "Повышает эффективность медицинской помощи. <LINE> Прокачивается при лечении травм и выполнении медицинских процедур. <LINE> С ростом навыка персонаж лучше определяет состояние ран и эффективнее оказывает помощь.",
+        }
+
         local DISPLAY_DESCRIPTION_OVERRIDES = {
             ["Лёгкий шаг"] = "Уменьшает шум от передвижения. <LINE> Чем выше навык, тем тише обычные шаги и тем меньше вероятность привлечь зомби звуком движения.",
             ["Бег"] = "Повышает эффективность бега. <LINE> Прокачивается во время бега. <LINE> С ростом навыка персонаж быстрее передвигается бегом и эффективнее расходует выносливость.",
-            ["Уход за животными"] = "Повышает навыки обращения с домашними животными. <LINE> Прокачивается при уходе за животными и выполнении связанных действий. <LINE> С ростом навыка становится проще оценивать их состояние и эффективнее использовать возможности животноводства.",
-            ["Короткое режущее"] = "Повышает владение коротким режущим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак.",
-            ["Короткое дробящее"] = "Повышает владение коротким дробящим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак.",
-            ["Длинное режущее"] = "Повышает владение длинным режущим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак.",
-            ["Длинное дробящее"] = "Повышает владение длинным дробящим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак.",
-            ["Медицина"] = "Повышает эффективность медицинской помощи. <LINE> Прокачивается при лечении травм и выполнении медицинских процедур. <LINE> С ростом навыка персонаж лучше определяет состояние ран и эффективнее оказывает помощь.",
-            ["Йога"] = "Прокачивается выполнением поз во время занятий йогой; сложные позы дают больше опыта. <LINE> Каждая завершённая поза уменьшает боль и мышечное перенапряжение. <LINE> 1 ур.: Шавасана начинает давать эффект «Дзен», временно повышающий получение опыта Физподготовки, Силы, Медитации и Йоги. <LINE> С ростом навыка открываются более сложные позы, увеличивается число поз за занятие и снижается шанс неудачи. <LINE> 10 ур.: неудачи при выполнении поз исчезают. <LINE> Завершайте занятие Шавасаной: она даёт дополнительный опыт; прерывание занятия может снять часть текущего опыта.",
+            ["Уход за животными"] = ID_DESCRIPTION_OVERRIDES_RU.Husbandry,
+            ["Короткое режущее"] = ID_DESCRIPTION_OVERRIDES_RU.SmallBlade,
+            ["Короткое дробящее"] = ID_DESCRIPTION_OVERRIDES_RU.SmallBlunt,
+            ["Длинное режущее"] = ID_DESCRIPTION_OVERRIDES_RU.LongBlade,
+            ["Длинное дробящее"] = ID_DESCRIPTION_OVERRIDES_RU.Blunt,
+            ["Медицина"] = ID_DESCRIPTION_OVERRIDES_RU.Doctor,
         }
 
         local missingLogged = {}
@@ -122,6 +134,11 @@ Guard.install {
             local value = getText(key)
             if value == key then return nil end
             return value
+        end
+
+        local function isRussianUI()
+            local fitness = lccGetTextOrNull("IGUI_perks_Fitness")
+            return fitness == "Фитнес"
         end
 
         local function getPerkId(perk)
@@ -153,8 +170,6 @@ Guard.install {
             if not perkId then return end
             addCandidate(candidates, seen, perkId)
 
-            -- Be tolerant of enum/debug string forms such as Perks.Lightfoot or
-            -- Base:Lightfoot without assuming that B42 always uses one format.
             local dotName = string.match(perkId, "([^%.]+)$")
             if dotName and dotName ~= perkId then
                 addCandidate(candidates, seen, dotName)
@@ -176,9 +191,6 @@ Guard.install {
             if localizedName ~= nil then
                 localizedName = tostring(localizedName)
 
-                -- Match the displayed localized name back to the translation id.
-                -- This survives B42 Perk id renames as long as the visible skill
-                -- name remains mapped through IGUI_perks_*.
                 for i = 1, #KNOWN_DESCRIPTION_IDS do
                     local id = KNOWN_DESCRIPTION_IDS[i]
                     local translatedName = lccGetTextOrNull("IGUI_perks_" .. id)
@@ -210,11 +222,27 @@ Guard.install {
             return nil
         end
 
-        local function getDisplayDescriptionOverride(perk)
-            if not perk or not perk.getName then return nil end
-            local localizedName = perk:getName()
-            if localizedName == nil then return nil end
-            return DISPLAY_DESCRIPTION_OVERRIDES[tostring(localizedName)]
+        local function getExplicitDescriptionOverride(perk, candidates)
+            if isRussianUI() and candidates then
+                for i = 1, #candidates do
+                    local description = ID_DESCRIPTION_OVERRIDES_RU[candidates[i]]
+                    if description then
+                        return description, "id:" .. tostring(candidates[i])
+                    end
+                end
+            end
+
+            if perk and perk.getName then
+                local localizedName = perk:getName()
+                if localizedName ~= nil then
+                    local description = DISPLAY_DESCRIPTION_OVERRIDES[tostring(localizedName)]
+                    if description then
+                        return description, "name"
+                    end
+                end
+            end
+
+            return nil, nil
         end
 
         local function replacePlain(text, needle, replacement)
@@ -241,22 +269,24 @@ Guard.install {
             print("[LCC][SkillDescriptions][MISS] id=" .. tostring(id) .. " name=" .. tostring(name))
         end
 
-        local function logOverride(perk)
+        local function logOverride(perk, source)
             local id = getPerkId(perk) or "?"
             local name = perk and perk.getName and perk:getName() or "?"
-            local marker = tostring(id) .. "|" .. tostring(name)
+            local marker = tostring(id) .. "|" .. tostring(name) .. "|" .. tostring(source)
             if overrideLogged[marker] then return end
             overrideLogged[marker] = true
-            print("[LCC][SkillDescriptions][OVERRIDE] id=" .. tostring(id) .. " name=" .. tostring(name))
+            print("[LCC][SkillDescriptions][OVERRIDE] source=" .. tostring(source) .. " id=" .. tostring(id) .. " name=" .. tostring(name))
         end
 
         local function repairSkillDescription(self, lvlSelected)
             if not self or not self.perk or type(self.message) ~= "string" or self.message == "" then return end
 
             local candidates = getDescriptionCandidates(self.perk)
-            local description = getDisplayDescriptionOverride(self.perk)
-            if description then
-                logOverride(self.perk)
+            local description, overrideSource = getExplicitDescriptionOverride(self.perk, candidates)
+            local explicitOverride = description ~= nil
+
+            if explicitOverride then
+                logOverride(self.perk, overrideSource)
             else
                 description = findDescription(candidates, "_Description")
             end
@@ -271,31 +301,24 @@ Guard.install {
                 local wrongKey = "IGUI_perks_" .. tostring(localizedName) .. "_Description"
                 local wrongTranslation = lccGetTextOrNull(wrongKey)
 
-                -- Even if another translation supplies an older description,
-                -- the explicit Russian override above must win for these names.
                 local repaired, replaced = replacePlain(self.message, wrongKey, description)
                 self.message = repaired
 
-                if not replaced then
-                    -- The upstream tooltip may already contain a translated
-                    -- description (not the key). Replace known candidate texts
-                    -- before falling back to appending the corrected wording.
-                    if candidates then
-                        for i = 1, #candidates do
-                            local oldDescription = lccGetTextOrNull("IGUI_perks_" .. candidates[i] .. "_Description")
-                            if oldDescription and oldDescription ~= "" and oldDescription ~= description then
-                                local candidateRepaired, candidateReplaced = replacePlain(self.message, oldDescription, description)
-                                if candidateReplaced then
-                                    self.message = candidateRepaired
-                                    replaced = true
-                                    break
-                                end
+                if not replaced and candidates then
+                    for i = 1, #candidates do
+                        local oldDescription = lccGetTextOrNull("IGUI_perks_" .. candidates[i] .. "_Description")
+                        if oldDescription and oldDescription ~= "" and oldDescription ~= description then
+                            local candidateRepaired, candidateReplaced = replacePlain(self.message, oldDescription, description)
+                            if candidateReplaced then
+                                self.message = candidateRepaired
+                                replaced = true
+                                break
                             end
                         end
                     end
                 end
 
-                if not replaced and (not wrongTranslation or wrongTranslation == "" or description == getDisplayDescriptionOverride(self.perk)) then
+                if not replaced and (explicitOverride or not wrongTranslation or wrongTranslation == "") then
                     self.message = appendUnique(self.message, description)
                 end
             end
