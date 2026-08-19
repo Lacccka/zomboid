@@ -7,12 +7,14 @@ The monolithic `LaccckaCompatibilityPatch` remains the source/regression package
 1. Run `python3 tools/audit_workshop_split.py`.
 2. Run the existing compatibility-contract and Lifestyle translation audits.
 3. Confirm all READY runtime projects have unique Mod IDs, active `workshop.txt`, empty Workshop `id=`, and `visibility=unlisted` before first upload.
-4. Confirm `LCCB4220BanditsRU` and `LCCB4220ThirdPartyRU` have `workshop.txt.DISABLED` only.
-5. Confirm the Bandits runtime split contains none of: `BanditZombie.lua`, `BanditServerWanderers.lua`, `ZAStompPlant.lua`, `ZAWaterFarm.lua`.
-6. Confirm the Bandits cache/farming/empty-server guards exist.
-7. Confirm Wellness `media/perks.txt` declares exactly one perk: `Yoga`, with `xp1..xp10 = 0`.
-8. Confirm Workshop descriptions for Bandits/Lifestyle/PZK/Chimera name and credit their targets and state that original content is not bundled.
-9. Confirm `LCCB4220BanditsRU/.../IG_UI.json` matches `Bandits/.../RU/IG_UI_ru.json` byte-for-byte and that the old mixed `LCCB4220ThirdPartyRU/.../IG_UI.json` no longer exists.
+4. Confirm `LCCB4220BanditsRU` and `LCCB4220LifestyleRU` have `workshop.txt.DISABLED` only.
+5. Confirm the deprecated `LCCB4220ThirdPartyRU` project does not exist.
+6. Confirm the Bandits runtime split contains none of: `BanditZombie.lua`, `BanditServerWanderers.lua`, `ZAStompPlant.lua`, `ZAWaterFarm.lua`.
+7. Confirm the Bandits cache/farming/empty-server guards exist.
+8. Confirm Wellness `media/perks.txt` declares exactly one perk: `Yoga`, with `xp1..xp10 = 0`.
+9. Confirm Workshop descriptions for Bandits/Lifestyle/PZK/Chimera name and credit their targets and state that original content is not bundled.
+10. Confirm `LCCB4220BanditsRU/.../IG_UI.json` matches `Bandits/.../RU/IG_UI_ru.json` byte-for-byte.
+11. Confirm `LCCB4220LifestyleRU/42/.../RU/IG_UI.json` does not exist; that blob belongs only to BanditsRU.
 
 ## Runtime smoke test
 
@@ -64,5 +66,5 @@ The monolithic `LaccckaCompatibilityPatch` remains the source/regression package
 ## Translation boundary
 
 - `LCCB4220BanditsRU` stays upload-disabled even though provenance is exact; resolve translation publication permission/rights separately.
-- `LCCB4220ThirdPartyRU` stays upload-disabled until remaining categories/keys are classified against Lifestyle and any other origin.
-- Do not use either translation staging project as a dependency for source-clean runtime fixes.
+- `LCCB4220LifestyleRU` stays upload-disabled until translation permission/publication rights and final key-level provenance are documented.
+- Do not use either translation project as a dependency for source-clean runtime fixes.
