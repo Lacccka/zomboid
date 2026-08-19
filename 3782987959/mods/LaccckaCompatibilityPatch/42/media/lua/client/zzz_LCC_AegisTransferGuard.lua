@@ -1,16 +1,39 @@
-require "TimedActions/ISInventoryTransferAction"
+local Guard = require "LCC/Guard"
+local FEATURE = "aegis.inventory-transfer"
 
--- Copy vanilla's nil-container guard before Aegis repeats the Java check.
--- Keep the wrapper idempotent in case this file is executed more than once.
-if not ISInventoryTransferAction.__LCCAegisTransferGuard then
-    local aegisIsValid = ISInventoryTransferAction.isValid
+Guard.safeRequire(FEATURE, "TimedActions/ISInventoryTransferAction")
+if not Guard.isEnabled(FEATURE) then return end
 
-    function ISInventoryTransferAction:isValid()
-        if not self.item or not self.srcContainer or not self.destContainer then
-            return false
+Guard.install {
+    id = FEATURE,
+    validate = function()
+        if type(ISInventoryTransferAction) ~= "table" then
+            return false, "ISInventoryTransferAction is unavailable"
         end
-        return aegisIsValid(self)
-    end
+        if type(ISInventoryTransferAction.isValid) ~= "function" then
+            return false, "ISInventoryTransferAction.isValid is unavailable"
+        end
+        return true
+    end,
+    install = function()
+        if ISInventoryTransferAction.__LCCAegisTransferGuard then return end
 
-    ISInventoryTransferAction.__LCCAegisTransferGuard = true
-end
+        local originalIsValid = ISInventoryTransferAction.isValid
+
+        function ISInventoryTransferAction:isValid()
+            if Guard.isEnabled(FEATURE) then
+                local ok, invalid = Guard.protect(FEATURE, "nil-container precheck", function()
+                    return not self or not self.item or not self.srcContainer or not self.destContainer
+                end)
+                if ok and invalid then
+                    return false
+                end
+            end
+
+            -- Upstream/Aegis errors remain visible: only our precheck is guarded.
+            return originalIsValid(self)
+        end
+
+        ISInventoryTransferAction.__LCCAegisTransferGuard = true
+    end,
+}

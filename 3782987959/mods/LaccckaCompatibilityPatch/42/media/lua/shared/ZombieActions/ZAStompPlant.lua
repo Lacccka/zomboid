@@ -1,18 +1,21 @@
--- Resolve the vanilla client-only farming global when the action runs.
-ZombieActions = ZombieActions or {}
-ZombieActions.StompPlant = {}
+-- Bandits farming compatibility for B42.20 with failure isolation.
 
-ZombieActions.StompPlant.onStart = function(zombie, task)
+local Guard = require "LCC/Guard"
+local FEATURE = "bandits.stomp-plant-action"
+
+ZombieActions = ZombieActions or {}
+
+local function onStart(zombie, task)
     return true
 end
 
-ZombieActions.StompPlant.onWorking = function(zombie, task)
+local function onWorking(zombie, task)
     zombie:faceLocationF(task.x, task.y)
     if zombie:getBumpType() ~= task.anim then return true end
     return false
 end
 
-ZombieActions.StompPlant.onComplete = function(zombie, task)
+local function onComplete(zombie, task)
     local square = zombie:getCell():getGridSquare(task.x, task.y, task.z)
     if not square then return true end
 
@@ -30,3 +33,20 @@ ZombieActions.StompPlant.onComplete = function(zombie, task)
     return true
 end
 
+local function runAction(phase, callback, zombie, task)
+    if not Guard.isEnabled(FEATURE) then return true end
+    local ok, result = Guard.protect(FEATURE, phase, callback, zombie, task)
+    if not ok then return true end
+    return result
+end
+
+ZombieActions.StompPlant = {}
+ZombieActions.StompPlant.onStart = function(zombie, task)
+    return runAction("onStart", onStart, zombie, task)
+end
+ZombieActions.StompPlant.onWorking = function(zombie, task)
+    return runAction("onWorking", onWorking, zombie, task)
+end
+ZombieActions.StompPlant.onComplete = function(zombie, task)
+    return runAction("onComplete", onComplete, zombie, task)
+end

@@ -1,0 +1,18 @@
+VERSION = 1,
+
+perk Yoga
+{
+    parent = Lifestyle,
+    translation = Yoga,
+    passive = false,
+    xp1 = 100,
+    xp2 = 250,
+    xp3 = 500,
+    xp4 = 750,
+    xp5 = 1000,
+    xp6 = 1250,
+    xp7 = 1750,
+    xp8 = 3000,
+    xp9 = 4000,
+    xp10 = 9000,
+}

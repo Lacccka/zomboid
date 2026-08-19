@@ -1,3 +1,6 @@
 -- PZK still requires the singular pre-B42.20 vehicle path.
-require "Vehicles/ISUI/ISVehiclePartMenu"
-return ISVehiclePartMenu
+local Guard = require "LCC/Guard"
+local FEATURE = "shim.pzk.vehicle-part-menu"
+
+Guard.safeRequire(FEATURE, "Vehicles/ISUI/ISVehiclePartMenu")
+return ISVehiclePartMenu or {}
