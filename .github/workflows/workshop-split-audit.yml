@@ -6,12 +6,14 @@ on:
       - 'LaccckaCompatibilityPatch/**'
       - 'WorkshopProjects/**'
       - 'tools/audit_workshop_split.py'
+      - 'tools/audit_wellness_proxy.py'
       - '.github/workflows/workshop-split-audit.yml'
   pull_request:
     paths:
       - 'LaccckaCompatibilityPatch/**'
       - 'WorkshopProjects/**'
       - 'tools/audit_workshop_split.py'
+      - 'tools/audit_wellness_proxy.py'
       - '.github/workflows/workshop-split-audit.yml'
 
 jobs:
@@ -24,3 +26,5 @@ jobs:
           python-version: '3.x'
       - name: Verify split Workshop projects
         run: python3 tools/audit_workshop_split.py
+      - name: Verify Wellness Yoga proxy contract
+        run: python3 tools/audit_wellness_proxy.py
