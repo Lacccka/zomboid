@@ -1,74 +1,82 @@
 # Workshop publication audit
 
-This is an engineering/publication-safety interpretation, not legal advice. Re-check the current Project Zomboid Modding Policy, Steam Subscriber Agreement, and target Workshop pages before changing an item from unlisted to public.
+This is an engineering/publication-safety checklist, not legal advice. Re-check current Project Zomboid/Steam rules and target Workshop pages before changing an item from unlisted to public.
 
 ## Boundary used by this split
 
-1. Third-party source code, models, textures, sounds, copied/translated text, or other third-party materials are not shipped in runtime compatibility items.
-2. Independent LCC compatibility items require original mods separately and interact with installed APIs/types through LCC-authored hooks, wrappers, guards, and path shims.
-3. Direct compatibility relationships are clearly credited; neutral functional titles must not conceal the target relationship.
-4. Modpacks/reuploads are intentionally not used here.
-5. Mod-specific translations are treated more conservatively and remain upload-disabled until provenance and publication rights/permission are clear.
-6. Explicit abandoned/broken-mod expansion/reupload restrictions still require separate review.
+1. Runtime compatibility items do not ship target-mod Lua source, models, textures, sounds, vehicles, clothing assets, or other repacked runtime content.
+2. Independent LCC items require original mods separately and interact with installed APIs/types through LCC-authored hooks, wrappers, guards, and path shims.
+3. Public Workshop titles are neutral functional LCC names. Direct compatibility targets/authors remain explicit in the item description/credits rather than the title.
+4. Translation projects are separate Workshop items rather than being bundled into runtime fixes.
+5. Modpacks/reuploads are intentionally not used here.
+6. All split projects begin as `visibility=unlisted` and require smoke testing before wider visibility.
 
 ## Current project status
 
-| Project | Status | Reason |
+All 12 projects are **READY_FOR_UNLISTED_TEST**:
+
+| Project | Public title | Payload boundary |
 |---|---|---|
-| `LCCB4220FirearmsBridge` | READY_FOR_UNLISTED_TEST | LCC runtime wrapper; no MFS source/assets redistributed. |
-| `LCCB4220SVUTsarBridge` | READY_FOR_UNLISTED_TEST | LCC legacy-path/API shims only. |
-| `LCCB4220zReBridge` | READY_FOR_UNLISTED_TEST | LCC vanilla API path shim only. |
-| `LCCB4220AegisGuard` | READY_FOR_UNLISTED_TEST | LCC runtime wrapper; no Aegis source redistributed. |
-| `LCCB4220LegacyCallbacks` | READY_FOR_UNLISTED_TEST | Generic LCC Build 42 compatibility bridge. |
-| `LCCB4220SkillDescriptionsRU` | READY_FOR_UNLISTED_TEST | LCC-authored vanilla/B42 Russian skill descriptions only. |
-| `LCCB4220SurvivorAIStability` | READY_FOR_UNLISTED_TEST | All four former Bandits full-file overrides were removed and replaced by LCC guards/shims. |
-| `LCCB4220WellnessCompat` | READY_FOR_UNLISTED_TEST | LCC bath/shower/Yoga runtime code; `perks.txt` declares only the LCC Yoga UI proxy. |
-| `LCCB4220PZKBridge` | READY_FOR_UNLISTED_TEST | LCC path/API shims only; no PZK vehicle/source/assets repacked. |
-| `LCCB4220OutfitMenuSafety` | READY_FOR_UNLISTED_TEST | LCC runtime wrapper only; no Chimera clothing/source/assets repacked. |
-| `LCCB4220BanditsRU` | BLOCKED_PENDING_PERMISSION | Exact Bandits RU `IG_UI` translation isolated from runtime code. |
-| `LCCB4220LifestyleRU` | BLOCKED_PENDING_PERMISSION | Lifestyle-oriented RU translation staging; Bandits translation excluded, final translation permission/provenance review still required. |
+| `LCCB4220FirearmsBridge` | LCC B42.20 Firearms Placement Bridge | LCC runtime wrapper only. |
+| `LCCB4220SVUTsarBridge` | LCC B42.20 Vehicle API Bridge | LCC legacy path/API shim only. |
+| `LCCB4220zReBridge` | LCC B42.20 Vaccine API Bridge | LCC API path shim only. |
+| `LCCB4220AegisGuard` | LCC B42.20 Inventory Safety Guard | LCC inventory validation wrapper only. |
+| `LCCB4220LegacyCallbacks` | LCC B42.20 Legacy Callback Bridge | Generic LCC Build 42 callback bridge. |
+| `LCCB4220SkillDescriptionsRU` | LCC Russian Skill Descriptions for B42.20 | LCC-authored vanilla/B42 skill descriptions. |
+| `LCCB4220SurvivorAIStability` | LCC B42.20 Survivor AI Stability | LCC guards/shims; no full target Lua overrides. |
+| `LCCB4220WellnessCompat` | LCC B42.20 Wellness Compatibility | LCC bath/shower/Yoga runtime code and Yoga-only proxy declaration. |
+| `LCCB4220PZKBridge` | LCC B42.20 Vehicle Integration Bridge | LCC path/API shims only. |
+| `LCCB4220OutfitMenuSafety` | LCC B42.20 Outfit Menu Safety | LCC runtime wrapper only. |
+| `LCCB4220BanditsRU` | LCC B42.20 Survivor Dialogue RU | Standalone RU survivor/NPC dialogue localization. |
+| `LCCB4220LifestyleRU` | LCC B42.20 Wellness & Hobbies RU | Standalone RU wellness/hobby localization plus LCC strings. |
 
-## Bandits runtime
+## Runtime architecture checks
 
-Target: `[B42] Bandits NPC`, Workshop `3268487204`, author Slayer. The runtime split does not carry Bandits Lua or assets. CI explicitly forbids `BanditZombie.lua`, `BanditServerWanderers.lua`, `ZAStompPlant.lua`, and `ZAWaterFarm.lua`; LCC-authored post-load guards operate against the separately installed `Bandits2` dependency.
+### Survivor AI stability
 
-## Lifestyle runtime
+Compatibility target/credit is kept in the Workshop description. The split carries none of the four former full-file overrides:
 
-Target: `Lifestyle: Hobbies`, Workshop `3403870858`, credited to Mopop and Angry. `LCCB4220WellnessCompat` is a separate dependency-driven item containing LCC-authored runtime compatibility code. Its `perks.txt` defines only `Yoga` with zero proxy XP thresholds; authoritative progress remains in installed Lifestyle `HiddenSkills`. No Lifestyle translations are bundled in this runtime project.
+- `BanditZombie.lua`
+- `BanditServerWanderers.lua`
+- `ZombieActions/ZAStompPlant.lua`
+- `ZombieActions/ZAWaterFarm.lua`
 
-Because the target page uses broad extension language, re-check the target page before public visibility even though the runtime payload contains no Lifestyle source/assets/translations.
+LCC-owned cache, farming, dedicated-server and empty-server guards work against the separately installed dependency. The empty-server guard must not depend on `isClient()` because current target server code treats client state as the path to skip and uses `getOnlinePlayers()` for multiplayer player enumeration.
 
-## PZK runtime
+### Wellness compatibility
 
-Target: PZK VLC, Workshop `3217685049`, PZK Forge. `LCCB4220PZKBridge` contains independent LCC path/API shims only and requires original PZK/SVU/Tsar dependencies separately. It does not repack vehicle/source/assets.
+The runtime split contains LCC-authored bath/shower wrappers/placeholders plus Yoga UI integration. Its `media/perks.txt` declares only `Yoga`, with `parent = Lifestyle` and zero proxy XP thresholds. Authoritative Yoga level/XP remains in the installed target's `HiddenSkills` storage.
 
-## Chimera runtime
+`zzy_LCC_LifestyleYogaContract.lua` validates the resolved CustomPerk parent on `OnGameStart`; an upstream/load-order contract change disables only the Yoga UI feature and emits an LCC diagnostic.
 
-Current B42 target: `Federal Ranger's [Chimera]`, Workshop `3766693411`, author EtherealShigure. The split contains only an LCC runtime wrapper and no Chimera clothing/source/assets.
+### Vehicle/API and outfit modules
 
-## Translation provenance
+The vehicle integration/API projects are path/require bridges only. The outfit-menu project is a wrapper over the installed UI method and does not contain clothing/source assets.
 
-### Bandits RU
+## Translation separation
 
-`LCCB4220BanditsRU/.../IG_UI.json` is byte-for-byte identical to `3268487204/mods/Bandits/42.20/media/lua/shared/Translate/RU/IG_UI_ru.json`. CI compares the split directly against that target-side snapshot. It remains upload-disabled because translated target text is a different publication-rights question from interoperability code.
+### Survivor Dialogue RU
 
-### Lifestyle RU
+`LCCB4220BanditsRU/.../IG_UI.json` is byte-for-byte identical to the isolated target-side RU `IG_UI` snapshot used by the compatibility package. It is now its own unlisted Workshop item and is not a dependency of the runtime stability project.
 
-`LCCB4220LifestyleRU` contains the remaining RU subtrees formerly staged in the generic `LCCB4220ThirdPartyRU` project. The Bandits `42/.../IG_UI.json` blob is explicitly excluded and CI forbids it from appearing here.
+### Wellness & Hobbies RU
 
-The existing Lifestyle translation audit uses these categories to cover the current Lifestyle EN key set, but it allows `extra/custom` keys. Therefore this project is accurately described as Lifestyle-oriented localization staging, not yet as a fully proven one-to-one Lifestyle translation package. It stays upload-disabled until permission/publication rights and final key-level provenance are documented.
+`LCCB4220LifestyleRU` contains the remaining wellness/hobby-oriented RU categories plus LCC custom compatibility strings. The survivor-dialogue `42/.../IG_UI.json` blob is explicitly excluded, and CI forbids the deprecated mixed `LCCB4220ThirdPartyRU` package from returning.
 
-The deprecated `LCCB4220ThirdPartyRU` project must not return; CI checks for this.
+## Naming rules
 
-## Publication rules
+- `title=` must remain target-neutral for direct compatibility modules.
+- Do not use target names such as Bandits/Lifestyle/PZK/Chimera/Aegis/SVU/Tsar/zRe in the public Workshop title.
+- Do name/credit the actual compatibility target and author in `description=` when there is a direct relationship.
+- Do not describe an LCC module as official.
 
-- Never bundle original Workshop directories or third-party source/assets into runtime compatibility items.
-- Keep direct target names/authors in Workshop descriptions and mark every module unofficial.
-- Keep runtime items `visibility=unlisted` until feature smoke tests pass.
+## Publication/test rules
+
+- Never bundle original Workshop directories or target runtime source/assets into source-clean compatibility items.
+- Keep every item `visibility=unlisted` until its feature/localization smoke test passes.
 - Do not enable split and equivalent monolithic runtime fixes together during A/B tests.
-- Keep mod-specific translations separate from runtime patches.
-- If a target author or moderation team disputes an independent-patch classification, stop public distribution of that module while the issue is resolved; do not conceal the relationship.
+- Keep translation items separate from runtime patches.
+- Assign a Workshop ID only after the item passes its initial test.
+- If an upstream contract changes, prefer a narrow LCC shim/wrapper over copying the target file.
 
-## Permission evidence
-
-For translations or any future payload that actually includes third-party material, store evidence under `WorkshopProjects/permissions/` with target mod/author, date, requested scope, response/link, and covered LCC project(s).
+`tools/audit_workshop_split.py` enforces these packaging boundaries. `tools/audit_wellness_proxy.py` checks the Yoga-only CustomPerk contract.
