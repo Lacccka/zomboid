@@ -1,9 +1,9 @@
-# LCC B42.20 Bandits Russian Localization
+# LCC B42.20 Survivor Dialogue RU
 
-Status: **BLOCKED_PENDING_PERMISSION**.
+Status: **READY_FOR_UNLISTED_TEST**.
 
-This project isolates the Bandits-specific Russian localization from the old combined translation staging area. Target: `[B42] Bandits NPC` by Slayer, Workshop `3268487204`, Mod ID `Bandits2`.
+This is a standalone Russian localization Workshop project with a neutral public name. Compatibility target and credit: `[B42] Bandits NPC` by Slayer, Workshop `3268487204`, Mod ID `Bandits2`.
 
-The payload currently contains the same RU `IG_UI` translation blob as the target-side RU snapshot (`IG_UI_ru.json`), renamed only to the Build 42 translation category filename used by the compatibility package. It is therefore intentionally **not upload-enabled** until translation publication rights/permission are documented.
+The payload contains only the isolated RU `IG_UI` translation data used by the compatibility package. It does not contain Bandits Lua source, models, textures, sounds, or other runtime assets.
 
-No Bandits Lua source, models, textures, sounds, or other assets belong in this project.
+Keep the Workshop item unlisted until the translation has been smoke-tested against the current target version. The original mod remains a separate dependency.
