@@ -37,16 +37,17 @@ pairs = {
     "LCCB4220OutfitMenuSafety/Contents/mods/LCCB4220OutfitMenuSafety/42/media/lua/client/zzz_LCC_ChimeraGhillieFix.lua": "42/media/lua/client/zzz_LCC_ChimeraGhillieFix.lua",
 }
 
-# Unclassified/mod-specific translation staging after the Bandits translation was isolated.
-translation_files = [
+# Permission-gated Lifestyle translation staging mirrors the monolithic translation baseline,
+# except the proven Bandits IG_UI blob which is isolated into LCCB4220BanditsRU.
+lifestyle_translation_files = [
     "ContextMenu.json", "Farming.json", "IG_UI_RU.txt", "ItemName.json",
     "Mod.json", "Moodles.json", "Moveables.json", "Moveables_RU.txt", "Recipes.json",
     "Recorded_Media.json", "Sandbox.json", "Tooltip.json", "UI.json", "ZZ_LCC_Perks_RU.txt",
 ]
-for name in translation_files:
-    pairs[f"LCCB4220ThirdPartyRU/Contents/mods/LCCB4220ThirdPartyRU/42/media/lua/shared/Translate/RU/{name}"] = f"42/media/lua/shared/Translate/RU/{name}"
+for name in lifestyle_translation_files:
+    pairs[f"LCCB4220LifestyleRU/Contents/mods/LCCB4220LifestyleRU/42/media/lua/shared/Translate/RU/{name}"] = f"42/media/lua/shared/Translate/RU/{name}"
 for name in ["IG_UI.json", "Moveables.json", "Tooltip.json"]:
-    pairs[f"LCCB4220ThirdPartyRU/Contents/mods/LCCB4220ThirdPartyRU/common/media/lua/shared/Translate/RU/{name}"] = f"common/media/lua/shared/Translate/RU/{name}"
+    pairs[f"LCCB4220LifestyleRU/Contents/mods/LCCB4220LifestyleRU/common/media/lua/shared/Translate/RU/{name}"] = f"common/media/lua/shared/Translate/RU/{name}"
 
 split_owned_required = [
     "LCCB4220SurvivorAIStability/Contents/mods/LCCB4220SurvivorAIStability/42/media/lua/client/zzz_LCC_BanditsZombieCacheGuard.lua",
@@ -68,7 +69,7 @@ ready = {
     "LCCB4220SurvivorAIStability", "LCCB4220WellnessCompat", "LCCB4220PZKBridge",
     "LCCB4220OutfitMenuSafety",
 }
-blocked = {"LCCB4220BanditsRU", "LCCB4220ThirdPartyRU"}
+blocked = {"LCCB4220BanditsRU", "LCCB4220LifestyleRU"}
 
 credit_markers = {
     "LCCB4220SurvivorAIStability": ("Bandits", "Slayer"),
@@ -98,7 +99,7 @@ for rel in forbidden_bandits_copies:
     if (WP / rel).exists():
         errors.append(f"Bandits split must not redistribute upstream override: {rel}")
 
-# Bandits translation provenance is known exactly: the split blob must equal the target-side RU snapshot.
+# Bandits translation provenance is exact and intentionally isolated.
 bandits_ru_source = ROOT / "3268487204/mods/Bandits/42.20/media/lua/shared/Translate/RU/IG_UI_ru.json"
 bandits_ru_split = WP / "LCCB4220BanditsRU/Contents/mods/LCCB4220BanditsRU/42/media/lua/shared/Translate/RU/IG_UI.json"
 if not bandits_ru_source.is_file() or not bandits_ru_split.is_file():
@@ -106,11 +107,13 @@ if not bandits_ru_source.is_file() or not bandits_ru_split.is_file():
 elif bandits_ru_source.read_bytes() != bandits_ru_split.read_bytes():
     errors.append("Bandits RU split no longer matches the isolated target-side RU snapshot")
 
-old_mixed_bandits = WP / "LCCB4220ThirdPartyRU/Contents/mods/LCCB4220ThirdPartyRU/42/media/lua/shared/Translate/RU/IG_UI.json"
-if old_mixed_bandits.exists():
-    errors.append("Bandits IG_UI translation must stay isolated from LCCB4220ThirdPartyRU")
+lifestyle_bandits_mix = WP / "LCCB4220LifestyleRU/Contents/mods/LCCB4220LifestyleRU/42/media/lua/shared/Translate/RU/IG_UI.json"
+if lifestyle_bandits_mix.exists():
+    errors.append("Bandits IG_UI translation must not be bundled in LCCB4220LifestyleRU")
+if (WP / "LCCB4220ThirdPartyRU").exists():
+    errors.append("deprecated mixed LCCB4220ThirdPartyRU project must not return")
 
-# Lifestyle split may declare only our Yoga proxy; all upstream Lifestyle perk blocks stay upstream.
+# Lifestyle runtime split may declare only our Yoga proxy; all upstream Lifestyle perk blocks stay upstream.
 wellness_perks = WP / "LCCB4220WellnessCompat/Contents/mods/LCCB4220WellnessCompat/42/media/perks.txt"
 if wellness_perks.is_file():
     text = wellness_perks.read_text(encoding="utf-8")
