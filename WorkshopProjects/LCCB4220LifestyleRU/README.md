@@ -1,9 +1,9 @@
-# LCC B42.20 Lifestyle Russian Localization
+# LCC B42.20 Wellness & Hobbies RU
 
-Status: **BLOCKED_PENDING_PERMISSION**.
+Status: **READY_FOR_UNLISTED_TEST**.
 
-This project isolates the remaining Russian localization staging associated with `Lifestyle: Hobbies` by Mopop and Angry (Workshop `3403870858`) after the proven Bandits translation was moved to `LCCB4220BanditsRU`.
+This is a standalone Russian localization Workshop project with a neutral public name. Compatibility target and credit: `Lifestyle: Hobbies` by Mopop and Angry, Workshop `3403870858`, Mod ID `LifestyleHobbies`.
 
-The existing Lifestyle translation audit uses these RU categories to cover the current Lifestyle EN key set. Some files may also contain LCC compatibility/custom keys, so this project is deliberately upload-disabled until translation publication rights/permission and final key-level provenance are documented.
+The project contains the current RU localization categories used by the compatibility package plus LCC compatibility/custom strings. It does not contain Lifestyle Lua source, models, textures, sounds, or other runtime assets.
 
-The runtime compatibility project `LCCB4220WellnessCompat` does not depend on this localization item and contains no Lifestyle translations.
+Keep the Workshop item unlisted until translation coverage and in-game rendering have been smoke-tested against the current target version. The runtime compatibility project `LCCB4220WellnessCompat` remains independent from this localization item.
