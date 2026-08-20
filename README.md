@@ -44,7 +44,7 @@
 
 - `LaccckaB4220PatchCore`
 - `LaccckaB4220RuntimeFixes`
-- `LaccckaB4220NPCCombatExperimental` — отдельный экспериментальный NPC combat-патч; в стабильную конфигурацию по умолчанию не включён
+- `LaccckaB4220NPCCombatExperimental` — Workshop ID `3786817782`; отдельный экспериментальный NPC combat-патч, в стабильную конфигурацию по умолчанию не включён
 - `LaccckaB4220ActivityFixes`
 - `LaccckaB4220CompatBridges`
 - `LaccckaB4220SafetyFixes`
