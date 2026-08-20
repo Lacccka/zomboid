@@ -106,26 +106,45 @@ local function readProtectedFlag(bandit)
     return nil
 end
 
+local function protectionString(bandit)
+    local value = readProtectedFlag(bandit)
+    if value == nil then
+        return protectedBandits[bandit] and "asserted-unreadable" or "unknown"
+    end
+    return boolString(value)
+end
+
 local function protectBandit(bandit)
     if not isBandit(bandit) then return false end
 
     local before = readProtectedFlag(bandit)
-    if before ~= true then
-        bandit:setZombiesDontAttack(true)
+    local alreadyAsserted = protectedBandits[bandit] == true
+
+    -- If the getter is not exposed to Lua, trust the successful setter call and
+    -- avoid calling it on every zombie update. If the getter is exposed and
+    -- reports false later, reassert the flag.
+    if before == false or (before == nil and not alreadyAsserted) then
+        local ok, err = pcall(function()
+            bandit:setZombiesDontAttack(true)
+        end)
+        if not ok then
+            error("setZombiesDontAttack(true) failed for Bandit " .. characterId(bandit) .. ": " .. tostring(err))
+        end
     end
 
     local after = readProtectedFlag(bandit)
-    if after ~= true then
-        error("setZombiesDontAttack(true) did not persist on Bandit " .. characterId(bandit))
+    if after == false then
+        error("setZombiesDontAttack(true) remained false on Bandit " .. characterId(bandit))
     end
 
-    if not protectedBandits[bandit] then
+    if not alreadyAsserted then
         protectedBandits[bandit] = true
         stats.protectedBandits = stats.protectedBandits + 1
         print(string.format(
-            "[LCC][BanditsAttackGuard][PROTECT_TARGET] target=%s before=%s after=true",
+            "[LCC][BanditsAttackGuard][PROTECT_TARGET] target=%s before=%s after=%s",
             characterId(bandit),
-            before == nil and "unknown" or boolString(before)
+            before == nil and "unreadable" or boolString(before),
+            after == nil and "unreadable" or boolString(after)
         ))
     end
 
@@ -193,7 +212,7 @@ local function observeZombie(zombie)
             boolString(noLungeAttack),
             bump,
             boolString(customBite),
-            tostring(readProtectedFlag(target))
+            protectionString(target)
         ))
     end
 
@@ -211,7 +230,7 @@ local function observeZombie(zombie)
             boolString(noLungeAttack),
             bump,
             boolString(customBite),
-            tostring(readProtectedFlag(target))
+            protectionString(target)
         ))
     end
 
@@ -230,7 +249,7 @@ local function observeZombie(zombie)
             boolString(noLungeAttack),
             bump,
             boolString(customBite),
-            tostring(readProtectedFlag(target))
+            protectionString(target)
         ))
     end
 
