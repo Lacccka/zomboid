@@ -6,9 +6,9 @@
 -- otherwise correlates a recent Bandit death by position.
 --
 -- B42.20.3 findings incorporated here:
---   * getItemsToSpawnAtDeath() is not safely callable from Lua and can emit a
---     Java/Kahlua RuntimeException even inside pcall;
---   * IsoDeadBody:getItemVisuals() is not callable with the IsoZombie signature;
+--   * the native death-queue getter is not safely callable from Lua and can emit
+--     a Java/Kahlua RuntimeException even inside pcall;
+--   * IsoDeadBody item-visual access does not use the IsoZombie signature;
 --   * array-style recent-death bookkeeping can surface a Kahlua null entry while
 --     OnDeadBodySpawn is firing. Recent deaths are therefore keyed by Bandit id.
 --
