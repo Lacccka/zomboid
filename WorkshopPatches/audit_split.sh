@@ -2,43 +2,69 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MONO="$ROOT/LaccckaCompatibilityPatch/Contents/mods/LaccckaCompatibilityPatch"
 SPLIT="$ROOT/WorkshopPatches"
 
 fail=0
-mapped_sources=()
 
 error() {
     printf 'ERROR: %s\n' "$*" >&2
     fail=1
 }
 
-same() {
-    local src_rel="$1"
-    local dst="$2"
-    local src="$MONO/42/media/$src_rel"
-    mapped_sources+=("$src_rel")
-    if [[ ! -f "$src" ]]; then
-        error "missing monolith source: $src_rel"
+require_file() {
+    local path="$1"
+    if [[ ! -f "$path" ]]; then
+        error "missing required file: ${path#$ROOT/}"
+        return 1
+    fi
+    if [[ ! -s "$path" ]]; then
+        error "required file is empty: ${path#$ROOT/}"
+        return 1
+    fi
+    return 0
+}
+
+require_marker() {
+    local path="$1"
+    local marker="$2"
+    local message="$3"
+    if [[ ! -f "$path" ]]; then
+        error "cannot validate marker; file missing: ${path#$ROOT/}"
         return
     fi
-    if [[ ! -f "$dst" ]]; then
-        error "missing split target for $src_rel: ${dst#$ROOT/}"
-        return
-    fi
-    if ! cmp -s "$src" "$dst"; then
-        error "split target differs from monolith: $src_rel -> ${dst#$ROOT/}"
+    if ! grep -Fq -- "$marker" "$path"; then
+        error "$message"
     fi
 }
 
-account_only() {
-    local src_rel="$1"
-    local src="$MONO/42/media/$src_rel"
-    mapped_sources+=("$src_rel")
-    if [[ ! -f "$src" ]]; then
-        error "missing historical monolith source: $src_rel"
+forbid_marker() {
+    local path="$1"
+    local marker="$2"
+    local message="$3"
+    if [[ -f "$path" ]] && grep -Fq -- "$marker" "$path"; then
+        error "$message"
     fi
 }
+
+# The grouped publication model currently consists of exactly these six items.
+expected_patch_dirs=(
+    ActivityFixes
+    CompatibilityBridges
+    PatchCore
+    RuntimeFixes
+    RussianTextFixes
+    SafetyFixes
+)
+
+tmp_actual_dirs="$(mktemp)"
+tmp_expected_dirs="$(mktemp)"
+trap 'rm -f "$tmp_actual_dirs" "$tmp_expected_dirs"' EXIT
+
+find "$SPLIT" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort > "$tmp_actual_dirs"
+printf '%s\n' "${expected_patch_dirs[@]}" | sort > "$tmp_expected_dirs"
+if ! diff -u "$tmp_expected_dirs" "$tmp_actual_dirs"; then
+    error "WorkshopPatches must contain exactly the six supported patch directories"
+fi
 
 core="$SPLIT/PatchCore/Contents/mods/LaccckaB4220PatchCore/42/media"
 runtime="$SPLIT/RuntimeFixes/Contents/mods/LaccckaB4220RuntimeFixes/42/media"
@@ -46,139 +72,312 @@ activity="$SPLIT/ActivityFixes/Contents/mods/LaccckaB4220ActivityFixes/42/media"
 bridges="$SPLIT/CompatibilityBridges/Contents/mods/LaccckaB4220CompatBridges/42/media"
 safety="$SPLIT/SafetyFixes/Contents/mods/LaccckaB4220SafetyFixes/42/media"
 text42="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/media"
-text_common="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/common"
+text_common="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/common/media"
 
-# Shared patch helper. CoreGuard is a unique entrypoint so the functional
-# bootstrap can explicitly prefer Patch Core even though each patch also owns a
-# fallback module at the legacy LCC/Guard path.
-same "lua/shared/LCC/Guard.lua" "$core/lua/shared/LCC/Guard.lua"
-core_guard="$core/lua/shared/LCC/CoreGuard.lua"
-[[ -f "$core_guard" ]] || error "PatchCore CoreGuard entrypoint is missing"
-if [[ -f "$core_guard" ]] && ! cmp -s "$core/lua/shared/LCC/Guard.lua" "$core_guard"; then
-    error "PatchCore CoreGuard must stay byte-for-byte equivalent to Guard.lua"
+# ---------------------------------------------------------------------------
+# Required current publication files.
+# ---------------------------------------------------------------------------
+
+required_files=(
+    "$core/lua/shared/LCC/Guard.lua"
+    "$core/lua/shared/LCC/CoreGuard.lua"
+
+    "$runtime/lua/client/ISUI/ISCharacterScreen.lua"
+    "$runtime/lua/client/zzz_LCC_BanditsAdminSpawnMenu.lua"
+    "$runtime/lua/client/zzz_LCC_BanditsZombieCacheGuard.lua"
+    "$runtime/lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua"
+    "$runtime/lua/server/zzz_LCC_BanditsEmptyServerWandererGuard.lua"
+    "$runtime/lua/shared/LCC/Guard.lua"
+    "$runtime/lua/shared/zzz_LCC_BanditsFarmingGuard.lua"
+
+    "$activity/lua/client/zzz_LCC_LifestyleBathFix.lua"
+    "$activity/lua/client/zzz_LCC_LifestyleYogaProgress.lua"
+    "$activity/lua/client/zzz_LCC_SkillDescriptions.lua"
+    "$activity/lua/shared/Hygiene/BathTubFunctions.lua"
+    "$activity/lua/shared/Hygiene/ShowerFunctions.lua"
+    "$activity/lua/shared/LCC/Guard.lua"
+    "$activity/perks.txt"
+
+    "$bridges/lua/client/Vehicle/ISUI/ISVehiclePartMenu.lua"
+    "$bridges/lua/client/Vehicle/ISVehiclePartMenu.lua"
+    "$bridges/lua/server/BuildingObjects/ISPlace3DItemCursor_Fix.lua"
+    "$bridges/lua/server/Tuning2/ATA2Tuning2.lua"
+    "$bridges/lua/server/utils/pzkZonesFunction.lua"
+    "$bridges/lua/shared/BodyLocations.lua"
+    "$bridges/lua/shared/ISBaseTimedAction.lua"
+    "$bridges/lua/shared/LCC/Guard.lua"
+    "$bridges/lua/shared/SVU3_PZKVLCCars_Stuffs.lua"
+    "$bridges/lua/shared/zzz_LCC_LegacyItemCallbacks.lua"
+
+    "$safety/lua/client/zzz_LCC_AegisTransferGuard.lua"
+    "$safety/lua/client/zzz_LCC_ChimeraGhillieFix.lua"
+    "$safety/lua/shared/LCC/Guard.lua"
+)
+
+for path in "${required_files[@]}"; do
+    require_file "$path" || true
+done
+
+# ---------------------------------------------------------------------------
+# PatchCore and optional-Guard bootstrap contract.
+# ---------------------------------------------------------------------------
+
+core_guard="$core/lua/shared/LCC/Guard.lua"
+core_entry="$core/lua/shared/LCC/CoreGuard.lua"
+
+if [[ -f "$core_guard" && -f "$core_entry" ]] && ! cmp -s "$core_guard" "$core_entry"; then
+    error "PatchCore CoreGuard.lua and Guard.lua must remain byte-for-byte equivalent"
 fi
+
+for marker in \
+    'function Guard.safeRequire' \
+    'function Guard.protect' \
+    'function Guard.install' \
+    'function Guard.wrapBefore' \
+    'Guard.__initialized = true'; do
+    require_marker "$core_guard" "$marker" "PatchCore Guard lost contract marker: $marker"
+done
 
 runtime_guard="$runtime/lua/shared/LCC/Guard.lua"
 activity_guard="$activity/lua/shared/LCC/Guard.lua"
 bridges_guard="$bridges/lua/shared/LCC/Guard.lua"
 safety_guard="$safety/lua/shared/LCC/Guard.lua"
 
-for guard in "$runtime_guard" "$activity_guard" "$bridges_guard" "$safety_guard"; do
-    [[ -f "$guard" ]] || { error "optional Guard bootstrap missing: ${guard#$ROOT/}"; continue; }
-    grep -Fq 'pcall(require, "LCC/CoreGuard")' "$guard" || error "Guard bootstrap does not prefer PatchCore: ${guard#$ROOT/}"
-    grep -Fq 'DEGRADED' "$guard" || error "Guard bootstrap lost degraded fallback: ${guard#$ROOT/}"
+functional_guards=(
+    "$runtime_guard"
+    "$activity_guard"
+    "$bridges_guard"
+    "$safety_guard"
+)
+
+for guard in "${functional_guards[@]}"; do
+    require_marker "$guard" 'pcall(require, "LCC/CoreGuard")' "Guard bootstrap does not prefer PatchCore: ${guard#$ROOT/}"
+    require_marker "$guard" 'CoreGuard.MODE = "GUARDED"' "Guard bootstrap lost GUARDED mode: ${guard#$ROOT/}"
+    require_marker "$guard" 'Guard.MODE = "DEGRADED"' "Guard bootstrap lost DEGRADED fallback: ${guard#$ROOT/}"
+    require_marker "$guard" 'Correct operation is not guaranteed' "Guard bootstrap lost degraded warning: ${guard#$ROOT/}"
 done
 
-if [[ -f "$runtime_guard" && -f "$activity_guard" ]] && ! cmp -s "$runtime_guard" "$activity_guard"; then
-    error "functional Guard bootstraps must remain identical"
-fi
-if [[ -f "$runtime_guard" && -f "$bridges_guard" ]] && ! cmp -s "$runtime_guard" "$bridges_guard"; then
-    error "functional Guard bootstraps must remain identical"
-fi
-if [[ -f "$runtime_guard" && -f "$safety_guard" ]] && ! cmp -s "$runtime_guard" "$safety_guard"; then
-    error "functional Guard bootstraps must remain identical"
-fi
+for guard in "$activity_guard" "$bridges_guard" "$safety_guard"; do
+    if [[ -f "$runtime_guard" && -f "$guard" ]] && ! cmp -s "$runtime_guard" "$guard"; then
+        error "functional Guard bootstraps must remain identical: ${guard#$ROOT/}"
+    fi
+done
 
-# Runtime fixes: historical full-file overrides are accounted for but MUST NOT
-# be copied into the public split. ISCharacterScreen is an LCC path shim.
-account_only "lua/client/BanditZombie.lua"
-same "lua/client/ISUI/ISCharacterScreen.lua" "$runtime/lua/client/ISUI/ISCharacterScreen.lua"
-account_only "lua/server/BanditServerWanderers.lua"
-account_only "lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua"
-account_only "lua/shared/ZombieActions/ZAStompPlant.lua"
-account_only "lua/shared/ZombieActions/ZAWaterFarm.lua"
+# ---------------------------------------------------------------------------
+# RuntimeFixes: source-clean Bandits contracts.
+# ---------------------------------------------------------------------------
 
+runtime_character="$runtime/lua/client/ISUI/ISCharacterScreen.lua"
+runtime_admin="$runtime/lua/client/zzz_LCC_BanditsAdminSpawnMenu.lua"
 runtime_cache="$runtime/lua/client/zzz_LCC_BanditsZombieCacheGuard.lua"
-runtime_empty="$runtime/lua/server/zzz_LCC_BanditsEmptyServerWandererGuard.lua"
 runtime_dedicated="$runtime/lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua"
+runtime_empty="$runtime/lua/server/zzz_LCC_BanditsEmptyServerWandererGuard.lua"
 runtime_farming="$runtime/lua/shared/zzz_LCC_BanditsFarmingGuard.lua"
-
-for path in "$runtime_cache" "$runtime_empty" "$runtime_dedicated" "$runtime_farming"; do
-    [[ -f "$path" ]] || error "RuntimeFixes source-clean guard missing: ${path#$ROOT/}"
-done
 
 for forbidden in \
     "$runtime/lua/client/BanditZombie.lua" \
+    "$runtime/lua/client/BanditUpdate.lua" \
     "$runtime/lua/server/BanditServerWanderers.lua" \
     "$runtime/lua/shared/ZombieActions/ZAStompPlant.lua" \
-    "$runtime/lua/shared/ZombieActions/ZAWaterFarm.lua" \
-    "$runtime/lua/client/BanditUpdate.lua"; do
+    "$runtime/lua/shared/ZombieActions/ZAWaterFarm.lua"; do
     [[ ! -e "$forbidden" ]] || error "RuntimeFixes must not bundle upstream Bandits source: ${forbidden#$ROOT/}"
 done
 
-if [[ -f "$runtime_empty" ]]; then
-    grep -Fq 'BanditCustom.ClanGetAll = function' "$runtime_empty" || error "RuntimeFixes empty-server guard lost ClanGetAll wrapper"
-    grep -Fq 'players:size() == 0' "$runtime_empty" || error "RuntimeFixes empty-server guard lost zero-player condition"
-    grep -Fq 'return originalClanGetAll(...)' "$runtime_empty" || error "RuntimeFixes empty-server guard must preserve normal ClanGetAll behavior"
-fi
+require_marker "$runtime_character" 'Guard.safeRequire(FEATURE, "XpSystem/ISUI/ISCharacterScreen")' \
+    "RuntimeFixes character-screen shim lost the B42.20 target path"
 
-if [[ -f "$runtime_cache" ]]; then
-    grep -Fq 'BanditCompatibility.IsReanimatedForGrappleOnly = function' "$runtime_cache" || error "RuntimeFixes cache guard lost BanditUpdate early-return seam"
-    grep -Fq 'not getSquareSafe(zombie)' "$runtime_cache" || error "RuntimeFixes cache guard lost squareless predicate"
-    grep -Fq 'Events.OnZombieUpdate.Add' "$runtime_cache" || error "RuntimeFixes cache guard lost post-update cleanup"
-    grep -Fq 'Events.EveryOneMinute.Add' "$runtime_cache" || error "RuntimeFixes cache guard lost post-flush sweep"
-fi
+require_marker "$runtime_admin" 'sendClientCommand(player, "Spawner", "Clan", args)' \
+    "RuntimeFixes admin spawn helper lost Bandits server-command path"
+require_marker "$runtime_admin" 'hasStaffAccess' \
+    "RuntimeFixes admin spawn helper lost staff-access guard"
 
-if [[ -f "$runtime_farming" ]]; then
-    grep -Fq 'return original(...)' "$runtime_farming" || error "RuntimeFixes farming wrappers must preserve original callbacks"
-    grep -Fq 'shouldSkipWaterComplete' "$runtime_farming" || error "RuntimeFixes farming guard must finish invalid water tasks cleanly"
-    grep -Fq 'CFarmingSystem.instance' "$runtime_farming" || error "RuntimeFixes farming guard lost B42 farming availability check"
-fi
+require_marker "$runtime_empty" 'BanditCustom.ClanGetAll = function' \
+    "RuntimeFixes empty-server guard lost ClanGetAll wrapper"
+require_marker "$runtime_empty" 'players:size() == 0' \
+    "RuntimeFixes empty-server guard lost zero-player condition"
+require_marker "$runtime_empty" 'return originalClanGetAll(...)' \
+    "RuntimeFixes empty-server guard must preserve normal ClanGetAll behavior"
 
-if [[ -f "$runtime_dedicated" ]]; then
-    grep -Fq 'BanditZombie.GetInstanceById = lookupZombie' "$runtime_dedicated" || error "RuntimeFixes dedicated guard must install lookup contract"
-    grep -Fq 'BanditServerZombie.Cache' "$runtime_dedicated" || error "RuntimeFixes dedicated lookup lost optional native server-cache path"
-    grep -Fq 'Guard.wrapBefore(FEATURE, Bandit, "ApplyVisuals", registerZombie)' "$runtime_dedicated" || error "RuntimeFixes dedicated lookup lost server Bandit registration hook"
-    grep -Fq 'Guard.wrapBefore(FEATURE, Bandit, "UpdateItemsToSpawnAtDeath", registerZombie)' "$runtime_dedicated" || error "RuntimeFixes dedicated lookup lost death-item registration hook"
-    grep -Fq 'Events.EveryOneMinute.Add(pruneRegistry)' "$runtime_dedicated" || error "RuntimeFixes dedicated registry lost stale-entry pruning"
-    grep -Fq 'pcall(getId, zombie)' "$runtime_dedicated" || error "RuntimeFixes dedicated lookup lost stale-IsoZombie protection"
-    if grep -Fq 'getZombieList()' "$runtime_dedicated"; then
-        error "RuntimeFixes dedicated lookup must not scan the complete server zombie list"
+require_marker "$runtime_cache" 'BanditCompatibility.IsReanimatedForGrappleOnly = function' \
+    "RuntimeFixes cache guard lost BanditUpdate early-return seam"
+require_marker "$runtime_cache" 'not getSquareSafe(zombie)' \
+    "RuntimeFixes cache guard lost squareless predicate"
+require_marker "$runtime_cache" 'Events.OnZombieUpdate.Add' \
+    "RuntimeFixes cache guard lost post-update cleanup"
+require_marker "$runtime_cache" 'Events.EveryOneMinute.Add' \
+    "RuntimeFixes cache guard lost post-flush sweep"
+
+require_marker "$runtime_farming" 'return original(...)' \
+    "RuntimeFixes farming wrappers must preserve original callbacks"
+require_marker "$runtime_farming" 'shouldSkipWaterComplete' \
+    "RuntimeFixes farming guard must finish invalid water tasks cleanly"
+require_marker "$runtime_farming" 'CFarmingSystem.instance' \
+    "RuntimeFixes farming guard lost B42 farming availability check"
+
+require_marker "$runtime_dedicated" 'BanditZombie.GetInstanceById = lookupZombie' \
+    "RuntimeFixes dedicated guard must install lookup contract"
+require_marker "$runtime_dedicated" 'BanditServerZombie.Cache' \
+    "RuntimeFixes dedicated lookup lost optional native server-cache path"
+require_marker "$runtime_dedicated" 'Guard.wrapBefore(FEATURE, Bandit, "ApplyVisuals", registerZombie)' \
+    "RuntimeFixes dedicated lookup lost Bandit registration hook"
+require_marker "$runtime_dedicated" 'Guard.wrapBefore(FEATURE, Bandit, "UpdateItemsToSpawnAtDeath", registerZombie)' \
+    "RuntimeFixes dedicated lookup lost death-item registration hook"
+require_marker "$runtime_dedicated" 'Events.EveryOneMinute.Add(pruneRegistry)' \
+    "RuntimeFixes dedicated registry lost stale-entry pruning"
+require_marker "$runtime_dedicated" 'pcall(getId, zombie)' \
+    "RuntimeFixes dedicated lookup lost stale-IsoZombie protection"
+forbid_marker "$runtime_dedicated" 'getZombieList()' \
+    "RuntimeFixes dedicated lookup must not scan the complete server zombie list"
+
+# ---------------------------------------------------------------------------
+# ActivityFixes: Lifestyle/hygiene/Yoga/skill-description contracts.
+# ---------------------------------------------------------------------------
+
+activity_bath="$activity/lua/client/zzz_LCC_LifestyleBathFix.lua"
+activity_yoga="$activity/lua/client/zzz_LCC_LifestyleYogaProgress.lua"
+activity_skills="$activity/lua/client/zzz_LCC_SkillDescriptions.lua"
+activity_bathtub_shim="$activity/lua/shared/Hygiene/BathTubFunctions.lua"
+activity_shower_shim="$activity/lua/shared/Hygiene/ShowerFunctions.lua"
+activity_perks="$activity/perks.txt"
+
+require_marker "$activity_bath" 'BathTubFunctions.walkToFront' \
+    "ActivityFixes bathtub hook lost Lifestyle walkToFront seam"
+require_marker "$activity_bath" 'fixtures_bathroom_01_25' \
+    "ActivityFixes bathtub hook lost west-entry fixture handling"
+require_marker "$activity_bath" 'Events.OnGameStart.Add(installBathFix)' \
+    "ActivityFixes bathtub hook lost late install retry"
+
+require_marker "$activity_yoga" 'HiddenSkills.getSkill' \
+    "ActivityFixes Yoga UI lost HiddenSkills authority"
+require_marker "$activity_yoga" 'ISSkillProgressBar.new = function' \
+    "ActivityFixes Yoga UI lost skill-progress-bar proxy"
+require_marker "$activity_yoga" 'function LCCYogaSkillProgressBar:onMouseUp' \
+    "ActivityFixes Yoga UI lost no-LevelPerk proxy protection"
+require_marker "$activity_yoga" 'Farming_LCC_Skill_Yoga_Description' \
+    "ActivityFixes Yoga UI lost Russian description key"
+
+require_marker "$activity_skills" 'ISSkillProgressBar.updateTooltip = function' \
+    "ActivityFixes skill-description repair lost tooltip wrapper"
+require_marker "$activity_skills" 'RU_DESCRIPTION_KEYS' \
+    "ActivityFixes skill-description repair lost Russian override map"
+
+require_marker "$activity_bathtub_shim" 'BathTubFunctions.DoAction = BathTubFunctions.DoAction or function() end' \
+    "ActivityFixes bathtub shared shim lost DoAction fallback"
+require_marker "$activity_shower_shim" 'ShowerFunctions.DoAction = ShowerFunctions.DoAction or function() end' \
+    "ActivityFixes shower shared shim lost DoAction fallback"
+
+require_marker "$activity_perks" 'perk Yoga' \
+    "ActivityFixes perks.txt must declare Yoga"
+require_marker "$activity_perks" 'parent = Lifestyle' \
+    "ActivityFixes Yoga proxy must remain under Lifestyle"
+
+for skill in Art Cleaning Dancing Meditation Music; do
+    if [[ -f "$activity_perks" ]] && grep -Eq "^[[:space:]]*perk[[:space:]]+$skill([[:space:]]|$)" "$activity_perks"; then
+        error "ActivityFixes perks.txt must not redeclare upstream Lifestyle perk: $skill"
     fi
+done
+
+# ---------------------------------------------------------------------------
+# CompatibilityBridges: legacy module/API redirects.
+# ---------------------------------------------------------------------------
+
+bridge_vehicle_isui="$bridges/lua/client/Vehicle/ISUI/ISVehiclePartMenu.lua"
+bridge_vehicle="$bridges/lua/client/Vehicle/ISVehiclePartMenu.lua"
+bridge_place3d="$bridges/lua/server/BuildingObjects/ISPlace3DItemCursor_Fix.lua"
+
+require_marker "$bridge_vehicle_isui" 'Guard.safeRequire(FEATURE, "Vehicles/ISUI/ISVehiclePartMenu")' \
+    "CompatibilityBridges ISUI vehicle shim lost B42 target"
+require_marker "$bridge_vehicle" 'Guard.safeRequire(FEATURE, "Vehicles/ISUI/ISVehiclePartMenu")' \
+    "CompatibilityBridges vehicle shim lost B42 target"
+require_marker "$bridge_place3d" 'if isServer() then return end' \
+    "CompatibilityBridges 3D-item cursor fix must stay client-only"
+require_marker "$bridge_place3d" 'ISPlace3DItemCursor.__LCCWeaponPartRenderFix' \
+    "CompatibilityBridges 3D-item cursor fix lost install marker"
+
+for path in \
+    "$bridges/lua/server/Tuning2/ATA2Tuning2.lua" \
+    "$bridges/lua/server/utils/pzkZonesFunction.lua" \
+    "$bridges/lua/shared/BodyLocations.lua" \
+    "$bridges/lua/shared/ISBaseTimedAction.lua" \
+    "$bridges/lua/shared/SVU3_PZKVLCCars_Stuffs.lua" \
+    "$bridges/lua/shared/zzz_LCC_LegacyItemCallbacks.lua"; do
+    require_marker "$path" 'LCC/Guard' "CompatibilityBridges file lost Guard dependency: ${path#$ROOT/}"
+done
+
+# ---------------------------------------------------------------------------
+# SafetyFixes: narrow defensive wrappers.
+# ---------------------------------------------------------------------------
+
+safety_aegis="$safety/lua/client/zzz_LCC_AegisTransferGuard.lua"
+safety_chimera="$safety/lua/client/zzz_LCC_ChimeraGhillieFix.lua"
+
+require_marker "$safety_aegis" 'ISInventoryTransferAction.isValid' \
+    "SafetyFixes Aegis guard lost transfer validity seam"
+require_marker "$safety_aegis" 'not self.item or not self.srcContainer or not self.destContainer' \
+    "SafetyFixes Aegis guard lost nil-container precheck"
+require_marker "$safety_chimera" 'Guard.install' \
+    "SafetyFixes Chimera guard lost guarded install contract"
+
+# ---------------------------------------------------------------------------
+# RussianTextFixes: standalone RU-only translation package.
+# ---------------------------------------------------------------------------
+
+ru42="$text42/lua/shared/Translate/RU"
+ru_common="$text_common/lua/shared/Translate/RU"
+
+[[ -d "$ru42" ]] || error "RussianTextFixes 42 RU tree is missing"
+[[ -d "$ru_common" ]] || error "RussianTextFixes common RU tree is missing"
+
+if [[ -d "$text42/lua/shared/Translate" ]] && \
+        find "$text42/lua/shared/Translate" -mindepth 1 -maxdepth 1 -type d ! -name RU -print -quit | grep -q .; then
+    error "RussianTextFixes 42 translation layer must contain RU only"
+fi
+if [[ -d "$text_common/lua/shared/Translate" ]] && \
+        find "$text_common/lua/shared/Translate" -mindepth 1 -maxdepth 1 -type d ! -name RU -print -quit | grep -q .; then
+    error "RussianTextFixes common translation layer must contain RU only"
 fi
 
-# Activity fixes.
-same "lua/client/zzz_LCC_LifestyleBathFix.lua" "$activity/lua/client/zzz_LCC_LifestyleBathFix.lua"
-same "lua/client/zzz_LCC_LifestyleYogaProgress.lua" "$activity/lua/client/zzz_LCC_LifestyleYogaProgress.lua"
-same "lua/shared/Hygiene/BathTubFunctions.lua" "$activity/lua/shared/Hygiene/BathTubFunctions.lua"
-same "lua/shared/Hygiene/ShowerFunctions.lua" "$activity/lua/shared/Hygiene/ShowerFunctions.lua"
-same "perks.txt" "$activity/perks.txt"
-
-# Compatibility bridges.
-same "lua/client/Vehicle/ISUI/ISVehiclePartMenu.lua" "$bridges/lua/client/Vehicle/ISUI/ISVehiclePartMenu.lua"
-same "lua/client/Vehicle/ISVehiclePartMenu.lua" "$bridges/lua/client/Vehicle/ISVehiclePartMenu.lua"
-same "lua/server/BuildingObjects/ISPlace3DItemCursor_Fix.lua" "$bridges/lua/server/BuildingObjects/ISPlace3DItemCursor_Fix.lua"
-same "lua/server/Tuning2/ATA2Tuning2.lua" "$bridges/lua/server/Tuning2/ATA2Tuning2.lua"
-same "lua/server/utils/pzkZonesFunction.lua" "$bridges/lua/server/utils/pzkZonesFunction.lua"
-same "lua/shared/BodyLocations.lua" "$bridges/lua/shared/BodyLocations.lua"
-same "lua/shared/ISBaseTimedAction.lua" "$bridges/lua/shared/ISBaseTimedAction.lua"
-same "lua/shared/SVU3_PZKVLCCars_Stuffs.lua" "$bridges/lua/shared/SVU3_PZKVLCCars_Stuffs.lua"
-same "lua/shared/zzz_LCC_LegacyItemCallbacks.lua" "$bridges/lua/shared/zzz_LCC_LegacyItemCallbacks.lua"
-
-# Defensive/UI fixes.
-same "lua/client/zzz_LCC_AegisTransferGuard.lua" "$safety/lua/client/zzz_LCC_AegisTransferGuard.lua"
-same "lua/client/zzz_LCC_ChimeraGhillieFix.lua" "$safety/lua/client/zzz_LCC_ChimeraGhillieFix.lua"
-
-# The translation package must remain byte-for-byte equivalent to both monolith layers.
-if ! diff -qr "$MONO/42/media/lua/shared/Translate" "$text42/lua/shared/Translate" >/dev/null; then
-    error "42 translation tree differs from monolith"
+if [[ -d "$text42" ]] && find "$text42" -type f ! -path "$ru42/*" -print -quit | grep -q .; then
+    error "RussianTextFixes 42/media must contain translation files only"
 fi
-if ! diff -qr "$MONO/common" "$text_common" >/dev/null; then
-    error "common translation tree differs from monolith"
+if [[ -d "$text_common" ]] && find "$text_common" -type f ! -path "$ru_common/*" -print -quit | grep -q .; then
+    error "RussianTextFixes common/media must contain translation files only"
 fi
 
-# Catch any new non-translation monolith file that has not been assigned to a split item.
-tmp_actual="$(mktemp)"
-tmp_mapped="$(mktemp)"
-trap 'rm -f "$tmp_actual" "$tmp_mapped"' EXIT
-find "$MONO/42/media" -type f ! -path '*/lua/shared/Translate/*' \
-    -printf '%P\n' | sort > "$tmp_actual"
-printf '%s\n' "${mapped_sources[@]}" | sort -u > "$tmp_mapped"
-if ! diff -u "$tmp_actual" "$tmp_mapped"; then
-    error "non-translation source coverage is incomplete or stale"
+if [[ -d "$ru42" ]]; then
+    count42="$(find "$ru42" -type f | wc -l)"
+    [[ "$count42" -eq 16 ]] || error "RussianTextFixes 42 RU tree expected 16 files, found $count42"
+fi
+if [[ -d "$ru_common" ]]; then
+    count_common="$(find "$ru_common" -type f | wc -l)"
+    [[ "$count_common" -eq 4 ]] || error "RussianTextFixes common RU tree expected 4 files, found $count_common"
 fi
 
-# Workshop metadata contracts.
+for json_root in "$ru42" "$ru_common"; do
+    [[ -d "$json_root" ]] || continue
+    while IFS= read -r -d '' json; do
+        if ! python3 -m json.tool "$json" >/dev/null 2>&1; then
+            error "invalid JSON translation file: ${json#$ROOT/}"
+        fi
+    done < <(find "$json_root" -type f -name '*.json' -print0)
+done
+
+for path in \
+    "$ru42/Farming.json" \
+    "$ru42/IG_UI.json" \
+    "$ru42/Moodles.json" \
+    "$ru42/Tooltip.json" \
+    "$ru42/ZZ_LCC_Perks_RU.txt" \
+    "$ru42/ZZ_LCC_VanillaPerks_RU.txt" \
+    "$ru_common/IG_UI.json" \
+    "$ru_common/Tooltip.json"; do
+    require_file "$path" || true
+done
+
+# ---------------------------------------------------------------------------
+# Workshop and mod.info metadata contracts.
+# ---------------------------------------------------------------------------
+
 declare -A expected_ids=(
     [PatchCore]="LaccckaB4220PatchCore"
     [RuntimeFixes]="LaccckaB4220RuntimeFixes"
@@ -197,40 +396,83 @@ declare -A expected_workshop_ids=(
     [RussianTextFixes]="3786176120"
 )
 
-seen_ids=""
-for folder in "${!expected_ids[@]}"; do
+seen_mod_ids=""
+seen_workshop_ids=""
+
+for folder in "${expected_patch_dirs[@]}"; do
     id="${expected_ids[$folder]}"
+    workshop_id="${expected_workshop_ids[$folder]}"
     workshop="$SPLIT/$folder/workshop.txt"
+    preview="$SPLIT/$folder/preview.png"
     modinfo="$SPLIT/$folder/Contents/mods/$id/42/mod.info"
 
-    [[ -f "$workshop" ]] || { error "$folder: workshop.txt missing"; continue; }
-    [[ -f "$modinfo" ]] || { error "$folder: mod.info missing"; continue; }
+    require_file "$workshop" || true
+    require_file "$preview" || true
+    require_file "$modinfo" || true
 
-    grep -Fxq "id=$id" "$modinfo" || error "$folder: wrong mod ID"
-    grep -Fxq 'versionMin=42.20.0' "$modinfo" || error "$folder: versionMin must stay on 42.20.0"
-    grep -Fqi 'Do not use' "$workshop" || error "$folder: Workshop warning is missing"
-    grep -Eqi 'original mod(s| Lua files| files)?.*not included|original mods are not included' "$workshop" || error "$folder: no-bundled-mods disclaimer is missing"
-    grep -Fxq "id=${expected_workshop_ids[$folder]}" "$workshop" || error "$folder: wrong published Workshop ID"
+    if [[ -f "$modinfo" ]]; then
+        grep -Fxq "id=$id" "$modinfo" || error "$folder: wrong mod ID"
+        grep -Fxq 'versionMin=42.20.0' "$modinfo" || error "$folder: versionMin must stay on 42.20.0"
+    fi
 
-    if grep -Fqx "$id" <<<"$seen_ids"; then
+    if [[ -f "$workshop" ]]; then
+        grep -Fxq "id=$workshop_id" "$workshop" || error "$folder: wrong published Workshop ID"
+        grep -Fqi 'Do not use' "$workshop" || error "$folder: Workshop warning is missing"
+        grep -Eqi 'original mod(s| Lua files| files)?.*not included|original mods are not included' "$workshop" \
+            || error "$folder: no-bundled-mods disclaimer is missing"
+    fi
+
+    if grep -Fqx "$id" <<<"$seen_mod_ids"; then
         error "$folder: duplicate mod ID $id"
     fi
-    seen_ids+="$id"$'\n'
+    seen_mod_ids+="$id"$'\n'
+
+    if grep -Fqx "$workshop_id" <<<"$seen_workshop_ids"; then
+        error "$folder: duplicate Workshop ID $workshop_id"
+    fi
+    seen_workshop_ids+="$workshop_id"$'\n'
 done
 
 for folder in RuntimeFixes ActivityFixes CompatibilityBridges SafetyFixes; do
     id="${expected_ids[$folder]}"
     modinfo="$SPLIT/$folder/Contents/mods/$id/42/mod.info"
+    [[ -f "$modinfo" ]] || continue
 
     if grep -Eq '^require=.*LaccckaB4220PatchCore' "$modinfo"; then
         error "$folder: PatchCore must remain a soft dependency, not require="
     fi
-    grep -Eq '^loadafter=.*\\LaccckaB4220PatchCore' "$modinfo" || error "$folder: PatchCore soft load-order dependency missing"
-    grep -Fqi 'strongly recommended' "$modinfo" || error "$folder: optional PatchCore warning missing from mod.info"
+    grep -Fq '\LaccckaB4220PatchCore' "$modinfo" \
+        || error "$folder: PatchCore soft load-order dependency missing"
+    grep -Fqi 'strongly recommended' "$modinfo" \
+        || error "$folder: optional PatchCore warning missing from mod.info"
 done
+
+runtime_modinfo="$SPLIT/RuntimeFixes/Contents/mods/LaccckaB4220RuntimeFixes/42/mod.info"
+activity_modinfo="$SPLIT/ActivityFixes/Contents/mods/LaccckaB4220ActivityFixes/42/mod.info"
+bridges_modinfo="$SPLIT/CompatibilityBridges/Contents/mods/LaccckaB4220CompatBridges/42/mod.info"
+safety_modinfo="$SPLIT/SafetyFixes/Contents/mods/LaccckaB4220SafetyFixes/42/mod.info"
+text_modinfo="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/mod.info"
+
+require_marker "$runtime_modinfo" '\Bandits2' "RuntimeFixes loadafter lost Bandits2"
+require_marker "$activity_modinfo" '\LifestyleHobbies' "ActivityFixes loadafter lost LifestyleHobbies"
+
+for dep in ModernFirearmsSystem MFS_community_fix PZKCarzoneWorkshop PzkVanillaPlusCarPack StandardizedVehicleUpgrades3Core tsarslib zReFRAMEWORK; do
+    require_marker "$bridges_modinfo" "\\$dep" "CompatibilityBridges loadafter lost dependency: $dep"
+done
+
+for dep in AP GridInventory Federal_Rangers_Chimera; do
+    require_marker "$safety_modinfo" "\\$dep" "SafetyFixes loadafter lost dependency: $dep"
+done
+
+require_marker "$text_modinfo" '\Bandits2' "RussianTextFixes loadafter lost Bandits2"
+require_marker "$text_modinfo" '\LifestyleHobbies' "RussianTextFixes loadafter lost LifestyleHobbies"
+
+if [[ -f "$text_modinfo" ]] && grep -Fq '\LaccckaB4220PatchCore' "$text_modinfo"; then
+    error "RussianTextFixes must remain standalone and must not depend on PatchCore"
+fi
 
 if (( fail != 0 )); then
     exit 1
 fi
 
-printf 'Workshop split audit: OK\n'
+printf 'Grouped Workshop patches audit: OK (6 current packages)\n'
