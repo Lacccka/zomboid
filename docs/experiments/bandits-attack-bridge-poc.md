@@ -2,15 +2,17 @@
 
 ## Purpose
 
-This is a controlled local experiment for the Bandits zombie -> NPC combat path on Build 42.20.3. It is intentionally **not** a redistributable replacement of `BanditUpdate.lua` and is not part of the public Workshop package.
+This is a controlled local experiment for the Bandits zombie -> NPC combat path on Build 42.20.3. The full test working copy lives in:
 
-The experiment tests one concrete hypothesis from upstream source inspection:
+`WorkshopPatches/Bandits-LCC-Dev`
 
-> Bandits' custom zombie -> NPC combat does not need a vanilla zombie combat target. The dangerous `AttackState` path is introduced by the intermediate `spotted/addAggro/setTarget/setAttackedBy` bridge, while target discovery, pursuit, `Bite/BiteLow`, damage and infection already have separate Bandits logic.
+It is intentionally separate from the public `NPCCombatExperimental` Workshop package. The repository working copy may temporarily contain direct upstream Bandits edits while we establish a behavioral reference implementation.
 
-## Upstream block under test
+## Established failure model
 
-Current Bandits 42.20 uses this close-range bridge in `UpdateZombies()`:
+Bandits NPCs are Java `IsoZombie` objects with a Lua human/NPC overlay. Its custom zombie -> Bandit combat already provides its own target discovery, bite animation, damage, infection and health synchronization. Vanilla `AttackState` is therefore not required for zombie damage to Bandits.
+
+The original close-range bridge in `UpdateZombies()` was:
 
 ```lua
 zombie:spotted(bandit, true)
@@ -19,120 +21,148 @@ zombie:setTarget(bandit)
 zombie:setAttackedBy(bandit)
 ```
 
-The Bandit object is still an `IsoZombie`. Previous runtime traces showed that this relationship can reach vanilla `attack` / `attack-network`, where Build 42.20.3 can follow an `IsoPlayer`-specific path and crash with the known `ClassCastException`.
+That relationship can reach vanilla `attack` / `attack-network`, where Build 42.20.3 can take an `IsoPlayer`-specific path with an `IsoZombie` Bandit and produce the known `ClassCastException` in `AttackState.triggerPlayerReaction`.
 
-The same function separately:
+## Iteration 1 result: `upstream-pursuit-v1`
 
-- finds NPCs through `BanditZombie.CacheLightB`;
-- uses `pathToCharacter(bandit)` while the NPC is farther away;
-- starts custom `Bite` / `BiteLow` through `biteTab` at close range;
-- applies damage with `bandit:Hit(...)`;
-- updates infection itself;
-- synchronizes health itself.
+The first upstream PoC removed the four-call vanilla bridge but retained `zombie:pathToCharacter(bandit)` for pursuit.
 
-This PoC therefore removes only the vanilla bridge and keeps explicit pursuit:
+Multiplayer testing showed that v1 improved the dangerous behavior but did **not** remove vanilla zombie -> Bandit targets:
+
+- `upstreamPoc=true` was confirmed;
+- `pocTargetLeaks` remained non-zero;
+- `bAttack` still appeared;
+- the first session still observed several Bandit-targeted `AttackState` entries;
+- `NetworkZombieMind: goal character is not set` remained very noisy;
+- target diagnostics observed stale Bandit targets at more than 60 tiles even though Bandits' own selection radius is about 20 tiles (`dist2max < 400`).
+
+This made `pathToCharacter(bandit)` the next causal suspect: it passes the real Bandit `IsoZombie` into the Java/network character-goal path even when the explicit `setTarget()` bridge is gone.
+
+## Current experiment: `upstream-coordinate-pursuit-v2`
+
+The current working copy removes **all active `pathToCharacter(bandit)` calls from `UpdateZombies()`** in addition to keeping the original four-call bridge disabled.
+
+The marker is:
 
 ```lua
-zombie:pathToCharacter(bandit)
+LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-coordinate-pursuit-v2"
 ```
 
-No Java state is forced and `bAttack` is not written.
+Runtime proof:
 
-## Apply on the Windows test checkout
-
-From the repository root, patch the repository snapshot:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\Apply-BanditsAttackBridgePoC.ps1
+```text
+[LCC][BanditsAttackPoC][INIT] upstream-coordinate-pursuit-v2 active; character pursuit and vanilla target bridge disabled
 ```
 
-The script is strict and only patches the audited B42.20 source header and combat block. If the upstream file no longer matches exactly, it aborts instead of modifying an unknown revision.
+Zombie pursuit now goes to coordinates only:
 
-To patch the exact `BanditUpdate.lua` used by a local client test instead, pass it explicitly:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\Apply-BanditsAttackBridgePoC.ps1 `
-  -TargetFile "C:\path\to\3268487204\mods\Bandits\42.20\media\lua\client\BanditUpdate.lua"
+```lua
+local function PathZombieToBanditLocation(zombie, banditCached)
+    if not zombie or not banditCached then return end
+    if BanditUtils.IsController(zombie) then
+        zombie:pathToLocationF(banditCached.x, banditCached.y, banditCached.z)
+    end
+end
 ```
 
-Use the same arguments plus `-Revert` to restore the original source:
+The same `pathToLocationF(x, y, z)` pattern is already used by Bandits' own B42.20 movement actions. The v2 change therefore avoids inventing a new movement primitive while ensuring the path request does not receive the Bandit object as a character destination.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\Apply-BanditsAttackBridgePoC.ps1 -Revert
-```
+Both pursuit bands use that helper:
 
-The repository default target is:
+- farther than 3 tiles (`dist2max > 9`);
+- the final approach from about 3 tiles down to custom bite range.
 
-`3268487204/mods/Bandits/42.20/media/lua/client/BanditUpdate.lua`
+The following remain unchanged:
 
-For a live test, the modified file must be the Bandits client source actually loaded by the game. A Steam Workshop copy can be overwritten by Steam, so use the same controlled local-mod workflow used for the current B42.20 test build where possible. Do not upload the modified upstream file as part of `NPCCombatExperimental`.
+- nearest-Bandit discovery through `BanditZombie.CacheLightB`;
+- visibility/range checks;
+- `Bite` / `BiteLow` transition;
+- `biteTab` timing;
+- manual `bandit:Hit(...)`;
+- infection update;
+- health synchronization;
+- multi-zombie death logic.
 
 ## Interaction with NPCCombatExperimental
 
-The patched upstream file sets the marker at `BanditUpdate.lua` load time, before NPC combat begins:
-
-```lua
-LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-pursuit-v1"
-```
-
-and prints:
+`zzz_LCC_BanditsAttackStateGuard.lua` recognizes exactly:
 
 ```text
-[LCC][BanditsAttackPoC][INIT] upstream-pursuit-v1 active; vanilla spotted/addAggro/setTarget/setAttackedBy bridge disabled
+upstream-coordinate-pursuit-v2
 ```
 
-`zzz_LCC_BanditsAttackStateGuard.lua` detects the same marker and switches to **fully observe-only mode**. During the PoC it does not call either the v3 `zombie:setTarget(nil)` intervention or the compatibility-patch `bandit:setZombiesDontAttack(true)` protection. This is required to keep the experiment causal: the source-level replacement must stand or fail on its own.
+While that marker is active, the guard is fully observation-only. It does **not** run the old v3 `zombie:setTarget(nil)` fallback and does not assert target-side `setZombiesDontAttack(true)` protection.
 
-Expected guard marker:
+Required guard marker:
 
 ```text
-[LCC][BanditsAttackGuard][UPSTREAM_POC_ACTIVE] marker=upstream-pursuit-v1 mode=observe-only v3Disconnect=false targetProtection=false
+[LCC][BanditsAttackGuard][UPSTREAM_POC_ACTIVE] marker=upstream-coordinate-pursuit-v2 mode=observe-only v3Disconnect=false targetProtection=false
 ```
 
-If a normal zombie still acquires a Bandit as a vanilla target while the PoC marker is active, the guard reports:
+Any line like:
 
 ```text
 [LCC][BanditsAttackGuard][POC_TARGET_LEAK] ... intervention=false
 ```
 
-That is a PoC failure signal and the guard intentionally does not clear the target.
+is therefore evidence that v2 still allowed or retained a vanilla Bandit target; the guard intentionally does not repair it.
+
+## Working-copy workflow
+
+For normal testing, **do not run the applicator**. `WorkshopPatches/Bandits-LCC-Dev` is already the materialized current experiment.
+
+After `git pull`, replace the local test copy completely:
+
+```text
+C:\zomboid\WorkshopPatches\Bandits-LCC-Dev
+    ->
+C:\Users\user\Zomboid\mods\Bandits-LCC-Dev
+```
+
+Refresh `NPCCombatExperimental` as well, because its guard marker must match the Bandits experiment.
+
+`tools/Apply-BanditsAttackBridgePoC.ps1` remains only as a strict reproducibility/revert tool. It knows the audited clean state and the complete coordinate-pursuit-v2 state and refuses mixed/unknown source revisions.
+
+`tools/Setup-LocalBanditsDev.ps1` mirrors the already-prepared working copy by default. `-NoAttackPoC` instead mirrors the clean repository upstream snapshot from `3268487204/mods/Bandits`.
 
 ## Test matrix
 
-Use a full client restart after applying or reverting the source patch.
+Use a **full dedicated-server and client restart**, then use freshly spawned Bandits and freshly encountered/spawned zombies so stale v1 network targets cannot contaminate the result.
 
-1. Spawn several NPCs with the existing LCC admin stress action.
-2. Let single zombies pursue NPCs from more than 3 tiles away.
-3. Verify they close the final 3-tile gap instead of stalling or orbiting.
-4. Verify `Bite` / `BiteLow` still starts and NPC health decreases.
-5. Test 2-3 zombies on one NPC and confirm the existing multi-zombie death logic still occurs.
-6. Keep a real player near the same zombies and confirm normal zombie -> player attacks still work.
-7. Drive the test long enough to produce multiple close-range engagements.
+1. Confirm both v2 runtime markers.
+2. Spawn several Bandits with the existing LCC admin action.
+3. Let single zombies acquire them from more than 3 tiles away.
+4. Verify zombies close the final 3-tile gap rather than stopping/orbiting.
+5. Verify `Bite` / `BiteLow` starts and completes and Bandit health decreases.
+6. Test 2-3+ zombies against one Bandit and preserve the existing death behavior.
+7. Keep a real player near the same zombies and verify ordinary zombie -> player attacks remain normal.
+8. Run long enough to produce multiple independent engagements and compare `NetworkZombieMind` frequency against v1.
 
 ## Success criteria
 
-A strong positive result requires all of the following:
+A strong positive result requires:
 
-- `[BanditsAttackPoC][INIT]` appears;
-- `[BanditsAttackGuard][UPSTREAM_POC_ACTIVE]` appears;
-- the guard summary reports `upstreamPoc=true` and `pocTargetLeaks=0`;
-- no `[POC_TARGET_LEAK]` lines appear;
-- target diagnostics stop reporting normal zombie -> Bandit vanilla target acquisitions;
-- `DANGER_ATTACK_STATE` / `ESCAPED_ATTACK_STATE` for Bandit targets disappear;
-- no `ClassCastException` from `AttackState.triggerPlayerReaction` occurs;
-- Bandits custom `Bite` / `BiteLow` counters continue to increase;
-- NPCs still take zombie damage / infection;
-- zombies do not stall in the 0.8-3 tile pursuit band;
-- ordinary zombie -> real player behavior remains normal.
+- `[BanditsAttackPoC][INIT] upstream-coordinate-pursuit-v2 ...` appears;
+- `[BanditsAttackGuard][UPSTREAM_POC_ACTIVE] marker=upstream-coordinate-pursuit-v2 ...` appears;
+- guard summary reports `upstreamPoc=true`;
+- ideally `pocTargetLeaks=0` for fresh v2 engagements;
+- no `[POC_TARGET_LEAK]` for fresh zombie/Bandit pairs;
+- no `DANGER_ATTACK_STATE` / `ESCAPED_ATTACK_STATE` for Bandit targets;
+- no `ClassCastException` from `AttackState.triggerPlayerReaction`;
+- `customBiteStart` and `customBiteEnd` advance;
+- NPCs still take zombie damage/infection;
+- zombies do not stall in the 0.8-3 tile band;
+- `NetworkZombieMind: goal character is not set` drops substantially;
+- ordinary zombie -> real-player combat remains normal.
 
 ## Failure interpretation
 
-- **No target leaks, but zombies stall before biting:** the removed vanilla bridge was also being used as the final pursuit controller. The next PoC should refine explicit pathing/close-range path cancellation without restoring a Bandit vanilla target.
-- **Custom bite stops:** inspect whether persistent `pathToCharacter` conflicts with `Bite/BiteLow`; the next iteration should stop/cancel pursuit only at the custom bite transition.
-- **Bandit target still appears:** another code path is assigning the target and must be located before designing the source-clean hook.
-- **AttackState still appears without a Bandit target:** the state can be entered from a second vanilla mechanism, so target creation was not the only trigger.
-- **PoC works completely:** treat this source edit as the behavioral reference implementation, then reproduce it with an LCC-authored source-clean interception rather than bundling the modified upstream file.
+- **Fresh v2 target leaks remain:** `pathToCharacter(bandit)` was not the only target source. Investigate stale network mind state, another Bandits/engine target assignment, and the remaining object-facing calls (`isFacingObject` / `faceThisObject`) separately.
+- **No target leaks, but final approach stalls:** coordinate-only pursuit supports the target-root hypothesis, but close steering/path cancellation must be refined without restoring a character target.
+- **No target leaks, but custom bite stops:** inspect the transition from coordinate pathing to `Bite/BiteLow`; stop/cancel coordinate pathing only when `biteTab` starts.
+- **AttackState occurs without a Bandit target:** a second vanilla state-transition mechanism exists independently of target creation.
+- **v2 works completely:** treat this source edit as the behavioral reference implementation, then look for a source-clean LCC interception or propose a minimal upstream Bandits change rather than shipping the complete upstream file inside the public patch.
 
 ## Publication constraint
 
-This experiment is deliberately implemented as a local exact-block transformation. The public `NPCCombatExperimental` package remains source-clean and must not ship the complete upstream `BanditUpdate.lua`.
+`WorkshopPatches/Bandits-LCC-Dev` is a private development/test working copy inside this repository workflow. The public `NPCCombatExperimental` Workshop package remains source-clean and must not include the complete upstream `BanditUpdate.lua`.
