@@ -1,3 +1,4 @@
 /build
-UpdatePatches.exe
-UpdatePatches.spec
+updater.py
+updater.spec
+updater.exe
