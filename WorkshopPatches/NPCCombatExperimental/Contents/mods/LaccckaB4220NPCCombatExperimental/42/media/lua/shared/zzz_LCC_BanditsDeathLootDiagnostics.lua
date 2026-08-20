@@ -114,12 +114,37 @@ local function characterId(character, brain)
     return "nil"
 end
 
+local function valueString(value, fallback)
+    if value == nil then return fallback or "<none>" end
+    return tostring(value):gsub("%s+", "_")
+end
+
 local function bagName(brain)
     if not brain or brain.bag == nil then return "<none>" end
     if type(brain.bag) == "table" then
         return tostring(brain.bag.name or "<unnamed>")
     end
     return tostring(brain.bag)
+end
+
+local function weaponName(weapons, slot)
+    if type(weapons) ~= "table" then return "<none>" end
+    if slot == "melee" then
+        return valueString(weapons.melee, "<none>")
+    end
+    local entry = weapons[slot]
+    if type(entry) ~= "table" then return "<none>" end
+    return valueString(entry.name, "<none>")
+end
+
+local function weaponSummary(brain)
+    local weapons = brain and brain.weapons
+    return string.format(
+        "melee=%s,primary=%s,secondary=%s",
+        weaponName(weapons, "melee"),
+        weaponName(weapons, "primary"),
+        weaponName(weapons, "secondary")
+    )
 end
 
 local function isBandit(zombie)
@@ -207,9 +232,13 @@ local function snapshotFor(zombie, brain)
         snapshots[id] = snapshot
     end
 
+    snapshot.cid = valueString(brain.cid or brain.clan, "<none>")
+    snapshot.bid = valueString(brain.bid, "<none>")
+    snapshot.fullname = valueString(brain.fullname, "<none>")
     snapshot.expectedClothing = tableCount(brain.clothing)
     snapshot.brainLoot = tableCount(brain.loot)
     snapshot.bag = bagName(brain)
+    snapshot.weapons = weaponSummary(brain)
     snapshot.clothing = sortedBrainClothing(brain)
     return snapshot, id
 end
@@ -227,13 +256,17 @@ end
 
 local function formatBrain(snapshot)
     if not snapshot then
-        return "expectedClothing=-1 brainLoot=-1 bag=<unknown> clothing=<unknown>"
+        return "cid=<unknown> bid=<unknown> fullname=<unknown> expectedClothing=-1 brainLoot=-1 bag=<unknown> weapons=<unknown> clothing=<unknown>"
     end
     return string.format(
-        "expectedClothing=%d brainLoot=%d bag=%s clothing=%s",
+        "cid=%s bid=%s fullname=%s expectedClothing=%d brainLoot=%d bag=%s weapons=%s clothing=%s",
+        tostring(snapshot.cid or "<unknown>"),
+        tostring(snapshot.bid or "<unknown>"),
+        tostring(snapshot.fullname or "<unknown>"),
         snapshot.expectedClothing or -1,
         snapshot.brainLoot or -1,
         tostring(snapshot.bag or "<unknown>"),
+        tostring(snapshot.weapons or "<unknown>"),
         tostring(snapshot.clothing or "<unknown>")
     )
 end
