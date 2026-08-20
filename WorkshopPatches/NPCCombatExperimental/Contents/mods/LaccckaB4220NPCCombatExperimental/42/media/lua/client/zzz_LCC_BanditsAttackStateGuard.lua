@@ -1,22 +1,25 @@
 -- Client-side guard for the Bandits zombie -> NPC vanilla AttackState path.
 --
--- B42.20.3 exposes bAttack as a read-only animation callback variable, so this
--- experiment works at the target-side engine seam instead. Bandits already uses
--- setZombiesDontAttack(true) during its close-range custom Bite/BiteLow path; LCC
--- asserts the same engine flag earlier for Bandit IsoZombie targets.
+-- B42.20.3 testing established two failed interventions:
+--   1. bAttack cannot be cleared because it is a read-only animation callback;
+--   2. setZombiesDontAttack(true) on the Bandit target does not stop Bandits'
+--      UpdateZombies() from rebuilding a vanilla combat relationship.
 --
--- This file deliberately uses a v2 Guard feature id. Older local test copies may
--- still contain the former experimental guard; sharing its feature id could make
--- Guard.install() treat this implementation as already installed and silently
--- skip it. The log namespace remains BanditsAttackGuard for easy comparison.
+-- Upstream UpdateZombies() explicitly calls spotted/addAggro/setTarget/setAttackedBy
+-- for a normal zombie -> Bandit pair and independently performs its custom
+-- Bite/BiteLow simulation. This v3 experiment runs later in OnZombieUpdate and
+-- disconnects only the vanilla target with zombie:setTarget(nil) after upstream
+-- has completed its custom logic for the tick. It deliberately does NOT clear
+-- the complete aggro list, change Java action state, change bump type, write
+-- bAttack, damage, infection, or Bandits' bite bookkeeping.
 if isServer() then return end
 
 local Guard = require "LCC/Guard"
-local FEATURE = "bandits.attack-state-target-guard-v2"
+local FEATURE = "bandits.attack-state-target-disconnect-v3"
 local HEARTBEAT_MS = 15000
 local HEARTBEAT_CHECK_EVERY_UPDATES = 512
 
-print("[LCC][BanditsAttackGuard][BOOT] target-side guard file loaded feature=" .. FEATURE)
+print("[LCC][BanditsAttackGuard][BOOT] vanilla target-disconnect guard file loaded feature=" .. FEATURE)
 
 Guard.safeRequire(FEATURE, "BanditUtils")
 if not Guard.isEnabled(FEATURE) then
@@ -32,6 +35,8 @@ local stats = {
     zombieUpdates = 0,
     protectedBandits = 0,
     targetLeaks = 0,
+    targetDisconnects = 0,
+    disconnectFailures = 0,
     bAttackObserved = 0,
     attackStateObserved = 0,
 }
@@ -104,9 +109,8 @@ local function protectBandit(bandit, force)
 
     local first = protectedBandits[bandit] ~= true
     if first or force then
-        -- Do not probe isZombiesDontAttack(). Java/Kahlua binding failures can be
-        -- logged even when wrapped in Lua pcall. The setter is the upstream-used
-        -- API and is sufficient for this experiment.
+        -- Keep the target-side engine flag as a supplemental protection. The v2
+        -- test proved it is insufficient by itself, not that it is harmful.
         bandit:setZombiesDontAttack(true)
     end
 
@@ -148,17 +152,19 @@ local function maybeHeartbeat()
     lastHeartbeat = now
 
     print(string.format(
-        "[LCC][BanditsAttackGuard][SUMMARY] updates=%d protectedBandits=%d targetLeaks=%d bAttackObserved=%d attackStateObserved=%d earlyHook=%s",
+        "[LCC][BanditsAttackGuard][SUMMARY] updates=%d protectedBandits=%d targetLeaks=%d targetDisconnects=%d disconnectFailures=%d bAttackObserved=%d attackStateObserved=%d earlyHook=%s",
         stats.zombieUpdates,
         stats.protectedBandits,
         stats.targetLeaks,
+        stats.targetDisconnects,
+        stats.disconnectFailures,
         stats.bAttackObserved,
         stats.attackStateObserved,
         boolString(applyVisualsHookInstalled)
     ))
 end
 
-local function observeZombie(zombie)
+local function observeAndDisconnectZombie(zombie)
     stats.zombieUpdates = stats.zombieUpdates + 1
     if stats.zombieUpdates % HEARTBEAT_CHECK_EVERY_UPDATES == 0 then
         maybeHeartbeat()
@@ -177,8 +183,6 @@ local function observeZombie(zombie)
         return
     end
 
-    -- Reassert on every observed vanilla target leak. This is intentionally
-    -- narrow: target/aggro/pathing/state/bump/custom-bite data are not rewritten.
     protectBandit(target, true)
 
     local asn = attackStateName(zombie)
@@ -188,18 +192,35 @@ local function observeZombie(zombie)
     local noLungeAttack = zombie:getVariableBoolean("NoLungeAttack")
     local attackState = isAttackState(asn)
     local previous = trackedAttackers[zombie]
+    local newPair = not previous or previous.target ~= target
 
-    if not previous or previous.target ~= target then
-        stats.targetLeaks = stats.targetLeaks + 1
+    stats.targetLeaks = stats.targetLeaks + 1
+
+    -- This is the only active v3 intervention. Bandits has already run its own
+    -- UpdateZombies callback for this tick, including custom Bite/BiteLow setup.
+    -- Do not clear the whole aggro list: that could erase legitimate player aggro.
+    zombie:setTarget(nil)
+
+    local postTarget = zombie:getTarget()
+    local disconnected = postTarget == nil
+    if disconnected then
+        stats.targetDisconnects = stats.targetDisconnects + 1
+    else
+        stats.disconnectFailures = stats.disconnectFailures + 1
+    end
+
+    if newPair or not disconnected then
         print(string.format(
-            "[LCC][BanditsAttackGuard][TARGET_LEAK] attacker=%s target=%s state=%s bAttack=%s noLunge=%s bump=%s customBite=%s targetProtected=true",
+            "[LCC][BanditsAttackGuard][DISCONNECT] attacker=%s target=%s stateBefore=%s bAttack=%s noLunge=%s bump=%s customBite=%s disconnected=%s postTarget=%s",
             characterId(zombie),
             characterId(target),
             asn,
             boolString(bAttack),
             boolString(noLungeAttack),
             bump,
-            boolString(customBite)
+            boolString(customBite),
+            boolString(disconnected),
+            characterId(postTarget)
         ))
     end
 
@@ -210,13 +231,11 @@ local function observeZombie(zombie)
         ) then
         stats.bAttackObserved = stats.bAttackObserved + 1
         print(string.format(
-            "[LCC][BanditsAttackGuard][READ_ONLY_BATTACK] attacker=%s target=%s state=%s bAttack=true noLunge=%s bump=%s customBite=%s targetProtected=true",
+            "[LCC][BanditsAttackGuard][READ_ONLY_BATTACK] attacker=%s target=%s state=%s bAttack=true targetDisconnected=%s",
             characterId(zombie),
             characterId(target),
             asn,
-            boolString(noLungeAttack),
-            bump,
-            boolString(customBite)
+            boolString(disconnected)
         ))
     end
 
@@ -227,14 +246,15 @@ local function observeZombie(zombie)
         ) then
         stats.attackStateObserved = stats.attackStateObserved + 1
         print(string.format(
-            "[LCC][BanditsAttackGuard][ESCAPED_ATTACK_STATE] attacker=%s target=%s state=%s bAttack=%s noLunge=%s bump=%s customBite=%s targetProtected=true diagnosticOnly=true",
+            "[LCC][BanditsAttackGuard][ESCAPED_ATTACK_STATE] attacker=%s target=%s state=%s bAttack=%s noLunge=%s bump=%s customBite=%s targetDisconnected=%s diagnosticOnly=true",
             characterId(zombie),
             characterId(target),
             asn,
             boolString(bAttack),
             boolString(noLungeAttack),
             bump,
-            boolString(customBite)
+            boolString(customBite),
+            boolString(disconnected)
         ))
     end
 
@@ -261,7 +281,7 @@ Guard.install {
 
         Events.OnZombieUpdate.Add(function(zombie)
             if Guard.isEnabled(FEATURE) then
-                Guard.protect(FEATURE, "protect/observe zombie attack state", observeZombie, zombie)
+                Guard.protect(FEATURE, "disconnect vanilla Bandit target", observeAndDisconnectZombie, zombie)
             end
         end)
 
@@ -274,7 +294,7 @@ Guard.install {
         end
 
         print(string.format(
-            "[LCC][BanditsAttackGuard][INIT] target-side guard active feature=%s earlyHook=%s heartbeat=%dms",
+            "[LCC][BanditsAttackGuard][INIT] vanilla target-disconnect guard active feature=%s earlyHook=%s heartbeat=%dms; clearAggroList=false",
             FEATURE,
             boolString(applyVisualsHookInstalled),
             HEARTBEAT_MS
