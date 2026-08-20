@@ -1,7 +1,0 @@
-name=Lacccka B42.20 Compatibility Patch
-id=LaccckaB4220Compat
-author=Lacccka
-description=Cross-platform Build 42.20 compatibility fixes and failure-isolation guards for Windows and Linux multiplayer servers/clients. Covers MFS, SVU3/TsarLib, PZK VLC, zRe, Bandits, Lifestyle, Aegis Panel, and Federal Ranger's Chimera. Adds concise Russian descriptions for vanilla, Build 42 and Lifestyle skills, Yoga progress, and Russian localization for Bandits. The repository Linux launcher preflight works around confirmed B42.20 lowercase XML inheritance failures for Bandits, Lifestyle, Escape from Kentucky4215, and tsarslib, including mixed-case XML filenames, without replacing upstream Workshop content.
-modversion=1.6.0
-versionMin=42.20.0
-loadafter=\AP,\Bandits2,\Federal_Rangers_Chimera,\GridInventory,\LifestyleHobbies,\ModernFirearmsSystem,\MFS_community_fix,\PZKCarzoneWorkshop,\PzkVanillaPlusCarPack,\StandardizedVehicleUpgrades3Core,\tsarslib,\zReFRAMEWORK

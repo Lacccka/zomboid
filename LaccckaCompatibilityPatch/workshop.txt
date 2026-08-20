@@ -1,6 +1,0 @@
-version=1
-id=3782987959
-title=Lacccka B42.20 Compatibility Patch
-description=Lacccka B42.20 Compatibility Patch is a cross-platform compatibility patch for selected Build 42.20.x multiplayer mods. It includes targeted Windows/Linux fixes, dedicated-server guards, Russian localization for supported mods, concise Russian descriptions for vanilla/Build 42/Lifestyle skills, and Linux workarounds for confirmed AnimSets case-sensitivity failures. It is NOT recommended to install this patch unless you actually need the supported fixes. Review the README for the supported mods and current limitations. The original mods must be installed separately and are NOT included in this patch.
-tags=Build 42;Multiplayer
-visibility=public

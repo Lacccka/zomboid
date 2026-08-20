@@ -1,7 +1,0 @@
-{
-  "Tooltip_CS_PryOpenDoor": "Bu kapıyı zorlayarak aımayı dene. Hırsızlar bu işte ıok iyidir!",
-  "Tooltip_CS_CantPryOpenRDoor": "Bu kapı zorlayarak açamayacağın kadar sağlam. %s. seviye Güç gerektirir.",
-
-  "Tooltip_CS_PryOpenWindow": "Bu pencereyi zorlayarak açmayı dene. Camı kırma ihtimalinin olduğunu unutma!",
-  "Tooltip_CS_CantPryOpenWindow": "Bu pencere barikatlanmış veya engellenmiş olmalı. Zorlayarak açmaya çalışmak faydasız olur."
-}
