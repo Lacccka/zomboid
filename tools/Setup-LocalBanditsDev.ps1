@@ -31,7 +31,7 @@ if (-not $ServerIni) {
     $ServerIni = Join-Path $ZomboidHome "Server\servertest.ini"
 }
 
-$Source = Join-Path $RepoRoot "3268487204\mods\Bandits"
+$Source = Join-Path $RepoRoot "WorkshopPatches\Bandits-LCC-Dev"
 $SourceModInfo = Join-Path $Source "42.20\mod.info"
 $DestinationModInfo = Join-Path $Destination "42.20\mod.info"
 $DestinationBanditUpdate = Join-Path $Destination "42.20\media\lua\client\BanditUpdate.lua"
