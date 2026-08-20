@@ -6,7 +6,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$relativePath = "3268487204/mods/Bandits/42.20/media/lua/client/BanditUpdate.lua"
+$workingCopyRelativePath = "WorkshopPatches/NPCCombatExperimental/DevUpstream/Bandits/42.20/media/lua/client/BanditUpdate.lua"
 
 if ($TargetFile) {
     $targetPath = (Resolve-Path -LiteralPath $TargetFile).Path
@@ -14,7 +14,7 @@ if ($TargetFile) {
     if (-not $RepoRoot) {
         $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
     }
-    $targetPath = Join-Path $RepoRoot $relativePath
+    $targetPath = Join-Path $RepoRoot $workingCopyRelativePath
 }
 
 if (-not (Test-Path -LiteralPath $targetPath -PathType Leaf)) {
@@ -117,4 +117,8 @@ Write-Host "Applied Bandits AttackState upstream PoC: $targetPath"
 Write-Host "The PoC marker is active from BanditUpdate.lua load time."
 Write-Host "The four-call vanilla bridge is replaced by pathToCharacter(bandit)."
 Write-Host "NPCCombatExperimental will run observation-only while marker upstream-pursuit-v1 is active."
+if (-not $TargetFile) {
+    Write-Host "Working copy is ready for manual transfer from:"
+    Write-Host "  $targetPath"
+}
 Write-Host "Use -Revert with the same arguments to restore the exact original header and bridge blocks."
