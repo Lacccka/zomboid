@@ -41,7 +41,7 @@ Guard.install {
         local originalRenderPerkRect = ISSkillProgressBar.renderPerkRect
         local originalUpdateTooltip = ISSkillProgressBar.updateTooltip
 
-        local YOGA_DESCRIPTION_RU = "Прокачивается выполнением поз во время занятий йогой; сложные позы дают больше опыта. <LINE> Каждая завершённая поза уменьшает боль и мышечное перенапряжение. <LINE> 1 ур.: Шавасана начинает давать эффект «Дзен», временно повышающий получение опыта Физподготовки, Силы, Медитации и Йоги. <LINE> С ростом навыка открываются более сложные позы, увеличивается число поз за занятие и снижается шанс неудачи. <LINE> 10 ур.: неудачи при выполнении поз исчезают. <LINE> Завершайте занятие Шавасаной: она даёт дополнительный опыт; прерывание занятия может снять часть текущего опыта."
+        local YOGA_DESCRIPTION_RU = "Прокачивается выполнением поз во время занятий йогой; сложные позы дают больше опыта. <LINE> 1 ур.: Шавасана даёт эффект «Дзен», повышающий получение опыта Физподготовки, Силы, Медитации и Йоги. <LINE> С ростом навыка открываются более сложные позы и снижается шанс неудачи. <LINE> 10 ур.: позы больше не проваливаются."
 
         LCCYogaSkillProgressBar = ISSkillProgressBar:derive("LCCYogaSkillProgressBar")
 
@@ -258,6 +258,6 @@ Guard.install {
         -- B42.20 sandbox configurations.
 
         LCC_LifestyleYogaProgressInstalled = true
-        print("[LaccckaCompatibilityPatch] Lifestyle Yoga progress UI installed with LCCGuard")
+        print("[LCC][YogaProgress][1.1.5] installed")
     end,
 }
