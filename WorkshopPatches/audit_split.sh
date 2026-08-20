@@ -46,6 +46,15 @@ forbid_marker() {
     fi
 }
 
+forbid_regex() {
+    local path="$1"
+    local regex="$2"
+    local message="$3"
+    if [[ -f "$path" ]] && grep -Eq -- "$regex" "$path"; then
+        error "$message"
+    fi
+}
+
 expected_patch_dirs=(
     ActivityFixes
     CompatibilityBridges
@@ -91,6 +100,7 @@ required_files=(
     "$experimental/lua/client/zzz_LCC_BanditsTargetDiagnostics.lua"
     "$experimental/lua/server/zzz_LCC_BanditsTestSpawnBridge.lua"
     "$experimental/lua/shared/LCC/Guard.lua"
+    "$experimental/lua/shared/zzz_LCC_BanditsDeathLootDiagnostics.lua"
 
     "$activity/lua/client/zzz_LCC_LifestyleBathFix.lua"
     "$activity/lua/client/zzz_LCC_LifestyleYogaProgress.lua"
@@ -100,7 +110,6 @@ required_files=(
     "$activity/lua/shared/LCC/Guard.lua"
     "$activity/perks.txt"
 
-    "$bridges/lua/client/Vehicle/ISUI/ISVehiclePartMenu.lua"
     "$bridges/lua/client/Vehicle/ISUI/ISVehiclePartMenu.lua"
     "$bridges/lua/server/BuildingObjects/ISPlace3DItemCursor_Fix.lua"
     "$bridges/lua/server/Tuning2/ATA2Tuning2.lua"
@@ -184,20 +193,19 @@ for experimental_file in \
     "$runtime/lua/client/zzz_LCC_BanditsAdminSpawnMenu.lua" \
     "$runtime/lua/client/zzz_LCC_BanditsAttackStateGuard.lua" \
     "$runtime/lua/client/zzz_LCC_BanditsTargetDiagnostics.lua" \
-    "$runtime/lua/server/zzz_LCC_BanditsTestSpawnBridge.lua"; do
-    [[ ! -e "$experimental_file" ]] || error "RuntimeFixes must not contain NPC combat experimental/test tooling: ${experimental_file#$ROOT/}"
+    "$runtime/lua/server/zzz_LCC_BanditsTestSpawnBridge.lua" \
+    "$runtime/lua/shared/zzz_LCC_BanditsDeathLootDiagnostics.lua"; do
+    [[ ! -e "$experimental_file" ]] || error "RuntimeFixes must not contain NPC experimental/test tooling: ${experimental_file#$ROOT/}"
 done
 
 require_marker "$runtime_character" 'Guard.safeRequire(FEATURE, "XpSystem/ISUI/ISCharacterScreen")' \
     "RuntimeFixes character-screen shim lost the B42.20 target path"
-
 require_marker "$runtime_empty" 'BanditCustom.ClanGetAll = function' \
     "RuntimeFixes empty-server guard lost ClanGetAll wrapper"
 require_marker "$runtime_empty" 'players:size() == 0' \
     "RuntimeFixes empty-server guard lost zero-player condition"
 require_marker "$runtime_empty" 'return originalClanGetAll(...)' \
     "RuntimeFixes empty-server guard must preserve normal ClanGetAll behavior"
-
 require_marker "$runtime_cache" 'BanditCompatibility.IsReanimatedForGrappleOnly = function' \
     "RuntimeFixes cache guard lost BanditUpdate early-return seam"
 require_marker "$runtime_cache" 'not getSquareSafe(zombie)' \
@@ -206,14 +214,12 @@ require_marker "$runtime_cache" 'Events.OnZombieUpdate.Add' \
     "RuntimeFixes cache guard lost post-update cleanup"
 require_marker "$runtime_cache" 'Events.EveryOneMinute.Add' \
     "RuntimeFixes cache guard lost post-flush sweep"
-
 require_marker "$runtime_farming" 'return original(...)' \
     "RuntimeFixes farming wrappers must preserve original callbacks"
 require_marker "$runtime_farming" 'shouldSkipWaterComplete' \
     "RuntimeFixes farming guard must finish invalid water tasks cleanly"
 require_marker "$runtime_farming" 'CFarmingSystem.instance' \
     "RuntimeFixes farming guard lost B42 farming availability check"
-
 require_marker "$runtime_dedicated" 'BanditZombie.GetInstanceById = lookupZombie' \
     "RuntimeFixes dedicated guard must install lookup contract"
 require_marker "$runtime_dedicated" 'BanditServerZombie.Cache' \
@@ -229,11 +235,12 @@ require_marker "$runtime_dedicated" 'pcall(getId, zombie)' \
 forbid_marker "$runtime_dedicated" 'getZombieList()' \
     "RuntimeFixes dedicated lookup must not scan the complete server zombie list"
 
-# NPCCombatExperimental: in-development guard, diagnostics and admin test tooling.
+# NPCCombatExperimental: observation, death-loot diagnostics and admin tooling.
 experimental_admin="$experimental/lua/client/zzz_LCC_BanditsAdminSpawnMenu.lua"
 experimental_attack="$experimental/lua/client/zzz_LCC_BanditsAttackStateGuard.lua"
 experimental_diag="$experimental/lua/client/zzz_LCC_BanditsTargetDiagnostics.lua"
 experimental_spawn="$experimental/lua/server/zzz_LCC_BanditsTestSpawnBridge.lua"
+experimental_death="$experimental/lua/shared/zzz_LCC_BanditsDeathLootDiagnostics.lua"
 
 for forbidden in \
     "$experimental/lua/client/BanditZombie.lua" \
@@ -248,33 +255,48 @@ require_marker "$experimental_admin" 'hasStaffAccess' \
     "NPCCombatExperimental admin spawn helper lost staff-access guard"
 require_marker "$experimental_admin" 'Events.OnPreFillWorldObjectContextMenu.Add' \
     "NPCCombatExperimental admin spawn helper lost right-click integration"
-
 require_marker "$experimental_spawn" 'module ~= MODULE or command ~= COMMAND' \
     "NPCCombatExperimental server spawn bridge lost isolated command routing"
 require_marker "$experimental_spawn" 'BanditServer.Spawner.Clan' \
     "NPCCombatExperimental server spawn bridge must preserve upstream spawn authority"
 require_marker "$experimental_spawn" 'hasStaffAccess' \
     "NPCCombatExperimental server spawn bridge lost staff-access validation"
-
 require_marker "$experimental_diag" '[LCC][BanditsDiag][SUMMARY]' \
     "NPCCombatExperimental target diagnostics lost summary logging"
 require_marker "$experimental_diag" 'DANGER_ATTACK_STATE' \
     "NPCCombatExperimental target diagnostics lost AttackState observation"
 
-require_marker "$experimental_attack" 'zombie:setVariable("bAttack", false)' \
-    "NPCCombatExperimental attack guard lost bAttack=false intervention"
-require_marker "$experimental_attack" '[LCC][BanditsAttackGuard][BLOCK]' \
-    "NPCCombatExperimental attack guard lost intervention diagnostics"
+require_marker "$experimental_attack" '[LCC][BanditsAttackGuard][READ_ONLY_BATTACK]' \
+    "NPCCombatExperimental attack probe lost read-only bAttack observation"
 require_marker "$experimental_attack" '[LCC][BanditsAttackGuard][ESCAPED_ATTACK_STATE]' \
-    "NPCCombatExperimental attack guard lost late-state diagnostic"
-forbid_marker "$experimental_attack" 'zombie:setVariable("bAttack", true)' \
-    "NPCCombatExperimental attack guard must never force vanilla attacks on"
+    "NPCCombatExperimental attack probe lost AttackState observation"
+require_marker "$experimental_attack" 'diagnosticOnly=true' \
+    "NPCCombatExperimental attack probe must identify its unresolved diagnostic state"
+forbid_regex "$experimental_attack" '^[[:space:]]*zombie:setVariable\("bAttack"' \
+    "NPCCombatExperimental must not write the B42.20.3 read-only bAttack variable"
 forbid_marker "$experimental_attack" 'changeState(' \
-    "NPCCombatExperimental attack guard must not force Java action states"
+    "NPCCombatExperimental attack probe must not force Java action states"
 forbid_marker "$experimental_attack" 'setTarget(' \
-    "NPCCombatExperimental attack guard must not rewrite zombie targets"
+    "NPCCombatExperimental attack probe must not rewrite zombie targets"
 forbid_marker "$experimental_attack" 'setBumpType(' \
-    "NPCCombatExperimental attack guard must not replace the upstream custom Bite setup"
+    "NPCCombatExperimental attack probe must not replace the upstream custom Bite setup"
+
+require_marker "$experimental_death" 'Bandit.UpdateItemsToSpawnAtDeath = function' \
+    "NPCCombatExperimental death-loot diagnostics lost manifest observation seam"
+require_marker "$experimental_death" 'Events.OnZombieDead.Add' \
+    "NPCCombatExperimental death-loot diagnostics lost death cleanup observation"
+require_marker "$experimental_death" 'Events.OnDeadBodySpawn.Add' \
+    "NPCCombatExperimental death-loot diagnostics lost corpse observation"
+require_marker "$experimental_death" '[LCC][BanditsDeathLoot][DEAD]' \
+    "NPCCombatExperimental death-loot diagnostics lost post-cleanup logging"
+require_marker "$experimental_death" '[LCC][BanditsDeathLoot][CORPSE]' \
+    "NPCCombatExperimental death-loot diagnostics lost corpse-content logging"
+forbid_marker "$experimental_death" 'addItemToSpawnAtDeath(' \
+    "NPCCombatExperimental death-loot diagnostics must remain observe-only before evidence identifies the loss boundary"
+forbid_marker "$experimental_death" 'inventory:AddItem(' \
+    "NPCCombatExperimental death-loot diagnostics must not add inventory items"
+forbid_marker "$experimental_death" 'inventory:Remove(' \
+    "NPCCombatExperimental death-loot diagnostics must not remove inventory items"
 
 # ActivityFixes: Lifestyle/hygiene/Yoga/skill-description contracts.
 activity_bath="$activity/lua/client/zzz_LCC_LifestyleBathFix.lua"
@@ -290,7 +312,6 @@ require_marker "$activity_bath" 'fixtures_bathroom_01_25' \
     "ActivityFixes bathtub hook lost west-entry fixture handling"
 require_marker "$activity_bath" 'Events.OnGameStart.Add(installBathFix)' \
     "ActivityFixes bathtub hook lost late install retry"
-
 require_marker "$activity_yoga" 'HiddenSkills.getSkill' \
     "ActivityFixes Yoga UI lost HiddenSkills authority"
 require_marker "$activity_yoga" 'ISSkillProgressBar.new = function' \
@@ -299,17 +320,14 @@ require_marker "$activity_yoga" 'function LCCYogaSkillProgressBar:onMouseUp' \
     "ActivityFixes Yoga UI lost no-LevelPerk proxy protection"
 require_marker "$activity_yoga" 'Farming_LCC_Skill_Yoga_Description' \
     "ActivityFixes Yoga UI lost Russian description key"
-
 require_marker "$activity_skills" 'ISSkillProgressBar.updateTooltip = function' \
     "ActivityFixes skill-description repair lost tooltip wrapper"
 require_marker "$activity_skills" 'RU_DESCRIPTION_KEYS' \
     "ActivityFixes skill-description repair lost Russian override map"
-
 require_marker "$activity_bathtub_shim" 'BathTubFunctions.DoAction = BathTubFunctions.DoAction or function() end' \
     "ActivityFixes bathtub shared shim lost DoAction fallback"
 require_marker "$activity_shower_shim" 'ShowerFunctions.DoAction = ShowerFunctions.DoAction or function() end' \
     "ActivityFixes shower shared shim lost DoAction fallback"
-
 require_marker "$activity_perks" 'perk Yoga' \
     "ActivityFixes perks.txt must declare Yoga"
 require_marker "$activity_perks" 'parent = Lifestyle' \
@@ -340,11 +358,9 @@ require_marker "$bridge_place3d" 'if isServer() then return end' \
     "CompatibilityBridges 3D-item cursor fix must stay client-only"
 require_marker "$bridge_place3d" 'ISPlace3DItemCursor.__LCCWeaponPartRenderFix' \
     "CompatibilityBridges 3D-item cursor fix lost install marker"
-
 for path in "$bridge_tuning" "$bridge_pzk" "$bridge_body" "$bridge_timed"; do
     require_marker "$path" 'LCC/Guard' "CompatibilityBridges guarded redirect lost Guard dependency: ${path#$ROOT/}"
 done
-
 require_marker "$bridge_svu" 'return require "OtherModsSupport/SVU3_PZKVLCCars_Stuffs"' \
     "CompatibilityBridges SVU3/PZK redirect lost its current target"
 require_marker "$bridge_callbacks" 'SpecialLootSpawns.OnCreateRecipeMagazine' \
@@ -355,7 +371,6 @@ require_marker "$bridge_callbacks" 'ItemCodeOnCreate.onCreateRecipeMagazine' \
 # SafetyFixes: narrow defensive wrappers.
 safety_aegis="$safety/lua/client/zzz_LCC_AegisTransferGuard.lua"
 safety_chimera="$safety/lua/client/zzz_LCC_ChimeraGhillieFix.lua"
-
 require_marker "$safety_aegis" 'ISInventoryTransferAction.isValid' \
     "SafetyFixes Aegis guard lost transfer validity seam"
 require_marker "$safety_aegis" 'not self.item or not self.srcContainer or not self.destContainer' \
@@ -378,7 +393,6 @@ if [[ -d "$text_common/lua/shared/Translate" ]] && \
         find "$text_common/lua/shared/Translate" -mindepth 1 -maxdepth 1 -type d ! -name RU -print -quit | grep -q .; then
     error "RussianTextFixes common translation layer must contain RU only"
 fi
-
 if [[ -d "$text42" ]] && find "$text42" -type f ! -path "$ru42/*" -print -quit | grep -q .; then
     error "RussianTextFixes 42/media must contain translation files only"
 fi
@@ -467,6 +481,8 @@ for folder in "${expected_patch_dirs[@]}"; do
         if [[ -f "$modinfo" ]]; then
             grep -Fxq 'name=Lacccka B42 NPC Combat Experimental' "$modinfo" \
                 || error "$folder: public mod name must remain neutral"
+            grep -Fxq 'modversion=0.1.1' "$modinfo" \
+                || error "$folder: experimental diagnostics version must be 0.1.1"
         fi
         if [[ -f "$workshop" ]]; then
             grep -Fxq 'title=Lacccka B42 NPC Combat Experimental' "$workshop" \
@@ -519,11 +535,9 @@ require_marker "$activity_modinfo" '\LifestyleHobbies' "ActivityFixes loadafter 
 for dep in ModernFirearmsSystem MFS_community_fix PZKCarzoneWorkshop PzkVanillaPlusCarPack StandardizedVehicleUpgrades3Core tsarslib zReFRAMEWORK; do
     require_marker "$bridges_modinfo" "\\$dep" "CompatibilityBridges loadafter lost dependency: $dep"
 done
-
 for dep in AP GridInventory Federal_Rangers_Chimera; do
     require_marker "$safety_modinfo" "\\$dep" "SafetyFixes loadafter lost dependency: $dep"
 done
-
 require_marker "$text_modinfo" '\Bandits2' "RussianTextFixes loadafter lost Bandits2"
 require_marker "$text_modinfo" '\LifestyleHobbies' "RussianTextFixes loadafter lost LifestyleHobbies"
 
@@ -535,4 +549,4 @@ if (( fail != 0 )); then
     exit 1
 fi
 
-printf 'Grouped Workshop patches audit: OK (7 current packages; NPCCombatExperimental Workshop=3786817782)\n'
+printf 'Grouped Workshop patches audit: OK (7 current packages; NPCCombatExperimental Workshop=3786817782; diagnostics=0.1.1)\n'
