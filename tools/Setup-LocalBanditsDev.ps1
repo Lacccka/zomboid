@@ -54,25 +54,26 @@ function Find-OtherBanditsCopies([string]$Root, [string]$ExcludedRoot) {
     }
 
     $excluded = [System.IO.Path]::GetFullPath($ExcludedRoot).TrimEnd('\') + '\'
-    $matches = @()
+    $found = @()
+    $files = @(Get-ChildItem -LiteralPath $Root -Filter "mod.info" -File -Recurse -ErrorAction SilentlyContinue)
 
-    Get-ChildItem -LiteralPath $Root -Filter "mod.info" -File -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
-        $full = [System.IO.Path]::GetFullPath($_.FullName)
+    foreach ($file in $files) {
+        $full = [System.IO.Path]::GetFullPath($file.FullName)
         if ($full.StartsWith($excluded, [System.StringComparison]::OrdinalIgnoreCase)) {
-            return
+            continue
         }
 
         try {
             $text = [System.IO.File]::ReadAllText($full)
             if ($text -match '(?m)^id=Bandits2\s*$') {
-                $matches += $full
+                $found += $full
             }
         } catch {
             # Ignore unreadable unrelated mod metadata during duplicate scan.
         }
     }
 
-    return $matches
+    return $found
 }
 
 function Update-ServerIni([string]$Path) {
@@ -156,9 +157,6 @@ if (-not $NoAttackPoC) {
         throw "Attack PoC applicator not found: $PoCScript"
     }
     & $PoCScript -TargetFile $DestinationBanditUpdate
-    if ($LASTEXITCODE -ne 0) {
-        throw "Attack PoC applicator failed with exit code $LASTEXITCODE"
-    }
 } else {
     Write-Host "Attack PoC was not applied because -NoAttackPoC was specified."
 }
@@ -172,10 +170,12 @@ if (-not $SkipServerIni) {
 $otherCopies = @()
 $otherCopies += Find-OtherBanditsCopies (Join-Path $ZomboidHome "mods") $Destination
 $otherCopies += Find-OtherBanditsCopies (Join-Path $ZomboidHome "Workshop") $Destination
+$otherCopies = @($otherCopies | Sort-Object -Unique)
 
 if ($otherCopies.Count -gt 0) {
-    Write-Warning "Other local copies with id=$ModId were found. Remove/rename them before testing to avoid ambiguity:"
-    $otherCopies | Sort-Object -Unique | ForEach-Object { Write-Warning "  $_" }
+    Write-Warning "Other local copies with id=$ModId were found. Remove/rename them before testing:"
+    $otherCopies | ForEach-Object { Write-Warning "  $_" }
+    throw "Local Bandits source is ambiguous because another id=$ModId copy exists under Zomboid\mods or Zomboid\Workshop."
 }
 
 $marker = Join-Path $Destination ".lcc-local-bandits-dev"
