@@ -1,29 +1,39 @@
 -- Observe the Bandits death-item pipeline without changing corpse contents.
 --
--- The file lives in shared Lua so its first OnZombieDead observer is registered
--- before client/BanditUpdate.lua. A second observer is deliberately registered
--- from OnGameStart, after BanditUpdate has installed its own OnZombieDead
--- cleanup. This gives us an actual PRE -> POST cleanup delta instead of the
--- ambiguous single death sample used by the previous diagnostic.
+-- The first OnZombieDead observer is registered from shared Lua before the
+-- client BanditUpdate cleanup. A second observer is registered at OnGameStart so
+-- it runs after upstream cleanup. Corpse matching prefers preserved modData but
+-- can fall back to recent death coordinates because IsoDeadBody does not always
+-- retain the Bandit brain id in multiplayer.
 --
--- Bandit.UpdateItemsToSpawnAtDeath is also wrapped to capture the last state
--- immediately before and after the upstream function. No items are added,
--- removed, worn, cloned, or otherwise modified here.
+-- Important B42.20.3 finding: probing getItemsToSpawnAtDeath() from Lua emits a
+-- Java/Kahlua RuntimeException even inside pcall, so this diagnostic deliberately
+-- does not inspect the native death queue anymore.
 if isServer() then return end
 
 local Guard = require "LCC/Guard"
 local FEATURE = "bandits.death-loot-diagnostics"
 local unpackFn = unpack or table.unpack
+local CORPSE_MATCH_MS = 10000
+local CORPSE_MATCH_DIST2 = 2.25 * 2.25
 
 Guard.safeRequire(FEATURE, "Bandit")
 Guard.safeRequire(FEATURE, "BanditUtils")
 if not Guard.isEnabled(FEATURE) then return end
 
 local snapshots = {}
+local recentDeaths = {}
 local lateObserversInstalled = false
 
 local function pack(...)
     return { n = select("#", ...), ... }
+end
+
+local function nowMs()
+    if type(getTimestampMs) == "function" then return getTimestampMs() end
+    local gt = getGameTime and getGameTime()
+    if gt then return math.floor(gt:getWorldAgeHours() * 3600000) end
+    return 0
 end
 
 local function tableCount(value)
@@ -57,33 +67,10 @@ local function wornCount(character)
 end
 
 local function itemVisualCount(character)
-    if not character then return -1 end
+    if not character or not instanceof(character, "IsoZombie") then return -1 end
     local ok, visuals = pcall(function() return character:getItemVisuals() end)
     if not ok or not visuals then return -1 end
     return safeSize(visuals)
-end
-
-local function deathQueueCount(zombie)
-    if not zombie then return -1 end
-
-    -- There is no documented B42 getter paired with the death-item enqueue API.
-    -- Probe both likely access paths behind pcall; -1 means unavailable rather
-    -- than an empty queue.
-    local okGetter, queue = pcall(function()
-        return zombie:getItemsToSpawnAtDeath()
-    end)
-    if okGetter and queue then
-        return safeSize(queue)
-    end
-
-    local okField, field = pcall(function()
-        return zombie.itemsToSpawnAtDeath
-    end)
-    if okField and field then
-        return safeSize(field)
-    end
-
-    return -1
 end
 
 local function modDataBrainId(character)
@@ -97,9 +84,8 @@ end
 
 local function characterId(character, brain)
     if brain and brain.id ~= nil then return tostring(brain.id) end
-
-    local brainId = modDataBrainId(character)
-    if brainId then return brainId end
+    local id = modDataBrainId(character)
+    if id then return id end
 
     if character and BanditUtils and type(BanditUtils.GetCharacterID) == "function" then
         local ok, value = pcall(BanditUtils.GetCharacterID, character)
@@ -110,7 +96,6 @@ local function characterId(character, brain)
         local ok, value = pcall(function() return character:getPersistentOutfitID() end)
         if ok and value ~= nil then return tostring(value) end
     end
-
     return "nil"
 end
 
@@ -121,17 +106,13 @@ end
 
 local function bagName(brain)
     if not brain or brain.bag == nil then return "<none>" end
-    if type(brain.bag) == "table" then
-        return tostring(brain.bag.name or "<unnamed>")
-    end
-    return tostring(brain.bag)
+    if type(brain.bag) == "table" then return valueString(brain.bag.name, "<unnamed>") end
+    return valueString(brain.bag, "<none>")
 end
 
 local function weaponName(weapons, slot)
     if type(weapons) ~= "table" then return "<none>" end
-    if slot == "melee" then
-        return valueString(weapons.melee, "<none>")
-    end
+    if slot == "melee" then return valueString(weapons.melee, "<none>") end
     local entry = weapons[slot]
     if type(entry) ~= "table" then return "<none>" end
     return valueString(entry.name, "<none>")
@@ -153,20 +134,19 @@ local function isBandit(zombie)
     return ok and value == true
 end
 
-local function captureRuntime(character, includeDeathQueue)
+local function captureRuntime(character)
     return {
         inventory = inventoryCount(character),
         worn = wornCount(character),
         visuals = itemVisualCount(character),
-        deathQueue = includeDeathQueue and deathQueueCount(character) or -1,
     }
 end
 
 local function sortedBrainClothing(brain)
     if not brain or type(brain.clothing) ~= "table" then return "<none>" end
     local values = {}
-    for bodyLocation, itemType in pairs(brain.clothing) do
-        values[#values + 1] = tostring(bodyLocation) .. "=" .. tostring(itemType)
+    for bodyLocation, itemName in pairs(brain.clothing) do
+        values[#values + 1] = tostring(bodyLocation) .. "=" .. tostring(itemName)
     end
     table.sort(values)
     if #values == 0 then return "<none>" end
@@ -184,14 +164,14 @@ end
 
 local function inventoryTypes(character)
     if not character then return "<unavailable>" end
-    local okInventory, inventory = pcall(function() return character:getInventory() end)
-    if not okInventory or not inventory then return "<unavailable>" end
+    local okInv, inventory = pcall(function() return character:getInventory() end)
+    if not okInv or not inventory then return "<unavailable>" end
     local okItems, items = pcall(function() return inventory:getItems() end)
     if not okItems or not items then return "<unavailable>" end
 
-    local values = {}
     local size = safeSize(items)
     if size < 0 then return "<unavailable>" end
+    local values = {}
     for i = 0, math.min(size - 1, 23) do
         local okItem, item = pcall(function() return items:get(i) end)
         if okItem and item then values[#values + 1] = itemType(item) end
@@ -206,9 +186,9 @@ local function wornTypes(character)
     local okWorn, worn = pcall(function() return character:getWornItems() end)
     if not okWorn or not worn then return "<unavailable>" end
 
-    local values = {}
     local size = safeSize(worn)
     if size < 0 then return "<unavailable>" end
+    local values = {}
     for i = 0, math.min(size - 1, 23) do
         local okEntry, entry = pcall(function() return worn:get(i) end)
         if okEntry and entry then
@@ -244,13 +224,12 @@ local function snapshotFor(zombie, brain)
 end
 
 local function formatRuntime(prefix, runtime)
-    runtime = runtime or { inventory = -1, worn = -1, visuals = -1, deathQueue = -1 }
+    runtime = runtime or { inventory = -1, worn = -1, visuals = -1 }
     return string.format(
-        "%sInventory=%d %sWorn=%d %sVisuals=%d %sDeathQueue=%d",
+        "%sInventory=%d %sWorn=%d %sVisuals=%d",
         prefix, runtime.inventory,
         prefix, runtime.worn,
-        prefix, runtime.visuals,
-        prefix, runtime.deathQueue
+        prefix, runtime.visuals
     )
 end
 
@@ -275,18 +254,33 @@ local function printLastUpdateStages(id, snapshot)
     if not snapshot then return end
     print(string.format(
         "[LCC][BanditsDeathLoot][BEFORE_UPDATE] id=%s seq=%d %s %s",
-        id,
-        snapshot.seq or 0,
-        formatRuntime("before", snapshot.before),
-        formatBrain(snapshot)
+        id, snapshot.seq or 0, formatRuntime("before", snapshot.before), formatBrain(snapshot)
     ))
     print(string.format(
         "[LCC][BanditsDeathLoot][AFTER_UPDATE] id=%s seq=%d %s %s",
-        id,
-        snapshot.seq or 0,
-        formatRuntime("after", snapshot.after),
-        formatBrain(snapshot)
+        id, snapshot.seq or 0, formatRuntime("after", snapshot.after), formatBrain(snapshot)
     ))
+end
+
+local function coords(object)
+    if not object then return nil, nil, nil end
+    local ok, x, y, z = pcall(function()
+        return object:getX(), object:getY(), object:getZ()
+    end)
+    if not ok then return nil, nil, nil end
+    return tonumber(x), tonumber(y), tonumber(z)
+end
+
+local function rememberRecentDeath(id, zombie)
+    local x, y, z = coords(zombie)
+    if not x or not y or not z then return end
+    recentDeaths[#recentDeaths + 1] = {
+        id = id,
+        x = x,
+        y = y,
+        z = z,
+        at = nowMs(),
+    }
 end
 
 local function onZombieDeadPreCleanup(zombie)
@@ -299,7 +293,7 @@ local function onZombieDeadPreCleanup(zombie)
     print(string.format(
         "[LCC][BanditsDeathLoot][DEAD] phase=PRE_CLEANUP id=%s %s inventoryTypes=%s wornTypes=%s %s",
         id,
-        formatRuntime("pre", captureRuntime(zombie, true)),
+        formatRuntime("pre", captureRuntime(zombie)),
         inventoryTypes(zombie),
         wornTypes(zombie),
         formatBrain(snapshot)
@@ -311,11 +305,12 @@ local function onZombieDeadPostCleanup(zombie)
     local snapshot = snapshots[id]
     if not snapshot then return end
 
+    rememberRecentDeath(id, zombie)
     print(string.format(
         "[LCC][BanditsDeathLoot][DEAD] phase=POST_CLEANUP id=%s banditFlag=%s %s inventoryTypes=%s wornTypes=%s %s",
         id,
         tostring(isBandit(zombie)),
-        formatRuntime("post", captureRuntime(zombie, true)),
+        formatRuntime("post", captureRuntime(zombie)),
         inventoryTypes(zombie),
         wornTypes(zombie),
         formatBrain(snapshot)
@@ -338,9 +333,9 @@ local function corpseInventoryTypes(body)
     local okItems, items = pcall(function() return container:getItems() end)
     if not okItems or not items then return "<unavailable>" end
 
-    local values = {}
     local size = safeSize(items)
     if size < 0 then return "<unavailable>" end
+    local values = {}
     for i = 0, math.min(size - 1, 23) do
         local okItem, item = pcall(function() return items:get(i) end)
         if okItem and item then values[#values + 1] = itemType(item) end
@@ -350,18 +345,53 @@ local function corpseInventoryTypes(body)
     return table.concat(values, ",")
 end
 
+local function resolveCorpseId(body)
+    local direct = modDataBrainId(body)
+    if direct and snapshots[direct] then return direct, "modData", 0 end
+
+    local bx, by, bz = coords(body)
+    if not bx or not by or not bz then return nil, "none", -1 end
+
+    local now = nowMs()
+    local bestIndex, bestDist2
+    for i = #recentDeaths, 1, -1 do
+        local death = recentDeaths[i]
+        local age = now - (death.at or now)
+        if age > CORPSE_MATCH_MS then
+            table.remove(recentDeaths, i)
+        elseif snapshots[death.id] and math.abs((death.z or 0) - bz) < 0.5 then
+            local dx = (death.x or 0) - bx
+            local dy = (death.y or 0) - by
+            local dist2 = dx * dx + dy * dy
+            if dist2 <= CORPSE_MATCH_DIST2 and (bestDist2 == nil or dist2 < bestDist2) then
+                bestIndex = i
+                bestDist2 = dist2
+            end
+        end
+    end
+
+    if not bestIndex then return nil, "none", -1 end
+    local death = table.remove(recentDeaths, bestIndex)
+    return death.id, "position", math.sqrt(bestDist2 or 0)
+end
+
 local function onDeadBodySpawn(body)
-    local id = modDataBrainId(body)
-    if not id then return end
+    local id, source, distance = resolveCorpseId(body)
+    if not id then
+        print("[LCC][BanditsDeathLoot][CORPSE_UNMATCHED] no recent Bandit death matched body")
+        return
+    end
+
     local snapshot = snapshots[id]
     if not snapshot then return end
 
     print(string.format(
-        "[LCC][BanditsDeathLoot][CORPSE] id=%s corpseItems=%d corpseWorn=%d corpseVisuals=%d inventoryTypes=%s wornTypes=%s %s",
+        "[LCC][BanditsDeathLoot][CORPSE] id=%s match=%s matchDist=%.3f corpseItems=%d corpseWorn=%d corpseVisuals=-1 inventoryTypes=%s wornTypes=%s %s",
         id,
+        source,
+        distance or -1,
         corpseContainerCount(body),
         wornCount(body),
-        itemVisualCount(body),
         corpseInventoryTypes(body),
         wornTypes(body),
         formatBrain(snapshot)
@@ -381,7 +411,7 @@ local function installLateObservers()
         Guard.protect(FEATURE, "observe Bandit corpse contents", onDeadBodySpawn, body)
     end)
 
-    print("[LCC][BanditsDeathLoot][LATE_INIT] post-cleanup and corpse observers registered")
+    print("[LCC][BanditsDeathLoot][LATE_INIT] post-cleanup and positional corpse observers registered")
 end
 
 Guard.install {
@@ -402,13 +432,13 @@ Guard.install {
                 local snapshot, id = snapshotFor(zombie, brain)
                 if snapshot then
                     snapshot.seq = (snapshot.seq or 0) + 1
-                    snapshot.before = captureRuntime(zombie, true)
+                    snapshot.before = captureRuntime(zombie)
                 end
 
                 local result = pack(Bandit.__LCCDeathLootDiagnosticsOriginal(zombie, brain, ...))
 
                 if snapshot then
-                    snapshot.after = captureRuntime(zombie, true)
+                    snapshot.after = captureRuntime(zombie)
                     snapshots[id] = snapshot
                 end
 
@@ -416,18 +446,14 @@ Guard.install {
             end
         end
 
-        -- Registered now (shared-Lua phase): expected to run before BanditUpdate's
-        -- client-side cleanup handler.
         Events.OnZombieDead.Add(function(zombie)
             Guard.protect(FEATURE, "observe Bandit death before upstream cleanup", onZombieDeadPreCleanup, zombie)
         end)
 
-        -- Registered at game start: expected to run after BanditUpdate.lua has
-        -- installed its own OnZombieDead and OnDeadBodySpawn handlers.
         Events.OnGameStart.Add(function()
             Guard.protect(FEATURE, "register late death observers", installLateObservers)
         end)
 
-        print("[LCC][BanditsDeathLoot][INIT] four-stage death tracing active; no inventory mutation")
+        print("[LCC][BanditsDeathLoot][INIT] four-stage death tracing active; native death queue probing disabled; no inventory mutation")
     end,
 }
