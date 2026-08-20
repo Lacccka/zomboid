@@ -1,10 +1,12 @@
--- Admin/debug context-menu helper for spawning one Bandits NPC at a chosen square.
+-- Admin/debug context-menu helper for spawning a small Bandits stress-test group.
 -- Uses Bandits' own Spawner/Clan server command path; no NPC construction is
--- duplicated here.
+-- duplicated here. Five independent size=1 requests are intentional: upstream
+-- spawnGroup caps one Clan request to the number of unique profiles in a clan.
 if isServer() then return end
 
 local Guard = require "LCC/Guard"
 local FEATURE = "bandits.admin-spawn-menu"
+local SPAWN_COUNT = 5
 
 Guard.safeRequire(FEATURE, "BanditCustom")
 Guard.safeRequire(FEATURE, "BanditCompatibility")
@@ -66,23 +68,82 @@ local function getClickedSquare(player, worldobjects)
     return nil
 end
 
-local function spawnOneBandit(player, square, cid)
+local function tableSize(tab)
+    if type(tab) ~= "table" then return 0 end
+    local count = 0
+    for _ in pairs(tab) do count = count + 1 end
+    return count
+end
+
+local function squareIsFree(square)
+    if not square then return false end
+    local ok, free = pcall(function()
+        return square:isFree(false)
+    end)
+    return ok and free == true
+end
+
+local function getSpawnSquares(player, clickedSquare, count)
+    local result = {}
+    if not player or not clickedSquare then return result end
+
+    local cell = player:getCell()
+    if not cell then return result end
+
+    local x = clickedSquare:getX()
+    local y = clickedSquare:getY()
+    local z = clickedSquare:getZ()
+
+    -- Prefer a compact ring around the clicked tile so the five NPCs do not
+    -- occupy one exact coordinate. The clicked tile remains a fallback.
+    local offsets = {
+        {0, 0},
+        {1, 0}, {-1, 0}, {0, 1}, {0, -1},
+        {1, 1}, {1, -1}, {-1, 1}, {-1, -1},
+        {2, 0}, {-2, 0}, {0, 2}, {0, -2},
+    }
+
+    for i = 1, #offsets do
+        if #result >= count then break end
+        local ox, oy = offsets[i][1], offsets[i][2]
+        local square = cell:getGridSquare(x + ox, y + oy, z)
+        if square and (i == 1 or squareIsFree(square)) then
+            result[#result + 1] = square
+        end
+    end
+
+    while #result < count do
+        result[#result + 1] = clickedSquare
+    end
+
+    return result
+end
+
+local function spawnBanditBatch(player, square, cid)
     if not player or not square or not cid then return end
     if type(sendClientCommand) ~= "function" then return end
 
-    local args = {
-        cid = cid,
-        x = square:getX(),
-        y = square:getY(),
-        z = square:getZ(),
-        program = "Bandit",
-        size = 1,
-    }
+    local spawnSquares = getSpawnSquares(player, square, SPAWN_COUNT)
+    if #spawnSquares == 0 then return end
 
-    sendClientCommand(player, "Spawner", "Clan", args)
+    for i = 1, SPAWN_COUNT do
+        local spawnSquare = spawnSquares[i]
+        local args = {
+            cid = cid,
+            x = spawnSquare:getX(),
+            y = spawnSquare:getY(),
+            z = spawnSquare:getZ(),
+            program = "Bandit",
+            size = 1,
+        }
+        sendClientCommand(player, "Spawner", "Clan", args)
+    end
+
     print(string.format(
-        "[LCC][BanditsSpawn] requested cid=%s at %d,%d,%d",
-        tostring(cid), args.x, args.y, args.z
+        "[LCC][BanditsSpawn] requested count=%d cid=%s around %d,%d,%d",
+        SPAWN_COUNT,
+        tostring(cid),
+        square:getX(), square:getY(), square:getZ()
     ))
 end
 
@@ -97,7 +158,7 @@ local function addSpawnMenu(playerID, context, worldobjects, test)
     local clans = BanditCustom.ClanGetAllSorted()
     if type(clans) ~= "table" then return end
 
-    local root = context:addOption("[LCC TEST] Spawn 1 Bandit")
+    local root = context:addOption("[LCC TEST] Spawn 5 Bandits")
     local submenu = context:getNew(context)
     context:addSubMenu(root, submenu)
 
@@ -106,7 +167,17 @@ local function addSpawnMenu(playerID, context, worldobjects, test)
         if cid and clan and clan.general then
             count = count + 1
             local name = clan.general.name or tostring(cid)
-            submenu:addOption("Clan " .. tostring(name), player, spawnOneBandit, square, cid)
+            local profiles = BanditCustom.GetFromClan(cid)
+            local profileCount = tableSize(profiles)
+            local label = string.format("Clan %s [profiles: %d]", tostring(name), profileCount)
+
+            local option = submenu:addOption(label, player, spawnBanditBatch, square, cid)
+            if profileCount == 0 then
+                -- Bandits' spawnGroup has nothing to select for such a clan and
+                -- silently spawns zero NPCs. Keep it visible but explain it by
+                -- disabling the impossible test entry.
+                option.notAvailable = true
+            end
         end
     end
 
@@ -122,7 +193,8 @@ Guard.install {
     validate = function()
         if type(BanditCustom) ~= "table"
                 or type(BanditCustom.Load) ~= "function"
-                or type(BanditCustom.ClanGetAllSorted) ~= "function" then
+                or type(BanditCustom.ClanGetAllSorted) ~= "function"
+                or type(BanditCustom.GetFromClan) ~= "function" then
             return false, "BanditCustom clan API is unavailable"
         end
         if not Events or not Events.OnPreFillWorldObjectContextMenu then
