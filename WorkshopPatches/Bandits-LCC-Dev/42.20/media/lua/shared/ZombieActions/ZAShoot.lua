@@ -67,11 +67,11 @@ ZombieActions.Shoot.onComplete = function(bandit, task)
     local volume = weaponItem:getSoundVolume()
     wsm:addSound(zombie, math.floor(sx), math.floor(sy), math.floor(sz), radius, volume, false)]]
 
-    -- alert nearby zombies
-
-    local patched = zombie.isBanditPatch
+    -- Alert nearby zombies without constructing a vanilla zombie -> Bandit
+    -- character relationship. B42 AttackState assumes a zombie character target
+    -- has player semantics in paths that are unsafe for Bandits (IsoZombie NPCs).
+    -- Preserve the gunshot response by sending idle zombies to the sound origin.
     local radius = weaponItem:getSoundRadius()
-    local volume = weaponItem:getSoundVolume()
     local zombieList = BanditZombie.CacheLightZ
     for id, zombie in pairs(zombieList) do
         local dist = math.abs(sx - zombie.x) + math.abs(sy - zombie.y)
@@ -80,10 +80,11 @@ ZombieActions.Shoot.onComplete = function(bandit, task)
             if zombie and not zombie:isMoving() then
                 local asn = zombie:getActionStateName()
                 if asn == "idle" then
-                    zombie:spottedNew(shooter, true)
-                    zombie:addAggro(shooter, 1)
-                    zombie:setTarget(shooter)
-                    -- zombie:pathToLocationF(sx, sy, sz)
+                    zombie:pathToLocationF(sx, sy, sz)
+                    local stats = rawget(_G, "LCC_BanditsRelationshipStats")
+                    if stats then
+                        stats.shotCoordinateAlerts = (stats.shotCoordinateAlerts or 0) + 1
+                    end
                 end
             end
         end
