@@ -1,30 +1,33 @@
 -- Client-side guard for the Bandits zombie -> NPC vanilla AttackState path.
 --
--- B42.20.3 testing proved that bAttack is a read-only animation callback
--- variable, so the former zombie:setVariable("bAttack", false) experiment could
--- never block the Java AttackState transition. The dangerous condition is a
--- normal IsoZombie holding a Bandit (also an IsoZombie) as its vanilla target.
+-- B42.20.3 exposes bAttack as a read-only animation callback variable, so this
+-- experiment works at the target-side engine seam instead. Bandits already uses
+-- setZombiesDontAttack(true) during its close-range custom Bite/BiteLow path; LCC
+-- asserts the same engine flag earlier for Bandit IsoZombie targets.
 --
--- Bandits already has its own zombie -> Bandit navigation and Bite/BiteLow
--- simulation through BanditZombie.CacheLightB. It also calls
--- bandit:setZombiesDontAttack(true), but only once close-range custom bite logic
--- is already running. This guard moves that target-side engine flag earlier and
--- keeps it asserted for the Bandit's lifetime. It does not rewrite zombie
--- targets, action states, bump types, bAttack, damage, infection, or Bandits'
--- custom bite bookkeeping.
+-- This file deliberately uses a v2 Guard feature id. Older local test copies may
+-- still contain the former experimental guard; sharing its feature id could make
+-- Guard.install() treat this implementation as already installed and silently
+-- skip it. The log namespace remains BanditsAttackGuard for easy comparison.
 if isServer() then return end
 
 local Guard = require "LCC/Guard"
-local FEATURE = "bandits.attack-state-guard"
+local FEATURE = "bandits.attack-state-target-guard-v2"
 local HEARTBEAT_MS = 15000
 local HEARTBEAT_CHECK_EVERY_UPDATES = 512
 
-Guard.safeRequire(FEATURE, "Bandit")
+print("[LCC][BanditsAttackGuard][BOOT] target-side guard file loaded feature=" .. FEATURE)
+
 Guard.safeRequire(FEATURE, "BanditUtils")
-if not Guard.isEnabled(FEATURE) then return end
+if not Guard.isEnabled(FEATURE) then
+    local state = Guard.status(FEATURE)
+    print("[LCC][BanditsAttackGuard][BOOT_DISABLED] reason=" .. tostring(state and state.reason or "unknown"))
+    return
+end
 
 local trackedAttackers = setmetatable({}, { __mode = "k" })
 local protectedBandits = setmetatable({}, { __mode = "k" })
+local applyVisualsHookInstalled = false
 local stats = {
     zombieUpdates = 0,
     protectedBandits = 0,
@@ -38,12 +41,10 @@ local function nowMs()
     if type(getTimestampMs) == "function" then
         return getTimestampMs()
     end
-
     local gameTime = getGameTime and getGameTime()
     if gameTime then
         return math.floor(gameTime:getWorldAgeHours() * 3600000)
     end
-
     return 0
 end
 
@@ -98,57 +99,43 @@ local function isCustomBite(zombie, bump)
         and (bump == "Bite" or bump == "BiteLow")
 end
 
-local function readProtectedFlag(bandit)
-    local ok, value = pcall(function()
-        return bandit:isZombiesDontAttack()
-    end)
-    if ok then return value == true end
-    return nil
-end
-
-local function protectionString(bandit)
-    local value = readProtectedFlag(bandit)
-    if value == nil then
-        return protectedBandits[bandit] and "asserted-unreadable" or "unknown"
-    end
-    return boolString(value)
-end
-
-local function protectBandit(bandit)
+local function protectBandit(bandit, force)
     if not isBandit(bandit) then return false end
 
-    local before = readProtectedFlag(bandit)
-    local alreadyAsserted = protectedBandits[bandit] == true
-
-    -- If the getter is not exposed to Lua, trust the successful setter call and
-    -- avoid calling it on every zombie update. If the getter is exposed and
-    -- reports false later, reassert the flag.
-    if before == false or (before == nil and not alreadyAsserted) then
-        local ok, err = pcall(function()
-            bandit:setZombiesDontAttack(true)
-        end)
-        if not ok then
-            error("setZombiesDontAttack(true) failed for Bandit " .. characterId(bandit) .. ": " .. tostring(err))
-        end
+    local first = protectedBandits[bandit] ~= true
+    if first or force then
+        -- Do not probe isZombiesDontAttack(). Java/Kahlua binding failures can be
+        -- logged even when wrapped in Lua pcall. The setter is the upstream-used
+        -- API and is sufficient for this experiment.
+        bandit:setZombiesDontAttack(true)
     end
 
-    local after = readProtectedFlag(bandit)
-    if after == false then
-        error("setZombiesDontAttack(true) remained false on Bandit " .. characterId(bandit))
-    end
-
-    if not alreadyAsserted then
+    if first then
         protectedBandits[bandit] = true
         stats.protectedBandits = stats.protectedBandits + 1
         print(string.format(
-            "[LCC][BanditsAttackGuard][PROTECT_TARGET] target=%s before=%s after=%s",
-            characterId(bandit),
-            before == nil and "unreadable" or boolString(before),
-            after == nil and "unreadable" or boolString(after)
+            "[LCC][BanditsAttackGuard][PROTECT_TARGET] target=%s asserted=true",
+            characterId(bandit)
         ))
     end
 
     return true
+end
+
+local function tryInstallApplyVisualsHook()
+    if applyVisualsHookInstalled then return true end
+    if type(Bandit) ~= "table" or type(Bandit.ApplyVisuals) ~= "function" then
+        return false
+    end
+
+    local ok = Guard.wrapBefore(FEATURE, Bandit, "ApplyVisuals", function(bandit)
+        protectBandit(bandit, true)
+    end)
+    if ok then
+        applyVisualsHookInstalled = true
+        print("[LCC][BanditsAttackGuard][EARLY_HOOK] Bandit.ApplyVisuals target protection installed")
+    end
+    return ok == true
 end
 
 local function maybeHeartbeat()
@@ -161,12 +148,13 @@ local function maybeHeartbeat()
     lastHeartbeat = now
 
     print(string.format(
-        "[LCC][BanditsAttackGuard][SUMMARY] updates=%d protectedBandits=%d targetLeaks=%d bAttackObserved=%d attackStateObserved=%d",
+        "[LCC][BanditsAttackGuard][SUMMARY] updates=%d protectedBandits=%d targetLeaks=%d bAttackObserved=%d attackStateObserved=%d earlyHook=%s",
         stats.zombieUpdates,
         stats.protectedBandits,
         stats.targetLeaks,
         stats.bAttackObserved,
-        stats.attackStateObserved
+        stats.attackStateObserved,
+        boolString(applyVisualsHookInstalled)
     ))
 end
 
@@ -179,7 +167,7 @@ local function observeZombie(zombie)
     if not zombie then return end
 
     if isBandit(zombie) then
-        protectBandit(zombie)
+        protectBandit(zombie, false)
         return
     end
 
@@ -189,9 +177,9 @@ local function observeZombie(zombie)
         return
     end
 
-    -- Assert the flag again before collecting a leak. This handles a Bandit
-    -- that was spawned/reused before our own OnZombieUpdate saw it.
-    protectBandit(target)
+    -- Reassert on every observed vanilla target leak. This is intentionally
+    -- narrow: target/aggro/pathing/state/bump/custom-bite data are not rewritten.
+    protectBandit(target, true)
 
     local asn = attackStateName(zombie)
     local bump = bumpType(zombie)
@@ -204,15 +192,14 @@ local function observeZombie(zombie)
     if not previous or previous.target ~= target then
         stats.targetLeaks = stats.targetLeaks + 1
         print(string.format(
-            "[LCC][BanditsAttackGuard][TARGET_LEAK] attacker=%s target=%s state=%s bAttack=%s noLunge=%s bump=%s customBite=%s targetProtected=%s",
+            "[LCC][BanditsAttackGuard][TARGET_LEAK] attacker=%s target=%s state=%s bAttack=%s noLunge=%s bump=%s customBite=%s targetProtected=true",
             characterId(zombie),
             characterId(target),
             asn,
             boolString(bAttack),
             boolString(noLungeAttack),
             bump,
-            boolString(customBite),
-            protectionString(target)
+            boolString(customBite)
         ))
     end
 
@@ -223,14 +210,13 @@ local function observeZombie(zombie)
         ) then
         stats.bAttackObserved = stats.bAttackObserved + 1
         print(string.format(
-            "[LCC][BanditsAttackGuard][READ_ONLY_BATTACK] attacker=%s target=%s state=%s bAttack=true noLunge=%s bump=%s customBite=%s targetProtected=%s",
+            "[LCC][BanditsAttackGuard][READ_ONLY_BATTACK] attacker=%s target=%s state=%s bAttack=true noLunge=%s bump=%s customBite=%s targetProtected=true",
             characterId(zombie),
             characterId(target),
             asn,
             boolString(noLungeAttack),
             bump,
-            boolString(customBite),
-            protectionString(target)
+            boolString(customBite)
         ))
     end
 
@@ -241,15 +227,14 @@ local function observeZombie(zombie)
         ) then
         stats.attackStateObserved = stats.attackStateObserved + 1
         print(string.format(
-            "[LCC][BanditsAttackGuard][ESCAPED_ATTACK_STATE] attacker=%s target=%s state=%s bAttack=%s noLunge=%s bump=%s customBite=%s targetProtected=%s diagnosticOnly=true",
+            "[LCC][BanditsAttackGuard][ESCAPED_ATTACK_STATE] attacker=%s target=%s state=%s bAttack=%s noLunge=%s bump=%s customBite=%s targetProtected=true diagnosticOnly=true",
             characterId(zombie),
             characterId(target),
             asn,
             boolString(bAttack),
             boolString(noLungeAttack),
             bump,
-            boolString(customBite),
-            protectionString(target)
+            boolString(customBite)
         ))
     end
 
@@ -263,9 +248,6 @@ end
 Guard.install {
     id = FEATURE,
     validate = function()
-        if type(Bandit) ~= "table" or type(Bandit.ApplyVisuals) ~= "function" then
-            return false, "Bandit.ApplyVisuals is unavailable"
-        end
         if type(BanditUtils) ~= "table" or type(BanditUtils.GetCharacterID) ~= "function" then
             return false, "BanditUtils.GetCharacterID is unavailable"
         end
@@ -275,9 +257,7 @@ Guard.install {
         return true
     end,
     install = function()
-        Guard.wrapBefore(FEATURE, Bandit, "ApplyVisuals", function(bandit)
-            protectBandit(bandit)
-        end)
+        tryInstallApplyVisualsHook()
 
         Events.OnZombieUpdate.Add(function(zombie)
             if Guard.isEnabled(FEATURE) then
@@ -285,8 +265,18 @@ Guard.install {
             end
         end)
 
+        if Events.OnGameStart then
+            Events.OnGameStart.Add(function()
+                if Guard.isEnabled(FEATURE) and not applyVisualsHookInstalled then
+                    Guard.protect(FEATURE, "install delayed ApplyVisuals hook", tryInstallApplyVisualsHook)
+                end
+            end)
+        end
+
         print(string.format(
-            "[LCC][BanditsAttackGuard][INIT] target-side setZombiesDontAttack guard active; bAttack remains observe-only; heartbeat=%dms",
+            "[LCC][BanditsAttackGuard][INIT] target-side guard active feature=%s earlyHook=%s heartbeat=%dms",
+            FEATURE,
+            boolString(applyVisualsHookInstalled),
             HEARTBEAT_MS
         ))
     end,
