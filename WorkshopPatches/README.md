@@ -68,7 +68,7 @@ Each child directory is a separate Workshop staging directory with its own `work
 
 Published items keep their assigned Workshop ID in `workshop.txt`. `NPCCombatExperimental` is published as Workshop item `3786817782`, and the grouped audit pins that ID so it cannot silently return to staging `id=0` or drift to another item.
 
-The `NPCCombatExperimental` preview is currently not versioned in this repository, so the grouped audit temporarily exempts only this published item from the local `preview.png` requirement. Other published patch items keep the existing preview-file contract.
+Every published split item, including `NPCCombatExperimental`, keeps a non-empty `preview.png` in its Workshop root. The NPC combat preview is tracked through Git LFS and is subject to the same preview-file audit contract as the other published patches.
 
 ## Migration rule
 
