@@ -222,7 +222,7 @@ local function observeZombie(zombie)
         ) then
         stats.attackStateObserved = stats.attackStateObserved + 1
         print(string.format(
-            "[LCC][BanditsAttackGuard][ESCAPED_ATTACK_STATE] attacker=%s target=%s state=%s bAttack=%s noLunge=%s bump=%s customBite=%s targetProtected=%s",
+            "[LCC][BanditsAttackGuard][ESCAPED_ATTACK_STATE] attacker=%s target=%s state=%s bAttack=%s noLunge=%s bump=%s customBite=%s targetProtected=%s diagnosticOnly=true",
             characterId(zombie),
             characterId(target),
             asn,
