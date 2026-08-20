@@ -19,7 +19,23 @@ if (-not (Test-Path -LiteralPath $targetPath -PathType Leaf)) {
 $content = [System.IO.File]::ReadAllText($targetPath)
 $newline = if ($content.Contains("`r`n")) { "`r`n" } else { "`n" }
 
-$originalLines = @(
+$headerOriginalLines = @(
+    'require "BanditZombie"',
+    '',
+    'local sum1 = 0'
+)
+
+$headerPocLines = @(
+    'require "BanditZombie"',
+    '',
+    '-- [LCC POC] Local B42.20.3 reference implementation; never ship this upstream file in the Workshop patch.',
+    'LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-pursuit-v1"',
+    'print("[LCC][BanditsAttackPoC][INIT] upstream-pursuit-v1 active; vanilla spotted/addAggro/setTarget/setAttackedBy bridge disabled")',
+    '',
+    'local sum1 = 0'
+)
+
+$bridgeOriginalLines = @(
     '                    if zombie and bandit then',
     '                        zombie:spotted(bandit, true)',
     '                        zombie:addAggro(bandit, 1)',
@@ -34,23 +50,18 @@ $originalLines = @(
     '                    end'
 )
 
-$pocLines = @(
+$bridgePocLines = @(
     '                    if zombie and bandit then',
-    '                        -- [LCC POC] B42.20.3: keep Bandits'' own pursuit / Bite pipeline',
-    '                        -- without constructing a vanilla zombie -> Bandit combat target.',
-    '                        -- The Bandit is still an IsoZombie, so vanilla AttackState must not',
-    '                        -- be allowed to treat it as the player-like target used by this mod.',
-    '                        if not LCC_BANDITS_ATTACK_BRIDGE_POC then',
-    '                            LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-pursuit-v1"',
-    '                            print("[LCC][BanditsAttackPoC][INIT] upstream-pursuit-v1 active; vanilla spotted/addAggro/setTarget/setAttackedBy bridge disabled")',
-    '                        end',
-    '',
+    '                        -- [LCC POC] Keep Bandits'' own pursuit / Bite pipeline without',
+    '                        -- constructing a vanilla zombie -> Bandit combat relationship.',
     '                        zombie:pathToCharacter(bandit)',
     '                    end'
 )
 
-$original = [string]::Join($newline, $originalLines)
-$poc = [string]::Join($newline, $pocLines)
+$headerOriginal = [string]::Join($newline, $headerOriginalLines)
+$headerPoc = [string]::Join($newline, $headerPocLines)
+$bridgeOriginal = [string]::Join($newline, $bridgeOriginalLines)
+$bridgePoc = [string]::Join($newline, $bridgePocLines)
 
 function Count-Occurrences([string]$Text, [string]$Needle) {
     if ([string]::IsNullOrEmpty($Needle)) { return 0 }
@@ -63,36 +74,42 @@ function Count-Occurrences([string]$Text, [string]$Needle) {
     return $count
 }
 
-$originalCount = Count-Occurrences $content $original
-$pocCount = Count-Occurrences $content $poc
+$headerOriginalCount = Count-Occurrences $content $headerOriginal
+$headerPocCount = Count-Occurrences $content $headerPoc
+$bridgeOriginalCount = Count-Occurrences $content $bridgeOriginal
+$bridgePocCount = Count-Occurrences $content $bridgePoc
+
+$isOriginal = $headerOriginalCount -eq 1 -and $headerPocCount -eq 0 -and $bridgeOriginalCount -eq 1 -and $bridgePocCount -eq 0
+$isPoc = $headerOriginalCount -eq 0 -and $headerPocCount -eq 1 -and $bridgeOriginalCount -eq 0 -and $bridgePocCount -eq 1
 
 if ($Revert) {
-    if ($originalCount -eq 1 -and $pocCount -eq 0) {
+    if ($isOriginal) {
         Write-Host "Bandits AttackState PoC is already reverted."
         exit 0
     }
-    if ($pocCount -ne 1 -or $originalCount -ne 0) {
-        throw "Refusing to revert: expected exactly one LCC PoC block and no original bridge block. original=$originalCount poc=$pocCount"
+    if (-not $isPoc) {
+        throw "Refusing to revert: BanditUpdate.lua is neither the audited original nor the complete LCC PoC state."
     }
 
-    $updated = $content.Replace($poc, $original)
+    $updated = $content.Replace($headerPoc, $headerOriginal).Replace($bridgePoc, $bridgeOriginal)
     [System.IO.File]::WriteAllText($targetPath, $updated, [System.Text.UTF8Encoding]::new($false))
     Write-Host "Reverted Bandits AttackState PoC in $relativePath"
     exit 0
 }
 
-if ($pocCount -eq 1 -and $originalCount -eq 0) {
+if ($isPoc) {
     Write-Host "Bandits AttackState PoC is already applied."
     exit 0
 }
-if ($originalCount -ne 1 -or $pocCount -ne 0) {
-    throw "Refusing to apply: upstream block does not match the audited B42.20 snapshot. original=$originalCount poc=$pocCount"
+if (-not $isOriginal) {
+    throw "Refusing to apply: BanditUpdate.lua is neither the audited original nor the complete LCC PoC state. Upstream may have changed."
 }
 
-$updated = $content.Replace($original, $poc)
+$updated = $content.Replace($headerOriginal, $headerPoc).Replace($bridgeOriginal, $bridgePoc)
 [System.IO.File]::WriteAllText($targetPath, $updated, [System.Text.UTF8Encoding]::new($false))
 
 Write-Host "Applied Bandits AttackState upstream PoC to $relativePath"
+Write-Host "The PoC marker is active from BanditUpdate.lua load time."
 Write-Host "The four-call vanilla bridge is replaced by pathToCharacter(bandit)."
-Write-Host "NPCCombatExperimental will detect marker upstream-pursuit-v1 and disable its v3 setTarget(nil) intervention for an uncontaminated test."
-Write-Host "Use -Revert to restore the exact original bridge block."
+Write-Host "NPCCombatExperimental will run observation-only while marker upstream-pursuit-v1 is active."
+Write-Host "Use -Revert to restore the exact original header and bridge blocks."
