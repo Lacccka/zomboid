@@ -29,6 +29,53 @@ local function hasStaffAccess(player)
         or normalized == "moderator"
 end
 
+local function tableCount(value)
+    if type(value) ~= "table" then return 0 end
+    local count = 0
+    for _ in pairs(value) do count = count + 1 end
+    return count
+end
+
+local function valueString(value, fallback)
+    if value == nil then return fallback or "<none>" end
+    local text = tostring(value):gsub("%s+", "_")
+    return text
+end
+
+local function bagName(brain)
+    if not brain or brain.bag == nil then return "<none>" end
+    if type(brain.bag) == "table" then
+        return valueString(brain.bag.name, "<unnamed>")
+    end
+    return valueString(brain.bag, "<none>")
+end
+
+local function weaponName(brain, slot)
+    local weapons = brain and brain.weapons
+    if type(weapons) ~= "table" then return "<none>" end
+    if slot == "melee" then
+        return valueString(weapons.melee, "<none>")
+    end
+    local entry = weapons[slot]
+    if type(entry) ~= "table" then return "<none>" end
+    return valueString(entry.name, "<none>")
+end
+
+local function profileSummary(brain)
+    if type(brain) ~= "table" then return "brain=<missing>" end
+    return string.format(
+        "cid=%s bid=%s fullname=%s clothing=%d bag=%s melee=%s primary=%s secondary=%s",
+        valueString(brain.cid or brain.clan, "<none>"),
+        valueString(brain.bid, "<none>"),
+        valueString(brain.fullname, "<none>"),
+        tableCount(brain.clothing),
+        bagName(brain),
+        weaponName(brain, "melee"),
+        weaponName(brain, "primary"),
+        weaponName(brain, "secondary")
+    )
+end
+
 local function getBanditBrainForZombie(zombie)
     if not zombie or not zombie.getPersistentOutfitID then return nil, nil end
 
@@ -42,7 +89,7 @@ local function getBanditBrainForZombie(zombie)
     return id, cluster[id]
 end
 
-local function collectBanditIdsNear(x, y, z, radius)
+local function collectBanditsNear(x, y, z, radius)
     local result = {}
     local count = 0
     local cell = getCell()
@@ -64,7 +111,7 @@ local function collectBanditIdsNear(x, y, z, radius)
                     if id ~= nil and type(brain) == "table" then
                         local key = tostring(id)
                         if not result[key] then
-                            result[key] = true
+                            result[key] = brain
                             count = count + 1
                         end
                     end
@@ -117,7 +164,7 @@ local function handleSpawnOne(player, args)
         return
     end
 
-    local before, beforeCount = collectBanditIdsNear(x, y, z, VERIFY_RADIUS)
+    local before, beforeCount = collectBanditsNear(x, y, z, VERIFY_RADIUS)
 
     print(string.format(
         "[LCC][BanditsSpawn][SERVER_BEGIN] batch=%s index=%d/%d cid=%s at=%d,%d,%d nearbyBefore=%d",
@@ -154,7 +201,7 @@ local function handleSpawnOne(player, args)
         end
     end
 
-    local after, afterCount = collectBanditIdsNear(x, y, z, VERIFY_RADIUS)
+    local after, afterCount = collectBanditsNear(x, y, z, VERIFY_RADIUS)
     local created = diffIds(before, after)
 
     print(string.format(
@@ -167,6 +214,17 @@ local function handleSpawnOne(player, args)
         #created,
         #created > 0 and table.concat(created, ",") or "none"
     ))
+
+    for _, id in ipairs(created) do
+        print(string.format(
+            "[LCC][BanditsSpawn][SERVER_CREATED] batch=%s index=%d/%d id=%s %s",
+            batch,
+            index,
+            total,
+            id,
+            profileSummary(after[id])
+        ))
+    end
 end
 
 local function onClientCommand(module, command, player, args)
