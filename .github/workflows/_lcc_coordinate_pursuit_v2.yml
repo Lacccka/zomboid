@@ -92,14 +92,12 @@ end
           text = text.replace(far_v1, far_v2, 1)
           text = text.replace(close_v1, close_v2, 1)
 
-          # Active code must no longer call pathToCharacter(bandit). Commented historical
-          # lines may still exist, so validate the two audited active blocks specifically.
           if far_v1 in text or close_v1 in text:
               raise SystemExit("Active pathToCharacter(bandit) pursuit survived v2 transformation")
           if text.count('LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-coordinate-pursuit-v2"') != 1:
               raise SystemExit("v2 marker missing or duplicated")
-          if text.count("PathZombieToBanditLocation(zombie, banditCached)") != 2:
-              raise SystemExit("Expected exactly two coordinate pursuit call sites")
+          if text.count("PathZombieToBanditLocation(zombie, banditCached)") != 3:
+              raise SystemExit("Expected helper definition plus exactly two coordinate pursuit call sites")
 
           bandit_path.write_text(text, encoding="utf-8", newline="")
 
