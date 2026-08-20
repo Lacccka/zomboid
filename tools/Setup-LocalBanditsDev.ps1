@@ -124,7 +124,7 @@ function Update-ServerIni([string]$Path) {
         [System.IO.File]::WriteAllLines($Path, $lines, [System.Text.UTF8Encoding]::new($false))
         Write-Host "Removed Workshop item $WorkshopId from: $Path"
     } else {
-        Write-Host "Server ini already excludes Workshop item $WorkshopId: $Path"
+        Write-Host "Server ini already excludes Workshop item ${WorkshopId}: $Path"
     }
 }
 
