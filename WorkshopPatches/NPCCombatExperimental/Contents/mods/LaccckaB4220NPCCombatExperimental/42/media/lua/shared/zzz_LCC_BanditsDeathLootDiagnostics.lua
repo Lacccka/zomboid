@@ -66,7 +66,7 @@ end
 local function deathQueueCount(zombie)
     if not zombie then return -1 end
 
-    -- There is no documented B42 getter paired with addItemToSpawnAtDeath().
+    -- There is no documented B42 getter paired with the death-item enqueue API.
     -- Probe both likely access paths behind pcall; -1 means unavailable rather
     -- than an empty queue.
     local okGetter, queue = pcall(function()
@@ -264,7 +264,7 @@ local function onZombieDeadPreCleanup(zombie)
 
     printLastUpdateStages(id, snapshot)
     print(string.format(
-        "[LCC][BanditsDeathLoot][DEAD_PRE_CLEANUP] id=%s %s inventoryTypes=%s wornTypes=%s %s",
+        "[LCC][BanditsDeathLoot][DEAD] phase=PRE_CLEANUP id=%s %s inventoryTypes=%s wornTypes=%s %s",
         id,
         formatRuntime("pre", captureRuntime(zombie, true)),
         inventoryTypes(zombie),
@@ -279,7 +279,7 @@ local function onZombieDeadPostCleanup(zombie)
     if not snapshot then return end
 
     print(string.format(
-        "[LCC][BanditsDeathLoot][DEAD_POST_CLEANUP] id=%s banditFlag=%s %s inventoryTypes=%s wornTypes=%s %s",
+        "[LCC][BanditsDeathLoot][DEAD] phase=POST_CLEANUP id=%s banditFlag=%s %s inventoryTypes=%s wornTypes=%s %s",
         id,
         tostring(isBandit(zombie)),
         formatRuntime("post", captureRuntime(zombie, true)),
