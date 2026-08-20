@@ -1,16 +1,21 @@
 param(
     [string]$RepoRoot,
+    [string]$TargetFile,
     [switch]$Revert
 )
 
 $ErrorActionPreference = "Stop"
 
-if (-not $RepoRoot) {
-    $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-}
-
 $relativePath = "3268487204/mods/Bandits/42.20/media/lua/client/BanditUpdate.lua"
-$targetPath = Join-Path $RepoRoot $relativePath
+
+if ($TargetFile) {
+    $targetPath = (Resolve-Path -LiteralPath $TargetFile).Path
+} else {
+    if (-not $RepoRoot) {
+        $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+    }
+    $targetPath = Join-Path $RepoRoot $relativePath
+}
 
 if (-not (Test-Path -LiteralPath $targetPath -PathType Leaf)) {
     throw "BanditUpdate.lua not found: $targetPath"
@@ -84,7 +89,7 @@ $isPoc = $headerOriginalCount -eq 0 -and $headerPocCount -eq 1 -and $bridgeOrigi
 
 if ($Revert) {
     if ($isOriginal) {
-        Write-Host "Bandits AttackState PoC is already reverted."
+        Write-Host "Bandits AttackState PoC is already reverted: $targetPath"
         exit 0
     }
     if (-not $isPoc) {
@@ -93,12 +98,12 @@ if ($Revert) {
 
     $updated = $content.Replace($headerPoc, $headerOriginal).Replace($bridgePoc, $bridgeOriginal)
     [System.IO.File]::WriteAllText($targetPath, $updated, [System.Text.UTF8Encoding]::new($false))
-    Write-Host "Reverted Bandits AttackState PoC in $relativePath"
+    Write-Host "Reverted Bandits AttackState PoC: $targetPath"
     exit 0
 }
 
 if ($isPoc) {
-    Write-Host "Bandits AttackState PoC is already applied."
+    Write-Host "Bandits AttackState PoC is already applied: $targetPath"
     exit 0
 }
 if (-not $isOriginal) {
@@ -108,8 +113,8 @@ if (-not $isOriginal) {
 $updated = $content.Replace($headerOriginal, $headerPoc).Replace($bridgeOriginal, $bridgePoc)
 [System.IO.File]::WriteAllText($targetPath, $updated, [System.Text.UTF8Encoding]::new($false))
 
-Write-Host "Applied Bandits AttackState upstream PoC to $relativePath"
+Write-Host "Applied Bandits AttackState upstream PoC: $targetPath"
 Write-Host "The PoC marker is active from BanditUpdate.lua load time."
 Write-Host "The four-call vanilla bridge is replaced by pathToCharacter(bandit)."
 Write-Host "NPCCombatExperimental will run observation-only while marker upstream-pursuit-v1 is active."
-Write-Host "Use -Revert to restore the exact original header and bridge blocks."
+Write-Host "Use -Revert with the same arguments to restore the exact original header and bridge blocks."
