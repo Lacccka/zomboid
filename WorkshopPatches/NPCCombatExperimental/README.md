@@ -1,8 +1,17 @@
 # Lacccka B42 NPC Combat Experimental
 
-This Workshop staging project isolates NPC-combat fixes, diagnostics and admin test tooling that are still under active investigation. Stable, already-validated runtime compatibility hooks remain in `RuntimeFixes`.
+This Workshop project isolates NPC-combat fixes, diagnostics and admin test tooling that are still under active investigation. Stable, already-validated runtime compatibility hooks remain in `RuntimeFixes`.
 
 The public package name, Mod ID and Workshop description are intentionally generic and do not reference the upstream mod. Internally, the current implementation integrates with `Bandits2` / Bandits APIs because that is the compatibility path under test. The project contains LCC-authored hooks only and must not contain complete third-party Lua files or assets.
+
+## Workshop publication
+
+- Workshop ID: `3786817782`
+- Mod ID: `LaccckaB4220NPCCombatExperimental`
+- Public title: `Lacccka B42 NPC Combat Experimental`
+- Current visibility: `public`
+
+The repository must keep this Workshop ID pinned in `workshop.txt` and in the grouped Workshop audit. The item is published independently from the stable RuntimeFixes package.
 
 ## 1. Zombie -> NPC AttackState guard
 
@@ -38,6 +47,6 @@ The spawner is test tooling, not a production gameplay feature.
 - verify ordinary zombie -> `IsoPlayer` attacks remain unchanged;
 - disable `NPCCombatExperimental` again and verify stable RuntimeFixes behavior is identical to the pre-experiment setup.
 
-## Workshop staging
+## Repository preview state
 
-The item intentionally starts with `workshop.txt` `id=0` and `visibility=private`. Assign a real Workshop ID and preview only when the experimental patch is ready to be uploaded as its own item.
+The Workshop item is already published, but `preview.png` is not currently versioned under `WorkshopPatches/NPCCombatExperimental`. Until that asset is synced into the repository, the grouped audit explicitly exempts only this item from the local preview-file check.
