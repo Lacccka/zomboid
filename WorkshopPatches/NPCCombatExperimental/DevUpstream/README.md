@@ -2,12 +2,36 @@
 
 This directory is development-only and is deliberately outside `Contents`.
 
-`Bandits/42.20/media/lua/client/BanditUpdate.lua` is the manually deployable working copy of the upstream Bandits B42.20 client file used for controlled compatibility experiments. It is not part of the source-clean Workshop package.
+`Bandits/42.20/media/lua/client/BanditUpdate.lua` is the tracked upstream B42.20 baseline used for controlled compatibility experiments. It is intentionally kept byte-for-byte identical to the repository's current upstream Bandits snapshot before an experiment is materialized, so we never test against a reconstructed or partially copied source file.
 
-Manual target on the test machine:
+## Prepare the current experimental file
+
+From the repository root run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\Apply-BanditsAttackBridgePoC.ps1
+```
+
+With no `-TargetFile`, the script now modifies this DevUpstream `BanditUpdate.lua` in the local checkout. For the current `upstream-pursuit-v1` experiment it adds the runtime marker and replaces only the audited close-range `spotted/addAggro/setTarget/setAttackedBy` bridge with `zombie:pathToCharacter(bandit)`.
+
+The resulting file to transfer manually is:
+
+`WorkshopPatches/NPCCombatExperimental/DevUpstream/Bandits/42.20/media/lua/client/BanditUpdate.lua`
+
+Copy it over the actual test Bandits file at:
 
 `<Bandits mod>/42.20/media/lua/client/BanditUpdate.lua`
 
-For the current experiment the working copy must contain marker `LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-pursuit-v1"` and replace the close-range `spotted/addAggro/setTarget/setAttackedBy` bridge with `zombie:pathToCharacter(bandit)`.
+To return the local working copy to its exact upstream baseline:
 
-After each update of upstream Bandits, refresh this working copy from the new 42.20 source before carrying compatibility changes forward.
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\Apply-BanditsAttackBridgePoC.ps1 -Revert
+```
+
+The same applicator can still patch an explicitly supplied live file with `-TargetFile` when needed.
+
+## Publication boundary
+
+`DevUpstream` is outside `Contents` and is not part of the source-clean Workshop package. Do not move this upstream file under `Contents/mods/LaccckaB4220NPCCombatExperimental`.
+
+When upstream Bandits updates, refresh this baseline from the new 42.20 source first, then carry forward only the compatibility experiment that is still required.
