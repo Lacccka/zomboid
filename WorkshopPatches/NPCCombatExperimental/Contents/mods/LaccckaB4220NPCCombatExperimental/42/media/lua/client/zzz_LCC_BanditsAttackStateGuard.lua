@@ -18,7 +18,7 @@ if isServer() then return end
 
 local Guard = require "LCC/Guard"
 local FEATURE = "bandits.attack-state-target-disconnect-v3"
-local POC_MARKER = "upstream-pursuit-v1"
+local POC_MARKER = "upstream-coordinate-pursuit-v2"
 local HEARTBEAT_MS = 15000
 local HEARTBEAT_CHECK_EVERY_UPDATES = 512
 
