@@ -3,20 +3,25 @@ name: Grouped Workshop patches audit
 on:
   push:
     paths:
-      - 'LaccckaCompatibilityPatch/**'
       - 'WorkshopPatches/**'
       - '.github/workflows/workshop-patches-audit.yml'
   pull_request:
     paths:
-      - 'LaccckaCompatibilityPatch/**'
       - 'WorkshopPatches/**'
       - '.github/workflows/workshop-patches-audit.yml'
+  workflow_dispatch:
 
 jobs:
   audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify grouped Workshop patch split
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Validate audit script syntax
+        shell: bash
+        run: bash -n WorkshopPatches/audit_split.sh
+      - name: Verify grouped Workshop patch contracts
         shell: bash
         run: bash WorkshopPatches/audit_split.sh
