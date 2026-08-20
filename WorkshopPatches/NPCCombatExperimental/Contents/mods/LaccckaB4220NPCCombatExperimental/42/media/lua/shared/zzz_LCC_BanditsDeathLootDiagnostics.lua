@@ -2,13 +2,17 @@
 --
 -- The first OnZombieDead observer is registered from shared Lua before the
 -- client BanditUpdate cleanup. A second observer is registered at OnGameStart so
--- it runs after upstream cleanup. Corpse matching prefers preserved modData but
--- can fall back to recent death coordinates because IsoDeadBody does not always
--- retain the Bandit brain id in multiplayer.
+-- it runs after upstream cleanup. Corpse matching prefers preserved modData and
+-- otherwise correlates a recent Bandit death by position.
 --
--- Important B42.20.3 finding: probing getItemsToSpawnAtDeath() from Lua emits a
--- Java/Kahlua RuntimeException even inside pcall, so this diagnostic deliberately
--- does not inspect the native death queue anymore.
+-- B42.20.3 findings incorporated here:
+--   * getItemsToSpawnAtDeath() is not safely callable from Lua and can emit a
+--     Java/Kahlua RuntimeException even inside pcall;
+--   * IsoDeadBody:getItemVisuals() is not callable with the IsoZombie signature;
+--   * array-style recent-death bookkeeping can surface a Kahlua null entry while
+--     OnDeadBodySpawn is firing. Recent deaths are therefore keyed by Bandit id.
+--
+-- This file is diagnostic-only: it does not add/remove/wear/clone inventory.
 if isServer() then return end
 
 local Guard = require "LCC/Guard"
@@ -52,8 +56,8 @@ end
 
 local function inventoryCount(character)
     if not character then return -1 end
-    local ok, inventory = pcall(function() return character:getInventory() end)
-    if not ok or not inventory then return -1 end
+    local okInventory, inventory = pcall(function() return character:getInventory() end)
+    if not okInventory or not inventory then return -1 end
     local okItems, items = pcall(function() return inventory:getItems() end)
     if not okItems or not items then return -1 end
     return safeSize(items)
@@ -61,15 +65,15 @@ end
 
 local function wornCount(character)
     if not character then return -1 end
-    local ok, worn = pcall(function() return character:getWornItems() end)
-    if not ok or not worn then return -1 end
+    local okWorn, worn = pcall(function() return character:getWornItems() end)
+    if not okWorn or not worn then return -1 end
     return safeSize(worn)
 end
 
 local function itemVisualCount(character)
     if not character or not instanceof(character, "IsoZombie") then return -1 end
-    local ok, visuals = pcall(function() return character:getItemVisuals() end)
-    if not ok or not visuals then return -1 end
+    local okVisuals, visuals = pcall(function() return character:getItemVisuals() end)
+    if not okVisuals or not visuals then return -1 end
     return safeSize(visuals)
 end
 
@@ -84,6 +88,7 @@ end
 
 local function characterId(character, brain)
     if brain and brain.id ~= nil then return tostring(brain.id) end
+
     local id = modDataBrainId(character)
     if id then return id end
 
@@ -96,6 +101,7 @@ local function characterId(character, brain)
         local ok, value = pcall(function() return character:getPersistentOutfitID() end)
         if ok and value ~= nil then return tostring(value) end
     end
+
     return "nil"
 end
 
@@ -106,7 +112,9 @@ end
 
 local function bagName(brain)
     if not brain or brain.bag == nil then return "<none>" end
-    if type(brain.bag) == "table" then return valueString(brain.bag.name, "<unnamed>") end
+    if type(brain.bag) == "table" then
+        return valueString(brain.bag.name, "<unnamed>")
+    end
     return valueString(brain.bag, "<none>")
 end
 
@@ -171,6 +179,7 @@ local function inventoryTypes(character)
 
     local size = safeSize(items)
     if size < 0 then return "<unavailable>" end
+
     local values = {}
     for i = 0, math.min(size - 1, 23) do
         local okItem, item = pcall(function() return items:get(i) end)
@@ -188,6 +197,7 @@ local function wornTypes(character)
 
     local size = safeSize(worn)
     if size < 0 then return "<unavailable>" end
+
     local values = {}
     for i = 0, math.min(size - 1, 23) do
         local okEntry, entry = pcall(function() return worn:get(i) end)
@@ -237,6 +247,7 @@ local function formatBrain(snapshot)
     if not snapshot then
         return "cid=<unknown> bid=<unknown> fullname=<unknown> expectedClothing=-1 brainLoot=-1 bag=<unknown> weapons=<unknown> clothing=<unknown>"
     end
+
     return string.format(
         "cid=%s bid=%s fullname=%s expectedClothing=%d brainLoot=%d bag=%s weapons=%s clothing=%s",
         tostring(snapshot.cid or "<unknown>"),
@@ -254,11 +265,17 @@ local function printLastUpdateStages(id, snapshot)
     if not snapshot then return end
     print(string.format(
         "[LCC][BanditsDeathLoot][BEFORE_UPDATE] id=%s seq=%d %s %s",
-        id, snapshot.seq or 0, formatRuntime("before", snapshot.before), formatBrain(snapshot)
+        id,
+        snapshot.seq or 0,
+        formatRuntime("before", snapshot.before),
+        formatBrain(snapshot)
     ))
     print(string.format(
         "[LCC][BanditsDeathLoot][AFTER_UPDATE] id=%s seq=%d %s %s",
-        id, snapshot.seq or 0, formatRuntime("after", snapshot.after), formatBrain(snapshot)
+        id,
+        snapshot.seq or 0,
+        formatRuntime("after", snapshot.after),
+        formatBrain(snapshot)
     ))
 end
 
@@ -273,9 +290,9 @@ end
 
 local function rememberRecentDeath(id, zombie)
     local x, y, z = coords(zombie)
-    if not x or not y or not z then return end
-    recentDeaths[#recentDeaths + 1] = {
-        id = id,
+    if not x or not y or not z or id == nil then return end
+    recentDeaths[tostring(id)] = {
+        id = tostring(id),
         x = x,
         y = y,
         z = z,
@@ -319,8 +336,8 @@ end
 
 local function corpseContainerCount(body)
     if not body then return -1 end
-    local ok, container = pcall(function() return body:getContainer() end)
-    if not ok or not container then return -1 end
+    local okContainer, container = pcall(function() return body:getContainer() end)
+    if not okContainer or not container then return -1 end
     local okItems, items = pcall(function() return container:getItems() end)
     if not okItems or not items then return -1 end
     return safeSize(items)
@@ -328,13 +345,14 @@ end
 
 local function corpseInventoryTypes(body)
     if not body then return "<unavailable>" end
-    local ok, container = pcall(function() return body:getContainer() end)
-    if not ok or not container then return "<unavailable>" end
+    local okContainer, container = pcall(function() return body:getContainer() end)
+    if not okContainer or not container then return "<unavailable>" end
     local okItems, items = pcall(function() return container:getItems() end)
     if not okItems or not items then return "<unavailable>" end
 
     local size = safeSize(items)
     if size < 0 then return "<unavailable>" end
+
     local values = {}
     for i = 0, math.min(size - 1, 23) do
         local okItem, item = pcall(function() return items:get(i) end)
@@ -347,38 +365,46 @@ end
 
 local function resolveCorpseId(body)
     local direct = modDataBrainId(body)
-    if direct and snapshots[direct] then return direct, "modData", 0 end
+    if direct and snapshots[direct] then
+        recentDeaths[direct] = nil
+        return direct, "modData", 0
+    end
 
     local bx, by, bz = coords(body)
     if not bx or not by or not bz then return nil, "none", -1 end
 
     local now = nowMs()
-    local bestIndex, bestDist2
-    for i = #recentDeaths, 1, -1 do
-        local death = recentDeaths[i]
-        local age = now - (death.at or now)
-        if age > CORPSE_MATCH_MS then
-            table.remove(recentDeaths, i)
-        elseif snapshots[death.id] and math.abs((death.z or 0) - bz) < 0.5 then
-            local dx = (death.x or 0) - bx
-            local dy = (death.y or 0) - by
-            local dist2 = dx * dx + dy * dy
-            if dist2 <= CORPSE_MATCH_DIST2 and (bestDist2 == nil or dist2 < bestDist2) then
-                bestIndex = i
-                bestDist2 = dist2
+    local bestId, bestDist2
+
+    for id, death in pairs(recentDeaths) do
+        if type(death) ~= "table" or death.id == nil then
+            recentDeaths[id] = nil
+        else
+            local age = now - tonumber(death.at or now)
+            if age > CORPSE_MATCH_MS then
+                recentDeaths[id] = nil
+            elseif snapshots[id] and math.abs((tonumber(death.z) or 0) - bz) < 0.5 then
+                local dx = (tonumber(death.x) or 0) - bx
+                local dy = (tonumber(death.y) or 0) - by
+                local dist2 = dx * dx + dy * dy
+                if dist2 <= CORPSE_MATCH_DIST2 and (bestDist2 == nil or dist2 < bestDist2) then
+                    bestId = id
+                    bestDist2 = dist2
+                end
             end
         end
     end
 
-    if not bestIndex then return nil, "none", -1 end
-    local death = table.remove(recentDeaths, bestIndex)
-    return death.id, "position", math.sqrt(bestDist2 or 0)
+    if not bestId then return nil, "none", -1 end
+    recentDeaths[bestId] = nil
+    return bestId, "position", math.sqrt(bestDist2 or 0)
 end
 
 local function onDeadBodySpawn(body)
     local id, source, distance = resolveCorpseId(body)
     if not id then
-        print("[LCC][BanditsDeathLoot][CORPSE_UNMATCHED] no recent Bandit death matched body")
+        -- OnDeadBodySpawn also fires for unrelated vanilla zombie corpses. Avoid
+        -- spamming one unmatched message per normal corpse.
         return
     end
 
@@ -411,7 +437,7 @@ local function installLateObservers()
         Guard.protect(FEATURE, "observe Bandit corpse contents", onDeadBodySpawn, body)
     end)
 
-    print("[LCC][BanditsDeathLoot][LATE_INIT] post-cleanup and positional corpse observers registered")
+    print("[LCC][BanditsDeathLoot][LATE_INIT] post-cleanup and keyed positional corpse observers registered")
 end
 
 Guard.install {
@@ -454,6 +480,6 @@ Guard.install {
             Guard.protect(FEATURE, "register late death observers", installLateObservers)
         end)
 
-        print("[LCC][BanditsDeathLoot][INIT] four-stage death tracing active; native death queue probing disabled; no inventory mutation")
+        print("[LCC][BanditsDeathLoot][INIT] four-stage death tracing active; native death queue probing disabled; keyed corpse matching; no inventory mutation")
     end,
 }
