@@ -12,15 +12,15 @@ Every item must keep this warning in its Workshop description:
 
 ## Items
 
-| Folder | Mod ID | Public title | Internal scope |
-| --- | --- | --- | --- |
-| `PatchCore` | `LaccckaB4220PatchCore` | Lacccka B42 Patch Core | Recommended shared guarded-patch helper used by the functional patches. |
-| `RuntimeFixes` | `LaccckaB4220RuntimeFixes` | Lacccka B42 Runtime Fixes | Source-clean Bandits runtime / dedicated-server / zombie-action compatibility hooks. |
-| `NPCCombatExperimental` | `LaccckaB4220NPCCombatExperimental` | Lacccka B42 NPC Combat Experimental | In-development NPC combat AttackState guard, diagnostics and admin stress-test tooling. |
-| `ActivityFixes` | `LaccckaB4220ActivityFixes` | Lacccka B42 Activity Fixes | Lifestyle hygiene, Yoga/progression and perk compatibility fixes. |
-| `CompatibilityBridges` | `LaccckaB4220CompatBridges` | Lacccka B42 Compatibility Bridges | Build 42 legacy module/API redirects used by weapon, vehicle and framework mods. |
-| `SafetyFixes` | `LaccckaB4220SafetyFixes` | Lacccka B42 Safety Fixes | Defensive inventory/UI compatibility guards. |
-| `RussianTextFixes` | `LaccckaB4220RussianText` | Lacccka B42 Russian Text Fixes | Russian localization and skill/UI text corrections. |
+| Folder | Mod ID | Workshop ID | Public title | Internal scope |
+| --- | --- | ---: | --- | --- |
+| `PatchCore` | `LaccckaB4220PatchCore` | `3786175901` | Lacccka B42 Patch Core | Recommended shared guarded-patch helper used by the functional patches. |
+| `RuntimeFixes` | `LaccckaB4220RuntimeFixes` | `3786175979` | Lacccka B42 Runtime Fixes | Source-clean Bandits runtime / dedicated-server / zombie-action compatibility hooks. |
+| `NPCCombatExperimental` | `LaccckaB4220NPCCombatExperimental` | `3786817782` | Lacccka B42 NPC Combat Experimental | In-development NPC combat AttackState guard, diagnostics and admin stress-test tooling. |
+| `ActivityFixes` | `LaccckaB4220ActivityFixes` | `3786175725` | Lacccka B42 Activity Fixes | Lifestyle hygiene, Yoga/progression and perk compatibility fixes. |
+| `CompatibilityBridges` | `LaccckaB4220CompatBridges` | `3786175808` | Lacccka B42 Compatibility Bridges | Build 42 legacy module/API redirects used by weapon, vehicle and framework mods. |
+| `SafetyFixes` | `LaccckaB4220SafetyFixes` | `3786176221` | Lacccka B42 Safety Fixes | Defensive inventory/UI compatibility guards. |
+| `RussianTextFixes` | `LaccckaB4220RussianText` | `3786176120` | Lacccka B42 Russian Text Fixes | Russian localization and skill/UI text corrections. |
 
 ## Dependency model
 
@@ -66,7 +66,9 @@ Each split item must be reviewed on its own publication contract. In particular,
 
 Each child directory is a separate Workshop staging directory with its own `workshop.txt` and `Contents/mods/.../42/mod.info`.
 
-Published items keep their assigned Workshop ID in `workshop.txt`. Experimental items may use `id=0` and omit `preview.png` until they are ready for upload; the audit treats that state as unpublished/private staging.
+Published items keep their assigned Workshop ID in `workshop.txt`. `NPCCombatExperimental` is published as Workshop item `3786817782`, and the grouped audit pins that ID so it cannot silently return to staging `id=0` or drift to another item.
+
+The `NPCCombatExperimental` preview is currently not versioned in this repository, so the grouped audit temporarily exempts only this published item from the local `preview.png` requirement. Other published patch items keep the existing preview-file contract.
 
 ## Migration rule
 
