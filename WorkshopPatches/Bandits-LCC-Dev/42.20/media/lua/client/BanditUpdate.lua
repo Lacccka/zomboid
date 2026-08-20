@@ -1,5 +1,9 @@
 require "BanditZombie"
 
+-- [LCC POC] Local B42.20.3 reference implementation; this working copy is for controlled testing.
+LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-pursuit-v1"
+print("[LCC][BanditsAttackPoC][INIT] upstream-pursuit-v1 active; vanilla spotted/addAggro/setTarget/setAttackedBy bridge disabled")
+
 local sum1 = 0
 local sum2 = 0
 local sum3 = 0
@@ -1680,16 +1684,9 @@ local function UpdateZombies(zombie)
                     -- zombie:setPath2(nil)
 
                     if zombie and bandit then
-                        zombie:spotted(bandit, true)
-                        zombie:addAggro(bandit, 1)
-                        zombie:setTarget(bandit)
-                        zombie:setAttackedBy(bandit)
-                    
-                        --[[
-                        zombie:spotted(bandit, true)
-                        zombie:setTarget(bandit)
-                        zombie:setAttackedBy(bandit)
-                        ]]
+                        -- [LCC POC] Keep Bandits' own pursuit / Bite pipeline without
+                        -- constructing a vanilla zombie -> Bandit combat relationship.
+                        zombie:pathToCharacter(bandit)
                     end
                     
                     
