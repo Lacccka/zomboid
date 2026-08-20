@@ -430,7 +430,7 @@ declare -A expected_ids=(
 declare -A expected_workshop_ids=(
     [PatchCore]="3786175901"
     [RuntimeFixes]="3786175979"
-    [NPCCombatExperimental]="0"
+    [NPCCombatExperimental]="3786817782"
     [ActivityFixes]="3786175725"
     [CompatibilityBridges]="3786175808"
     [SafetyFixes]="3786176221"
@@ -448,7 +448,11 @@ for folder in "${expected_patch_dirs[@]}"; do
     modinfo="$SPLIT/$folder/Contents/mods/$id/42/mod.info"
 
     require_file "$workshop" || true
-    if [[ "$workshop_id" != "0" ]]; then
+    if [[ "$folder" == "NPCCombatExperimental" ]]; then
+        if [[ -e "$preview" && ! -s "$preview" ]]; then
+            error "$folder: preview.png exists but is empty"
+        fi
+    else
         require_file "$preview" || true
     fi
     require_file "$modinfo" || true
@@ -459,13 +463,10 @@ for folder in "${expected_patch_dirs[@]}"; do
     fi
 
     if [[ -f "$workshop" ]]; then
-        grep -Fxq "id=$workshop_id" "$workshop" || error "$folder: wrong Workshop ID/staging ID"
+        grep -Fxq "id=$workshop_id" "$workshop" || error "$folder: wrong Workshop ID"
         grep -Fqi 'Do not use' "$workshop" || error "$folder: Workshop warning is missing"
         grep -Eqi 'original mod(s| Lua files| files)?.*not included|original mods are not included' "$workshop" \
             || error "$folder: no-bundled-mods disclaimer is missing"
-        if [[ "$workshop_id" == "0" ]]; then
-            grep -Fxq 'visibility=private' "$workshop" || error "$folder: unpublished id=0 item must remain private"
-        fi
     fi
 
     if [[ "$folder" == "NPCCombatExperimental" ]]; then
@@ -476,6 +477,8 @@ for folder in "${expected_patch_dirs[@]}"; do
         if [[ -f "$workshop" ]]; then
             grep -Fxq 'title=Lacccka B42 NPC Combat Experimental' "$workshop" \
                 || error "$folder: Workshop title must remain neutral"
+            grep -Fxq 'visibility=public' "$workshop" \
+                || error "$folder: published Workshop item must remain public"
             if grep -Eqi '^title=.*Bandits|^description=.*Bandits' "$workshop"; then
                 error "$folder: public Workshop metadata must not name the upstream mod"
             fi
@@ -538,4 +541,4 @@ if (( fail != 0 )); then
     exit 1
 fi
 
-printf 'Grouped Workshop patches audit: OK (7 current packages; NPCCombatExperimental unpublished/private)\n'
+printf 'Grouped Workshop patches audit: OK (7 current packages; NPCCombatExperimental Workshop=3786817782)\n'
