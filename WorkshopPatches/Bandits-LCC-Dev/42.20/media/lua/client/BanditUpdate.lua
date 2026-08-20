@@ -1,8 +1,9 @@
 require "BanditZombie"
 
 -- [LCC POC] Local B42.20.3 reference implementation; this working copy is for controlled testing.
-LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-pursuit-v1"
-print("[LCC][BanditsAttackPoC][INIT] upstream-pursuit-v1 active; vanilla spotted/addAggro/setTarget/setAttackedBy bridge disabled")
+-- v2 removes every active pathToCharacter(bandit) call from zombie -> Bandit pursuit.
+LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-coordinate-pursuit-v2"
+print("[LCC][BanditsAttackPoC][INIT] upstream-coordinate-pursuit-v2 active; character pursuit and vanilla target bridge disabled")
 
 local sum1 = 0
 local sum2 = 0
@@ -1508,6 +1509,17 @@ end
 -- table of bandits being attacked by zombies
 local biteTab = {}
 
+-- Coordinate-only pursuit for normal zombies chasing Bandits.
+-- Passing the Bandit IsoZombie to pathToCharacter() can create/retain a Java/network
+-- goal-character relationship. Keep the destination as x/y/z only so the custom
+-- Bite/BiteLow pipeline can operate without constructing a character target.
+local function PathZombieToBanditLocation(zombie, banditCached)
+    if not zombie or not banditCached then return end
+    if BanditUtils.IsController(zombie) then
+        zombie:pathToLocationF(banditCached.x, banditCached.y, banditCached.z)
+    end
+end
+
 -- manages zombie behavior towards bandits
 local function UpdateZombies(zombie)
 
@@ -1665,7 +1677,7 @@ local function UpdateZombies(zombie)
             -- zombie:addLineChatElement(tostring(ZombRand(100)) .. " far", 0.6, 0.6, 1)
             --
             if zombie:CanSee(bandit) then
-                zombie:pathToCharacter(bandit)
+                PathZombieToBanditLocation(zombie, banditCached)
             end
 
         -- Approach bandit if in range
@@ -1684,9 +1696,9 @@ local function UpdateZombies(zombie)
                     -- zombie:setPath2(nil)
 
                     if zombie and bandit then
-                        -- [LCC POC] Keep Bandits' own pursuit / Bite pipeline without
-                        -- constructing a vanilla zombie -> Bandit combat relationship.
-                        zombie:pathToCharacter(bandit)
+                        -- [LCC POC v2] Keep the final approach coordinate-only as well.
+                        -- Do not pass the Bandit IsoZombie into character-pathing APIs.
+                        PathZombieToBanditLocation(zombie, banditCached)
                     end
                     
                     
