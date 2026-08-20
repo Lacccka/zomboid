@@ -1,5 +1,6 @@
 require "PPO_Config"
 require "PPO_MultiplierMath"
+require "PPO_ToneMath"
 
 PPO = PPO or {}
 PPO.ClientRuntime = PPO.ClientRuntime or {
@@ -33,6 +34,31 @@ local function writeBase(character, value)
     return pcall(function()
         character:setMaxWeightBase(value)
     end)
+end
+
+-- The Strength ladder vanilla multiplies the carry base by; see
+-- PPO.ToneMath.carryBaseDelta for why the bonus is divided by it.
+local function readWeightMod(character)
+    local ok, value = pcall(function()
+        return character:getWeightMod()
+    end)
+    if not ok then return 1 end
+    return finiteOr(value, 1)
+end
+
+-- Single player runs the server production against the very character sitting
+-- in front of the player, and the report is delivered to this file through a
+-- local event rather than the network. Both seams would then write the same
+-- field, and the second one seeds its record from a base the first had already
+-- raised -- paying the bonus twice for anyone who loads with a live tone. The
+-- server owns the seam wherever it can reach the character itself.
+local function serverOwnsCarrySeam()
+    if type(isClient) ~= "function" or type(isServer) ~= "function" then
+        return false
+    end
+    local clientOk, client = pcall(isClient)
+    local serverOk, server = pcall(isServer)
+    return clientOk and serverOk and client == false and server == false
 end
 
 local function activePlayers()
@@ -107,6 +133,8 @@ function ClientRuntime.applyState(character, payload)
     ClientRuntime.LastState[character] = payload
     ClientRuntime.onStateChanged(character, payload)
 
+    if serverOwnsCarrySeam() then return true end
+
     local bonus = math.max(0,
         math.floor(finiteOr(payload.Strength.carryBonus, 0) + 0.5))
 
@@ -120,7 +148,8 @@ function ClientRuntime.applyState(character, payload)
     end
     if current ~= record.applied then return false end
 
-    local target = record.original + bonus
+    local target = record.original + PPO.ToneMath.carryBaseDelta(
+        bonus, readWeightMod(character))
     if target == current then return true end
     if not writeBase(character, target) then return false end
     record.applied = target

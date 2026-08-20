@@ -90,6 +90,27 @@ function ToneMath.carryBonus(quality, settings, courseScale)
         math.floor(kilograms * courseScaleOr(courseScale) + 0.5))
 end
 
+-- The carry stages are kilograms the player can carry, and the only seam that
+-- survives a tick is `maxWeightBase`: `BodyDamage.UpdateStrength` recomputes
+-- `maxWeight` from it every update as
+-- `floor(maxWeightBase * getWeightMod()) - moodlePenalty`. `getWeightMod` is a
+-- ladder of the Strength level -- 0.9 at level 1, 2.26 at 9, 2.5 at 10 -- so
+-- kilograms written straight into the base arrive multiplied by it, and the
+-- shipped six turned into fifteen on a strong character. Dividing here is what
+-- makes the Sandbox option mean what it says.
+--
+-- A base point is indivisible, so at the top of the ladder one point is worth
+-- two and a half carried kilograms and neighbouring stages can round onto the
+-- same point. Nearest is still the honest rule: rounding up would hand the
+-- strongest characters more than the option promises, which is the defect this
+-- function exists to end.
+function ToneMath.carryBaseDelta(kilograms, weightMod)
+    local bonus = math.max(0, finiteOr(kilograms, 0))
+    local ladder = finiteOr(weightMod, 1)
+    if ladder <= 0 then ladder = 1 end
+    return math.max(0, math.floor(bonus / ladder + 0.5))
+end
+
 -- Used only when a physical seam is unavailable, so tone is never a no-op.
 function ToneMath.fallbackReadinessBonus(quality, settings)
     local resolved = settingsOr(settings)

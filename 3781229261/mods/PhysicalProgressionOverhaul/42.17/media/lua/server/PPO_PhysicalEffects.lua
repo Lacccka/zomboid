@@ -42,6 +42,17 @@ local function writeCarryBase(character, value)
     end)
 end
 
+-- The Strength ladder vanilla multiplies the carry base by. An unreadable one
+-- means the bonus is written as plain base points, which is what the seam did
+-- before the ladder was accounted for.
+local function readWeightMod(character)
+    local ok, value = pcall(function()
+        return character:getWeightMod()
+    end)
+    if not ok then return 1 end
+    return finiteOr(value, 1)
+end
+
 -- Method wrappers mirror the AdaptationEngine.new pattern so the engine can
 -- call an injected fake and the real instance through the same syntax.
 function PhysicalEffects.new()
@@ -480,8 +491,13 @@ function PhysicalEffects.applyStrengthTone(instance, character, carryBonus)
         return false
     end
 
+    -- The bonus arrives in carried kilograms and the base is not carried
+    -- kilograms: vanilla multiplies it by the Strength ladder on every update.
+    -- The conversion is redone every tick because levelling Strength moves the
+    -- ladder under a tone that is already standing.
     local bonus = math.max(0, math.floor(finiteOr(carryBonus, 0) + 0.5))
-    local target = record.original + bonus
+    local target = record.original + PPO.ToneMath.carryBaseDelta(
+        bonus, readWeightMod(character))
     if target == current then return true end
 
     if not writeCarryBase(character, target) then
