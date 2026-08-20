@@ -8,39 +8,24 @@ from datetime import datetime
 from pathlib import Path
 from tkinter import messagebox, ttk
 
+
 # ============================================================
 # Lacccka B42.20 Local Server Tools
 # ============================================================
 
-# ------------------------------------------------------------
-# Patch paths
-# ------------------------------------------------------------
-
 REPOSITORY_ROOT = Path(r"C:\zomboid")
-SOURCE_ROOT = Path(r"C:\zomboid\WorkshopPatches")
+SOURCE_ROOT = REPOSITORY_ROOT / "WorkshopPatches"
 MODS_ROOT = Path(r"C:\Users\user\Zomboid\mods")
-
-
-# ------------------------------------------------------------
-# Project Zomboid Dedicated Server
-# ------------------------------------------------------------
 
 SERVER_BAT = Path(
     r"C:\Program Files (x86)\Steam\steamapps\common"
     r"\Project Zomboid Dedicated Server\StartServer64.bat"
 )
 
-
-# ------------------------------------------------------------
-# Logs
-# ------------------------------------------------------------
-
 ZOMBOID_ROOT = Path(r"C:\Users\user\Zomboid")
 LOGS_ROOT = ZOMBOID_ROOT / "Logs"
-
 SERVER_CONSOLE_LOG = ZOMBOID_ROOT / "server-console.txt"
 CLIENT_CONSOLE_LOG = ZOMBOID_ROOT / "console.txt"
-
 LOG_ARCHIVE_ROOT = REPOSITORY_ROOT / "CollectedLogs"
 
 
@@ -48,13 +33,8 @@ LOG_ARCHIVE_ROOT = REPOSITORY_ROOT / "CollectedLogs"
 # Helpers
 # ============================================================
 
-
 def is_subpath(path: Path, root: Path) -> bool:
-    """
-    Safety check:
-    path must be located inside root, but must not be root itself.
-    """
-
+    """Return True only when path is inside root and is not root itself."""
     try:
         resolved_path = path.resolve()
         resolved_root = root.resolve()
@@ -64,67 +44,79 @@ def is_subpath(path: Path, root: Path) -> bool:
 
         resolved_path.relative_to(resolved_root)
         return True
-
     except ValueError:
         return False
 
 
 def replace_directory(source: Path, destination: Path) -> None:
-    """
-    Completely replace one mod directory.
-
-    Only directories inside MODS_ROOT may be deleted/replaced.
-    """
-
+    """Completely replace one local mod directory."""
     if not source.is_dir():
         raise RuntimeError(f"Источник не найден:\n{source}")
 
     if not is_subpath(destination, MODS_ROOT):
         raise RuntimeError(f"Небезопасный путь назначения:\n{destination}")
 
-    destination.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
+    destination.parent.mkdir(parents=True, exist_ok=True)
 
     if destination.exists():
         shutil.rmtree(destination)
 
-    shutil.copytree(
-        source,
-        destination,
-    )
+    shutil.copytree(source, destination)
 
 
 def get_latest_file(directory: Path, pattern: str):
-    """
-    Return the newest file matching pattern.
-
-    Search is NOT recursive.
-    Only files directly inside 'directory' are checked.
-    """
-
+    """Return newest matching file directly inside directory (not recursive)."""
     if not directory.is_dir():
         return None
 
     files = [path for path in directory.glob(pattern) if path.is_file()]
-
     if not files:
         return None
 
-    return max(
-        files,
-        key=lambda path: path.stat().st_mtime,
-    )
+    return max(files, key=lambda path: path.stat().st_mtime)
+
+
+def is_direct_mod_root(project: Path) -> bool:
+    """
+    Detect a Project Zomboid mod stored directly in WorkshopPatches.
+
+    Supported layouts:
+
+        SomeMod/
+            mod.info
+            media/
+
+    and Build 42 versioned layout:
+
+        SomeMod/
+            common/
+            42.20/
+                mod.info
+                media/
+
+    Bandits-LCC-Dev uses the second layout and therefore must be copied
+    as a whole directory rather than searched under Contents/mods.
+    """
+    if (project / "mod.info").is_file():
+        return True
+
+    try:
+        children = project.iterdir()
+    except OSError:
+        return False
+
+    for child in children:
+        if child.is_dir() and (child / "mod.info").is_file():
+            return True
+
+    return False
 
 
 # ============================================================
 # Application
 # ============================================================
 
-
 class ServerToolsApp(tk.Tk):
-
     def __init__(self):
         super().__init__()
 
@@ -133,10 +125,9 @@ class ServerToolsApp(tk.Tk):
         self.minsize(880, 580)
 
         self.status_var = tk.StringVar(value="Ожидание")
-
         self.progress_var = tk.DoubleVar(value=0)
 
-        # Server process started from this GUI.
+        # Only the server started from this GUI is controlled by Stop.
         self.server_process = None
 
         self.build_ui()
@@ -147,96 +138,26 @@ class ServerToolsApp(tk.Tk):
     # ========================================================
 
     def build_ui(self):
+        main = ttk.Frame(self, padding=14)
+        main.pack(fill="both", expand=True)
 
-        main = ttk.Frame(
-            self,
-            padding=14,
-        )
-
-        main.pack(
-            fill="both",
-            expand=True,
-        )
-
-        # ----------------------------------------------------
-        # Title
-        # ----------------------------------------------------
-
-        title = ttk.Label(
+        ttk.Label(
             main,
             text="Lacccka B42.20 Local Server Tools",
             font=("Segoe UI", 16, "bold"),
-        )
+        ).pack(anchor="w", pady=(0, 12))
 
-        title.pack(
-            anchor="w",
-            pady=(0, 12),
-        )
+        paths = ttk.LabelFrame(main, text="Пути", padding=10)
+        paths.pack(fill="x", pady=(0, 12))
 
-        # ----------------------------------------------------
-        # Paths
-        # ----------------------------------------------------
+        self.add_path_row(paths, 0, "Патчи:", SOURCE_ROOT)
+        self.add_path_row(paths, 1, "Mods:", MODS_ROOT)
+        self.add_path_row(paths, 2, "Сервер:", SERVER_BAT)
+        self.add_path_row(paths, 3, "Логи:", LOGS_ROOT)
+        self.add_path_row(paths, 4, "Архивы:", LOG_ARCHIVE_ROOT)
 
-        paths = ttk.LabelFrame(
-            main,
-            text="Пути",
-            padding=10,
-        )
-
-        paths.pack(
-            fill="x",
-            pady=(0, 12),
-        )
-
-        self.add_path_row(
-            paths,
-            0,
-            "Патчи:",
-            SOURCE_ROOT,
-        )
-
-        self.add_path_row(
-            paths,
-            1,
-            "Mods:",
-            MODS_ROOT,
-        )
-
-        self.add_path_row(
-            paths,
-            2,
-            "Сервер:",
-            SERVER_BAT,
-        )
-
-        self.add_path_row(
-            paths,
-            3,
-            "Логи:",
-            LOGS_ROOT,
-        )
-
-        self.add_path_row(
-            paths,
-            4,
-            "Архивы:",
-            LOG_ARCHIVE_ROOT,
-        )
-
-        # ----------------------------------------------------
-        # Patch controls
-        # ----------------------------------------------------
-
-        patch_frame = ttk.LabelFrame(
-            main,
-            text="Compatibility Patch",
-            padding=10,
-        )
-
-        patch_frame.pack(
-            fill="x",
-            pady=(0, 10),
-        )
+        patch_frame = ttk.LabelFrame(main, text="Compatibility Patch", padding=10)
+        patch_frame.pack(fill="x", pady=(0, 10))
 
         self.update_button = ttk.Button(
             patch_frame,
@@ -244,25 +165,10 @@ class ServerToolsApp(tk.Tk):
             command=self.start_update,
             width=24,
         )
+        self.update_button.pack(side="left")
 
-        self.update_button.pack(
-            side="left",
-        )
-
-        # ----------------------------------------------------
-        # Server controls
-        # ----------------------------------------------------
-
-        server_frame = ttk.LabelFrame(
-            main,
-            text="Dedicated Server",
-            padding=10,
-        )
-
-        server_frame.pack(
-            fill="x",
-            pady=(0, 10),
-        )
+        server_frame = ttk.LabelFrame(main, text="Dedicated Server", padding=10)
+        server_frame.pack(fill="x", pady=(0, 10))
 
         self.start_server_button = ttk.Button(
             server_frame,
@@ -270,10 +176,7 @@ class ServerToolsApp(tk.Tk):
             command=self.start_server,
             width=24,
         )
-
-        self.start_server_button.pack(
-            side="left",
-        )
+        self.start_server_button.pack(side="left")
 
         self.stop_server_button = ttk.Button(
             server_frame,
@@ -281,26 +184,10 @@ class ServerToolsApp(tk.Tk):
             command=self.stop_server,
             width=24,
         )
+        self.stop_server_button.pack(side="left", padx=(8, 0))
 
-        self.stop_server_button.pack(
-            side="left",
-            padx=(8, 0),
-        )
-
-        # ----------------------------------------------------
-        # Logs controls
-        # ----------------------------------------------------
-
-        logs_frame = ttk.LabelFrame(
-            main,
-            text="Логи",
-            padding=10,
-        )
-
-        logs_frame.pack(
-            fill="x",
-            pady=(0, 10),
-        )
+        logs_frame = ttk.LabelFrame(main, text="Логи", padding=10)
+        logs_frame.pack(fill="x", pady=(0, 10))
 
         self.collect_logs_button = ttk.Button(
             logs_frame,
@@ -308,41 +195,17 @@ class ServerToolsApp(tk.Tk):
             command=self.start_collect_logs,
             width=24,
         )
-
-        self.collect_logs_button.pack(
-            side="left",
-        )
-
-        # ----------------------------------------------------
-        # Status
-        # ----------------------------------------------------
+        self.collect_logs_button.pack(side="left")
 
         status_frame = ttk.Frame(main)
+        status_frame.pack(fill="x", pady=(2, 6))
 
-        status_frame.pack(
-            fill="x",
-            pady=(2, 6),
-        )
-
-        ttk.Label(
-            status_frame,
-            text="Статус:",
-        ).pack(
-            side="left",
-        )
-
+        ttk.Label(status_frame, text="Статус:").pack(side="left")
         ttk.Label(
             status_frame,
             textvariable=self.status_var,
             font=("Segoe UI", 9, "bold"),
-        ).pack(
-            side="left",
-            padx=(6, 0),
-        )
-
-        # ----------------------------------------------------
-        # Progress
-        # ----------------------------------------------------
+        ).pack(side="left", padx=(6, 0))
 
         self.progress = ttk.Progressbar(
             main,
@@ -350,26 +213,10 @@ class ServerToolsApp(tk.Tk):
             maximum=100,
             mode="determinate",
         )
+        self.progress.pack(fill="x", pady=(0, 10))
 
-        self.progress.pack(
-            fill="x",
-            pady=(0, 10),
-        )
-
-        # ----------------------------------------------------
-        # Application log
-        # ----------------------------------------------------
-
-        log_frame = ttk.LabelFrame(
-            main,
-            text="Журнал",
-            padding=8,
-        )
-
-        log_frame.pack(
-            fill="both",
-            expand=True,
-        )
+        log_frame = ttk.LabelFrame(main, text="Журнал", padding=8)
+        log_frame.pack(fill="both", expand=True)
 
         self.log_text = tk.Text(
             log_frame,
@@ -377,49 +224,24 @@ class ServerToolsApp(tk.Tk):
             state="disabled",
             font=("Consolas", 9),
         )
-
-        self.log_text.pack(
-            side="left",
-            fill="both",
-            expand=True,
-        )
+        self.log_text.pack(side="left", fill="both", expand=True)
 
         scrollbar = ttk.Scrollbar(
             log_frame,
             orient="vertical",
             command=self.log_text.yview,
         )
-
-        scrollbar.pack(
-            side="right",
-            fill="y",
-        )
-
+        scrollbar.pack(side="right", fill="y")
         self.log_text.configure(yscrollcommand=scrollbar.set)
 
-    def add_path_row(
-        self,
-        parent,
-        row,
-        label,
-        path,
-    ):
-
-        ttk.Label(
-            parent,
-            text=label,
-            width=12,
-        ).grid(
+    def add_path_row(self, parent, row, label, path):
+        ttk.Label(parent, text=label, width=12).grid(
             row=row,
             column=0,
             sticky="w",
             pady=2,
         )
-
-        ttk.Label(
-            parent,
-            text=str(path),
-        ).grid(
+        ttk.Label(parent, text=str(path)).grid(
             row=row,
             column=1,
             sticky="w",
@@ -431,68 +253,34 @@ class ServerToolsApp(tk.Tk):
     # ========================================================
 
     def log(self, text):
-
         def append():
-
             self.log_text.configure(state="normal")
-
-            self.log_text.insert(
-                "end",
-                text + "\n",
-            )
-
+            self.log_text.insert("end", text + "\n")
             self.log_text.see("end")
-
             self.log_text.configure(state="disabled")
 
-        self.after(
-            0,
-            append,
-        )
+        self.after(0, append)
 
     def clear_log(self):
-
         self.log_text.configure(state="normal")
-
-        self.log_text.delete(
-            "1.0",
-            "end",
-        )
-
+        self.log_text.delete("1.0", "end")
         self.log_text.configure(state="disabled")
 
     def set_status(self, text):
-
-        self.after(
-            0,
-            lambda: self.status_var.set(text),
-        )
+        self.after(0, lambda: self.status_var.set(text))
 
     def set_progress(self, value):
+        self.after(0, lambda: self.progress_var.set(value))
 
-        self.after(
-            0,
-            lambda: self.progress_var.set(value),
-        )
-
-    def set_update_button_enabled(
-        self,
-        enabled,
-    ):
-
+    def set_update_button_enabled(self, enabled):
         state = "normal" if enabled else "disabled"
-
-        self.after(
-            0,
-            lambda: self.update_button.configure(state=state),
-        )
+        self.after(0, lambda: self.update_button.configure(state=state))
 
     # ========================================================
     # Patch updater
     # ========================================================
 
     def get_projects(self):
-
         if not SOURCE_ROOT.is_dir():
             raise RuntimeError(f"Не найдена папка:\n{SOURCE_ROOT}")
 
@@ -508,129 +296,122 @@ class ServerToolsApp(tk.Tk):
 
     def build_jobs(self, projects):
         """
-        Only copy:
+        Build copy jobs for both repository layouts.
 
-        WorkshopPatches
-          └─ Project
-              └─ Contents
-                  └─ mods
-                      └─ SomeMod
+        Workshop-ready patch:
+            Project/Contents/mods/SomeMod
+                -> Zomboid/mods/SomeMod
 
-        to:
-
-        Zomboid
-          └─ mods
-              └─ SomeMod
+        Direct/versioned mod:
+            Project/42.20/mod.info
+                -> Zomboid/mods/Project
         """
-
         jobs = []
+        skipped = []
 
         for project in projects:
-
             source_mods = project / "Contents" / "mods"
 
-            if not source_mods.is_dir():
+            if source_mods.is_dir():
+                mod_directories = sorted(
+                    [path for path in source_mods.iterdir() if path.is_dir()],
+                    key=lambda path: path.name.lower(),
+                )
+
+                if not mod_directories:
+                    skipped.append(
+                        (project, "Contents\\mods существует, но не содержит модов")
+                    )
+                    continue
+
+                for mod_dir in mod_directories:
+                    jobs.append((mod_dir, MODS_ROOT / mod_dir.name))
+
                 continue
 
-            mod_directories = sorted(
-                [path for path in source_mods.iterdir() if path.is_dir()],
-                key=lambda path: path.name.lower(),
+            # Bandits-LCC-Dev and any other Build 42 direct/versioned mod.
+            if is_direct_mod_root(project):
+                jobs.append((project, MODS_ROOT / project.name))
+                continue
+
+            skipped.append(
+                (project, "не найден Contents\\mods или mod.info в корне/версии")
             )
 
-            for mod_dir in mod_directories:
+        # Do not allow two sources to silently overwrite the same destination.
+        destinations = {}
+        for source, destination in jobs:
+            key = str(destination).casefold()
+            previous = destinations.get(key)
 
-                jobs.append(
-                    (
-                        mod_dir,
-                        MODS_ROOT / mod_dir.name,
-                    )
+            if previous is not None:
+                raise RuntimeError(
+                    "Два источника пытаются обновить один каталог:\n"
+                    f"{previous}\n{source}\n-> {destination}"
                 )
 
-        return jobs
+            destinations[key] = source
+
+        return jobs, skipped
 
     def start_update(self):
-
         self.set_update_button_enabled(False)
-
         self.progress_var.set(0)
-
         self.status_var.set("Обновление mods...")
-
         self.clear_log()
 
-        thread = threading.Thread(
+        threading.Thread(
             target=self.update_all,
             daemon=True,
-        )
-
-        thread.start()
+        ).start()
 
     def update_all(self):
-
         try:
-
             projects = self.get_projects()
-
-            jobs = self.build_jobs(projects)
+            jobs, skipped = self.build_jobs(projects)
 
             if not jobs:
-                raise RuntimeError(
-                    "В Contents\\mods не найдено " "ни одной модификации."
-                )
+                raise RuntimeError("Не найдено ни одной модификации для копирования.")
 
             self.log(f"Источник: {SOURCE_ROOT}")
-
             self.log(f"Mods: {MODS_ROOT}")
+            self.log(f"Найдено проектов: {len(projects)}")
+            self.log(f"Найдено модов: {len(jobs)}")
 
-            self.log(f"Найдено проектов: " f"{len(projects)}")
-
-            self.log(f"Найдено модов: " f"{len(jobs)}")
+            if skipped:
+                self.log(f"Пропущено каталогов: {len(skipped)}")
+                for project, reason in skipped:
+                    self.log(f"[SKIP] {project.name}: {reason}")
 
             self.log("")
 
-            for index, (
-                source,
-                destination,
-            ) in enumerate(
-                jobs,
-                start=1,
-            ):
-
+            for index, (source, destination) in enumerate(jobs, start=1):
                 self.set_status(
-                    f"Mods: " f"{destination.name} " f"({index}/{len(jobs)})"
+                    f"Mods: {destination.name} ({index}/{len(jobs)})"
                 )
 
                 self.log(f"[MOD] {source}")
-
                 self.log(f"   -> {destination}")
 
-                replace_directory(
-                    source,
-                    destination,
-                )
+                replace_directory(source, destination)
 
                 self.log("   OK")
-
                 self.log("")
-
                 self.set_progress(index / len(jobs) * 100)
 
             self.set_status("Mods обновлены")
-
-            self.log("Обновление локальных " "модов завершено успешно.")
+            self.log("Обновление локальных модов завершено успешно.")
 
             self.after(
                 0,
                 lambda: messagebox.showinfo(
                     "Готово",
-                    "Локальные моды обновлены.",
+                    f"Локальные моды обновлены: {len(jobs)}.",
                 ),
             )
 
         except Exception as exc:
-
             self.set_status("Ошибка обновления")
-
             self.log("")
             self.log(f"[ERROR] {exc}")
 
@@ -643,7 +424,6 @@ class ServerToolsApp(tk.Tk):
             )
 
         finally:
-
             self.set_update_button_enabled(True)
 
     # ========================================================
@@ -651,48 +431,37 @@ class ServerToolsApp(tk.Tk):
     # ========================================================
 
     def server_is_running(self):
-
         return self.server_process is not None and self.server_process.poll() is None
 
     def update_server_buttons(self):
-
         running = self.server_is_running()
 
-        start_state = "disabled" if running else "normal"
-
-        stop_state = "normal" if running else "disabled"
-
-        self.start_server_button.configure(state=start_state)
-
-        self.stop_server_button.configure(state=stop_state)
+        self.start_server_button.configure(
+            state="disabled" if running else "normal"
+        )
+        self.stop_server_button.configure(
+            state="normal" if running else "disabled"
+        )
 
     def start_server(self):
-
         if self.server_is_running():
-
             messagebox.showinfo(
                 "Сервер",
-                "Сервер уже запущен " "из этой программы.",
+                "Сервер уже запущен из этой программы.",
             )
-
             return
 
         if not SERVER_BAT.is_file():
-
             messagebox.showerror(
                 "Ошибка",
-                "Не найден StartServer64.bat:\n\n" f"{SERVER_BAT}",
+                f"Не найден StartServer64.bat:\n\n{SERVER_BAT}",
             )
-
             return
 
         try:
-
             self.log("")
             self.log("========================================")
-
             self.log("[SERVER] Запуск сервера")
-
             self.log(f"[SERVER] {SERVER_BAT}")
 
             creation_flags = getattr(
@@ -710,12 +479,6 @@ class ServerToolsApp(tk.Tk):
                 ],
                 cwd=str(SERVER_BAT.parent),
                 stdin=subprocess.PIPE,
-                # Сам Dedicated Server пишет свои
-                # нормальные логи в Zomboid.
-                #
-                # Не держим PIPE для stdout/stderr,
-                # чтобы процесс не завис из-за
-                # заполненного буфера.
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 text=True,
@@ -723,28 +486,19 @@ class ServerToolsApp(tk.Tk):
             )
 
             self.set_status("Сервер запущен")
-
-            self.log(f"[SERVER] PID launcher: " f"{self.server_process.pid}")
-
+            self.log(f"[SERVER] PID launcher: {self.server_process.pid}")
             self.update_server_buttons()
 
-            # Watch server without blocking UI.
-            thread = threading.Thread(
+            threading.Thread(
                 target=self.watch_server,
                 args=(self.server_process,),
                 daemon=True,
-            )
-
-            thread.start()
+            ).start()
 
         except Exception as exc:
-
             self.server_process = None
-
             self.update_server_buttons()
-
             self.set_status("Ошибка запуска сервера")
-
             self.log(f"[SERVER ERROR] {exc}")
 
             messagebox.showerror(
@@ -752,77 +506,53 @@ class ServerToolsApp(tk.Tk):
                 str(exc),
             )
 
-    def watch_server(
-        self,
-        process,
-    ):
-
+    def watch_server(self, process):
         exit_code = process.wait()
 
-        # Make sure this is still the same
-        # server process.
         if self.server_process is process:
-
             self.server_process = None
 
-        self.log(f"[SERVER] Процесс завершён. " f"Код: {exit_code}")
-
+        self.log(f"[SERVER] Процесс завершён. Код: {exit_code}")
         self.set_status("Сервер остановлен")
-
-        self.after(
-            0,
-            self.update_server_buttons,
-        )
+        self.after(0, self.update_server_buttons)
 
     def stop_server(self):
-
         if not self.server_is_running():
-
             self.server_process = None
-
             self.update_server_buttons()
 
             messagebox.showinfo(
                 "Сервер",
-                "Сервер, запущенный из этой " "программы, не найден.",
+                "Сервер, запущенный из этой программы, не найден.",
             )
-
             return
 
         process = self.server_process
 
         try:
-
             if process.stdin is None:
-
                 raise RuntimeError("stdin сервера недоступен.")
 
-            # Project Zomboid Dedicated Server:
-            # graceful shutdown command.
+            # Graceful Project Zomboid shutdown: save world and quit.
             process.stdin.write("quit\n")
-
             process.stdin.flush()
 
             self.set_status("Остановка сервера...")
-
             self.stop_server_button.configure(state="disabled")
 
             self.log("")
             self.log("[SERVER] Отправлена команда: quit")
-
-            self.log("[SERVER] Сервер сохраняет мир " "и завершает работу...")
+            self.log("[SERVER] Сервер сохраняет мир и завершает работу...")
 
         except Exception as exc:
-
-            self.log(f"[SERVER ERROR] " f"Не удалось отправить quit: " f"{exc}")
-
+            self.log(f"[SERVER ERROR] Не удалось отправить quit: {exc}")
             self.set_status("Ошибка остановки")
-
             self.update_server_buttons()
 
             messagebox.showerror(
                 "Ошибка остановки сервера",
-                "Не удалось корректно отправить " "серверу команду quit.\n\n" f"{exc}",
+                "Не удалось корректно отправить серверу команду quit.\n\n"
+                f"{exc}",
             )
 
     # ========================================================
@@ -830,126 +560,70 @@ class ServerToolsApp(tk.Tk):
     # ========================================================
 
     def start_collect_logs(self):
-
         self.collect_logs_button.configure(state="disabled")
-
         self.set_status("Сбор логов...")
 
-        thread = threading.Thread(
+        threading.Thread(
             target=self.collect_logs,
             daemon=True,
-        )
-
-        thread.start()
+        ).start()
 
     def collect_logs(self):
-
         try:
-
-            LOG_ARCHIVE_ROOT.mkdir(
-                parents=True,
-                exist_ok=True,
-            )
+            LOG_ARCHIVE_ROOT.mkdir(parents=True, exist_ok=True)
 
             files_to_archive = []
-
-            # ------------------------------------------------
-            # Current console files
-            # ------------------------------------------------
 
             for log_file in (
                 SERVER_CONSOLE_LOG,
                 CLIENT_CONSOLE_LOG,
             ):
-
                 if log_file.is_file():
-
                     files_to_archive.append(log_file)
-
                 else:
-
-                    self.log(f"[LOGS] Не найден: " f"{log_file}")
-
-            # ------------------------------------------------
-            # Latest server DebugLog
-            #
-            # Example:
-            # 2026-08-20_19-19_DebugLog-server.txt
-            # ------------------------------------------------
+                    self.log(f"[LOGS] Не найден: {log_file}")
 
             latest_server_debug = get_latest_file(
                 LOGS_ROOT,
                 "*_DebugLog-server.txt",
             )
-
             if latest_server_debug:
-
                 files_to_archive.append(latest_server_debug)
-
             else:
-
-                self.log("[LOGS] Не найден " "*_DebugLog-server.txt")
-
-            # ------------------------------------------------
-            # Latest client DebugLog
-            #
-            # Example:
-            # 2026-08-20_19-21_DebugLog.txt
-            # ------------------------------------------------
+                self.log("[LOGS] Не найден *_DebugLog-server.txt")
 
             latest_client_debug = get_latest_file(
                 LOGS_ROOT,
                 "*_DebugLog.txt",
             )
-
             if latest_client_debug:
-
                 files_to_archive.append(latest_client_debug)
-
             else:
-
-                self.log("[LOGS] Не найден " "*_DebugLog.txt")
-
-            # ------------------------------------------------
-            # Remove accidental duplicates
-            # ------------------------------------------------
+                self.log("[LOGS] Не найден *_DebugLog.txt")
 
             unique_files = []
-
             seen = set()
 
             for path in files_to_archive:
-
                 resolved = path.resolve()
-
                 if resolved in seen:
                     continue
 
                 seen.add(resolved)
-
                 unique_files.append(path)
 
             files_to_archive = unique_files
 
             if not files_to_archive:
-
-                raise RuntimeError("Не найдено ни одного " "файла для архивации.")
-
-            # ------------------------------------------------
-            # Archive
-            # ------------------------------------------------
+                raise RuntimeError("Не найдено ни одного файла для архивации.")
 
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
             archive_path = LOG_ARCHIVE_ROOT / f"ZomboidLogs_{timestamp}.zip"
 
             self.log("")
             self.log("========================================")
-
             self.log("[LOGS] Сбор актуальных логов")
-
             self.log(f"[LOGS] Архив: {archive_path}")
-
             self.log("")
 
             with zipfile.ZipFile(
@@ -957,25 +631,16 @@ class ServerToolsApp(tk.Tk):
                 mode="w",
                 compression=zipfile.ZIP_DEFLATED,
             ) as archive:
-
                 for log_file in files_to_archive:
-
                     self.log(f"[LOGS] + {log_file}")
-
-                    archive.write(
-                        log_file,
-                        arcname=log_file.name,
-                    )
+                    archive.write(log_file, arcname=log_file.name)
 
             archive_size_mb = archive_path.stat().st_size / 1024 / 1024
 
             self.log("")
-
-            self.log(f"[LOGS] Готово: " f"{archive_path.name}")
-
-            self.log(f"[LOGS] Файлов: " f"{len(files_to_archive)}")
-
-            self.log(f"[LOGS] Размер: " f"{archive_size_mb:.2f} MB")
+            self.log(f"[LOGS] Готово: {archive_path.name}")
+            self.log(f"[LOGS] Файлов: {len(files_to_archive)}")
+            self.log(f"[LOGS] Размер: {archive_size_mb:.2f} MB")
 
             self.set_status("Логи собраны")
 
@@ -983,14 +648,12 @@ class ServerToolsApp(tk.Tk):
                 0,
                 lambda: messagebox.showinfo(
                     "Логи собраны",
-                    "Архив создан:\n\n" f"{archive_path}",
+                    f"Архив создан:\n\n{archive_path}",
                 ),
             )
 
         except Exception as exc:
-
             self.set_status("Ошибка сбора логов")
-
             self.log("")
             self.log(f"[LOG ERROR] {exc}")
 
@@ -1003,7 +666,6 @@ class ServerToolsApp(tk.Tk):
             )
 
         finally:
-
             self.after(
                 0,
                 lambda: self.collect_logs_button.configure(state="normal"),
@@ -1015,6 +677,5 @@ class ServerToolsApp(tk.Tk):
 # ============================================================
 
 if __name__ == "__main__":
-
     app = ServerToolsApp()
     app.mainloop()
