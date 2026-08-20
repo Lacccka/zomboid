@@ -10,6 +10,14 @@ function NMServerMPZombieIntakeQueue.getZombieQueueKey(zombie)
     return zombie and zombie.getObjectID and tostring(zombie:getObjectID() or "") or tostring(zombie)
 end
 
+function NMServerMPZombieIntakeQueue.count(flowState)
+    local queue = flowState and flowState._pendingNaturalIntake or nil
+    if type(queue) ~= "table" then
+        return 0
+    end
+    return #queue
+end
+
 function NMServerMPZombieIntakeQueue.enqueue(flowState, zombie, source, shouldQueueFn, keyFn, diag)
     if shouldQueueFn and shouldQueueFn(zombie) ~= true then
         return false

@@ -54,7 +54,10 @@ function NMClientTickGate.onTick()
         end
     end
 
-    if hasWork ~= true and isHookInstalled ~= true then
+    local keepGateRegistered = NMClientTickGate._shouldKeepGateRegistered
+        and NMClientTickGate._shouldKeepGateRegistered() == true
+        or false
+    if hasWork ~= true and isHookInstalled ~= true and keepGateRegistered ~= true then
         removeTickListener()
     end
 end
@@ -68,6 +71,7 @@ function NMClientTickGate.register(config)
     NMClientTickGate._isHookInstalled = config.isHookInstalled
     NMClientTickGate._installHook = config.installHook
     NMClientTickGate._removeHook = config.removeHook
+    NMClientTickGate._shouldKeepGateRegistered = config.shouldKeepGateRegistered
     NMClientTickGate.wake("register")
 end
 

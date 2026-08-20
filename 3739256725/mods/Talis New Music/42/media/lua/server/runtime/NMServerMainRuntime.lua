@@ -60,6 +60,16 @@ local function shouldRunCadence(interval)
     return interval > 0 and (tick % interval) == 0
 end
 
+local function shouldWakeForCadence(interval)
+    local tick = tonumber(serverSchedulerState.tick) or 0
+    local cadence = tonumber(interval) or 0
+    if cadence <= 0 then
+        return false
+    end
+    local remainder = tick % cadence
+    return remainder == 0 or remainder == (cadence - 1)
+end
+
 local function countScheduler(name)
     if not (NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("memory") == true) then
         return
@@ -206,11 +216,20 @@ end
 function NMServerMainRuntime.hasAnyTickWork()
     local canMutate = canRunAuthoritativeWorldMutation()
     local mpAuthority = isMPServerAuthority()
-    if mpAuthority then
-        return true, "mp_runtime"
-    end
     if canMutate and NMServerZombieCorpseCarry and NMServerZombieCorpseCarry.hasPendingWork and NMServerZombieCorpseCarry.hasPendingWork() == true then
         return true, "corpse_carry_pending"
+    end
+    if mpAuthority and NMServerVehicleTrackSchedulerTick and NMServerVehicleTrackSchedulerTick.hasWorldSources and NMServerVehicleTrackSchedulerTick.hasWorldSources() == true then
+        return true, "vehicle_track_world_sources"
+    end
+    if mpAuthority and NMServerSourceRefreshTick and NMServerSourceRefreshTick.hasWorldSources and NMServerSourceRefreshTick.hasWorldSources() == true then
+        return true, "source_refresh_world_sources"
+    end
+    if mpAuthority and shouldWakeForCadence(SERVER_SLOW_LANE_INTERVAL_TICKS) and NMServerModeReconcile and NMServerModeReconcile.onTick then
+        return true, "mode_reconcile_due"
+    end
+    if mpAuthority and shouldWakeForCadence(SERVER_ACTIVE_LANE_INTERVAL_TICKS) and NMServerZombiePulseTick and NMServerZombiePulseTick.hasActiveWork and NMServerZombiePulseTick.hasActiveWork() == true then
+        return true, "zombie_pulse_active"
     end
     local activeZombieExecutor = NMServerMainRuntime.getActiveZombieExecutor()
     local hasZombieExecutor = activeZombieExecutor ~= nil and activeZombieExecutor.onTick ~= nil and canMutate
@@ -220,11 +239,22 @@ function NMServerMainRuntime.hasAnyTickWork()
         if executorActiveInterest then
             return true, "executor_active_interest"
         end
-        if executorActiveInterest ~= true and executorMaintenanceInterest == true then
+        if executorActiveInterest ~= true and executorMaintenanceInterest == true and shouldWakeForCadence(SERVER_MAINTENANCE_LANE_INTERVAL_TICKS) then
             return true, "executor_maintenance_interest"
         end
     end
-    if hasLegacyServerTickPending(mpAuthority) == true then
+    if mpAuthority
+        and shouldRunTargetPublisher()
+        and shouldWakeForCadence(SERVER_ACTIVE_LANE_INTERVAL_TICKS)
+        and NMServerZombieVisualTargetPublisher.hasPublishWork
+        and (NMServerZombieVisualTargetPublisher.hasPublishWork(serverSchedulerState.tick) == true
+            or NMServerZombieVisualTargetPublisher.hasPublishWork((tonumber(serverSchedulerState.tick) or 0) + 1) == true) then
+        return true, "target_publisher_due"
+    end
+    if mpAuthority and shouldWakeForCadence(SERVER_MAINTENANCE_LANE_INTERVAL_TICKS) and NMServerRegistryTick and NMServerRegistryTick.hasWorldSources and NMServerRegistryTick.hasWorldSources() == true then
+        return true, "registry_tick_due"
+    end
+    if hasLegacyServerTickPending(mpAuthority) == true and shouldWakeForCadence(SERVER_SLOW_LANE_INTERVAL_TICKS) then
         return true, "legacy_tick_pending"
     end
     return false, "idle"
@@ -280,6 +310,7 @@ function NMServerMainRuntime.onTick()
     local corpseCarryPending = false
     local hasLegacyServerTick = hasLegacyServerTickHandler()
     local legacyServerTickPending = hasLegacyServerTickPending(mpAuthority)
+    local targetPublisherHasWork = false
 
     local executorLookupStartedMs = beginWrapperStage()
     activeZombieExecutor = NMServerMainRuntime.getActiveZombieExecutor()
@@ -289,6 +320,11 @@ function NMServerMainRuntime.onTick()
         and NMServerZombieCorpseCarry
         and NMServerZombieCorpseCarry.hasPendingWork
         and NMServerZombieCorpseCarry.hasPendingWork() == true
+    targetPublisherHasWork = mpAuthority
+        and shouldRunTargetPublisher()
+        and activeLaneDue
+        and NMServerZombieVisualTargetPublisher.hasPublishWork
+        and NMServerZombieVisualTargetPublisher.hasPublishWork(serverSchedulerState.tick) == true
     countWrapper(activeLaneDue and "active_lane_due" or "active_lane_not_due")
     countWrapper(slowLaneDue and "slow_lane_due" or "slow_lane_not_due")
     countWrapper(maintenanceLaneDue and "maintenance_lane_due" or "maintenance_lane_not_due")
@@ -360,9 +396,9 @@ function NMServerMainRuntime.onTick()
     end
     recordWrapperStage("server_wrapper_executor_routing", executorRoutingStartedMs)
 
-    if mpAuthority and shouldRunTargetPublisher() and activeLaneDue then
+    if targetPublisherHasWork then
         countScheduler("target_publisher_run")
-        NMServerZombieVisualTargetPublisher.onTick()
+        NMServerZombieVisualTargetPublisher.onTick(SERVER_ACTIVE_LANE_INTERVAL_TICKS, serverSchedulerState.tick)
     else
         countScheduler("target_publisher_skip")
     end

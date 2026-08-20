@@ -16,17 +16,6 @@ module NewMusic
         CanSpawn = true,
     }
 
-    item LootRepMediaTapeBackfill
-    {
-        ItemType = base:normal,
-        DisplayCategory = Entertainment,
-        Weight = 0.0,
-        Icon = NM_Cassette_Zomboid,
-        DisplayName = ZZ Loot Rep Media Tape Backfill,
-        hidden = true,
-        CanSpawn = true,
-    }
-
     item LootRepMediaTapeStoreTopUp
     {
         ItemType = base:normal,
@@ -45,17 +34,6 @@ module NewMusic
         Weight = 0.0,
         Icon = NM_Vinyl4,
         DisplayName = ZZ Loot Rep Media Wax,
-        hidden = true,
-        CanSpawn = true,
-    }
-
-    item LootRepMediaWaxBackfill
-    {
-        ItemType = base:normal,
-        DisplayCategory = Entertainment,
-        Weight = 0.0,
-        Icon = NM_Vinyl4,
-        DisplayName = ZZ Loot Rep Media Wax Backfill,
         hidden = true,
         CanSpawn = true,
     }
@@ -82,17 +60,6 @@ module NewMusic
         CanSpawn = true,
     }
 
-    item LootRepMediaDiscBackfill
-    {
-        ItemType = base:normal,
-        DisplayCategory = Entertainment,
-        Weight = 0.0,
-        Icon = NM_CD,
-        DisplayName = ZZ Loot Rep Media Disc Backfill,
-        hidden = true,
-        CanSpawn = true,
-    }
-
     item LootRepMediaDiscStoreTopUp
     {
         ItemType = base:normal,
@@ -104,13 +71,13 @@ module NewMusic
         CanSpawn = true,
     }
 
-    item LootRepDeviceWalkmanBackfill
+    item LootRepDeviceWalkman
     {
         ItemType = base:normal,
         DisplayCategory = Entertainment,
         Weight = 0.0,
         Icon = NM_WalkmanBlue,
-        DisplayName = ZZ Loot Rep Device Walkman Backfill,
+        DisplayName = ZZ Loot Rep Device Walkman,
         hidden = true,
         CanSpawn = true,
     }
@@ -126,13 +93,13 @@ module NewMusic
         CanSpawn = true,
     }
 
-    item LootRepDeviceBoomboxBackfill
+    item LootRepDeviceBoombox
     {
         ItemType = base:normal,
         DisplayCategory = Entertainment,
         Weight = 0.0,
         Icon = NM_BoomboxGrey,
-        DisplayName = ZZ Loot Rep Device Boombox Backfill,
+        DisplayName = ZZ Loot Rep Device Boombox,
         hidden = true,
         CanSpawn = true,
     }
@@ -148,13 +115,13 @@ module NewMusic
         CanSpawn = true,
     }
 
-    item LootRepDeviceCDPlayerBackfill
+    item LootRepDeviceCDPlayer
     {
         ItemType = base:normal,
         DisplayCategory = Entertainment,
         Weight = 0.0,
         Icon = NM_CDPlayerBlue,
-        DisplayName = ZZ Loot Rep Device CD Player Backfill,
+        DisplayName = ZZ Loot Rep Device CD Player,
         hidden = true,
         CanSpawn = true,
     }
@@ -170,13 +137,13 @@ module NewMusic
         CanSpawn = true,
     }
 
-    item LootRepDeviceRecordPlayerBackfill
+    item LootRepDeviceRecordPlayer
     {
         ItemType = base:normal,
         DisplayCategory = Entertainment,
         Weight = 0.0,
         Icon = NM_VinylplayerOak,
-        DisplayName = ZZ Loot Rep Device Record Player Backfill,
+        DisplayName = ZZ Loot Rep Device Record Player,
         hidden = true,
         CanSpawn = true,
     }

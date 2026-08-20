@@ -8,6 +8,7 @@ NMPlaybackRuntime.MissingSinceTick = NMPlaybackRuntime.MissingSinceTick or {}
 NMPlaybackRuntime.MissingSinceMs = NMPlaybackRuntime.MissingSinceMs or {}
 NMPlaybackRuntime.PowerTick = NMPlaybackRuntime.PowerTick or {}
 NMPlaybackRuntime._corpseAudioSeen = NMPlaybackRuntime._corpseAudioSeen or {}
+NMPlaybackRuntime.SoundStartFailures = NMPlaybackRuntime.SoundStartFailures or {}
 local runtimeDiag = type(NMPlaybackRuntimeDiagnostics) == "table" and NMPlaybackRuntimeDiagnostics or {
     ensure = function(_) end,
     updateVehicleEmitter = function(_, _, _, _, _) end,
@@ -17,6 +18,7 @@ local runtimeDiag = type(NMPlaybackRuntimeDiagnostics) == "table" and NMPlayback
 runtimeDiag.ensure(NMPlaybackRuntime)
 local ATTACHED_WORLD_SMOOTH_MS = 125
 local ATTACHED_WORLD_SNAP_DIST = 6.0
+local SOUND_START_FAILURE_COOLDOWN_MS = 300000
 
 local function shouldLogLifecycleProbe(tag, uuid, signature, minIntervalMs)
     if runtimeDiag and runtimeDiag.shouldLogLifecycleProbe then
@@ -237,10 +239,20 @@ local function startSoundFromCandidates(emitter, candidates)
         local candidate = candidates[i]
         local soundId = nil
         if emitter.playSoundImpl then
-            soundId = normalizeId(emitter:playSoundImpl(candidate, soundIsoObj))
+            local okImpl, id = pcall(emitter.playSoundImpl, emitter, candidate, soundIsoObj)
+            if okImpl then
+                soundId = normalizeId(id)
+            elseif NMCore and NMCore.logChannel then
+                NMCore.logChannel("emitter", "sound_start_exception", "method=playSoundImpl sound=" .. tostring(candidate) .. " err=" .. tostring(id))
+            end
         end
-        if emitter.playSound then
-            soundId = soundId or normalizeId(emitter:playSound(candidate))
+        if soundId == nil and emitter.playSound then
+            local okPlay, id = pcall(emitter.playSound, emitter, candidate)
+            if okPlay then
+                soundId = normalizeId(id)
+            elseif NMCore and NMCore.logChannel then
+                NMCore.logChannel("emitter", "sound_start_exception", "method=playSound sound=" .. tostring(candidate) .. " err=" .. tostring(id))
+            end
         end
         if soundId then
             return soundId, candidate
@@ -278,6 +290,67 @@ local function joinCandidates(candidates, maxCount)
         out[#out + 1] = "..."
     end
     return table.concat(out, ",")
+end
+
+local function buildSoundStartFailureKey(uuid, state, candidates)
+    local keyUuid = tostring(uuid or state and state.deviceUUID or "")
+    if keyUuid == "" then
+        return nil
+    end
+    return table.concat({
+        keyUuid,
+        tostring(state and state.mediaFullType or ""),
+        tostring(tonumber(state and state.playbackEpoch) or 0),
+        tostring(tonumber(state and state.trackIndex) or 0),
+        joinCandidates(candidates, 12)
+    }, "|")
+end
+
+local function getNowRealMsSafe()
+    return NMPlaybackRuntimeCommon
+        and NMPlaybackRuntimeCommon.getNowRealMs
+        and NMPlaybackRuntimeCommon.getNowRealMs()
+        or 0
+end
+
+local function getSoundStartFailureHold(uuid, state, candidates)
+    local key = buildSoundStartFailureKey(uuid, state, candidates)
+    if not key then
+        return nil, nil
+    end
+    local entry = NMPlaybackRuntime.SoundStartFailures[key]
+    if not entry then
+        return nil, key
+    end
+    local nowMs = getNowRealMsSafe()
+    if nowMs <= 0 or (nowMs - (tonumber(entry.lastMs) or 0)) >= SOUND_START_FAILURE_COOLDOWN_MS then
+        NMPlaybackRuntime.SoundStartFailures[key] = nil
+        return nil, key
+    end
+    return entry, key
+end
+
+local function noteSoundStartFailure(uuid, state, candidates, reason)
+    local key = buildSoundStartFailureKey(uuid, state, candidates)
+    if not key then
+        return
+    end
+    local nowMs = getNowRealMsSafe()
+    NMPlaybackRuntime.SoundStartFailures[key] = {
+        lastMs = nowMs,
+        reason = tostring(reason or "sound_start_failed"),
+        mediaFullType = tostring(state and state.mediaFullType or ""),
+        playbackEpoch = tonumber(state and state.playbackEpoch) or 0,
+        trackIndex = tonumber(state and state.trackIndex) or 0,
+        candidates = joinCandidates(candidates, 12)
+    }
+end
+
+local function clearSoundStartFailure(uuid, state, candidates)
+    local key = buildSoundStartFailureKey(uuid, state, candidates)
+    if key then
+        NMPlaybackRuntime.SoundStartFailures[key] = nil
+    end
 end
 
 local function logTransitionProbe(msg, detail)
@@ -1762,6 +1835,26 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
         end
 
         local candidates = buildSoundCandidates(track, state)
+        local heldFailure = getSoundStartFailureHold(uuid, state, candidates)
+        if heldFailure then
+            state.isPlaying = false
+            state.desiredIsPlaying = false
+            state.lastStopReason = tostring(heldFailure.reason or "sound_start_quarantined")
+            if NMCore and NMCore.logChannel then
+                local detail = string.format(
+                    "uuid=%s reason=sound_start_quarantined media=%s track=%s epoch=%s candidates=%s",
+                    tostring(uuid),
+                    tostring(state.mediaFullType or "nil"),
+                    tostring(track and track.sound or "nil"),
+                    tostring(state.playbackEpoch or 0),
+                    tostring(heldFailure.candidates or joinCandidates(candidates, 8))
+                )
+                if shouldLogLifecycleProbe("sound_start_quarantined", uuid, detail, 30000) then
+                    NMCore.logChannel("emitter", "start_rejected", detail)
+                end
+            end
+            return
+        end
         if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("emitter") then
             NMCore.logChannel(
                 "emitter",
@@ -1789,6 +1882,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                 state.isPlaying = false
                 state.desiredIsPlaying = false
                 state.lastStopReason = "sound_start_failed"
+                noteSoundStartFailure(uuid, state, candidates, "dual_start_failed")
                 if isCorpseRecoveredState(state) then
                     logCorpseAudio(
                         uuid,
@@ -1817,6 +1911,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                 end
                 return
             end
+            clearSoundStartFailure(uuid, state, candidates)
 
             active = {
                 mode = "dual",
@@ -1937,6 +2032,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                 state.isPlaying = false
                 state.desiredIsPlaying = false
                 state.lastStopReason = "sound_start_failed"
+                noteSoundStartFailure(uuid, state, candidates, "sound_start_failed")
                 if isCorpseRecoveredState(state) then
                     logCorpseAudio(
                         uuid,
@@ -1967,6 +2063,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                 end
                 return
             end
+            clearSoundStartFailure(uuid, state, candidates)
             if NMCore and NMCore.logChannel then
                 NMCore.logChannel(
                     "emitter",

@@ -156,7 +156,7 @@ function NMPlaybackRuntimeDiagnostics.formatMemoryProbeSnapshot(snapshot)
         return "memory_probe_snapshot unavailable=true"
     end
     return string.format(
-        "lua_mb=%.2f heap_delta_kb=%d tick_ms_avg=%.2f tick_ms_max=%.2f sync_ms_avg=%.2f sync_ms_max=%.2f inventory_devices=%d detached_sources=%d active_emitters=%d active_entries=%d track_end_pending=%d track_end_awaiting=%d missing_tick=%d missing_ms=%d emitter_starts=%d emitter_stops=%d world_emitter_acquires=%d sound_start_failures=%d resolve_tracks_calls=%d inventory_sync_count=%d detached_sync_count=%d stop_missing_removals=%d",
+        "lua_mb=%.2f heap_delta_kb=%d tick_ms_avg=%.2f tick_ms_max=%.2f sync_ms_avg=%.2f sync_ms_max=%.2f inventory_devices=%d detached_sources=%d active_emitters=%d active_entries=%d track_end_pending=%d track_end_awaiting=%d missing_tick=%d missing_ms=%d emitter_starts=%d emitter_stops=%d world_emitter_acquires=%d sound_start_failures=%d resolve_tracks_calls=%d inventory_sync_count=%d detached_sync_count=%d stable_off_skip=%d stable_off_sync=%d stop_missing_removals=%d",
         tonumber(snapshot.luaMb) or 0,
         math.floor(tonumber(snapshot.heapDeltaKb) or 0),
         tonumber(snapshot.tickMsAvg) or 0,
@@ -178,6 +178,8 @@ function NMPlaybackRuntimeDiagnostics.formatMemoryProbeSnapshot(snapshot)
         tonumber(snapshot.resolveTracksCalls) or 0,
         tonumber(snapshot.inventorySyncCount) or 0,
         tonumber(snapshot.detachedSyncCount) or 0,
+        tonumber(snapshot.stableOffInventorySkipCount) or 0,
+        tonumber(snapshot.stableOffInventorySyncCount) or 0,
         tonumber(snapshot.stopMissingRemovals) or 0
     )
 end
@@ -249,6 +251,8 @@ function NMPlaybackRuntimeDiagnostics.sampleMemoryProbe(runtimeTable, sample)
         resolveTracksCalls = getCounter(probe, "resolve_tracks_calls"),
         inventorySyncCount = getCounter(probe, "inventory_sync_count"),
         detachedSyncCount = getCounter(probe, "detached_sync_count"),
+        stableOffInventorySkipCount = getCounter(probe, "playback_inventory_stable_off_skip"),
+        stableOffInventorySyncCount = getCounter(probe, "playback_inventory_stable_off_sync"),
         stopMissingRemovals = getCounter(probe, "stop_missing_removals"),
         peaks = {
             luaHeapKb = nextHeapPeak,
@@ -264,7 +268,7 @@ function NMPlaybackRuntimeDiagnostics.sampleMemoryProbe(runtimeTable, sample)
     local tickHotMs = NMRuntimeConfig and NMRuntimeConfig.getMemoryProbeTickHotMs and NMRuntimeConfig.getMemoryProbeTickHotMs() or 8
     local syncHotMs = NMRuntimeConfig and NMRuntimeConfig.getMemoryProbeSyncHotMs and NMRuntimeConfig.getMemoryProbeSyncHotMs() or 4
     local playbackActive = sample and sample.playbackActive == true or false
-    local shouldHeartbeat = (activeEmitters > 0 or trackEndPending > 0 or trackEndAwaiting > 0 or snapshot.inventorySyncCount > 0 or snapshot.detachedSyncCount > 0)
+    local shouldHeartbeat = (activeEmitters > 0 or trackEndPending > 0 or trackEndAwaiting > 0 or snapshot.inventorySyncCount > 0 or snapshot.detachedSyncCount > 0 or snapshot.stableOffInventorySkipCount > 0)
         and ((currentNowMs - (tonumber(probe.lastFlushMs) or 0)) >= heartbeatEveryMs)
     local shouldLogPlaybackStart = playbackActive == true and probe.lastPlaybackActive ~= true
 

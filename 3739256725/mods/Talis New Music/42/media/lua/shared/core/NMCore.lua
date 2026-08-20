@@ -2,7 +2,7 @@
 NMCore = NMCore or {}
 
 NMCore.ModId = "newmusic"
-NMCore.BuildMarker = "NM_BUILD_2026-08-17_1"
+NMCore.BuildMarker = "NM_BUILD_2026-08-18_1"
 NMCore.NetModule = "newmusic_device"
 NMCore.StateKey = "nm_device_state"
 NMCore.RegistryKey = "nm_device"

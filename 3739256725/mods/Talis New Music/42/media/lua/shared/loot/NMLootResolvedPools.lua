@@ -1,6 +1,5 @@
 require "loot/NMManagedSpawnCatalog"
-require "loot/NMLootPolicySnapshot"
-require "loot/NMLootRealizationAuthority"
+require "loot/NMMediaLootPool"
 
 NMLootResolvedPools = NMLootResolvedPools or {}
 
@@ -13,8 +12,7 @@ local DEVICE_CATEGORY_ORDER = NMManagedSpawnCatalog.getDeviceCategoryOrder and N
 
 local ROUTE_ORDER = {
     "standard",
-    "globalBackfill",
-    "storeTopUp"
+    "topUp"
 }
 
 local function cloneMediaUnit(unit, category)
@@ -158,12 +156,11 @@ local function logResolvedPoolShape(buildId, policy, countsByRoute)
         "loot",
         "sandbox.loot policy pool shape",
         string.format(
-            "buildId=%s policy={%s} standard={%s} globalBackfill={%s} storeTopUp={%s}",
+            "buildId=%s policy={%s} standard={%s} topUp={%s}",
             tostring(buildId or ""),
             tostring(NMLootPolicySnapshot and NMLootPolicySnapshot.formatPolicy and NMLootPolicySnapshot.formatPolicy(policy) or "unknown"),
             tostring(formatResolvedRouteCounts(countsByRoute and countsByRoute.standard)),
-            tostring(formatResolvedRouteCounts(countsByRoute and countsByRoute.globalBackfill)),
-            tostring(formatResolvedRouteCounts(countsByRoute and countsByRoute.storeTopUp))
+            tostring(formatResolvedRouteCounts(countsByRoute and countsByRoute.topUp))
         )
     )
 end
@@ -277,8 +274,21 @@ local function buildRouteViews(buildContext, policy)
         local route = ROUTE_ORDER[i]
         routes[route] = newRouteView()
         countsByRoute[route] = newCounts()
-        addMediaUnitsForRoute(routes[route], buildContext and buildContext.fallbackMediaPool or nil, policy, countsByRoute[route])
-        addDeviceUnitsForRoute(routes[route], buildContext and buildContext.fallbackDevicePool or nil, countsByRoute[route])
+        if route == "standard" or route == "topUp" then
+            local authoritativeMediaPool = buildContext
+                and buildContext.mediaLootPool
+                and buildContext.mediaLootPool.media
+                or buildContext and buildContext.managedSpawnMediaPool
+                or nil
+            addMediaUnitsForRoute(routes[route], authoritativeMediaPool, policy, countsByRoute[route])
+        end
+        if route == "standard" or route == "topUp" then
+            addDeviceUnitsForRoute(
+                routes[route],
+                buildContext and buildContext.managedSpawnDevicePool or nil,
+                countsByRoute[route]
+            )
+        end
     end
     return routes, countsByRoute
 end
@@ -286,15 +296,14 @@ end
 function resolvedPools.build(buildContext)
     local policy = clonePolicy(buildContext and buildContext.lootPolicy or nil)
     local routes, countsByRoute = buildRouteViews(buildContext or {}, policy)
-    local distroPatchStats = buildContext and buildContext.distroPatchStats
-        or NMServerDistroPatch and NMServerDistroPatch.getStats and NMServerDistroPatch.getStats()
+    local realizationAuthority = NMLootRealizationAuthority
+        and NMLootRealizationAuthority.build
+        and NMLootRealizationAuthority.build({
+            mediaPool = routes.standard and routes.standard.media or nil,
+            devicePool = routes.standard and routes.standard.devices or nil,
+            lootPolicy = policy
+        })
         or nil
-    local realizationAuthority = NMLootRealizationAuthority.build({
-        mediaPool = buildContext and buildContext.fallbackMediaPool or nil,
-        devicePool = buildContext and buildContext.fallbackDevicePool or nil,
-        lootPolicy = policy,
-        distroPatchStats = distroPatchStats
-    })
     logResolvedPoolShape(buildContext and buildContext.buildId or "", policy, countsByRoute)
     if NMCore and NMCore.logChannel then
         NMCore.logChannel(

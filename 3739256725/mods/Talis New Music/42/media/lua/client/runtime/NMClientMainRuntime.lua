@@ -151,6 +151,16 @@ local function shouldRunCadence(interval)
     return interval > 0 and (tick % interval) == 0
 end
 
+local function shouldWakeForCadence(interval)
+    local tick = tonumber(tickWorkProbe.tick) or 0
+    local cadence = tonumber(interval) or 0
+    if cadence <= 0 then
+        return false
+    end
+    local remainder = tick % cadence
+    return remainder == 0 or remainder == (cadence - 1)
+end
+
 local function maybeRetryRadialHooks(probeEnabled)
     NMClientMainRuntime._radialHookRetryTick = (tonumber(NMClientMainRuntime._radialHookRetryTick) or 0) + 1
     if (NMClientMainRuntime._radialHookRetryTick % 120) ~= 1 then
@@ -189,9 +199,6 @@ function NMClientMainRuntime.markAuthorityRefresh(reason)
 end
 
 function NMClientMainRuntime.requestTickGateWake(reason)
-    if isMPClientRuntime() then
-        return
-    end
     if NMClientTickGate and NMClientTickGate.wake then
         NMClientTickGate.wake(reason)
     end
@@ -232,16 +239,17 @@ function NMClientMainRuntime.advanceSchedulerTick()
 end
 
 function NMClientMainRuntime.hasAnyTickWork()
-    if isMPClientRuntime() then
-        return true, "mp_runtime"
-    end
     local player = getPlayer and getPlayer() or nil
     local playbackInterested = NMClientPlaybackTick and NMClientPlaybackTick.hasInterest and NMClientPlaybackTick.hasInterest() == true
     local zombieActiveInterested = NMClientZombieVisualProbe and NMClientZombieVisualProbe.hasPendingWork and NMClientZombieVisualProbe.hasPendingWork(player) == true
     local zombieMaintenanceDue = NMClientZombieVisualProbe and NMClientZombieVisualProbe.shouldRunMaintenance and NMClientZombieVisualProbe.shouldRunMaintenance() == true
     local uiDragInterested = NMClientPortableUiDragBlockProbe and NMClientPortableUiDragBlockProbe.hasPendingWork and NMClientPortableUiDragBlockProbe.hasPendingWork() == true
     local windowRestorePending = hasPendingWindowRestore() == true
-    local zombieCachePending = hasZombieCachePendingWork() == true
+    local registrySyncDue = isMPClientRuntime()
+        and NMClientRegistrySync
+        and NMClientRegistrySync.shouldRunThisTick
+        and NMClientRegistrySync.shouldRunThisTick() == true
+    local zombieCachePending = hasZombieCachePendingWork() == true and shouldWakeForCadence(SLOW_LANE_INTERVAL_TICKS)
     if playbackInterested then
         return true, "playback_interest"
     end
@@ -256,6 +264,9 @@ function NMClientMainRuntime.hasAnyTickWork()
     end
     if windowRestorePending then
         return true, "window_restore_pending"
+    end
+    if registrySyncDue then
+        return true, "registry_sync_due"
     end
     if zombieCachePending then
         return true, "zombie_cache_pending"
@@ -703,7 +714,8 @@ function NMClientMainRuntime.registerTickGate()
         hasAnyTickWork = NMClientMainRuntime.hasAnyTickWork,
         isHookInstalled = NMClientMainRuntime.isTickHookInstalled,
         installHook = NMClientMainRuntime.installTickHook,
-        removeHook = NMClientMainRuntime.removeTickHook
+        removeHook = NMClientMainRuntime.removeTickHook,
+        shouldKeepGateRegistered = isMPClientRuntime
     })
 end
 

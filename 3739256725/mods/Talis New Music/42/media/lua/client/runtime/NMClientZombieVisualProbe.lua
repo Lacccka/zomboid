@@ -391,7 +391,9 @@ end
 local function ensureClientProofVisual(zombie, decision, attachedItemsState)
     local zid = getZombieId(zombie)
     local beforeProbe = getModelProbe(zombie)
-    local allowDefaultFallback = not (type(decision) == "table" and decision.authoritative == true)
+    local allowDefaultFallback = type(decision) == "table"
+        and decision.authoritative ~= true
+        and decision.allowDefaultFallback == true
     local spec = getZombieVariantSpec(zombie, decision, allowDefaultFallback)
     if not spec then
         if type(decision) == "table" and decision.authoritative == true and decision.selected == true then
@@ -403,6 +405,11 @@ local function ensureClientProofVisual(zombie, decision, attachedItemsState)
     local attachedBefore = countMatchingAttachedSlots(tostring(spec.fullType or ""), initialAttachedItemsState)
     local slot = tostring(spec.attachmentLocation or "")
     local madeAttach = false
+    local visualState = NMClientZombieVisualProbe._clientVisualStateByZombieId[zid] or {}
+    NMClientZombieVisualProbe._clientVisualStateByZombieId[zid] = visualState
+    local decisionSource = tostring(decision and decision.source or "")
+    local decisionState = tostring(decision and decision.state or "")
+    local authoritative = decision and decision.authoritative == true or false
     if not hasAttachedSlot(slot, tostring(spec.fullType or ""), initialAttachedItemsState) then
         local ok, reason, item = attachClientProofSlot(zombie, spec)
         if ok then
@@ -410,8 +417,11 @@ local function ensureClientProofVisual(zombie, decision, attachedItemsState)
             logProof(
                 "client_attach",
                 string.format(
-                    "zombie=%s slot=%s item=%s attachedBefore=%s",
+                    "zombie=%s source=%s authoritative=%s state=%s slot=%s item=%s attachedBefore=%s",
                     tostring(zid),
+                    decisionSource,
+                    tostring(authoritative),
+                    decisionState,
                     tostring(slot),
                     tostring(item and item.getFullType and item:getFullType() or reason or tostring(spec.fullType or "")),
                     tostring(attachedBefore)
@@ -428,6 +438,32 @@ local function ensureClientProofVisual(zombie, decision, attachedItemsState)
                 )
             )
         end
+    elseif shouldLog() then
+        local existingSig = table.concat({
+            tostring(zid),
+            decisionSource,
+            tostring(authoritative),
+            decisionState,
+            tostring(slot),
+            tostring(spec.fullType or ""),
+            tostring(attachedBefore)
+        }, "|")
+        if visualState.lastExistingVisualSig ~= existingSig then
+            visualState.lastExistingVisualSig = existingSig
+            logProof(
+                "client_attach_existing",
+                string.format(
+                    "zombie=%s source=%s authoritative=%s state=%s slot=%s item=%s attached=%s",
+                    tostring(zid),
+                    decisionSource,
+                    tostring(authoritative),
+                    decisionState,
+                    tostring(slot),
+                    tostring(spec.fullType or ""),
+                    tostring(attachedBefore)
+                )
+            )
+        end
     end
 
     local afterProbe = beforeProbe
@@ -438,8 +474,6 @@ local function ensureClientProofVisual(zombie, decision, attachedItemsState)
     local finalAttachedItemsState = madeAttach and inspectAttachedItemsState(zombie) or initialAttachedItemsState
     local attachedAfter = countMatchingAttachedSlots(tostring(spec.fullType or ""), finalAttachedItemsState)
     local supportedSlots = hasAttachedSlot(tostring(spec.attachmentLocation or ""), tostring(spec.fullType or ""), finalAttachedItemsState) and 1 or 0
-    local visualState = NMClientZombieVisualProbe._clientVisualStateByZombieId[zid] or {}
-    NMClientZombieVisualProbe._clientVisualStateByZombieId[zid] = visualState
     if madeAttach then
         visualState.clientProofAttached = true
     elseif attachedAfter > 0 and visualState.clientProofAttached ~= false then
@@ -558,7 +592,16 @@ local function applyClientVisualFallback(zombie, decision, counts, attachedItems
     counts.fallbackEligible = counts.fallbackEligible + 1
     local forced = ensureClientProofVisual(zombie, decision, attachedItemsState)
     if forced then
-        logProof("client_attach_fallback", string.format("zombie=%s reason=no_authoritative_record", tostring(getZombieId(zombie))))
+        logProof(
+            "client_attach_fallback",
+            string.format(
+                "zombie=%s source=%s authoritative=%s state=%s reason=no_authoritative_record",
+                tostring(getZombieId(zombie)),
+                tostring(decision and decision.source or ""),
+                tostring(decision and decision.authoritative == true or false),
+                tostring(decision and decision.state or "")
+            )
+        )
     end
     return forced
 end

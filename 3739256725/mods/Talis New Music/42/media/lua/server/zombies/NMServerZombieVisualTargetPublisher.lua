@@ -185,6 +185,19 @@ function NMServerZombieVisualTargetPublisher.noteRealizationChanged(zombie, real
         return false
     end
     trackRealizationChange(zombie)
+    logSummary(
+        "target_realization_change",
+        string.format(
+            "zombie=%s status=%s variant=%s fullType=%s proof=%s attachment=%s companion=%s",
+            tostring(realization.zombieId or ""),
+            tostring(realization.selectionStatus or ""),
+            tostring(realization.variantId or ""),
+            tostring(realization.fullType or ""),
+            tostring(realization.proofItemStatus or ""),
+            tostring(realization.attachmentStatus or ""),
+            tostring(realization.companionCaseStatus or "")
+        )
+    )
     return true
 end
 
@@ -233,7 +246,7 @@ local function shouldRepublishSnapshot(state, publishSignature)
     return publishSignature ~= state.signature or ticksSinceSend >= republishInterval
 end
 
-local function hasPendingNearbyRealizationChange(player)
+local function hasPendingNearbyRealizationChange(player, pruneDead)
     local allowZombie = makeNearbyZombieCheck(player)
     if not allowZombie then
         return false
@@ -243,7 +256,7 @@ local function hasPendingNearbyRealizationChange(player)
         if zombie and isAliveZombie(zombie) and allowZombie(zombie) then
             return true
         end
-        if not zombie or not isAliveZombie(zombie) then
+        if pruneDead == true and (not zombie or not isAliveZombie(zombie)) then
             NMServerZombieVisualTargetPublisher._pendingRealizationChanges[zombieId] = nil
         end
     end
@@ -286,13 +299,69 @@ local function hasMovedEnoughForNearbyRefresh(state, player)
     return dx >= 2 or dy >= 2
 end
 
-local function canMovementRepublishNow(state)
+local function canMovementRepublishAtTick(state, tick)
     if type(state) ~= "table" then
         return false
     end
-    local nowTick = tonumber(NMServerZombieVisualTargetPublisher._tick) or 0
     local lastMovementPublishTick = tonumber(state.lastMovementPublishTick) or 0
-    return (nowTick - lastMovementPublishTick) >= getMovementPublishCooldownTicks()
+    return ((tonumber(tick) or 0) - lastMovementPublishTick) >= getMovementPublishCooldownTicks()
+end
+
+local function hasTrackedPlayerState()
+    for _ in pairs(NMServerZombieVisualTargetPublisher._playerState) do
+        return true
+    end
+    return false
+end
+
+local function pruneExpiredPendingRealizationChanges()
+    local nowTick = tonumber(NMServerZombieVisualTargetPublisher._tick) or 0
+    local publishInterval = math.max(1, getPublishIntervalTicks())
+    for zombieId, entry in pairs(NMServerZombieVisualTargetPublisher._pendingRealizationChanges) do
+        local changedTick = tonumber(entry and entry.changedTick) or 0
+        if changedTick <= 0 or (nowTick - changedTick) >= publishInterval then
+            NMServerZombieVisualTargetPublisher._pendingRealizationChanges[zombieId] = nil
+        end
+    end
+end
+
+local function buildPublishPlan(players, options)
+    local tick = tonumber(options and options.tick) or tonumber(NMServerZombieVisualTargetPublisher._tick) or 0
+    local pruneDead = options and options.pruneDead == true
+    local plans = {}
+    local summary = {
+        bootstrap = false,
+        movement = false,
+        realization = false
+    }
+
+    for i = 1, #players do
+        local player = players[i]
+        local playerId = getPlayerId(player)
+        if playerId ~= "" then
+            local state = NMServerZombieVisualTargetPublisher._playerState[playerId]
+            local bootstrapNeeded = needsBootstrapSnapshot(state, player)
+            local movementNeeded = hasMovedEnoughForNearbyRefresh(state, player) and canMovementRepublishAtTick(state, tick)
+            local nearbyChangePending = hasPendingNearbyRealizationChange(player, pruneDead)
+            plans[#plans + 1] = {
+                player = player,
+                playerId = playerId,
+                state = state,
+                bootstrapNeeded = bootstrapNeeded,
+                movementNeeded = movementNeeded,
+                nearbyChangePending = nearbyChangePending
+            }
+            summary.bootstrap = summary.bootstrap or bootstrapNeeded
+            summary.movement = summary.movement or movementNeeded
+            summary.realization = summary.realization or nearbyChangePending
+        end
+    end
+
+    if pruneDead == true then
+        pruneExpiredPendingRealizationChanges()
+    end
+
+    return plans, summary
 end
 
 local function publishSnapshot(player, state, snapshot, publishReason)
@@ -329,68 +398,67 @@ local function publishSnapshot(player, state, snapshot, publishReason)
     logSummary(
         "target_publish_reason",
         string.format(
-            "player=%s reason=%s revision=%s records=%s",
+            "player=%s reason=%s revision=%s records=%s candidates=%s published=%s tick=%s",
             tostring(getPlayerId(player)),
             tostring(publishReason or "cadence"),
             tostring(state.revision or 0),
-            tostring(snapshot and #snapshot.records or 0)
+            tostring(snapshot and #snapshot.records or 0),
+            tostring(snapshot and snapshot.targetCandidates or 0),
+            tostring(snapshot and snapshot.targetPublished or 0),
+            tostring(NMServerZombieVisualTargetPublisher._tick or 0)
         )
     )
 end
 
-function NMServerZombieVisualTargetPublisher.onTick(tickStep)
+function NMServerZombieVisualTargetPublisher.onTick(tickStep, absoluteTick)
     if not canPublish() then
         return
     end
-    NMServerZombieVisualTargetPublisher._tick = (tonumber(NMServerZombieVisualTargetPublisher._tick) or 0) + math.max(1, tonumber(tickStep) or 1)
+    if tonumber(absoluteTick) then
+        NMServerZombieVisualTargetPublisher._tick = tonumber(absoluteTick) or 0
+    else
+        NMServerZombieVisualTargetPublisher._tick = (tonumber(NMServerZombieVisualTargetPublisher._tick) or 0) + math.max(1, tonumber(tickStep) or 1)
+    end
     local players = collectPlayers()
     local publishIntervalDue = (NMServerZombieVisualTargetPublisher._tick % getPublishIntervalTicks()) == 0
-    local bootstrapPassNeeded = false
-    local assistedPassNeeded = false
-    local movementPassNeeded = false
-    for i = 1, #players do
-        local player = players[i]
-        local playerId = getPlayerId(player)
-        if playerId ~= "" then
-            local state = NMServerZombieVisualTargetPublisher._playerState[playerId]
-            if needsBootstrapSnapshot(state, player) then
-                bootstrapPassNeeded = true
-                break
-            end
-            if movementPassNeeded ~= true and hasMovedEnoughForNearbyRefresh(state, player) and canMovementRepublishNow(state) then
-                movementPassNeeded = true
-            end
-        end
-        if assistedPassNeeded ~= true and hasPendingNearbyRealizationChange(player) then
-            assistedPassNeeded = true
-        end
-    end
-    if not publishIntervalDue and not bootstrapPassNeeded and not assistedPassNeeded and not movementPassNeeded then
+    local plans, summary = buildPublishPlan(players, { tick = NMServerZombieVisualTargetPublisher._tick, pruneDead = true })
+    if not publishIntervalDue and summary.bootstrap ~= true and summary.realization ~= true and summary.movement ~= true and hasTrackedPlayerState() ~= true then
         return
     end
-    local zombies = getCell() and getCell():getZombieList() or nil
+    local needsSnapshot = publishIntervalDue or summary.bootstrap == true or summary.realization == true or summary.movement == true
+    if needsSnapshot ~= true then
+        local activePlayers = {}
+        for i = 1, #plans do
+            activePlayers[plans[i].playerId] = true
+        end
+        for playerId, _ in pairs(NMServerZombieVisualTargetPublisher._playerState) do
+            if activePlayers[playerId] ~= true then
+                NMServerZombieVisualTargetPublisher._playerState[playerId] = nil
+            end
+        end
+        return
+    end
+    local zombies = needsSnapshot and getCell() and getCell():getZombieList() or nil
     local activeStrategy = getActiveVisualStrategy()
     local activePlayers = {}
     NMServerZombieVisualTargetPublisher._diag.publishCalls = (NMServerZombieVisualTargetPublisher._diag.publishCalls or 0) + 1
-    for i = 1, #players do
-        local player = players[i]
-        local playerId = getPlayerId(player)
+    for i = 1, #plans do
+        local plan = plans[i]
+        local player = plan.player
+        local playerId = plan.playerId
         if playerId ~= "" then
             activePlayers[playerId] = true
-            local state = NMServerZombieVisualTargetPublisher._playerState[playerId] or { revision = 0, signature = nil, lastSentTick = 0 }
-            local bootstrapNeeded = needsBootstrapSnapshot(state, player)
-            local nearbyChangePending = hasPendingNearbyRealizationChange(player)
-            local movementNeeded = hasMovedEnoughForNearbyRefresh(state, player) and canMovementRepublishNow(state)
+            local state = plan.state or { revision = 0, signature = nil, lastSentTick = 0 }
             local snapshot = collectTargetSnapshotForPlayer(player, zombies, activeStrategy)
             local signature = NMZombieVisualTargetContract and NMZombieVisualTargetContract.getTargetSnapshotSignature and NMZombieVisualTargetContract.getTargetSnapshotSignature(snapshot.records) or ""
             NMServerZombieVisualTargetPublisher._diag.targetCandidates = (NMServerZombieVisualTargetPublisher._diag.targetCandidates or 0) + snapshot.targetCandidates
             NMServerZombieVisualTargetPublisher._diag.targetPublished = (NMServerZombieVisualTargetPublisher._diag.targetPublished or 0) + snapshot.targetPublished
             local publishReason = nil
-            if bootstrapNeeded then
+            if plan.bootstrapNeeded then
                 publishReason = "bootstrap"
-            elseif nearbyChangePending then
+            elseif plan.nearbyChangePending then
                 publishReason = "realization"
-            elseif movementNeeded and signature ~= state.signature then
+            elseif plan.movementNeeded and signature ~= state.signature then
                 publishReason = "movement"
             elseif shouldRepublishSnapshot(state, signature) then
                 publishReason = "cadence"
@@ -407,12 +475,6 @@ function NMServerZombieVisualTargetPublisher.onTick(tickStep)
     for playerId, _ in pairs(NMServerZombieVisualTargetPublisher._playerState) do
         if activePlayers[playerId] ~= true then
             NMServerZombieVisualTargetPublisher._playerState[playerId] = nil
-        end
-    end
-    for zombieId, entry in pairs(NMServerZombieVisualTargetPublisher._pendingRealizationChanges) do
-        local changedTick = tonumber(entry and entry.changedTick) or 0
-        if changedTick <= 0 or ((tonumber(NMServerZombieVisualTargetPublisher._tick) or 0) - changedTick) >= math.max(1, getPublishIntervalTicks()) then
-            NMServerZombieVisualTargetPublisher._pendingRealizationChanges[zombieId] = nil
         end
     end
     logSummary(
@@ -434,6 +496,23 @@ function NMServerZombieVisualTargetPublisher.onTick(tickStep)
     if NMServerZombieVisualTargetLedger and NMServerZombieVisualTargetLedger.logDiag then
         NMServerZombieVisualTargetLedger.logDiag("target_ledger")
     end
+end
+
+function NMServerZombieVisualTargetPublisher.hasPublishWork(currentTick)
+    if not canPublish() then
+        return false
+    end
+    local nextTick = tonumber(currentTick) or ((tonumber(NMServerZombieVisualTargetPublisher._tick) or 0) + 1)
+    local players = collectPlayers()
+    if #players <= 0 then
+        return hasTrackedPlayerState() == true
+    end
+    local publishIntervalDue = (nextTick % getPublishIntervalTicks()) == 0
+    if publishIntervalDue == true then
+        return true
+    end
+    local _plans, summary = buildPublishPlan(players, { tick = nextTick, pruneDead = false })
+    return summary.bootstrap == true or summary.realization == true or summary.movement == true
 end
 
 return NMServerZombieVisualTargetPublisher

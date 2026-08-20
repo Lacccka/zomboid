@@ -2,17 +2,17 @@ NMServerSandboxLootController = NMServerSandboxLootController or {}
 
 require "loot/NMManagedSpawnCatalog"
 require "loot/NMLootContainerClassifier"
-require "loot/NMFallbackRepresentativeResolver"
+require "loot/NMLootPlaceholderResolver"
 require "loot/NMLootBuildContext"
 require "loot/NMLootDebugHelpers"
 require "loot/NMLootDiagnostics"
 require "loot/NMLootPolicySnapshot"
+require "loot/NMLootRealizationAuthority"
 require "loot/NMLootResolvedPools"
 require "loot/NMLootRoutePlanner"
 require "loot/NMLateBuildContainerRecovery"
 require "loot/NMServerLootProbe"
 require "loot/NMVanillaCDLootConverter"
-require "core/NMTempBootDebugProfiles"
 
 local controller = NMServerSandboxLootController
 local formatRawSandboxLootSettings = NMLootDiagnostics.formatRawSandboxLootSettings
@@ -51,7 +51,7 @@ local postDistributionMergeObserved = false
 local vanillaPickerParseLikelyCompleted = false
 local bootstrapIsNewGame = nil
 local SESSION_FILL_POST_PROCESS_STATE = setmetatable({}, { __mode = "k" })
-local logTempBootMarker
+local logLootBootstrap
 
 local function shouldKeepTickHookRegistered()
     return sandboxLootApplied ~= true
@@ -68,8 +68,8 @@ local function syncTickHookRegistration()
         if Events.OnTick.Add and not tickHookRegistered then
             Events.OnTick.Add(controller.onTick)
             tickHookRegistered = true
-            if logTempBootMarker then
-                logTempBootMarker("registerEventHooks_tick", "registered=true")
+            if logLootBootstrap then
+                logLootBootstrap("registerEventHooks_tick", "registered=true")
             end
         end
         return
@@ -77,8 +77,8 @@ local function syncTickHookRegistration()
     if Events.OnTick.Remove and tickHookRegistered then
         Events.OnTick.Remove(controller.onTick)
         tickHookRegistered = false
-        if logTempBootMarker then
-            logTempBootMarker("registerEventHooks_tick", "registered=false")
+        if logLootBootstrap then
+            logLootBootstrap("registerEventHooks_tick", "registered=false")
         end
     end
 end
@@ -140,34 +140,18 @@ local function transitionLootState(nextState, reason, buildId)
     )
 end
 
-local function logTempBootMarker(stage, extra)
-    if NMCore and NMCore.logChannel then
-        NMCore.logChannel(
-            "loot",
-            "temp_boot_marker",
-            string.format(
-                "stage=%s applied=%s applying=%s distroReady=%s extra=%s",
-                tostring(stage or "unknown"),
-                tostring(sandboxLootApplied),
-                tostring(sandboxLootApplying),
-                tostring(areDistributionTablesReady and areDistributionTablesReady() or false),
-                tostring(extra or "")
-            )
-        )
-    end
-    if NMTempBootDebugProfiles then
-        NMTempBootDebugProfiles.logSandboxSnapshot(
-            "loot",
-            "temp_boot_sandbox",
+logLootBootstrap = function(stage, extra)
+    logLoot(
+        "sandbox.loot bootstrap",
+        string.format(
+            "stage=%s applied=%s applying=%s distroReady=%s extra=%s",
             tostring(stage or "unknown"),
-            string.format(
-                "applied=%s applying=%s extra=%s",
-                tostring(sandboxLootApplied),
-                tostring(sandboxLootApplying),
-                tostring(extra or "")
-            )
+            tostring(sandboxLootApplied),
+            tostring(sandboxLootApplying),
+            tostring(areDistributionTablesReady and areDistributionTablesReady() or false),
+            tostring(extra or "")
         )
-    end
+    )
 end
 
 local function isResidentialDresserContext(context)
@@ -239,7 +223,7 @@ local function captureLootSandboxSnapshot(stage)
         zomboidOST = getSandboxBoolean(NMRuntimeConfig and NMRuntimeConfig.getZomboidOSTEnabled or nil, true),
         convertVanilla = getSandboxBoolean(NMRuntimeConfig and NMRuntimeConfig.getConvertVanillaCDsAndCDPlayersEnabled or nil, false),
         cassettes = getSandboxRate(NMRuntimeConfig and NMRuntimeConfig.getCassettesSpawnRate or nil, 0.6),
-        vinyl = getSandboxRate(NMRuntimeConfig and NMRuntimeConfig.getVinylRecordsSpawnRate or nil, 0.6),
+        vinyl = getSandboxRate(NMRuntimeConfig and NMRuntimeConfig.getVinylRecordsSpawnRate or nil, 0.3),
         cds = getSandboxRate(NMRuntimeConfig and NMRuntimeConfig.getCDsSpawnRate or nil, 0.6),
         walkman = getSandboxRate(NMRuntimeConfig and NMRuntimeConfig.getWalkmanSpawnRate or nil, 0.6),
         boombox = getSandboxRate(NMRuntimeConfig and NMRuntimeConfig.getBoomboxSpawnRate or nil, 0.6),
@@ -480,14 +464,13 @@ local function resetLootBuildState()
     lateBuildRecoveryAllowed = false
     runtimeRecoveryEnabledEpoch = nil
     clearPendingBootstrapApply()
-    if NMFallbackRepresentativeResolver and NMFallbackRepresentativeResolver.configure then
-        NMFallbackRepresentativeResolver.configure({
+    if NMLootPlaceholderResolver and NMLootPlaceholderResolver.configure then
+        NMLootPlaceholderResolver.configure({
             cacheKey = "invalidated",
             policy = { casesEnabled = true, ostEnabled = true },
             routes = {
                 standard = { media = { cassettes = {}, vinyl = {}, cds = {} }, devices = { walkman = {}, boombox = {}, cdplayer = {}, recordplayer = {} } },
-                globalBackfill = { media = { cassettes = {}, vinyl = {}, cds = {} }, devices = { walkman = {}, boombox = {}, cdplayer = {}, recordplayer = {} } },
-                storeTopUp = { media = { cassettes = {}, vinyl = {}, cds = {} }, devices = { walkman = {}, boombox = {}, cdplayer = {}, recordplayer = {} } }
+                topUp = { media = { cassettes = {}, vinyl = {}, cds = {} }, devices = { walkman = {}, boombox = {}, cdplayer = {}, recordplayer = {} } }
             }
         })
     end
@@ -645,8 +628,8 @@ local function executeAcceptedLootBuild(snapshot, stage, buildId, distributionAu
     end
     local injectBudgetMs = elapsedMs(phaseStartedAt)
 
-    if NMFallbackRepresentativeResolver and NMFallbackRepresentativeResolver.configure then
-        NMFallbackRepresentativeResolver.configure(resolvedPools)
+    if NMLootPlaceholderResolver and NMLootPlaceholderResolver.configure then
+        NMLootPlaceholderResolver.configure(resolvedPools)
     end
     if NMVanillaCDLootConverter and NMVanillaCDLootConverter.configure then
         NMVanillaCDLootConverter.configure()
@@ -666,11 +649,6 @@ local function executeAcceptedLootBuild(snapshot, stage, buildId, distributionAu
         and NMVanillaCDLootConverter.getConfigurationSnapshot
         and NMVanillaCDLootConverter.getConfigurationSnapshot()
         or nil
-    local distroPatchStats = NMServerDistroPatch
-        and NMServerDistroPatch.getStats
-        and NMServerDistroPatch.getStats()
-        or nil
-
     NMLootDiagnostics.emitSandboxLootSummary({
         distributionAuditEnabled = distributionAuditEnabled,
         activeDebugPreset = "subsystem:loot",
@@ -690,22 +668,21 @@ local function executeAcceptedLootBuild(snapshot, stage, buildId, distributionAu
         basePresentCounts = buildContext.basePresentCounts,
         baseMissingCounts = buildContext.baseMissingCounts,
         childPoolCounts = buildContext.childPoolCounts,
-        fallbackMediaCounts = routeResult.fallbackMediaCounts,
-        fallbackDeviceCounts = routeResult.fallbackDeviceCounts,
+        managedSpawnMediaCounts = routeResult.managedSpawnMediaCounts,
+        managedSpawnDeviceCounts = routeResult.managedSpawnDeviceCounts,
         resolvedPoolCounts = routeResult.resolvedPoolCounts,
-        fallbackChildCounts = buildContext.fallbackChildCounts,
-        fallbackMediaOwnership = routeResult.fallbackMediaOwnership,
-        fallbackRepresentatives = routeResult.fallbackRepresentatives,
+        managedSpawnChildMediaCounts = buildContext.managedSpawnChildMediaCounts,
+        managedSpawnMediaOwnership = routeResult.managedSpawnMediaOwnership,
+        managedSpawnPlaceholders = routeResult.managedSpawnPlaceholders,
         injected = routeResult.injected,
         budgetDiagnostics = routeResult.budgetDiagnostics,
         backfill = routeResult.backfill,
-        storeTopUp = routeResult.storeTopUp,
+        topUp = routeResult.topUp,
         standardRoute = routeResult.standardRoute,
         musicStoreCategoryWeights = routeResult.musicStoreCategoryWeights,
         musicStoreLaneWeights = routeResult.musicStoreLaneWeights,
         vanillaCDEnabled = NMVanillaCDLootConverter and NMVanillaCDLootConverter.isEnabled and NMVanillaCDLootConverter.isEnabled() == true,
         vanillaCDConfig = vanillaCDConfig,
-        distroPatchStats = distroPatchStats,
         cdPlayerVariantCount = NMZombieDeviceVariantCatalog
             and NMZombieDeviceVariantCatalog.getVariantConfig
             and #(NMZombieDeviceVariantCatalog.getVariantConfig("cd_player").itemPool or {})
@@ -763,13 +740,12 @@ local function executeAcceptedLootBuild(snapshot, stage, buildId, distributionAu
             tostring(NMLootDiagnostics and NMLootDiagnostics.formatResolvedRouteCounts and NMLootDiagnostics.formatResolvedRouteCounts(resolvedPools and resolvedPools.countsByRoute and resolvedPools.countsByRoute.standard or nil) or "none")
         )
     )
-    logTempBootMarker(
+    logLootBootstrap(
         "ensureInitialized_end",
         string.format(
-            "result=true epoch=%s elapsedMs=%s preset=%s rawRates=%s",
+            "result=true epoch=%s elapsedMs=%s rawRates=%s",
             tostring(sandboxLootEpoch),
             tostring(elapsedMs(totalStartedAt)),
-            tostring(NMTempBootDebugProfiles and NMTempBootDebugProfiles.getActivePresetName and NMTempBootDebugProfiles.getActivePresetName() or "nil"),
             tostring(buildContext and buildContext.rawSandboxLoot and formatRawSandboxLootSettings(buildContext.rawSandboxLoot) or "nil")
         )
     )
@@ -779,7 +755,7 @@ end
 
 local function applySandboxLootControl(stage, options)
     if sandboxLootApplied or sandboxLootApplying then
-        logTempBootMarker("ensureInitialized_short_circuit", "reason=already_applied_or_applying")
+        logLootBootstrap("ensureInitialized_short_circuit", "reason=already_applied_or_applying")
         return sandboxLootApplied
     end
     local allowBuildFromStage = options and options.allowBuildFromStage == true
@@ -787,7 +763,7 @@ local function applySandboxLootControl(stage, options)
     sandboxLootApplying = true
     local buildId = sandboxLootEpoch + 1
     transitionLootState("building", allowBuildFromStage and "scheduled_rebuild" or "ensure_initialized", buildId)
-    logTempBootMarker("ensureInitialized_start", "path=applySandboxLootControl stage=" .. requestedStage)
+    logLootBootstrap("ensureInitialized_start", "path=applySandboxLootControl stage=" .. requestedStage)
 
     local totalStartedAt = nowMs()
     local distributionAuditEnabled = isLootDebugEnabled()
@@ -824,7 +800,7 @@ local function applySandboxLootControl(stage, options)
         end
         sandboxLootApplying = false
         deferUntilAuthoritativeSnapshot(reason, snapshot)
-        logTempBootMarker("ensureInitialized_deferred", "reason=" .. tostring(reason))
+        logLootBootstrap("ensureInitialized_deferred", "reason=" .. tostring(reason))
         syncTickHookRegistration()
         return false
     end
@@ -858,30 +834,30 @@ local function applySandboxLootControl(stage, options)
 end
 
 function controller.ensureInitialized()
-    logTempBootMarker("ensureInitialized_enter", "public=true")
+    logLootBootstrap("ensureInitialized_enter", "public=true")
     if not areDistributionTablesReady() then
-        logTempBootMarker("ensureInitialized_not_ready", "reason=distribution_tables_missing")
+        logLootBootstrap("ensureInitialized_not_ready", "reason=distribution_tables_missing")
         return false
     end
     local currentSnapshot = observeSnapshot(lastObservedStage or "ensure_initialized")
     local currentCacheKey = tostring(currentSnapshot and currentSnapshot.cacheKey or "")
     if sandboxLootApplied and sandboxLootCacheKey ~= nil and sandboxLootCacheKey ~= "" and sandboxLootCacheKey ~= currentCacheKey then
         invalidateLootBuild("cache_key_changed", currentSnapshot)
-        logTempBootMarker("ensureInitialized_cache_invalidate", "reason=sandbox_key_changed")
+        logLootBootstrap("ensureInitialized_cache_invalidate", "reason=sandbox_key_changed")
     end
     if sandboxLootApplied then
         transitionLootState("applied", "already_applied", sandboxLootEpoch)
-        logTempBootMarker("ensureInitialized_already_applied", "result=true")
+        logLootBootstrap("ensureInitialized_already_applied", "result=true")
         return true
     end
     if sandboxLootApplying then
         transitionLootState("building", "already_applying", sandboxLootEpoch + 1)
-        logTempBootMarker("ensureInitialized_already_applying", "result=false")
+        logLootBootstrap("ensureInitialized_already_applying", "result=false")
         return false
     end
     if pendingRebuildStage ~= nil then
         transitionLootState("pending_rebuild_after_snapshot", pendingRebuildReason or "pending_rebuild", sandboxLootEpoch)
-        logTempBootMarker("ensureInitialized_pending", "stage=" .. tostring(pendingRebuildStage))
+        logLootBootstrap("ensureInitialized_pending", "stage=" .. tostring(pendingRebuildStage))
         return false
     end
     return applySandboxLootControl(lastObservedStage or "ensure_initialized", { allowBuildFromStage = true }) == true
@@ -889,6 +865,10 @@ end
 
 function controller.getLootEpoch()
     return sandboxLootEpoch
+end
+
+function controller.isSandboxLootApplied()
+    return sandboxLootApplied == true
 end
 
 function controller.getActiveLootPolicy()
@@ -984,7 +964,7 @@ function controller.onTick()
     end
     if pendingRebuildStage == nil then
         if sandboxLootState == "deferred_waiting_for_authoritative_snapshot" then
-            logTempBootMarker(
+            logLootBootstrap(
                 "onTick_bootstrap_probe",
                 string.format(
                     "state=%s observations=%s provisionalCacheKey=%s",
@@ -997,7 +977,7 @@ function controller.onTick()
         end
         return
     end
-    logTempBootMarker(
+    logLootBootstrap(
         "onTick_pending_rebuild",
         string.format(
             "stage=%s reason=%s",
@@ -1029,6 +1009,8 @@ local function getContainerFillPostProcessState(container)
     return state
 end
 
+local buildFullFillContext
+
 local function stampFillPostProcessState(state, epoch, outcome, routeClass)
     if type(state) ~= "table" then
         return
@@ -1038,16 +1020,16 @@ local function stampFillPostProcessState(state, epoch, outcome, routeClass)
     state.routeClass = tostring(routeClass or "")
 end
 
-local function canAttemptRepresentativeReplacement(routeClass)
-    return NMFallbackRepresentativeResolver
-        and NMFallbackRepresentativeResolver.canRouteContainManagedPlaceholders
-        and NMFallbackRepresentativeResolver.canRouteContainManagedPlaceholders(routeClass) == true
+local function canAttemptPlaceholderReplacement(routeClass)
+    return NMLootPlaceholderResolver
+        and NMLootPlaceholderResolver.canRouteContainManagedPlaceholders
+        and NMLootPlaceholderResolver.canRouteContainManagedPlaceholders(routeClass) == true
 end
 
 local function canRouteAttemptLateRecovery(routeClass)
-    return NMFallbackRepresentativeResolver
-        and NMFallbackRepresentativeResolver.canRecoverManagedLootForRoute
-        and NMFallbackRepresentativeResolver.canRecoverManagedLootForRoute(routeClass) == true
+    return NMLootPlaceholderResolver
+        and NMLootPlaceholderResolver.canRecoverManagedLootForRoute
+        and NMLootPlaceholderResolver.canRecoverManagedLootForRoute(routeClass) == true
 end
 
 local function buildMinimalFillContext(roomName, containerType, routeClass)
@@ -1061,7 +1043,7 @@ local function buildMinimalFillContext(roomName, containerType, routeClass)
     }
 end
 
-local function buildFullFillContext(roomName, containerType, container, routeClass)
+buildFullFillContext = function(roomName, containerType, container, routeClass)
     if NMLootDebugHelpers and NMLootDebugHelpers.describeFullContainerContext then
         return NMLootDebugHelpers.describeFullContainerContext(roomName, containerType, container, routeClass)
     end
@@ -1102,13 +1084,13 @@ end
 
 function controller.onPreDistributionMerge()
     observeSnapshot("pre_distribution_merge")
-    logTempBootMarker("OnPreDistributionMerge_controller", "handler=controller.onPreDistributionMerge")
+    logLootBootstrap("OnPreDistributionMerge_controller", "handler=controller.onPreDistributionMerge")
 end
 
 function controller.onPostDistributionMerge()
     postDistributionMergeObserved = true
     observeSnapshot("post_distribution_merge")
-    logTempBootMarker("OnPostDistributionMerge", "handler=controller.onPostDistributionMerge")
+    logLootBootstrap("OnPostDistributionMerge", "handler=controller.onPostDistributionMerge")
     controller.ensureInitialized()
 end
 
@@ -1136,7 +1118,7 @@ function controller.onFillContainer(roomName, containerType, container)
         and NMLootContainerClassifier.classifyContainer
         and NMLootContainerClassifier.classifyContainer(roomName, containerType, container)
         or nil
-    local placeholderEligible = canAttemptRepresentativeReplacement(routeClass)
+    local placeholderEligible = canAttemptPlaceholderReplacement(routeClass)
     local routeRecoveryEligible = canRouteAttemptLateRecovery(routeClass)
     local runtimeRecoveryAllowed = routeRecoveryEligible == true and isRuntimeRecoveryAllowedForCurrentEpoch() == true
     local recoveryEligible = routeRecoveryEligible == true and runtimeRecoveryAllowed == true
@@ -1149,7 +1131,7 @@ function controller.onFillContainer(roomName, containerType, container)
     if firstResidentialFillLogged ~= true and isResidentialDresserContext(context) then
         context = ensureFullFillContext(context, roomName, containerType, container, routeClass)
         firstResidentialFillLogged = true
-        logTempBootMarker(
+        logLootBootstrap(
             "OnFillContainer_first_residential_dresser",
             NMLootDebugHelpers and NMLootDebugHelpers.formatContainerContext and NMLootDebugHelpers.formatContainerContext(context) or tostring(context.shape or "nil")
         )
@@ -1203,14 +1185,14 @@ function controller.onFillContainer(roomName, containerType, container)
     local replaced = 0
     if shouldSkipDeepWork ~= true
         and placeholderEligible == true
-        and NMFallbackRepresentativeResolver
-        and NMFallbackRepresentativeResolver.replaceRepresentativesInContainer
+        and NMLootPlaceholderResolver
+        and NMLootPlaceholderResolver.replacePlaceholdersInContainer
     then
         context = ensureFullFillContext(context, roomName, containerType, container, routeClass)
-        replaced = NMFallbackRepresentativeResolver.replaceRepresentativesInContainer(container, context) or 0
+        replaced = NMLootPlaceholderResolver.replacePlaceholdersInContainer(container, context) or 0
         if replaced and replaced > 3 and NMLootDebugHelpers and NMLootDebugHelpers.logLoot then
             NMLootDebugHelpers.logLoot(
-                "fallback.fill_event",
+                "placeholder.fill_event",
                 string.format(
                     "epoch=%s replaced=%s %s",
                     tostring(sandboxLootEpoch),
@@ -1261,22 +1243,22 @@ function controller.registerEventHooks()
     if Events and Events.OnInitGlobalModData and Events.OnInitGlobalModData.Add and not initGlobalModDataHookRegistered then
         Events.OnInitGlobalModData.Add(controller.onInitGlobalModData)
         initGlobalModDataHookRegistered = true
-        logTempBootMarker("registerEventHooks_init_global_mod_data", "registered=true")
+        logLootBootstrap("registerEventHooks_init_global_mod_data", "registered=true")
     end
     if Events and Events.OnPreDistributionMerge and Events.OnPreDistributionMerge.Add and not preDistributionHookRegistered then
         Events.OnPreDistributionMerge.Add(controller.onPreDistributionMerge)
         preDistributionHookRegistered = true
-        logTempBootMarker("registerEventHooks_pre_distribution", "registered=true")
+        logLootBootstrap("registerEventHooks_pre_distribution", "registered=true")
     end
     if Events and Events.OnPostDistributionMerge and Events.OnPostDistributionMerge.Add and not postDistributionHookRegistered then
         Events.OnPostDistributionMerge.Add(controller.onPostDistributionMerge)
         postDistributionHookRegistered = true
-        logTempBootMarker("registerEventHooks_post_distribution", "registered=true")
+        logLootBootstrap("registerEventHooks_post_distribution", "registered=true")
     end
     if Events and Events.OnFillContainer and Events.OnFillContainer.Add and not fillContainerHookRegistered then
         Events.OnFillContainer.Add(controller.onFillContainer)
         fillContainerHookRegistered = true
-        logTempBootMarker("registerEventHooks_fill_container", "registered=true")
+        logLootBootstrap("registerEventHooks_fill_container", "registered=true")
     end
     syncTickHookRegistration()
 end

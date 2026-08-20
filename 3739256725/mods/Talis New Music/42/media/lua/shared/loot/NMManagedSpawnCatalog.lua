@@ -24,6 +24,12 @@ local DEVICE_CATEGORY_ORDER = {
     "recordplayer"
 }
 
+local RARE_DEVICE_VARIANT_WEIGHTS = {
+    ["NewMusic.WalkmanLore"] = 0.25,
+    ["NewMusic.BoomboxOddbolt"] = 0.25,
+    ["NewMusic.CDPlayerCow"] = 0.25
+}
+
 local BASE_ZOMBOID_OST_MEDIA = {
     ["NewMusic.CassettePZOSTA"] = true,
     ["NewMusic.CassettePZOSTB"] = true,
@@ -187,44 +193,6 @@ local function resolveDeviceCategoryFromProfile(profile)
     end
     if deviceType == "vinylplayer" or deviceType == "recordplayer" then
         return "recordplayer"
-    end
-    return nil
-end
-
-local function legacyLooseCategoryMatch(typeName)
-    local lower = toLower(typeName)
-    if lower == "" then
-        return nil
-    end
-    if string.find(lower, "walkman", 1, true) then
-        return "walkman"
-    end
-    if string.find(lower, "boombox", 1, true) then
-        return "boombox"
-    end
-    if string.find(lower, "cdplayer", 1, true) then
-        return "cdplayer"
-    end
-    if string.find(lower, "vinylplayer", 1, true) or string.find(lower, "recordplayer", 1, true) then
-        return "recordplayer"
-    end
-    if string.find(lower, "cassette", 1, true) then
-        if string.find(lower, "case", 1, true) or string.find(lower, "cover", 1, true) then
-            return nil
-        end
-        return "cassettes"
-    end
-    if string.find(lower, "vinyl", 1, true) then
-        if string.find(lower, "cover", 1, true) or string.find(lower, "jacket", 1, true) then
-            return nil
-        end
-        return "vinyl"
-    end
-    if lower == "cd" or lower == "nm_cd" then
-        return "cds"
-    end
-    if string.find(lower, "cd", 1, true) and not string.find(lower, "cover", 1, true) and not string.find(lower, "case", 1, true) then
-        return "cds"
     end
     return nil
 end
@@ -475,10 +443,7 @@ local function resolveManagedDeviceUnit(fullType)
         spawnFullType = tostring(fullType or ""),
         deviceType = tostring(profile.deviceType or ""),
         supportedCarrier = tostring(profile.supportedCarrier or ""),
-        variantWeight = (
-            tostring(fullType or "") == "NewMusic.WalkmanLore"
-            or tostring(fullType or "") == "NewMusic.BoomboxOddbolt"
-        ) and 0.25 or 1.0
+        variantWeight = tonumber(RARE_DEVICE_VARIANT_WEIGHTS[tostring(fullType or "")]) or 1.0
     }
 end
 
@@ -639,9 +604,7 @@ function NMManagedSpawnCatalog.buildManagedPools(allItems, overrides, compatible
     local skippedMods = {}
     local skippedFalsePositives = {}
     local bareMediaRepresentatives = {}
-    local auditLooseLegacy = options and options.distributionAuditEnabled == true
     local metrics = {
-        splitMs = 0,
         mediaResolveMs = 0,
         deviceResolveMs = 0,
         mediaUnits = 0,
@@ -657,20 +620,12 @@ function NMManagedSpawnCatalog.buildManagedPools(allItems, overrides, compatible
         if item then
             local modId = tostring(item:getModID() or "")
             local fullType = tostring(item:getFullName() or "")
-            local splitStartedAt = nowMs()
-            local _, typeName = splitFullType(fullType)
-            metrics.splitMs = metrics.splitMs + elapsedMs(splitStartedAt)
             local mediaResolveStartedAt = nowMs()
             local mediaUnit = resolveManagedMediaUnit(fullType, overrides)
             metrics.mediaResolveMs = metrics.mediaResolveMs + elapsedMs(mediaResolveStartedAt)
             local deviceResolveStartedAt = nowMs()
             local deviceUnit = resolveManagedDeviceUnit(fullType)
             metrics.deviceResolveMs = metrics.deviceResolveMs + elapsedMs(deviceResolveStartedAt)
-            local legacyCategory = auditLooseLegacy and legacyLooseCategoryMatch(typeName) or nil
-
-            if not mediaUnit and not deviceUnit and legacyCategory then
-                skippedFalsePositives[fullType] = true
-            end
 
             if mediaUnit then
                 metrics.mediaUnits = metrics.mediaUnits + 1
@@ -701,12 +656,11 @@ function NMManagedSpawnCatalog.buildManagedPools(allItems, overrides, compatible
     logCatalog(
         "spawn.catalog managed pools",
         string.format(
-            "elapsedMs=%d allItems=%d mediaUnits=%d deviceUnits=%d splitMs=%d mediaResolveMs=%d deviceResolveMs=%d skippedMods=%d falsePositives=%d childMods=%d bareMedia=%d",
+            "elapsedMs=%d allItems=%d mediaUnits=%d deviceUnits=%d mediaResolveMs=%d deviceResolveMs=%d skippedMods=%d falsePositives=%d childMods=%d bareMedia=%d",
             elapsedMs(startedAt),
             tonumber(allItems:size()) or 0,
             metrics.mediaUnits,
             metrics.deviceUnits,
-            metrics.splitMs,
             metrics.mediaResolveMs,
             metrics.deviceResolveMs,
             countItemsInMap(skippedMods),

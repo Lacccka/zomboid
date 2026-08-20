@@ -1,9 +1,11 @@
 require "loot/NMManagedSpawnCatalog"
 require "loot/NMLootDistributionUtils"
+require "loot/NMLootDiagnostics"
 require "loot/NMLootPolicySnapshot"
+require "loot/NMLootRealizationAuthority"
 require "loot/NMLootResolvedPools"
 require "loot/NMLootSandboxSettings"
-require "core/NMTempBootDebugProfiles"
+require "loot/NMMediaLootPool"
 
 NMLootBuildContext = NMLootBuildContext or {}
 
@@ -180,30 +182,16 @@ function build.create(options)
         and lootPolicy.casesEnabled == true
         or not (NMRuntimeConfig and NMRuntimeConfig.getMediaSpawnsWithCasesEnabled)
         or NMRuntimeConfig.getMediaSpawnsWithCasesEnabled() == true
-    if NMCore and NMCore.logChannel then
-        NMCore.logChannel(
-            "loot",
-            "temp_boot_marker",
+    if NMLootDiagnostics and NMLootDiagnostics.logSandboxLoot then
+        NMLootDiagnostics.logSandboxLoot(
+            distributionAuditEnabled == true,
+            "sandbox.loot build_context_create_start",
             string.format(
-                "stage=build_context_create_start buildId=%s distributionAuditEnabled=%s allItems=%s mediaSpawnsWithCases=%s policy=%s",
+                "buildId=%s allItems=%s mediaSpawnsWithCases=%s policy=%s",
                 tostring(buildId),
-                tostring(distributionAuditEnabled == true),
                 tostring(tonumber(allItems and allItems:size()) or 0),
                 tostring(mediaSpawnsWithCases),
                 tostring(NMLootPolicySnapshot and NMLootPolicySnapshot.formatPolicy and NMLootPolicySnapshot.formatPolicy(lootPolicy) or "runtime")
-            )
-        )
-    end
-    if NMTempBootDebugProfiles then
-        NMTempBootDebugProfiles.logSandboxSnapshot(
-            "loot",
-            "temp_boot_sandbox",
-            "build_context_create_start",
-            string.format(
-                "buildId=%s distributionAuditEnabled=%s allItems=%s",
-                tostring(buildId),
-                tostring(distributionAuditEnabled == true),
-                tostring(tonumber(allItems and allItems:size()) or 0)
             )
         )
     end
@@ -261,24 +249,17 @@ function build.create(options)
         tostring(rawSandboxLoot and rawSandboxLoot.cdplayer),
         tostring(rawSandboxLoot and rawSandboxLoot.recordplayer)
     )
-    if NMTempBootDebugProfiles then
-        NMTempBootDebugProfiles.logSandboxSnapshot(
-            "loot",
-            "temp_boot_sandbox",
-            "build_context_sandbox_resolved",
-            string.format(
-                "buildId=%s rawRates=%s lootBuildZomboidOST={enabled=%s source=%s}",
-                tostring(buildId),
-                tostring(rawSandboxLoot and rawSandboxLoot.summary or "nil"),
-                tostring(lootBuildZomboidOST and lootBuildZomboidOST.enabled),
-                tostring(lootBuildZomboidOST and lootBuildZomboidOST.source or "unknown")
-            )
-        )
-    end
-
     phaseStartedAt = nowMs()
     local filteredBaseZomboidOST = NMManagedSpawnCatalog.filterBaseZomboidOSTMedia(basePools, lootBuildZomboidOST.enabled)
     local filterBaseOstMs = elapsedMs(phaseStartedAt)
+
+    phaseStartedAt = nowMs()
+    local mediaLootPool = NMMediaLootPool.build({
+        baseMedia = basePools and basePools.media or nil,
+        childPools = childPools,
+        policy = lootPolicy
+    })
+    local mediaLootPoolMs = elapsedMs(phaseStartedAt)
 
     local mediaFootprint = buildManagedMediaFootprint(basePools, childPools, presenceIndex)
 
@@ -293,12 +274,12 @@ function build.create(options)
     local baseTouched = applyMultipliersForItems(baseAllMap, distributionTables, multiplierIndexCache, resolveCategoryMultiplier)
     local baseTouchMs = elapsedMs(phaseStartedAt)
 
-    local fallbackMediaPool = newCategoryMaps()
-    local fallbackDevicePool = newCategoryMaps()
+    local managedSpawnMediaPool = newCategoryMaps()
+    local managedSpawnDevicePool = newCategoryMaps()
     local baseMissingCounts = newCategoryMaps()
     local basePresentCounts = newCategoryMaps()
     local childPoolCounts = newCategoryMaps()
-    local fallbackChildCounts = newCategoryMaps()
+    local managedSpawnChildMediaCounts = newCategoryMaps()
     local childTouched = 0
 
     for i = 1, #MEDIA_CATEGORY_ORDER do
@@ -308,7 +289,7 @@ function build.create(options)
             if basePresentMap[spawnFullType] then
                 basePresentCounts[category] = (tonumber(basePresentCounts[category]) or 0) + 1
             elseif baseMissingMap[spawnFullType] then
-                fallbackMediaPool[category][key] = unit
+                managedSpawnMediaPool[category][key] = unit
                 baseMissingCounts[category] = (tonumber(baseMissingCounts[category]) or 0) + 1
             end
         end
@@ -321,7 +302,7 @@ function build.create(options)
             if basePresentMap[spawnFullType] then
                 basePresentCounts[category] = (tonumber(basePresentCounts[category]) or 0) + 1
             elseif baseMissingMap[spawnFullType] then
-                fallbackDevicePool[category][key] = unit
+                managedSpawnDevicePool[category][key] = unit
                 baseMissingCounts[category] = (tonumber(baseMissingCounts[category]) or 0) + 1
             end
         end
@@ -344,8 +325,8 @@ function build.create(options)
                 local category = MEDIA_CATEGORY_ORDER[i]
                 for key, unit in pairs(pools.media[category] or {}) do
                     if missingMap[tostring(unit and unit.spawnFullType or "")] then
-                        fallbackMediaPool[category][key] = unit
-                        fallbackChildCounts[category] = (tonumber(fallbackChildCounts[category]) or 0) + 1
+                        managedSpawnMediaPool[category][key] = unit
+                        managedSpawnChildMediaCounts[category] = (tonumber(managedSpawnChildMediaCounts[category]) or 0) + 1
                     end
                 end
             end
@@ -353,7 +334,7 @@ function build.create(options)
 
         if childPackAuditEntries then
             childPackAuditEntries[#childPackAuditEntries + 1] = string.format(
-                "modId=%s ownsAny=%s presence={proc=%s,suburbs=%s,vehicle=%s} present=%s missing=%s eligibleFallback=%s byCategory={%s}",
+                "modId=%s ownsAny=%s presence={proc=%s,suburbs=%s,vehicle=%s} present=%s missing=%s eligibleManagedSpawn=%s byCategory={%s}",
                 tostring(modId),
                 tostring(ownsAnyPresence),
                 tostring(presence and presence.procedural),
@@ -370,8 +351,8 @@ function build.create(options)
 
     phaseStartedAt = nowMs()
     local resolvedPools = NMLootResolvedPools.build({
-        fallbackMediaPool = fallbackMediaPool,
-        fallbackDevicePool = fallbackDevicePool,
+        managedSpawnMediaPool = managedSpawnMediaPool,
+        managedSpawnDevicePool = managedSpawnDevicePool,
         lootPolicy = lootPolicy,
         buildId = buildId
     })
@@ -395,14 +376,15 @@ function build.create(options)
         basePools = basePools,
         childPools = childPools,
         mediaFootprint = mediaFootprint,
+        mediaLootPool = mediaLootPool,
         baseCategoryCounts = countPoolsByCategory(basePools),
-        fallbackMediaPool = fallbackMediaPool,
-        fallbackDevicePool = fallbackDevicePool,
+        managedSpawnMediaPool = managedSpawnMediaPool,
+        managedSpawnDevicePool = managedSpawnDevicePool,
         resolvedPools = resolvedPools,
         basePresentCounts = basePresentCounts,
         baseMissingCounts = baseMissingCounts,
         childPoolCounts = childPoolCounts,
-        fallbackChildCounts = fallbackChildCounts,
+        managedSpawnChildMediaCounts = managedSpawnChildMediaCounts,
         rawSandboxLoot = rawSandboxLoot,
         lootBuildZomboidOST = lootBuildZomboidOST,
         filteredBaseZomboidOST = filteredBaseZomboidOST,
@@ -425,7 +407,8 @@ function build.create(options)
         baseSplitPresenceMs = baseSplitPresenceMs,
         baseTouchMs = baseTouchMs,
         childFanoutMs = childFanoutMs,
-        resolvedPoolsMs = resolvedPoolsMs
+        resolvedPoolsMs = resolvedPoolsMs,
+        mediaLootPoolMs = mediaLootPoolMs
     }
 end
 

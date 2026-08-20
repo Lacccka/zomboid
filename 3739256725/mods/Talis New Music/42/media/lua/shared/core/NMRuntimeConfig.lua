@@ -62,7 +62,7 @@ local function clampNumber(value, minValue, maxValue)
 end
 
 local values = {
-    buildContentToken = "2026.08.17.1",
+    buildContentToken = "2026.08.19.1",
     worldTrackingCap = 1500,
     registryStaleTicks = 7200,
     registryHeartbeatIntervalTicks = 120,
@@ -378,9 +378,9 @@ function NMRuntimeConfig.getBatteryDrainRateHours()
 end
 
 function NMRuntimeConfig.getAudioMaxRadius()
-    local fromSandbox = clampNumber(resolveSandboxNumber("AudioMaxRadius"), 9, 100)
+    local fromSandbox = clampNumber(resolveSandboxNumber("AudioMaxRadius"), 9, 500)
     if fromSandbox ~= nil then
-        return math.max(9, math.min(100, math.floor(fromSandbox + 0.5)))
+        return math.max(9, math.min(500, math.floor(fromSandbox + 0.5)))
     end
     return 35
 end
@@ -490,7 +490,7 @@ function NMRuntimeConfig.getCassettesSpawnRate()
 end
 
 function NMRuntimeConfig.getVinylRecordsSpawnRate()
-    return NMRuntimeConfig.getLootRate("VinylRecordsSpawnRate", 0.6)
+    return NMRuntimeConfig.getLootRate("VinylRecordsSpawnRate", 0.3)
 end
 
 function NMRuntimeConfig.getCDsSpawnRate()

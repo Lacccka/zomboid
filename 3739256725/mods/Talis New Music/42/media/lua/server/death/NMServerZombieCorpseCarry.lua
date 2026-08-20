@@ -151,7 +151,8 @@ end
 local transferRecordSupport = NMServerZombieCorpseTransferRecord.new({
     knownSpecs = KNOWN_SPECS,
     getModData = getModData,
-    getRootModData = getRootModData
+    getRootModData = getRootModData,
+    logProof = logProof
 })
 
 local mutationSupport = NMServerZombieCorpseMutationSupport.new({
@@ -295,6 +296,80 @@ local function logCorpseSpawnPath(tag, body, detail)
             tostring(detail or "")
         ),
         true
+    )
+end
+
+local function findLiveProofPresence(zombie, spec, wantedUuid)
+    local attachedProof = false
+    local inventoryProof = false
+    local resolvedSpec = type(spec) == "table" and spec or nil
+    if resolvedSpec then
+        attachedProof = NMZombieAudioVisualSupport.findAttachedProofItem(zombie, resolvedSpec) ~= nil
+        inventoryProof = NMZombieAudioVisualSupport.findInventoryProofItem(zombie, resolvedSpec, wantedUuid) ~= nil
+    else
+        for i = 1, #KNOWN_SPECS do
+            local candidate = KNOWN_SPECS[i]
+            if not attachedProof and NMZombieAudioVisualSupport.findAttachedProofItem(zombie, candidate) then
+                attachedProof = true
+            end
+            if not inventoryProof and NMZombieAudioVisualSupport.findInventoryProofItem(zombie, candidate, wantedUuid) then
+                inventoryProof = true
+            end
+            if attachedProof and inventoryProof then
+                break
+            end
+        end
+    end
+    return attachedProof, inventoryProof
+end
+
+local function logCorpseCaptureSkip(zombie, square, reason)
+    if not shouldLogProofVerbose() then
+        return
+    end
+    local md = getModData(zombie)
+    local payload = NMZombieMediaPayloadResolver
+        and NMZombieMediaPayloadResolver.resolveStoredPayload
+        and NMZombieMediaPayloadResolver.resolveStoredPayload(md)
+        or nil
+    local selection = NMZombieVisualTargetLedger
+        and NMZombieVisualTargetLedger.getStampedSelection
+        and NMZombieVisualTargetLedger.getStampedSelection(zombie)
+        or nil
+    local spec = NMZombieDeviceVariantCatalog
+        and NMZombieDeviceVariantCatalog.resolveStoredSpec
+        and NMZombieDeviceVariantCatalog.resolveStoredSpec(md)
+        or nil
+    local wantedUuid = tostring(md and md.deviceUUID or "")
+    local attachedProof, inventoryProof = findLiveProofPresence(zombie, spec, wantedUuid)
+    logProof(
+        "corpse_capture_skip",
+        string.format(
+            "zombie=%s reason=%s squarePresent=%s square=%s:%s:%s status=%s selected=%s musicSelected=%s stampedSelected=%s stampedMusicSelected=%s strategy=%s variant=%s fullType=%s deviceUUID=%s mediaMode=%s caseEmpty=%s caseFull=%s contractMode=%s contractFullType=%s contractDeviceUUID=%s attachedProof=%s inventoryProof=%s",
+            tostring(entityDebugId(zombie)),
+            tostring(reason or ""),
+            tostring(square ~= nil),
+            tostring(square and square:getX() or "nil"),
+            tostring(square and square:getY() or "nil"),
+            tostring(square and square:getZ() or "nil"),
+            tostring(md and md.status or ""),
+            tostring(md and md.selected == true),
+            tostring(md and md.musicSelected == true),
+            tostring(selection and selection.selected == true or false),
+            tostring(selection and selection.musicSelected == true or false),
+            tostring(md and (md.strategy or md.liveVisualStrategy) or ""),
+            tostring(spec and spec.variantId or md and md.variantId or ""),
+            tostring(spec and spec.fullType or md and md.fullType or ""),
+            wantedUuid,
+            tostring(payload and payload.mediaMode or md and md.mediaMode or ""),
+            tostring(payload and payload.caseEmptyType or md and md.caseEmptyType or ""),
+            tostring(payload and payload.caseFullType or md and md.caseFullType or ""),
+            tostring(md and md.corpseCompanionMode or ""),
+            tostring(md and md.corpseCompanionFullType or ""),
+            tostring(md and md.corpseCompanionDeviceUUID or ""),
+            tostring(attachedProof),
+            tostring(inventoryProof)
+        )
     )
 end
 
@@ -580,6 +655,7 @@ function NMServerZombieCorpseCarry.onZombieDead(zombie)
     local transferRecord = transferRecordSupport.buildCorpseTransferRecord(zombie, NMServerZombieCorpseCarry._diag)
     if not (square and transferRecord) then
         NMServerZombieCorpseCarry._diag.corpseCaptureSkip = (NMServerZombieCorpseCarry._diag.corpseCaptureSkip or 0) + 1
+        logCorpseCaptureSkip(zombie, square, square and "missing_transfer_record" or "missing_square")
         return
     end
     transferRecord.selection = NMZombieVisualTargetLedger and NMZombieVisualTargetLedger.getOrAssignZombieSelection and NMZombieVisualTargetLedger.getOrAssignZombieSelection(zombie, tostring(transferRecord.strategy or "")) or nil

@@ -132,7 +132,7 @@ function NMDeviceProfiles.getWorldTrackingRange(profile)
     if tracking and tracking > 0 then
         baseRange = tracking
     else
-        baseRange = tonumber(profile and profile.worldMaxRange) or 0
+        baseRange = resolveEffectiveWorldMaxRange(profile)
     end
     if cap <= 0 then
         return baseRange

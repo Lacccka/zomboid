@@ -47,6 +47,71 @@ local function inventoryHasProofUuid(deps, zombie, wantedUuid, spec)
     return false, nil
 end
 
+local function shouldLogAssignment()
+    return NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("zombie_assignment") == true
+end
+
+local function getZombieDebugId(zombie)
+    return tostring(zombie and zombie.getOnlineID and zombie:getOnlineID()
+        or zombie and zombie.getObjectID and zombie:getObjectID()
+        or "unknown")
+end
+
+local function logMPAssignmentOutcome(deps, zombie, source, outcome)
+    if not shouldLogAssignment() then
+        return
+    end
+    local realization = outcome and outcome.realization or nil
+    local spec = outcome and outcome.spec or getStampedVariantSpec(deps, zombie)
+    local md = getModData(deps, zombie)
+    local deviceUUID = tostring(outcome and outcome.state and outcome.state.deviceUUID
+        or md and md.deviceUUID
+        or "")
+    local attachedVisible = spec and findAttachedProofItem(deps, zombie, spec) ~= nil or false
+    local inventoryVisible = inventoryHasProofUuid(deps, zombie, deviceUUID, spec)
+    NMCore.logChannel(
+        "zombie_assignment",
+        "mp_assignment_outcome",
+        string.format(
+            "zombie=%s source=%s ok=%s status=%s reason=%s variant=%s fullType=%s deviceUUID=%s mediaMode=%s proof=%s attachment=%s companion=%s refresh=%s usedInventoryFallback=%s attachedVisible=%s inventoryProof=%s contractMode=%s contractFullType=%s",
+            getZombieDebugId(zombie),
+            tostring(source or ""),
+            tostring(outcome and outcome.ok == true),
+            tostring(outcome and outcome.status or ""),
+            tostring(outcome and outcome.reason or ""),
+            tostring(realization and realization.variantId or spec and spec.variantId or md and md.variantId or ""),
+            tostring(realization and realization.fullType or spec and spec.fullType or md and md.fullType or ""),
+            deviceUUID,
+            tostring(realization and realization.payload and realization.payload.mediaMode or md and md.mediaMode or ""),
+            tostring(realization and realization.proofItemStatus or ""),
+            tostring(realization and realization.attachmentStatus or ""),
+            tostring(realization and realization.companionCaseStatus or ""),
+            tostring(realization and realization.needsVisualRefresh == true or false),
+            tostring(outcome and outcome.usedInventoryFallback == true or false),
+            tostring(attachedVisible),
+            tostring(inventoryVisible),
+            tostring(md and md.corpseCompanionMode or ""),
+            tostring(md and md.corpseCompanionFullType or "")
+        )
+    )
+    if outcome and outcome.ok == true and attachedVisible ~= true and inventoryVisible == true then
+        NMCore.logChannel(
+            "zombie_assignment",
+            "mp_assignment_attached_not_visible",
+            string.format(
+                "zombie=%s source=%s variant=%s fullType=%s deviceUUID=%s proof=%s attachment=%s",
+                getZombieDebugId(zombie),
+                tostring(source or ""),
+                tostring(spec and spec.variantId or ""),
+                tostring(spec and spec.fullType or ""),
+                deviceUUID,
+                tostring(realization and realization.proofItemStatus or ""),
+                tostring(realization and realization.attachmentStatus or "")
+            )
+        )
+    end
+end
+
 local function recordTruthObservation(diag, zombie, uuid, deps)
     local spec = getStampedVariantSpec(deps, zombie)
     local attachedVisible = spec and findAttachedProofItem(deps, zombie, spec) ~= nil or false
@@ -227,6 +292,7 @@ function NMServerMPZombieAssignmentExecutor.applyAssignmentOutcome(zombie, sourc
         diag.attachSuppressed = (diag.attachSuppressed or 0) + 1
         markSelectionState(deps, zombie, getSpecForVariantId(outcome.selection and outcome.selection.variantId or ""), source, outcome.selection, outcome.status, outcome.reason, outcome.payload)
         noteRealization(deps, zombie, outcome)
+        logMPAssignmentOutcome(deps, zombie, source, outcome)
         return false
     end
     if outcome.status == "excluded" or outcome.status == "media_only" then
@@ -234,18 +300,21 @@ function NMServerMPZombieAssignmentExecutor.applyAssignmentOutcome(zombie, sourc
         diag.attachExcludedScrubbed = (diag.attachExcludedScrubbed or 0) + (tonumber(outcome.removedCount) or 0)
         markSelectionState(deps, zombie, getSpecForVariantId(outcome.selection and outcome.selection.variantId or ""), source, outcome.selection, outcome.status, outcome.reason, outcome.payload)
         noteRealization(deps, zombie, outcome)
+        logMPAssignmentOutcome(deps, zombie, source, outcome)
         return false
     end
     if not outcome.ok then
         markFailed(deps, zombie, outcome.spec, outcome.reason, source, outcome.payload)
         diag.attachFailure = (diag.attachFailure or 0) + 1
         noteRealization(deps, zombie, outcome)
+        logMPAssignmentOutcome(deps, zombie, source, outcome)
         return false
     end
     diag.attachSuccess = (diag.attachSuccess or 0) + 1
     diag.strategyAssignments = (diag.strategyAssignments or 0) + 1
     markResolved(deps, zombie, outcome.spec, outcome.item, source, nil, outcome.payload)
     noteRealization(deps, zombie, outcome)
+    logMPAssignmentOutcome(deps, zombie, source, outcome)
     sampleAttachmentLifecycle(
         diag,
         zombie,

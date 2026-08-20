@@ -1,6 +1,6 @@
 require "loot/NMLootContainerClassifier"
 require "loot/NMLootDebugHelpers"
-require "loot/NMFallbackRepresentativeResolver"
+require "loot/NMLootPlaceholderResolver"
 
 NMLateBuildContainerRecovery = NMLateBuildContainerRecovery or {}
 
@@ -56,9 +56,9 @@ local function scanContainerState(items, managedLootMap)
             state.hasManaged = true
             return state
         end
-        if NMFallbackRepresentativeResolver
-            and NMFallbackRepresentativeResolver.isRepresentativeFullType
-            and NMFallbackRepresentativeResolver.isRepresentativeFullType(fullType)
+        if NMLootPlaceholderResolver
+            and NMLootPlaceholderResolver.isPlaceholderFullType
+            and NMLootPlaceholderResolver.isPlaceholderFullType(fullType)
         then
             state.hasPlaceholder = true
         end
@@ -153,8 +153,8 @@ function recovery.recoverContainer(roomName, containerType, container, context, 
         return result
     end
 
-    if not (NMFallbackRepresentativeResolver and NMFallbackRepresentativeResolver.canRecoverManagedLootForRoute
-        and NMFallbackRepresentativeResolver.canRecoverManagedLootForRoute(routeClass))
+    if not (NMLootPlaceholderResolver and NMLootPlaceholderResolver.canRecoverManagedLootForRoute
+        and NMLootPlaceholderResolver.canRecoverManagedLootForRoute(routeClass))
     then
         stampRecoveryState(recoveryState, epoch, "skip_no_authority_profile")
         result.outcome = "skip_no_authority_profile"
@@ -172,10 +172,10 @@ function recovery.recoverContainer(roomName, containerType, container, context, 
     end
 
     if scan.hasPlaceholder == true
-        and NMFallbackRepresentativeResolver
-        and NMFallbackRepresentativeResolver.replaceRepresentativesInContainer
+        and NMLootPlaceholderResolver
+        and NMLootPlaceholderResolver.replacePlaceholdersInContainer
     then
-        local replaced = NMFallbackRepresentativeResolver.replaceRepresentativesInContainer(resolvedContainer, context)
+        local replaced = NMLootPlaceholderResolver.replacePlaceholdersInContainer(resolvedContainer, context)
         if replaced and replaced > 0 then
             stampRecoveryState(recoveryState, epoch, "placeholder_replaced")
             result.outcome = "placeholder_replaced"
@@ -185,7 +185,7 @@ function recovery.recoverContainer(roomName, containerType, container, context, 
         end
     end
 
-    local recoveryResult, recoveryReason = NMFallbackRepresentativeResolver.recoverLiveContainerFromAuthority(resolvedContainer, context)
+    local recoveryResult, recoveryReason = NMLootPlaceholderResolver.recoverLiveContainerFromAuthority(resolvedContainer, context)
     if recoveryResult == nil then
         stampRecoveryState(recoveryState, epoch, "skip_no_resolved_items")
         if recoveryReason == "no_authority_profile" or recoveryReason == "no_authority_route" or recoveryReason == "no_authority_budget" then

@@ -17,6 +17,7 @@ NMClientPlaybackTick.detachedSyncHeartbeatMs = NMClientPlaybackTick.detachedSync
 NMClientPlaybackTick.modeResolutionSigSeen = NMClientPlaybackTick.modeResolutionSigSeen or {}
 NMClientPlaybackTick.modeResolutionHeartbeatMs = NMClientPlaybackTick.modeResolutionHeartbeatMs or {}
 NMClientPlaybackTick.modeResolutionBootstrapMs = NMClientPlaybackTick.modeResolutionBootstrapMs or {}
+NMClientPlaybackTick.stableOffInventorySigSeen = NMClientPlaybackTick.stableOffInventorySigSeen or {}
 NMClientPlaybackTick.corpseInventoryReboundSeen = NMClientPlaybackTick.corpseInventoryReboundSeen or {}
 NMClientPlaybackTick.idleFullCadenceTicks = NMClientPlaybackTick.idleFullCadenceTicks or 10
 NMClientPlaybackTick.activeFullCadenceTicks = NMClientPlaybackTick.activeFullCadenceTicks or 10
@@ -431,6 +432,63 @@ local function consumeForcedFullPass()
     end
     NMClientPlaybackTick._forceFullPass = false
     return true
+end
+
+local function isStableOffInventoryMode(mode)
+    local normalized = tostring(mode or "")
+    return normalized ~= "attached"
+        and normalized ~= "stowed"
+        and normalized ~= "drop_pending"
+        and normalized ~= "pickup_pending"
+        and normalized ~= "placed"
+        and normalized ~= "vehicle"
+end
+
+local function buildStableOffInventorySignature(item, profile, state, mode, resolvedOutput)
+    if not (item and profile and state and state.deviceUUID) then
+        return nil
+    end
+    if state.isOn == true or state.isPlaying == true then
+        return nil
+    end
+    if isStableOffInventoryMode(mode) ~= true then
+        return nil
+    end
+    if NMDeviceState and NMDeviceState.isZombieDormant and NMDeviceState.isZombieDormant(state) then
+        return nil
+    end
+    local worldItem = item.getWorldItem and item:getWorldItem() or nil
+    if worldItem ~= nil then
+        return nil
+    end
+    return table.concat({
+        tostring(item.getFullType and item:getFullType() or ""),
+        tostring(NMCore and NMCore.itemId and NMCore.itemId(item) or ""),
+        tostring(profile and profile.id or profile and profile.type or ""),
+        tostring(mode or ""),
+        tostring(resolvedOutput or ""),
+        tostring(state.mediaFullType or "nil"),
+        tostring(tonumber(state.trackIndex) or 0),
+        tostring(tonumber(state.playbackEpoch) or 0),
+        tostring(tonumber(state.sourceGeneration) or 0),
+        tostring(tonumber(state.revision) or 0),
+        tostring(state.headphoneItemFullType or "nil"),
+        tostring(state.batteryPresent == true),
+        string.format("%.3f", tonumber(state.batteryCharge) or 0),
+        tostring(state.isMuted == true),
+        string.format("%.3f", tonumber(state.volume) or 0),
+        tostring(state.playbackMode or ""),
+        tostring(state.authoritativeMode or ""),
+        tostring(state.sourceKind or "")
+    }, "|")
+end
+
+local function pruneStableOffInventorySignatures(valid)
+    for uuid, _ in pairs(NMClientPlaybackTick.stableOffInventorySigSeen or {}) do
+        if not (valid and valid[uuid] == true) then
+            NMClientPlaybackTick.stableOffInventorySigSeen[uuid] = nil
+        end
+    end
 end
 
 local function noteInterestReason(reason)
@@ -940,6 +998,8 @@ function NMClientPlaybackTick.onTick(player, tickStep, passMode)
     observeMemoryDuration("inventory_collect_ms", inventoryCollectElapsedMs)
     local inventorySyncCount = 0
     local detachedSyncCount = 0
+    local stableOffInventorySkipCount = 0
+    local stableOffInventorySyncCount = 0
 
     for i = 1, #inventory do
         local e = inventory[i]
@@ -1012,76 +1072,92 @@ function NMClientPlaybackTick.onTick(player, tickStep, passMode)
             NMClientModeSync.emit(player, e.item, e.profile, e.state, mode)
         end
 
-        local source = nil
-        local trackedPortable = NMDeviceProfiles.isPortableTrackedProfile and NMDeviceProfiles.isPortableTrackedProfile(e.profile)
-        if mode == "attached" or mode == "stowed" or mode == "drop_pending" or mode == "pickup_pending" then
-            if mode == "pickup_pending"
-                and NMClientPortableDropHandoff
-                and NMClientPortableDropHandoff.buildPickupSource then
-                source = NMClientPortableDropHandoff.buildPickupSource(player, e.uuid)
-            end
-            if not source then
-                source = {
-                    mode = "world",
-                    context = mode,
-                    x = player.getX and player:getX() or 0,
-                    y = player.getY and player:getY() or 0,
-                    z = player.getZ and player:getZ() or 0,
-                    _nmFastFollowPlayer = true
-                }
-            end
-            e.state.playbackMode = ((resolvedOutputForMode == "world" or resolvedOutputForMode == "silent") or trackedPortable) and "world" or "inventory"
-        elseif mode == "placed" then
-            local w = e.item.getWorldItem and e.item:getWorldItem() or nil
-            local s = w and w.getSquare and w:getSquare() or nil
-            if s then
-                source = {
-                    mode = "world",
-                    context = "placed",
-                    x = s:getX() + 0.5,
-                    y = s:getY() + 0.5,
-                    z = s:getZ(),
-                    _nmFastWorldItem = e.item
-                }
-                e.state.playbackMode = ((resolvedOutputForMode == "world" or resolvedOutputForMode == "silent") or trackedPortable) and "world" or "inventory"
-            end
-        else
-            source = { mode = "inventory", context = "inventory" }
-            e.state.playbackMode = "inventory"
-        end
-        rememberPlaybackLossSource(e.uuid, e.state, source, {
-            mode = mode,
-            resolvedOutput = resolvedOutputForMode
-        })
-        emitPlaybackLossProbe(player, e.uuid, true, "inventory_sync", {
-            source = source,
-            mode = mode,
-            playbackMode = e.state.playbackMode,
-            resolvedOutput = resolvedOutputForMode,
-            isOn = e.state.isOn == true,
-            isPlaying = e.state.isPlaying == true,
-            media = e.state.mediaFullType
-        })
-
-        local syncStartedMs = nowRealMs()
-        NMPlaybackRuntime.syncDevice(player, e.profile, e.state, source, tickCount * 60)
-        if NMClientVanillaMusicSuppressor and NMClientVanillaMusicSuppressor.observeAudibility then
-            NMClientVanillaMusicSuppressor.observeAudibility(player, e.profile, e.state, source)
-        end
-        observeMemoryDuration("sync_device_ms", math.max(0, nowRealMs() - syncStartedMs))
-        inventorySyncCount = inventorySyncCount + 1
-        rememberFastSource(e.uuid, e.profile, e.state, source, player)
-        local sourceKind = (source and source.mode == "world") and "world_item" or "inventory"
-        consumeAndDispatchTrackFinished(player, e.profile, e.state, nil, e.item, sourceKind, e.uuid)
         valid[e.uuid] = true
         inventoryOwners[e.uuid] = true
         currentInventoryByUuid[e.uuid] = e.item
-        if source and source.mode == "world" and source.x and source.y and source.z then
-            spPulseCandidates[e.uuid] = {
-                profile = e.profile,
-                state = e.state,
-                source = source
-            }
+
+        local stableOffSig = buildStableOffInventorySignature(e.item, e.profile, e.state, mode, resolvedOutputForMode)
+        if stableOffSig ~= nil and tostring(NMClientPlaybackTick.stableOffInventorySigSeen[e.uuid] or "") == stableOffSig then
+            stableOffInventorySkipCount = stableOffInventorySkipCount + 1
+        else
+            if stableOffSig == nil then
+                NMClientPlaybackTick.stableOffInventorySigSeen[e.uuid] = nil
+            else
+                stableOffInventorySyncCount = stableOffInventorySyncCount + 1
+            end
+
+            local source = nil
+            local trackedPortable = NMDeviceProfiles.isPortableTrackedProfile and NMDeviceProfiles.isPortableTrackedProfile(e.profile)
+            if mode == "attached" or mode == "stowed" or mode == "drop_pending" or mode == "pickup_pending" then
+                if mode == "pickup_pending"
+                    and NMClientPortableDropHandoff
+                    and NMClientPortableDropHandoff.buildPickupSource then
+                    source = NMClientPortableDropHandoff.buildPickupSource(player, e.uuid)
+                end
+                if not source then
+                    source = {
+                        mode = "world",
+                        context = mode,
+                        x = player.getX and player:getX() or 0,
+                        y = player.getY and player:getY() or 0,
+                        z = player.getZ and player:getZ() or 0,
+                        _nmFastFollowPlayer = true
+                    }
+                end
+                e.state.playbackMode = ((resolvedOutputForMode == "world" or resolvedOutputForMode == "silent") or trackedPortable) and "world" or "inventory"
+            elseif mode == "placed" then
+                local w = e.item.getWorldItem and e.item:getWorldItem() or nil
+                local s = w and w.getSquare and w:getSquare() or nil
+                if s then
+                    source = {
+                        mode = "world",
+                        context = "placed",
+                        x = s:getX() + 0.5,
+                        y = s:getY() + 0.5,
+                        z = s:getZ(),
+                        _nmFastWorldItem = e.item
+                    }
+                    e.state.playbackMode = ((resolvedOutputForMode == "world" or resolvedOutputForMode == "silent") or trackedPortable) and "world" or "inventory"
+                end
+            else
+                source = { mode = "inventory", context = "inventory" }
+                e.state.playbackMode = "inventory"
+            end
+
+            rememberPlaybackLossSource(e.uuid, e.state, source, {
+                mode = mode,
+                resolvedOutput = resolvedOutputForMode
+            })
+            emitPlaybackLossProbe(player, e.uuid, true, "inventory_sync", {
+                source = source,
+                mode = mode,
+                playbackMode = e.state.playbackMode,
+                resolvedOutput = resolvedOutputForMode,
+                isOn = e.state.isOn == true,
+                isPlaying = e.state.isPlaying == true,
+                media = e.state.mediaFullType
+            })
+
+            local syncStartedMs = nowRealMs()
+            NMPlaybackRuntime.syncDevice(player, e.profile, e.state, source, tickCount * 60)
+            if NMClientVanillaMusicSuppressor and NMClientVanillaMusicSuppressor.observeAudibility then
+                NMClientVanillaMusicSuppressor.observeAudibility(player, e.profile, e.state, source)
+            end
+            observeMemoryDuration("sync_device_ms", math.max(0, nowRealMs() - syncStartedMs))
+            inventorySyncCount = inventorySyncCount + 1
+            if stableOffSig ~= nil then
+                NMClientPlaybackTick.stableOffInventorySigSeen[e.uuid] = stableOffSig
+            end
+            rememberFastSource(e.uuid, e.profile, e.state, source, player)
+            local sourceKind = (source and source.mode == "world") and "world_item" or "inventory"
+            consumeAndDispatchTrackFinished(player, e.profile, e.state, nil, e.item, sourceKind, e.uuid)
+            if source and source.mode == "world" and source.x and source.y and source.z then
+                spPulseCandidates[e.uuid] = {
+                    profile = e.profile,
+                    state = e.state,
+                    source = source
+                }
+            end
         end
     end
 
@@ -1145,6 +1221,7 @@ function NMClientPlaybackTick.onTick(player, tickStep, passMode)
             NMClientPlaybackTick.ownershipConflictState[ownedUuid] = nil
         end
     end
+    pruneStableOffInventorySignatures(valid)
     NMClientModeReconcile.pruneAuthority(valid)
     if NMPlaybackRuntime and type(NMPlaybackRuntime.Active) == "table" then
         for activeUuid, _ in pairs(NMPlaybackRuntime.Active) do
@@ -1158,6 +1235,8 @@ function NMClientPlaybackTick.onTick(player, tickStep, passMode)
 
     countMemoryEvent("inventory_sync_count", inventorySyncCount)
     countMemoryEvent("detached_sync_count", detachedSyncCount)
+    countMemoryEvent("playback_inventory_stable_off_skip", stableOffInventorySkipCount)
+    countMemoryEvent("playback_inventory_stable_off_sync", stableOffInventorySyncCount)
     if NMClientVanillaMusicSuppressor and NMClientVanillaMusicSuppressor.endTick then
         NMClientVanillaMusicSuppressor.endTick(NMClientPlaybackTick.tick)
     end

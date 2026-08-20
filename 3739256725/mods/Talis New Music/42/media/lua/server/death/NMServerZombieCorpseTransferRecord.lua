@@ -18,6 +18,42 @@ function NMServerZombieCorpseTransferRecord.new(deps)
         return fn and fn(holder) or nil
     end
 
+    local function logProof(tag, detail)
+        local fn = deps.logProof
+        if fn then
+            fn(tag, detail, false)
+        end
+    end
+
+    local function entityDebugId(entity)
+        return tostring(entity and entity.getOnlineID and entity:getOnlineID()
+            or entity and entity.getObjectID and entity:getObjectID()
+            or "unknown")
+    end
+
+    local function getTransferDiagDetail(zombie, spec, md, payload, registration, reason)
+        return string.format(
+            "zombie=%s reason=%s status=%s selected=%s musicSelected=%s strategy=%s variant=%s fullType=%s deviceUUID=%s mediaMode=%s caseEmpty=%s caseFull=%s contractMode=%s contractFullType=%s spawnAttempted=%s spawnRegistered=%s spawnRoute=%s",
+            entityDebugId(zombie),
+            tostring(reason or ""),
+            tostring(md and md.status or ""),
+            tostring(md and md.selected == true),
+            tostring(md and md.musicSelected == true),
+            tostring(md and (md.strategy or md.liveVisualStrategy) or ""),
+            tostring(spec and spec.variantId or md and md.variantId or ""),
+            tostring(spec and spec.fullType or md and md.fullType or ""),
+            tostring(md and md.deviceUUID or ""),
+            tostring(payload and payload.mediaMode or ""),
+            tostring(payload and payload.caseEmptyType or md and md.caseEmptyType or ""),
+            tostring(payload and payload.caseFullType or md and md.caseFullType or ""),
+            tostring(md and md.corpseCompanionMode or ""),
+            tostring(md and md.corpseCompanionFullType or ""),
+            tostring(registration and tostring(registration.deviceUUID or "") ~= "" or false),
+            tostring(registration and registration.registered == true or false),
+            tostring(registration and registration.createRoute or "")
+        )
+    end
+
     local function getCorpseLooseLootFullTypes(holder)
         -- Canonical explicit companion case contract:
         -- a finalized contract owns corpse-side case realization when present.
@@ -130,6 +166,7 @@ function NMServerZombieCorpseTransferRecord.new(deps)
         -- export from the attached proof item when the finalized assignment is already realized on the zombie.
         local attachedItem = NMZombieAudioVisualSupport.findAttachedProofItem(zombie, spec)
         if not attachedItem then
+            logProof("canonical_attached_missing", getTransferDiagDetail(zombie, spec, md, payload, registration, "attached_proof_absent"))
             return nil
         end
         local exported = exportStoppedDeviceState(attachedItem)
@@ -144,14 +181,17 @@ function NMServerZombieCorpseTransferRecord.new(deps)
         local wantedUuid = tostring(md and md.deviceUUID or "")
         local status = tostring(md and md.status or "")
         if status ~= "attached" or wantedUuid == "" then
+            logProof("inventory_fallback_missing", getTransferDiagDetail(zombie, spec, md, payload, registration, "status_or_uuid_not_eligible"))
             return nil
         end
         local item = NMZombieAudioVisualSupport.findInventoryProofItem(zombie, spec, wantedUuid)
         if not item then
+            logProof("inventory_fallback_missing", getTransferDiagDetail(zombie, spec, md, payload, registration, "inventory_proof_absent"))
             return nil
         end
         local exported = exportStoppedDeviceState(item)
         if not exported then
+            logProof("inventory_fallback_state_missing", getTransferDiagDetail(zombie, spec, md, payload, registration, "state_export_absent"))
             return nil
         end
         if diag then
@@ -168,6 +208,7 @@ function NMServerZombieCorpseTransferRecord.new(deps)
         if not (payload and tostring(payload.mediaMode or "") == "media_only" and tostring(payload.caseFullType or "") ~= "") then
             return nil
         end
+        logProof("media_only_compat_used", getTransferDiagDetail(zombie, nil, md, payload, registration, "media_only_payload"))
         return exportCorpseTransferRecord(nil, nil, md, payload, registration, {
             sourceHolder = zombie
         })

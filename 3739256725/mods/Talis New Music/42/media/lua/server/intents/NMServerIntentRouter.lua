@@ -163,6 +163,18 @@ function NMServerIntentRouter.onClientCommand(module, command, player, args)
     if command == "device_disassemble" then
         return NMServerDeviceDisassembly.perform(player, args)
     end
+    if command == "loot_probe_client_visible_vanilla_disc" then
+        if NMServerLootProbe and NMServerLootProbe.inspectClientVisibleVanillaDisc then
+            NMServerLootProbe.inspectClientVisibleVanillaDisc(player, args or {})
+        end
+        return true
+    end
+    if command == "repair_visible_vanilla_media" then
+        if NMServerLootProbe and NMServerLootProbe.repairVisibleVanillaMedia then
+            NMServerLootProbe.repairVisibleVanillaMedia(player, args or {})
+        end
+        return true
+    end
 
     if command == "debug_set" then
         if not isDebugControlAllowed(player) then

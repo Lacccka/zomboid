@@ -14,6 +14,9 @@ local function ensureTextureSlot(key, path)
     if UI_TEXTURES[cacheKey] == false then
         return nil
     end
+    if key and key ~= "" then
+        UI_TEXTURES[key] = UI_TEXTURES[cacheKey]
+    end
     return UI_TEXTURES[cacheKey]
 end
 

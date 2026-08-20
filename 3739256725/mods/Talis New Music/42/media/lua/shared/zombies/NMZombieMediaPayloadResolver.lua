@@ -76,7 +76,7 @@ local function sanitizePayloadForSandbox(payload)
             payload.caseEmptyType = nil
         end
     elseif payload.mediaMode == "media_only" then
-        if not hasText(payload.insertedMediaFullType) then
+        if not hasText(payload.insertedMediaFullType) or not hasText(payload.caseFullType) then
             payload.mediaMode = payload.deviceEnabled == true and "device_only" or "none"
             payload.mediaEjectFullType = nil
             payload.mediaRecordedMediaIndex = nil

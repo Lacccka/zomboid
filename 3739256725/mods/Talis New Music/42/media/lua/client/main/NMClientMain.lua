@@ -4,12 +4,12 @@ require "runtime/NMClientModOptions"
 require "runtime/NMClientPortableUiDragBlockProbe"
 require "runtime/NMClientVehicleLootRefresh"
 require "runtime/NMClientVanillaMusicSuppressor"
+require "runtime/NMClientVanillaDiscVisibleProbe"
 require "runtime/NMClientWorldItemVisualSanitizer"
 require "runtime/NMClientTickGate"
 require "runtime/NMClientZombieVisualTargetCache"
 require "runtime/NMClientZombieVisualProbe"
 require "runtime/NMClientMainRuntime"
-require "core/NMTempBootDebugProfiles"
 require "ui/shared/host/NMGamepadWindowTracker"
 require "ui/boombox/NMBoomboxWindowBootstrap"
 require "ui/cdplayer/NMCDPlayerWindowBootstrap"
@@ -128,20 +128,6 @@ end
 local function onGameStart()
     if NMCore and NMCore.logBuildVersionLine then
         NMCore.logBuildVersionLine("client")
-    end
-    if NMTempBootDebugProfiles then
-        NMTempBootDebugProfiles.applyIfEnabled("client", "onGameStart")
-        NMTempBootDebugProfiles.logSandboxSnapshot(
-            "loot",
-            "temp_boot_sandbox",
-            "client_onGameStart",
-            string.format(
-                "authority=%s isClient=%s isServer=%s",
-                tostring(NMCore and NMCore.getRuntimeAuthorityMode and NMCore.getRuntimeAuthorityMode() or "unknown"),
-                tostring(isClient and isClient() or false),
-                tostring(isServer and isServer() or false)
-            )
-        )
     end
     logClientDebugBootstrap("onGameStart")
     if NMCore and NMCore.logChannel then

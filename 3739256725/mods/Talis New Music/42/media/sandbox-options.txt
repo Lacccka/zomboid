@@ -34,7 +34,7 @@ option NewMusic.AudioMaxRadius
 {
     type = integer,
     min = 9,
-    max = 100,
+    max = 500,
     default = 35,
     page = NewMusic,
     translation = NewMusic_AudioMaxRadius,
@@ -98,7 +98,7 @@ option NewMusic.VinylRecordsSpawnRate
     type = double,
     min = 0.0,
     max = 4.0,
-    default = 0.6,
+    default = 0.3,
     page = NewMusic,
     translation = NewMusic_VinylRecordsSpawnRate,
 }

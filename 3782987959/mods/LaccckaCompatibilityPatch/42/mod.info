@@ -1,7 +1,0 @@
-name=Lacccka B42.20 Compatibility Patch
-id=LaccckaB4220Compat
-author=Lacccka
-description=Cross-platform Build 42.20 compatibility fixes and failure-isolation guards for Windows and Linux multiplayer servers/clients. Covers MFS, SVU3/TsarLib, PZK VLC, zRe, Bandits, Lifestyle, Aegis Panel, and Federal Ranger's Chimera. Adds Lifestyle Yoga progress and Russian localization, including Bandits. Linux Bandits AnimSets case-sensitivity is handled by the repository's Linux server launcher preflight.
-modversion=1.4.0
-versionMin=42.20.0
-loadafter=\AP,\Bandits2,\Federal_Rangers_Chimera,\GridInventory,\LifestyleHobbies,\ModernFirearmsSystem,\MFS_community_fix,\PZKCarzoneWorkshop,\PzkVanillaPlusCarPack,\StandardizedVehicleUpgrades3Core,\tsarslib,\zReFRAMEWORK

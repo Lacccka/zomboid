@@ -6,7 +6,6 @@ require "zombies/NMZombieVisualTargetLedger"
 require "zombies/NMZombieAttraction"
 require "death/NMServerZombieCorpseCarry"
 require "NMServerSandboxLootController"
-require "core/NMTempBootDebugProfiles"
 require "zombies/NMServerMPZombieAssignmentFlow"
 require "zombies/NMServerZombieVisualTargetPublisher"
 require "zombies/NMServerSPZombieAssignmentFlow"
@@ -34,20 +33,6 @@ if NMCore and NMCore.logChannel then
         NMCore.logBuildVersionLine("server")
     end
     logServerDebugBootstrap("bootstrap")
-    if NMTempBootDebugProfiles then
-        NMTempBootDebugProfiles.applyIfEnabled("server", "bootstrap_entry")
-        NMTempBootDebugProfiles.logSandboxSnapshot(
-            "loot",
-            "temp_boot_sandbox",
-            "server_bootstrap_entry",
-            string.format(
-                "authority=%s isClient=%s isServer=%s",
-                tostring(NMCore.getRuntimeAuthorityMode and NMCore.getRuntimeAuthorityMode() or "unknown"),
-                tostring(isClient and isClient() or false),
-                tostring(isServer and isServer() or false)
-            )
-        )
-    end
     NMCore.logChannel(
         "zombie_assignment",
         "server_boot",
@@ -60,15 +45,6 @@ if NMCore and NMCore.logChannel then
     )
     if NMServerBootReset and NMServerBootReset.initSession then
         NMServerBootReset.initSession()
-    end
-    if NMTempBootDebugProfiles then
-        NMTempBootDebugProfiles.applyIfEnabled("server", "bootstrap_pre_loot")
-        NMTempBootDebugProfiles.logSandboxSnapshot(
-            "loot",
-            "temp_boot_sandbox",
-            "server_bootstrap_pre_loot",
-            "before_register=true before_ensure=true"
-        )
     end
     if NMServerSandboxLootController and NMServerSandboxLootController.registerEventHooks then
         NMServerSandboxLootController.registerEventHooks()

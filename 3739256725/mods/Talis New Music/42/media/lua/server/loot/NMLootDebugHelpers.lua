@@ -9,8 +9,7 @@ local throttles = {
 
 local ROUTES = {
     standard = "standard",
-    globalBackfill = "globalBackfill",
-    storeTopUp = "storeTopUp"
+    topUp = "topUp"
 }
 
 local RESULTS = {
