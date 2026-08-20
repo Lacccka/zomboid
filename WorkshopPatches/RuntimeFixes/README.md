@@ -2,6 +2,8 @@
 
 This Workshop staging project contains LCC-authored compatibility hooks only. It must not contain complete Bandits Lua files or assets.
 
+In-development NPC combat AttackState work, target diagnostics, and the admin stress-test spawner are intentionally isolated in `WorkshopPatches/NPCCombatExperimental` and are not part of this stable item.
+
 Validated against the repository snapshot at `3268487204/mods/Bandits/42.20` (`Mod ID: Bandits2`) and the known B42.20 dedicated/client failures observed by this server project.
 
 ## 1. Empty dedicated server wanderer scheduler

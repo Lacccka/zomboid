@@ -49,6 +49,7 @@ forbid_marker() {
 expected_patch_dirs=(
     ActivityFixes
     CompatibilityBridges
+    NPCCombatExperimental
     PatchCore
     RuntimeFixes
     RussianTextFixes
@@ -62,11 +63,12 @@ trap 'rm -f "$tmp_actual_dirs" "$tmp_expected_dirs"' EXIT
 find "$SPLIT" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort > "$tmp_actual_dirs"
 printf '%s\n' "${expected_patch_dirs[@]}" | sort > "$tmp_expected_dirs"
 if ! diff -u "$tmp_expected_dirs" "$tmp_actual_dirs"; then
-    error "WorkshopPatches must contain exactly the six supported patch directories"
+    error "WorkshopPatches must contain exactly the seven supported patch directories"
 fi
 
 core="$SPLIT/PatchCore/Contents/mods/LaccckaB4220PatchCore/42/media"
 runtime="$SPLIT/RuntimeFixes/Contents/mods/LaccckaB4220RuntimeFixes/42/media"
+experimental="$SPLIT/NPCCombatExperimental/Contents/mods/LaccckaB4220NPCCombatExperimental/42/media"
 activity="$SPLIT/ActivityFixes/Contents/mods/LaccckaB4220ActivityFixes/42/media"
 bridges="$SPLIT/CompatibilityBridges/Contents/mods/LaccckaB4220CompatBridges/42/media"
 safety="$SPLIT/SafetyFixes/Contents/mods/LaccckaB4220SafetyFixes/42/media"
@@ -78,12 +80,17 @@ required_files=(
     "$core/lua/shared/LCC/CoreGuard.lua"
 
     "$runtime/lua/client/ISUI/ISCharacterScreen.lua"
-    "$runtime/lua/client/zzz_LCC_BanditsAdminSpawnMenu.lua"
     "$runtime/lua/client/zzz_LCC_BanditsZombieCacheGuard.lua"
     "$runtime/lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua"
     "$runtime/lua/server/zzz_LCC_BanditsEmptyServerWandererGuard.lua"
     "$runtime/lua/shared/LCC/Guard.lua"
     "$runtime/lua/shared/zzz_LCC_BanditsFarmingGuard.lua"
+
+    "$experimental/lua/client/zzz_LCC_BanditsAdminSpawnMenu.lua"
+    "$experimental/lua/client/zzz_LCC_BanditsAttackStateGuard.lua"
+    "$experimental/lua/client/zzz_LCC_BanditsTargetDiagnostics.lua"
+    "$experimental/lua/server/zzz_LCC_BanditsTestSpawnBridge.lua"
+    "$experimental/lua/shared/LCC/Guard.lua"
 
     "$activity/lua/client/zzz_LCC_LifestyleBathFix.lua"
     "$activity/lua/client/zzz_LCC_LifestyleYogaProgress.lua"
@@ -131,12 +138,14 @@ for marker in \
 done
 
 runtime_guard="$runtime/lua/shared/LCC/Guard.lua"
+experimental_guard="$experimental/lua/shared/LCC/Guard.lua"
 activity_guard="$activity/lua/shared/LCC/Guard.lua"
 bridges_guard="$bridges/lua/shared/LCC/Guard.lua"
 safety_guard="$safety/lua/shared/LCC/Guard.lua"
 
 functional_guards=(
     "$runtime_guard"
+    "$experimental_guard"
     "$activity_guard"
     "$bridges_guard"
     "$safety_guard"
@@ -149,7 +158,7 @@ for guard in "${functional_guards[@]}"; do
     require_marker "$guard" 'Correct operation is not guaranteed' "Guard bootstrap lost degraded warning: ${guard#$ROOT/}"
 done
 
-for guard in "$activity_guard" "$bridges_guard" "$safety_guard"; do
+for guard in "$experimental_guard" "$activity_guard" "$bridges_guard" "$safety_guard"; do
     if [[ -f "$runtime_guard" && -f "$guard" ]] && ! cmp -s "$runtime_guard" "$guard"; then
         error "functional Guard bootstraps must remain identical: ${guard#$ROOT/}"
     fi
@@ -157,7 +166,6 @@ done
 
 # RuntimeFixes: source-clean Bandits contracts.
 runtime_character="$runtime/lua/client/ISUI/ISCharacterScreen.lua"
-runtime_admin="$runtime/lua/client/zzz_LCC_BanditsAdminSpawnMenu.lua"
 runtime_cache="$runtime/lua/client/zzz_LCC_BanditsZombieCacheGuard.lua"
 runtime_dedicated="$runtime/lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua"
 runtime_empty="$runtime/lua/server/zzz_LCC_BanditsEmptyServerWandererGuard.lua"
@@ -172,12 +180,16 @@ for forbidden in \
     [[ ! -e "$forbidden" ]] || error "RuntimeFixes must not bundle upstream Bandits source: ${forbidden#$ROOT/}"
 done
 
+for experimental_file in \
+    "$runtime/lua/client/zzz_LCC_BanditsAdminSpawnMenu.lua" \
+    "$runtime/lua/client/zzz_LCC_BanditsAttackStateGuard.lua" \
+    "$runtime/lua/client/zzz_LCC_BanditsTargetDiagnostics.lua" \
+    "$runtime/lua/server/zzz_LCC_BanditsTestSpawnBridge.lua"; do
+    [[ ! -e "$experimental_file" ]] || error "RuntimeFixes must not contain NPC combat experimental/test tooling: ${experimental_file#$ROOT/}"
+done
+
 require_marker "$runtime_character" 'Guard.safeRequire(FEATURE, "XpSystem/ISUI/ISCharacterScreen")' \
     "RuntimeFixes character-screen shim lost the B42.20 target path"
-require_marker "$runtime_admin" 'sendClientCommand(player, "Spawner", "Clan", args)' \
-    "RuntimeFixes admin spawn helper lost Bandits server-command path"
-require_marker "$runtime_admin" 'hasStaffAccess' \
-    "RuntimeFixes admin spawn helper lost staff-access guard"
 
 require_marker "$runtime_empty" 'BanditCustom.ClanGetAll = function' \
     "RuntimeFixes empty-server guard lost ClanGetAll wrapper"
@@ -216,6 +228,53 @@ require_marker "$runtime_dedicated" 'pcall(getId, zombie)' \
     "RuntimeFixes dedicated lookup lost stale-IsoZombie protection"
 forbid_marker "$runtime_dedicated" 'getZombieList()' \
     "RuntimeFixes dedicated lookup must not scan the complete server zombie list"
+
+# NPCCombatExperimental: in-development guard, diagnostics and admin test tooling.
+experimental_admin="$experimental/lua/client/zzz_LCC_BanditsAdminSpawnMenu.lua"
+experimental_attack="$experimental/lua/client/zzz_LCC_BanditsAttackStateGuard.lua"
+experimental_diag="$experimental/lua/client/zzz_LCC_BanditsTargetDiagnostics.lua"
+experimental_spawn="$experimental/lua/server/zzz_LCC_BanditsTestSpawnBridge.lua"
+
+for forbidden in \
+    "$experimental/lua/client/BanditZombie.lua" \
+    "$experimental/lua/client/BanditUpdate.lua" \
+    "$experimental/lua/server/BanditServerWanderers.lua"; do
+    [[ ! -e "$forbidden" ]] || error "NPCCombatExperimental must not bundle upstream Bandits source: ${forbidden#$ROOT/}"
+done
+
+require_marker "$experimental_admin" 'local MODULE = "LCCBanditsTest"' \
+    "NPCCombatExperimental admin spawn helper lost isolated command channel"
+require_marker "$experimental_admin" 'hasStaffAccess' \
+    "NPCCombatExperimental admin spawn helper lost staff-access guard"
+require_marker "$experimental_admin" 'Events.OnPreFillWorldObjectContextMenu.Add' \
+    "NPCCombatExperimental admin spawn helper lost right-click integration"
+
+require_marker "$experimental_spawn" 'module ~= MODULE or command ~= COMMAND' \
+    "NPCCombatExperimental server spawn bridge lost isolated command routing"
+require_marker "$experimental_spawn" 'BanditServer.Spawner.Clan' \
+    "NPCCombatExperimental server spawn bridge must preserve upstream spawn authority"
+require_marker "$experimental_spawn" 'hasStaffAccess' \
+    "NPCCombatExperimental server spawn bridge lost staff-access validation"
+
+require_marker "$experimental_diag" '[LCC][BanditsDiag][SUMMARY]' \
+    "NPCCombatExperimental target diagnostics lost summary logging"
+require_marker "$experimental_diag" 'DANGER_ATTACK_STATE' \
+    "NPCCombatExperimental target diagnostics lost AttackState observation"
+
+require_marker "$experimental_attack" 'zombie:setVariable("bAttack", false)' \
+    "NPCCombatExperimental attack guard lost bAttack=false intervention"
+require_marker "$experimental_attack" '[LCC][BanditsAttackGuard][BLOCK]' \
+    "NPCCombatExperimental attack guard lost intervention diagnostics"
+require_marker "$experimental_attack" '[LCC][BanditsAttackGuard][ESCAPED_ATTACK_STATE]' \
+    "NPCCombatExperimental attack guard lost late-state diagnostic"
+forbid_marker "$experimental_attack" 'zombie:setVariable("bAttack", true)' \
+    "NPCCombatExperimental attack guard must never force vanilla attacks on"
+forbid_marker "$experimental_attack" 'changeState(' \
+    "NPCCombatExperimental attack guard must not force Java action states"
+forbid_marker "$experimental_attack" 'setTarget(' \
+    "NPCCombatExperimental attack guard must not rewrite zombie targets"
+forbid_marker "$experimental_attack" 'setBumpType(' \
+    "NPCCombatExperimental attack guard must not replace the upstream custom Bite setup"
 
 # ActivityFixes: Lifestyle/hygiene/Yoga/skill-description contracts.
 activity_bath="$activity/lua/client/zzz_LCC_LifestyleBathFix.lua"
@@ -361,6 +420,7 @@ done
 declare -A expected_ids=(
     [PatchCore]="LaccckaB4220PatchCore"
     [RuntimeFixes]="LaccckaB4220RuntimeFixes"
+    [NPCCombatExperimental]="LaccckaB4220NPCCombatExperimental"
     [ActivityFixes]="LaccckaB4220ActivityFixes"
     [CompatibilityBridges]="LaccckaB4220CompatBridges"
     [SafetyFixes]="LaccckaB4220SafetyFixes"
@@ -370,6 +430,7 @@ declare -A expected_ids=(
 declare -A expected_workshop_ids=(
     [PatchCore]="3786175901"
     [RuntimeFixes]="3786175979"
+    [NPCCombatExperimental]="0"
     [ActivityFixes]="3786175725"
     [CompatibilityBridges]="3786175808"
     [SafetyFixes]="3786176221"
@@ -387,7 +448,9 @@ for folder in "${expected_patch_dirs[@]}"; do
     modinfo="$SPLIT/$folder/Contents/mods/$id/42/mod.info"
 
     require_file "$workshop" || true
-    require_file "$preview" || true
+    if [[ "$workshop_id" != "0" ]]; then
+        require_file "$preview" || true
+    fi
     require_file "$modinfo" || true
 
     if [[ -f "$modinfo" ]]; then
@@ -396,10 +459,27 @@ for folder in "${expected_patch_dirs[@]}"; do
     fi
 
     if [[ -f "$workshop" ]]; then
-        grep -Fxq "id=$workshop_id" "$workshop" || error "$folder: wrong published Workshop ID"
+        grep -Fxq "id=$workshop_id" "$workshop" || error "$folder: wrong Workshop ID/staging ID"
         grep -Fqi 'Do not use' "$workshop" || error "$folder: Workshop warning is missing"
         grep -Eqi 'original mod(s| Lua files| files)?.*not included|original mods are not included' "$workshop" \
             || error "$folder: no-bundled-mods disclaimer is missing"
+        if [[ "$workshop_id" == "0" ]]; then
+            grep -Fxq 'visibility=private' "$workshop" || error "$folder: unpublished id=0 item must remain private"
+        fi
+    fi
+
+    if [[ "$folder" == "NPCCombatExperimental" ]]; then
+        if [[ -f "$modinfo" ]]; then
+            grep -Fxq 'name=Lacccka B42 NPC Combat Experimental' "$modinfo" \
+                || error "$folder: public mod name must remain neutral"
+        fi
+        if [[ -f "$workshop" ]]; then
+            grep -Fxq 'title=Lacccka B42 NPC Combat Experimental' "$workshop" \
+                || error "$folder: Workshop title must remain neutral"
+            if grep -Eqi '^title=.*Bandits|^description=.*Bandits' "$workshop"; then
+                error "$folder: public Workshop metadata must not name the upstream mod"
+            fi
+        fi
     fi
 
     if grep -Fqx "$id" <<<"$seen_mod_ids"; then
@@ -413,7 +493,7 @@ for folder in "${expected_patch_dirs[@]}"; do
     seen_workshop_ids+="$workshop_id"$'\n'
 done
 
-for folder in RuntimeFixes ActivityFixes CompatibilityBridges SafetyFixes; do
+for folder in RuntimeFixes NPCCombatExperimental ActivityFixes CompatibilityBridges SafetyFixes; do
     id="${expected_ids[$folder]}"
     modinfo="$SPLIT/$folder/Contents/mods/$id/42/mod.info"
     [[ -f "$modinfo" ]] || continue
@@ -428,12 +508,15 @@ for folder in RuntimeFixes ActivityFixes CompatibilityBridges SafetyFixes; do
 done
 
 runtime_modinfo="$SPLIT/RuntimeFixes/Contents/mods/LaccckaB4220RuntimeFixes/42/mod.info"
+experimental_modinfo="$SPLIT/NPCCombatExperimental/Contents/mods/LaccckaB4220NPCCombatExperimental/42/mod.info"
 activity_modinfo="$SPLIT/ActivityFixes/Contents/mods/LaccckaB4220ActivityFixes/42/mod.info"
 bridges_modinfo="$SPLIT/CompatibilityBridges/Contents/mods/LaccckaB4220CompatBridges/42/mod.info"
 safety_modinfo="$SPLIT/SafetyFixes/Contents/mods/LaccckaB4220SafetyFixes/42/mod.info"
 text_modinfo="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/mod.info"
 
 require_marker "$runtime_modinfo" '\Bandits2' "RuntimeFixes loadafter lost Bandits2"
+require_marker "$experimental_modinfo" '\Bandits2' "NPCCombatExperimental loadafter lost current NPC integration"
+require_marker "$experimental_modinfo" '\LaccckaB4220RuntimeFixes' "NPCCombatExperimental must load after stable RuntimeFixes when both are enabled"
 require_marker "$activity_modinfo" '\LifestyleHobbies' "ActivityFixes loadafter lost LifestyleHobbies"
 
 for dep in ModernFirearmsSystem MFS_community_fix PZKCarzoneWorkshop PzkVanillaPlusCarPack StandardizedVehicleUpgrades3Core tsarslib zReFRAMEWORK; do
@@ -455,4 +538,4 @@ if (( fail != 0 )); then
     exit 1
 fi
 
-printf 'Grouped Workshop patches audit: OK (6 current packages)\n'
+printf 'Grouped Workshop patches audit: OK (7 current packages; NPCCombatExperimental unpublished/private)\n'

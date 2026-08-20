@@ -16,6 +16,7 @@ Every item must keep this warning in its Workshop description:
 | --- | --- | --- | --- |
 | `PatchCore` | `LaccckaB4220PatchCore` | Lacccka B42 Patch Core | Recommended shared guarded-patch helper used by the functional patches. |
 | `RuntimeFixes` | `LaccckaB4220RuntimeFixes` | Lacccka B42 Runtime Fixes | Source-clean Bandits runtime / dedicated-server / zombie-action compatibility hooks. |
+| `NPCCombatExperimental` | `LaccckaB4220NPCCombatExperimental` | Lacccka B42 NPC Combat Experimental | In-development NPC combat AttackState guard, diagnostics and admin stress-test tooling. |
 | `ActivityFixes` | `LaccckaB4220ActivityFixes` | Lacccka B42 Activity Fixes | Lifestyle hygiene, Yoga/progression and perk compatibility fixes. |
 | `CompatibilityBridges` | `LaccckaB4220CompatBridges` | Lacccka B42 Compatibility Bridges | Build 42 legacy module/API redirects used by weapon, vehicle and framework mods. |
 | `SafetyFixes` | `LaccckaB4220SafetyFixes` | Lacccka B42 Safety Fixes | Defensive inventory/UI compatibility guards. |
@@ -23,7 +24,7 @@ Every item must keep this warning in its Workshop description:
 
 ## Dependency model
 
-`RuntimeFixes`, `ActivityFixes`, `CompatibilityBridges`, and `SafetyFixes` use `LaccckaB4220PatchCore` as a **recommended soft dependency**. `RussianTextFixes` remains completely standalone.
+`RuntimeFixes`, `NPCCombatExperimental`, `ActivityFixes`, `CompatibilityBridges`, and `SafetyFixes` use `LaccckaB4220PatchCore` as a **recommended soft dependency**. `RussianTextFixes` remains completely standalone.
 
 The functional patches no longer use the Build 42 `mod.info` `require=` field for Patch Core, because that field makes Core a hard blocker before any fallback Lua can run. Instead, each functional patch declares Patch Core in `loadafter=` and ships the same small `LCC/Guard.lua` bootstrap:
 
@@ -47,6 +48,14 @@ Upstream mods are deliberately not hard-required by these generic patch items be
 
 The grouped audit must fail if `BanditZombie.lua`, `BanditServerWanderers.lua`, `ZAWaterFarm.lua` or `ZAStompPlant.lua` reappear under `RuntimeFixes`.
 
+## NPCCombatExperimental isolation contract
+
+`NPCCombatExperimental` contains only NPC-combat work that is still being actively tested: the zombie -> NPC `bAttack`/AttackState guard, its observe-only target diagnostics, and the admin right-click stress spawner plus its server bridge. These files must not live in `RuntimeFixes`.
+
+The public Workshop title and Mod ID intentionally do not name the upstream mod. Internal Lua integration still uses the real `Bandits2`/Bandits API names where required for load ordering and debugging.
+
+The stable RuntimeFixes item must remain usable without enabling this experimental item. Conversely, the experimental item is allowed to load after RuntimeFixes so both can be tested together without modifying the already-published stable package.
+
 ## Source ownership
 
 The monolithic compatibility patch remains a private regression baseline and can contain historical full-file overrides. Those files are not automatically suitable for public Workshop publication.
@@ -57,7 +66,7 @@ Each split item must be reviewed on its own publication contract. In particular,
 
 Each child directory is a separate Workshop staging directory with its own `workshop.txt` and `Contents/mods/.../42/mod.info`.
 
-Each published item keeps its assigned Workshop ID in `workshop.txt`. Add or replace `preview.png` as needed before publishing.
+Published items keep their assigned Workshop ID in `workshop.txt`. Experimental items may use `id=0` and omit `preview.png` until they are ready for upload; the audit treats that state as unpublished/private staging.
 
 ## Migration rule
 
