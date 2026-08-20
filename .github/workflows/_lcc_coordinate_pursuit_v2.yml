@@ -1,0 +1,166 @@
+name: LCC Coordinate Pursuit V2
+
+on:
+  push:
+    branches:
+      - agent/b42-20-compatibility-patch
+    paths:
+      - tools/_lcc_coordinate_pursuit_v2.trigger
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/b42-20-compatibility-patch
+          fetch-depth: 0
+
+      - name: Materialize coordinate-only pursuit v2
+        shell: python
+        run: |
+          from pathlib import Path
+
+          bandit_path = Path("WorkshopPatches/Bandits-LCC-Dev/42.20/media/lua/client/BanditUpdate.lua")
+          guard_path = Path("WorkshopPatches/NPCCombatExperimental/Contents/mods/LaccckaB4220NPCCombatExperimental/42/media/lua/client/zzz_LCC_BanditsAttackStateGuard.lua")
+          doc_path = Path("docs/experiments/bandits-attack-bridge-poc.md")
+
+          text = bandit_path.read_text(encoding="utf-8")
+
+          old_header = '''-- [LCC POC] Local B42.20.3 reference implementation; this working copy is for controlled testing.
+LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-pursuit-v1"
+print("[LCC][BanditsAttackPoC][INIT] upstream-pursuit-v1 active; vanilla spotted/addAggro/setTarget/setAttackedBy bridge disabled")'''
+          new_header = '''-- [LCC POC] Local B42.20.3 reference implementation; this working copy is for controlled testing.
+-- v2 removes every active pathToCharacter(bandit) call from zombie -> Bandit pursuit.
+LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-coordinate-pursuit-v2"
+print("[LCC][BanditsAttackPoC][INIT] upstream-coordinate-pursuit-v2 active; character pursuit and vanilla target bridge disabled")'''
+
+          helper_anchor = '''-- table of bandits being attacked by zombies
+local biteTab = {}
+
+-- manages zombie behavior towards bandits'''
+          helper_v2 = '''-- table of bandits being attacked by zombies
+local biteTab = {}
+
+-- Coordinate-only pursuit for normal zombies chasing Bandits.
+-- Passing the Bandit IsoZombie to pathToCharacter() can create/retain a Java/network
+-- goal-character relationship. Keep the destination as x/y/z only so the custom
+-- Bite/BiteLow pipeline can operate without constructing a character target.
+local function PathZombieToBanditLocation(zombie, banditCached)
+    if not zombie or not banditCached then return end
+    if BanditUtils.IsController(zombie) then
+        zombie:pathToLocationF(banditCached.x, banditCached.y, banditCached.z)
+    end
+end
+
+-- manages zombie behavior towards bandits'''
+
+          far_v1 = '''            if zombie:CanSee(bandit) then
+                zombie:pathToCharacter(bandit)
+            end'''
+          far_v2 = '''            if zombie:CanSee(bandit) then
+                PathZombieToBanditLocation(zombie, banditCached)
+            end'''
+
+          close_v1 = '''                    if zombie and bandit then
+                        -- [LCC POC] Keep Bandits' own pursuit / Bite pipeline without
+                        -- constructing a vanilla zombie -> Bandit combat relationship.
+                        zombie:pathToCharacter(bandit)
+                    end'''
+          close_v2 = '''                    if zombie and bandit then
+                        -- [LCC POC v2] Keep the final approach coordinate-only as well.
+                        -- Do not pass the Bandit IsoZombie into character-pathing APIs.
+                        PathZombieToBanditLocation(zombie, banditCached)
+                    end'''
+
+          checks = {
+              "v1 header": (old_header, 1),
+              "helper anchor": (helper_anchor, 1),
+              "far active character pursuit": (far_v1, 1),
+              "close v1 pursuit": (close_v1, 1),
+          }
+          for name, (needle, expected) in checks.items():
+              count = text.count(needle)
+              if count != expected:
+                  raise SystemExit(f"Refusing BanditUpdate patch: {name} count={count}, expected={expected}")
+
+          text = text.replace(old_header, new_header, 1)
+          text = text.replace(helper_anchor, helper_v2, 1)
+          text = text.replace(far_v1, far_v2, 1)
+          text = text.replace(close_v1, close_v2, 1)
+
+          # Active code must no longer call pathToCharacter(bandit). Commented historical
+          # lines may still exist, so validate the two audited active blocks specifically.
+          if far_v1 in text or close_v1 in text:
+              raise SystemExit("Active pathToCharacter(bandit) pursuit survived v2 transformation")
+          if text.count('LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-coordinate-pursuit-v2"') != 1:
+              raise SystemExit("v2 marker missing or duplicated")
+          if text.count("PathZombieToBanditLocation(zombie, banditCached)") != 2:
+              raise SystemExit("Expected exactly two coordinate pursuit call sites")
+
+          bandit_path.write_text(text, encoding="utf-8", newline="")
+
+          guard = guard_path.read_text(encoding="utf-8")
+          old_guard_marker = 'local POC_MARKER = "upstream-pursuit-v1"'
+          new_guard_marker = 'local POC_MARKER = "upstream-coordinate-pursuit-v2"'
+          if guard.count(old_guard_marker) != 1 or new_guard_marker in guard:
+              raise SystemExit("Attack guard marker is not in expected v1 state")
+          guard = guard.replace(old_guard_marker, new_guard_marker, 1)
+          guard_path.write_text(guard, encoding="utf-8", newline="")
+
+          doc = doc_path.read_text(encoding="utf-8")
+          marker = "## Upstream block under test"
+          if marker not in doc:
+              raise SystemExit("Experiment document anchor not found")
+          result = '''## Iteration status
+
+`upstream-pursuit-v1` was tested in multiplayer. Removing `spotted/addAggro/setTarget/setAttackedBy` reduced the dangerous AttackState behavior but did **not** eliminate vanilla zombie -> Bandit targets. `pathToCharacter(bandit)` remained active in both the far and final-approach paths, and target diagnostics still observed Bandit targets, including stale/remote targets well outside Bandits' own ~20-tile selection radius.
+
+The current experiment is therefore `upstream-coordinate-pursuit-v2`:
+
+- no active `spotted/addAggro/setTarget/setAttackedBy` bridge;
+- no active `pathToCharacter(bandit)` in `UpdateZombies()`;
+- pursuit uses `pathToLocationF(x, y, z)`, the coordinate path API already used by Bandits' own `ZombieActions.GoTo`;
+- `Bite/BiteLow`, manual `Hit`, infection and health synchronization remain unchanged;
+- `NPCCombatExperimental` remains observation-only while the v2 marker is active.
+
+Primary success signal: fresh zombie -> Bandit engagements produce `pocTargetLeaks=0` and `attackStateObserved=0` while custom bite counters continue to advance.
+
+'''
+          if "## Iteration status" not in doc:
+              doc = doc.replace(marker, result + marker, 1)
+          doc = doc.replace('LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-pursuit-v1"', 'LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-coordinate-pursuit-v2"')
+          doc = doc.replace('[LCC][BanditsAttackPoC][INIT] upstream-pursuit-v1 active; vanilla spotted/addAggro/setTarget/setAttackedBy bridge disabled', '[LCC][BanditsAttackPoC][INIT] upstream-coordinate-pursuit-v2 active; character pursuit and vanilla target bridge disabled')
+          doc = doc.replace('marker=upstream-pursuit-v1', 'marker=upstream-coordinate-pursuit-v2')
+          doc_path.write_text(doc, encoding="utf-8", newline="")
+
+      - name: Verify v2 diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          f='WorkshopPatches/Bandits-LCC-Dev/42.20/media/lua/client/BanditUpdate.lua'
+          g='WorkshopPatches/NPCCombatExperimental/Contents/mods/LaccckaB4220NPCCombatExperimental/42/media/lua/client/zzz_LCC_BanditsAttackStateGuard.lua'
+          grep -F 'LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-coordinate-pursuit-v2"' "$f"
+          grep -F 'zombie:pathToLocationF(banditCached.x, banditCached.y, banditCached.z)' "$f"
+          grep -F 'local POC_MARKER = "upstream-coordinate-pursuit-v2"' "$g"
+          if grep -Fq 'zombie:addAggro(bandit, 1)' "$f"; then
+            echo 'unsafe active vanilla bridge unexpectedly present' >&2
+            exit 1
+          fi
+          git diff --check
+
+      - name: Commit v2 experiment
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'LCC compatibility automation'
+          git config user.email '101393701+Lacccka@users.noreply.github.com'
+          git add -- \
+            WorkshopPatches/Bandits-LCC-Dev/42.20/media/lua/client/BanditUpdate.lua \
+            WorkshopPatches/NPCCombatExperimental/Contents/mods/LaccckaB4220NPCCombatExperimental/42/media/lua/client/zzz_LCC_BanditsAttackStateGuard.lua \
+            docs/experiments/bandits-attack-bridge-poc.md
+          git commit -m 'Test coordinate-only zombie pursuit for Bandits'
+          git push origin HEAD:agent/b42-20-compatibility-patch
