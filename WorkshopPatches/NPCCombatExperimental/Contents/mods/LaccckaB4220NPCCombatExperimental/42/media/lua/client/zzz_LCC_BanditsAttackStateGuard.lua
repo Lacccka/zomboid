@@ -1,13 +1,14 @@
--- Narrow client-side guard for the Bandits zombie -> Bandit attack path.
+-- Client-side observation of the Bandits zombie -> NPC AttackState path.
 --
--- Bandits intentionally represents NPCs as IsoZombie and assigns them as real
--- targets of normal zombies. Upstream also implements its own Bite/BiteLow
--- damage path, but the bAttack=false line intended to keep vanilla AttackState
--- out of that interaction is commented out in BanditUpdate.lua.
+-- B42.20.3 testing proved that bAttack is backed by a read-only animation
+-- callback variable. Calling zombie:setVariable("bAttack", false) produces
+-- AnimationVariableSlotCallback.trySetValue warnings and does not change the
+-- value. The former experimental intervention therefore did not block vanilla
+-- AttackState and its BLOCK counter was misleading.
 --
--- LCC does not replace BanditUpdate.lua and does not change targets, aggro,
--- pathfinding, bump types, custom bite bookkeeping, damage, or infection. It
--- only clears bAttack while a normal IsoZombie currently targets a Bandit.
+-- Keep this probe strictly observe-only until a mutable pre-AttackState seam is
+-- identified. It does not change targets, aggro, pathfinding, bump types,
+-- custom Bite bookkeeping, damage, infection, or Java action states.
 if isServer() then return end
 
 local Guard = require "LCC/Guard"
@@ -22,8 +23,8 @@ local tracked = setmetatable({}, { __mode = "k" })
 local stats = {
     zombieUpdates = 0,
     banditTargetUpdates = 0,
-    blocked = 0,
-    escapedAttackState = 0,
+    bAttackObserved = 0,
+    attackStateObserved = 0,
 }
 local lastHeartbeat = 0
 
@@ -101,15 +102,15 @@ local function maybeHeartbeat()
     lastHeartbeat = now
 
     print(string.format(
-        "[LCC][BanditsAttackGuard][SUMMARY] updates=%d banditTargetUpdates=%d blocked=%d escapedAttackState=%d",
+        "[LCC][BanditsAttackGuard][SUMMARY] updates=%d banditTargetUpdates=%d bAttackObserved=%d attackStateObserved=%d",
         stats.zombieUpdates,
         stats.banditTargetUpdates,
-        stats.blocked,
-        stats.escapedAttackState
+        stats.bAttackObserved,
+        stats.attackStateObserved
     ))
 end
 
-local function guardZombie(zombie)
+local function observeZombie(zombie)
     stats.zombieUpdates = stats.zombieUpdates + 1
     if stats.zombieUpdates % HEARTBEAT_CHECK_EVERY_UPDATES == 0 then
         maybeHeartbeat()
@@ -128,15 +129,19 @@ local function guardZombie(zombie)
     local asn = attackStateName(zombie)
     local bump = bumpType(zombie)
     local customBite = isCustomBite(zombie, bump)
-    local bAttackBefore = zombie:getVariableBoolean("bAttack")
+    local bAttack = zombie:getVariableBoolean("bAttack")
     local noLungeAttack = zombie:getVariableBoolean("NoLungeAttack")
+    local attackState = isAttackState(asn)
+    local previous = tracked[zombie]
 
-    if bAttackBefore then
-        zombie:setVariable("bAttack", false)
-        stats.blocked = stats.blocked + 1
-
+    if bAttack and (
+            not previous
+            or not previous.bAttack
+            or previous.target ~= target
+        ) then
+        stats.bAttackObserved = stats.bAttackObserved + 1
         print(string.format(
-            "[LCC][BanditsAttackGuard][BLOCK] attacker=%s target=%s stateBefore=%s bAttackBefore=true bAttackAfter=false noLunge=%s bump=%s customBite=%s",
+            "[LCC][BanditsAttackGuard][READ_ONLY_BATTACK] attacker=%s target=%s state=%s bAttack=true noLunge=%s bump=%s customBite=%s",
             characterId(zombie),
             characterId(target),
             asn,
@@ -146,22 +151,18 @@ local function guardZombie(zombie)
         ))
     end
 
-    local attackState = isAttackState(asn)
-    local previous = tracked[zombie]
     if attackState and (
             not previous
             or not previous.attackState
             or previous.target ~= target
         ) then
-        stats.escapedAttackState = stats.escapedAttackState + 1
-
+        stats.attackStateObserved = stats.attackStateObserved + 1
         print(string.format(
-            "[LCC][BanditsAttackGuard][ESCAPED_ATTACK_STATE] attacker=%s target=%s state=%s bAttackBefore=%s bAttackAfter=%s noLunge=%s bump=%s customBite=%s",
+            "[LCC][BanditsAttackGuard][ESCAPED_ATTACK_STATE] attacker=%s target=%s state=%s bAttack=%s noLunge=%s bump=%s customBite=%s diagnosticOnly=true",
             characterId(zombie),
             characterId(target),
             asn,
-            boolString(bAttackBefore),
-            boolString(zombie:getVariableBoolean("bAttack")),
+            boolString(bAttack),
             boolString(noLungeAttack),
             bump,
             boolString(customBite)
@@ -170,6 +171,7 @@ local function guardZombie(zombie)
 
     tracked[zombie] = {
         target = target,
+        bAttack = bAttack,
         attackState = attackState,
     }
 end
@@ -188,12 +190,12 @@ Guard.install {
     install = function()
         Events.OnZombieUpdate.Add(function(zombie)
             if Guard.isEnabled(FEATURE) then
-                Guard.protect(FEATURE, "guard zombie attack state", guardZombie, zombie)
+                Guard.protect(FEATURE, "observe zombie attack state", observeZombie, zombie)
             end
         end)
 
         print(string.format(
-            "[LCC][BanditsAttackGuard][INIT] bAttack guard active; heartbeat=%dms; targets/aggro/pathing/custom Bite are unchanged",
+            "[LCC][BanditsAttackGuard][INIT] diagnostic-only on B42.20.3; bAttack is read-only; no mutation attempted; heartbeat=%dms",
             HEARTBEAT_MS
         ))
     end,
