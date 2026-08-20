@@ -40,46 +40,53 @@ No Java state is forced and `bAttack` is not written.
 
 ## Apply on the Windows test checkout
 
-From the repository root:
+From the repository root, patch the repository snapshot:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\Apply-BanditsAttackBridgePoC.ps1
 ```
 
-The script is strict and only patches the audited B42.20 source block. If the upstream file no longer matches exactly, it aborts instead of modifying an unknown revision.
+The script is strict and only patches the audited B42.20 source header and combat block. If the upstream file no longer matches exactly, it aborts instead of modifying an unknown revision.
 
-To revert:
+To patch the exact `BanditUpdate.lua` used by a local client test instead, pass it explicitly:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\Apply-BanditsAttackBridgePoC.ps1 `
+  -TargetFile "C:\path\to\3268487204\mods\Bandits\42.20\media\lua\client\BanditUpdate.lua"
+```
+
+Use the same arguments plus `-Revert` to restore the original source:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\Apply-BanditsAttackBridgePoC.ps1 -Revert
 ```
 
-The patch changes the tracked upstream snapshot at:
+The repository default target is:
 
 `3268487204/mods/Bandits/42.20/media/lua/client/BanditUpdate.lua`
 
-For a live test, copy/use that patched Bandits client source in the same local mod workflow used for the current B42.20 test build. Do not upload the modified upstream file as part of `NPCCombatExperimental`.
+For a live test, the modified file must be the Bandits client source actually loaded by the game. A Steam Workshop copy can be overwritten by Steam, so use the same controlled local-mod workflow used for the current B42.20 test build where possible. Do not upload the modified upstream file as part of `NPCCombatExperimental`.
 
 ## Interaction with NPCCombatExperimental
 
-The patched upstream block sets:
+The patched upstream file sets the marker at `BanditUpdate.lua` load time, before NPC combat begins:
 
 ```lua
 LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-pursuit-v1"
 ```
 
-and prints once when the close-range path is first exercised:
+and prints:
 
 ```text
 [LCC][BanditsAttackPoC][INIT] upstream-pursuit-v1 active; vanilla spotted/addAggro/setTarget/setAttackedBy bridge disabled
 ```
 
-`zzz_LCC_BanditsAttackStateGuard.lua` detects the same marker and switches the v3 target-disconnect intervention to **observe-only**. This is required to keep the experiment causal: during PoC mode, `zombie:setTarget(nil)` from the compatibility patch must not help the source-level change.
+`zzz_LCC_BanditsAttackStateGuard.lua` detects the same marker and switches to **fully observe-only mode**. During the PoC it does not call either the v3 `zombie:setTarget(nil)` intervention or the compatibility-patch `bandit:setZombiesDontAttack(true)` protection. This is required to keep the experiment causal: the source-level replacement must stand or fail on its own.
 
 Expected guard marker:
 
 ```text
-[LCC][BanditsAttackGuard][UPSTREAM_POC_ACTIVE] marker=upstream-pursuit-v1 mode=observe-only v3Disconnect=false
+[LCC][BanditsAttackGuard][UPSTREAM_POC_ACTIVE] marker=upstream-pursuit-v1 mode=observe-only v3Disconnect=false targetProtection=false
 ```
 
 If a normal zombie still acquires a Bandit as a vanilla target while the PoC marker is active, the guard reports:
@@ -108,7 +115,8 @@ A strong positive result requires all of the following:
 
 - `[BanditsAttackPoC][INIT]` appears;
 - `[BanditsAttackGuard][UPSTREAM_POC_ACTIVE]` appears;
-- `POC_TARGET_LEAK=0` in practice (no leak lines and summary counter remains zero);
+- the guard summary reports `upstreamPoc=true` and `pocTargetLeaks=0`;
+- no `[POC_TARGET_LEAK]` lines appear;
 - target diagnostics stop reporting normal zombie -> Bandit vanilla target acquisitions;
 - `DANGER_ATTACK_STATE` / `ESCAPED_ATTACK_STATE` for Bandit targets disappear;
 - no `ClassCastException` from `AttackState.triggerPlayerReaction` occurs;
