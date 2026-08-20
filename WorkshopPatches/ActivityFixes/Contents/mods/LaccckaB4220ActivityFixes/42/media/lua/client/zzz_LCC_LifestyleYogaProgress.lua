@@ -4,13 +4,15 @@
 -- Yoga remains authoritative in Lifestyle's HiddenSkills/LSHiddenSkills storage.
 -- The perk declared by this patch is only a UI proxy, so existing saves and
 -- Lifestyle's own progression logic are not migrated or duplicated.
+--
+-- IMPORTANT: keep this Lua source ASCII-only. Localized text is resolved via
+-- Translator keys to avoid Build 42.20 Windows mojibake from Cyrillic literals.
 
 local Guard = require "LCC/Guard"
 local FEATURE = "lifestyle.yoga-progress-ui"
-local PATCH_VERSION = "1.1.6"
+local PATCH_VERSION = "1.1.7"
 
 Guard.safeRequire(FEATURE, "XpSystem/ISUI/ISSkillProgressBar")
-Guard.safeRequire(FEATURE, "XpSystem/ISUI/ISCharacterInfo")
 Guard.safeRequire(FEATURE, "Helper/HSMng")
 if not Guard.isEnabled(FEATURE) then return end
 if LCC_LifestyleYogaProgressInstalled then return end
@@ -42,21 +44,6 @@ Guard.install {
         local originalRenderPerkRect = ISSkillProgressBar.renderPerkRect
         local originalUpdateTooltip = ISSkillProgressBar.updateTooltip
 
-        local YOGA_DESCRIPTION_RU = "Прокачивается выполнением поз йоги. <LINE> 1 ур.: Шавасана даёт «Дзен» и повышает получение опыта Физподготовки, Силы, Медитации и Йоги. <LINE> С ростом уровня открываются новые позы и снижается шанс неудачи. <LINE> 10 ур.: позы больше не проваливаются."
-
-        LCCYogaSkillProgressBar = ISSkillProgressBar:derive("LCCYogaSkillProgressBar")
-
-        local function isYogaPerk(perk)
-            if not perk then return false end
-            if Perks and Perks.Yoga and perk.getType and perk:getType() == Perks.Yoga then return true end
-            if perk.getId and tostring(perk:getId()) == "Yoga" then return true end
-            if perk.getName then
-                local name = perk:getName()
-                return name == "Yoga" or name == "Йога"
-            end
-            return false
-        end
-
         local function clamp(value, minValue, maxValue)
             if value < minValue then return minValue end
             if value > maxValue then return maxValue end
@@ -64,6 +51,7 @@ Guard.install {
         end
 
         local function lccGetTextOrNull(key)
+            if not key then return nil end
             if getTextOrNull then
                 return getTextOrNull(key)
             end
@@ -92,19 +80,17 @@ Guard.install {
 
         local function isRussianUI()
             local code = getLanguageCode()
-            if code then
-                local normalized = string.lower(tostring(code))
-                if normalized == "ru" or normalized == "russian" then
-                    return true
-                end
-            end
-
-            local meditation = lccGetTextOrNull("IGUI_perks_Meditation")
-            local doctor = lccGetTextOrNull("IGUI_perks_Doctor")
-            return meditation == "Медитация" or doctor == "Медицина"
+            if not code then return false end
+            local normalized = string.lower(tostring(code))
+            return normalized == "ru"
+                or normalized == "russian"
+                or string.find(normalized, "russian", 1, true) ~= nil
+                or string.find(normalized, "ru_", 1, true) ~= nil
+                or string.find(normalized, "ru-", 1, true) ~= nil
         end
 
         local russianUI = isRussianUI()
+        local languageCode = getLanguageCode() or "?"
 
         local function getYogaName()
             return lccGetTextOrNull("IGUI_perks_Yoga")
@@ -113,15 +99,27 @@ Guard.install {
         end
 
         local function getYogaDescription()
-            -- B42.20 can keep an older Yoga description in another active
-            -- translation layer. For Russian clients the compatibility patch is
-            -- authoritative and always supplies this concise gameplay text.
             if russianUI then
-                return YOGA_DESCRIPTION_RU
+                return lccGetTextOrNull("Farming_LCC_Skill_Yoga_Description")
             end
             return lccGetTextOrNull("IGUI_perks_Yoga_Description")
                 or lccGetTextOrNull("Tooltip_Yoga_Option")
         end
+
+        local function isYogaPerk(perk)
+            if not perk then return false end
+            if Perks and Perks.Yoga and perk.getType and perk:getType() == Perks.Yoga then return true end
+            if perk.getId and tostring(perk:getId()) == "Yoga" then return true end
+            if perk.getName then
+                local translatedYoga = lccGetTextOrNull("IGUI_perks_Yoga") or lccGetTextOrNull("UI_LSHS_Yoga")
+                if translatedYoga and tostring(perk:getName()) == tostring(translatedYoga) then
+                    return true
+                end
+            end
+            return false
+        end
+
+        LCCYogaSkillProgressBar = ISSkillProgressBar:derive("LCCYogaSkillProgressBar")
 
         local function getHiddenYogaSkill(character)
             if not character then return nil end
@@ -285,13 +283,7 @@ Guard.install {
             return originalNew(self, x, y, width, height, playerNum, perk, parent)
         end
 
-        -- Do not filter the Yoga proxy out of ISCharacterInfo.loadPerk. The
-        -- entire purpose of this compatibility layer is to expose Lifestyle's
-        -- hidden Yoga progression in the normal Skills panel. The previous
-        -- DividerMeditationNew check could remove Yoga completely on valid
-        -- B42.20 sandbox configurations.
-
         LCC_LifestyleYogaProgressInstalled = true
-        print("[LCC][YogaProgress][" .. PATCH_VERSION .. "] installed language=" .. tostring(getLanguageCode() or "?") .. " russian=" .. tostring(russianUI))
+        print("[LCC][YogaProgress][" .. PATCH_VERSION .. "] installed language=" .. tostring(languageCode) .. " russian=" .. tostring(russianUI))
     end,
 }

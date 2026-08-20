@@ -1,15 +1,14 @@
 -- Lacccka B42 Activity Fixes
 -- Build 42.20 translated skill-tooltip repair.
 --
--- Vanilla ISSkillProgressBar.updateTooltip() builds description keys from
--- perk:getName(). With a translated UI that name is already localized, so
--- e.g. Russian "Медицина" produces a non-existent
--- IGUI_perks_Медицина_Description key. Resolve descriptions from stable perk
--- ids and only fall back to translated display names when needed.
+-- IMPORTANT: keep this Lua source ASCII-only. Build 42.20 on Windows can
+-- corrupt non-ASCII literals embedded directly in mod Lua files. Russian
+-- fallback text therefore lives in a normal Translator JSON file and this
+-- script references it only by ASCII keys.
 
 local Guard = require "LCC/Guard"
 local FEATURE = "ui.skill-descriptions"
-local PATCH_VERSION = "1.1.6"
+local PATCH_VERSION = "1.1.7"
 
 Guard.safeRequire(FEATURE, "XpSystem/ISUI/ISSkillProgressBar")
 if not Guard.isEnabled(FEATURE) then return end
@@ -77,71 +76,39 @@ Guard.install {
             "Art", "Cleaning", "Dancing", "Meditation", "Music", "Yoga",
         }
 
-        local RU_LIGHTFOOT = "Уменьшает шум от передвижения. <LINE> Чем выше навык, тем тише обычные шаги и тем меньше вероятность привлечь зомби звуком движения."
-        local RU_SPRINTING = "Повышает эффективность бега. <LINE> Прокачивается во время бега. <LINE> С ростом навыка персонаж быстрее передвигается бегом и эффективнее расходует выносливость."
-        local RU_HUSBANDRY = "Повышает навыки обращения с домашними животными. <LINE> Прокачивается при уходе за животными и выполнении связанных действий. <LINE> С ростом навыка становится проще оценивать их состояние и эффективнее использовать возможности животноводства."
-        local RU_SMALL_BLADE = "Повышает владение коротким режущим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак."
-        local RU_SMALL_BLUNT = "Повышает владение коротким дробящим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак."
-        local RU_LONG_BLADE = "Повышает владение длинным режущим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак."
-        local RU_LONG_BLUNT = "Повышает владение длинным дробящим оружием. <LINE> Прокачивается успешными атаками оружием этого типа. <LINE> С ростом навыка увеличивается эффективность и урон атак."
-        local RU_DOCTOR = "Повышает эффективность медицинской помощи. <LINE> Прокачивается при лечении травм и выполнении медицинских процедур. <LINE> С ростом навыка персонаж лучше определяет состояние ран и эффективнее оказывает помощь."
+        -- These keys are stored in RussianTextFixes/42/.../RU/Farming.json.
+        -- Keeping the Lua side ASCII-only avoids the mojibake seen when Russian
+        -- literals are parsed directly from a mod Lua file on Windows.
+        local RU_DESCRIPTION_KEYS = {
+            Lightfoot = "Farming_LCC_Skill_Lightfoot_Description",
+            Lightfooted = "Farming_LCC_Skill_Lightfoot_Description",
+            Sprinting = "Farming_LCC_Skill_Sprinting_Description",
+            Running = "Farming_LCC_Skill_Sprinting_Description",
 
-        -- Exact Build 42 ids observed in the live 42.20.3 client log are
-        -- intentionally first-class here. Aliases are retained for mods/build
-        -- variations, but these entries no longer depend on Translator keys.
-        local ID_DESCRIPTION_OVERRIDES_RU = {
-            Lightfoot = RU_LIGHTFOOT,
-            Lightfooted = RU_LIGHTFOOT,
-            Sprinting = RU_SPRINTING,
-            Running = RU_SPRINTING,
+            Husbandry = "Farming_LCC_Skill_Husbandry_Description",
+            AnimalCare = "Farming_LCC_Skill_Husbandry_Description",
+            AnimalHusbandry = "Farming_LCC_Skill_Husbandry_Description",
+            AnimalHandling = "Farming_LCC_Skill_Husbandry_Description",
 
-            Husbandry = RU_HUSBANDRY,
-            AnimalCare = RU_HUSBANDRY,
-            AnimalHusbandry = RU_HUSBANDRY,
-            AnimalHandling = RU_HUSBANDRY,
+            SmallBlade = "Farming_LCC_Skill_SmallBlade_Description",
+            ShortBlade = "Farming_LCC_Skill_SmallBlade_Description",
+            SmallBlunt = "Farming_LCC_Skill_SmallBlunt_Description",
+            ShortBlunt = "Farming_LCC_Skill_SmallBlunt_Description",
+            LongBlade = "Farming_LCC_Skill_LongBlade_Description",
+            Blunt = "Farming_LCC_Skill_Blunt_Description",
+            LongBlunt = "Farming_LCC_Skill_Blunt_Description",
 
-            SmallBlade = RU_SMALL_BLADE,
-            ShortBlade = RU_SMALL_BLADE,
-            SmallBlunt = RU_SMALL_BLUNT,
-            ShortBlunt = RU_SMALL_BLUNT,
-            LongBlade = RU_LONG_BLADE,
-            Blunt = RU_LONG_BLUNT,
-            LongBlunt = RU_LONG_BLUNT,
-
-            Doctor = RU_DOCTOR,
-            FirstAid = RU_DOCTOR,
-            Medical = RU_DOCTOR,
-            Medicine = RU_DOCTOR,
-        }
-
-        local DISPLAY_NAME_ALIASES = {
-            ["Лёгкий шаг"] = { "Lightfoot", "Lightfooted" },
-            ["Легкий шаг"] = { "Lightfoot", "Lightfooted" },
-            ["Бег"] = { "Sprinting", "Running" },
-            ["Уход за животными"] = { "Husbandry", "AnimalCare", "AnimalHusbandry", "AnimalHandling" },
-            ["Короткое режущее"] = { "SmallBlade", "ShortBlade" },
-            ["Короткое дробящее"] = { "SmallBlunt", "ShortBlunt" },
-            ["Длинное режущее"] = { "LongBlade" },
-            ["Длинное дробящее"] = { "Blunt", "LongBlunt" },
-            ["Медицина"] = { "Doctor", "FirstAid", "Medical", "Medicine" },
-        }
-
-        local DISPLAY_DESCRIPTION_OVERRIDES_RU = {
-            ["Лёгкий шаг"] = RU_LIGHTFOOT,
-            ["Легкий шаг"] = RU_LIGHTFOOT,
-            ["Бег"] = RU_SPRINTING,
-            ["Уход за животными"] = RU_HUSBANDRY,
-            ["Короткое режущее"] = RU_SMALL_BLADE,
-            ["Короткое дробящее"] = RU_SMALL_BLUNT,
-            ["Длинное режущее"] = RU_LONG_BLADE,
-            ["Длинное дробящее"] = RU_LONG_BLUNT,
-            ["Медицина"] = RU_DOCTOR,
+            Doctor = "Farming_LCC_Skill_Doctor_Description",
+            FirstAid = "Farming_LCC_Skill_Doctor_Description",
+            Medical = "Farming_LCC_Skill_Doctor_Description",
+            Medicine = "Farming_LCC_Skill_Doctor_Description",
         }
 
         local missingLogged = {}
         local overrideLogged = {}
 
         local function lccGetTextOrNull(key)
+            if not key then return nil end
             if getTextOrNull then
                 return getTextOrNull(key)
             end
@@ -170,23 +137,13 @@ Guard.install {
 
         local function isRussianUI()
             local code = getLanguageCode()
-            if code then
-                local normalized = string.lower(tostring(code))
-                if normalized == "ru" or normalized == "russian" then
-                    return true
-                end
-            end
-
-            -- Fallback for environments where the Java Translator class is not
-            -- exposed to Lua. Use stable existing translations, not the old
-            -- "Фитнес" assumption (B42 RU commonly calls it "Физподготовка").
-            local doctor = lccGetTextOrNull("IGUI_perks_Doctor")
-            local meditation = lccGetTextOrNull("IGUI_perks_Meditation")
-            local fitness = lccGetTextOrNull("IGUI_perks_Fitness")
-            return doctor == "Медицина"
-                or meditation == "Медитация"
-                or fitness == "Физподготовка"
-                or fitness == "Фитнес"
+            if not code then return false end
+            local normalized = string.lower(tostring(code))
+            return normalized == "ru"
+                or normalized == "russian"
+                or string.find(normalized, "russian", 1, true) ~= nil
+                or string.find(normalized, "ru_", 1, true) ~= nil
+                or string.find(normalized, "ru-", 1, true) ~= nil
         end
 
         local russianUI = isRussianUI()
@@ -243,19 +200,11 @@ Guard.install {
             local localizedName = perk.getName and perk:getName() or nil
             if localizedName ~= nil then
                 localizedName = tostring(localizedName)
-
                 for i = 1, #KNOWN_DESCRIPTION_IDS do
                     local id = KNOWN_DESCRIPTION_IDS[i]
                     local translatedName = lccGetTextOrNull("IGUI_perks_" .. id)
                     if translatedName and tostring(translatedName) == localizedName then
                         addCandidate(candidates, seen, id)
-                    end
-                end
-
-                local displayAliases = DISPLAY_NAME_ALIASES[localizedName]
-                if displayAliases then
-                    for i = 1, #displayAliases do
-                        addCandidate(candidates, seen, displayAliases[i])
                     end
                 end
             end
@@ -275,49 +224,17 @@ Guard.install {
             return nil
         end
 
-        local function getExplicitDescriptionOverride(perk, candidates)
-            if not russianUI then
-                return nil, nil
-            end
-
-            -- Prefer the exact Java perk id from the live runtime.
-            local exactId = getPerkId(perk)
-            if exactId then
-                local direct = ID_DESCRIPTION_OVERRIDES_RU[exactId]
-                if direct then
-                    return direct, "id:" .. exactId
-                end
-
-                local dotName = string.match(exactId, "([^%.]+)$")
-                if dotName and ID_DESCRIPTION_OVERRIDES_RU[dotName] then
-                    return ID_DESCRIPTION_OVERRIDES_RU[dotName], "id:" .. dotName
-                end
-
-                local colonName = string.match(exactId, "([^:]+)$")
-                if colonName and ID_DESCRIPTION_OVERRIDES_RU[colonName] then
-                    return ID_DESCRIPTION_OVERRIDES_RU[colonName], "id:" .. colonName
-                end
-            end
-
-            if candidates then
-                for i = 1, #candidates do
-                    local description = ID_DESCRIPTION_OVERRIDES_RU[candidates[i]]
-                    if description then
-                        return description, "alias:" .. tostring(candidates[i])
+        local function getRussianOverride(candidates)
+            if not russianUI or not candidates then return nil, nil end
+            for i = 1, #candidates do
+                local key = RU_DESCRIPTION_KEYS[candidates[i]]
+                if key then
+                    local text = lccGetTextOrNull(key)
+                    if text and text ~= "" then
+                        return text, "translator:" .. tostring(candidates[i])
                     end
                 end
             end
-
-            if perk and perk.getName then
-                local localizedName = perk:getName()
-                if localizedName ~= nil then
-                    local description = DISPLAY_DESCRIPTION_OVERRIDES_RU[tostring(localizedName)]
-                    if description then
-                        return description, "name"
-                    end
-                end
-            end
-
             return nil, nil
         end
 
@@ -358,7 +275,7 @@ Guard.install {
             if not self or not self.perk or type(self.message) ~= "string" or self.message == "" then return end
 
             local candidates = getDescriptionCandidates(self.perk)
-            local description, overrideSource = getExplicitDescriptionOverride(self.perk, candidates)
+            local description, overrideSource = getRussianOverride(candidates)
             local explicitOverride = description ~= nil
 
             if explicitOverride then
@@ -382,9 +299,7 @@ Guard.install {
                 self.message = repaired
             end
 
-            -- If another translation already supplied a canonical description,
-            -- replace it when an explicit B42.20 override is authoritative.
-            if not replaced and explicitOverride and candidates then
+            if not replaced and candidates then
                 for i = 1, #candidates do
                     local oldDescription = lccGetTextOrNull("IGUI_perks_" .. candidates[i] .. "_Description")
                     if oldDescription and oldDescription ~= "" and oldDescription ~= description then
