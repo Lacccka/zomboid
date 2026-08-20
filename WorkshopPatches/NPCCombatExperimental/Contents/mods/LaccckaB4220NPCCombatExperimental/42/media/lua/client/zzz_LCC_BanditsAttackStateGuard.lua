@@ -1,14 +1,17 @@
--- Client-side observation of the Bandits zombie -> NPC AttackState path.
+-- Client-side guard for the Bandits zombie -> NPC vanilla AttackState path.
 --
--- B42.20.3 testing proved that bAttack is backed by a read-only animation
--- callback variable. Calling zombie:setVariable("bAttack", false) produces
--- AnimationVariableSlotCallback.trySetValue warnings and does not change the
--- value. The former experimental intervention therefore did not block vanilla
--- AttackState and its BLOCK counter was misleading.
+-- B42.20.3 testing proved that bAttack is a read-only animation callback
+-- variable, so the former zombie:setVariable("bAttack", false) experiment could
+-- never block the Java AttackState transition. The dangerous condition is a
+-- normal IsoZombie holding a Bandit (also an IsoZombie) as its vanilla target.
 --
--- Keep this probe strictly observe-only until a mutable pre-AttackState seam is
--- identified. It does not change targets, aggro, pathfinding, bump types,
--- custom Bite bookkeeping, damage, infection, or Java action states.
+-- Bandits already has its own zombie -> Bandit navigation and Bite/BiteLow
+-- simulation through BanditZombie.CacheLightB. It also calls
+-- bandit:setZombiesDontAttack(true), but only once close-range custom bite logic
+-- is already running. This guard moves that target-side engine flag earlier and
+-- keeps it asserted for the Bandit's lifetime. It does not rewrite zombie
+-- targets, action states, bump types, bAttack, damage, infection, or Bandits'
+-- custom bite bookkeeping.
 if isServer() then return end
 
 local Guard = require "LCC/Guard"
@@ -16,13 +19,16 @@ local FEATURE = "bandits.attack-state-guard"
 local HEARTBEAT_MS = 15000
 local HEARTBEAT_CHECK_EVERY_UPDATES = 512
 
+Guard.safeRequire(FEATURE, "Bandit")
 Guard.safeRequire(FEATURE, "BanditUtils")
 if not Guard.isEnabled(FEATURE) then return end
 
-local tracked = setmetatable({}, { __mode = "k" })
+local trackedAttackers = setmetatable({}, { __mode = "k" })
+local protectedBandits = setmetatable({}, { __mode = "k" })
 local stats = {
     zombieUpdates = 0,
-    banditTargetUpdates = 0,
+    protectedBandits = 0,
+    targetLeaks = 0,
     bAttackObserved = 0,
     attackStateObserved = 0,
 }
@@ -53,20 +59,20 @@ local function characterId(character)
         if ok and value ~= nil then return tostring(value) end
     end
 
-    if character.getPersistentOutfitID then
-        local ok, value = pcall(function()
-            return character:getPersistentOutfitID()
-        end)
-        if ok and value ~= nil then return tostring(value) end
-    end
+    local ok, value = pcall(function()
+        return character:getPersistentOutfitID()
+    end)
+    if ok and value ~= nil then return tostring(value) end
 
     return tostring(character)
 end
 
 local function isBandit(character)
-    return character
-        and instanceof(character, "IsoZombie")
-        and character:getVariableBoolean("Bandit")
+    if not character or not instanceof(character, "IsoZombie") then return false end
+    local ok, value = pcall(function()
+        return character:getVariableBoolean("Bandit")
+    end)
+    return ok and value == true
 end
 
 local function attackStateName(zombie)
@@ -92,6 +98,40 @@ local function isCustomBite(zombie, bump)
         and (bump == "Bite" or bump == "BiteLow")
 end
 
+local function readProtectedFlag(bandit)
+    local ok, value = pcall(function()
+        return bandit:isZombiesDontAttack()
+    end)
+    if ok then return value == true end
+    return nil
+end
+
+local function protectBandit(bandit)
+    if not isBandit(bandit) then return false end
+
+    local before = readProtectedFlag(bandit)
+    if before ~= true then
+        bandit:setZombiesDontAttack(true)
+    end
+
+    local after = readProtectedFlag(bandit)
+    if after ~= true then
+        error("setZombiesDontAttack(true) did not persist on Bandit " .. characterId(bandit))
+    end
+
+    if not protectedBandits[bandit] then
+        protectedBandits[bandit] = true
+        stats.protectedBandits = stats.protectedBandits + 1
+        print(string.format(
+            "[LCC][BanditsAttackGuard][PROTECT_TARGET] target=%s before=%s after=true",
+            characterId(bandit),
+            before == nil and "unknown" or boolString(before)
+        ))
+    end
+
+    return true
+end
+
 local function maybeHeartbeat()
     local now = nowMs()
     if lastHeartbeat == 0 then
@@ -102,9 +142,10 @@ local function maybeHeartbeat()
     lastHeartbeat = now
 
     print(string.format(
-        "[LCC][BanditsAttackGuard][SUMMARY] updates=%d banditTargetUpdates=%d bAttackObserved=%d attackStateObserved=%d",
+        "[LCC][BanditsAttackGuard][SUMMARY] updates=%d protectedBandits=%d targetLeaks=%d bAttackObserved=%d attackStateObserved=%d",
         stats.zombieUpdates,
-        stats.banditTargetUpdates,
+        stats.protectedBandits,
+        stats.targetLeaks,
         stats.bAttackObserved,
         stats.attackStateObserved
     ))
@@ -116,15 +157,22 @@ local function observeZombie(zombie)
         maybeHeartbeat()
     end
 
-    if not zombie or zombie:getVariableBoolean("Bandit") then return end
+    if not zombie then return end
 
-    local target = zombie:getTarget()
-    if not isBandit(target) then
-        tracked[zombie] = nil
+    if isBandit(zombie) then
+        protectBandit(zombie)
         return
     end
 
-    stats.banditTargetUpdates = stats.banditTargetUpdates + 1
+    local target = zombie:getTarget()
+    if not isBandit(target) then
+        trackedAttackers[zombie] = nil
+        return
+    end
+
+    -- Assert the flag again before collecting a leak. This handles a Bandit
+    -- that was spawned/reused before our own OnZombieUpdate saw it.
+    protectBandit(target)
 
     local asn = attackStateName(zombie)
     local bump = bumpType(zombie)
@@ -132,7 +180,22 @@ local function observeZombie(zombie)
     local bAttack = zombie:getVariableBoolean("bAttack")
     local noLungeAttack = zombie:getVariableBoolean("NoLungeAttack")
     local attackState = isAttackState(asn)
-    local previous = tracked[zombie]
+    local previous = trackedAttackers[zombie]
+
+    if not previous or previous.target ~= target then
+        stats.targetLeaks = stats.targetLeaks + 1
+        print(string.format(
+            "[LCC][BanditsAttackGuard][TARGET_LEAK] attacker=%s target=%s state=%s bAttack=%s noLunge=%s bump=%s customBite=%s targetProtected=%s",
+            characterId(zombie),
+            characterId(target),
+            asn,
+            boolString(bAttack),
+            boolString(noLungeAttack),
+            bump,
+            boolString(customBite),
+            tostring(readProtectedFlag(target))
+        ))
+    end
 
     if bAttack and (
             not previous
@@ -141,13 +204,14 @@ local function observeZombie(zombie)
         ) then
         stats.bAttackObserved = stats.bAttackObserved + 1
         print(string.format(
-            "[LCC][BanditsAttackGuard][READ_ONLY_BATTACK] attacker=%s target=%s state=%s bAttack=true noLunge=%s bump=%s customBite=%s",
+            "[LCC][BanditsAttackGuard][READ_ONLY_BATTACK] attacker=%s target=%s state=%s bAttack=true noLunge=%s bump=%s customBite=%s targetProtected=%s",
             characterId(zombie),
             characterId(target),
             asn,
             boolString(noLungeAttack),
             bump,
-            boolString(customBite)
+            boolString(customBite),
+            tostring(readProtectedFlag(target))
         ))
     end
 
@@ -158,18 +222,19 @@ local function observeZombie(zombie)
         ) then
         stats.attackStateObserved = stats.attackStateObserved + 1
         print(string.format(
-            "[LCC][BanditsAttackGuard][ESCAPED_ATTACK_STATE] attacker=%s target=%s state=%s bAttack=%s noLunge=%s bump=%s customBite=%s diagnosticOnly=true",
+            "[LCC][BanditsAttackGuard][ESCAPED_ATTACK_STATE] attacker=%s target=%s state=%s bAttack=%s noLunge=%s bump=%s customBite=%s targetProtected=%s",
             characterId(zombie),
             characterId(target),
             asn,
             boolString(bAttack),
             boolString(noLungeAttack),
             bump,
-            boolString(customBite)
+            boolString(customBite),
+            tostring(readProtectedFlag(target))
         ))
     end
 
-    tracked[zombie] = {
+    trackedAttackers[zombie] = {
         target = target,
         bAttack = bAttack,
         attackState = attackState,
@@ -179,6 +244,9 @@ end
 Guard.install {
     id = FEATURE,
     validate = function()
+        if type(Bandit) ~= "table" or type(Bandit.ApplyVisuals) ~= "function" then
+            return false, "Bandit.ApplyVisuals is unavailable"
+        end
         if type(BanditUtils) ~= "table" or type(BanditUtils.GetCharacterID) ~= "function" then
             return false, "BanditUtils.GetCharacterID is unavailable"
         end
@@ -188,14 +256,18 @@ Guard.install {
         return true
     end,
     install = function()
+        Guard.wrapBefore(FEATURE, Bandit, "ApplyVisuals", function(bandit)
+            protectBandit(bandit)
+        end)
+
         Events.OnZombieUpdate.Add(function(zombie)
             if Guard.isEnabled(FEATURE) then
-                Guard.protect(FEATURE, "observe zombie attack state", observeZombie, zombie)
+                Guard.protect(FEATURE, "protect/observe zombie attack state", observeZombie, zombie)
             end
         end)
 
         print(string.format(
-            "[LCC][BanditsAttackGuard][INIT] diagnostic-only on B42.20.3; bAttack is read-only; no mutation attempted; heartbeat=%dms",
+            "[LCC][BanditsAttackGuard][INIT] target-side setZombiesDontAttack guard active; bAttack remains observe-only; heartbeat=%dms",
             HEARTBEAT_MS
         ))
     end,
