@@ -1,11 +1,5 @@
 require "BanditZombie"
 
--- [LCC POC] Development-only working copy for controlled B42.20.3 testing.
--- This file lives outside Workshop Contents and must be manually copied over the
--- real Bandits 42.20 client BanditUpdate.lua when testing the current experiment.
-LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-pursuit-v1"
-print("[LCC][BanditsAttackPoC][INIT] upstream-pursuit-v1 active; vanilla spotted/addAggro/setTarget/setAttackedBy bridge disabled")
-
 local sum1 = 0
 local sum2 = 0
 local sum3 = 0
@@ -227,7 +221,7 @@ end
 local TorchLightDefs = {
     {d=0, r=2, c={r = 1, g = 0.9, b = 0.8}},
     {d=2, r=4, c={r = 1, g = 0.9, b = 0.8}},
-    {d=7, r=8, c={r = 1, g = 0.9, b = 0.7}},
+    {d=7, r=8, c={r = 1, g = 0.9, b = 0.8}},
     {d=11, r=12, c={r = 0.8, g = 0.8, b = 0.7}}
 }
 
@@ -243,6 +237,10 @@ local function ManageTorch(bandit, brain)
     
     if bandit:isProne() then
 
+        --[[local lightSource = IsoLightSource.new(zx, zy, zz, colors.r, colors.g, colors.b, 2, 20)
+        if lightSource then
+            getCell():addLamppost(lightSource)
+        end]]
     else
         local theta = bandit:getDirectionAngle() * 0.0174533
 
@@ -256,14 +254,17 @@ local function ManageTorch(bandit, brain)
                 local ls = IsoLightSource.new(lx, ly, lz, ld.c.r, ld.c.g, ld.c.b, ld.r, 1)
                 if ls then
                     cell:addLamppost(ls)
+                    --print("Added light source at: " .. lx .. ", " .. ly .. ", " .. lz)
                 end
             else
+                --print ("Light source already exists at: " .. lx .. ", " .. ly .. ", " .. lz)
                 cell:removeLamppost(ls)
             end
         end
     end
 end
 
+-- update bandit chainsaw sound
 local function ManageChainsaw(bandit)
     if bandit:isPrimaryEquipped("AuthenticZClothing.Chainsaw") then
         local emitter = bandit:getEmitter()
@@ -273,6 +274,7 @@ local function ManageChainsaw(bandit)
     end
 end
 
+-- updates bandit being on fire
 local function ManageOnFire(bandit)
     if bandit:isOnFire() then
         if not Bandit.HasTaskType(bandit, "Die") then
@@ -299,10 +301,12 @@ local function ManageOnFire(bandit)
     end
 end
 
+-- reduces cooldown for bandit speech
 local function ManageSpeechCooldown(brain)
     if brain.speech and brain.speech > 0 then
         brain.speech = brain.speech - 0.01
         if brain.speech < 0 then brain.speech = 0 end
+        -- BanditBrain.Update(bandit, brain)
     end
 end
 
@@ -368,9 +372,11 @@ local ClearTaskActionStates = {
     ["vehiclecollision-staggerback"] = true,
 }
 
+-- applies tweaks based on bandit action state
 local function ManageActionState(bandit)
     local asn = bandit:getActionStateName()
 
+    -- Keep this branch allocation-free; it's called from OnZombieUpdate.
     if asn == "turnalerted" then
         bandit:changeState(ZombieIdleState.instance())
         bandit:clearAggroList()
@@ -388,12 +394,17 @@ local function ManageActionState(bandit)
         return false
     end
 
+    -- Default behavior (for undefined states)
     bandit:setTarget(nil)
+
     bandit:setUseless(getWorld():getGameMode() ~= "Multiplayer" or Bandit.IsForceStationary(bandit))
+
     return true
 end
 
+-- manages endurance regain tasks 
 local function ManageEndurance(bandit)
+
     if bandit:isMoving() then
         if bandit:getVariableString("BanditWalkType") == "Run" then
             local player = getSpecificPlayer(0)
@@ -423,29 +434,38 @@ local function ManageEndurance(bandit)
     end
 
     brain.endurance = 1
+
     local exhaustionTasks = {}
     local exhaustionTask = { action = "Time", anim = "Exhausted", time = 200, lock = true }
+
     for i = 1, 5 do
         exhaustionTasks[i] = exhaustionTask
     end
+
     return exhaustionTasks
 end
 
+-- manages tasks related to bandit health
 local function ManageHealth(bandit)
     local tasks = {}
 
+    -- temporarily removed until bleeding bug in week one investigation is complete
     if SandboxVars.Bandits.General_BleedOut then
         local healing = false
         local health = bandit:getHealth()
         if health < 0.7 then
             local zx, zy = bandit:getX(), bandit:getY()
+
+            -- purely visual so random allowed
             if ZombRand(16) == 0 then
                 local bx = zx - 0.5 + ZombRandFloat(0.1, 0.9)
                 local by = zy - 0.5 + ZombRandFloat(0.1, 0.9)
+                
                 local chunk = bandit:getChunk()
                 if chunk then 
                     chunk:addBloodSplat(bx, by, 0, ZombRand(20))
                 end
+
             end
             bandit:setHealth(health - 0.00005)
         end
@@ -454,6 +474,7 @@ local function ManageHealth(bandit)
     if SandboxVars.Bandits.General_Infection then
         local brain = BanditBrain.Get(bandit)
         if brain.infection and brain.infection > 0 then
+            -- print ("INFECTION: " .. brain.infection)
             Bandit.UpdateInfection(bandit, 0.001)
             if brain.infection >= 100 then
                 Bandit.ClearTasks(bandit)
@@ -467,21 +488,62 @@ end
 
 local function RemoveWindowFromPathing (bandit, square)
     if true then return end
+    -- will need to unset for windows and windowframes too
+    local recalc = false
+    local objects = square:getObjects()
+    for i = 0, objects:size() - 1 do
+        local object = objects:get(i)
+        local properties = object:getProperties()
+
+        if properties then
+            if properties:has(IsoFlagType.canPathN) then
+                properties:unset(IsoFlagType.canPathN)
+                recalc = true
+            end
+            if properties:has(IsoFlagType.canPathW) then
+                properties:unset(IsoFlagType.canPathW)
+                recalc = true
+            end
+
+            -- properties:unset(IsoFlagType.WindowN)
+            -- properties:unset(IsoFlagType.WindowW)
+        end
+    end
+
+    if recalc then
+        square:RecalcProperties()
+        square:RecalcAllWithNeighbours(true)
+        if BanditCompatibility.GetGameVersion() >= 42 then
+            square:setSquareChanged()
+        end
+    end
 end
 
+
+
+-- manages collisions with doors, windows, fences and other objects
 local function ManageCollisions(bandit)
+
+    -- if Bandit.HasActionTask(bandit) then return {} end
+
+    -- bandit:setCollidable(true)
+
     local collided = bandit:isCollidedWithDoor() or bandit:isCollidedThisFrame() or bandit:isCollided()
     if not collided then return {} end
 
     local tasks = {}
+
     local task = Bandit.GetTask(bandit)
     if not task then return {} end
     if not (task.action == "Move" or task.action == "GoTo") then return {} end
     
+    -- west and north objects are ont the same square, east is x+1, sound is y+1
     local dir = bandit:getDirectionAngle()
+
     local bx = math.floor(bandit:getX())
     local by = math.floor(bandit:getY())
     local bz = bandit:getZ()
+
     local sx, sy
     if (dir >= -180 and dir < -45) or (dir >= 135 and dir <= 180) then
         sx, sy = bx, by
@@ -493,29 +555,41 @@ local function ManageCollisions(bandit)
    
     if not sx or not sy then return {} end
 
+    -- print ("Checking collision at: " .. sx .. ", " .. sy .. ", " .. bz)
     local cell = getCell()
     local square = cell:getGridSquare(sx, sy, bz)
     if square then
+
         local brain = BanditBrain.Get(bandit)
         local weapons = brain.weapons
+
         local objects = square:getObjects()
         for i = 0, objects:size() - 1 do
             local object = objects:get(i)
             if object then
                 local properties = object:getProperties()
+
                 if properties then
                     local lowFence = properties:get("FenceTypeLow")
                     local hoppable = object:isHoppable()
+
+                    -- LOW FENCE COLLISION
                     if lowFence or hoppable then
                         if bandit:isFacingObject(object, 0.5) then
                             bandit:changeState(ClimbOverFenceState.instance())
                             bandit:setBumpType("ClimbFenceEnd")
+                            
+                            --[[local task = {action="ClimbFence", anim="ClimbFenceEnd", lock=true}
+                            table.insert(tasks, task)
+                            return tasks]]                           
+                        
                         else
                             bandit:faceThisObject(object)
                         end
                         return tasks
                     end
 
+                    -- TALL FENCE COLLISION
                     local tallFence = properties:get("FenceTypeHigh")
                     local tallHoppable = object:isTallHoppable()
                     if tallFence or tallHoppable then
@@ -528,8 +602,11 @@ local function ManageCollisions(bandit)
                         return tasks
                     end
 
+                    -- WINDOW COLLISIONS
                     if instanceof(object, "IsoWindow") then
+                            
                         if bandit:isFacingObject(object, 0.5) then
+                            
                             if object:isBarricaded() then
                                 if brain.hostile then
                                     local barricade = object:getBarricadeOnSameSquare()
@@ -543,6 +620,7 @@ local function ManageCollisions(bandit)
                                             fx = barricade:getX() - 0.5
                                             fy = barricade:getY()
                                         end
+
                                     else
                                         barricade = object:getBarricadeOnOppositeSquare()
                                         if properties:has(IsoFlagType.WindowN) then
@@ -568,7 +646,9 @@ local function ManageCollisions(bandit)
                                         else
                                             anim = "RemoveBarricadeCrowbarMid"
                                             local planks = barricade:getNumPlanks()
-                                            if planks == 2 or planks == 4 then anim = "RemoveBarricadeCrowbarHigh" end
+                                            if planks == 2 or planks == 4 then
+                                                anim = "RemoveBarricadeCrowbarHigh"
+                                            end
                                             if not bandit:isPrimaryEquipped("Base.Crowbar") then
                                                 local stasks = BanditPrograms.Weapon.Switch(bandit, "Base.Crowbar")
                                                 for _, t in pairs(stasks) do table.insert(tasks, t) end
@@ -593,6 +673,7 @@ local function ManageCollisions(bandit)
                                 else
                                     RemoveWindowFromPathing(bandit, square)
                                 end
+
                             elseif not object:IsOpen() and not object:isSmashed() and not BanditBrain.HasTaskType(brain, "SmashWindow") then
                                 if SandboxVars.Bandits.General_SmashWindow and (brain.hostile or brain.demolish) then
                                     local task = {action="SmashWindow", anim="WindowSmash", time=25, x=object:getSquare():getX(), y=object:getSquare():getY(), z=object:getSquare():getZ()}
@@ -603,17 +684,22 @@ local function ManageCollisions(bandit)
                                     table.insert(tasks, task)
                                     return tasks
                                 end
+
                             elseif object:canClimbThrough(bandit) then
                                 ClimbThroughWindowState.instance():setParams(bandit, object)
                                 bandit:changeState(ClimbThroughWindowState.instance())
                                 bandit:setBumpType("ClimbWindow")
+                                --[[local task = {action="ClimbFence", anim="ClimbWindow", lock=true}
+                                table.insert(tasks, task)]]
                                 return tasks      
                             end
                         end
                     end
 
+                    -- DOOR COLLISIONS
                     if instanceof(object, "IsoDoor") or (instanceof(object, 'IsoThumpable') and object:isDoor() == true) then
                         if bandit:isFacingObject(object, 0.5) then
+
                             if object:isBarricaded() then
                                 local barricade = object:getBarricadeOnSameSquare()
                                 local fx, fy
@@ -625,6 +711,7 @@ local function ManageCollisions(bandit)
                                         fx = barricade:getX() - 1
                                         fy = barricade:getY()
                                     end
+
                                 else
                                     barricade = object:getBarricadeOnOppositeSquare()
                                     if properties:has(IsoFlagType.doorN) then
@@ -640,7 +727,9 @@ local function ManageCollisions(bandit)
                                 if SandboxVars.Bandits.General_RemoveBarricade and Bandit.HasExpertise(bandit, Bandit.Expertise.Breaker) and sameSide then
                                     anim = "RemoveBarricadeCrowbarMid"
                                     local planks = barricade:getNumPlanks()
-                                    if planks == 2 or planks == 4 then anim = "RemoveBarricadeCrowbarHigh" end
+                                    if planks == 2 or planks == 4 then
+                                        anim = "RemoveBarricadeCrowbarHigh"
+                                    end
                                     if not bandit:isPrimaryEquipped("Base.Crowbar") then
                                         local stasks = BanditPrograms.Weapon.Switch(bandit, "Base.Crowbar")
                                         for _, t in pairs(stasks) do table.insert(tasks, t) end
@@ -663,8 +752,10 @@ local function ManageCollisions(bandit)
                                     end
                                     return tasks
                                 end
+
                             elseif not object:IsOpen() then
                                 if IsoDoor.getDoubleDoorIndex(object) > -1 then
+
                                     if object:isLocked() or object:isLockedByKey() or object:isObstructed() then
                                         if bandit:isPrimaryEquipped(weapons.melee) then
                                             if not BanditBrain.HasTaskType(brain, "Destroy") then
@@ -684,7 +775,9 @@ local function ManageCollisions(bandit)
                                         doorSound = doorSound .. "Open"
                                         bandit:playSound(doorSound)
                                     end
+
                                 elseif IsoDoor.getGarageDoorIndex(object) > -1 then
+                                
                                     local exterior = bandit:getCurrentSquare():has(IsoFlagType.exterior)
                                     if brain.hostile and (object:isLocked() or object:isLockedByKey() or object:getModData().CustomLock or object:isObstructed()) then
                                         if bandit:isPrimaryEquipped(weapons.melee) then
@@ -707,6 +800,8 @@ local function ManageCollisions(bandit)
                                         bandit:playSound(doorSound)
                                     end
                                 else
+
+                                    -- door locks are complicated... 
                                     if ((object:isLocked() or object:isLockedByKey()) and (not bandit:getCurrentSquare():getRoom() or object:getProperties():has("forceLocked"))) or object:isObstructed() then
                                         if bandit:isPrimaryEquipped(weapons.melee) then
                                             Bandit.Say(bandit, "BREACH")
@@ -732,6 +827,45 @@ local function ManageCollisions(bandit)
                                             object:invalidateRenderChunkLevel(FBORenderChunk.DIRTY_OBJECT_MODIFY)
                                         end
                                         BanditNotifications.DoorToggled(bandit, object, true)
+
+                                        --[[
+                                        local args = {
+                                            x = object:getSquare():getX(),
+                                            y = object:getSquare():getY(),
+                                            z = object:getSquare():getZ(),
+                                            index = object:getObjectIndex()
+                                        }
+                                        sendClientCommand(getSpecificPlayer(0), 'Commands', 'OpenDoor', args)
+
+                                        -- Get the square of the object
+                                        local square = getSpecificPlayer(0):getSquare()
+
+                                        -- Recalculate vision blocked for the surrounding tiles in a r-tile radius
+                                        local radius = 5
+                                        for dx = -radius, radius do
+                                            for dy = -radius, radius do
+                                                -- if dx ~= 0 and dy ~= 0 then
+                                                    local surroundingSquare = cell:getGridSquare(square:getX() + dx, square:getY() + dy, square:getZ())
+                                                    --local surroundingSquare = getCell():getGridSquare(square:getX(), square:getY() + 1, square:getZ())
+                                                    if surroundingSquare then
+                                                        
+                                                        --
+                                                        square:ReCalculateCollide(surroundingSquare)
+                                                        square:ReCalculatePathFind(surroundingSquare)
+                                                        square:ReCalculateVisionBlocked(surroundingSquare)
+                                                        surroundingSquare:ReCalculateCollide(square)
+                                                        surroundingSquare:ReCalculatePathFind(square)
+                                                        surroundingSquare:ReCalculateVisionBlocked(square)
+                                                        --
+                                                        
+                                                        surroundingSquare:InvalidateSpecialObjectPaths()
+                                                        surroundingSquare:RecalcProperties()
+                                                        surroundingSquare:RecalcAllWithNeighbours(true)
+                                                    end
+                                                -- end
+                                            end
+                                        end
+                                        ]]
                                         local doorSound = properties:has("DoorSound") and properties:get("DoorSound") or "WoodDoor"
                                         doorSound = doorSound .. "Open"
                                         bandit:playSound(doorSound)
@@ -743,6 +877,7 @@ local function ManageCollisions(bandit)
                         end
                     end
 
+                    -- THUMPABLE COLLISIONS
                     if SandboxVars.Bandits.General_DestroyThumpable and instanceof(object, "IsoThumpable") and not properties:get("FenceTypeLow") and brain.hostile then
                         local isWallTo = bandit:getSquare():isSomethingTo(object:getSquare())
                         if not isWallTo then
@@ -764,9 +899,12 @@ local function ManageCollisions(bandit)
     return tasks
 end
 
+-- manages melee and weapon combat
 local function ManageCombat(bandit)
+
     if bandit:isCrawling() then return {} end 
     if Bandit.IsSleeping(bandit) then return {} end
+    -- if bandit:getActionStateName() == "bumped" then return {} end
 
     local tasks = {}
     local zx, zy, zz = bandit:getX(), bandit:getY(), bandit:getZ()
@@ -786,16 +924,24 @@ local function ManageCombat(bandit)
     local friendlies, friendliesBwd, enemies, enemiesBwd = 0, 0, 0, 0
     local sx, sy = 0, 0
 
+    -- THIS GOVERNS LOW-PRIORITY TASKS
     if not BanditBrain.HasActionTask(brain) then
+        
+        -- HEALING FLAG
         local health = bandit:getHealth()    
-        if health < 0.4 then healing = true end
+        if health < 0.4 then
+            healing = true
+        end
 
+        -- PEACFUL RELOAD FLAG
         local wp = weapons.primary
         if wp and wp.name then
             if (wp.type == "mag" and wp.bulletsLeft <= 0 and wp.magCount > 0) or
                (wp.type == "nomag" and wp.bulletsLeft < wp.ammoSize and wp.ammoCount > 0) or
                wp.racked == false then
-                if bandit:isPrimaryEquipped(wp.name) then reload = true end
+                if bandit:isPrimaryEquipped(wp.name) then
+                    reload = true
+                end
             end
         end
 
@@ -804,36 +950,53 @@ local function ManageCombat(bandit)
             if (ws.type == "mag" and ws.bulletsLeft <= 0 and ws.magCount > 0) or
                (ws.type == "nomag" and ws.bulletsLeft < ws.ammoSize and ws.ammoCount > 0) or
                ws.racked == false then
-                if bandit:isPrimaryEquipped(ws.name) then reload = true end
+                if bandit:isPrimaryEquipped(ws.name) then
+                    reload = true
+                end
             end
         end
 
-        if isBareHands or isNeedPrimary or isNeedSecondary then resupply = true end
+        -- RESUPPLY FLAG
+        if isBareHands or isNeedPrimary or isNeedSecondary then
+            resupply = true
+        end
     end
 
+    -- SWITCH WEAPON DISTANCES
     local meleeDist = isOutside and 2.6 or 1.2
     local meleeDistPlayer = isOutside and 3.5 or 1.2
     local rifleDist = 5.5
-    local escapeDist = 10
+    local escapeDist = 10 -- 5.2
     local bwdDist = 2.8
 
+    -- COMBAT AGAIST PLAYERS 
     if brain.hostile or brain.hostileP then
         local playerList = BanditPlayer.GetPlayers()
+
         for i=0, playerList:size()-1 do
             local potentialEnemy = playerList:get(i)
             if potentialEnemy and potentialEnemy:isAlive() and bandit:CanSee(potentialEnemy) and not potentialEnemy:isBehind(bandit) and (instanceof(potentialEnemy, "IsoPlayer") and not BanditPlayer.IsGhost(potentialEnemy)) then
                 local px, py, pz = potentialEnemy:getX(), potentialEnemy:getY(), potentialEnemy:getZ()
-                local dist = math.sqrt(((zx - px) * (zx - px)) + ((zy - py) * (zy - py)))
+                -- local dist = BanditUtils.DistTo(zx, zy, px, py)
+                local dist = math.sqrt(((zx - px) * (zx - px)) + ((zy - py) * (zy - py))) -- no function call for performance
                 if dist < bestDist and math.abs(zz - pz) < 0.5 then
                     local spottedScore = CalcSpottedScore(potentialEnemy, dist)
                     if not bandit:getSquare():isSomethingTo(potentialEnemy:getSquare()) and spottedScore > 0.49 then
                         bestDist, enemyCharacter = dist, potentialEnemy
+
+                        -- record last known position 
                         brain.lastPost = {x=px, y=py, z=pz, id=BanditUtils.GetCharacterID(enemyCharacter), d=enemyCharacter:getDirectionAngle()}
+
+                        --reset action flags, only one can be true
                         combat, switch, firing, shove, escape = false, false, false, false, false
 
+                        --determine if bandit will be in combat mode
                         if weapons.melee then
-                            if not maxRangeMelee then maxRangeMelee = BanditCompatibility.InstanceItem(weapons.melee):getMaxRange() end
+                            if not maxRangeMelee then
+                                maxRangeMelee = BanditCompatibility.InstanceItem(weapons.melee):getMaxRange()
+                            end
                             local prone = potentialEnemy:isProne()
+                            
                             if dist <= meleeDistPlayer then 
                                 if bandit:isPrimaryEquipped(weapons.melee) then
                                     if dist <= maxRangeMelee then
@@ -848,6 +1011,7 @@ local function ManageCombat(bandit)
                             end
                         end
 
+                        --determine if bandit will be in shooting mode
                         if not isOutOfAmmo and dist > meleeDistPlayer + 1 and not combat and not shove then
                             if weapons.primary.name and weapons.primary.bulletsLeft > 0 then
                                 if not maxRangeRifle then
@@ -857,7 +1021,9 @@ local function ManageCombat(bandit)
                                 end
                                 if dist < maxRangeRifle then
                                     if bandit:isPrimaryEquipped(weapons.primary.name) then
-                                        if dist < maxRangeRifle + rifleDist and IsShotClear(bandit, potentialEnemy) then firing = true end
+                                        if dist < maxRangeRifle + rifleDist and IsShotClear(bandit, potentialEnemy) then
+                                            firing = true
+                                        end
                                     elseif not reload then
                                         Bandit.Say(bandit, "SPOTTED")
                                         switch = true
@@ -872,7 +1038,9 @@ local function ManageCombat(bandit)
                                 end
                                 if dist < maxRangePistol then
                                     if bandit:isPrimaryEquipped(weapons.secondary.name) then
-                                        if dist < maxRangePistol + rifleDist and IsShotClear(bandit, potentialEnemy) then firing = true end
+                                        if dist < maxRangePistol + rifleDist and IsShotClear(bandit, potentialEnemy) then
+                                            firing = true
+                                        end
                                     elseif not reload then
                                         Bandit.Say(bandit, "SPOTTED")
                                         switch = true
@@ -886,30 +1054,54 @@ local function ManageCombat(bandit)
             end
         end
     end
-
+    
+    -- COMBAT AGAINST ZOMBIES AND BANDITS FROM OTHER CLAN
     local cache, potentialEnemyList = BanditZombie.Cache, BanditZombie.CacheLight
     for id, potentialEnemy in pairs(potentialEnemyList) do
+
+        -- quick manhattan check for performance boost
+        -- if BanditUtils.DistToManhattan(potentialEnemy.x, potentialEnemy.y, zx, zy) < 36 then
         local maxDistAllowed = 57
-        if brain.weaponsHold then maxDistAllowed = 2 end
+        if brain.weaponsHold then
+            maxDistAllowed = 2
+        end
         local distManhattan = math.abs(potentialEnemy.x - zx) + math.abs(potentialEnemy.y - zy)
         if distManhattan < maxDistAllowed then
+
             if BanditUtils.AreEnemies(potentialEnemy.brain, brain) then
+            -- if not potentialEnemy.brain or (brain.clan ~= potentialEnemy.brain.clan and (brain.hostile or potentialEnemy.brain.hostile)) then
+     
+                -- load real instance here
                 local potentialEnemy = cache[id]
                 if potentialEnemy:isAlive() and potentialEnemy:getHealth() > 0 and bandit:CanSee(potentialEnemy) then
+                --- if true then
                     local pesq = potentialEnemy:getSquare()
                     if pesq and pesq:getLightLevel(0) > 0.20 and not bandit:getSquare():isSomethingTo(pesq) then
                         local px, py, pz = potentialEnemy:getX(), potentialEnemy:getY(), potentialEnemy:getZ()
+                        -- local dist = BanditUtils.DistTo(zx, zy, potentialEnemy:getX(), potentialEnemy:getY())
                         local dist = math.sqrt(((zx - px) * (zx - px)) + ((zy - py) * (zy - py)))
                         if dist < escapeDist and potentialEnemy:isAlive() and not potentialEnemy:isProne() then
                             enemies = enemies + 1
-                            if dist < bwdDist then enemiesBwd = enemiesBwd + 1 end
+                            if dist < bwdDist  then
+                                enemiesBwd = enemiesBwd + 1
+                            end
                         end
                         if dist < bestDist then
                             bestDist, enemyCharacter = dist, potentialEnemy
+
+                            --reset action flags, only one can be true
                             combat, switch, firing, shove, stomp, escape = false, false, false, false, false, false
+                            
                             local asn = enemyCharacter:getActionStateName()
+
+                            -- bandit:faceThisObject(enemyCharacter)
+                            --determine attack mode
                             if dist <= 1 and math.abs(zz - pz) < 0.8 then
-                                if enemyCharacter:isProne() or ans == "onground" then stomp = true else shove = true end
+                                if enemyCharacter:isProne() or ans == "onground" then
+                                    stomp = true
+                                else
+                                    shove = true
+                                end
                             elseif not isOutOfAmmo then
                                 if weapons.primary.name and weapons.primary.bulletsLeft > 0 then
                                     if not maxRangeRifle then
@@ -919,11 +1111,14 @@ local function ManageCombat(bandit)
                                     end
                                     if dist < maxRangeRifle then
                                         if bandit:isPrimaryEquipped(weapons.primary.name) then
-                                            if dist < maxRangeRifle + rifleDist and IsShotClear(bandit, potentialEnemy) then firing = true end
+                                            if dist < maxRangeRifle + rifleDist and IsShotClear(bandit, potentialEnemy) then
+                                                firing = true
+                                            end
                                         elseif not reload then
                                             Bandit.Say(bandit, "SPOTTED")
                                             switch = true
                                             switchTo = weapons.primary.name
+                                            -- bandit:addLineChatElement("Primary" .. dist, 0.8, 0.8, 0.1)
                                         end
                                     end
                                 elseif weapons.secondary.name and weapons.secondary.bulletsLeft > 0 then
@@ -934,22 +1129,31 @@ local function ManageCombat(bandit)
                                     end
                                     if dist < maxRangePistol then
                                         if bandit:isPrimaryEquipped(weapons.secondary.name) then
-                                            if dist < maxRangePistol + rifleDist and IsShotClear(bandit, potentialEnemy) then firing = true end
+                                            if dist < maxRangePistol + rifleDist and IsShotClear(bandit, potentialEnemy) then
+                                                firing = true
+                                            end
                                         elseif not reload then
                                             Bandit.Say(bandit, "SPOTTED")
                                             switch = true
                                             switchTo = weapons.secondary.name
+                                            -- bandit:addLineChatElement("Secondary" .. dist, 0.8, 0.8, 0.1)
                                         end
                                     end
                                 end
                             elseif dist <= meleeDist then
                                 if bandit:isPrimaryEquipped(weapons.melee) then
-                                    if not maxRangeMelee then maxRangeMelee = BanditCompatibility.InstanceItem(weapons.melee):getMaxRange() end
+                                    if not maxRangeMelee then
+                                        maxRangeMelee = BanditCompatibility.InstanceItem(weapons.melee):getMaxRange()
+                                    end
                                     local fix = 0.1
-                                    if dist <= maxRangeMelee + fix then combat = true end
+
+                                    if dist <= maxRangeMelee + fix then
+                                        combat = true
+                                    end
                                 else
                                     switch = true
                                     switchTo = weapons.melee
+                                    -- bandit:addLineChatElement("Melee" .. dist, 0.8, 0.8, 0.1)
                                 end
                             end
                         end
@@ -959,23 +1163,30 @@ local function ManageCombat(bandit)
                 local distSq = ((zx - potentialEnemy.x) * (zx - potentialEnemy.x)) + ((zy - potentialEnemy.y) * (zy - potentialEnemy.y))
                 if distSq < 27.04 then
                     friendlies = friendlies + 1
-                    if distSq < 5.76 then friendliesBwd = friendliesBwd + 1 end
+                    if distSq < 5.76 then
+                        friendliesBwd = friendliesBwd + 1
+                    end
                 end
             end
         end
     end
 
     if getWorld():getGameMode() == "Multiplayer" and IsWindowClose(bandit) then
-        if bandit:getPrimaryHandItem() then bandit:setPrimaryHandItem(nil) end
-        if bandit:getSecondaryHandItem() then bandit:setSecondaryHandItem(nil) end
+        if bandit:getPrimaryHandItem() then
+            bandit:setPrimaryHandItem(nil)
+        end
+        if bandit:getSecondaryHandItem() then
+            bandit:setSecondaryHandItem(nil)
+        end
         switch = false
     end
-
+    
     if shove then
         if not BanditBrain.HasTaskType(brain, "Push") then
             Bandit.ClearTasks(bandit)
             local veh = enemyCharacter:getVehicle()
             if veh then Bandit.Say(bandit, "CAR") end
+
             if bandit:isFacingObject(enemyCharacter, 0.1) then
                 local eid = BanditUtils.GetCharacterID(enemyCharacter)
                 local task = {action="Push", anim="Shove", sound="AttackShove", time=60, endurance=-0.05, eid=eid, x=enemyCharacter:getX(), y=enemyCharacter:getY(), z=enemyCharacter:getZ()}
@@ -984,74 +1195,123 @@ local function ManageCombat(bandit)
                 bandit:faceThisObject(enemyCharacter)
             end
         end
+
     elseif stomp then
         if not BanditBrain.HasTaskTypes(brain, {"Smack"}) then 
             Bandit.ClearTasks(bandit)
+
             local eid = BanditUtils.GetCharacterID(enemyCharacter)
             local task = {action="Smack", time=65, endurance=-0.03, shm=false, weapon=weapons.melee, eid=eid, x=enemyCharacter:getX(), y=enemyCharacter:getY(), z=enemyCharacter:getZ()}
             table.insert(tasks, task)
         end
+
     elseif switch then
         if not BanditBrain.HasActionTask(brain) then
             Bandit.ClearTasks(bandit)
             local stasks = BanditPrograms.Weapon.Switch(bandit, switchTo)
             for _, t in pairs(stasks) do table.insert(tasks, t) end
         end
+
     elseif combat then
         if not BanditBrain.HasTaskTypes(brain, {"Smack", "Push", "Equip", "Unequip"}) then 
             Bandit.ClearTasks(bandit)
             local veh = enemyCharacter:getVehicle()
             if veh then Bandit.Say(bandit, "CAR") end
+
             if bandit:isFacingObject(enemyCharacter, 0.5) then
-                local shouldHitMoving = enemiesBwd >= friendliesBwd + 1
+                local shouldHitMoving = false
+                if enemiesBwd >= friendliesBwd + 1 then
+                    shouldHitMoving = true
+                end
                 local eid = BanditUtils.GetCharacterID(enemyCharacter)
                 local task = {action="Smack", time=65, endurance=-0.03, shm=shouldHitMoving, weapon=weapons.melee, eid=eid, x=enemyCharacter:getX(), y=enemyCharacter:getY(), z=enemyCharacter:getZ()}
                 table.insert(tasks, task)
             else
                 bandit:faceThisObject(enemyCharacter)
             end
+
+        
+        elseif instanceof(enemyCharacter, "IsoPlayer") and not Bandit.HasActionTask(bandit) then
+            local task = {action="Time", anim="Smoke", time=250}
+            table.insert(tasks, task)
+            Bandit.Say(bandit, "DEATH")
         end
+
     elseif enemies >= friendlies + 2 then
+        -- fixme: i need to refactror this
         if not BanditBrain.HasMoveTask(brain) then
+
             local sx, sy = 0, 0
             local closestDistSq = math.huge
             local closestDX, closestDY = 0, 0
             local threatCount = 0
             local escapeDistSq = escapeDist * escapeDist
+
+            -- =====================================
+            -- 1. BUILD DISTANCE-WEIGHTED REPULSION
+            -- =====================================
+
             for id, enemyLight in pairs(potentialEnemyList) do
+
                 if BanditUtils.AreEnemies(enemyLight.brain, brain) then
+
                     local dx = zx - enemyLight.x
                     local dy = zy - enemyLight.y
                     local distSq = dx*dx + dy*dy
+
                     if distSq > 0.01 and distSq < escapeDistSq then
+
                         threatCount = threatCount + 1
+
+                        -- track closest enemy (for fallback)
                         if distSq < closestDistSq then
                             closestDistSq = distSq
                             closestDX = dx
                             closestDY = dy
                         end
+
                         local dist = math.sqrt(distSq)
+
+                        -- normalize
                         dx = dx / dist
                         dy = dy / dist
+
+                        -- weight: closer enemies dominate strongly
                         local weight = 1 / distSq
+
                         sx = sx + dx * weight
                         sy = sy + dy * weight
                     end
                 end
             end
+
+            -- =====================================
+            -- 2. BREAK PERFECT SYMMETRY
+            -- =====================================
+
             if threatCount > 0 then
+                -- perpendicular bias to prevent cancellation
                 local perpX = -sy
                 local perpY = sx
+
                 sx = sx + perpX * 0.25
                 sy = sy + perpY * 0.25
             end
+
+            -- =====================================
+            -- 3. NORMALIZE SAFELY
+            -- =====================================
+
             local mag = math.sqrt(sx*sx + sy*sy)
+
             if mag < 0.001 then
+                -- fallback: run opposite closest enemy
                 if closestDistSq < math.huge then
                     local dist = math.sqrt(closestDistSq)
                     sx = closestDX / dist
                     sy = closestDY / dist
                 else
+                    -- absolute fallback (should never happen)
                     local angle = ZombRandFloat(0, math.pi * 2)
                     sx = math.cos(angle)
                     sy = math.sin(angle)
@@ -1060,33 +1320,65 @@ local function ManageCombat(bandit)
                 sx = sx / mag
                 sy = sy / mag
             end
+
+            -- =====================================
+            -- 4. SMOOTH DIRECTION (ANTI-JITTER)
+            -- =====================================
+
             if brain.escapeX and brain.escapeY then
                 sx = sx * 0.7 + brain.escapeX * 0.3
                 sy = sy * 0.7 + brain.escapeY * 0.3
+
                 local smag = math.sqrt(sx*sx + sy*sy)
                 if smag > 0 then
                     sx = sx / smag
                     sy = sy / smag
                 end
             end
+
             brain.escapeX = sx
             brain.escapeY = sy
+
+            -- =====================================
+            -- 5. COMPUTE TARGET (NO SQUARE SCAN)
+            -- =====================================
+
             local baseDist = 6
             local scale = math.min(threatCount, 5) * 1.5
             local runDist = baseDist + scale
+
             local nbx = zx + sx * runDist
             local nby = zy + sy * runDist
             local nbz = zz
+
+            -- =====================================
+            -- 6. ISSUE MOVE TASK
+            -- =====================================
+
             Bandit.ClearTasks(bandit)
-            local task = BanditUtils.GetMoveTask(0.01, nbx, nby, nbz, "Run", 12, false)
+
+            local task = BanditUtils.GetMoveTask(
+                0.01,
+                nbx,
+                nby,
+                nbz,
+                "Run",
+                12,
+                false
+            )
+
             task.time = 140 + threatCount * 30
             task.backwards = false
+
             table.insert(tasks, task)
         end
+
     elseif BanditCompatibility.GetGameVersion() >= 42 and enemiesBwd >= 2 then
         if not Bandit.HasMoveTask(bandit) and not Bandit.HasTaskType(bandit, "Shove") and not Bandit.HasTaskType(bandit, "Hit") then
             Bandit.ClearTasks(bandit)
+            -- bandit:addLineChatElement("Slow", 0.8, 0.8, 0.1)
             local mrad = math.atan2(sy, sx)
+            local mdeg = math.deg(mrad)
             local l = 1
             local nbx = zx + (l * math.cos(mrad))
             local nby = zy + (l * math.sin(mrad))
@@ -1095,50 +1387,68 @@ local function ManageCombat(bandit)
             task.backwards = true
             task.lock = false
             table.insert(tasks, task)
+
         end
+
     elseif healing then
         if not BanditBrain.HasTaskType(brain, "Bandage") then
             local task = {action="Bandage"}
             table.insert(tasks, task)
         end
+
     elseif firing then
         if not BanditBrain.HasTaskTypes(brain, {"Shoot", "Turn", "Aim", "Rack", "Equip", "Unequip", "Load", "Unload"}) then 
             Bandit.ClearTasks(bandit)
             if enemyCharacter:isAlive() then
+                
                 local veh = enemyCharacter:getVehicle()
                 if veh then Bandit.Say(bandit, "CAR") end
+
                 if bandit:isFacingObject(enemyCharacter, 0.1) then
                     for _, slot in pairs({"primary", "secondary"}) do
+                        
                         if weapons[slot].name then
+
                             if weapons[slot].bulletsLeft > 0 then
                                 if not weapons[slot].racked then
-                                    local stasks = BanditPrograms.Weapon.Rack(bandit, slot)
-                                    for _, t in pairs(stasks) do table.insert(tasks, t) end
+                                        local stasks = BanditPrograms.Weapon.Rack(bandit, slot)
+                                        for _, t in pairs(stasks) do table.insert(tasks, t) end
+
                                 elseif not Bandit.IsAim(bandit) then
                                     local stasks = BanditPrograms.Weapon.Aim(bandit, enemyCharacter, slot)
                                     for _, t in pairs(stasks) do table.insert(tasks, t) end
+
                                 elseif weapons[slot].bulletsLeft > 0 then
                                     local stasks = BanditPrograms.Weapon.Shoot(bandit, enemyCharacter, slot)
                                     for _, t in pairs(stasks) do table.insert(tasks, t) end
+
                                 end
+
                                 break
-                            elseif (weapons[slot].type == "mag" and weapons[slot].magCount > 0) or
-                                   (weapons[slot].type == "nomag" and weapons[slot].ammoCount > 0) then
+
+                            elseif (weapons[slot].type == "mag"  and weapons[slot].magCount > 0) or
+                                (weapons[slot].type == "nomag" and weapons[slot].ammoCount > 0) then
+
                                 Bandit.Say(bandit, "RELOADING")
+
                                 local stasks = BanditPrograms.Weapon.Reload(bandit, slot)
                                 for _, t in pairs(stasks) do table.insert(tasks, t) end
+
                                 break
                             end
+                            
                         end
                     end
                 else
                     bandit:faceThisObject(enemyCharacter)
                 end
+
             elseif instanceof(enemyCharacter, "IsoPlayer") then
                 local task = {action="Time", anim="Smoke", time=250}
                 table.insert(tasks, task)
                 Bandit.Say(bandit, "DEATH")
             end
+
         end
     elseif reload then
         if not BanditBrain.HasActionTask(brain) then
@@ -1161,18 +1471,26 @@ local function ManageCombat(bandit)
     return tasks
 end
 
+-- manages multiplayer social distance hack
 local function ManageSocialDistance(bandit)
     local bx, by, bz = bandit:getX(), bandit:getY(), bandit:getZ()
     local brain = BanditBrain.Get(bandit)
+    
     if brain.hostile or brain.hostileP then return end
 
     local playerList = BanditPlayer.GetPlayers()
+
+    -- Iterate through players
     for i = 0, playerList:size() - 1 do
         local player = playerList:get(i)
         if player then
+            -- Cache player's position and vehicle status
             local px, py, pz = player:getX(), player:getY(), player:getZ()
             local veh = player:getVehicle()
             local asn = bandit:getActionStateName()
+            
+            -- Calculate distance only once and check if conditions are met
+            -- local dist = BanditUtils.DistToManhattan(bx, by, px, py)
             local dist = math.sqrt(((bx - px) * (bx - px)) + ((by - py) * (by - py)))
             if bz == pz and dist < 3 and not veh and asn ~= "onground" then
                 bandit:setUseless(true)
@@ -1183,9 +1501,12 @@ local function ManageSocialDistance(bandit)
     end
 end
 
+-- table of bandits being attacked by zombies
 local biteTab = {}
 
+-- manages zombie behavior towards bandits
 local function UpdateZombies(zombie)
+
     local player = getSpecificPlayer(0)
     if not player then return end
 
@@ -1193,7 +1514,7 @@ local function UpdateZombies(zombie)
     if target and target:getVariableBoolean("Bandit") then
         zombie:setVariable("NoLungeAttack", true)
     else
-        zombie:setVariable("NoLungeAttack", false)
+        zombie:setVariable("NoLungeAttack", false) -- Re-enable lunge for zombies targeting players
     end
 
     if zombie:getVariableBoolean("Bandit") then return end
@@ -1206,18 +1527,24 @@ local function UpdateZombies(zombie)
             local bandit = biteTab[zid].bandit
             local dist = BanditUtils.DistTo(zombie:getX(), zombie:getY(), bandit:getX(), bandit:getY())
             if dist < 0.8 then 
-                if ZombRand(4) == 1 then zombie:playSound("ZombieBite") else zombie:playSound("ZombieScratch") end
+                if ZombRand(4) == 1 then
+                    zombie:playSound("ZombieBite")
+                else
+                    zombie:playSound("ZombieScratch")
+                end
 
                 local teeth = BanditCompatibility.InstanceItem("Base.RollingPin")
                 BanditCompatibility.Splash(bandit, teeth, zombie)
                 bandit:setHitFromBehind(zombie:isBehind(bandit))
         
                 if instanceof(bandit, "IsoZombie") then
+                    -- bandit:setHitAngle(zombie:getForwardDirection())
                     bandit:setPlayerAttackPosition(bandit:testDotSide(zombie))
                 end
         
                 if not bandit:isOnKillDone() then
                     Bandit.ClearTasks(bandit)
+                    -- bandit:setBumpDone(true)
                     bandit:Hit(teeth, zombie, 1.01, false, 1, false)
                     Bandit.UpdateInfection(bandit, 0.001)
 
@@ -1236,21 +1563,44 @@ local function UpdateZombies(zombie)
         return
     end
 
+
     local stuckTime = zombie:getModData().stuckTime or 0
+
+    --[[
+    if ans == "turnalerted" then
+        stuckTime = stuckTime + 1
+        zombie:getModData().stuckTime = stuckTime
+
+        -- If the zombie stays in turnalerted for too long (≈5 seconds)
+        if stuckTime > 300 then
+            zombie:getModData().stuckTime = 0
+            zombie:setActionStateName("idle")
+            zombie:setTurnDelta(0)
+            zombie:setTurnAlertedValues(0, 0)
+            zombie:resetModelNextFrame()
+        end
+    end]]
 
     if asn == "bumped" or asn == "onground" or asn == "climbfence" or asn == "getup" or asn == "turnalerted" then
         return
     end
     if zombie:isProne() then return end
 
+    -- Recycle brain and handle useless state
     BanditBrain.Remove(zombie)
-    if zombie:isUseless() then zombie:setUseless(false) end
+    if zombie:isUseless() then
+        zombie:setUseless(false)
+    end
 
+    -- Handle primary and secondary hand items
     local phi = zombie:getPrimaryHandItem()
     if phi then zombie:setPrimaryHandItem(nil) end
     local shi = zombie:getSecondaryHandItem()
-    if shi then zombie:setSecondaryHandItem(nil) end
+    if shi then 
+        zombie:setSecondaryHandItem(nil) 
+    end
 
+    -- Handle zombie target and teeth state
     local target = zombie:getTarget()
     if target and instanceof(target, "IsoZombie") then
         zombie:setVariable("ZombieBiteDone", true)
@@ -1259,10 +1609,27 @@ local function UpdateZombies(zombie)
         zombie:setNoTeeth(false)
     end
 
+    -- Clear invalid target
+    --[[
+    if target and (not target:isAlive() or not zombie:CanSee(target)) then
+        zombie:setTarget(nil)
+    end]]
+
+    -- Stop sound if playing
+    --[[
+    local emitter = zombie:getEmitter()
+    if emitter:isPlaying("ChainsawIdle") then
+        emitter:stopSoundByName("ChainsawIdle")
+    end]]
+
+    -- Fetch zombie coordinates and closest bandit location
     local zx, zy, zz = zombie:getX(), zombie:getY(), zombie:getZ()
+
     local px, py, pz = player:getX(), player:getY(), player:getZ()
     local distPlayer2 = ((px - zx) * (px - zx)) + ((py - zy) * (py - zy))
-    if distPlayer2 < 4 and math.abs(pz - zz) < 0.3 then return end
+    if distPlayer2 < 4 and math.abs(pz - zz) < 0.3 then
+        return
+    end
 
     local banditList = BanditZombie.CacheLightB
     local dist2max = math.huge
@@ -1275,25 +1642,75 @@ local function UpdateZombies(zombie)
         end
     end
 
+    -- local enemy = BanditUtils.GetClosestBanditLocation(zombie)
+
+    -- If bandit is in range, proceed
     if banditCached and dist2max < 400 then
+        --local player = BanditUtils.GetClosestPlayerLocation(zombie, true)
+        
+        -- Skip if player is closer than the bandit
+        --if player.dist < enemy.dist then return end
+
         local bandit = BanditZombie.Cache[banditCached.id]
+        -- local bx, by, bz = bandit:getX(), bandit:getY(), bandit:getZ()
+        -- local dist = math.sqrt(((banditCached.x - zx) * (banditCached.x - zx)) + ((banditCached.y - zy) * (banditCached.y - zy)))
+
+        -- Standard movement if bandit is far
 
         if dist2max > 9 then
-            if zombie:CanSee(bandit) then zombie:pathToCharacter(bandit) end
-        else
-            if zombie and bandit then
-                -- [LCC POC] Keep Bandits' own pursuit / Bite pipeline without
-                -- constructing a vanilla zombie -> Bandit combat relationship.
+            -- zombie:addLineChatElement(tostring(ZombRand(100)) .. " far", 0.6, 0.6, 1)
+            --
+            if zombie:CanSee(bandit) then
                 zombie:pathToCharacter(bandit)
             end
 
+        -- Approach bandit if in range
+        else
+            -- zombie:addLineChatElement(string.format("mid %.2f", dist2max), 0.6, 0.6, 1)
+            
+            -- local tempTarget = BanditUtils.CloneIsoPlayer(bandit)
+            -- if zombie:CanSee(bandit) and zombie:CanSee(player) then
+                -- if BanditCompatibility.GetGameVersion() >= 42 then
+                    -- zombie:pathToCharacter(bandit)
+                -- end
+                -- if not zombie:getTarget() then
+                    -- zombie:addLineChatElement(string.format("SPOTTED %.2f", enemy.dist), 0.6, 0.6, 1)
+                    -- zombie:changeState(LungeState.instance())
+                    -- zombie:getPathFindBehavior2():cancel()
+                    -- zombie:setPath2(nil)
+
+                    if zombie and bandit then
+                        zombie:spotted(bandit, true)
+                        zombie:addAggro(bandit, 1)
+                        zombie:setTarget(bandit)
+                        zombie:setAttackedBy(bandit)
+                    
+                        --[[
+                        zombie:spotted(bandit, true)
+                        zombie:setTarget(bandit)
+                        zombie:setAttackedBy(bandit)
+                        ]]
+                    end
+                    
+                    
+                    --tempTarget:removeFromWorld()
+                    -- tempTarget = nil
+
+                -- end
+            -- end
             if dist2max < 0.64 and math.abs(zz - banditCached.z) < 0.3 then
+                
                 local isWallTo = zombie:getSquare():isSomethingTo(bandit:getSquare())
                 if not isWallTo then
+
+
                     if zombie:isFacingObject(bandit, 0.3) then
+                        -- Optimized close-range attack logic
                         local attackingZombiesNumber = 0
                         for id, attackingZombie in pairs(BanditZombie.CacheLightZ) do
+                            -- local distManhattan = BanditUtils.DistToManhattan(attackingZombie.x, attackingZombie.y, enemy.x, enemy.y)
                             if math.abs(attackingZombie.x - banditCached.x) + math.abs(attackingZombie.y - banditCached.y) < 1 then
+                                -- local dist = BanditUtils.DistTo(attackingZombie.x, attackingZombie.y, enemy.x, enemy.y)
                                 local dist = math.sqrt(((attackingZombie.x - banditCached.x) * (attackingZombie.x - banditCached.x)) + ((attackingZombie.y - banditCached.y) * (attackingZombie.y - banditCached.y)))
                                 if dist < 0.6 then
                                     attackingZombiesNumber = attackingZombiesNumber + 1
@@ -1302,6 +1719,7 @@ local function UpdateZombies(zombie)
                             end
                         end
 
+                        -- If more than 2 zombies attacking, initiate death task
                         if attackingZombiesNumber > 2 then
                             if not Bandit.HasTaskType(bandit, "Die") then
                                 Bandit.ClearTasks(bandit)
@@ -1312,6 +1730,8 @@ local function UpdateZombies(zombie)
                         end
 
                         if zombie:getBumpType() ~= "Bite" and zombie:getBumpType() ~= "BiteLow" and asn ~= "staggerback" then
+                            -- prevents zombie into entering real attack state (we want simulate our own attack)
+                            -- zombie:setVariable("bAttack", false)
                             bandit:setZombiesDontAttack(true)
                             if bandit:isProne() or bandit:isCrawling() then
                                 zombie:setBumpType("BiteLow")
@@ -1321,6 +1741,7 @@ local function UpdateZombies(zombie)
                             local zid = BanditUtils.GetCharacterID(zombie)
                             zombie:getModData().zid = zid 
                             biteTab[zid] = {bandit=bandit, tick=0}
+                            -- zombie:addLineChatElement("BITE", 0.8, 0.8, 0.1)
                         end
                     else
                         zombie:faceThisObject(bandit)
@@ -1331,94 +1752,186 @@ local function UpdateZombies(zombie)
     end
 end
 
+
 local function ProcessTask(bandit, task)
+
     if not task.action then return end
     if not task.state then task.state = "NEW" end
 
     if task.state == "NEW" then
         if not task.time then task.time = 1000 end
-        if task.action ~= "Shoot" and task.action ~= "Aim" and task.action ~= "Rack" and task.action ~= "Load" then
+        -- bandit:addLineChatElement(task.action, 0.8, 0.8, 0.1)
+        if task.action ~= "Shoot" and task.action ~= "Aim" and task.action ~= "Rack"  and task.action ~= "Load" then
             Bandit.SetAim(bandit, false)
         end
+
         if task.action ~= "Move" and task.action ~= "GoTo" then
-            if Bandit.IsMoving(bandit) then Bandit.SetMoving(bandit, false) end
+            if Bandit.IsMoving(bandit) then
+                Bandit.SetMoving(bandit, false)
+            end
         end
+
         if task.sound then
             local play = true
             if task.soundDistMax then
                 local player = getSpecificPlayer(0)
                 local dist = BanditUtils.DistTo(bandit:getX(), bandit:getY(), player:getX(), player:getY())
-                if dist > task.soundDistMax then play = false end
+                if dist > task.soundDistMax then
+                    play = false
+                end
             end
+
             if play then
                 local emitter = bandit:getEmitter()
-                if not emitter:isPlaying(task.sound) then emitter:playSound(task.sound) end
+                if not emitter:isPlaying(task.sound) then
+                    emitter:playSound(task.sound)
+                end
             end
+            -- bandit:playSound(task.sound)
         end
-        if task.anim then bandit:setBumpType(task.anim) end
+
+        if task.anim then
+            bandit:setBumpType(task.anim)
+        end
+
         local done = ZombieActions[task.action].onStart(bandit, task)
-        if done then task.state = "WORKING" end
+
+        if done then 
+            task.state = "WORKING"
+            --Bandit.UpdateTask(bandit, task)
+        end
+
     elseif task.state == "WORKING" then
+
+        -- normalize time speed
         local decrement = 1 / ((getAverageFPS() + 0.5) * 0.01666667)
         task.time = task.time - decrement
+
         local done = ZombieActions[task.action].onWorking(bandit, task)
-        if done or task.time <= 0 then task.state = "COMPLETED" end
+        if done or task.time <= 0 then 
+            task.state = "COMPLETED"
+        end
+        -- Bandit.UpdateTask(bandit, task)
+
     elseif task.state == "COMPLETED" then
+
         if task.sound then
             local emitter = bandit:getEmitter()
-            if not emitter:isPlaying(task.sound) then bandit:playSound(task.sound) end
+            if not emitter:isPlaying(task.sound) then
+                bandit:playSound(task.sound)
+            end
         end
-        if task.endurance then Bandit.UpdateEndurance(bandit, task.endurance) end
+        
+        if task.endurance then
+            Bandit.UpdateEndurance(bandit, task.endurance)
+        end
+
         local done = ZombieActions[task.action].onComplete(bandit, task)
-        if done then Bandit.RemoveTask(bandit) end
+
+        if done then 
+            Bandit.RemoveTask(bandit)
+            -- bandit:setBumpDone(true)
+            -- bandit:setBumpType("")
+        end
     end
 end
 
 local function GenerateTask(bandit)
     local tasks = {}
+    
+    -- MANAGE BANDIT ENDURANCE LOSS
+    -- local ts = getTimestampMs()
     local enduranceTasks = ManageEndurance(bandit)
-    if #enduranceTasks > 0 then for _, t in pairs(enduranceTasks) do table.insert(tasks, t) end end
-
+    -- local elapsed = getTimestampMs() - ts
+    -- if elapsed > 1 then
+    --     print ("ManageEndurance: " .. elapsed)
+    -- end
+    if #enduranceTasks > 0 then
+        for _, t in pairs(enduranceTasks) do table.insert(tasks, t) end
+    end
+    
+    -- MANAGE BLEEDING AND HEALING
     if #tasks == 0 then
+        -- local ts = getTimestampMs()
         local healingTasks = ManageHealth(bandit)
-        if #healingTasks > 0 then for _, t in pairs(healingTasks) do table.insert(tasks, t) end end
+        -- local elapsed = getTimestampMs() - ts
+        -- if elapsed > 1 then
+        --    print ("ManageHealth: " .. elapsed)
+        --end
+        
+        if #healingTasks > 0 then
+            for _, t in pairs(healingTasks) do table.insert(tasks, t) end
+        end
     end
 
-    if #tasks == 0 then
+    -- MANAGE MELEE / SHOOTING TASKS
+    if #tasks == 0  then
+        -- local ts = getTimestampMs()
         local combatTasks = ManageCombat(bandit)
-        if #combatTasks > 0 then for _, t in pairs(combatTasks) do table.insert(tasks, t) end end
+        -- local elapsed = getTimestampMs() - ts
+        -- if elapsed > 1 then
+        --     print ("ManageCombat: " .. elapsed)
+        -- end
+        if #combatTasks > 0 then
+            for _, t in pairs(combatTasks) do table.insert(tasks, t) end
+        end
     end
 
+    -- MANAGE COLLISION TASKS
     if #tasks == 0 then
+        -- local ts = getTimestampMs()
         local colissionTasks = ManageCollisions(bandit)
-        if #colissionTasks > 0 then for _, t in pairs(colissionTasks) do table.insert(tasks, t) end end
+        -- local elapsed = getTimestampMs() - ts
+        -- if elapsed > 1 then
+        --     print ("ManageCollisions: " .. elapsed)
+        -- end
+        if #colissionTasks > 0 then
+            for _, t in pairs(colissionTasks) do table.insert(tasks, t) end
+        end
     end
-
+    
+    -- CUSTOM PROGRAM 
     if #tasks == 0 and not Bandit.HasTask(bandit) then
         local program = Bandit.GetProgram(bandit)
-        if program and program.name and program.stage then
+        if program and program.name and program.stage  then
+            -- local ts = getTimestampMs()
             local res = ZombiePrograms[program.name][program.stage](bandit)
+            -- local elapsed = getTimestampMs() - ts
+            -- if elapsed > 1 then
+            --     print ("CustomProgram: " .. program.name .. " " .. program.stage .. " ".. elapsed)
+            -- end
             if res.status and res.next then
                 Bandit.SetProgramStage(bandit, res.next)
-                for _, task in pairs(res.tasks) do table.insert(tasks, task) end
+                for _, task in pairs(res.tasks) do
+                    table.insert(tasks, task)
+                end
             else
                 local task = {action="Time", anim="Shrug", time=200}
                 table.insert(tasks, task)
             end
         end
     end
+    
 
     if #tasks > 0 then
         local brain = BanditBrain.Get(bandit)
-        for _, task in pairs(tasks) do table.insert(brain.tasks, task) end
+        for _, task in pairs(tasks) do
+            table.insert(brain.tasks, task)
+        end
+        -- BanditBrain.Update(zombie, brain)
     end
 end
 
+-- main function to handle bandits
 local function OnBanditUpdate(zombie)
+
     local ts = getTimestampMs()
+    
     if isServer() then return end
 
     local isMP = getWorld():getGameMode() == "Multiplayer"
+
+    -- hack for multiplayer
     if isMP then
         local i1 = zombie:getPrimaryHandItem()
         local i2 = zombie:getSecondaryHandItem()
@@ -1428,34 +1941,52 @@ local function OnBanditUpdate(zombie)
                 zombie:setVariable("BanditPrimary", "")
                 zombie:setVariable("BanditPrimaryType", "")
             end
-            if i2 then zombie:setSecondaryHandItem(nil) end
-        end
-    end
-
-    if not Bandit.Engine then return end
-    if BanditCompatibility.IsReanimatedForGrappleOnly(zombie) then return end
-    if BanditCompatibility.IsRagdoll(zombie) then return end
-
-    local target = zombie:getTarget()
-    if target and instanceof(target, "IsoPlayer") and not target:getVariableBoolean("Bandit") then
-        if zombie:isCrawling() then
-            local zx, zy, zz = zombie:getX(), zombie:getY(), zombie:getZ()
-            local px, py, pz = target:getX(), target:getY(), target:getZ()
-            local dist = math.sqrt(((zx - px) * (zx - px)) + ((zy - py) * (zy - py)))
-            if dist < 0.80 and math.abs(zz - pz) < 0.3 and zombie:CanSee(target) then
-                local isWallTo = zombie:getSquare():isSomethingTo(target:getSquare())
-                if not isWallTo and zombie:isFacingObject(target, 0.3) then
-                    zombie:changeState(LungeState.instance())
-                    zombie:getPathFindBehavior2():cancel()
-                    zombie:setPath2(nil)
-                    return
-                end
+            if i2 then
+                zombie:setSecondaryHandItem(nil)
             end
         end
     end
 
+    if not Bandit.Engine then return end
+
+    if BanditCompatibility.IsReanimatedForGrappleOnly(zombie) then return end
+
+    if BanditCompatibility.IsRagdoll(zombie) then return end
+
+    local target = zombie:getTarget()
+    if target and instanceof(target, "IsoPlayer") and not target:getVariableBoolean("Bandit") then
+        -- If zombie is on the ground (crawling) and close enough to the player
+        if zombie:isCrawling() then
+            local zx, zy, zz = zombie:getX(), zombie:getY(), zombie:getZ()
+            local px, py, pz = target:getX(), target:getY(), target:getZ()
+            local dist = math.sqrt(((zx - px) * (zx - px)) + ((zy - py) * (zy - py)))
+
+            if dist < 0.80 and math.abs(zz - pz) < 0.3 and zombie:CanSee(target) then
+                -- Check if there is no wall between zombie and player
+                local isWallTo = zombie:getSquare():isSomethingTo(target:getSquare())
+                if not isWallTo and zombie:isFacingObject(target, 0.3) then
+                    -- Enable lunging for players
+                    zombie:changeState(LungeState.instance())
+                    zombie:getPathFindBehavior2():cancel()
+                    zombie:setPath2(nil)
+                    return -- Important: Exit the function to avoid further processing
+                end
+            end
+        end
+    end
+    
     local id = BanditUtils.GetZombieID(zombie)
+    local zx = zombie:getX()
+    local zy = zombie:getY()
+    local zz = zombie:getZ()
+
+    -- local cell = getCell()
+    -- local world = getWorld()
+    -- local gamemode = world:getGameMode()
     local brain = BanditBrain.Get(zombie)
+    
+    -- BANDITIZE ZOMBIES SPAWNED AND ENQUEUED BY SERVER
+    -- OR ZOMBIFY IF HAS BEEN REMOVED FROM CLUSTER
     local gmd = GetBanditClusterData(id)
     if gmd and gmd[id] then
         if not zombie:getVariableBoolean("Bandit") then
@@ -1463,9 +1994,20 @@ local function OnBanditUpdate(zombie)
             Banditize(zombie, brain)
         end
     else
-        if zombie:getVariableBoolean("Bandit") then Zombify(zombie) end
+        if zombie:getVariableBoolean("Bandit") then
+            Zombify(zombie)
+        end
     end
-
+    
+    -- if true then return end 
+    -- ZOMBIES VS BANDITS
+    -- Using adaptive performance here.
+    -- The more zombies in player's cell, the less frequent updates.
+    -- Up to 100 zombies, update every tick, 
+    -- 800+ zombies, update every 1/16 tick. 
+    -- local zcnt = BanditZombie.GetAllCnt()
+    -- if zcnt > 600 then zcnt = 600 end
+    -- local skip = math.floor(zcnt / 50) + 1
     UpdateZombies(zombie)
 
     local asn = zombie:getActionStateName()
@@ -1477,35 +2019,112 @@ local function OnBanditUpdate(zombie)
         end
     end
 
+    ------------------------------------------------------------------------------------------------------------------------------------
+    -- BANDIT UPDATE AFTER THIS LINE
+    ------------------------------------------------------------------------------------------------------------------------------------
     if not zombie:getVariableBoolean("Bandit") then return end
     if not brain then return end
 
+    -- distant bandits are not updated by this mod so they need to be set useless
+    -- to prevent game updating them as if they were zombies
     if BanditZombie.CacheLightB[id] then 
         zombie:setUseless(false)
     else
         zombie:setUseless(true)
         return
     end
-
+    
     local bandit = zombie
-    if BanditCompatibility.GetGameVersion() >= 42 then bandit:setAnimatingBackwards(false) end
+
+    if BanditCompatibility.GetGameVersion() >= 42 then
+        bandit:setAnimatingBackwards(false)
+    end
+
+    --[[
+    local primaryItem = zombie:getPrimaryHandItem()
+    if primaryItem and zombie:isHeavyItem(primaryItem) then
+        print ("FOUND HEAVY ITEM" .. primaryItem:getFullType())
+    end
+
+    local secondaryItem = zombie:getSecondaryHandItem()
+    if secondaryItem and zombie:isHeavyItem(secondaryItem) then
+        print ("FOUND HEAVY ITEM" .. secondaryItem:getFullType())
+    end
+    ]]
+
+    -- IF TELEPORTING THEN THERE IS NO SENSE IN PROCEEDING
+    --[[
+    if bandit:isTeleporting() then
+        return
+    end]]
+
+    -- WALKTYPE
+    -- we do it this way, if walktype get overwritten by game engine we force our animations
     bandit:setWalkType(bandit:getVariableString("BanditWalkType"))
+    -- bandit:addLineChatElement(bandit:getVariableString("BanditWalkType"))
     bandit:setSpeedMod(1)
+
+    -- NO ZOMBIE SOUNDS
     Bandit.SurpressZombieSounds(bandit)
-    if not brain.eatBody then bandit:setEatBodyTarget(nil, false) end
+
+    -- CANNIBALS
+    if not brain.eatBody then
+        bandit:setEatBodyTarget(nil, false)
+    end
+    
+    -- ADJUST HUMAN VISUALS
     Bandit.ApplyVisuals(bandit, brain)
+
+    -- MANAGE BANDIT TORCH
+    --
     ManageTorch(bandit, brain)
+
+    -- MANAGE BANDIT CHAINSAW
+    -- ManageChainsaw(bandit)
+
+    -- MANAGE BANDIT BEING ON FIRE
     ManageOnFire(bandit)
+
+    -- MANAGE BANDIT SPEECH COOLDOWN
     ManageSpeechCooldown(brain)
 
+    -- ACTION STATE TWEAKS
+    -- local ts = getTimestampMs()
     local continue = ManageActionState(bandit)
-    if not continue then return end
-    if isMP then ManageSocialDistance(bandit) end
-    if bandit:isCrawling() then Bandit.Say(bandit, "DEAD") end
+    -- local elapsed = getTimestampMs() - ts
+    -- if elapsed > 1 then
+    --    print ("ManageActionState: " .. elapsed)
+    -- end
 
+    if not continue then return end
+    
+    -- COMPANION SOCIAL DISTANCE HACK
+    -- local ts = getTimestampMs()
+    if isMP then
+        ManageSocialDistance(bandit)
+    end
+    -- local elapsed = getTimestampMs() - ts
+    -- if elapsed > 1 then
+    --     print ("ManageSocialDistance: " .. elapsed)
+    -- end
+
+    -- CRAWLERS SCREAM OCASSINALLY
+    if bandit:isCrawling() then
+        Bandit.Say(bandit, "DEAD")
+    end
+    
     GenerateTask(bandit)
+
     local task = Bandit.GetTask(bandit)
-    if task then ProcessTask(bandit, task) end
+    if task then
+            
+        -- local ts = getTimestampMs()
+        ProcessTask(bandit, task)
+        -- local elapsed = getTimestampMs() - ts
+        -- if elapsed > 1 then
+        --     print ("ProcessTask " .. task.action .. "(" .. task.state .. "): " .. elapsed)
+        -- end
+    end
 
     local elapsed = getTimestampMs() - ts
     if elapsed < 1 then 
@@ -1521,9 +2140,55 @@ local function OnBanditUpdate(zombie)
 end
 
 local function OnHitZombie(zombie, attacker, bodyPartType, handWeapon)
+    
+    --[[
+    local visuals = zombie:getHumanVisual()
+    local femaleChance = zombie:isFemale() and 100 or 0
+    local hairModel = visuals:getHairModel()
+    local hairColor = visuals:getHairColor()
+    local beardModel
+    local beardColor
+    if femaleChance == 0 then
+        beardModel = visuals:getBeardModel()
+        beardColor = visuals:getBeardColor()
+    end
+    
+    visuals:setSkinTextureName("MaleBody01_Headless")
+    visuals:setHairModel("Bald")
+    zombie:resetModel()
+
+    local outfit = "Naked" .. (1 + ZombRand(101))
+    local zombieList = BanditCompatibility.AddZombiesInOutfit(zombie:getX(), zombie:getY(), zombie:getZ(), outfit, femaleChance, 
+                                                              false, false, false, 
+                                                              false, false, false,
+                                                              1)
+
+    if zombieList:size() > 0 then
+        local head = zombieList:get(0)
+        -- local head = createZombie(zombie:getX(), zombie:getY(), zombie:getZ(), nil, femaleChance, IsoDirections.fromAngle(zombie:getForwardDirection()))
+        local headVisuals = head:getHumanVisual()
+        local headItemVisuals = head:getItemVisuals()
+        headItemVisuals:clear()
+        head:dressInNamedOutfit("Naked1")
+        headVisuals:setSkinTextureName("MaleBody01_Head")
+        headVisuals:setHairModel(hairModel)
+        headVisuals:setHairColor(hairColor)
+        if femaleChance == 0 then
+            headVisuals:setBeardModel(beardModel)
+            headVisuals:setBeardColor(beardColor)
+        end
+        head:resetModel()
+        head:resetModelNextFrame()
+        head:setHealth(0)
+    end
+    ]]
+
+
+
     if not zombie:getVariableBoolean("Bandit") then return end
 
     local bandit = zombie
+
     Bandit.AddVisualDamage(bandit, handWeapon)
     Bandit.ClearTasks(bandit)
     Bandit.Say(bandit, "HIT", true)
@@ -1539,10 +2204,23 @@ local function OnHitZombie(zombie, attacker, bodyPartType, handWeapon)
 
     if handWeapon:isRanged() and instanceof(attacker, "IsoPlayer") then
         local bodyPartTypes = {
-            Foot_R = {}, Foot_L = {}, LowerLeg_R = {}, LowerLeg_L = {}, UpperLeg_R = {}, UpperLeg_L = {},
-            Groin = {serious = true}, Neck = {serious = true}, Head = {insta = true},
-            Torso_Lower = {serious = true}, Torso_Upper = {serious = true}, UpperArm_R = {}, UpperArm_L = {},
-            ForeArm_R = {}, ForeArm_L = {}, Hand_R = {}, Hand_L = {}
+            Foot_R = {},
+            Foot_L = {},
+            LowerLeg_R = {},
+            LowerLeg_L = {},
+            UpperLeg_R = {},
+            UpperLeg_L = {},
+            Groin = {serious = true},
+            Neck = {serious = true},
+            Head = {insta = true},
+            Torso_Lower = {serious = true},
+            Torso_Upper = {serious = true},
+            UpperArm_R = {},
+            UpperArm_L = {},
+            ForeArm_R = {},
+            ForeArm_L = {},
+            Hand_R = {},
+            Hand_L = {}
         }
 
         for k, tab in pairs(bodyPartTypes) do
@@ -1573,10 +2251,13 @@ local function OnHitZombie(zombie, attacker, bodyPartType, handWeapon)
 end
 
 local function OnZombieDead(bandit)
+
     if bandit:getVariableBoolean("Bandit") then 
+
         local brain = BanditBrain.Get(bandit)
         local inventory = bandit:getInventory()
         local items = ArrayList.new()
+
         local veh = bandit:getVehicle()
         if veh then veh:exit(bandit) end
 
@@ -1587,6 +2268,7 @@ local function OnZombieDead(bandit)
             inventory:setDrawDirty(true)
         end
 
+        -- update stuck weapons
         local stuckLocationList = {"MeatCleaver in Back", "Axe Back", "Knife in Back", "Knife Left Leg", "Knife Right Leg", "Knife Shoulder", "Knife Stomach"}
         for _, stuckLocation in pairs(stuckLocationList) do
             local attachedItem = bandit:getAttachedItem(stuckLocation)
@@ -1596,28 +2278,41 @@ local function OnZombieDead(bandit)
             end
         end
 
-        if brain.bag and brain.bag == "Briefcase" then
-            local bag = BanditCompatibility.InstanceItem("Base.Briefcase")
-            local bagContainer = bag:getItemContainer()
-            if bagContainer then
-                local rn = ZombRand(3)
-                if rn == 0 then
-                    for i = 1, 1000 do bagContainer:AddItem(instanceItem("Base.Money")) end
-                elseif rn == 1 then
-                    bagContainer:AddItem(BanditCompatibility.InstanceItem("Base.Corset_Black"))
-                    bagContainer:AddItem(BanditCompatibility.InstanceItem("Base.StockingsBlack"))
-                    bagContainer:AddItem(BanditCompatibility.InstanceItem("Base.Hat_PeakedCapArmy"))
-                elseif rn == 2 then
-                    bagContainer:AddItem(BanditCompatibility.InstanceItem("Base.Machete"))
-                    if BanditCompatibility.GetGameVersion() >= 42 then
-                        bagContainer:AddItem(BanditCompatibility.InstanceItem("Base.Hat_HalloweenMaskVampire"))
-                        bagContainer:AddItem(BanditCompatibility.InstanceItem("Base.BlackRobe"))
+        -- drop extra suitcase item 
+        if brain.bag then
+            if brain.bag == "Briefcase" then
+                local bag = BanditCompatibility.InstanceItem("Base.Briefcase")
+                local bagContainer = bag:getItemContainer()
+                if bagContainer then
+                    local rn = ZombRand(3)
+                    if rn == 0 then
+                        for i = 1, 1000 do
+                            local money = instanceItem("Base.Money")
+                            bagContainer:AddItem(money)
+                        end
+                    elseif rn == 1 then
+                        local c1 = BanditCompatibility.InstanceItem("Base.Corset_Black")
+                        local c2 = BanditCompatibility.InstanceItem("Base.StockingsBlack")
+                        local c3 = BanditCompatibility.InstanceItem("Base.Hat_PeakedCapArmy")
+                        bagContainer:AddItem(c1)
+                        bagContainer:AddItem(c2)
+                        bagContainer:AddItem(c3)
+                    elseif rn == 2 then
+                        local c1 = BanditCompatibility.InstanceItem("Base.Machete")
+                        bagContainer:AddItem(c1)
+                        if BanditCompatibility.GetGameVersion() >= 42 then
+                            local c2 = BanditCompatibility.InstanceItem("Base.Hat_HalloweenMaskVampire")
+                            local c3 = BanditCompatibility.InstanceItem("Base.BlackRobe")
+                            bagContainer:AddItem(c2)
+                            bagContainer:AddItem(c3)
+                        end
                     end
+                    bandit:getSquare():AddWorldInventoryItem(bag, ZombRandFloat(0.2, 0.8), ZombRandFloat(0.2, 0.8), 0)
                 end
-                bandit:getSquare():AddWorldInventoryItem(bag, ZombRandFloat(0.2, 0.8), ZombRandFloat(0.2, 0.8), 0)
             end
         end
 
+        -- add key to inv
         if brain.key and ZombRand(3) == 1 then
             local item = BanditCompatibility.InstanceItem("Base.Key1")
             item:setKeyId(brain.key)
@@ -1627,10 +2322,21 @@ local function OnZombieDead(bandit)
         end
 
         Bandit.Say(bandit, "DEAD", true)
+
+        -- update player kills
         local player = getSpecificPlayer(0)
         local killer = bandit:getAttackedBy()
-        if killer and killer == player then player:setZombieKills(player:getZombieKills() - 1) end
+        if killer then
+            if killer == player then
+                player:setZombieKills(player:getZombieKills() - 1)
+            end
+        end
 
+        -- warning: bwo overwrites CheckFriendlyFire
+        local attacker = bandit:getAttackedBy()
+        -- BanditPlayer.CheckFriendlyFire(bandit, attacker)
+
+        -- deprovision
         bandit:setUseless(false)
         bandit:setReanim(false)
         bandit:setVariable("Bandit", false)
@@ -1642,19 +2348,127 @@ local function OnZombieDead(bandit)
         bandit:resetEquippedHandsModels()
         bandit:getModData().isDeadBandit = true
 
-        local args = {id = brain.id}
+        local args = {}
+        args.id = brain.id
         sendClientCommand(player, 'Commands', 'BanditRemove', args)
         BanditBrain.Remove(bandit)
+
+        --[[
+        local bx, by = bandit:getX(), bandit:getY()
+        local zombieList = BanditZombie.CacheLightZ
+        for id, zombie in pairs(zombieList) do
+            local dist = math.abs(bx - zombie.x) + math.abs(by - zombie.y)
+            if dist < 10 then
+                local zombie = BanditZombie.Cache[id]
+                if zombie then
+                    zombie:setEatBodyTarget(bandit, true)
+                end
+            end
+        end
+        ]]
     end
+
+    --[[
+    -- stale corpse removal hack fro b42, it replaces the dying zombie with a deadbody
+    -- and copies most of the properties to look as the original 
+    if SandboxVars.Bandits.General_CorpseSwapper and BanditCompatibility.GetGameVersion() >= 42 then
+        local isSeen = false
+        local playerList = BanditPlayer.GetPlayers()
+        for i=0, playerList:size()-1 do
+            local player = playerList:get(i)
+            if player then
+                if  player:CanSee(bandit) then
+                    if bandit:getSquare():isCanSee(0) then
+                        isSeen = true
+                    end
+                end
+            end
+        end
+
+        --[[
+        if not isSeen and not bandit:getVariableBoolean("BanditBecomingCorpse") then
+            bandit:setVariable("BanditBecomingCorpse", true)
+            bandit:getModData().isDeadBandit = false
+            local wornItems = bandit:getWornItems()
+            local inv = bandit:getInventory()
+            local hv = bandit:getHumanVisual()
+            local arrItems = ArrayList.new()
+            inv:getAllEvalRecurse(predicateAll, arrItems)
+
+            
+            local bandit2 = createZombie(bandit:getX(), bandit:getY(), bandit:getZ(), nil, 0, IsoDirections.fromAngle(bandit:getForwardDirection()))
+            local hv2 = bandit2:getHumanVisual()
+            bandit2:setFemale(bandit:isFemale())
+            hv2:setSkinTextureName(hv:getSkinTexture())
+            hv2:setHairModel(hv:getHairModel())
+            hv2:setBeardModel(hv:getHairModel())
+            hv2:setHairColor(hv:getHairColor()) 
+            hv2:setBeardColor(hv:getBeardColor())
+
+            for it, _ in pairs(BanditUtils.ItemVisuals) do
+                if ZombRand(3) == 0 and it:embodies("ZedDmg") then
+                    hv2:addBodyVisualFromItemType(it)
+                end
+            end
+    
+            local maxIndex = BloodBodyPartType.MAX:index()
+            for i = 0, maxIndex - 1 do
+                local part = BloodBodyPartType.FromIndex(i)
+                hv2:setBlood(part, 1)
+                hv2:setDirt(part, 1)
+            end
+            
+            bandit2:setWornItems(wornItems)
+            bandit2:setAttachedItems(bandit:getAttachedItems())
+            bandit2:getModData().isDeadBandit = false
+
+            local body = IsoDeadBody.new(bandit2, false);
+            inv2 = body:getContainer()
+            for i = 0, wornItems:size() - 1 do
+                local wornItem = wornItems:get(i)
+                local item = wornItem:getItem()
+                inv2:AddItem(item)
+            end
+
+            for i = 0, arrItems:size()-1 do
+                local item = arrItems:get(i)
+                inv2:AddItem(item)
+            end
+
+            bandit:removeFromSquare()
+            bandit:removeFromWorld()
+            
+            bandit2:removeFromWorld()
+            bandit2:removeFromSquare()
+            -- print ("----- CORPSE SWAPPED ------")
+        end
+    end
+    ]]
+
 end
 
 local function OnDeadBodySpawn(body)
+    --[[
+    local hv = body:getHumanVisual()
+    local skin = hv:getSkinTexture()
+    if skin:find("^FemaleBody") or skin:find("^MaleBody") then
+        local age = getGameTime():getWorldAgeHours()
+        body:setReanimateTime(age + ZombRandFloat(0.1, 0.7))
+    end
+    ]]
     local md = body:getModData()
-    if md.isDeadBandit and md.isDeadBandit == true then
-        local player = getSpecificPlayer(0)
-        md.isDeadBandit = false
-        local args = {x = body:getX(), y = body:getY(), z = body:getZ(), id = md.brainId}
-        sendClientCommand(player, 'Commands', 'BanditCorpse', args)
+    if md.isDeadBandit then
+        if md.isDeadBandit == true then
+            local player = getSpecificPlayer(0)
+            md.isDeadBandit = false
+            local args = {
+                x = body:getX(),
+                y = body:getY(),
+                z = body:getZ(),
+                id = md.brainId
+            }
+            sendClientCommand(player, 'Commands', 'BanditCorpse', args)
+        end
     end
 end
 
