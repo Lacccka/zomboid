@@ -31,30 +31,30 @@ local function tableCount(value)
 end
 
 local function safeSize(value)
-    if value == nil or type(value.size) ~= "function" then return -1 end
+    if value == nil then return -1 end
     local ok, size = pcall(function() return value:size() end)
     if ok and size ~= nil then return tonumber(size) or -1 end
     return -1
 end
 
 local function inventoryCount(character)
-    if not character or type(character.getInventory) ~= "function" then return -1 end
+    if not character then return -1 end
     local ok, inventory = pcall(function() return character:getInventory() end)
     if not ok or not inventory then return -1 end
     local okItems, items = pcall(function() return inventory:getItems() end)
-    if not okItems then return -1 end
+    if not okItems or not items then return -1 end
     return safeSize(items)
 end
 
 local function wornCount(character)
-    if not character or type(character.getWornItems) ~= "function" then return -1 end
+    if not character then return -1 end
     local ok, worn = pcall(function() return character:getWornItems() end)
-    if not ok then return -1 end
+    if not ok or not worn then return -1 end
     return safeSize(worn)
 end
 
 local function modDataBrainId(character)
-    if not character or type(character.getModData) ~= "function" then return nil end
+    if not character then return nil end
     local ok, md = pcall(function() return character:getModData() end)
     if not ok or type(md) ~= "table" then return nil end
     if md.brainId ~= nil then return tostring(md.brainId) end
@@ -73,7 +73,7 @@ local function characterId(character, brain)
         if ok and value ~= nil then return tostring(value) end
     end
 
-    if character and type(character.getPersistentOutfitID) == "function" then
+    if character then
         local ok, value = pcall(function() return character:getPersistentOutfitID() end)
         if ok and value ~= nil then return tostring(value) end
     end
@@ -146,11 +146,11 @@ local function bodyId(body)
 end
 
 local function corpseContainerCount(body)
-    if not body or type(body.getContainer) ~= "function" then return -1 end
+    if not body then return -1 end
     local ok, container = pcall(function() return body:getContainer() end)
     if not ok or not container then return -1 end
     local okItems, items = pcall(function() return container:getItems() end)
-    if not okItems then return -1 end
+    if not okItems or not items then return -1 end
     return safeSize(items)
 end
 
