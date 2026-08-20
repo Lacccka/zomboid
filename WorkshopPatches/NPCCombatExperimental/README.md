@@ -49,4 +49,4 @@ The spawner is test tooling, not a production gameplay feature.
 
 ## Repository preview state
 
-The Workshop item is already published, but `preview.png` is not currently versioned under `WorkshopPatches/NPCCombatExperimental`. Until that asset is synced into the repository, the grouped audit explicitly exempts only this item from the local preview-file check.
+`preview.png` is versioned in the Workshop root through Git LFS. The repository pointer currently resolves to a 114483-byte PNG, and the grouped audit must require the preview for this published item just like it does for the other published split patches.
