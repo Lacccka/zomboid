@@ -12,8 +12,8 @@
 --
 -- A controlled upstream proof-of-concept can set the global marker
 -- LCC_BANDITS_ATTACK_BRIDGE_POC. While that marker is active this guard becomes
--- observation-only: the PoC must be evaluated without the v3 target disconnect
--- masking or assisting its result.
+-- fully observation-only: it does not disconnect targets and does not assert
+-- setZombiesDontAttack(true). The PoC must stand or fail on its own behavior.
 if isServer() then return end
 
 local Guard = require "LCC/Guard"
@@ -70,7 +70,7 @@ local function announcePocIfNeeded()
     if pocAnnounced or not upstreamPocActive() then return end
     pocAnnounced = true
     print(string.format(
-        "[LCC][BanditsAttackGuard][UPSTREAM_POC_ACTIVE] marker=%s mode=observe-only v3Disconnect=false",
+        "[LCC][BanditsAttackGuard][UPSTREAM_POC_ACTIVE] marker=%s mode=observe-only v3Disconnect=false targetProtection=false",
         POC_MARKER
     ))
 end
@@ -125,10 +125,15 @@ end
 local function protectBandit(bandit, force)
     if not isBandit(bandit) then return false end
 
+    -- A source-level PoC must not be helped by compatibility-patch mutations.
+    if upstreamPocActive() then
+        return true
+    end
+
     local first = protectedBandits[bandit] ~= true
     if first or force then
-        -- Keep the target-side engine flag as a supplemental protection. The v2
-        -- test proved it is insufficient by itself, not that it is harmful.
+        -- Keep the target-side engine flag as a supplemental protection for the
+        -- normal v3 fallback only. The v2 test proved it is insufficient alone.
         bandit:setZombiesDontAttack(true)
     end
 
@@ -155,7 +160,7 @@ local function tryInstallApplyVisualsHook()
     end)
     if ok then
         applyVisualsHookInstalled = true
-        print("[LCC][BanditsAttackGuard][EARLY_HOOK] Bandit.ApplyVisuals target protection installed")
+        print("[LCC][BanditsAttackGuard][EARLY_HOOK] Bandit.ApplyVisuals target protection hook installed")
     end
     return ok == true
 end
