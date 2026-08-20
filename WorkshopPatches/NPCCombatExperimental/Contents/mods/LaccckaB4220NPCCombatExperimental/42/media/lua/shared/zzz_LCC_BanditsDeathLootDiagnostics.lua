@@ -53,8 +53,20 @@ local function wornCount(character)
     return safeSize(worn)
 end
 
+local function modDataBrainId(character)
+    if not character or type(character.getModData) ~= "function" then return nil end
+    local ok, md = pcall(function() return character:getModData() end)
+    if not ok or type(md) ~= "table" then return nil end
+    if md.brainId ~= nil then return tostring(md.brainId) end
+    if md.banditId ~= nil then return tostring(md.banditId) end
+    return nil
+end
+
 local function characterId(character, brain)
     if brain and brain.id ~= nil then return tostring(brain.id) end
+
+    local brainId = modDataBrainId(character)
+    if brainId then return brainId end
 
     if character and BanditUtils and type(BanditUtils.GetCharacterID) == "function" then
         local ok, value = pcall(BanditUtils.GetCharacterID, character)
@@ -70,8 +82,11 @@ local function characterId(character, brain)
 end
 
 local function bagName(brain)
-    if not brain or type(brain.bag) ~= "table" then return "<none>" end
-    return tostring(brain.bag.name or "<none>")
+    if not brain or brain.bag == nil then return "<none>" end
+    if type(brain.bag) == "table" then
+        return tostring(brain.bag.name or "<unnamed>")
+    end
+    return tostring(brain.bag)
 end
 
 local function isBandit(zombie)
@@ -86,19 +101,13 @@ local function rememberManifest(zombie, brain)
     local id = characterId(zombie, brain)
     if id == "nil" then return end
 
-    local snapshot = {
+    snapshots[id] = {
         expectedClothing = tableCount(brain.clothing),
         brainLoot = tableCount(brain.loot),
         inventory = inventoryCount(zombie),
         worn = wornCount(zombie),
         bag = bagName(brain),
     }
-    snapshots[id] = snapshot
-
-    -- The wrapper can be called multiple times during a Bandit's lifetime.
-    -- Keep the manifest log compact: emit only when the observed shape changes.
-    local previous = snapshot.__previous
-    snapshot.__previous = nil
 end
 
 local function snapshotSummary(id)
@@ -132,13 +141,8 @@ local function onZombieDead(zombie)
 end
 
 local function bodyId(body)
-    if not body or type(body.getModData) ~= "function" then return "nil" end
-    local ok, md = pcall(function() return body:getModData() end)
-    if not ok or type(md) ~= "table" then return "nil" end
-
-    if md.brainId ~= nil then return tostring(md.brainId) end
-    if md.banditId ~= nil then return tostring(md.banditId) end
-    return "nil"
+    local id = modDataBrainId(body)
+    return id or "nil"
 end
 
 local function corpseContainerCount(body)
