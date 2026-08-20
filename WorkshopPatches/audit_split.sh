@@ -235,7 +235,7 @@ require_marker "$runtime_dedicated" 'pcall(getId, zombie)' \
 forbid_marker "$runtime_dedicated" 'getZombieList()' \
     "RuntimeFixes dedicated lookup must not scan the complete server zombie list"
 
-# NPCCombatExperimental: observation, death-loot diagnostics and admin tooling.
+# NPCCombatExperimental: target-disconnect experiment, diagnostics and admin tooling.
 experimental_admin="$experimental/lua/client/zzz_LCC_BanditsAdminSpawnMenu.lua"
 experimental_attack="$experimental/lua/client/zzz_LCC_BanditsAttackStateGuard.lua"
 experimental_diag="$experimental/lua/client/zzz_LCC_BanditsTargetDiagnostics.lua"
@@ -266,20 +266,30 @@ require_marker "$experimental_diag" '[LCC][BanditsDiag][SUMMARY]' \
 require_marker "$experimental_diag" 'DANGER_ATTACK_STATE' \
     "NPCCombatExperimental target diagnostics lost AttackState observation"
 
+require_marker "$experimental_attack" 'bandits.attack-state-target-disconnect-v3' \
+    "NPCCombatExperimental attack guard lost v3 feature isolation"
+require_marker "$experimental_attack" '[LCC][BanditsAttackGuard][DISCONNECT]' \
+    "NPCCombatExperimental attack guard lost target-disconnect diagnostics"
+require_marker "$experimental_attack" 'zombie:setTarget(nil)' \
+    "NPCCombatExperimental attack guard lost narrow vanilla target disconnect"
 require_marker "$experimental_attack" '[LCC][BanditsAttackGuard][READ_ONLY_BATTACK]' \
-    "NPCCombatExperimental attack probe lost read-only bAttack observation"
+    "NPCCombatExperimental attack guard lost read-only bAttack observation"
 require_marker "$experimental_attack" '[LCC][BanditsAttackGuard][ESCAPED_ATTACK_STATE]' \
-    "NPCCombatExperimental attack probe lost AttackState observation"
-require_marker "$experimental_attack" 'diagnosticOnly=true' \
-    "NPCCombatExperimental attack probe must identify its unresolved diagnostic state"
+    "NPCCombatExperimental attack guard lost AttackState observation"
+require_marker "$experimental_attack" 'clearAggroList=false' \
+    "NPCCombatExperimental v3 must state that global aggro clearing is disabled"
 forbid_regex "$experimental_attack" '^[[:space:]]*zombie:setVariable\("bAttack"' \
     "NPCCombatExperimental must not write the B42.20.3 read-only bAttack variable"
 forbid_marker "$experimental_attack" 'changeState(' \
-    "NPCCombatExperimental attack probe must not force Java action states"
-forbid_marker "$experimental_attack" 'setTarget(' \
-    "NPCCombatExperimental attack probe must not rewrite zombie targets"
+    "NPCCombatExperimental attack guard must not force Java action states"
 forbid_marker "$experimental_attack" 'setBumpType(' \
-    "NPCCombatExperimental attack probe must not replace the upstream custom Bite setup"
+    "NPCCombatExperimental attack guard must not replace the upstream custom Bite setup"
+forbid_marker "$experimental_attack" 'clearAggroList(' \
+    "NPCCombatExperimental v3 must not erase the complete zombie aggro list"
+forbid_marker "$experimental_attack" 'zombie:setTarget(target)' \
+    "NPCCombatExperimental attack guard must never retarget the zombie to a captured target"
+forbid_marker "$experimental_attack" 'zombie:setTarget(bandit)' \
+    "NPCCombatExperimental attack guard must never create the unsafe Bandit target"
 
 require_marker "$experimental_death" 'Bandit.UpdateItemsToSpawnAtDeath = function' \
     "NPCCombatExperimental death-loot diagnostics lost manifest observation seam"
@@ -291,6 +301,10 @@ require_marker "$experimental_death" '[LCC][BanditsDeathLoot][DEAD]' \
     "NPCCombatExperimental death-loot diagnostics lost post-cleanup logging"
 require_marker "$experimental_death" '[LCC][BanditsDeathLoot][CORPSE]' \
     "NPCCombatExperimental death-loot diagnostics lost corpse-content logging"
+require_marker "$experimental_death" 'recentDeaths[tostring(id)]' \
+    "NPCCombatExperimental corpse matcher must use keyed recent-death storage"
+forbid_marker "$experimental_death" 'getItemsToSpawnAtDeath(' \
+    "NPCCombatExperimental must not call the unsafe B42.20.3 death-queue getter"
 forbid_marker "$experimental_death" 'addItemToSpawnAtDeath(' \
     "NPCCombatExperimental death-loot diagnostics must remain observe-only before evidence identifies the loss boundary"
 forbid_marker "$experimental_death" 'inventory:AddItem(' \
@@ -481,8 +495,8 @@ for folder in "${expected_patch_dirs[@]}"; do
         if [[ -f "$modinfo" ]]; then
             grep -Fxq 'name=Lacccka B42 NPC Combat Experimental' "$modinfo" \
                 || error "$folder: public mod name must remain neutral"
-            grep -Fxq 'modversion=0.1.1' "$modinfo" \
-                || error "$folder: experimental diagnostics version must be 0.1.1"
+            grep -Fxq 'modversion=0.1.2' "$modinfo" \
+                || error "$folder: experimental target-disconnect version must be 0.1.2"
         fi
         if [[ -f "$workshop" ]]; then
             grep -Fxq 'title=Lacccka B42 NPC Combat Experimental' "$workshop" \
@@ -549,4 +563,4 @@ if (( fail != 0 )); then
     exit 1
 fi
 
-printf 'Grouped Workshop patches audit: OK (7 current packages; NPCCombatExperimental Workshop=3786817782; diagnostics=0.1.1)\n'
+printf 'Grouped Workshop patches audit: OK (7 current packages; NPCCombatExperimental Workshop=3786817782; target-disconnect=0.1.2)\n'
