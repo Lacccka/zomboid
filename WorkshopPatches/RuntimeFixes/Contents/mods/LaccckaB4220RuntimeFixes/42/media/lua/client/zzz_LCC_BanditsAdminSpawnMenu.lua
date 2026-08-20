@@ -1,16 +1,25 @@
 -- Admin/debug context-menu helper for spawning a small Bandits stress-test group.
--- Uses Bandits' own Spawner/Clan server command path; no NPC construction is
--- duplicated here. Five independent size=1 requests are intentional: upstream
--- spawnGroup caps one Clan request to the number of unique profiles in a clan.
+--
+-- Five independent size=1 requests are intentional: upstream spawnGroup caps one
+-- Clan request to the number of unique profiles in a clan. Requests are queued and
+-- sent with a short gap so Bandits/vanilla MP synchronization is not hit by five
+-- spawn+GlobalModData transmissions in the same client frame.
 if isServer() then return end
 
 local Guard = require "LCC/Guard"
 local FEATURE = "bandits.admin-spawn-menu"
 local SPAWN_COUNT = 5
+local SEND_INTERVAL_TICKS = 30
+local MODULE = "LCCBanditsTest"
+local COMMAND = "SpawnOne"
 
 Guard.safeRequire(FEATURE, "BanditCustom")
 Guard.safeRequire(FEATURE, "BanditCompatibility")
 if not Guard.isEnabled(FEATURE) then return end
+
+local pending = {}
+local ticksUntilSend = 0
+local batchSerial = 0
 
 local function hasStaffAccess(player)
     if type(isDebugEnabled) == "function" then
@@ -94,8 +103,6 @@ local function getSpawnSquares(player, clickedSquare, count)
     local y = clickedSquare:getY()
     local z = clickedSquare:getZ()
 
-    -- Prefer a compact ring around the clicked tile so the five NPCs do not
-    -- occupy one exact coordinate. The clicked tile remains a fallback.
     local offsets = {
         {0, 0},
         {1, 0}, {-1, 0}, {0, 1}, {0, -1},
@@ -119,32 +126,94 @@ local function getSpawnSquares(player, clickedSquare, count)
     return result
 end
 
-local function spawnBanditBatch(player, square, cid)
+local function nextBatchId()
+    batchSerial = batchSerial + 1
+    local stamp = type(getTimestampMs) == "function" and getTimestampMs() or 0
+    return tostring(stamp) .. "-" .. tostring(batchSerial)
+end
+
+local function queueBanditBatch(player, square, cid)
     if not player or not square or not cid then return end
     if type(sendClientCommand) ~= "function" then return end
 
     local spawnSquares = getSpawnSquares(player, square, SPAWN_COUNT)
     if #spawnSquares == 0 then return end
 
+    local batch = nextBatchId()
+    local queueWasEmpty = #pending == 0
+
     for i = 1, SPAWN_COUNT do
         local spawnSquare = spawnSquares[i]
-        local args = {
+        pending[#pending + 1] = {
+            player = player,
+            batch = batch,
+            index = i,
+            total = SPAWN_COUNT,
             cid = cid,
             x = spawnSquare:getX(),
             y = spawnSquare:getY(),
             z = spawnSquare:getZ(),
-            program = "Bandit",
-            size = 1,
         }
-        sendClientCommand(player, "Spawner", "Clan", args)
     end
 
+    -- Let the first request leave on the next OnTick; subsequent requests are
+    -- spaced by SEND_INTERVAL_TICKS.
+    if queueWasEmpty then ticksUntilSend = 0 end
+
     print(string.format(
-        "[LCC][BanditsSpawn] requested count=%d cid=%s around %d,%d,%d",
+        "[LCC][BanditsSpawn][BATCH_QUEUED] batch=%s count=%d cid=%s around=%d,%d,%d queueDepth=%d intervalTicks=%d",
+        batch,
         SPAWN_COUNT,
         tostring(cid),
-        square:getX(), square:getY(), square:getZ()
+        square:getX(), square:getY(), square:getZ(),
+        #pending,
+        SEND_INTERVAL_TICKS
     ))
+end
+
+local function processSpawnQueue()
+    if #pending == 0 then return end
+
+    if ticksUntilSend > 0 then
+        ticksUntilSend = ticksUntilSend - 1
+        return
+    end
+
+    local item = table.remove(pending, 1)
+    if not item or not item.player then return end
+
+    local args = {
+        lccBatch = item.batch,
+        lccIndex = item.index,
+        lccTotal = item.total,
+        cid = item.cid,
+        x = item.x,
+        y = item.y,
+        z = item.z,
+        program = "Bandit",
+        size = 1,
+    }
+
+    sendClientCommand(item.player, MODULE, COMMAND, args)
+    print(string.format(
+        "[LCC][BanditsSpawn][SEND] batch=%s index=%d/%d cid=%s at=%d,%d,%d remaining=%d",
+        item.batch,
+        item.index,
+        item.total,
+        tostring(item.cid),
+        item.x, item.y, item.z,
+        #pending
+    ))
+
+    if item.index == item.total then
+        print(string.format(
+            "[LCC][BanditsSpawn][BATCH_SENT] batch=%s count=%d",
+            item.batch,
+            item.total
+        ))
+    end
+
+    ticksUntilSend = SEND_INTERVAL_TICKS
 end
 
 local function addSpawnMenu(playerID, context, worldobjects, test)
@@ -171,11 +240,8 @@ local function addSpawnMenu(playerID, context, worldobjects, test)
             local profileCount = tableSize(profiles)
             local label = string.format("Clan %s [profiles: %d]", tostring(name), profileCount)
 
-            local option = submenu:addOption(label, player, spawnBanditBatch, square, cid)
+            local option = submenu:addOption(label, player, queueBanditBatch, square, cid)
             if profileCount == 0 then
-                -- Bandits' spawnGroup has nothing to select for such a clan and
-                -- silently spawns zero NPCs. Keep it visible but explain it by
-                -- disabling the impossible test entry.
                 option.notAvailable = true
             end
         end
@@ -197,8 +263,8 @@ Guard.install {
                 or type(BanditCustom.GetFromClan) ~= "function" then
             return false, "BanditCustom clan API is unavailable"
         end
-        if not Events or not Events.OnPreFillWorldObjectContextMenu then
-            return false, "world context-menu event is unavailable"
+        if not Events or not Events.OnPreFillWorldObjectContextMenu or not Events.OnTick then
+            return false, "required context-menu/OnTick event is unavailable"
         end
         if type(sendClientCommand) ~= "function" then
             return false, "sendClientCommand is unavailable"
@@ -211,5 +277,17 @@ Guard.install {
                 Guard.protect(FEATURE, "build context menu", addSpawnMenu, playerID, context, worldobjects, test)
             end
         end)
+
+        Events.OnTick.Add(function()
+            if Guard.isEnabled(FEATURE) then
+                Guard.protect(FEATURE, "process staged spawn queue", processSpawnQueue)
+            end
+        end)
+
+        print(string.format(
+            "[LCC][BanditsSpawn][CLIENT_INIT] staged test spawner active; count=%d intervalTicks=%d",
+            SPAWN_COUNT,
+            SEND_INTERVAL_TICKS
+        ))
     end,
 }
