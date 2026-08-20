@@ -1,3 +1,4 @@
+import queue
 import shutil
 import subprocess
 import threading
@@ -7,7 +8,6 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 from tkinter import messagebox, ttk
-
 
 # ============================================================
 # Lacccka B42.20 Local Server Tools
@@ -21,6 +21,7 @@ SERVER_BAT = Path(
     r"C:\Program Files (x86)\Steam\steamapps\common"
     r"\Project Zomboid Dedicated Server\StartServer64.bat"
 )
+SERVER_NAME = "servertest"
 
 ZOMBOID_ROOT = Path(r"C:\Users\user\Zomboid")
 LOGS_ROOT = ZOMBOID_ROOT / "Logs"
@@ -28,20 +29,20 @@ SERVER_CONSOLE_LOG = ZOMBOID_ROOT / "server-console.txt"
 CLIENT_CONSOLE_LOG = ZOMBOID_ROOT / "console.txt"
 LOG_ARCHIVE_ROOT = REPOSITORY_ROOT / "CollectedLogs"
 
+# GUI log buffering. Server output can be very chatty on large modpacks, so
+# background threads enqueue lines and Tkinter renders them in batches.
+LOG_FLUSH_INTERVAL_MS = 150
+MAX_GUI_LOG_LINES = 5000
+MAX_LOG_BATCH = 1000
 
-# ============================================================
-# Helpers
-# ============================================================
 
 def is_subpath(path: Path, root: Path) -> bool:
-    """Return True only when path is inside root and is not root itself."""
+    """Return True only when path is a child of root (not root itself)."""
     try:
         resolved_path = path.resolve()
         resolved_root = root.resolve()
-
         if resolved_path == resolved_root:
             return False
-
         resolved_path.relative_to(resolved_root)
         return True
     except ValueError:
@@ -65,7 +66,7 @@ def replace_directory(source: Path, destination: Path) -> None:
 
 
 def get_latest_file(directory: Path, pattern: str):
-    """Return newest matching file directly inside directory (not recursive)."""
+    """Return the newest matching file directly inside directory."""
     if not directory.is_dir():
         return None
 
@@ -77,26 +78,7 @@ def get_latest_file(directory: Path, pattern: str):
 
 
 def is_direct_mod_root(project: Path) -> bool:
-    """
-    Detect a Project Zomboid mod stored directly in WorkshopPatches.
-
-    Supported layouts:
-
-        SomeMod/
-            mod.info
-            media/
-
-    and Build 42 versioned layout:
-
-        SomeMod/
-            common/
-            42.20/
-                mod.info
-                media/
-
-    Bandits-LCC-Dev uses the second layout and therefore must be copied
-    as a whole directory rather than searched under Contents/mods.
-    """
+    """Detect a direct or Build-42-versioned Project Zomboid mod root."""
     if (project / "mod.info").is_file():
         return True
 
@@ -112,9 +94,16 @@ def is_direct_mod_root(project: Path) -> bool:
     return False
 
 
-# ============================================================
-# Application
-# ============================================================
+def decode_server_line(raw_line: bytes) -> str:
+    """Decode mixed Java/CMD output without crashing the reader thread."""
+    for encoding in ("utf-8", "cp866", "cp1251"):
+        try:
+            return raw_line.decode(encoding).rstrip("\r\n")
+        except UnicodeDecodeError:
+            pass
+
+    return raw_line.decode("utf-8", errors="replace").rstrip("\r\n")
+
 
 class ServerToolsApp(tk.Tk):
     def __init__(self):
@@ -127,11 +116,19 @@ class ServerToolsApp(tk.Tk):
         self.status_var = tk.StringVar(value="Ожидание")
         self.progress_var = tk.DoubleVar(value=0)
 
-        # Only the server started from this GUI is controlled by Stop.
         self.server_process = None
+        self.server_pause_released = False
+        self.server_java_exit_code = None
+
+        # Thread-safe buffer for all GUI log messages. Background workers never
+        # touch Tk widgets directly; the main Tk loop renders queued lines in
+        # batches to reduce CPU usage and redraw overhead during server log spam.
+        self.log_queue = queue.SimpleQueue()
+        self.gui_log_line_count = 0
 
         self.build_ui()
         self.update_server_buttons()
+        self.after(LOG_FLUSH_INTERVAL_MS, self.flush_log_queue)
 
     # ========================================================
     # UI
@@ -153,8 +150,9 @@ class ServerToolsApp(tk.Tk):
         self.add_path_row(paths, 0, "Патчи:", SOURCE_ROOT)
         self.add_path_row(paths, 1, "Mods:", MODS_ROOT)
         self.add_path_row(paths, 2, "Сервер:", SERVER_BAT)
-        self.add_path_row(paths, 3, "Логи:", LOGS_ROOT)
-        self.add_path_row(paths, 4, "Архивы:", LOG_ARCHIVE_ROOT)
+        self.add_path_row(paths, 3, "Профиль:", SERVER_NAME)
+        self.add_path_row(paths, 4, "Логи:", LOGS_ROOT)
+        self.add_path_row(paths, 5, "Архивы:", LOG_ARCHIVE_ROOT)
 
         patch_frame = ttk.LabelFrame(main, text="Compatibility Patch", padding=10)
         patch_frame.pack(fill="x", pady=(0, 10))
@@ -253,18 +251,54 @@ class ServerToolsApp(tk.Tk):
     # ========================================================
 
     def log(self, text):
-        def append():
+        """Queue one log message without touching Tkinter from worker threads."""
+        self.log_queue.put(str(text))
+
+    def flush_log_queue(self):
+        """Render queued log messages in one Tkinter update."""
+        lines = []
+
+        for _ in range(MAX_LOG_BATCH):
+            try:
+                lines.append(self.log_queue.get_nowait())
+            except queue.Empty:
+                break
+
+        if lines:
+            batch_text = "\n".join(lines) + "\n"
+            added_line_count = batch_text.count("\n")
+
             self.log_text.configure(state="normal")
-            self.log_text.insert("end", text + "\n")
+            self.log_text.insert("end", batch_text)
+            self.gui_log_line_count += added_line_count
+
+            # Keep the GUI as a lightweight tail view. Full logs remain on disk.
+            excess_lines = self.gui_log_line_count - MAX_GUI_LOG_LINES
+            if excess_lines > 0:
+                self.log_text.delete("1.0", f"{excess_lines + 1}.0")
+                self.gui_log_line_count -= excess_lines
+
             self.log_text.see("end")
             self.log_text.configure(state="disabled")
 
-        self.after(0, append)
+        # If the server produced more than one batch, continue draining quickly;
+        # otherwise stay on the low-frequency timer while idle.
+        next_delay = 10 if not self.log_queue.empty() else LOG_FLUSH_INTERVAL_MS
+        self.after(next_delay, self.flush_log_queue)
 
     def clear_log(self):
+        # Drop messages waiting for display so an old operation cannot appear
+        # immediately after the user clears the journal for a new operation.
+        while True:
+            try:
+                self.log_queue.get_nowait()
+            except queue.Empty:
+                break
+
         self.log_text.configure(state="normal")
         self.log_text.delete("1.0", "end")
         self.log_text.configure(state="disabled")
+        self.gui_log_line_count = 0
 
     def set_status(self, text):
         self.after(0, lambda: self.status_var.set(text))
@@ -295,17 +329,7 @@ class ServerToolsApp(tk.Tk):
         return projects
 
     def build_jobs(self, projects):
-        """
-        Build copy jobs for both repository layouts.
-
-        Workshop-ready patch:
-            Project/Contents/mods/SomeMod
-                -> Zomboid/mods/SomeMod
-
-        Direct/versioned mod:
-            Project/42.20/mod.info
-                -> Zomboid/mods/Project
-        """
+        """Build copy jobs for Workshop-ready and direct/versioned mods."""
         jobs = []
         skipped = []
 
@@ -329,7 +353,6 @@ class ServerToolsApp(tk.Tk):
 
                 continue
 
-            # Bandits-LCC-Dev and any other Build 42 direct/versioned mod.
             if is_direct_mod_root(project):
                 jobs.append((project, MODS_ROOT / project.name))
                 continue
@@ -338,7 +361,6 @@ class ServerToolsApp(tk.Tk):
                 (project, "не найден Contents\\mods или mod.info в корне/версии")
             )
 
-        # Do not allow two sources to silently overwrite the same destination.
         destinations = {}
         for source, destination in jobs:
             key = str(destination).casefold()
@@ -435,7 +457,6 @@ class ServerToolsApp(tk.Tk):
 
     def update_server_buttons(self):
         running = self.server_is_running()
-
         self.start_server_button.configure(
             state="disabled" if running else "normal"
         )
@@ -463,31 +484,39 @@ class ServerToolsApp(tk.Tk):
             self.log("========================================")
             self.log("[SERVER] Запуск сервера")
             self.log(f"[SERVER] {SERVER_BAT}")
+            self.log(f"[SERVER] Профиль: {SERVER_NAME}")
 
-            creation_flags = getattr(
-                subprocess,
-                "CREATE_NEW_PROCESS_GROUP",
-                0,
+            # Let Windows execute the BAT through COMSPEC.  Using shell=True
+            # avoids the cmd /c + call quoting problem for Program Files (x86).
+            command = subprocess.list2cmdline(
+                [str(SERVER_BAT), "-servername", SERVER_NAME]
             )
 
+            creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+            self.server_pause_released = False
+            self.server_java_exit_code = None
             self.server_process = subprocess.Popen(
-                [
-                    "cmd.exe",
-                    "/d",
-                    "/c",
-                    f'call "{SERVER_BAT}"',
-                ],
+                command,
                 cwd=str(SERVER_BAT.parent),
                 stdin=subprocess.PIPE,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                shell=True,
+                text=False,
+                bufsize=0,
                 creationflags=creation_flags,
             )
 
-            self.set_status("Сервер запущен")
+            self.set_status("Сервер запускается...")
             self.log(f"[SERVER] PID launcher: {self.server_process.pid}")
             self.update_server_buttons()
+
+            threading.Thread(
+                target=self.read_server_output,
+                args=(self.server_process,),
+                daemon=True,
+            ).start()
 
             threading.Thread(
                 target=self.watch_server,
@@ -506,14 +535,88 @@ class ServerToolsApp(tk.Tk):
                 str(exc),
             )
 
+    def read_server_output(self, process):
+        if process.stdout is None:
+            return
+
+        try:
+            while True:
+                raw_line = process.stdout.readline()
+                if not raw_line:
+                    break
+
+                line = decode_server_line(raw_line)
+                if line:
+                    self.log(line)
+
+                    # This line is printed by the custom BAT only after Java has
+                    # already exited. Release its final `pause` automatically.
+                    if (
+                        "Press any key to close this window" in line
+                        and not self.server_pause_released
+                    ):
+                        self.server_pause_released = True
+                        try:
+                            if process.stdin is not None:
+                                process.stdin.write(b"\n")
+                                process.stdin.flush()
+                        except (BrokenPipeError, OSError):
+                            pass
+
+                    marker = "Server process exited with code "
+                    if marker in line:
+                        value = line.rsplit(marker, 1)[1].strip().rstrip(".")
+                        try:
+                            self.server_java_exit_code = int(value)
+                        except ValueError:
+                            pass
+
+                    if line.strip().startswith("Exit code:"):
+                        value = line.split(":", 1)[1].strip()
+                        try:
+                            self.server_java_exit_code = int(value)
+                        except ValueError:
+                            pass
+
+                    lowered = line.lower()
+                    if (
+                        "server started" in lowered
+                        or "listening on port" in lowered
+                        or "steam game server initialized" in lowered
+                    ):
+                        self.set_status("Сервер запущен")
+
+        except Exception as exc:
+            self.log(f"[SERVER OUTPUT ERROR] {exc}")
+
     def watch_server(self, process):
-        exit_code = process.wait()
+        shell_exit_code = process.wait()
+        java_exit_code = self.server_java_exit_code
 
         if self.server_process is process:
             self.server_process = None
 
-        self.log(f"[SERVER] Процесс завершён. Код: {exit_code}")
-        self.set_status("Сервер остановлен")
+        effective_exit_code = (
+            java_exit_code if java_exit_code is not None else shell_exit_code
+        )
+
+        if effective_exit_code == 0:
+            self.log(
+                f"[SERVER] Процесс завершён. Код Java: {effective_exit_code}; "
+                f"код launcher: {shell_exit_code}"
+            )
+            self.set_status("Сервер остановлен")
+        else:
+            self.log(
+                f"[SERVER ERROR] Сервер завершён. Код Java: {java_exit_code}; "
+                f"код launcher: {shell_exit_code}"
+            )
+            self.log(
+                "[SERVER ERROR] Причина завершения находится выше в журнале; "
+                "stdout/stderr сервера теперь не скрываются."
+            )
+            self.set_status(f"Ошибка сервера ({effective_exit_code})")
+
         self.after(0, self.update_server_buttons)
 
     def stop_server(self):
@@ -533,8 +636,7 @@ class ServerToolsApp(tk.Tk):
             if process.stdin is None:
                 raise RuntimeError("stdin сервера недоступен.")
 
-            # Graceful Project Zomboid shutdown: save world and quit.
-            process.stdin.write("quit\n")
+            process.stdin.write(b"quit\n")
             process.stdin.flush()
 
             self.set_status("Остановка сервера...")
@@ -571,13 +673,9 @@ class ServerToolsApp(tk.Tk):
     def collect_logs(self):
         try:
             LOG_ARCHIVE_ROOT.mkdir(parents=True, exist_ok=True)
-
             files_to_archive = []
 
-            for log_file in (
-                SERVER_CONSOLE_LOG,
-                CLIENT_CONSOLE_LOG,
-            ):
+            for log_file in (SERVER_CONSOLE_LOG, CLIENT_CONSOLE_LOG):
                 if log_file.is_file():
                     files_to_archive.append(log_file)
                 else:
@@ -671,10 +769,6 @@ class ServerToolsApp(tk.Tk):
                 lambda: self.collect_logs_button.configure(state="normal"),
             )
 
-
-# ============================================================
-# Main
-# ============================================================
 
 if __name__ == "__main__":
     app = ServerToolsApp()
