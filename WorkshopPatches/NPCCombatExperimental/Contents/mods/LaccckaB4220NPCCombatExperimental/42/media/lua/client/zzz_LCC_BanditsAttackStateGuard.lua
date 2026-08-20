@@ -1,24 +1,22 @@
 -- Client-side guard for the Bandits zombie -> NPC vanilla AttackState path.
 --
--- B42.20.3 testing established two failed interventions:
---   1. bAttack cannot be cleared because it is a read-only animation callback;
---   2. setZombiesDontAttack(true) on the Bandit target does not stop Bandits'
---      UpdateZombies() from rebuilding a vanilla combat relationship.
+-- B42.20.3 testing established:
+--   * bAttack is read-only;
+--   * target-side setZombiesDontAttack(true) is insufficient;
+--   * removing spotted/addAggro/setTarget/setAttackedBy is not enough;
+--   * coordinate-only pathToLocationF still correlates with fresh Bandit targets.
 --
--- Upstream UpdateZombies() explicitly calls spotted/addAggro/setTarget/setAttackedBy
--- for a normal zombie -> Bandit pair and independently performs its custom
--- Bite/BiteLow simulation. The normal v3 fallback runs later in OnZombieUpdate
--- and disconnects only the vanilla target with zombie:setTarget(nil).
---
--- A controlled upstream proof-of-concept can set the global marker
--- LCC_BANDITS_ATTACK_BRIDGE_POC. While that marker is active this guard becomes
--- fully observation-only: it does not disconnect targets and does not assert
--- setZombiesDontAttack(true). The PoC must stand or fail on its own behavior.
+-- Two controlled modes are supported:
+--   1. upstream-coordinate-pursuit-v2: fully observation-only.
+--   2. coordinate-target-trace-v3: no target-side protection, but a late
+--      zombie:setTarget(nil) safety disconnect after Bandits' own post-trace
+--      observer has measured the resulting target state.
 if isServer() then return end
 
 local Guard = require "LCC/Guard"
 local FEATURE = "bandits.attack-state-target-disconnect-v3"
 local POC_MARKER = "upstream-coordinate-pursuit-v2"
+local TRACE_MARKER = "coordinate-target-trace-v3"
 local HEARTBEAT_MS = 15000
 local HEARTBEAT_CHECK_EVERY_UPDATES = 512
 
@@ -35,11 +33,13 @@ local trackedAttackers = setmetatable({}, { __mode = "k" })
 local protectedBandits = setmetatable({}, { __mode = "k" })
 local applyVisualsHookInstalled = false
 local pocAnnounced = false
+local traceAnnounced = false
 local stats = {
     zombieUpdates = 0,
     protectedBandits = 0,
     targetLeaks = 0,
     targetDisconnects = 0,
+    traceSafetyDisconnects = 0,
     disconnectFailures = 0,
     pocTargetLeaks = 0,
     bAttackObserved = 0,
@@ -62,11 +62,26 @@ local function boolString(value)
     return value and "true" or "false"
 end
 
-local function upstreamPocActive()
-    return rawget(_G, "LCC_BANDITS_ATTACK_BRIDGE_POC") == POC_MARKER
+local function traceSafetyActive()
+    return rawget(_G, "LCC_BANDITS_ATTACK_TRACE") == TRACE_MARKER
 end
 
-local function announcePocIfNeeded()
+local function upstreamPocActive()
+    return not traceSafetyActive()
+        and rawget(_G, "LCC_BANDITS_ATTACK_BRIDGE_POC") == POC_MARKER
+end
+
+local function announceModeIfNeeded()
+    if traceSafetyActive() then
+        if traceAnnounced then return end
+        traceAnnounced = true
+        print(string.format(
+            "[LCC][BanditsAttackGuard][TRACE_SAFETY_ACTIVE] marker=%s mode=late-disconnect targetProtection=false",
+            TRACE_MARKER
+        ))
+        return
+    end
+
     if pocAnnounced or not upstreamPocActive() then return end
     pocAnnounced = true
     print(string.format(
@@ -125,15 +140,13 @@ end
 local function protectBandit(bandit, force)
     if not isBandit(bandit) then return false end
 
-    -- A source-level PoC must not be helped by compatibility-patch mutations.
-    if upstreamPocActive() then
+    -- Neither controlled experiment may be helped by target-side mutation.
+    if upstreamPocActive() or traceSafetyActive() then
         return true
     end
 
     local first = protectedBandits[bandit] ~= true
     if first or force then
-        -- Keep the target-side engine flag as a supplemental protection for the
-        -- normal v3 fallback only. The v2 test proved it is insufficient alone.
         bandit:setZombiesDontAttack(true)
     end
 
@@ -160,7 +173,7 @@ local function tryInstallApplyVisualsHook()
     end)
     if ok then
         applyVisualsHookInstalled = true
-        print("[LCC][BanditsAttackGuard][EARLY_HOOK] Bandit.ApplyVisuals target protection hook installed")
+        print("[LCC][BanditsAttackGuard][EARLY_HOOK] Bandit.ApplyVisuals target hook installed")
     end
     return ok == true
 end
@@ -174,26 +187,33 @@ local function maybeHeartbeat()
     if now - lastHeartbeat < HEARTBEAT_MS then return end
     lastHeartbeat = now
 
-    announcePocIfNeeded()
+    announceModeIfNeeded()
 
     print(string.format(
-        "[LCC][BanditsAttackGuard][SUMMARY] updates=%d protectedBandits=%d targetLeaks=%d targetDisconnects=%d disconnectFailures=%d pocTargetLeaks=%d bAttackObserved=%d attackStateObserved=%d earlyHook=%s upstreamPoc=%s",
+        "[LCC][BanditsAttackGuard][SUMMARY] updates=%d protectedBandits=%d targetLeaks=%d targetDisconnects=%d traceSafetyDisconnects=%d disconnectFailures=%d pocTargetLeaks=%d bAttackObserved=%d attackStateObserved=%d earlyHook=%s upstreamPoc=%s traceSafety=%s",
         stats.zombieUpdates,
         stats.protectedBandits,
         stats.targetLeaks,
         stats.targetDisconnects,
+        stats.traceSafetyDisconnects,
         stats.disconnectFailures,
         stats.pocTargetLeaks,
         stats.bAttackObserved,
         stats.attackStateObserved,
         boolString(applyVisualsHookInstalled),
-        boolString(upstreamPocActive())
+        boolString(upstreamPocActive()),
+        boolString(traceSafetyActive())
     ))
+end
+
+local function disconnectTarget(zombie)
+    zombie:setTarget(nil)
+    return zombie:getTarget() == nil
 end
 
 local function observeAndDisconnectZombie(zombie)
     stats.zombieUpdates = stats.zombieUpdates + 1
-    announcePocIfNeeded()
+    announceModeIfNeeded()
 
     if stats.zombieUpdates % HEARTBEAT_CHECK_EVERY_UPDATES == 0 then
         maybeHeartbeat()
@@ -223,6 +243,7 @@ local function observeAndDisconnectZombie(zombie)
     local previous = trackedAttackers[zombie]
     local newPair = not previous or previous.target ~= target
     local pocActive = upstreamPocActive()
+    local traceSafety = traceSafetyActive()
 
     stats.targetLeaks = stats.targetLeaks + 1
 
@@ -230,8 +251,6 @@ local function observeAndDisconnectZombie(zombie)
     local disconnected = false
 
     if pocActive then
-        -- Do not assist the upstream PoC. Any Bandit vanilla target reaching this
-        -- callback is evidence that the source-level bridge replacement leaked.
         stats.pocTargetLeaks = stats.pocTargetLeaks + 1
         if newPair then
             print(string.format(
@@ -246,22 +265,26 @@ local function observeAndDisconnectZombie(zombie)
             ))
         end
     else
-        -- Normal v3 fallback. Bandits has already run its own UpdateZombies
-        -- callback for this tick. Do not clear the whole aggro list: that could
-        -- erase legitimate player aggro.
-        zombie:setTarget(nil)
+        -- The normal fallback and trace-safety mode both disconnect late. In
+        -- trace mode the Bandits pre/post observers have already measured this
+        -- tick, while target-side protection remains disabled.
+        disconnected = disconnectTarget(zombie)
         postTarget = zombie:getTarget()
-        disconnected = postTarget == nil
 
         if disconnected then
             stats.targetDisconnects = stats.targetDisconnects + 1
+            if traceSafety then
+                stats.traceSafetyDisconnects = stats.traceSafetyDisconnects + 1
+            end
         else
             stats.disconnectFailures = stats.disconnectFailures + 1
         end
 
         if newPair or not disconnected then
+            local tag = traceSafety and "TRACE_SAFETY_DISCONNECT" or "DISCONNECT"
             print(string.format(
-                "[LCC][BanditsAttackGuard][DISCONNECT] attacker=%s target=%s stateBefore=%s bAttack=%s noLunge=%s bump=%s customBite=%s disconnected=%s postTarget=%s",
+                "[LCC][BanditsAttackGuard][%s] attacker=%s target=%s stateBefore=%s bAttack=%s noLunge=%s bump=%s customBite=%s disconnected=%s postTarget=%s",
+                tag,
                 characterId(zombie),
                 characterId(target),
                 asn,
@@ -282,12 +305,13 @@ local function observeAndDisconnectZombie(zombie)
         ) then
         stats.bAttackObserved = stats.bAttackObserved + 1
         print(string.format(
-            "[LCC][BanditsAttackGuard][READ_ONLY_BATTACK] attacker=%s target=%s state=%s bAttack=true targetDisconnected=%s upstreamPoc=%s",
+            "[LCC][BanditsAttackGuard][READ_ONLY_BATTACK] attacker=%s target=%s state=%s bAttack=true targetDisconnected=%s upstreamPoc=%s traceSafety=%s",
             characterId(zombie),
             characterId(target),
             asn,
             boolString(disconnected),
-            boolString(pocActive)
+            boolString(pocActive),
+            boolString(traceSafety)
         ))
     end
 
@@ -298,7 +322,7 @@ local function observeAndDisconnectZombie(zombie)
         ) then
         stats.attackStateObserved = stats.attackStateObserved + 1
         print(string.format(
-            "[LCC][BanditsAttackGuard][ESCAPED_ATTACK_STATE] attacker=%s target=%s state=%s bAttack=%s noLunge=%s bump=%s customBite=%s targetDisconnected=%s upstreamPoc=%s diagnosticOnly=true",
+            "[LCC][BanditsAttackGuard][ESCAPED_ATTACK_STATE] attacker=%s target=%s state=%s bAttack=%s noLunge=%s bump=%s customBite=%s targetDisconnected=%s upstreamPoc=%s traceSafety=%s diagnosticOnly=true",
             characterId(zombie),
             characterId(target),
             asn,
@@ -307,7 +331,8 @@ local function observeAndDisconnectZombie(zombie)
             bump,
             boolString(customBite),
             boolString(disconnected),
-            boolString(pocActive)
+            boolString(pocActive),
+            boolString(traceSafety)
         ))
     end
 
@@ -347,11 +372,12 @@ Guard.install {
         end
 
         print(string.format(
-            "[LCC][BanditsAttackGuard][INIT] vanilla target-disconnect guard active feature=%s earlyHook=%s heartbeat=%dms; clearAggroList=false upstreamPocMarker=%s",
+            "[LCC][BanditsAttackGuard][INIT] feature=%s earlyHook=%s heartbeat=%dms clearAggroList=false upstreamPocMarker=%s traceMarker=%s",
             FEATURE,
             boolString(applyVisualsHookInstalled),
             HEARTBEAT_MS,
-            POC_MARKER
+            POC_MARKER,
+            TRACE_MARKER
         ))
     end,
 }
