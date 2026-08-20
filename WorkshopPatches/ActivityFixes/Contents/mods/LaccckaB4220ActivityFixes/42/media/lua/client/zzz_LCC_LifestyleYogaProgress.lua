@@ -7,6 +7,7 @@
 
 local Guard = require "LCC/Guard"
 local FEATURE = "lifestyle.yoga-progress-ui"
+local PATCH_VERSION = "1.1.6"
 
 Guard.safeRequire(FEATURE, "XpSystem/ISUI/ISSkillProgressBar")
 Guard.safeRequire(FEATURE, "XpSystem/ISUI/ISCharacterInfo")
@@ -41,7 +42,7 @@ Guard.install {
         local originalRenderPerkRect = ISSkillProgressBar.renderPerkRect
         local originalUpdateTooltip = ISSkillProgressBar.updateTooltip
 
-        local YOGA_DESCRIPTION_RU = "Прокачивается выполнением поз во время занятий йогой; сложные позы дают больше опыта. <LINE> 1 ур.: Шавасана даёт эффект «Дзен», повышающий получение опыта Физподготовки, Силы, Медитации и Йоги. <LINE> С ростом навыка открываются более сложные позы и снижается шанс неудачи. <LINE> 10 ур.: позы больше не проваливаются."
+        local YOGA_DESCRIPTION_RU = "Прокачивается выполнением поз йоги. <LINE> 1 ур.: Шавасана даёт «Дзен» и повышает получение опыта Физподготовки, Силы, Медитации и Йоги. <LINE> С ростом уровня открываются новые позы и снижается шанс неудачи. <LINE> 10 ур.: позы больше не проваливаются."
 
         LCCYogaSkillProgressBar = ISSkillProgressBar:derive("LCCYogaSkillProgressBar")
 
@@ -71,6 +72,40 @@ Guard.install {
             return value
         end
 
+        local function getLanguageCode()
+            if Translator and Translator.getLanguage then
+                local okLanguage, language = pcall(function()
+                    return Translator.getLanguage()
+                end)
+                if okLanguage and language then
+                    local okName, name = pcall(function()
+                        return language:name()
+                    end)
+                    if okName and name ~= nil and tostring(name) ~= "" then
+                        return tostring(name)
+                    end
+                    return tostring(language)
+                end
+            end
+            return nil
+        end
+
+        local function isRussianUI()
+            local code = getLanguageCode()
+            if code then
+                local normalized = string.lower(tostring(code))
+                if normalized == "ru" or normalized == "russian" then
+                    return true
+                end
+            end
+
+            local meditation = lccGetTextOrNull("IGUI_perks_Meditation")
+            local doctor = lccGetTextOrNull("IGUI_perks_Doctor")
+            return meditation == "Медитация" or doctor == "Медицина"
+        end
+
+        local russianUI = isRussianUI()
+
         local function getYogaName()
             return lccGetTextOrNull("IGUI_perks_Yoga")
                 or lccGetTextOrNull("UI_LSHS_Yoga")
@@ -78,11 +113,10 @@ Guard.install {
         end
 
         local function getYogaDescription()
-            -- The Lifestyle RU translation does not provide a reliable Yoga
-            -- description key in B42.20. When the UI is Russian, use the patch's
-            -- concise progression-oriented description directly. Other languages
-            -- keep using whatever description Lifestyle/the base translator has.
-            if getYogaName() == "Йога" then
+            -- B42.20 can keep an older Yoga description in another active
+            -- translation layer. For Russian clients the compatibility patch is
+            -- authoritative and always supplies this concise gameplay text.
+            if russianUI then
                 return YOGA_DESCRIPTION_RU
             end
             return lccGetTextOrNull("IGUI_perks_Yoga_Description")
@@ -258,6 +292,6 @@ Guard.install {
         -- B42.20 sandbox configurations.
 
         LCC_LifestyleYogaProgressInstalled = true
-        print("[LCC][YogaProgress][1.1.5] installed")
+        print("[LCC][YogaProgress][" .. PATCH_VERSION .. "] installed language=" .. tostring(getLanguageCode() or "?") .. " russian=" .. tostring(russianUI))
     end,
 }
