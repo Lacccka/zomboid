@@ -1,15 +1,8 @@
 -- LCC controlled PoC for the B42.20 Bandits reconnect clothing bug.
---
--- Bandit.ApplyVisuals() rebuilds brain.clothing as ItemVisual objects and clears
--- real WornItems. Persistent Bandits can therefore retain the clothing metadata
--- and visuals while losing the actual wearable state after reconnect. This
--- wrapper runs after upstream ApplyVisuals and materializes only missing real
--- WornItems. It does NOT add them to the inventory or death-spawn queue; vanilla
--- corpse creation can then copy the real worn state without duplicating the
--- upstream death-item queue.
+-- B42 worn-item APIs require ItemBodyLocation objects, not string slot names.
 if isServer() then return end
 
-local MARKER = "real-worn-reconnect-v1"
+local MARKER = "real-worn-reconnect-v2"
 LCC_BANDITS_CLOTHING_RESTORE = MARKER
 
 if type(Bandit) ~= "table" or type(Bandit.ApplyVisuals) ~= "function" then
@@ -23,21 +16,12 @@ end
 
 local originalApplyVisuals = Bandit.ApplyVisuals
 local stateByBandit = setmetatable({}, { __mode = "k" })
-local stats = {
-    applyCalls = 0,
-    entitiesRestored = 0,
-    slotsRestored = 0,
-    itemsCreated = 0,
-    cachedRewears = 0,
-    conflicts = 0,
-    bagRestored = 0,
-}
+local warned = {}
 
 local function fullType(item)
     if not item then return nil end
     local ok, value = pcall(function() return item:getFullType() end)
-    if ok and value then return tostring(value) end
-    return nil
+    return ok and value and tostring(value) or nil
 end
 
 local function characterId(character, brain)
@@ -49,9 +33,17 @@ local function characterId(character, brain)
     return "nil"
 end
 
+local function warnOnce(key, message)
+    if warned[key] then return end
+    warned[key] = true
+    print(message)
+end
+
 local function wornSize(bandit)
-    local worn = bandit and bandit:getWornItems() or nil
-    return worn and worn:size() or -1
+    local ok, worn = pcall(function() return bandit:getWornItems() end)
+    if not ok or not worn then return -1 end
+    local okSize, size = pcall(function() return worn:size() end)
+    return okSize and size or -1
 end
 
 local function expectedClothingCount(brain)
@@ -61,11 +53,10 @@ local function expectedClothingCount(brain)
     return count
 end
 
-local function applyTint(item, brain, bodyLocation)
+local function applyTint(item, brain, brainLocation)
     if not item or not brain or type(brain.tint) ~= "table" then return end
-    local packed = brain.tint[bodyLocation]
+    local packed = brain.tint[brainLocation]
     if packed == nil or not BanditUtils or type(BanditUtils.dec2rgb) ~= "function" then return end
-
     pcall(function()
         local visual = item:getVisual()
         if not visual then return end
@@ -74,71 +65,91 @@ local function applyTint(item, brain, bodyLocation)
     end)
 end
 
-local function itemState(bandit)
+local function stateFor(bandit)
     local state = stateByBandit[bandit]
     if not state then
-        state = {
-            items = {},
-            reportedRestore = false,
-            reportedConflicts = {},
-        }
+        state = {items = {}, reportedRestore = false, conflicts = {}}
         stateByBandit[bandit] = state
     end
     return state
 end
 
-local function createRealItem(itemType, brain, bodyLocation)
+local function createRealItem(itemType, brain, brainLocation)
     local item = BanditCompatibility.InstanceItem(itemType)
     if not item then return nil end
-
     local md = item:getModData()
     if md then
         md.LCC_BanditsRealClothing = MARKER
         md.preserve = true
     end
-    applyTint(item, brain, bodyLocation)
-    stats.itemsCreated = stats.itemsCreated + 1
+    applyTint(item, brain, brainLocation)
     return item
 end
 
-local function ensureSlot(bandit, brain, state, bodyLocation, itemType)
-    if not bodyLocation or not itemType then return 0, 0 end
+local function typedBodyLocation(item)
+    if not item then return nil end
+    local ok, location = pcall(function() return item:getBodyLocation() end)
+    if not ok or location == nil then return nil end
+    return location
+end
 
-    local current = bandit:getWornItem(bodyLocation)
-    if current then
-        if fullType(current) == tostring(itemType) then
-            state.items[bodyLocation] = current
-            return 0, 0
-        end
-
-        if not state.reportedConflicts[bodyLocation] then
-            state.reportedConflicts[bodyLocation] = true
-            stats.conflicts = stats.conflicts + 1
-            print(string.format(
-                "[LCC][BanditsClothingPoC][SLOT_CONFLICT] id=%s location=%s expected=%s actual=%s intervention=false",
-                characterId(bandit, brain),
-                tostring(bodyLocation),
-                tostring(itemType),
-                tostring(fullType(current) or "<unknown>")
-            ))
-        end
-        return 0, 1
-    end
-
-    local item = state.items[bodyLocation]
+local function ensureSlot(bandit, brain, state, brainLocation, itemType)
+    if not brainLocation or not itemType then return 0, 0 end
+    local cacheKey = tostring(brainLocation)
+    local item = state.items[cacheKey]
     local created = false
+
     if not item or fullType(item) ~= tostring(itemType) then
-        item = createRealItem(itemType, brain, bodyLocation)
+        item = createRealItem(itemType, brain, brainLocation)
         if not item then return 0, 0 end
-        state.items[bodyLocation] = item
+        state.items[cacheKey] = item
         created = true
     else
-        stats.cachedRewears = stats.cachedRewears + 1
-        applyTint(item, brain, bodyLocation)
+        applyTint(item, brain, brainLocation)
     end
 
-    bandit:setWornItem(bodyLocation, item)
-    stats.slotsRestored = stats.slotsRestored + 1
+    local location = typedBodyLocation(item)
+    if not location then
+        warnOnce("missing:" .. tostring(itemType), string.format(
+            "[LCC][BanditsClothingPoC][BODY_LOCATION_MISSING] id=%s brainLocation=%s item=%s intervention=false",
+            characterId(bandit, brain), tostring(brainLocation), tostring(itemType)
+        ))
+        return 0, created and 1 or 0
+    end
+
+    local okCurrent, current = pcall(function() return bandit:getWornItem(location) end)
+    if not okCurrent then
+        warnOnce("get:" .. tostring(itemType), string.format(
+            "[LCC][BanditsClothingPoC][BODY_LOCATION_API_ERROR] operation=get item=%s location=%s intervention=false",
+            tostring(itemType), tostring(location)
+        ))
+        return 0, created and 1 or 0
+    end
+
+    if current then
+        if fullType(current) == tostring(itemType) then
+            state.items[cacheKey] = current
+            return 0, created and 1 or 0
+        end
+        if not state.conflicts[cacheKey] then
+            state.conflicts[cacheKey] = true
+            print(string.format(
+                "[LCC][BanditsClothingPoC][SLOT_CONFLICT] id=%s brainLocation=%s typedLocation=%s expected=%s actual=%s intervention=false",
+                characterId(bandit, brain), tostring(brainLocation), tostring(location), tostring(itemType), tostring(fullType(current) or "<unknown>")
+            ))
+        end
+        return 0, created and 1 or 0
+    end
+
+    local okSet = pcall(function() bandit:setWornItem(location, item) end)
+    if not okSet then
+        warnOnce("set:" .. tostring(itemType), string.format(
+            "[LCC][BanditsClothingPoC][BODY_LOCATION_API_ERROR] operation=set item=%s location=%s intervention=false",
+            tostring(itemType), tostring(location)
+        ))
+        return 0, created and 1 or 0
+    end
+
     return 1, created and 1 or 0
 end
 
@@ -152,7 +163,6 @@ end
 local function ensureBag(bandit, brain, state)
     local itemType = bagName(brain)
     if not itemType then return 0 end
-
     local key = "__bag"
     local item = state.items[key]
     if not item or fullType(item) ~= tostring(itemType) then
@@ -161,46 +171,41 @@ local function ensureBag(bandit, brain, state)
         state.items[key] = item
     end
 
-    local okLocation, bodyLocation = pcall(function() return item:canBeEquipped() end)
-    if not okLocation or not bodyLocation or tostring(bodyLocation) == "" then return 0 end
-
-    local current = bandit:getWornItem(bodyLocation)
-    if current then
-        if current == item or fullType(current) == tostring(itemType) then
-            state.items[key] = current
-        end
+    local location = typedBodyLocation(item)
+    if not location then
+        warnOnce("bag:" .. tostring(itemType), string.format(
+            "[LCC][BanditsClothingPoC][BAG_LOCATION_UNAVAILABLE] id=%s item=%s intervention=false",
+            characterId(bandit, brain), tostring(itemType)
+        ))
         return 0
     end
 
-    bandit:setWornItem(bodyLocation, item)
-    stats.bagRestored = stats.bagRestored + 1
-    return 1
+    local okCurrent, current = pcall(function() return bandit:getWornItem(location) end)
+    if not okCurrent or current then return 0 end
+    local okSet = pcall(function() bandit:setWornItem(location, item) end)
+    return okSet and 1 or 0
 end
 
-Bandit.ApplyVisuals = function(bandit, brain)
-    originalApplyVisuals(bandit, brain)
-    stats.applyCalls = stats.applyCalls + 1
-
+local function restoreRealWorn(bandit, brain)
     if not bandit or not brain or type(brain.clothing) ~= "table" then return end
     if not bandit:isAlive() then return end
 
-    local state = itemState(bandit)
+    local state = stateFor(bandit)
     local beforeWorn = wornSize(bandit)
-    local expected = expectedClothingCount(brain)
-    local restored, created, conflicts = 0, 0, 0
+    local restored, created = 0, 0
 
     if BanditCompatibility.GetBodyLocationsOrdered then
-        for _, bodyLocation in pairs(BanditCompatibility.GetBodyLocationsOrdered()) do
-            local itemType = brain.clothing[bodyLocation]
+        for _, brainLocation in pairs(BanditCompatibility.GetBodyLocationsOrdered()) do
+            local itemType = brain.clothing[brainLocation]
             if itemType then
-                local r, c = ensureSlot(bandit, brain, state, bodyLocation, itemType)
+                local r, c = ensureSlot(bandit, brain, state, brainLocation, itemType)
                 restored = restored + r
                 created = created + c
             end
         end
     else
-        for bodyLocation, itemType in pairs(brain.clothing) do
-            local r, c = ensureSlot(bandit, brain, state, bodyLocation, itemType)
+        for brainLocation, itemType in pairs(brain.clothing) do
+            local r, c = ensureSlot(bandit, brain, state, brainLocation, itemType)
             restored = restored + r
             created = created + c
         end
@@ -208,28 +213,27 @@ Bandit.ApplyVisuals = function(bandit, brain)
 
     restored = restored + ensureBag(bandit, brain, state)
     local afterWorn = wornSize(bandit)
-
     if restored > 0 then
         bandit:resetModelNextFrame()
-        stats.entitiesRestored = stats.entitiesRestored + (state.reportedRestore and 0 or 1)
         if not state.reportedRestore then
             state.reportedRestore = true
             print(string.format(
                 "[LCC][BanditsClothingPoC][RESTORE] marker=%s id=%s beforeWorn=%d expectedClothing=%d restored=%d created=%d afterWorn=%d bag=%s",
-                MARKER,
-                characterId(bandit, brain),
-                beforeWorn,
-                expected,
-                restored,
-                created,
-                afterWorn,
-                tostring(bagName(brain) or "<none>")
+                MARKER, characterId(bandit, brain), beforeWorn, expectedClothingCount(brain), restored, created, afterWorn, tostring(bagName(brain) or "<none>")
             ))
         end
     end
 end
 
+Bandit.ApplyVisuals = function(bandit, brain)
+    originalApplyVisuals(bandit, brain)
+    local ok, err = pcall(restoreRealWorn, bandit, brain)
+    if not ok then
+        warnOnce("restore-runtime", "[LCC][BanditsClothingPoC][RESTORE_ERROR] " .. tostring(err))
+    end
+end
+
 print(string.format(
-    "[LCC][BanditsClothingPoC][BOOT] marker=%s mode=materialize-missing-real-worn inventoryAdd=false",
+    "[LCC][BanditsClothingPoC][BOOT] marker=%s mode=typed-ItemBodyLocation inventoryAdd=false",
     MARKER
 ))
