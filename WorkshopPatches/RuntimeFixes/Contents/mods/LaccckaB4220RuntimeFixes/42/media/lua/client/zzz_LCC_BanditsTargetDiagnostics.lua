@@ -9,6 +9,7 @@ if isServer() then return end
 local Guard = require "LCC/Guard"
 local FEATURE = "bandits.target-diagnostics"
 local HEARTBEAT_MS = 15000
+local HEARTBEAT_CHECK_EVERY_UPDATES = 512
 
 Guard.safeRequire(FEATURE, "BanditUtils")
 if not Guard.isEnabled(FEATURE) then return end
@@ -28,14 +29,12 @@ local lastHeartbeat = 0
 
 local function nowMs()
     if type(getTimestampMs) == "function" then
-        local ok, value = pcall(getTimestampMs)
-        if ok and value then return value end
+        return getTimestampMs()
     end
 
     local gameTime = getGameTime and getGameTime()
-    if gameTime and gameTime.getWorldAgeHours then
-        local ok, hours = pcall(function() return gameTime:getWorldAgeHours() end)
-        if ok and hours then return math.floor(hours * 3600000) end
+    if gameTime then
+        return math.floor(gameTime:getWorldAgeHours() * 3600000)
     end
 
     return 0
@@ -43,36 +42,6 @@ end
 
 local function boolString(value)
     return value and "true" or "false"
-end
-
-local function safeVariableBoolean(character, name)
-    if not character or not character.getVariableBoolean then return false end
-    local ok, value = pcall(function() return character:getVariableBoolean(name) end)
-    return ok and value == true
-end
-
-local function safeActionState(character)
-    if not character or not character.getActionStateName then return "<none>" end
-    local ok, value = pcall(function() return character:getActionStateName() end)
-    if ok and value then return tostring(value) end
-    return "<none>"
-end
-
-local function safeBumpType(character)
-    if not character or not character.getBumpType then return "<none>" end
-    local ok, value = pcall(function() return character:getBumpType() end)
-    if ok and value and tostring(value) ~= "" then return tostring(value) end
-    return "<none>"
-end
-
-local function safeModDataZid(character)
-    if not character or not character.getModData then return nil end
-    local ok, value = pcall(function()
-        local md = character:getModData()
-        return md and md.zid or nil
-    end)
-    if ok then return value end
-    return nil
 end
 
 local function characterId(character)
@@ -93,43 +62,41 @@ end
 
 local function characterClass(character)
     if not character then return "nil" end
-    if type(instanceof) == "function" then
-        local okPlayer, isPlayer = pcall(instanceof, character, "IsoPlayer")
-        if okPlayer and isPlayer then return "IsoPlayer" end
-        local okZombie, isZombie = pcall(instanceof, character, "IsoZombie")
-        if okZombie and isZombie then return "IsoZombie" end
-    end
+    if instanceof(character, "IsoPlayer") then return "IsoPlayer" end
+    if instanceof(character, "IsoZombie") then return "IsoZombie" end
     return "unknown"
 end
 
-local function distance2d(a, b)
-    if not a or not b then return -1 end
-    local ok, value = pcall(function()
-        local dx = a:getX() - b:getX()
-        local dy = a:getY() - b:getY()
-        return math.sqrt(dx * dx + dy * dy)
-    end)
-    if ok and value then return value end
-    return -1
+local function isBandit(character)
+    return character
+        and instanceof(character, "IsoZombie")
+        and character:getVariableBoolean("Bandit")
 end
 
 local function snapshot(zombie, target)
-    local asn = safeActionState(zombie)
-    local bump = safeBumpType(zombie)
-    local modDataZid = safeModDataZid(zombie)
+    local asn = zombie:getActionStateName() or "<none>"
+    local bump = zombie:getBumpType()
+    if not bump or tostring(bump) == "" then bump = "<none>" end
+
+    local md = zombie:getModData()
+    local modDataZid = md and md.zid or nil
+    local bAttack = zombie:getVariableBoolean("bAttack")
+    local noLungeAttack = zombie:getVariableBoolean("NoLungeAttack")
+    local dx = zombie:getX() - target:getX()
+    local dy = zombie:getY() - target:getY()
 
     return {
         target = target,
         targetId = characterId(target),
         targetClass = characterClass(target),
-        asn = asn,
-        bAttack = safeVariableBoolean(zombie, "bAttack"),
-        noLungeAttack = safeVariableBoolean(zombie, "NoLungeAttack"),
-        bump = bump,
+        asn = tostring(asn),
+        bAttack = bAttack,
+        noLungeAttack = noLungeAttack,
+        bump = tostring(bump),
         modDataZid = modDataZid,
         customBite = modDataZid ~= nil and (bump == "Bite" or bump == "BiteLow"),
         attackState = asn == "attack" or asn == "attack-network",
-        dist = distance2d(zombie, target),
+        dist = math.sqrt(dx * dx + dy * dy),
     }
 end
 
@@ -155,11 +122,10 @@ local function activeTrackedCount()
     for zombie, state in pairs(tracked) do
         local keep = false
         if zombie and state then
-            local ok, alive = pcall(function() return zombie:isAlive() end)
-            if ok and alive then
-                local okTarget, target = pcall(function() return zombie:getTarget() end)
-                keep = okTarget and target and safeVariableBoolean(target, "Bandit")
-            end
+            local ok, result = pcall(function()
+                return zombie:isAlive() and isBandit(zombie:getTarget())
+            end)
+            keep = ok and result == true
         end
 
         if keep then
@@ -196,15 +162,14 @@ end
 
 local function observeZombie(zombie)
     stats.zombieUpdates = stats.zombieUpdates + 1
-    maybeHeartbeat()
+    if stats.zombieUpdates % HEARTBEAT_CHECK_EVERY_UPDATES == 0 then
+        maybeHeartbeat()
+    end
 
-    if not zombie or safeVariableBoolean(zombie, "Bandit") then return end
-    if not zombie.getTarget then return end
+    if not zombie or zombie:getVariableBoolean("Bandit") then return end
 
-    local ok, target = pcall(function() return zombie:getTarget() end)
-    if not ok then return end
-
-    local targetIsBandit = target and safeVariableBoolean(target, "Bandit")
+    local target = zombie:getTarget()
+    local targetIsBandit = isBandit(target)
     local previous = tracked[zombie]
 
     if not targetIsBandit then
