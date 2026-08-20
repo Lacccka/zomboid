@@ -1,12 +1,22 @@
 -- LCC controlled PoC for the B42.20 Bandits reconnect clothing bug.
 -- B42 worn-item APIs require ItemBodyLocation objects, not string slot names.
+--
+-- v2 proved that persistent Bandits can restore real WornItems after reconnect.
+-- The death-queue companion below keeps those same materialized items eligible
+-- for corpse creation without re-enabling upstream's copy-creating clothing loop.
 if isServer() then return end
 
 local MARKER = "real-worn-reconnect-v2"
+local DEATH_MARKER = "real-worn-death-queue-v1"
 LCC_BANDITS_CLOTHING_RESTORE = MARKER
+LCC_BANDITS_CLOTHING_DEATH_QUEUE = DEATH_MARKER
 
 if type(Bandit) ~= "table" or type(Bandit.ApplyVisuals) ~= "function" then
     print("[LCC][BanditsClothingPoC][DISABLED] Bandit.ApplyVisuals unavailable")
+    return
+end
+if type(Bandit.UpdateItemsToSpawnAtDeath) ~= "function" then
+    print("[LCC][BanditsClothingPoC][DISABLED] Bandit.UpdateItemsToSpawnAtDeath unavailable")
     return
 end
 if type(BanditCompatibility) ~= "table" or type(BanditCompatibility.InstanceItem) ~= "function" then
@@ -15,6 +25,7 @@ if type(BanditCompatibility) ~= "table" or type(BanditCompatibility.InstanceItem
 end
 
 local originalApplyVisuals = Bandit.ApplyVisuals
+local originalUpdateItemsToSpawnAtDeath = Bandit.UpdateItemsToSpawnAtDeath
 local stateByBandit = setmetatable({}, { __mode = "k" })
 local warned = {}
 
@@ -68,20 +79,30 @@ end
 local function stateFor(bandit)
     local state = stateByBandit[bandit]
     if not state then
-        state = {items = {}, reportedRestore = false, conflicts = {}}
+        state = {
+            items = {},
+            reportedRestore = false,
+            conflicts = {},
+            lastDeathQueueCount = -1,
+        }
         stateByBandit[bandit] = state
     end
     return state
 end
 
-local function createRealItem(itemType, brain, brainLocation)
-    local item = BanditCompatibility.InstanceItem(itemType)
-    if not item then return nil end
+local function markRealItem(item)
+    if not item then return end
     local md = item:getModData()
     if md then
         md.LCC_BanditsRealClothing = MARKER
         md.preserve = true
     end
+end
+
+local function createRealItem(itemType, brain, brainLocation)
+    local item = BanditCompatibility.InstanceItem(itemType)
+    if not item then return nil end
+    markRealItem(item)
     applyTint(item, brain, brainLocation)
     return item
 end
@@ -105,6 +126,7 @@ local function ensureSlot(bandit, brain, state, brainLocation, itemType)
         state.items[cacheKey] = item
         created = true
     else
+        markRealItem(item)
         applyTint(item, brain, brainLocation)
     end
 
@@ -128,6 +150,7 @@ local function ensureSlot(bandit, brain, state, brainLocation, itemType)
 
     if current then
         if fullType(current) == tostring(itemType) then
+            markRealItem(current)
             state.items[cacheKey] = current
             return 0, created and 1 or 0
         end
@@ -169,6 +192,8 @@ local function ensureBag(bandit, brain, state)
         item = createRealItem(itemType, brain, nil)
         if not item then return 0 end
         state.items[key] = item
+    else
+        markRealItem(item)
     end
 
     local location = typedBodyLocation(item)
@@ -181,9 +206,57 @@ local function ensureBag(bandit, brain, state)
     end
 
     local okCurrent, current = pcall(function() return bandit:getWornItem(location) end)
-    if not okCurrent or current then return 0 end
+    if not okCurrent or current then
+        if current and fullType(current) == tostring(itemType) then markRealItem(current) end
+        return 0
+    end
     local okSet = pcall(function() bandit:setWornItem(location, item) end)
     return okSet and 1 or 0
+end
+
+local function queueMaterializedWornItems(bandit, brain)
+    if not bandit then return 0 end
+    local state = stateFor(bandit)
+    local worn = bandit:getWornItems()
+    if not worn then return 0 end
+
+    local queued = 0
+    for i = 0, worn:size() - 1 do
+        local wornEntry = worn:get(i)
+        local item = wornEntry and wornEntry:getItem() or nil
+        if item then
+            local md = item:getModData()
+            if md and md.LCC_BanditsRealClothing == MARKER then
+                md.preserve = true
+                md.LCC_BanditsDeathQueue = DEATH_MARKER
+                bandit:addItemToSpawnAtDeath(item)
+                queued = queued + 1
+            end
+        end
+    end
+
+    if queued > 0 and state.lastDeathQueueCount ~= queued then
+        state.lastDeathQueueCount = queued
+        print(string.format(
+            "[LCC][BanditsClothingPoC][DEATH_QUEUE] marker=%s id=%s queuedRealWorn=%d currentWorn=%d expectedClothing=%d bag=%s",
+            DEATH_MARKER,
+            characterId(bandit, brain),
+            queued,
+            worn:size(),
+            expectedClothingCount(brain),
+            tostring(bagName(brain) or "<none>")
+        ))
+    end
+
+    return queued
+end
+
+Bandit.UpdateItemsToSpawnAtDeath = function(bandit, brain)
+    originalUpdateItemsToSpawnAtDeath(bandit, brain)
+    local ok, err = pcall(queueMaterializedWornItems, bandit, brain)
+    if not ok then
+        warnOnce("death-queue-runtime", "[LCC][BanditsClothingPoC][DEATH_QUEUE_ERROR] " .. tostring(err))
+    end
 end
 
 local function restoreRealWorn(bandit, brain)
@@ -223,6 +296,14 @@ local function restoreRealWorn(bandit, brain)
             ))
         end
     end
+
+    -- Upstream ApplyVisuals queues death items before this PoC re-materializes
+    -- WornItems. Rebuild the queue once more so the same real worn objects are
+    -- appended after upstream has cleared/rebuilt its normal weapon/loot queue.
+    local ok, err = pcall(Bandit.UpdateItemsToSpawnAtDeath, bandit, brain)
+    if not ok then
+        warnOnce("death-queue-refresh", "[LCC][BanditsClothingPoC][DEATH_QUEUE_REFRESH_ERROR] " .. tostring(err))
+    end
 end
 
 Bandit.ApplyVisuals = function(bandit, brain)
@@ -234,6 +315,7 @@ Bandit.ApplyVisuals = function(bandit, brain)
 end
 
 print(string.format(
-    "[LCC][BanditsClothingPoC][BOOT] marker=%s mode=typed-ItemBodyLocation inventoryAdd=false",
-    MARKER
+    "[LCC][BanditsClothingPoC][BOOT] marker=%s deathMarker=%s mode=typed-ItemBodyLocation+same-object-death-queue inventoryAdd=false copyClothing=false",
+    MARKER,
+    DEATH_MARKER
 ))
