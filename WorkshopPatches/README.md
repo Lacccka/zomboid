@@ -16,7 +16,7 @@ Every item must keep this warning in its Workshop description:
 | --- | --- | ---: | --- | --- |
 | `PatchCore` | `LaccckaB4220PatchCore` | `3786175901` | Lacccka B42 Patch Core | Recommended shared guarded-patch helper used by the functional patches. |
 | `RuntimeFixes` | `LaccckaB4220RuntimeFixes` | `3786175979` | Lacccka B42 Runtime Fixes | Source-clean Bandits runtime / dedicated-server / zombie-action compatibility hooks. |
-| `NPCCombatExperimental` | `LaccckaB4220NPCCombatExperimental` | `3786817782` | Lacccka B42 NPC Combat Experimental | In-development NPC combat AttackState guard, diagnostics and admin stress-test tooling. |
+| `NPCCombatExperimental` | `LaccckaB4220NPCCombatExperimental` | `3786817782` | Lacccka B42 NPC Combat Experimental | In-development NPC combat AttackState observation, death-loot/corpse diagnostics and admin stress-test tooling. |
 | `ActivityFixes` | `LaccckaB4220ActivityFixes` | `3786175725` | Lacccka B42 Activity Fixes | Lifestyle hygiene, Yoga/progression and perk compatibility fixes. |
 | `CompatibilityBridges` | `LaccckaB4220CompatBridges` | `3786175808` | Lacccka B42 Compatibility Bridges | Build 42 legacy module/API redirects used by weapon, vehicle and framework mods. |
 | `SafetyFixes` | `LaccckaB4220SafetyFixes` | `3786176221` | Lacccka B42 Safety Fixes | Defensive inventory/UI compatibility guards. |
@@ -50,7 +50,11 @@ The grouped audit must fail if `BanditZombie.lua`, `BanditServerWanderers.lua`, 
 
 ## NPCCombatExperimental isolation contract
 
-`NPCCombatExperimental` contains only NPC-combat work that is still being actively tested: the zombie -> NPC `bAttack`/AttackState guard, its observe-only target diagnostics, and the admin right-click stress spawner plus its server bridge. These files must not live in `RuntimeFixes`.
+`NPCCombatExperimental` contains only NPC work that is still being actively tested: the zombie -> NPC AttackState probe, its observe-only target diagnostics, the death-loot/corpse pipeline diagnostics, and the admin right-click stress spawner plus its server bridge. These files must not live in `RuntimeFixes` until they are independently validated.
+
+B42.20.3 testing proved that `bAttack` is read-only through the exposed animation-variable callback, so the experimental package must not call `setVariable("bAttack", false)` and must not claim that an observed `bAttack=true` was blocked. The current AttackState component is diagnostic-only while a safe mutable pre-AttackState seam is investigated.
+
+Death-loot diagnostics are also observation-only. They trace the existing `Bandit.UpdateItemsToSpawnAtDeath()` manifest through `OnZombieDead` and `OnDeadBodySpawn` without adding, deleting, cloning or wearing items. This is intentional because the current upstream death path mixes `ItemVisual` clothing, `getWornItems():clear()` and a `preserve`-based inventory cleanup; a fix should be based on the observed loss boundary rather than guessed and risk duplicate loot.
 
 The public Workshop title and Mod ID intentionally do not name the upstream mod. Internal Lua integration still uses the real `Bandits2`/Bandits API names where required for load ordering and debugging.
 
