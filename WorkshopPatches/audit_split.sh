@@ -101,7 +101,7 @@ required_files=(
     "$activity/perks.txt"
 
     "$bridges/lua/client/Vehicle/ISUI/ISVehiclePartMenu.lua"
-    "$bridges/lua/client/Vehicle/ISVehiclePartMenu.lua"
+    "$bridges/lua/client/Vehicle/ISUI/ISVehiclePartMenu.lua"
     "$bridges/lua/server/BuildingObjects/ISPlace3DItemCursor_Fix.lua"
     "$bridges/lua/server/Tuning2/ATA2Tuning2.lua"
     "$bridges/lua/server/utils/pzkZonesFunction.lua"
@@ -448,13 +448,7 @@ for folder in "${expected_patch_dirs[@]}"; do
     modinfo="$SPLIT/$folder/Contents/mods/$id/42/mod.info"
 
     require_file "$workshop" || true
-    if [[ "$folder" == "NPCCombatExperimental" ]]; then
-        if [[ -e "$preview" && ! -s "$preview" ]]; then
-            error "$folder: preview.png exists but is empty"
-        fi
-    else
-        require_file "$preview" || true
-    fi
+    require_file "$preview" || true
     require_file "$modinfo" || true
 
     if [[ -f "$modinfo" ]]; then
