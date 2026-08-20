@@ -46,7 +46,6 @@ forbid_marker() {
     fi
 }
 
-# The grouped publication model currently consists of exactly these six items.
 expected_patch_dirs=(
     ActivityFixes
     CompatibilityBridges
@@ -73,10 +72,6 @@ bridges="$SPLIT/CompatibilityBridges/Contents/mods/LaccckaB4220CompatBridges/42/
 safety="$SPLIT/SafetyFixes/Contents/mods/LaccckaB4220SafetyFixes/42/media"
 text42="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/media"
 text_common="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/common/media"
-
-# ---------------------------------------------------------------------------
-# Required current publication files.
-# ---------------------------------------------------------------------------
 
 required_files=(
     "$core/lua/shared/LCC/Guard.lua"
@@ -118,10 +113,7 @@ for path in "${required_files[@]}"; do
     require_file "$path" || true
 done
 
-# ---------------------------------------------------------------------------
 # PatchCore and optional-Guard bootstrap contract.
-# ---------------------------------------------------------------------------
-
 core_guard="$core/lua/shared/LCC/Guard.lua"
 core_entry="$core/lua/shared/LCC/CoreGuard.lua"
 
@@ -163,10 +155,7 @@ for guard in "$activity_guard" "$bridges_guard" "$safety_guard"; do
     fi
 done
 
-# ---------------------------------------------------------------------------
 # RuntimeFixes: source-clean Bandits contracts.
-# ---------------------------------------------------------------------------
-
 runtime_character="$runtime/lua/client/ISUI/ISCharacterScreen.lua"
 runtime_admin="$runtime/lua/client/zzz_LCC_BanditsAdminSpawnMenu.lua"
 runtime_cache="$runtime/lua/client/zzz_LCC_BanditsZombieCacheGuard.lua"
@@ -185,7 +174,6 @@ done
 
 require_marker "$runtime_character" 'Guard.safeRequire(FEATURE, "XpSystem/ISUI/ISCharacterScreen")' \
     "RuntimeFixes character-screen shim lost the B42.20 target path"
-
 require_marker "$runtime_admin" 'sendClientCommand(player, "Spawner", "Clan", args)' \
     "RuntimeFixes admin spawn helper lost Bandits server-command path"
 require_marker "$runtime_admin" 'hasStaffAccess' \
@@ -229,10 +217,7 @@ require_marker "$runtime_dedicated" 'pcall(getId, zombie)' \
 forbid_marker "$runtime_dedicated" 'getZombieList()' \
     "RuntimeFixes dedicated lookup must not scan the complete server zombie list"
 
-# ---------------------------------------------------------------------------
 # ActivityFixes: Lifestyle/hygiene/Yoga/skill-description contracts.
-# ---------------------------------------------------------------------------
-
 activity_bath="$activity/lua/client/zzz_LCC_LifestyleBathFix.lua"
 activity_yoga="$activity/lua/client/zzz_LCC_LifestyleYogaProgress.lua"
 activity_skills="$activity/lua/client/zzz_LCC_SkillDescriptions.lua"
@@ -277,13 +262,16 @@ for skill in Art Cleaning Dancing Meditation Music; do
     fi
 done
 
-# ---------------------------------------------------------------------------
 # CompatibilityBridges: legacy module/API redirects.
-# ---------------------------------------------------------------------------
-
 bridge_vehicle_isui="$bridges/lua/client/Vehicle/ISUI/ISVehiclePartMenu.lua"
 bridge_vehicle="$bridges/lua/client/Vehicle/ISVehiclePartMenu.lua"
 bridge_place3d="$bridges/lua/server/BuildingObjects/ISPlace3DItemCursor_Fix.lua"
+bridge_tuning="$bridges/lua/server/Tuning2/ATA2Tuning2.lua"
+bridge_pzk="$bridges/lua/server/utils/pzkZonesFunction.lua"
+bridge_body="$bridges/lua/shared/BodyLocations.lua"
+bridge_timed="$bridges/lua/shared/ISBaseTimedAction.lua"
+bridge_svu="$bridges/lua/shared/SVU3_PZKVLCCars_Stuffs.lua"
+bridge_callbacks="$bridges/lua/shared/zzz_LCC_LegacyItemCallbacks.lua"
 
 require_marker "$bridge_vehicle_isui" 'Guard.safeRequire(FEATURE, "Vehicles/ISUI/ISVehiclePartMenu")' \
     "CompatibilityBridges ISUI vehicle shim lost B42 target"
@@ -294,20 +282,18 @@ require_marker "$bridge_place3d" 'if isServer() then return end' \
 require_marker "$bridge_place3d" 'ISPlace3DItemCursor.__LCCWeaponPartRenderFix' \
     "CompatibilityBridges 3D-item cursor fix lost install marker"
 
-for path in \
-    "$bridges/lua/server/Tuning2/ATA2Tuning2.lua" \
-    "$bridges/lua/server/utils/pzkZonesFunction.lua" \
-    "$bridges/lua/shared/BodyLocations.lua" \
-    "$bridges/lua/shared/ISBaseTimedAction.lua" \
-    "$bridges/lua/shared/SVU3_PZKVLCCars_Stuffs.lua" \
-    "$bridges/lua/shared/zzz_LCC_LegacyItemCallbacks.lua"; do
-    require_marker "$path" 'LCC/Guard' "CompatibilityBridges file lost Guard dependency: ${path#$ROOT/}"
+for path in "$bridge_tuning" "$bridge_pzk" "$bridge_body" "$bridge_timed"; do
+    require_marker "$path" 'LCC/Guard' "CompatibilityBridges guarded redirect lost Guard dependency: ${path#$ROOT/}"
 done
 
-# ---------------------------------------------------------------------------
-# SafetyFixes: narrow defensive wrappers.
-# ---------------------------------------------------------------------------
+require_marker "$bridge_svu" 'return require "OtherModsSupport/SVU3_PZKVLCCars_Stuffs"' \
+    "CompatibilityBridges SVU3/PZK redirect lost its current target"
+require_marker "$bridge_callbacks" 'SpecialLootSpawns.OnCreateRecipeMagazine' \
+    "CompatibilityBridges legacy item callback shim lost old callback contract"
+require_marker "$bridge_callbacks" 'ItemCodeOnCreate.onCreateRecipeMagazine' \
+    "CompatibilityBridges legacy item callback shim lost B42 callback target"
 
+# SafetyFixes: narrow defensive wrappers.
 safety_aegis="$safety/lua/client/zzz_LCC_AegisTransferGuard.lua"
 safety_chimera="$safety/lua/client/zzz_LCC_ChimeraGhillieFix.lua"
 
@@ -318,10 +304,7 @@ require_marker "$safety_aegis" 'not self.item or not self.srcContainer or not se
 require_marker "$safety_chimera" 'Guard.install' \
     "SafetyFixes Chimera guard lost guarded install contract"
 
-# ---------------------------------------------------------------------------
 # RussianTextFixes: standalone RU-only translation package.
-# ---------------------------------------------------------------------------
-
 ru42="$text42/lua/shared/Translate/RU"
 ru_common="$text_common/lua/shared/Translate/RU"
 
@@ -374,10 +357,7 @@ for path in \
     require_file "$path" || true
 done
 
-# ---------------------------------------------------------------------------
 # Workshop and mod.info metadata contracts.
-# ---------------------------------------------------------------------------
-
 declare -A expected_ids=(
     [PatchCore]="LaccckaB4220PatchCore"
     [RuntimeFixes]="LaccckaB4220RuntimeFixes"
