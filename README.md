@@ -18,7 +18,6 @@
 | [`3403870858`](./3403870858) | Lifestyle: Hobbies | `LifestyleHobbies` | Подключён |
 | [`3413150945`](./3413150945) | More Damaged Objects [42MP] | `MoreDamagedObjects` | Подключён |
 | [`3464606086`](./3464606086) | [B42] HDCP Immersive Vehicle Paint | `ImmersiveVehiclePaint` | Подключён |
-| [`3465040406`](./3465040406) | Open All Containers [42MP] | `OpenAllContainers` | **Не подключён сейчас** |
 | [`3633421539`](./3633421539) | ModernFirearmsSystem 42.19 (SP/MP) | `ModernFirearmsSystem`, `BackpackSystemB42` *(Workshop также содержит `BladesmithSystemB42`)* | Подключён частично |
 | [`3739256725`](./3739256725) | New Music [42+] | `NewMusic` | Подключён |
 | [`3744973332`](./3744973332) | New Music [42+]: Russian Albums Collection | `RussianAlbumsNewMusic` | Подключён |
