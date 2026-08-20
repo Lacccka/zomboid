@@ -18,13 +18,24 @@ The repository must keep this Workshop ID pinned in `workshop.txt` and in the gr
 
 The first experimental implementation attempted to clear `bAttack` when a normal `IsoZombie` targeted an NPC represented by the upstream integration as another `IsoZombie`. B42.20.3 testing disproved that intervention: `bAttack` is exposed through a read-only animation callback variable, and `zombie:setVariable("bAttack", false)` produces `AnimationVariableSlotCallback.trySetValue: Trying to set read-only variable "battack"` while a subsequent read still returns `true`.
 
-The old `[BLOCK]` counter therefore measured attempted writes rather than successful blocks and must not be treated as evidence that the crash path was fixed. The probe is now observe-only: it never calls `setVariable("bAttack", ...)`, `changeState()`, `setTarget()` or `setBumpType()`.
+The old `[BLOCK]` counter therefore measured attempted writes rather than successful blocks and must not be treated as evidence that the crash path was fixed.
 
-`[LCC][BanditsAttackGuard][READ_ONLY_BATTACK]` records transitions where `bAttack=true` is observed on a normal zombie targeting an NPC. `[ESCAPED_ATTACK_STATE]` records actual `attack` / `attack-network` entry and explicitly marks itself `diagnosticOnly=true`. The original dangerous precondition remains unresolved until a mutable pre-AttackState seam is identified.
+The current experiment moves to an earlier target-side engine seam. Bandits' own `UpdateZombies()` logic independently scans `BanditZombie.CacheLightB`, paths normal zombies toward the selected NPC and simulates `Bite` / `BiteLow`. The upstream code also calls `bandit:setZombiesDontAttack(true)`, but only once close-range bite handling is already underway. `zzz_LCC_BanditsAttackStateGuard.lua` now asserts that engine flag for every live Bandit as early as the guarded `Bandit.ApplyVisuals()` path and again from `OnZombieUpdate`.
+
+The guard intentionally does **not** call `setTarget()`, `clearAggroList()`, `changeState()`, `setBumpType()` or write `bAttack`. This first active stage tests whether moving `setZombiesDontAttack(true)` earlier is sufficient to prevent the normal-zombie -> Bandit vanilla target relationship without disturbing Bandits' own pathing and custom bite simulation.
+
+Expected logs:
+
+- `[LCC][BanditsAttackGuard][PROTECT_TARGET]` — a Bandit target was observed with the engine no-attack flag asserted;
+- `[TARGET_LEAK]` — a normal zombie still acquired that protected Bandit as its vanilla target;
+- `[READ_ONLY_BATTACK]` — `bAttack=true` was observed on such a leak; the value remains diagnostic-only;
+- `[ESCAPED_ATTACK_STATE]` — the zombie still entered `attack` / `attack-network` despite target-side protection.
+
+Success criterion for this stage is `protectedBandits > 0` with `targetLeaks=0` and `attackStateObserved=0` while the upstream `Bite` / `BiteLow` counters remain active. If protected targets still leak, the next experimental stage may clear only the vanilla target/aggro relationship while leaving Bandits' independent NPC search/pathing intact.
 
 ## 2. Target diagnostics
 
-`zzz_LCC_BanditsTargetDiagnostics.lua` remains observe-only. It records NPC target acquisition/loss, `bAttack`, vanilla attack-state entry and the upstream custom `Bite` / `BiteLow` activity. It is intentionally colocated with the experimental probe so the stable RuntimeFixes package does not carry diagnostic logging.
+`zzz_LCC_BanditsTargetDiagnostics.lua` remains observe-only. It records NPC target acquisition/loss, `bAttack`, vanilla attack-state entry and the upstream custom `Bite` / `BiteLow` activity. It is intentionally colocated with the experimental guard so the stable RuntimeFixes package does not carry diagnostic logging.
 
 ## 3. Death-loot / naked-corpse diagnostics
 
@@ -33,14 +44,19 @@ B42.20 source inspection found two upstream behaviors that plausibly combine int
 1. `Bandit.ApplyVisuals()` clears `bandit:getWornItems()` and reconstructs configured clothing primarily as `ItemVisual` objects. The NPC can therefore look dressed while not owning equivalent real worn `InventoryItem` objects.
 2. the upstream `OnZombieDead` handler removes inventory entries that do not have `item:getModData().preserve`, while `UpdateItemsToSpawnAtDeath()` is responsible for marking inventory and preparing the death-item manifest. Timing or synchronization gaps can therefore destroy items at death before the corpse is created.
 
-The current package does **not** yet mutate this pipeline. `zzz_LCC_BanditsDeathLootDiagnostics.lua` wraps the existing `Bandit.UpdateItemsToSpawnAtDeath()` only to snapshot counts, then observes `OnZombieDead` and `OnDeadBodySpawn` without adding/removing/cloning/wearing items.
+The previous diagnostic registered its single `OnZombieDead` observer from shared Lua. Because `BanditUpdate.lua` is client Lua, that observer can run **before** the upstream cleanup even though the old log field was named `postCleanupInventory`. That ambiguity is now removed.
 
-Expected diagnostic sequence for an affected NPC:
+`zzz_LCC_BanditsDeathLootDiagnostics.lua` remains mutation-free and captures four explicit stages:
 
-- `[LCC][BanditsDeathLoot][DEAD]` — inventory/worn counts after the upstream death cleanup plus the last manifest snapshot;
-- `[LCC][BanditsDeathLoot][CORPSE]` — resulting corpse container/worn counts for the same `brainId`.
+- `[BEFORE_UPDATE]` — the last real inventory/worn/item-visual state immediately before upstream `Bandit.UpdateItemsToSpawnAtDeath()`;
+- `[AFTER_UPDATE]` — the same state immediately after the upstream function returns, plus a best-effort death-queue count when B42 exposes it;
+- `[DEAD] phase=PRE_CLEANUP` — the Bandit at the start of `OnZombieDead`, before the client `BanditUpdate.lua` cleanup handler;
+- `[DEAD] phase=POST_CLEANUP` — the same object after the upstream death handler has removed non-preserved inventory and deprovisioned the Bandit;
+- `[CORPSE]` — the resulting `IsoDeadBody` container/worn/item-visual state for the same `brainId`.
 
-This is intended to prove exactly where the loss occurs before introducing a preservation fix and avoids creating duplicate loot by guessing at the wrong ownership layer.
+The death logs also include configured `brain.clothing`, bag identity and concrete top-level inventory/worn item types. This should tell us whether a naked corpse starts with an empty death manifest, loses items specifically inside the upstream cleanup handler, or reaches cleanup intact and is lost only during zombie -> corpse materialization.
+
+No preservation fix is enabled yet. The next mutation should target only the stage proven to lose the items, so successful corpses do not gain duplicated clothing, weapons or bags.
 
 ## 4. Admin context-menu stress spawner
 
@@ -59,11 +75,12 @@ The spawner is test tooling, not a production gameplay feature.
 ## Regression checklist
 
 - verify `RuntimeFixes` loads without any `[LCC][BanditsDiag]`, `[LCC][BanditsAttackGuard]`, `[LCC][BanditsDeathLoot]` or `[LCC][BanditsSpawn]` initialization lines;
-- enable `NPCCombatExperimental` and verify attack-state observation, target diagnostics, death-loot diagnostics and the admin test tooling initialize;
+- enable `NPCCombatExperimental` and verify `BanditsAttackGuard`, target diagnostics, four-stage death-loot diagnostics and the admin test tooling initialize;
 - confirm the client no longer emits LCC-triggered `Trying to set read-only variable "battack"` warnings;
-- stress normal zombie -> NPC combat and record `READ_ONLY_BATTACK`, `ESCAPED_ATTACK_STATE` and `DANGER_ATTACK_STATE`; non-zero attack-state observations mean the crash path remains unresolved;
+- verify `[PROTECT_TARGET]` appears for spawned Bandits and summary `protectedBandits` grows;
+- stress normal zombie -> NPC combat and record `TARGET_LEAK`, `READ_ONLY_BATTACK`, `ESCAPED_ATTACK_STATE` and `DANGER_ATTACK_STATE`; the desired result is zero target/AttackState leaks while custom `Bite` / `BiteLow` remains non-zero;
 - verify ordinary zombie -> `IsoPlayer` attacks remain unchanged;
-- spawn and kill multiple NPCs by player and zombie damage; for each affected death compare `DEAD` and `CORPSE` counts using the same ID;
+- spawn and kill multiple NPCs by player and zombie damage; for each affected death compare `BEFORE_UPDATE`, `AFTER_UPDATE`, `DEAD phase=PRE_CLEANUP`, `DEAD phase=POST_CLEANUP` and `CORPSE` using the same ID;
 - specifically test NPCs with visible clothing, bags and carried/collected inventory so an empty-corpse transition can be distinguished from an NPC that legitimately had little loot;
 - disable `NPCCombatExperimental` again and verify stable RuntimeFixes behavior is identical to the pre-experiment setup.
 
