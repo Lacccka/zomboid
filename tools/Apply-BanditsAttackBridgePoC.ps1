@@ -6,7 +6,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$workingCopyRelativePath = "WorkshopPatches/NPCCombatExperimental/DevUpstream/Bandits/42.20/media/lua/client/BanditUpdate.lua"
+$workingCopyRelativePath = "WorkshopPatches/Bandits-LCC-Dev/42.20/media/lua/client/BanditUpdate.lua"
 
 if ($TargetFile) {
     $targetPath = (Resolve-Path -LiteralPath $TargetFile).Path
