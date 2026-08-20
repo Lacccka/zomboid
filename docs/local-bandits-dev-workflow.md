@@ -1,105 +1,115 @@
 # Local Bandits development workflow (Build 42.20)
 
-This workflow makes the Bandits source used by local Windows testing deterministic while `NPCCombatExperimental` remains a separate source-clean compatibility patch.
+The repository contains a complete Bandits development working copy at:
 
-## Goal
+`WorkshopPatches/Bandits-LCC-Dev`
 
-The live test must use exactly this chain:
+That folder is the authoritative source for local testing. It keeps the real `id=Bandits2` and may contain the current controlled upstream experiment. The user copies this ready working copy into `%UserProfile%\Zomboid\mods\Bandits-LCC-Dev` for testing.
+
+## Preferred manual workflow
+
+After repository changes:
+
+```powershell
+cd C:\zomboid
+git pull
+```
+
+Delete the previous local test copy and copy the whole folder:
 
 ```text
-repository/3268487204/mods/Bandits
+C:\zomboid\WorkshopPatches\Bandits-LCC-Dev
         |
-        | mirror + optional local PoC
+        | complete folder replacement
         v
-C:\Users\<user>\Zomboid\mods\Bandits-LCC-Dev
+C:\Users\user\Zomboid\mods\Bandits-LCC-Dev
         |
         | id=Bandits2
         v
 Project Zomboid client + dedicated server
 ```
 
-The Steam Workshop item `3268487204` is excluded from the test server's `WorkshopItems=` line, while `Bandits2` remains in `Mods=`.
+Do not keep another active local/Steam copy with `id=Bandits2`. Steam Workshop item `3268487204` is intentionally unsubscribed/excluded from this test setup, while `Bandits2` remains in `Mods=`.
 
-## Why `-modfolders` is required
-
-Build 42 can discover the same Mod ID from multiple sources. For this development workflow both client and server must be launched with:
+For deterministic development loading, both client and dedicated server should use:
 
 ```text
 -modfolders mods,workshop,steam
 ```
 
-This puts `%UserProfile%\Zomboid\mods` ahead of the local Workshop staging folder and Steam Workshop source. Without this argument a subscribed Steam copy with the same `id=Bandits2` may be selected instead of `Bandits-LCC-Dev`.
+## Current AttackState experiment
 
-## One-command setup
+The ready repository working copy currently contains:
 
-From the repository root:
+```text
+upstream-coordinate-pursuit-v2
+```
+
+Runtime proof:
+
+```text
+[LCC][BanditsAttackPoC][INIT] upstream-coordinate-pursuit-v2 active; character pursuit and vanilla target bridge disabled
+```
+
+The matching `NPCCombatExperimental` build must also be refreshed. Its guard should report:
+
+```text
+[LCC][BanditsAttackGuard][UPSTREAM_POC_ACTIVE] marker=upstream-coordinate-pursuit-v2 mode=observe-only v3Disconnect=false targetProtection=false
+```
+
+If either marker is missing, do not interpret the combat test: the client is not running the intended paired experiment.
+
+## Optional setup script
+
+Manual copying is the normal workflow. `tools/Setup-LocalBanditsDev.ps1` remains available when a deterministic mirror/update of the local folder is useful:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\Setup-LocalBanditsDev.ps1
 ```
 
-Defaults:
+By default it mirrors the **already-prepared** `WorkshopPatches\Bandits-LCC-Dev` working copy. It does not apply another source transformation after copying. This keeps the local file identical to the version reviewed and committed in the repository.
 
-- repository source: `3268487204\mods\Bandits`;
-- local destination: `%UserProfile%\Zomboid\mods\Bandits-LCC-Dev`;
-- server config: `%UserProfile%\Zomboid\Server\servertest.ini`;
-- current AttackState upstream PoC: enabled.
+The script also:
 
-The script:
+1. validates `id=Bandits2`;
+2. mirrors with `robocopy /MIR`;
+3. verifies the current PoC marker in the copied `BanditUpdate.lua`;
+4. checks that `Mods=` contains `Bandits2`;
+5. removes Workshop item `3268487204` from `WorkshopItems=` if necessary;
+6. scans `Zomboid\mods` and `Zomboid\Workshop` for a second `id=Bandits2` and refuses an ambiguous setup;
+7. writes `.lcc-local-bandits-dev` metadata into the destination.
 
-1. validates that the repository B42.20 mod declares `id=Bandits2`;
-2. mirrors the complete Bandits mod into `Zomboid\mods\Bandits-LCC-Dev` using `robocopy /MIR`;
-3. applies `Apply-BanditsAttackBridgePoC.ps1` only to the local mirrored `BanditUpdate.lua`;
-4. checks that `Mods=` already contains `Bandits2`;
-5. removes Workshop item `3268487204` from `WorkshopItems=` and creates `servertest.ini.lcc-local-bandits.bak` before the first change;
-6. scans `Zomboid\mods` and `Zomboid\Workshop` for another `id=Bandits2` and refuses an ambiguous local setup;
-7. writes `.lcc-local-bandits-dev` into the destination with source/PoC metadata.
-
-Every rerun refreshes the local Bandits copy from the repository first and then reapplies the current PoC. This prevents old experimental edits from accumulating between tests.
-
-## Setup without the AttackState PoC
-
-To test the repository Bandits snapshot unchanged while still keeping deterministic local loading:
+To mirror the clean repository snapshot instead of the prepared experimental working copy:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\Setup-LocalBanditsDev.ps1 -NoAttackPoC
 ```
 
-## Custom Zomboid directory or server ini
+That mode uses:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\Setup-LocalBanditsDev.ps1 `
-  -ZomboidHome "D:\PZ-Test\Zomboid" `
-  -ServerIni "D:\PZ-Test\Zomboid\Server\servertest.ini"
-```
+`3268487204\mods\Bandits`
 
-Use `-SkipServerIni` only when the config is intentionally managed elsewhere. In that case manually guarantee:
+as the source.
 
-```ini
-Mods=...;Bandits2;...
-WorkshopItems=...        # must NOT contain 3268487204
-```
+## Reproducibility / revert tool
 
-## Runtime verification
+`tools/Apply-BanditsAttackBridgePoC.ps1` is not required for the normal manual test workflow. It exists to reproduce or revert the current exact-block transformation against an audited clean `BanditUpdate.lua`.
 
-For the current upstream AttackState PoC, a correct client load must print:
+Current transformation:
 
-```text
-[LCC][BanditsAttackPoC][INIT] upstream-pursuit-v1 active; vanilla spotted/addAggro/setTarget/setAttackedBy bridge disabled
-```
+- removes the active `spotted/addAggro/setTarget/setAttackedBy` bridge;
+- removes both active `pathToCharacter(bandit)` pursuit calls from `UpdateZombies()`;
+- replaces pursuit with coordinate-only `pathToLocationF(x, y, z)`;
+- sets marker `upstream-coordinate-pursuit-v2`.
 
-`NPCCombatExperimental` must then also report:
-
-```text
-[LCC][BanditsAttackGuard][UPSTREAM_POC_ACTIVE] marker=upstream-pursuit-v1 mode=observe-only v3Disconnect=false targetProtection=false
-```
-
-If the first marker is missing, do not interpret the combat test: the client did not load the prepared local `BanditUpdate.lua`.
+The script refuses mixed or unknown source states rather than patching them heuristically.
 
 ## Client/server consistency
 
-With `DoLuaChecksum=true`, the client and dedicated server must resolve `Bandits2` and the LCC patches from matching local content. On a single Windows test machine this workflow uses the same `%UserProfile%\Zomboid\mods` tree for both processes. Remote clients cannot join this local-only configuration unless they are given the same local Bandits and LCC mod copies.
+With `DoLuaChecksum=true`, the client and dedicated server must resolve `Bandits2` and the LCC patches from matching content. On the single Windows test machine, both processes can use the same `%UserProfile%\Zomboid\mods` tree. Remote clients need the same modified Bandits/LCC files.
 
-## What remains source-clean
+Use a full client and dedicated-server restart after replacing the working copy. For causal experiments, prefer freshly spawned Bandits and fresh zombies so stale network target state from a previous PoC cannot contaminate results.
 
-`WorkshopPatches/NPCCombatExperimental` still does not bundle `BanditUpdate.lua` or another complete Bandits source file. The direct source modification exists only in the controlled local development copy produced by the setup script. Once the correct behavior is proven, the reference change should be reproduced with an LCC-authored interception or an upstream hook instead of publishing modified third-party source.
+## Publication boundary
+
+`WorkshopPatches/Bandits-LCC-Dev` is the controlled development copy. It is not part of the `NPCCombatExperimental/Contents` Workshop payload. Once the correct behavior is proven, the intended final compatibility solution remains an LCC-authored interception or a minimal upstream Bandits change rather than shipping the complete upstream source inside the public compatibility patch.
