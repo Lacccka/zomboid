@@ -4,11 +4,15 @@
 -- only after the zombie is <0.8 center distance, unobstructed and facing the
 -- Bandit. It then sets Bite/BiteLow and expects action state "bumped".
 --
+-- v2 mirrors BanditUpdate's early state/prone exits before counting a sample as
+-- actually eligible. This removes the false-positive "eligible but not armed"
+-- samples previously produced by zombies already in onground/bumped/etc states.
+--
 -- This callback is intentionally loaded after BanditUpdate and never mutates
 -- target, path, bump state, movement or Bandit health.
 if isServer() then return end
 
-local MARKER = "close-range-bite-trace-v1"
+local MARKER = "close-range-bite-trace-v2"
 LCC_BANDITS_CLOSE_RANGE_BITE_TRACE = MARKER
 
 local stats = {
@@ -21,6 +25,8 @@ local stats = {
     wallBlockedSamples = 0,
     facingTrueSamples = 0,
     facingFalseSamples = 0,
+    earlyStateBlockedSamples = 0,
+    proneBlockedSamples = 0,
     overAttackCapSamples = 0,
     staggerSamples = 0,
     eligibleSamples = 0,
@@ -35,6 +41,14 @@ local stats = {
 
 local stateByZombie = setmetatable({}, { __mode = "k" })
 local detailBudget = 30
+
+local earlyBlockedStates = {
+    bumped = true,
+    onground = true,
+    climbfence = true,
+    getup = true,
+    turnalerted = true,
+}
 
 local function isBandit(character)
     if not character or not instanceof(character, "IsoZombie") then return false end
@@ -200,6 +214,9 @@ local function onZombieUpdate(zombie)
     local armed = bump == "Bite" or bump == "BiteLow"
     local bumped = armed and asn == "bumped"
 
+    -- Observe an already-running custom bite before applying the eligibility
+    -- filters below. BanditUpdate itself returns early in "bumped" once the
+    -- pipeline is active, so excluding it here would hide successful transitions.
     if armed then
         stats.biteArmedSamples = stats.biteArmedSamples + 1
         if not state.armed then
@@ -225,6 +242,18 @@ local function onZombieUpdate(zombie)
         end
     end
 
+    -- Mirror the real early-outs in BanditUpdate.UpdateZombies. These states are
+    -- not eligible to start a new bite even if geometry/facing would otherwise
+    -- look valid to an external observer.
+    if earlyBlockedStates[asn] then
+        stats.earlyStateBlockedSamples = stats.earlyStateBlockedSamples + 1
+        return
+    end
+    if zombie:isProne() then
+        stats.proneBlockedSamples = stats.proneBlockedSamples + 1
+        return
+    end
+
     if asn == "staggerback" then
         stats.staggerSamples = stats.staggerSamples + 1
         return
@@ -248,7 +277,7 @@ Events.OnZombieUpdate.Add(onZombieUpdate)
 
 Events.EveryOneMinute.Add(function()
     print(string.format(
-        "[LCC][BanditsBiteTrace][SUMMARY] marker=%s updates=%d withBandit=%d near12Samples=%d near08Samples=%d near08Entries=%d zMismatchSamples=%d wallBlockedSamples=%d facingTrueSamples=%d facingFalseSamples=%d overAttackCapSamples=%d staggerSamples=%d eligibleSamples=%d eligibleNotArmedSamples=%d biteArmedSamples=%d biteArmedTransitions=%d bumpedBiteSamples=%d bumpedTransitions=%d armedLostBeforeBumped=%d armedTimeouts=%d",
+        "[LCC][BanditsBiteTrace][SUMMARY] marker=%s updates=%d withBandit=%d near12Samples=%d near08Samples=%d near08Entries=%d zMismatchSamples=%d wallBlockedSamples=%d facingTrueSamples=%d facingFalseSamples=%d earlyStateBlockedSamples=%d proneBlockedSamples=%d overAttackCapSamples=%d staggerSamples=%d eligibleSamples=%d eligibleNotArmedSamples=%d biteArmedSamples=%d biteArmedTransitions=%d bumpedBiteSamples=%d bumpedTransitions=%d armedLostBeforeBumped=%d armedTimeouts=%d",
         MARKER,
         stats.updates,
         stats.withBandit,
@@ -259,6 +288,8 @@ Events.EveryOneMinute.Add(function()
         stats.wallBlockedSamples,
         stats.facingTrueSamples,
         stats.facingFalseSamples,
+        stats.earlyStateBlockedSamples,
+        stats.proneBlockedSamples,
         stats.overAttackCapSamples,
         stats.staggerSamples,
         stats.eligibleSamples,
@@ -273,6 +304,6 @@ Events.EveryOneMinute.Add(function()
 end)
 
 print(string.format(
-    "[LCC][BanditsBiteTrace][BOOT] marker=%s mode=observe-only postBanditUpdate=true mutation=false thresholds=1.2/0.8",
+    "[LCC][BanditsBiteTrace][BOOT] marker=%s mode=observe-only postBanditUpdate=true eligibility=mirrors-early-outs mutation=false thresholds=1.2/0.8",
     MARKER
 ))
