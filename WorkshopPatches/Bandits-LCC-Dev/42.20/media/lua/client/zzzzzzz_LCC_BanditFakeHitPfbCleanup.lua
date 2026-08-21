@@ -8,16 +8,23 @@
 -- "NetworkZombieMind: goal character is not set". A vanilla target pointing at
 -- the same helper is also not a legitimate combat relation and must not survive.
 --
+-- Runtime 2026-08-21 confirmed the narrow fix: 79 fake target relations were
+-- cleared, no Goal.Character survived to the late sweep, and NetworkZombieMind
+-- warnings dropped to zero. v3 keeps the same behavior but caches the cell's
+-- reusable fake-hit zombie so getFakeZombieForHit() is not called for every
+-- ordinary-zombie update.
+--
 -- This fix is deliberately exact: it only clears relations to the cell's engine
 -- fake-hit zombie. Real players, Bandits and arbitrary non-player mod targets are
 -- untouched here.
 if isServer() then return end
 
-local MARKER = "fake-hit-relation-cleanup-v2"
+local MARKER = "fake-hit-relation-cleanup-v3"
 LCC_BANDITS_FAKE_HIT_PFB_CLEANUP = MARKER
 
 local stats = {
     updates = 0,
+    fakeRefRefreshes = 0,
     fakeRelations = 0,
     fakeCharacterGoals = 0,
     pfbCancels = 0,
@@ -30,6 +37,8 @@ local stats = {
 local detailBudget = 24
 local rebindTicks = 0
 local rebound = false
+local cachedCell = nil
+local cachedFakeZombie = nil
 
 local function isBandit(character)
     return character ~= nil
@@ -46,18 +55,30 @@ local function characterId(character)
     return tostring(character)
 end
 
+local function getFakeZombie()
+    local cell = getCell()
+    if not cell then return nil end
+
+    if cell ~= cachedCell or not cachedFakeZombie then
+        local ok, fakeZombie = pcall(function() return cell:getFakeZombieForHit() end)
+        if not ok or not fakeZombie then
+            stats.errors = stats.errors + 1
+            return nil
+        end
+        cachedCell = cell
+        cachedFakeZombie = fakeZombie
+        stats.fakeRefRefreshes = stats.fakeRefRefreshes + 1
+    end
+
+    return cachedFakeZombie
+end
+
 local function onZombieUpdate(zombie)
     if not zombie or not zombie:isAlive() or isBandit(zombie) then return end
     stats.updates = stats.updates + 1
 
-    local cell = getCell()
-    if not cell then return end
-
-    local okFake, fakeZombie = pcall(function() return cell:getFakeZombieForHit() end)
-    if not okFake or not fakeZombie then
-        stats.errors = stats.errors + 1
-        return
-    end
+    local fakeZombie = getFakeZombie()
+    if not fakeZombie then return end
 
     local changed = false
     local targetCleared = false
@@ -152,9 +173,10 @@ Events.OnTick.Add(lateRebind)
 
 Events.EveryOneMinute.Add(function()
     print(string.format(
-        "[LCC][BanditsFakeHitRelation][SUMMARY] marker=%s updates=%d fakeRelations=%d fakeCharacterGoals=%d pfbCancels=%d targetClears=%d attackedByClears=%d errors=%d lateRebinds=%d",
+        "[LCC][BanditsFakeHitRelation][SUMMARY] marker=%s updates=%d fakeRefRefreshes=%d fakeRelations=%d fakeCharacterGoals=%d pfbCancels=%d targetClears=%d attackedByClears=%d errors=%d lateRebinds=%d",
         MARKER,
         stats.updates,
+        stats.fakeRefRefreshes,
         stats.fakeRelations,
         stats.fakeCharacterGoals,
         stats.pfbCancels,
@@ -166,6 +188,6 @@ Events.EveryOneMinute.Add(function()
 end)
 
 print(string.format(
-    "[LCC][BanditsFakeHitRelation][BOOT] marker=%s target=engine-fake-hit-zombie action=clear-target+attackedBy+cancel-character-pfb",
+    "[LCC][BanditsFakeHitRelation][BOOT] marker=%s target=engine-fake-hit-zombie action=clear-target+attackedBy+cancel-character-pfb fakeRef=cached-per-cell",
     MARKER
 ))
