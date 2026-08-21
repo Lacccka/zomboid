@@ -1,9 +1,9 @@
 require "BanditZombie"
 
 -- [LCC POC] Local B42.20.3 reference implementation; this working copy is for controlled testing.
--- v2 removes every active pathToCharacter(bandit) call from zombie -> Bandit pursuit.
-LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-coordinate-pursuit-v2"
-print("[LCC][BanditsAttackPoC][INIT] upstream-coordinate-pursuit-v2 active; character pursuit and vanilla target bridge disabled")
+-- v3 keeps zombie -> Bandit pursuit coordinate-only and throttles redundant Goal.Location refreshes in-source.
+LCC_BANDITS_ATTACK_BRIDGE_POC = "upstream-coordinate-pursuit-v3"
+print("[LCC][BanditsAttackPoC][INIT] upstream-coordinate-pursuit-v3 active; character pursuit disabled; location repath throttled in BanditUpdate")
 
 local sum1 = 0
 local sum2 = 0
@@ -1513,11 +1513,41 @@ local biteTab = {}
 -- Passing the Bandit IsoZombie to pathToCharacter() can create/retain a Java/network
 -- goal-character relationship. Keep the destination as x/y/z only so the custom
 -- Bite/BiteLow pipeline can operate without constructing a character target.
+--
+-- Build 42.20.3 PathFindBehavior2.setData() cancels the in-flight path request.
+-- Reissuing the same location on every OnZombieUpdate therefore caused sustained
+-- pathfind stalls. The confirmed fix is kept here, at the only call site that
+-- actually represents zombie -> Bandit coordinate pursuit.
+local PURSUIT_ALIGN_DIST2 = 0.5625 -- 0.75 tile
+local PURSUIT_IDLE_RETRY_MS = 750
+local pursuitIdleRetryAt = setmetatable({}, { __mode = "k" })
+
 local function PathZombieToBanditLocation(zombie, banditCached)
     if not zombie or not banditCached then return end
-    if BanditUtils.IsController(zombie) then
-        zombie:pathToLocationF(banditCached.x, banditCached.y, banditCached.z)
+    if not BanditUtils.IsController(zombie) then return end
+
+    local pfb = zombie:getPathFindBehavior2()
+    if pfb and not pfb:getIsCancelled() and pfb:isGoalLocation() then
+        local dx = pfb:getTargetX() - banditCached.x
+        local dy = pfb:getTargetY() - banditCached.y
+        local dz = math.abs(pfb:getTargetZ() - banditCached.z)
+        local aligned = dz < 0.5 and (dx * dx + dy * dy) <= PURSUIT_ALIGN_DIST2
+
+        if aligned then
+            if zombie:getActionStateName() ~= "idle" then
+                return
+            end
+
+            local now = getTimestampMs()
+            local lastRetry = pursuitIdleRetryAt[zombie] or 0
+            if now - lastRetry < PURSUIT_IDLE_RETRY_MS then
+                return
+            end
+            pursuitIdleRetryAt[zombie] = now
+        end
     end
+
+    zombie:pathToLocationF(banditCached.x, banditCached.y, banditCached.z)
 end
 
 -- manages zombie behavior towards bandits
@@ -1696,8 +1726,8 @@ local function UpdateZombies(zombie)
                     -- zombie:setPath2(nil)
 
                     if zombie and bandit then
-                        -- [LCC POC v2] Keep the final approach coordinate-only as well.
-                        -- Do not pass the Bandit IsoZombie into character-pathing APIs.
+                        -- [LCC POC v3] Keep the final approach coordinate-only and
+                        -- refresh the location goal only when the Bandit actually moved.
                         PathZombieToBanditLocation(zombie, banditCached)
                     end
                     
