@@ -1,25 +1,31 @@
--- LCC controlled PoC for B42.20 Bandits -> vanilla zombie combat relationships.
+-- LCC controlled suppression of unsafe Bandit -> ordinary-zombie character
+-- relationships for B42.20.3.
 --
--- The direct gunshot alert in ZAShoot.lua is source-edited to use
--- pathToLocationF() instead of spottedNew/addAggro/setTarget. This companion
--- handles two remaining retaliation seams that are buried inside upstream
--- functions: melee Smack and BanditUtils.Hit.
+-- ZAShoot.lua is source-edited to alert ordinary zombies with coordinates only.
+-- This companion sanitizes the two remaining retaliation seams after actual
+-- Bandit damage: ZombieActions.Smack and BanditUtils.Hit.
+--
+-- v5 deliberately DOES NOT issue pathToLocationF(attackerX, attackerY, attackerZ)
+-- after a hit. Decompiled LungeState.execute() unconditionally normalizes the
+-- zombie's target vector; a same/near-same coordinate response can therefore
+-- contribute a zero-length-vector failure. Normal BanditUpdate coordinate pursuit
+-- and the gunshot sound-coordinate alert remain responsible for movement.
 if isServer() then return end
 
-local MARKER = "character-relation-suppression-v4"
+local MARKER = "character-relation-suppression-v5"
 LCC_BANDITS_ATTACK_RELATION_POC = MARKER
 
-local stats = rawget(_G, "LCC_BanditsRelationshipStats") or {
-    shotCoordinateAlerts = 0,
-    meleeChecks = 0,
-    meleeDamageEvents = 0,
-    gunChecks = 0,
-    gunDamageEvents = 0,
-    targetClears = 0,
-    attackedByClears = 0,
-    coordinateResponses = 0,
-    sanitizeErrors = 0,
-}
+local stats = rawget(_G, "LCC_BanditsRelationshipStats") or {}
+stats.shotCoordinateAlerts = stats.shotCoordinateAlerts or 0
+stats.meleeChecks = stats.meleeChecks or 0
+stats.meleeDamageEvents = stats.meleeDamageEvents or 0
+stats.gunChecks = stats.gunChecks or 0
+stats.gunDamageEvents = stats.gunDamageEvents or 0
+stats.targetClears = stats.targetClears or 0
+stats.attackedByClears = stats.attackedByClears or 0
+stats.coordinateResponses = stats.coordinateResponses or 0 -- legacy counter; v5 keeps it at zero
+stats.retaliationPathsSuppressed = stats.retaliationPathsSuppressed or 0
+stats.sanitizeErrors = stats.sanitizeErrors or 0
 _G.LCC_BanditsRelationshipStats = stats
 
 local seenPairs = {}
@@ -55,30 +61,27 @@ end
 local function healthOf(character)
     if not character then return nil end
     local ok, value = pcall(function() return character:getHealth() end)
-    if ok then return value end
-    return nil
+    return ok and value or nil
 end
 
 local function currentTarget(character)
     if not character then return nil end
     local ok, value = pcall(function() return character:getTarget() end)
-    if ok then return value end
-    return nil
+    return ok and value or nil
 end
 
-local function logPairOnce(source, victim, attacker, targetCleared, attackedByCleared, pathIssued)
+local function logPairOnce(source, victim, attacker, targetCleared, attackedByCleared)
     local key = table.concat({source, characterId(victim), characterId(attacker)}, ":")
     if seenPairs[key] then return end
     seenPairs[key] = true
     print(string.format(
-        "[LCC][BanditsRelationPoC][SANITIZE] marker=%s source=%s victim=%s attacker=%s targetCleared=%s attackedByCleared=%s coordinateResponse=%s",
+        "[LCC][BanditsRelationPoC][SANITIZE] marker=%s source=%s victim=%s attacker=%s targetCleared=%s attackedByCleared=%s coordinateResponse=false retaliationPathSuppressed=true",
         MARKER,
         source,
         characterId(victim),
         characterId(attacker),
         tostring(targetCleared),
-        tostring(attackedByCleared),
-        tostring(pathIssued)
+        tostring(attackedByCleared)
     ))
 end
 
@@ -88,7 +91,6 @@ local function sanitizeBanditRelationship(victim, attacker, source, clearAttacke
 
     local targetCleared = false
     local attackedByCleared = false
-    local pathIssued = false
 
     local target = currentTarget(victim)
     if isBandit(target) then
@@ -113,22 +115,11 @@ local function sanitizeBanditRelationship(victim, attacker, source, clearAttacke
         end
     end
 
-    -- Keep the intended retaliation/attention behavior without a character
-    -- target. This mirrors the coordinate-only zombie pursuit used by the v2
-    -- BanditUpdate PoC and the source-edited gunshot alert path.
-    local okPath = pcall(function()
-        victim:pathToLocationF(attacker:getX(), attacker:getY(), attacker:getZ())
-    end)
-    if okPath then
-        pathIssued = true
-        stats.coordinateResponses = stats.coordinateResponses + 1
-    else
-        stats.sanitizeErrors = stats.sanitizeErrors + 1
-        warnOnce("path", "[LCC][BanditsRelationPoC][ERROR] pathToLocationF retaliation failed")
-    end
-
-    logPairOnce(source, victim, attacker, targetCleared, attackedByCleared, pathIssued)
-    return targetCleared or attackedByCleared or pathIssued
+    -- No exact-coordinate path is issued here. The normal zombie update will
+    -- rediscover a nearby Bandit and use the existing coordinate-only pursuit.
+    stats.retaliationPathsSuppressed = stats.retaliationPathsSuppressed + 1
+    logPairOnce(source, victim, attacker, targetCleared, attackedByCleared)
+    return targetCleared or attackedByCleared
 end
 
 local smackWrapped = false
@@ -153,7 +144,6 @@ if type(ZombieActions) == "table"
                 sanitizeBanditRelationship(victim, bandit, "melee", damaged)
             end
         end
-
         return result
     end
     smackWrapped = true
@@ -180,7 +170,6 @@ if type(BanditUtils) == "table" and type(BanditUtils.Hit) == "function" then
                 sanitizeBanditRelationship(victim, shooter, "gun-hit", damaged)
             end
         end
-
         return result
     end
     gunWrapped = true
@@ -190,7 +179,7 @@ end
 
 local function summary()
     print(string.format(
-        "[LCC][BanditsRelationPoC][SUMMARY] marker=%s shotCoordinateAlerts=%d meleeChecks=%d meleeDamageEvents=%d gunChecks=%d gunDamageEvents=%d targetClears=%d attackedByClears=%d coordinateResponses=%d sanitizeErrors=%d",
+        "[LCC][BanditsRelationPoC][SUMMARY] marker=%s shotCoordinateAlerts=%d meleeChecks=%d meleeDamageEvents=%d gunChecks=%d gunDamageEvents=%d targetClears=%d attackedByClears=%d coordinateResponses=%d retaliationPathsSuppressed=%d sanitizeErrors=%d",
         MARKER,
         stats.shotCoordinateAlerts or 0,
         stats.meleeChecks or 0,
@@ -200,6 +189,7 @@ local function summary()
         stats.targetClears or 0,
         stats.attackedByClears or 0,
         stats.coordinateResponses or 0,
+        stats.retaliationPathsSuppressed or 0,
         stats.sanitizeErrors or 0
     ))
 end
@@ -207,7 +197,7 @@ end
 Events.EveryOneMinute.Add(summary)
 
 print(string.format(
-    "[LCC][BanditsRelationPoC][BOOT] marker=%s gunshotAlert=coordinate-only meleeWrapped=%s gunHitWrapped=%s",
+    "[LCC][BanditsRelationPoC][BOOT] marker=%s gunshotAlert=coordinate-only meleeWrapped=%s gunHitWrapped=%s retaliationPath=disabled",
     MARKER,
     tostring(smackWrapped),
     tostring(gunWrapped)
