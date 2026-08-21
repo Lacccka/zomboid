@@ -18,14 +18,14 @@ Every Workshop item must keep this warning:
 | --- | --- | ---: | --- | --- |
 | `PatchCore` | `LaccckaB4220PatchCore` | `3786175901` | Lacccka B42 Patch Core | Shared guarded-patch helper used by functional patches. |
 | `RuntimeFixes` | `LaccckaB4220RuntimeFixes` | `3786175979` | Lacccka B42 Runtime Fixes | Low-level runtime, dedicated-server, cache and API compatibility hooks. |
-| `NPCFixes` | `LaccckaB4220NPCFixes` | staging `0` | Lacccka B42 NPC Fixes | Validated NPC combat, terminal-death and corpse/clothing lifecycle fixes. |
+| `NPCFixes` | `LaccckaB4220NPCFixes` | staging `0` | Lacccka B42 NPC Fixes | Stable NPC combat, terminal-death and corpse/clothing lifecycle fixes. |
 | `NPCCombatExperimental` | `LaccckaB4220NPCCombatExperimental` | `3786817782` | Lacccka B42 NPC Combat Experimental | Diagnostics, corpse tracing and admin stress-test tooling only. |
 | `ActivityFixes` | `LaccckaB4220ActivityFixes` | `3786175725` | Lacccka B42 Activity Fixes | Lifestyle hygiene, Yoga/progression and perk compatibility fixes. |
 | `CompatibilityBridges` | `LaccckaB4220CompatBridges` | `3786175808` | Lacccka B42 Compatibility Bridges | Build 42 legacy module/API redirects used by weapon, vehicle and framework mods. |
 | `SafetyFixes` | `LaccckaB4220SafetyFixes` | `3786176221` | Lacccka B42 Safety Fixes | Defensive inventory/UI compatibility guards. |
 | `RussianTextFixes` | `LaccckaB4220RussianText` | `3786176120` | Lacccka B42 Russian Text Fixes | Russian localization and skill/UI text corrections. |
 
-`NPCFixes` remains a private release-candidate item until its source-clean transformers pass a regression run against the normal installed `Bandits2` rather than `Bandits-LCC-Dev`.
+`NPCFixes` code is stable `1.0.0`. Its source-clean transformers passed an acceptance run against the normal Workshop `Bandits2` installation on 2026-08-21. The Workshop project remains private with staging `id=0` only until a real Workshop ID and final preview are assigned.
 
 ## Dependency model
 
@@ -64,6 +64,8 @@ Two Bandits functions are local to upstream files and cannot be safely monkeypat
 
 The Workshop item therefore contains no complete third-party implementation. A fingerprint mismatch must result in a visible bypass warning rather than an unverified guessed patch.
 
+Stable acceptance evidence is stored in `docs/final-reports/npcfixes-source-clean-bandits-acceptance-2026-08-21.md`.
+
 ## NPCCombatExperimental isolation contract
 
 `NPCCombatExperimental` is optional tooling for controlled tests. Production target-disconnect behavior has been promoted out of it. It retains observe-only target/AttackState diagnostics, death/corpse tracing and the staff-only stress spawner/server bridge.
@@ -80,7 +82,7 @@ Every stable/experimental Workshop item is reviewed independently for scope and 
 
 Each published/staged child directory has its own `workshop.txt` and `Contents/mods/.../42/mod.info`.
 
-Published items keep their assigned Workshop IDs and non-empty previews. A new item may remain `id=0`, `visibility=private`, and without a final preview while it is still a release candidate; it must receive a real Workshop ID and preview before public publication.
+Published items keep their assigned Workshop IDs and non-empty previews. A stable new item may remain `id=0`, `visibility=private`, and without a final preview while the Workshop page is not yet created; it must receive a real Workshop ID and preview before public publication.
 
 ## Test rule
 
