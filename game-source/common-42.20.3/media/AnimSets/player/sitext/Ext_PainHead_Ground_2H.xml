@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="Ext_PainHead_Ground.xml">
+	<m_Name>Ext_PainHead_Ground_2H</m_Name>
+	<m_Conditions x_name="70bc94a1-4afe-4ccc-a3ef-7754a3b8d8ba">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="4f43f167-8a4d-4535-b74d-0b06e9c682cf">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="3442f6f8-5ecb-439d-ad7d-031392fdfb74">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainHead1</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="ed89c092-40c3-4fdb-9223-e22185bdfab2">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="45fc8c2d-ef74-4ee1-9a02-4e28778b4348">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="cb8df31f-0838-4ce5-a461-de0d57421943">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="7d53a0c0-3a32-43fa-8739-cc9f4b52c32f">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainHead1</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="6464c5a6-7840-4872-a589-47367a5e18a9">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="6a66c5c4-dd1a-46e4-822d-a782db8da9e8">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+</animNode>

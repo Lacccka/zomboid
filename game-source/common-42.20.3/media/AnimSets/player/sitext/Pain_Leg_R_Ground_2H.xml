@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="PainLegR_Ground.xml">
+	<m_Name>Pain_Leg_R_Ground_2H</m_Name>
+	<m_Conditions x_name="b07e9650-310e-45af-ad6b-9c5cbc2d7021">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="dae9c1b2-8ed3-4508-863e-a06ffe404bf0">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="0c23e77d-4b04-4a57-a904-16a0eb339cd7">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainLegR</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="4f3a61a6-7a22-4316-ade6-ba75f6737d3a">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="5e33afa0-6ade-4988-8a55-9babca0ca051">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="9c47955c-e4c9-493e-be88-85bf72d8f1aa">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="7367c0b1-1c67-474c-813b-7ea9cb59fff1">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainLegR</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="1d7e120f-cc05-432c-94ee-eb57097efc89">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="7eded0ef-734f-4238-b04f-5c8a737d6835">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="e06c6894-6f30-4fb9-99af-ecb3371f3b8f">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="f2ae0fbc-b6aa-43fb-82db-811a00f5c8c9">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainLegR</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="a39ccf70-2c89-4fef-9f1a-682da9c6765c">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>heavy</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="71a0567f-da4f-48d2-929b-8ac7e6d656bd">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Events x_name="77ea6c16-1e24-47f3-9248-ef638978dfdd">
+		<m_EventName>FlagWhileAlive</m_EventName>
+		<m_Time>Start</m_Time>
+		<m_ParameterValue>hideEquippedHandL</m_ParameterValue>
+	</m_Events>
+	<m_Events x_name="9e2e9894-1ade-41b3-a0ce-b51b2da1ca1f">
+		<m_EventName>FlagWhileAlive</m_EventName>
+		<m_Time>Start</m_Time>
+		<m_ParameterValue>hideEquippedHandR</m_ParameterValue>
+	</m_Events>
+</animNode>

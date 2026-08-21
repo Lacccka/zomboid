@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode>
+	<m_Name>sit_warmhands</m_Name>
+	<m_AnimName>Bob_SitGround_WarmHands</m_AnimName>
+	<m_BlendTime>0.40</m_BlendTime>
+	<m_SpeedScale>0.38</m_SpeedScale>
+	<m_SyncTrackingEnabled>false</m_SyncTrackingEnabled>
+	<m_Conditions x_name="90b89ee4-2081-4ea8-af55-5107328289af">
+		<m_Name>SitGroundAnim</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>WarmHands</m_Value>
+	</m_Conditions>
+	<m_Events x_name="c5d90679-8a62-4f18-b0a9-e3bf7b22a4d0">
+		<m_EventName>FlagWhileAlive</m_EventName>
+		<m_Time>Start</m_Time>
+		<m_ParameterValue>hideEquippedHandL</m_ParameterValue>
+	</m_Events>
+	<m_Events x_name="9ad750eb-15c7-4d91-a298-b8f4ddaeb218">
+		<m_EventName>FlagWhileAlive</m_EventName>
+		<m_Time>Start</m_Time>
+		<m_ParameterValue>hideEquippedHandR</m_ParameterValue>
+	</m_Events>
+	<m_Transitions>
+		<m_Target>sit_action_warmhands</m_Target>
+		<m_blendInTime>0.5</m_blendInTime>
+		<m_blendOutTime>0.5</m_blendOutTime>
+		<m_speedScale>1</m_speedScale>
+	</m_Transitions>
+	<m_Transitions>
+		<m_Target>sitext</m_Target>
+		<m_blendInTime>0.5</m_blendInTime>
+		<m_blendOutTime>0.5</m_blendOutTime>
+		<m_speedScale>1</m_speedScale>
+	</m_Transitions>
+</animNode>

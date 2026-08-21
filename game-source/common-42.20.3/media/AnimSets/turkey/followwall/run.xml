@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="default.xml">
+	<m_Name>run</m_Name>
+	<m_AnimName>Turk_Run</m_AnimName>
+	<m_Conditions x_name="7374d871-4dd5-4462-bfb0-e6fc1cccda38">
+		<m_Name>animalRunning</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Events x_name="a1cd85b6-6d8c-4fa2-af73-ddac800a55bb">
+		<m_TimePc>0.33</m_TimePc>
+		<m_ParameterValue>run</m_ParameterValue>
+	</m_Events>
+	<m_Events x_name="cf33d1ab-5b03-4779-b295-0f3840bbb9f1">
+		<m_TimePc>0.87</m_TimePc>
+		<m_ParameterValue>run</m_ParameterValue>
+	</m_Events>
+</animNode>

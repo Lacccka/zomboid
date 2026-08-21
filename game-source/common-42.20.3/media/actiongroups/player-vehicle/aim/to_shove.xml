@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transition>
+	<transitionTo>shove</transitionTo>
+	<conditions>
+		<isTrue>initiateAttack</isTrue>
+		<isTrue>bDoShove</isTrue>
+		<isFalse>AttackAnim</isFalse>
+	</conditions>
+</transition>

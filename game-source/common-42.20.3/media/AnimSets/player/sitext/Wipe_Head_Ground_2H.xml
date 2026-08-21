@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="WipeHead_Ground.xml">
+	<m_Name>Wipe_Head_Ground_2H</m_Name>
+	<m_AnimName>Bob_Emote_Wipe_Sat_Head_2H</m_AnimName>
+	<m_Conditions x_name="583d4fd2-c35e-44f5-8231-fa5f5f34251d">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="eef07129-bc02-4055-9a8f-58f9f0184b87">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="37a4ca07-789c-46a1-aa3e-3f15d37b1ec7">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>WipeHead</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="ecd0dea3-f599-40ec-ba5f-6870c91f87b8">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="3650a083-1c9a-4e50-aaae-d19f12869d31">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="e2d19b32-9aa9-46e4-84f5-e6b1fbf5fccf">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="9628587a-2fee-4a16-9107-d010b4201120">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>WipeHead</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="50240220-b852-43a4-8f53-a3b47fce2870">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="185c3bf4-f4ac-43fd-a44f-d212107143e4">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+</animNode>

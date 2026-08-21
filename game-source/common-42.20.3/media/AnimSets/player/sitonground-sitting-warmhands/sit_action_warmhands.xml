@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode>
+	<m_Name>sit_action_warmhands</m_Name>
+	<m_Priority>7</m_Priority>
+	<m_AnimName>Bob_SitGround_ActionIdle</m_AnimName>
+	<m_BlendTime>0.30</m_BlendTime>
+	<m_SpeedScale>0.30</m_SpeedScale>
+	<m_SyncTrackingEnabled>false</m_SyncTrackingEnabled>
+	<m_Conditions x_name="b188aade-830c-4d75-a9dc-b29914e04602">
+		<m_Name>hasTimedActions</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="bf8117b3-7014-4ea6-9b97-3afe9c6578c0">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="16f5c999-ade3-41e1-b1f9-6b256e839132">
+		<m_Name>extplaying</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Transitions>
+		<m_Target>sit_Warmhands</m_Target>
+		<m_AnimName>Bob_SitGround_ActionToSitIdle</m_AnimName>
+		<m_speedScale>1</m_speedScale>
+	</m_Transitions>
+</animNode>

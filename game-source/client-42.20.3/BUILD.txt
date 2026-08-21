@@ -1,0 +1,12 @@
+Project Zomboid client runtime overlay
+Build: 42.20.3
+Generated UTC: 2026-08-21T09:18:21+00:00
+
+Runtime source:
+C:\Program Files (x86)\Steam\steamapps\common\ProjectZomboid
+
+Shared vanilla source:
+../common-42.20.3
+
+projectzomboid.jar SHA-256:
+bda809fb49004a07dbfc560d059c0ee58d0643ab0f33b53351b13bd62f1d8227

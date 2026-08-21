@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transition>
+	<transitionTo>fakedead</transitionTo>
+	<conditions>
+		<isFalse>isSimulationActive</isFalse>
+		<isTrue>isRagdoll</isTrue>
+	</conditions>
+</transition>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="PainHandL.xml">
+	<m_Name>Pain_Hand_L_2H</m_Name>
+	<m_AnimName>Bob_Emote_Pain_Sat_Hand_L_2H</m_AnimName>
+	<m_Conditions x_name="6494b6f2-5b4b-422c-91d6-f895c226acdc">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="591cd9d8-3b53-4885-a5de-37fb3cb6fa92">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="c526282d-256f-48dd-bff3-5687dc613994">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainHandL</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="789cdd1d-1ff6-453c-a49e-447b3a3f5407">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="e32b0b8e-7ef5-4a4a-bac2-8183b74a8d49">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="14f212f7-ae2f-4e2f-a9d2-b7ed1eddc8c0">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>PainHandL</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="96d80b42-eb2f-4397-891e-6d7ac4b3b8a6">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+</animNode>

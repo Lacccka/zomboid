@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transitions>
+	<transition>
+		<transitionTo>hitreaction-bite</transitionTo>
+		<conditions>
+			<compare op="==" a="hitreaction" b="Bite" />
+		</conditions>
+	</transition>
+	<transition>
+		<transitionTo>hitreaction-bite</transitionTo>
+		<conditions>
+			<compare op="==" a="hitreaction" b="BiteDefended" />
+		</conditions>
+	</transition>
+	<transition>
+		<transitionTo>hitreaction-bite</transitionTo>
+		<conditions>
+			<compare op="==" a="hitreaction" b="BiteLEFT" />
+		</conditions>
+	</transition>
+	<transition>
+		<transitionTo>hitreaction-bite</transitionTo>
+		<conditions>
+			<compare op="==" a="hitreaction" b="BiteRIGHT" />
+		</conditions>
+	</transition>
+</transitions>

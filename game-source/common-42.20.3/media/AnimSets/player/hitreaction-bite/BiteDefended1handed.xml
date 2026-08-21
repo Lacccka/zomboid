@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="BiteDefended.xml">
+	<m_Name>BiteDefended1handed</m_Name>
+	<m_Conditions x_name="c62aa3eb-17e0-4273-9779-b3eb556ad5b8">
+		<m_Value>1handed</m_Value>
+	</m_Conditions>
+</animNode>

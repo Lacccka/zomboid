@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="Sneeze2.xml">
+	<m_Name>Sneeze2_2H</m_Name>
+	<m_AnimName>Bob_Emote_Sneeze2_Sat_2H</m_AnimName>
+	<m_Conditions x_name="e51fdc38-9bae-42f1-8a8a-7c0e4257bf19">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="6f18e2a9-8ab4-4244-942f-836e25f794b5">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="db536599-2856-45e7-b6eb-1aab4045aa06">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>Sneeze2</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="5ec33927-2cd4-496b-bbd2-714cc0c11968">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="3d91f8a7-73bf-403a-ab8a-b259a1734af3">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="06e4e5ce-727b-4086-bdd4-40f94663bd15">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>Sneeze2</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="a8009d54-3e57-498b-8477-54ff82970e67">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+</animNode>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="Ext03.xml">
+	<m_Name>Ext03_2Handed</m_Name>
+	<m_AnimName>Bob_Idle1HandExt03</m_AnimName>
+	<m_Conditions x_name="e9945ad7-bd73-46f1-81db-cf16fc034313">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="b07c77fc-6165-413b-b841-6e4a7fafc912">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="c42b9ecb-6e00-4bfd-b692-c179a5cac737">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>3</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="d8583cfd-ca74-4a5e-9ce8-53897d2b6122">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="d798b097-3e9e-44f3-a884-2635893696e7">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="b081aa8a-389f-4e7e-80be-398be55efb4f">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>3</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="ea44ded5-2536-41f8-8bc0-5c0b9a7aff6b">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+</animNode>

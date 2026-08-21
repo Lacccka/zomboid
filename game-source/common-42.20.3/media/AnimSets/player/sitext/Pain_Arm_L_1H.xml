@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="PainArmL.xml">
+	<m_Name>Pain_Arm_L_1H</m_Name>
+	<m_AnimName>Bob_Emote_Pain_Sat_Arm_L_1H</m_AnimName>
+</animNode>

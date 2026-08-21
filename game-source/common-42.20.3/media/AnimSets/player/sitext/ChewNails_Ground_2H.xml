@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="ChewNails_Ground.xml">
+	<m_Name>ChewNails_Ground_2H</m_Name>
+	<m_Conditions x_name="4e8644bc-8b5e-420c-b39f-0fcfc4b4ac9b">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="d85bf4b2-75a9-4360-a016-7151a081be24">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="41e29894-1542-4160-85a5-42987f365ca1">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>ChewNails</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="9ae51a0f-48d8-48e9-8f39-626c024a068a">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="79adce2a-0dc0-458f-84f0-5bc0a3cb767b">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="0bbd2dc3-b46d-42f7-95ed-1e35d9f2b6e2">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="be3c3070-2a45-44d9-8d16-b511e064e51a">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>ChewNails</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="e04fe3e7-bfb2-4f8e-99fa-6d6b5a5313b4">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="058d2b7e-52d2-4f8a-a47e-a476ab496590">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+</animNode>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="Bite.xml">
+	<m_Name>BiteFromRight</m_Name>
+	<m_AnimName>Bob_BiteReact_Bat_R</m_AnimName>
+	<m_Conditions x_name="e87498ae-f107-4aa9-afd6-785b083c26fa">
+		<m_Value>BiteRIGHT</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="5ad17b45-4868-425f-9304-53335973a3c8">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="16b335ef-f12c-4534-bd55-3f0acb427e4e">
+		<m_Name>hitreaction</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>BiteRIGHT</m_Value>
+	</m_Conditions>
+</animNode>

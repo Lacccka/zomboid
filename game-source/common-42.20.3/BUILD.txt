@@ -1,0 +1,48 @@
+Project Zomboid vanilla source snapshot
+Build: 42.20.3
+Generated UTC: 2026-08-21T09:18:21+00:00
+
+Client installation:
+C:\Program Files (x86)\Steam\steamapps\common\ProjectZomboid
+
+Dedicated server installation:
+C:\Program Files (x86)\Steam\steamapps\common\Project Zomboid Dedicated Server
+
+Client projectzomboid.jar SHA-256:
+bda809fb49004a07dbfc560d059c0ee58d0643ab0f33b53351b13bd62f1d8227
+
+Dedicated server projectzomboid.jar SHA-256:
+bda809fb49004a07dbfc560d059c0ee58d0643ab0f33b53351b13bd62f1d8227
+
+Verification:
+- JAR hashes are identical.
+- 10602 selected vanilla source/config files were compared.
+- Selected client/server files are byte-identical by SHA-256.
+
+Snapshot policy:
+- media/lua/**/*.lua
+- media/lua/shared/Translate/EN and RU text translation files
+- media/scripts/**/*.txt
+- actiongroups / AnimSets / animscript / animstates source configs
+- selected model/item/clothing/effect/radio XML/TXT configs
+- media/maps/**/*.lua and *.info only
+- media/fileGuidTable.xml
+- media/SpritePaddingSettings.xml
+
+Explicitly excluded:
+- Steam Workshop content
+- appcache / depotcache / userdata
+- JRE / native binaries / DLLs
+- logs
+- textures / texturepacks / UI images
+- audio / video
+- 3D binary/model assets
+- .lotpack / .lotheader / .bin map cells
+- large world-map XML data
+- raw projectzomboid.jar
+
+Java decompilation target:
+C:\zomboid\game-source\common-42.20.3\java
+
+The decompiler should read the JAR directly from:
+C:\Program Files (x86)\Steam\steamapps\common\ProjectZomboid\projectzomboid.jar

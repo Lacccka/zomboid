@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="defaultPathfind.xml">
+	<m_Name>runPathfind</m_Name>
+	<m_AnimName>TurkPoult_Run</m_AnimName>
+	<m_Conditions x_name="1e3e3ef3-c6f3-4df8-9d4c-666744522c92">
+		<m_Name>animalRunning</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Events x_name="2fab9393-6e63-4cdf-9ee3-b96759010391">
+		<m_TimePc>0.33</m_TimePc>
+		<m_ParameterValue>run</m_ParameterValue>
+	</m_Events>
+	<m_Events x_name="df62e8b6-6457-4452-ad82-8ed0b01466e4">
+		<m_TimePc>0.87</m_TimePc>
+		<m_ParameterValue>run</m_ParameterValue>
+	</m_Events>
+</animNode>

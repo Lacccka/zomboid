@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="Cough.xml">
+	<m_Name>Cough_2H</m_Name>
+	<m_Conditions x_name="74a269e3-602d-4504-a573-5764aae58a40">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="16b25e54-f6ff-408c-b16b-bbffed4a9f63">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="6b1d59c9-eddb-449f-90bc-018b851ee968">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>Cough</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="739d9dd7-5f77-4fea-a606-d56572f1e57f">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="56c0a146-e899-4164-9c42-cf388db940ac">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="33a76016-cad3-4d63-ade0-41aab1087ffc">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>Cough</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="9c58189a-9027-42ef-a340-eb0b0061103b">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights>
+		<weight>0.00</weight>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights>
+		<weight>0.00</weight>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights>
+		<weight>0.50</weight>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+	<m_SubStateBoneWeights />
+</animNode>

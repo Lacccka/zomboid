@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="fromSitOnFurnitureRightQuick.xml">
+	<m_Name>fromSitOnFurnitureRightQuick2Handed</m_Name>
+	<m_AnimName>Bob_Seated_StandUp_R_2Hand</m_AnimName>
+	<m_Conditions x_name="06b185e5-b950-4752-bb9c-88717a6c8b8e">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="5549b8e8-f6b5-48e3-98dd-64e81ac7c35e">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="5323f56c-a5a7-4c92-aa8e-e940190d8009">
+		<m_Name>sittingonfurniture</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="43154cdc-ab06-44ac-a8f7-e826ae4d64da">
+		<m_Name>SitOnFurnitureDirection</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>Right</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="ba21f049-244d-4d11-840c-a09e15be4d0d">
+		<m_Name>getUpQuick</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="186df665-ab5c-4b1f-9da9-ddcda07d660f">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+	<m_Events x_name="424a061a-4701-4ca4-b178-f779e244d080">
+		<m_ParameterValue></m_ParameterValue>
+	</m_Events>
+</animNode>

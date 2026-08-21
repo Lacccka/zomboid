@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="Ext04_Ground.xml">
+	<m_Name>Ext04_Ground_1Handed</m_Name>
+	<m_Conditions x_name="b9e7aac0-134c-484d-8e0a-4a210e22b1cc">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>1handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="baf8506f-67fd-458d-a443-aa3fe88be3bd">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="fd0fba3b-7ca1-4245-aa50-9b149098ebe8">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>4</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="37bfd06d-6ea6-4daa-af4e-41ee6bdf0a4e">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>knife</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="977e1ded-63f9-4ab1-a96e-c49b7136b295">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="3af5ea2d-ba0a-4f18-b0ed-41cf73ccf145">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="b95a175e-4566-4d95-bde6-c8348e7d24c6">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>4</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="0cac1a92-903f-495a-94f6-62636a6bfbb6">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>heavy</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="53193424-8acc-4068-9552-1e2060eacdde">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="2e535458-e8ab-472b-b05a-7e14978b241d">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="e1e30ef8-aa82-40c9-b3dd-ac19588f541f">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>4</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="f6c9af46-cb29-49f5-b54b-92f4d05e0784">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>handgun</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="08bb43ae-6e60-439d-bed9-56e9f35fa03b">
+		<m_Name>sitonground</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+</animNode>

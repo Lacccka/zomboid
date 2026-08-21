@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode>
+	<m_Name>HammerOre</m_Name>
+	<m_AnimName>Bob_IdleHammering_Low</m_AnimName>
+	<m_BlendTime>0.40</m_BlendTime>
+	<m_SpeedScale>0.80</m_SpeedScale>
+	<m_SyncTrackingEnabled>false</m_SyncTrackingEnabled>
+	<m_Conditions x_name="addb22bb-df52-4428-b20d-a28ac2695920">
+		<m_Name>PerformingAction</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>HammerOre</m_Value>
+	</m_Conditions>
+	<m_Events x_name="4034f13a-f269-4777-a092-927d98603cb5">
+		<m_EventName>PlaySound</m_EventName>
+		<m_TimePc>0.16</m_TimePc>
+		<m_ParameterValue>CraftMineralDepositHit</m_ParameterValue>
+	</m_Events>
+	<m_SubStateBoneWeights>
+		<boneName>Dummy01</boneName>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights>
+		<boneName>Translation_Data</boneName>
+	</m_SubStateBoneWeights>
+</animNode>

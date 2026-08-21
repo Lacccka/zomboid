@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="BentDouble.xml">
+	<m_Name>Bent_Double_Rifle</m_Name>
+	<m_AnimName>Bob_Emote_Bent_Double_Sat_Rifle</m_AnimName>
+	<m_Conditions x_name="fa00722d-e333-4e74-a3e4-0f8415fd17f8">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>firearm</m_Value>
+	</m_Conditions>
+</animNode>

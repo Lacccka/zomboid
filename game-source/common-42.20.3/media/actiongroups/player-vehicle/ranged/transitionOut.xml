@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transition>
+	<transitionOut>true</transitionOut>
+	<conditions>
+		<isTrue>aim</isTrue>
+		<isFalse>ShotDone</isFalse>
+		<eventOccurred>ActiveAnimFinishing</eventOccurred>
+	</conditions>
+</transition>

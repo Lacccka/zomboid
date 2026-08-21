@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode>
+	<m_Name>default</m_Name>
+	<m_AnimName>DeerStag_Walk</m_AnimName>
+	<m_BlendTime>0.20</m_BlendTime>
+	<m_SyncTrackingEnabled>false</m_SyncTrackingEnabled>
+	<m_Conditions x_name="6be5445b-28ad-4a47-b061-62c9becb6a0d">
+		<m_Name>bMoving</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_Value>true</m_Value>
+	</m_Conditions>
+	<m_Events x_name="514412a2-ba62-4f63-bf32-40f308ff5ec9">
+		<m_EventName>PlayBreedSound</m_EventName>
+		<m_TimePc>0.22</m_TimePc>
+		<m_ParameterValue>walkFront</m_ParameterValue>
+	</m_Events>
+	<m_Events x_name="244eeaf3-86df-45a2-bfdd-02f0172625b8">
+		<m_EventName>PlayBreedSound</m_EventName>
+		<m_TimePc>0.38</m_TimePc>
+		<m_ParameterValue>walkBack</m_ParameterValue>
+	</m_Events>
+	<m_Events x_name="eff73231-c37a-44d5-959f-473cee9113cc">
+		<m_EventName>PlayBreedSound</m_EventName>
+		<m_TimePc>0.59</m_TimePc>
+		<m_ParameterValue>walkFront</m_ParameterValue>
+	</m_Events>
+	<m_Events x_name="31bf6128-6ed7-4c3b-a458-b90921849f57">
+		<m_EventName>PlayBreedSound</m_EventName>
+		<m_TimePc>0.97</m_TimePc>
+		<m_ParameterValue>walkBack</m_ParameterValue>
+	</m_Events>
+</animNode>

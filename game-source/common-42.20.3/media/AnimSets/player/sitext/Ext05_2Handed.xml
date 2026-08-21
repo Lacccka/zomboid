@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="Ext05.xml">
+	<m_Name>Ext05_2Handed</m_Name>
+	<m_AnimName>Bob_IdleSeatedExt01_2H</m_AnimName>
+	<m_Conditions x_name="5e5709da-94e4-4194-95c8-172d1a14dd95">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>2handed</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="bbb75b1c-90e3-4d40-adfb-4d5e60880e6c">
+		<m_Type>OR</m_Type>
+	</m_Conditions>
+	<m_Conditions x_name="9691f7ba-ff83-4769-a7f0-708825d4f8b6">
+		<m_Name>Ext</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>5</m_Value>
+	</m_Conditions>
+	<m_Conditions x_name="ee955c03-e8a3-4ec0-a260-905176437a45">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>spear</m_Value>
+	</m_Conditions>
+</animNode>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="sit_ext.xml">
+	<m_Name>sit_ext_knife</m_Name>
+	<m_Conditions x_name="955458a1-2366-4d6f-a964-b02b7814b259">
+		<m_Name>Weapon</m_Name>
+		<m_Type>STRING</m_Type>
+		<m_Value>knife</m_Value>
+	</m_Conditions>
+	<m_Transitions>
+		<m_Target>sit_loop_knife</m_Target>
+	</m_Transitions>
+</animNode>
