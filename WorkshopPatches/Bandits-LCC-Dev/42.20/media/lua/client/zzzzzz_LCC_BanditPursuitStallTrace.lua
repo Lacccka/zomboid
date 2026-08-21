@@ -6,20 +6,14 @@
 -- stand still until the local player approaches or the Bandit starts a new task.
 --
 -- This tracer does NOT alter movement, targets, PathFindBehavior2, tasks or
--- ownership. It samples at a low rate and records only sustained stalls while a
--- zombie should have an active opportunity to pursue a nearby Bandit, plus
--- stalled Bandit Move/GoTo tasks. The next runtime archive should tell us whether
--- the freeze is caused by:
---   * an early action-state return such as turnalerted;
---   * loss of local zombie controller/ownership;
---   * a stale/finished Goal.Location;
---   * repeated pathfind state churn;
---   * or a Bandit Move/GoTo task that itself stops progressing.
+-- ownership. It samples each entity only four times per second and keeps the
+-- OnZombieUpdate hot path limited to table lookup/time gating plus isAlive().
+-- Expensive PFB/task snapshots are taken only when a sustained stall is detected.
 if isServer() then return end
 
 require "BanditZombie"
 
-local MARKER = "pursuit-stall-trace-v1"
+local MARKER = "pursuit-stall-trace-v2"
 LCC_BANDITS_PURSUIT_STALL_TRACE = MARKER
 
 local SAMPLE_MS = 250
@@ -30,10 +24,10 @@ local CLOSE_PURSUIT_DIST2 = 9       -- <=3 tiles is always pursued by current Po
 local STALE_LOCATION_DIST2 = 0.5625 -- path destination >0.75 tile behind Bandit
 local MOVE_TASK_TARGET_DIST2 = 0.5625
 
-local zombieSamples = setmetatable({}, { __mode = "k" })
-local banditSamples = setmetatable({}, { __mode = "k" })
+local samples = setmetatable({}, { __mode = "k" })
 local detailBudget = 96
-local rebindTicks = 0
+local nowMs = getTimestampMs()
+local tickCount = 0
 local rebound = false
 
 local stats = {
@@ -62,16 +56,10 @@ local stats = {
     lateRebinds = 0,
 }
 
-local function safeCall(default, fn)
+local function optionalCall(default, fn)
     local ok, value = pcall(fn)
     if ok then return value end
-    stats.errors = stats.errors + 1
     return default
-end
-
-local function isBandit(character)
-    if not character or not instanceof(character, "IsoZombie") then return false end
-    return safeCall(false, function() return character:getVariableBoolean("Bandit") end) == true
 end
 
 local function characterId(character)
@@ -80,24 +68,14 @@ local function characterId(character)
         local ok, value = pcall(BanditUtils.GetCharacterID, character)
         if ok and value ~= nil then return tostring(value) end
     end
-    local value = safeCall(nil, function() return character:getPersistentOutfitID() end)
+    local value = optionalCall(nil, function() return character:getPersistentOutfitID() end)
     return value ~= nil and tostring(value) or "unknown"
 end
 
 local function actionState(character)
     if not character then return "nil" end
-    local value = safeCall(nil, function() return character:getActionStateName() end)
+    local value = optionalCall(nil, function() return character:getActionStateName() end)
     return value ~= nil and tostring(value) or "<none>"
-end
-
-local function currentTarget(character)
-    if not character then return nil end
-    return safeCall(nil, function() return character:getTarget() end)
-end
-
-local function attackedBy(character)
-    if not character then return nil end
-    return safeCall(nil, function() return character:getAttackedBy() end)
 end
 
 local function isController(character)
@@ -112,16 +90,16 @@ local function isController(character)
     return value == true
 end
 
-local function playerSnapshot(zombie)
+local function playerSnapshot(character)
     local player = getSpecificPlayer(0)
-    if not player then return nil, math.huge, false, false end
+    if not player then return math.huge, false, false end
 
-    local dx = player:getX() - zombie:getX()
-    local dy = player:getY() - zombie:getY()
+    local dx = player:getX() - character:getX()
+    local dy = player:getY() - character:getY()
     local dist2 = dx * dx + dy * dy
-    local ghost = safeCall(false, function() return player:isGhostMode() end) == true
-    local invisible = safeCall(false, function() return player:isInvisible() end) == true
-    return player, dist2, ghost, invisible
+    local ghost = optionalCall(false, function() return player:isGhostMode() end) == true
+    local invisible = optionalCall(false, function() return player:isInvisible() end) == true
+    return dist2, ghost, invisible
 end
 
 local function nearestBandit(zombie)
@@ -146,66 +124,61 @@ local function nearestBandit(zombie)
 
     local id = bestCached.id
     local bandit = id and BanditZombie.Cache and BanditZombie.Cache[id] or nil
-    if not bandit or not safeCall(false, function() return bandit:isAlive() end) or not isBandit(bandit) then
+    if not bandit or not bandit:isAlive() or not bandit:getVariableBoolean("Bandit") then
         return nil
     end
 
+    local bx, by, bz = bandit:getX(), bandit:getY(), bandit:getZ()
     return {
         id = id,
         object = bandit,
-        x = bandit:getX(),
-        y = bandit:getY(),
-        z = bandit:getZ(),
-        dist2 = bestDist2,
-        zDelta = math.abs(zz - bandit:getZ()),
+        x = bx,
+        y = by,
+        z = bz,
+        dist2 = (bx - zx) * (bx - zx) + (by - zy) * (by - zy),
+        zDelta = math.abs(zz - bz),
     }
 end
 
 local function pfbSnapshot(character)
+    local pfb = optionalCall(nil, function() return character:getPathFindBehavior2() end)
+    if not pfb then
+        return { goal = "unavailable" }
+    end
+
     local out = {
-        goal = "unavailable",
-        cancelled = nil,
-        stopping = nil,
-        x = nil,
-        y = nil,
-        z = nil,
+        goal = "Other",
+        cancelled = optionalCall(nil, function() return pfb:getIsCancelled() end),
+        stopping = optionalCall(nil, function() return pfb.stopping end),
+        x = optionalCall(nil, function() return pfb:getTargetX() end),
+        y = optionalCall(nil, function() return pfb:getTargetY() end),
+        z = optionalCall(nil, function() return pfb:getTargetZ() end),
         targetChar = nil,
     }
 
-    local pfb = safeCall(nil, function() return character:getPathFindBehavior2() end)
-    if not pfb then return out end
-
-    if safeCall(false, function() return pfb:isGoalCharacter() end) then
+    if optionalCall(false, function() return pfb:isGoalCharacter() end) then
         out.goal = "Character"
-        out.targetChar = safeCall(nil, function() return pfb:getTargetChar() end)
-    elseif safeCall(false, function() return pfb:isGoalLocation() end) then
+        out.targetChar = optionalCall(nil, function() return pfb:getTargetChar() end)
+    elseif optionalCall(false, function() return pfb:isGoalLocation() end) then
         out.goal = "Location"
-    elseif safeCall(false, function() return pfb:isGoalSound() end) then
+    elseif optionalCall(false, function() return pfb:isGoalSound() end) then
         out.goal = "Sound"
-    elseif safeCall(false, function() return pfb:isGoalNone() end) then
+    elseif optionalCall(false, function() return pfb:isGoalNone() end) then
         out.goal = "None"
-    else
-        out.goal = "Other"
     end
 
-    out.cancelled = safeCall(nil, function() return pfb:getIsCancelled() end)
-    out.stopping = safeCall(nil, function() return pfb.stopping end)
-    out.x = safeCall(nil, function() return pfb:getTargetX() end)
-    out.y = safeCall(nil, function() return pfb:getTargetY() end)
-    out.z = safeCall(nil, function() return pfb:getTargetZ() end)
     return out
 end
 
 local function banditTaskSnapshot(bandit)
-    local task = nil
-    if Bandit and type(Bandit.GetTask) == "function" then
-        local ok, value = pcall(Bandit.GetTask, bandit)
-        if ok then task = value else stats.errors = stats.errors + 1 end
-    end
+    if not Bandit or type(Bandit.GetTask) ~= "function" then return nil end
 
-    if not task then
+    local ok, task = pcall(Bandit.GetTask, bandit)
+    if not ok then
+        stats.errors = stats.errors + 1
         return nil
     end
+    if not task then return nil end
 
     return {
         action = tostring(task.action or "<none>"),
@@ -214,7 +187,6 @@ local function banditTaskSnapshot(bandit)
         x = tonumber(task.x),
         y = tonumber(task.y),
         z = tonumber(task.z),
-        tid = task.tid ~= nil and tostring(task.tid) or "nil",
     }
 end
 
@@ -223,15 +195,14 @@ local function fmtNumber(value)
 end
 
 local function logZombieStall(zombie, sample, bandit, controller, playerDist2, playerGhost, playerInvisible, canSee, pairStalled)
-    if detailBudget <= 0 then return end
-    detailBudget = detailBudget - 1
+    stats.zombieStalls = stats.zombieStalls + 1
 
     local pfb = pfbSnapshot(zombie)
     local task = banditTaskSnapshot(bandit.object)
     local state = actionState(zombie)
-    local luaTarget = currentTarget(zombie)
-    local hitBy = attackedBy(zombie)
-    local allowRepathDelay = safeCall(nil, function() return zombie.allowRepathDelay end)
+    local luaTarget = optionalCall(nil, function() return zombie:getTarget() end)
+    local hitBy = optionalCall(nil, function() return zombie:getAttackedBy() end)
+    local allowRepathDelay = optionalCall(nil, function() return zombie.allowRepathDelay end)
 
     local staleLocation = false
     local pathBanditDist2 = nil
@@ -242,7 +213,6 @@ local function logZombieStall(zombie, sample, bandit, controller, playerDist2, p
         staleLocation = pathBanditDist2 > STALE_LOCATION_DIST2
     end
 
-    stats.zombieStalls = stats.zombieStalls + 1
     if pairStalled then stats.pairStalls = stats.pairStalls + 1 end
     if bandit.dist2 <= CLOSE_PURSUIT_DIST2 then stats.closeStalls = stats.closeStalls + 1 end
     if state == "turnalerted" then stats.turnAlertedStalls = stats.turnAlertedStalls + 1 end
@@ -253,6 +223,9 @@ local function logZombieStall(zombie, sample, bandit, controller, playerDist2, p
     if pfb.goal == "Location" then stats.pfbLocationStalls = stats.pfbLocationStalls + 1 end
     if pfb.goal == "Character" then stats.pfbCharacterStalls = stats.pfbCharacterStalls + 1 end
     if staleLocation then stats.staleLocationStalls = stats.staleLocationStalls + 1 end
+
+    if detailBudget <= 0 then return end
+    detailBudget = detailBudget - 1
 
     print(string.format(
         "[LCC][BanditsPursuitStall][ZOMBIE_STALL] marker=%s zombie=%s stationaryMs=%d state=%s controller=%s allowRepathDelay=%s bandit=%s dist=%.3f pairStalled=%s banditState=%s banditTask=%s/%s taskTime=%s canSee=%s playerDist=%.3f playerGhost=%s playerInvisible=%s pfbGoal=%s pfbCancelled=%s pfbStopping=%s pfbTarget=%s,%s,%s pathBanditDist=%s staleLocation=%s pfbTargetChar=%s luaTarget=%s attackedBy=%s",
@@ -286,6 +259,9 @@ local function logZombieStall(zombie, sample, bandit, controller, playerDist2, p
 end
 
 local function logZombieResume(zombie, sample, bandit, controller, playerDist2)
+    stats.zombieResumes = stats.zombieResumes + 1
+    if playerDist2 < 9 then stats.resumeNearPlayer = stats.resumeNearPlayer + 1 end
+
     if detailBudget <= 0 then return end
     detailBudget = detailBudget - 1
 
@@ -293,7 +269,7 @@ local function logZombieResume(zombie, sample, bandit, controller, playerDist2)
         "[LCC][BanditsPursuitStall][ZOMBIE_RESUME] marker=%s zombie=%s stalledMs=%d state=%s controller=%s bandit=%s dist=%.3f playerDist=%.3f pfbGoal=%s",
         MARKER,
         characterId(zombie),
-        math.floor(sample.lastStallDuration or 0),
+        math.floor(nowMs - (sample.stationarySince or nowMs)),
         actionState(zombie),
         tostring(controller),
         bandit and tostring(bandit.id) or "nil",
@@ -303,38 +279,24 @@ local function logZombieResume(zombie, sample, bandit, controller, playerDist2)
     ))
 end
 
-local function updateOrdinaryZombie(zombie, now)
-    local sample = zombieSamples[zombie]
-    if not sample then
-        sample = {
-            lastSample = 0,
-            lastX = zombie:getX(),
-            lastY = zombie:getY(),
-            stationarySince = now,
-            stalled = false,
-        }
-        zombieSamples[zombie] = sample
-    end
-
-    if now - sample.lastSample < SAMPLE_MS then return end
-    sample.lastSample = now
+local function updateOrdinaryZombie(zombie, sample)
     stats.samples = stats.samples + 1
 
     local bandit = nearestBandit(zombie)
     if not bandit or bandit.zDelta >= 0.8 then
         sample.banditId = nil
         sample.stalled = false
-        sample.stationarySince = now
+        sample.stationarySince = nowMs
         sample.lastX, sample.lastY = zombie:getX(), zombie:getY()
         return
     end
 
-    local canSee = safeCall(false, function() return zombie:CanSee(bandit.object) end) == true
+    local canSee = optionalCall(false, function() return zombie:CanSee(bandit.object) end) == true
     local expectedOpportunity = bandit.dist2 <= CLOSE_PURSUIT_DIST2 or canSee
     if not expectedOpportunity then
         sample.banditId = bandit.id
         sample.stalled = false
-        sample.stationarySince = now
+        sample.stationarySince = nowMs
         sample.lastX, sample.lastY = zombie:getX(), zombie:getY()
         sample.lastBanditX, sample.lastBanditY = bandit.x, bandit.y
         return
@@ -342,7 +304,7 @@ local function updateOrdinaryZombie(zombie, now)
 
     stats.pursuitCandidates = stats.pursuitCandidates + 1
 
-    local _, playerDist2, playerGhost, playerInvisible = playerSnapshot(zombie)
+    local playerDist2, playerGhost, playerInvisible = playerSnapshot(zombie)
     local playerNear = playerDist2 < 4
     if playerNear then stats.playerNearSamples = stats.playerNearSamples + 1 end
 
@@ -360,28 +322,34 @@ local function updateOrdinaryZombie(zombie, now)
     end
 
     if not sameBandit then
-        sample.stationarySince = now
+        sample.stationarySince = nowMs
         sample.stalled = false
     elseif moved2 > MOVE_EPS2 then
         if sample.stalled then
-            stats.zombieResumes = stats.zombieResumes + 1
-            sample.lastStallDuration = now - (sample.stationarySince or now)
-            if playerDist2 < 9 then stats.resumeNearPlayer = stats.resumeNearPlayer + 1 end
             logZombieResume(zombie, sample, bandit, controller, playerDist2)
         end
-        sample.stationarySince = now
+        sample.stationarySince = nowMs
         sample.stalled = false
     else
-        local stationaryMs = now - (sample.stationarySince or now)
-        sample.stationaryMs = stationaryMs
+        sample.stationaryMs = nowMs - (sample.stationarySince or nowMs)
 
-        -- Do not declare a new stall while the local player is inside the exact
-        -- <2 tile early-return radius in UpdateZombies(). A previously detected
-        -- stall can still produce a RESUME while the player approaches.
-        if not sample.stalled and not playerNear and stationaryMs >= STALL_MS then
+        -- Current UpdateZombies() deliberately returns when the local player is
+        -- inside two tiles. Do not classify a new stall during that window; a
+        -- stall detected before approach can still emit ZOMBIE_RESUME there.
+        if not sample.stalled and not playerNear and sample.stationaryMs >= STALL_MS then
             sample.stalled = true
             local pairStalled = banditMoved2 <= MOVE_EPS2
-            logZombieStall(zombie, sample, bandit, controller, playerDist2, playerGhost, playerInvisible, canSee, pairStalled)
+            logZombieStall(
+                zombie,
+                sample,
+                bandit,
+                controller,
+                playerDist2,
+                playerGhost,
+                playerInvisible,
+                canSee,
+                pairStalled
+            )
         end
     end
 
@@ -390,55 +358,17 @@ local function updateOrdinaryZombie(zombie, now)
     sample.lastBanditX, sample.lastBanditY = bandit.x, bandit.y
 end
 
-local function logBanditTaskStall(bandit, sample, task, controller, playerDist2)
-    if detailBudget <= 0 then return end
-    detailBudget = detailBudget - 1
-
-    local pfb = pfbSnapshot(bandit)
-    print(string.format(
-        "[LCC][BanditsPursuitStall][BANDIT_MOVE_STALL] marker=%s bandit=%s stationaryMs=%d state=%s controller=%s task=%s/%s taskTime=%s taskTarget=%s,%s,%s playerDist=%.3f pfbGoal=%s pfbTarget=%s,%s,%s",
-        MARKER,
-        characterId(bandit),
-        math.floor(sample.stationaryMs or 0),
-        actionState(bandit),
-        tostring(controller),
-        task.action,
-        task.state,
-        tostring(task.time),
-        fmtNumber(task.x), fmtNumber(task.y), fmtNumber(task.z),
-        math.sqrt(playerDist2),
-        pfb.goal,
-        fmtNumber(pfb.x), fmtNumber(pfb.y), fmtNumber(pfb.z)
-    ))
-end
-
-local function updateBandit(bandit, now)
+local function updateBandit(bandit, sample)
     local task = banditTaskSnapshot(bandit)
     local movingTask = task and (task.action == "Move" or task.action == "GoTo")
+
     if not movingTask then
-        local old = banditSamples[bandit]
-        if old then
-            old.stalled = false
-            old.stationarySince = now
-            old.lastX, old.lastY = bandit:getX(), bandit:getY()
-        end
+        sample.stalled = false
+        sample.stationarySince = nowMs
+        sample.lastX, sample.lastY = bandit:getX(), bandit:getY()
         return
     end
 
-    local sample = banditSamples[bandit]
-    if not sample then
-        sample = {
-            lastSample = 0,
-            lastX = bandit:getX(),
-            lastY = bandit:getY(),
-            stationarySince = now,
-            stalled = false,
-        }
-        banditSamples[bandit] = sample
-    end
-
-    if now - sample.lastSample < SAMPLE_MS then return end
-    sample.lastSample = now
     stats.banditMoveTaskSamples = stats.banditMoveTaskSamples + 1
 
     local bx, by = bandit:getX(), bandit:getY()
@@ -451,7 +381,7 @@ local function updateBandit(bandit, now)
         targetFarEnough = dx * dx + dy * dy > MOVE_TASK_TARGET_DIST2
     end
 
-    local _, playerDist2 = playerSnapshot(bandit)
+    local playerDist2 = playerSnapshot(bandit)
     local controller = isController(bandit)
 
     if moved2 > MOVE_EPS2 then
@@ -463,7 +393,7 @@ local function updateBandit(bandit, now)
                     "[LCC][BanditsPursuitStall][BANDIT_MOVE_RESUME] marker=%s bandit=%s stalledMs=%d state=%s controller=%s task=%s/%s playerDist=%.3f",
                     MARKER,
                     characterId(bandit),
-                    math.floor(now - (sample.stationarySince or now)),
+                    math.floor(nowMs - (sample.stationarySince or nowMs)),
                     actionState(bandit),
                     tostring(controller),
                     task.action,
@@ -472,14 +402,33 @@ local function updateBandit(bandit, now)
                 ))
             end
         end
-        sample.stationarySince = now
+        sample.stationarySince = nowMs
         sample.stalled = false
     else
-        sample.stationaryMs = now - (sample.stationarySince or now)
+        sample.stationaryMs = nowMs - (sample.stationarySince or nowMs)
         if targetFarEnough and not sample.stalled and sample.stationaryMs >= STALL_MS then
             sample.stalled = true
             stats.banditMoveTaskStalls = stats.banditMoveTaskStalls + 1
-            logBanditTaskStall(bandit, sample, task, controller, playerDist2)
+
+            if detailBudget > 0 then
+                detailBudget = detailBudget - 1
+                local pfb = pfbSnapshot(bandit)
+                print(string.format(
+                    "[LCC][BanditsPursuitStall][BANDIT_MOVE_STALL] marker=%s bandit=%s stationaryMs=%d state=%s controller=%s task=%s/%s taskTime=%s taskTarget=%s,%s,%s playerDist=%.3f pfbGoal=%s pfbTarget=%s,%s,%s",
+                    MARKER,
+                    characterId(bandit),
+                    math.floor(sample.stationaryMs),
+                    actionState(bandit),
+                    tostring(controller),
+                    task.action,
+                    task.state,
+                    tostring(task.time),
+                    fmtNumber(task.x), fmtNumber(task.y), fmtNumber(task.z),
+                    math.sqrt(playerDist2),
+                    pfb.goal,
+                    fmtNumber(pfb.x), fmtNumber(pfb.y), fmtNumber(pfb.z)
+                ))
+            end
         end
     end
 
@@ -487,23 +436,44 @@ local function updateBandit(bandit, now)
 end
 
 local function onZombieUpdate(zombie)
-    if not zombie or not safeCall(false, function() return zombie:isAlive() end) then return end
+    if not zombie then return end
     stats.updates = stats.updates + 1
 
-    local now = getTimestampMs()
-    if isBandit(zombie) then
-        updateBandit(zombie, now)
+    local sample = samples[zombie]
+    if not sample then
+        sample = {
+            lastSample = nowMs,
+            lastX = zombie:getX(),
+            lastY = zombie:getY(),
+            stationarySince = nowMs,
+            stalled = false,
+        }
+        samples[zombie] = sample
+        return
+    end
+
+    if nowMs - sample.lastSample < SAMPLE_MS then return end
+    sample.lastSample = nowMs
+
+    if not zombie:isAlive() then return end
+
+    if zombie:getVariableBoolean("Bandit") then
+        updateBandit(zombie, sample)
     else
-        updateOrdinaryZombie(zombie, now)
+        updateOrdinaryZombie(zombie, sample)
     end
 end
 
 Events.OnZombieUpdate.Add(onZombieUpdate)
 
--- Re-append after startup so the snapshot reflects the post-BanditUpdate state.
-local function lateRebind()
-    rebindTicks = rebindTicks + 1
-    if rebound or rebindTicks < 120 then return end
+-- Maintain one timestamp per frame instead of calling getTimestampMs() for every
+-- OnZombieUpdate invocation. After 120 ticks, re-append our observer so snapshots
+-- are taken after BanditUpdate and the other experiment callbacks.
+local function onTick()
+    nowMs = getTimestampMs()
+    tickCount = tickCount + 1
+
+    if rebound or tickCount < 120 then return end
 
     local okRemove = pcall(function() Events.OnZombieUpdate.Remove(onZombieUpdate) end)
     local okAdd = pcall(function() Events.OnZombieUpdate.Add(onZombieUpdate) end)
@@ -512,12 +482,11 @@ local function lateRebind()
         stats.lateRebinds = stats.lateRebinds + 1
         print(string.format(
             "[LCC][BanditsPursuitStall][REBIND] marker=%s tick=%d removeOk=%s addOk=%s",
-            MARKER, rebindTicks, tostring(okRemove), tostring(okAdd)
+            MARKER, tickCount, tostring(okRemove), tostring(okAdd)
         ))
-        pcall(function() Events.OnTick.Remove(lateRebind) end)
     end
 end
-Events.OnTick.Add(lateRebind)
+Events.OnTick.Add(onTick)
 
 Events.EveryOneMinute.Add(function()
     print(string.format(
@@ -550,6 +519,6 @@ Events.EveryOneMinute.Add(function()
 end)
 
 print(string.format(
-    "[LCC][BanditsPursuitStall][BOOT] marker=%s mode=observation-only sampleMs=%d stallMs=%d movementMutation=false targetMutation=false pfbMutation=false taskMutation=false",
+    "[LCC][BanditsPursuitStall][BOOT] marker=%s mode=observation-only sampleMs=%d stallMs=%d timestamp=once-per-frame movementMutation=false targetMutation=false pfbMutation=false taskMutation=false",
     MARKER, SAMPLE_MS, STALL_MS
 ))
