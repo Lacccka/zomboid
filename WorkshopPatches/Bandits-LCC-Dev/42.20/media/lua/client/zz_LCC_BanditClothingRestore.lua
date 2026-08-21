@@ -2,21 +2,16 @@
 -- B42 worn-item APIs require ItemBodyLocation objects, not string slot names.
 --
 -- v2 proved that persistent Bandits can restore real WornItems after reconnect.
--- The death-queue companion below keeps those same materialized items eligible
--- for corpse creation without re-enabling upstream's copy-creating clothing loop.
+-- This iteration deliberately removes the rejected same-object death-queue path
+-- and only records a compact clothing snapshot for the post-corpse repair PoC.
 if isServer() then return end
 
 local MARKER = "real-worn-reconnect-v2"
-local DEATH_MARKER = "real-worn-death-queue-v1"
 LCC_BANDITS_CLOTHING_RESTORE = MARKER
-LCC_BANDITS_CLOTHING_DEATH_QUEUE = DEATH_MARKER
+LCC_BANDITS_CLOTHING_DEATH_QUEUE = nil
 
 if type(Bandit) ~= "table" or type(Bandit.ApplyVisuals) ~= "function" then
     print("[LCC][BanditsClothingPoC][DISABLED] Bandit.ApplyVisuals unavailable")
-    return
-end
-if type(Bandit.UpdateItemsToSpawnAtDeath) ~= "function" then
-    print("[LCC][BanditsClothingPoC][DISABLED] Bandit.UpdateItemsToSpawnAtDeath unavailable")
     return
 end
 if type(BanditCompatibility) ~= "table" or type(BanditCompatibility.InstanceItem) ~= "function" then
@@ -25,9 +20,14 @@ if type(BanditCompatibility) ~= "table" or type(BanditCompatibility.InstanceItem
 end
 
 local originalApplyVisuals = Bandit.ApplyVisuals
-local originalUpdateItemsToSpawnAtDeath = Bandit.UpdateItemsToSpawnAtDeath
 local stateByBandit = setmetatable({}, { __mode = "k" })
 local warned = {}
+
+local snapshots = rawget(_G, "LCC_BanditsClothingSnapshots")
+if type(snapshots) ~= "table" then
+    snapshots = {}
+    _G.LCC_BanditsClothingSnapshots = snapshots
+end
 
 local function fullType(item)
     if not item then return nil end
@@ -48,6 +48,20 @@ local function warnOnce(key, message)
     if warned[key] then return end
     warned[key] = true
     print(message)
+end
+
+local function shallowCopy(value)
+    if type(value) ~= "table" then return {} end
+    local result = {}
+    for k, v in pairs(value) do result[k] = v end
+    return result
+end
+
+local function nowMs()
+    if type(getTimestampMs) == "function" then return getTimestampMs() end
+    local gt = getGameTime and getGameTime()
+    if gt then return math.floor(gt:getWorldAgeHours() * 3600000) end
+    return 0
 end
 
 local function wornSize(bandit)
@@ -76,15 +90,45 @@ local function applyTint(item, brain, brainLocation)
     end)
 end
 
+local function bagName(brain)
+    if not brain or brain.bag == nil then return nil end
+    if type(brain.bag) == "table" then return brain.bag.name end
+    if type(brain.bag) == "string" then return brain.bag end
+    return nil
+end
+
+local function recordSnapshot(bandit, brain)
+    if not bandit or not brain or type(brain.clothing) ~= "table" then return end
+    local id = characterId(bandit, brain)
+    if id == "nil" then return end
+
+    local x, y, z
+    pcall(function()
+        x, y, z = bandit:getX(), bandit:getY(), bandit:getZ()
+    end)
+
+    snapshots[id] = {
+        id = id,
+        clothing = shallowCopy(brain.clothing),
+        tint = shallowCopy(brain.tint),
+        bag = bagName(brain),
+        fullname = brain.fullname and tostring(brain.fullname) or "<unknown>",
+        x = tonumber(x),
+        y = tonumber(y),
+        z = tonumber(z),
+        at = nowMs(),
+    }
+
+    pcall(function()
+        local md = bandit:getModData()
+        if md then md.LCC_BanditsBrainId = id end
+    end)
+end
+
 local function stateFor(bandit)
     local state = stateByBandit[bandit]
     if not state then
-        state = {
-            items = {},
-            reportedRestore = false,
-            conflicts = {},
-            lastDeathQueueCount = -1,
-        }
+        state = {items = {}, reportedRestore = false, conflicts = {}}
         stateByBandit[bandit] = state
     end
     return state
@@ -92,8 +136,8 @@ end
 
 local function markRealItem(item)
     if not item then return end
-    local md = item:getModData()
-    if md then
+    local ok, md = pcall(function() return item:getModData() end)
+    if ok and md then
         md.LCC_BanditsRealClothing = MARKER
         md.preserve = true
     end
@@ -176,13 +220,6 @@ local function ensureSlot(bandit, brain, state, brainLocation, itemType)
     return 1, created and 1 or 0
 end
 
-local function bagName(brain)
-    if not brain or brain.bag == nil then return nil end
-    if type(brain.bag) == "table" then return brain.bag.name end
-    if type(brain.bag) == "string" then return brain.bag end
-    return nil
-end
-
 local function ensureBag(bandit, brain, state)
     local itemType = bagName(brain)
     if not itemType then return 0 end
@@ -214,54 +251,11 @@ local function ensureBag(bandit, brain, state)
     return okSet and 1 or 0
 end
 
-local function queueMaterializedWornItems(bandit, brain)
-    if not bandit then return 0 end
-    local state = stateFor(bandit)
-    local worn = bandit:getWornItems()
-    if not worn then return 0 end
-
-    local queued = 0
-    for i = 0, worn:size() - 1 do
-        local wornEntry = worn:get(i)
-        local item = wornEntry and wornEntry:getItem() or nil
-        if item then
-            local md = item:getModData()
-            if md and md.LCC_BanditsRealClothing == MARKER then
-                md.preserve = true
-                md.LCC_BanditsDeathQueue = DEATH_MARKER
-                bandit:addItemToSpawnAtDeath(item)
-                queued = queued + 1
-            end
-        end
-    end
-
-    if queued > 0 and state.lastDeathQueueCount ~= queued then
-        state.lastDeathQueueCount = queued
-        print(string.format(
-            "[LCC][BanditsClothingPoC][DEATH_QUEUE] marker=%s id=%s queuedRealWorn=%d currentWorn=%d expectedClothing=%d bag=%s",
-            DEATH_MARKER,
-            characterId(bandit, brain),
-            queued,
-            worn:size(),
-            expectedClothingCount(brain),
-            tostring(bagName(brain) or "<none>")
-        ))
-    end
-
-    return queued
-end
-
-Bandit.UpdateItemsToSpawnAtDeath = function(bandit, brain)
-    originalUpdateItemsToSpawnAtDeath(bandit, brain)
-    local ok, err = pcall(queueMaterializedWornItems, bandit, brain)
-    if not ok then
-        warnOnce("death-queue-runtime", "[LCC][BanditsClothingPoC][DEATH_QUEUE_ERROR] " .. tostring(err))
-    end
-end
-
 local function restoreRealWorn(bandit, brain)
     if not bandit or not brain or type(brain.clothing) ~= "table" then return end
     if not bandit:isAlive() then return end
+
+    recordSnapshot(bandit, brain)
 
     local state = stateFor(bandit)
     local beforeWorn = wornSize(bandit)
@@ -296,14 +290,6 @@ local function restoreRealWorn(bandit, brain)
             ))
         end
     end
-
-    -- Upstream ApplyVisuals queues death items before this PoC re-materializes
-    -- WornItems. Rebuild the queue once more so the same real worn objects are
-    -- appended after upstream has cleared/rebuilt its normal weapon/loot queue.
-    local ok, err = pcall(Bandit.UpdateItemsToSpawnAtDeath, bandit, brain)
-    if not ok then
-        warnOnce("death-queue-refresh", "[LCC][BanditsClothingPoC][DEATH_QUEUE_REFRESH_ERROR] " .. tostring(err))
-    end
 end
 
 Bandit.ApplyVisuals = function(bandit, brain)
@@ -315,7 +301,6 @@ Bandit.ApplyVisuals = function(bandit, brain)
 end
 
 print(string.format(
-    "[LCC][BanditsClothingPoC][BOOT] marker=%s deathMarker=%s mode=typed-ItemBodyLocation+same-object-death-queue inventoryAdd=false copyClothing=false",
-    MARKER,
-    DEATH_MARKER
+    "[LCC][BanditsClothingPoC][BOOT] marker=%s mode=typed-ItemBodyLocation snapshot=true deathQueue=false",
+    MARKER
 ))
