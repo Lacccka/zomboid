@@ -5995,41 +5995,32 @@ IPositional {
         return this.getUsername(canShowFirstname, false);
     }
 
-    /*
-     * Unable to fully structure code
-     */
     public String getUsername(Boolean canShowFirstname, Boolean canShowDisguisedName) {
-        block9: {
-            block8: {
-                nameStr = this.username;
-                if (!canShowDisguisedName.booleanValue()) break block8;
-                this.updateDisguisedState();
-                isoGameCharacter = IsoCamera.getCameraCharacter();
-                if (!GameClient.client || !(isoGameCharacter instanceof IsoPlayer)) ** GOTO lbl-1000
-                player = (IsoPlayer)isoGameCharacter;
-                if (player.role.hasCapability(Capability.CanSeePlayersStats)) {
-                    v0 = true;
-                } else lbl-1000:
-                // 2 sources
-
-                {
-                    v0 = bViewerIsAdmin = false;
-                }
-                if (this.isDisguised() && !bViewerIsAdmin) {
-                    nameStr = ServerOptions.getInstance().hideDisguisedUserName.getValue() != false ? "" : Translator.getText("IGUI_Disguised_Player_Name", new Object[0]);
-                } else if (canShowFirstname.booleanValue() && GameClient.client && ServerOptions.instance.showFirstAndLastName.getValue()) {
-                    nameStr = this.getDescriptor().getForename() + " " + this.getDescriptor().getSurname();
-                    if (ServerOptions.instance.displayUserName.getValue()) {
-                        nameStr = (String)nameStr + " (" + this.username + ")";
-                    }
-                }
-                break block9;
-            }
-            if (canShowFirstname.booleanValue() && GameClient.client && ServerOptions.instance.showFirstAndLastName.getValue()) {
+        String nameStr = this.username;
+        if (canShowDisguisedName) {
+            this.updateDisguisedState();
+            IsoGameCharacter isoGameCharacter = IsoCamera.getCameraCharacter();
+            boolean bViewerIsAdmin = GameClient.client
+                    && isoGameCharacter instanceof IsoPlayer player
+                    && player.role.hasCapability(Capability.CanSeePlayersStats);
+            if (this.isDisguised() && !bViewerIsAdmin) {
+                nameStr = ServerOptions.getInstance().hideDisguisedUserName.getValue()
+                        ? ""
+                        : Translator.getText("IGUI_Disguised_Player_Name");
+            } else if (canShowFirstname
+                    && GameClient.client
+                    && ServerOptions.instance.showFirstAndLastName.getValue()) {
                 nameStr = this.getDescriptor().getForename() + " " + this.getDescriptor().getSurname();
                 if (ServerOptions.instance.displayUserName.getValue()) {
-                    nameStr = (String)nameStr + " (" + this.username + ")";
+                    nameStr = nameStr + " (" + this.username + ")";
                 }
+            }
+        } else if (canShowFirstname
+                && GameClient.client
+                && ServerOptions.instance.showFirstAndLastName.getValue()) {
+            nameStr = this.getDescriptor().getForename() + " " + this.getDescriptor().getSurname();
+            if (ServerOptions.instance.displayUserName.getValue()) {
+                nameStr = nameStr + " (" + this.username + ")";
             }
         }
         return nameStr;

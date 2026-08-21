@@ -60,3 +60,10 @@ Vineflower fallback classes:
 
 Source JAR SHA-256:
 bda809fb49004a07dbfc560d059c0ee58d0643ab0f33b53351b13bd62f1d8227
+
+Bytecode QA:
+Report: ../../docs/final-reports/java-decompilation-qa-42.20.3.md
+
+Bytecode-verified clean reconstructions:
+- zombie.characters.IsoPlayer.getUsername(Boolean, Boolean)
+- zombie.iso.fboRenderChunk.FBORenderCell.calculateObjectTargetAlpha(IsoObject)

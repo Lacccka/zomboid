@@ -1814,45 +1814,30 @@ public final class FBORenderCell {
         return cell.isInStencil(sx, sy);
     }
 
-    /*
-     * Unable to fully structure code
-     */
     private float calculateObjectTargetAlpha(IsoObject object) {
-        block6: {
-            playerIndex = IsoCamera.frameState.playerIndex;
-            renderLayer = object.getRenderInfo((int)playerIndex).layer;
-            t = IsoObjectType.MAX;
-            if (object.sprite != null) {
-                t = object.sprite.getTileType();
-            }
-            if (renderLayer != ObjectRenderLayer.MinusFloor && renderLayer != ObjectRenderLayer.MinusFloorSE && renderLayer != ObjectRenderLayer.Translucent && renderLayer != ObjectRenderLayer.TranslucentSE) break block6;
-            if (object instanceof IsoDoor && (door = (IsoDoor)object).isOpen()) ** GOTO lbl-1000
-            if (object instanceof IsoThumpable) {
-                isoThumpable = (IsoThumpable)object;
-                ** if (!isoThumpable.open) goto lbl-1000
-            }
-            ** GOTO lbl-1000
-lbl-1000:
-            // 2 sources
-
-            {
-                v0 = true;
-                ** GOTO lbl15
-            }
-lbl-1000:
-            // 2 sources
-
-            {
-                v0 = isOpenDoor = false;
-            }
-lbl15:
-            // 2 sources
-
-            if (isOpenDoor && object.getProperties() != null && !object.getProperties().has(IsoPropertyType.GARAGE_DOOR)) {
+        int playerIndex = IsoCamera.frameState.playerIndex;
+        ObjectRenderLayer renderLayer = object.getRenderInfo(playerIndex).layer;
+        IsoObjectType t = IsoObjectType.MAX;
+        if (object.sprite != null) {
+            t = object.sprite.getTileType();
+        }
+        if (renderLayer == ObjectRenderLayer.MinusFloor
+                || renderLayer == ObjectRenderLayer.MinusFloorSE
+                || renderLayer == ObjectRenderLayer.Translucent
+                || renderLayer == ObjectRenderLayer.TranslucentSE) {
+            boolean isOpenDoor = object instanceof IsoDoor door && door.isOpen()
+                    || object instanceof IsoThumpable isoThumpable && isoThumpable.open;
+            if (isOpenDoor
+                    && object.getProperties() != null
+                    && !object.getProperties().has(IsoPropertyType.GARAGE_DOOR)) {
                 return 0.6f;
             }
-            isWestDoorOrWall = t == IsoObjectType.doorFrW || t == IsoObjectType.doorW || object.sprite != null && object.sprite.cutW != false;
-            v1 = isNorthDoorOrWall = t == IsoObjectType.doorFrN || t == IsoObjectType.doorN || object.sprite != null && object.sprite.cutN != false;
+            boolean isWestDoorOrWall = t == IsoObjectType.doorFrW
+                    || t == IsoObjectType.doorW
+                    || object.sprite != null && object.sprite.cutW;
+            boolean isNorthDoorOrWall = t == IsoObjectType.doorFrN
+                    || t == IsoObjectType.doorN
+                    || object.sprite != null && object.sprite.cutN;
             if (isWestDoorOrWall || isNorthDoorOrWall) {
                 return this.calculateObjectTargetAlpha_DoorOrWall(object);
             }
