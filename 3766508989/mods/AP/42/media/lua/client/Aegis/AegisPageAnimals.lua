@@ -143,11 +143,8 @@ function AegisAnimalPlacer:render()
     local c = Aegis.col
     local wx, wy, z = self:mouseWorld()
     local cx, cy = wx, wy
-    local anchorX, anchorY = getMouseX(), getMouseY()
-    pcall(function()
-        anchorX = isoToScreenX(0, cx, cy, z)
-        anchorY = isoToScreenY(0, cx, cy, z)
-    end)
+    local anchorX = isoToScreenX(0, cx, cy, z)
+    local anchorY = isoToScreenY(0, cx, cy, z)
 
     local rad = math.rad(self.angle)
     local cosA, sinA = math.cos(rad), math.sin(rad)
@@ -254,27 +251,25 @@ end
 function AegisPageAnimals:buildCache()
     if self.animals then return end
     self.animals = {}
-    pcall(function()
-        local defs = getAllAnimalsDefinitions()
-        for i = 0, defs:size() - 1 do
-            local def = defs:get(i)
-            local type = def:getAnimalType()
-            local typeName = getTextOrNull("IGUI_AnimalType_" .. type) or type
-            local breeds = def:getBreeds()
-            for j = 0, breeds:size() - 1 do
-                local breed = breeds:get(j)
-                local breedName = breed:getName()
-                local breedDisplay = getTextOrNull("IGUI_Breed_" .. breedName) or breedName
-                local display = typeName .. " (" .. breedDisplay .. ")"
-                table.insert(self.animals, {
-                    type = type, def = def, breed = breed, breedName = breedName,
-                    display = display,
-                    search = string.lower(display .. " " .. type .. " " .. breedName),
-                })
-            end
+    local defs = getAllAnimalsDefinitions()
+    for i = 0, defs:size() - 1 do
+        local def = defs:get(i)
+        local type = def:getAnimalType()
+        local typeName = getTextOrNull("IGUI_AnimalType_" .. type) or type
+        local breeds = def:getBreeds()
+        for j = 0, breeds:size() - 1 do
+            local breed = breeds:get(j)
+            local breedName = breed:getName()
+            local breedDisplay = getTextOrNull("IGUI_Breed_" .. breedName) or breedName
+            local display = typeName .. " (" .. breedDisplay .. ")"
+            table.insert(self.animals, {
+                type = type, def = def, breed = breed, breedName = breedName,
+                display = display,
+                search = string.lower(display .. " " .. type .. " " .. breedName),
+            })
         end
-        table.sort(self.animals, function(a, b) return a.display < b.display end)
-    end)
+    end
+    table.sort(self.animals, function(a, b) return a.display < b.display end)
 end
 
 function AegisPageAnimals:createChildren()
@@ -452,17 +447,16 @@ end
 function AegisPageAnimals.onRemoveNear(self)
     local animal = nearestAnimal(5)
     if not animal then return end
-    local name = nil
-    pcall(function() name = animal:getCustomName() end)
+    local name = animal:getCustomName()
     if not name or name == "" then
-        pcall(function() name = getTextOrNull("IGUI_AnimalType_" .. animal:getAnimalType()) or animal:getAnimalType() end)
+        name = getTextOrNull("IGUI_AnimalType_" .. animal:getAnimalType()) or animal:getAnimalType()
     end
     local id = animal:getAnimalID()
     AegisConfirm.show(getText("UI_Aegis_RemoveAnimal"), getText("UI_Aegis_ConfirmRemoveAnimal", name or ""), getText("UI_Aegis_DeleteItem"), self, function()
         if isClient() then
             sendClientCommandV(getPlayer(), "animal", "remove", "id", id)
         else
-            pcall(function() removeAnimal(id) end)
+            removeAnimal(id)
         end
         Aegis.logAction("animals", "Animal removed: " .. (name or "animal"))
         Aegis.showToast(getText("UI_Aegis_AnimalRemoved"))

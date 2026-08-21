@@ -214,22 +214,16 @@ end
 -- tile under the cursor; called once per tick, not once per draw
 local function mouseTile()
     local z = playerLevel()
-    local ok, t = pcall(function()
-        local zoom = getCore():getZoom(0)
-        local mx, my = getMouseX() * zoom, getMouseY() * zoom
-        return { IsoUtils.XToIso(mx, my, z), IsoUtils.YToIso(mx, my, z) }
-    end)
-    if not ok or type(t) ~= "table" or not t[2] then return nil end
-    return math.floor(t[1]), math.floor(t[2])
+    local zoom = getCore():getZoom(0)
+    local mx, my = getMouseX() * zoom, getMouseY() * zoom
+    return math.floor(IsoUtils.XToIso(mx, my, z)), math.floor(IsoUtils.YToIso(mx, my, z))
 end
 
 local function screenProjection(wx, wy, z)
-    local ok, v = pcall(function()
-        return { isoToScreenX(0, wx, wy, z), isoToScreenY(0, wx, wy, z), getCore():getZoom(0),
-            IsoUtils.XToScreen(wx, wy, z, 0), IsoUtils.YToScreen(wx, wy, z, 0) }
-    end)
-    if not ok or type(v) ~= "table" or not v[5] or v[3] == 0 then return nil end
-    local anchorX, anchorY, zoom, baseX, baseY = v[1], v[2], v[3], v[4], v[5]
+    local zoom = getCore():getZoom(0)
+    if zoom == 0 then return nil end
+    local anchorX, anchorY = isoToScreenX(0, wx, wy, z), isoToScreenY(0, wx, wy, z)
+    local baseX, baseY = IsoUtils.XToScreen(wx, wy, z, 0), IsoUtils.YToScreen(wx, wy, z, 0)
     return function(px, py)
         return anchorX + (IsoUtils.XToScreen(px, py, z, 0) - baseX) / zoom,
             anchorY + (IsoUtils.YToScreen(px, py, z, 0) - baseY) / zoom
@@ -256,11 +250,7 @@ end
 local function viewBounds(view)
     if view.probed then return view.minX ~= nil end
     view.probed = true
-    local ok, screen = pcall(function()
-        return { getCore():getScreenWidth(), getCore():getScreenHeight() }
-    end)
-    if not ok or type(screen) ~= "table" or not screen[2] then return false end
-    local sw, sh = screen[1], screen[2]
+    local sw, sh = getCore():getScreenWidth(), getCore():getScreenHeight()
     local project = view.project
     local ox, oy = project(0, 0)
     local ax, ay = project(1, 0)
@@ -370,7 +360,7 @@ function AegisZoneOverlay.show(on)
         o.background = false
         o:initialise()
         o:addToUIManager()
-        pcall(function() o.javaObject:setConsumeMouseEvents(false) end)
+        o.javaObject:setConsumeMouseEvents(false)
         AegisZoneOverlay.instance = o
     elseif not on and AegisZoneOverlay.instance then
         AegisZoneOverlay.instance:removeFromUIManager()
@@ -865,8 +855,7 @@ function AegisZoneEditor:apply()
     end
     -- the server only applies an edit while the admin stands on the old
     -- zone or the wanted area; caught here so the drawn set survives
-    local px, py
-    pcall(function() px, py = math.floor(p:getX()), math.floor(p:getY()) end)
+    local px, py = math.floor(p:getX()), math.floor(p:getY())
     if px and not hasTile(self.tiles, px, py)
         and not (self.baseTiles and hasTile(self.baseTiles, px, py)) then
         Aegis.showToast(getText("UI_Aegis_ZoneOutside"))

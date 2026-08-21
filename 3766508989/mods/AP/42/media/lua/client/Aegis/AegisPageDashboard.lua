@@ -124,23 +124,19 @@ local function drawTime(page, el, x, y, w, h)
     local c = Aegis.col
     Aegis.roundFrame(el, x, y, w, h, 10, 1, c.line, c.panel)
     statHeader(el, x, y, "UI_Aegis_StatTime", "clock")
-    local ok, hh, mm = pcall(Aegis.hourMinute, getGameTime())
-    if ok then
-        Aegis.text(el, string.format("%02d:%02d", hh, mm), x + 16, y + 32, UIFont.Large, c.text)
-    end
+    local hh, mm = Aegis.hourMinute(getGameTime())
+    Aegis.text(el, string.format("%02d:%02d", hh, mm), x + 16, y + 32, UIFont.Large, c.text)
     local dayText = Aegis.dayAndDate(getGameTime())
     if dayText ~= "" then
         Aegis.textRight(el, Aegis.fitText(dayText, UIFont.Small, w - 120), x + w - 16, y + 42, UIFont.Small, c.muted)
     end
-    if ok then
-        local barX, barW = x + 16, w - 32
-        local barY = y + h - 20
-        Aegis.roundRect(el, barX, barY, barW, 5, 2, 1, c.line)
-        local dayStart, dayEnd = 6, 22
-        Aegis.roundRect(el, barX + barW * (dayStart / 24), barY, barW * ((dayEnd - dayStart) / 24), 5, 2, 0.35, c.gold)
-        local frac = math.min((hh + mm / 60) / 24, 1)
-        Aegis.roundRect(el, barX + math.max(0, barW * frac - 2), barY - 2, 4, 9, 2, 1, c.goldHi)
-    end
+    local barX, barW = x + 16, w - 32
+    local barY = y + h - 20
+    Aegis.roundRect(el, barX, barY, barW, 5, 2, 1, c.line)
+    local dayStart, dayEnd = 6, 22
+    Aegis.roundRect(el, barX + barW * (dayStart / 24), barY, barW * ((dayEnd - dayStart) / 24), 5, 2, 0.35, c.gold)
+    local frac = math.min((hh + mm / 60) / 24, 1)
+    Aegis.roundRect(el, barX + math.max(0, barW * frac - 2), barY - 2, 4, 9, 2, 1, c.goldHi)
 end
 
 local function drawPulse(page, el, x, y, w, h)
@@ -228,10 +224,8 @@ local function drawPlayers(page, el, x, y, w, h)
     else
         local p = getPlayer()
         if p then
-            local ok, name = pcall(function()
-                return p:getDescriptor():getForename() .. " " .. p:getDescriptor():getSurname()
-            end)
-            table.insert(rows, (ok and name) or p:getUsername())
+            local name = p:getDescriptor():getForename() .. " " .. p:getDescriptor():getSurname()
+            table.insert(rows, name)
         end
     end
     Aegis.textRight(el, tostring(#rows), x + w - 16, y + 12, UIFont.Small, c.muted)
@@ -492,7 +486,7 @@ function AegisPageDashboard:ensureWidgets(id)
                 page:setFeature(def.opt, checked)
             end)
             t.featureOpt = def.opt
-            pcall(function() t.tooltip = getTextOrNull(def.tip) end)
+            t.tooltip = getTextOrNull(def.tip)
             t:setChecked(AegisShared.featureOn(def.opt))
             canvas:addChild(t)
             table.insert(list, t)
@@ -773,8 +767,7 @@ function AegisPageDashboard:refreshToggles()
     local p = getPlayer()
     if not p then return end
     for _, t in pairs(self.toggles) do
-        local ok, v = pcall(t.powerDef.get, p)
-        if ok then t:setChecked(v) end
+        t:setChecked(t.powerDef.get(p))
         -- without the capability the Java setter silently refuses, the toggle
         -- would be a dummy and the log entry a lie (same pattern as powers page)
         t:setEnabled(Aegis.hasCap(t.powerDef.cap))
@@ -796,11 +789,7 @@ function AegisPageDashboard.onPower(self, checked, toggle)
     local p = getPlayer()
     if not p then return end
     Aegis.ensureSoloRole()
-    local ok = pcall(toggle.powerDef.set, p, checked)
-    if not ok then
-        toggle:setChecked(not checked)
-        return
-    end
+    toggle.powerDef.set(p, checked)
     Aegis.syncPowers(p)
     -- same log line as the powers page, godmode via dashboard
     -- was previously invisible in every mode
@@ -991,7 +980,7 @@ function AegisPageDashboard:update()
     end
     if self:hasCard("players") and isClient() and now >= self.scoreNextAt then
         self.scoreNextAt = now + SCORE_POLL_MS
-        pcall(function() scoreboardUpdate() end)
+        scoreboardUpdate()
     end
 end
 

@@ -85,8 +85,8 @@ local function overBudget(name, slot, perSecond)
 end
 
 local function senderName(player)
-    local ok, name = pcall(function() return player:getUsername() end)
-    if ok and type(name) == "string" and name ~= "" then return name end
+    local name = player:getUsername()
+    if type(name) == "string" and name ~= "" then return name end
     return nil
 end
 
@@ -153,7 +153,7 @@ local perkCache = nil
 local function perks()
     if perkCache then return perkCache end
     local cache = { byId = {}, order = {} }
-    pcall(function()
+    if PerkFactory and PerkFactory.PerkList then
         for i = 0, PerkFactory.PerkList:size() - 1 do
             local perk = PerkFactory.PerkList:get(i)
             local parent = perk and perk:getParent()
@@ -168,7 +168,7 @@ local function perks()
                 end
             end
         end
-    end)
+    end
     -- empty means the scripts are not parsed yet, do not pin that
     if #cache.order > 0 then perkCache = cache end
     return cache
@@ -180,8 +180,8 @@ local function traitCatalogue()
     if traitCache then return traitCache end
     local map = {}
     local count = 0
-    pcall(function()
-        local defs = CharacterTraitDefinition.getTraits()
+    local defs = CharacterTraitDefinition and CharacterTraitDefinition.getTraits()
+    if defs then
         for i = 0, defs:size() - 1 do
             local def = defs:get(i)
             local t = def and def:getType()
@@ -190,7 +190,7 @@ local function traitCatalogue()
                 count = count + 1
             end
         end
-    end)
+    end
     if count > 0 then traitCache = map end
     return map
 end
@@ -201,8 +201,8 @@ local function professionCatalogue()
     if profCache then return profCache end
     local map = {}
     local count = 0
-    pcall(function()
-        local defs = CharacterProfessionDefinition.getProfessions()
+    local defs = CharacterProfessionDefinition and CharacterProfessionDefinition.getProfessions()
+    if defs then
         for i = 0, defs:size() - 1 do
             local def = defs:get(i)
             local p = def and def:getType()
@@ -211,7 +211,7 @@ local function professionCatalogue()
                 count = count + 1
             end
         end
-    end)
+    end
     if count > 0 then profCache = map end
     return map
 end
@@ -226,18 +226,18 @@ local function weightTraits()
     local list = {}
     local function put(trait, want, test)
         if trait == nil then return end
-        local ok, id = pcall(function() return tostring(trait) end)
-        if ok and type(id) == "string" and id ~= "" and id ~= "nil" then
+        local id = tostring(trait)
+        if id ~= "" and id ~= "nil" then
             list[#list + 1] = { id = id, want = want, test = test }
         end
     end
-    pcall(function()
+    if CharacterTrait then
         put(CharacterTrait.EMACIATED, 50, function(w) return w <= 50 end)
         put(CharacterTrait.VERY_UNDERWEIGHT, 60, function(w) return w > 50 and w <= 65 end)
         put(CharacterTrait.UNDERWEIGHT, 70, function(w) return w > 65 and w <= 75 end)
         put(CharacterTrait.OVERWEIGHT, 95, function(w) return w >= 85 and w < 100 end)
         put(CharacterTrait.OBESE, 105, function(w) return w >= 100 end)
-    end)
+    end
     if #list > 0 then weightCache = list end
     return list
 end
@@ -260,19 +260,17 @@ end
 -- player anyway
 local function traitList(target)
     local list, seen = {}, {}
-    pcall(function()
-        local known = target:getCharacterTraits():getKnownTraits()
-        for i = 0, known:size() - 1 do
-            local t = known:get(i)
-            if t then
-                local id = tostring(t)
-                if not seen[id] then
-                    seen[id] = true
-                    list[#list + 1] = id
-                end
+    local known = target:getCharacterTraits():getKnownTraits()
+    for i = 0, known:size() - 1 do
+        local t = known:get(i)
+        if t then
+            local id = tostring(t)
+            if not seen[id] then
+                seen[id] = true
+                list[#list + 1] = id
             end
         end
-    end)
+    end
     return list
 end
 
@@ -287,41 +285,37 @@ end
 -- disappeared with a mod can still be removed
 local function knownTrait(target, id)
     local found = nil
-    pcall(function()
-        local known = target:getCharacterTraits():getKnownTraits()
-        for i = 0, known:size() - 1 do
-            local t = known:get(i)
-            if t and tostring(t) == id then
-                found = t
-                return
-            end
+    local known = target:getCharacterTraits():getKnownTraits()
+    for i = 0, known:size() - 1 do
+        local t = known:get(i)
+        if t and tostring(t) == id then
+            found = t
+            break
         end
-    end)
+    end
     return found
 end
 
 local function perkRows(target)
     local rows = {}
-    pcall(function()
-        local xp = target:getXp()
-        for _, perk in ipairs(perks().order) do
-            local level = target:getPerkLevel(perk)
-            local total = xp:getXP(perk)
-            local base = perk:getTotalXpForLevel(level)
-            rows[#rows + 1] = {
-                id = perk:getId(),
-                parent = perk:getParent():getId(),
-                level = level,
-                -- xp gained inside the current level, that is what a bar shows
-                xp = round(total - base, 2),
-                -- getXpForLevel returns -1 above level 10
-                need = round(perk:getXpForLevel(level + 1), 2),
-                boost = xp:getPerkBoost(perk),
-                -- 0 means no personal multiplier, not factor one
-                mult = round(xp:getMultiplier(perk), 2),
-            }
-        end
-    end)
+    local xp = target:getXp()
+    for _, perk in ipairs(perks().order) do
+        local level = target:getPerkLevel(perk)
+        local total = xp:getXP(perk)
+        local base = perk:getTotalXpForLevel(level)
+        rows[#rows + 1] = {
+            id = perk:getId(),
+            parent = perk:getParent():getId(),
+            level = level,
+            -- xp gained inside the current level, that is what a bar shows
+            xp = round(total - base, 2),
+            -- getXpForLevel returns -1 above level 10
+            need = round(perk:getXpForLevel(level + 1), 2),
+            boost = xp:getPerkBoost(perk),
+            -- 0 means no personal multiplier, not factor one
+            mult = round(xp:getMultiplier(perk), 2),
+        }
+    end
     return rows
 end
 
@@ -341,24 +335,19 @@ for _, id in ipairs(NEED_ORDER) do NEED_ALLOWED[id] = true end
 
 local function needRows(target)
     local rows = {}
-    pcall(function()
-        local stats = target:getStats()
-        for _, id in ipairs(NEED_ORDER) do
-            local stat = CharacterStat[id]
-            if stat then
-                local v, lo, hi
-                local ok = pcall(function()
-                    v = stats:get(stat)
-                    lo = stat:getMinimumValue()
-                    hi = stat:getMaximumValue()
-                end)
-                if ok and type(v) == "number" then
-                    rows[#rows + 1] = { s = id, v = round(v, 3),
-                        lo = tonumber(lo) or 0, hi = tonumber(hi) or 1 }
-                end
+    local stats = target:getStats()
+    for _, id in ipairs(NEED_ORDER) do
+        local stat = CharacterStat[id]
+        if stat then
+            local v = stats:get(stat)
+            local lo = stat:getMinimumValue()
+            local hi = stat:getMaximumValue()
+            if type(v) == "number" then
+                rows[#rows + 1] = { s = id, v = round(v, 3),
+                    lo = tonumber(lo) or 0, hi = tonumber(hi) or 1 }
             end
         end
-    end)
+    end
     return rows
 end
 
@@ -367,22 +356,20 @@ local function statsBlock(target)
         id = -1, username = "", forename = "", surname = "", displayName = "",
         profession = "", weight = 0, hours = 0, level = "", role = "",
     }
-    pcall(function() block.id = target:getOnlineID() end)
-    pcall(function() block.username = target:getUsername() or "" end)
-    pcall(function()
-        local d = target:getDescriptor()
-        block.forename = d:getForename() or ""
-        block.surname = d:getSurname() or ""
-        local prof = d:getCharacterProfession()
-        block.profession = prof and tostring(prof) or ""
-    end)
-    pcall(function() block.displayName = target:getDisplayName() or "" end)
-    pcall(function() block.weight = round(target:getNutrition():getWeight(), 1) end)
-    pcall(function() block.hours = round(target:getHoursSurvived(), 1) end)
-    pcall(function() block.level = tostring(target:getAccessLevel() or ""):lower() end)
-    pcall(function() block.asleep = target:isAsleep() == true end)
+    block.id = target:getOnlineID()
+    block.username = target:getUsername() or ""
+    local d = target:getDescriptor()
+    block.forename = d:getForename() or ""
+    block.surname = d:getSurname() or ""
+    local prof = d:getCharacterProfession()
+    block.profession = prof and tostring(prof) or ""
+    block.displayName = target:getDisplayName() or ""
+    block.weight = round(target:getNutrition():getWeight(), 1)
+    block.hours = round(target:getHoursSurvived(), 1)
+    block.level = tostring(target:getAccessLevel() or ""):lower()
+    block.asleep = target:isAsleep() == true
     if isServer() and AegisRoles and AegisRoles.assignedRole then
-        pcall(function() block.role = AegisRoles.assignedRole(block.username) or "" end)
+        block.role = AegisRoles.assignedRole(block.username) or ""
     end
     block.traits = traitList(target)
     block.perks = perkRows(target)
@@ -423,20 +410,15 @@ end
 -- delta: the same push applied twice must not double a boost
 local function pushBoosts(target)
     local rows = {}
-    pcall(function()
-        local xp = target:getXp()
-        for _, perk in ipairs(perks().order) do
-            rows[#rows + 1] = { p = perk:getId(), v = xp:getPerkBoost(perk) }
-        end
-    end)
+    local xp = target:getXp()
+    for _, perk in ipairs(perks().order) do
+        rows[#rows + 1] = { p = perk:getId(), v = xp:getPerkBoost(perk) }
+    end
     if #rows == 0 then return end
     -- carry the identity: the targeted send only addresses the connection,
     -- and in splitscreen that connection holds several players
-    local id, user = -1, ""
-    pcall(function()
-        id = target:getOnlineID()
-        user = target:getUsername() or ""
-    end)
+    local id = target:getOnlineID()
+    local user = target:getUsername() or ""
     toTarget(target, "statsBoostApply", { boosts = rows, id = id, username = user })
 end
 
@@ -448,25 +430,21 @@ local function pushIdentity(target, auto)
         auto = auto == true, id = -1, username = "",
         forename = "", surname = "", displayName = "", profession = "",
     }
-    pcall(function()
-        payload.id = target:getOnlineID()
-        payload.username = target:getUsername() or ""
-        local d = target:getDescriptor()
-        payload.forename = d:getForename() or ""
-        payload.surname = d:getSurname() or ""
-        local prof = d:getCharacterProfession()
-        payload.profession = prof and tostring(prof) or ""
-    end)
-    pcall(function() payload.displayName = target:getDisplayName() or "" end)
+    payload.id = target:getOnlineID()
+    payload.username = target:getUsername() or ""
+    local d = target:getDescriptor()
+    payload.forename = d:getForename() or ""
+    payload.surname = d:getSurname() or ""
+    local prof = d:getCharacterProfession()
+    payload.profession = prof and tostring(prof) or ""
+    payload.displayName = target:getDisplayName() or ""
     toEveryone("statsIdentityApply", payload)
 end
 
 -- ---------- xp helpers ----------
 
 local function xpOf(target, perk)
-    local value = 0
-    pcall(function() value = target:getXp():getXP(perk) end)
-    return value
+    return target:getXp():getXP(perk)
 end
 
 -- always through the globals, never getXp():AddXP() directly: only
@@ -486,8 +464,7 @@ end
 -- copy, and repeated: strength xp is scaled by the protein state, so a single
 -- pass overshoots or falls short
 local function reachLevel(target, perk, want)
-    local goal = 0
-    if not pcall(function() goal = perk:getTotalXpForLevel(want) end) then return false end
+    local goal = perk:getTotalXpForLevel(want)
     for _ = 1, LEVEL_ROUNDS do
         local have = xpOf(target, perk)
         local delta = goal - have
@@ -596,8 +573,7 @@ Commands.statsTrait = function(player, args, admin)
     -- into the matching band and say so
     local rule = weightRule(id)
     if rule then
-        local now = nil
-        pcall(function() now = target:getNutrition():getWeight() end)
+        local now = target:getNutrition():getWeight()
         if type(now) == "number" then
             local set = nil
             if add and math.abs(now - rule.want) > 0.5 then
@@ -631,11 +607,8 @@ Commands.statsProfession = function(player, args, admin)
         fail(player, "profession", target, "value")
         return
     end
-    local before = ""
-    pcall(function()
-        local p = target:getDescriptor():getCharacterProfession()
-        before = p and tostring(p) or ""
-    end)
+    local p = target:getDescriptor():getCharacterProfession()
+    local before = p and tostring(p) or ""
     if before == id then
         fail(player, "profession", target, "same")
         return
@@ -676,15 +649,13 @@ Commands.statsName = function(player, args, admin)
         return
     end
     local before = ""
-    pcall(function()
-        if kind == "fore" then
-            before = target:getDescriptor():getForename() or ""
-        elseif kind == "sur" then
-            before = target:getDescriptor():getSurname() or ""
-        else
-            before = target:getDisplayName() or ""
-        end
-    end)
+    if kind == "fore" then
+        before = target:getDescriptor():getForename() or ""
+    elseif kind == "sur" then
+        before = target:getDescriptor():getSurname() or ""
+    else
+        before = target:getDisplayName() or ""
+    end
     if not auto and before == value then
         fail(player, "name", target, "same")
         return
@@ -734,8 +705,7 @@ Commands.statsWeight = function(player, args, admin)
     if w < WEIGHT_MIN then w = WEIGHT_MIN end
     if w > WEIGHT_MAX then w = WEIGHT_MAX end
     w = round(w, 1)
-    local before = nil
-    pcall(function() before = target:getNutrition():getWeight() end)
+    local before = target:getNutrition():getWeight()
     if type(before) == "number" and math.abs(before - w) < 0.05 then
         fail(player, "weight", target, "same")
         return
@@ -828,8 +798,7 @@ Commands.statsXp = function(player, args, admin)
             fail(player, "xp", target, "value")
             return
         end
-        local before = -1
-        pcall(function() before = target:getXp():getPerkBoost(perk) end)
+        local before = target:getXp():getPerkBoost(perk)
         if before == n then
             fail(player, "xp", target, "same")
             return
@@ -849,10 +818,8 @@ Commands.statsXp = function(player, args, admin)
     -- GameServer.addXp skips a dead one. Both calls would look successful and
     -- change nothing, so say it instead
     local blocked = nil
-    pcall(function()
-        if target:isAsleep() == true then blocked = "asleep" end
-        if target:isDead() == true then blocked = "dead" end
-    end)
+    if target:isAsleep() == true then blocked = "asleep" end
+    if target:isDead() == true then blocked = "dead" end
     if blocked then
         fail(player, "xp", target, blocked)
         return
@@ -890,8 +857,7 @@ Commands.statsXp = function(player, args, admin)
             return
         end
     else
-        local cur = -1
-        pcall(function() cur = target:getPerkLevel(perk) end)
+        local cur = target:getPerkLevel(perk)
         if cur < 0 then
             fail(player, "xp", target, "engine")
             return
@@ -901,8 +867,7 @@ Commands.statsXp = function(player, args, admin)
     want = math.floor(want)
     if want < 0 then want = 0 end
     if want > LEVEL_MAX then want = LEVEL_MAX end
-    local before = -1
-    pcall(function() before = target:getPerkLevel(perk) end)
+    local before = target:getPerkLevel(perk)
     if before == want then
         fail(player, "xp", target, "same")
         return
@@ -917,8 +882,7 @@ Commands.statsXp = function(player, args, admin)
         -- other mods do not see the change
         note = "forced"
     end
-    local after = -1
-    pcall(function() after = target:getPerkLevel(perk) end)
+    local after = target:getPerkLevel(perk)
     AegisLog.write("Actions", admin, userOf(target),
         "Skill " .. perkId .. " level " .. tostring(before) .. " -> " .. tostring(after))
     reply(player, "xp", target, note and { note = note } or nil)

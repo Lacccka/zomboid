@@ -86,8 +86,8 @@ local function throttled(name, command, seconds)
 end
 
 local function senderName(player)
-    local ok, name = pcall(function() return player:getUsername() end)
-    if ok and type(name) == "string" and name ~= "" then return name end
+    local name = player:getUsername()
+    if type(name) == "string" and name ~= "" then return name end
     return nil
 end
 

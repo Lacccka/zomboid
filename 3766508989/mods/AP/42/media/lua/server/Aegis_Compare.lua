@@ -48,28 +48,24 @@ end
 -- translates it locally (no getText on the dedicated server)
 local function skillList(target)
     local list = {}
-    pcall(function()
-        for i = 0, PerkFactory.PerkList:size() - 1 do
-            local perk = PerkFactory.PerkList:get(i)
-            local level = target:getPerkLevel(perk)
-            if level and level > 0 then
-                table.insert(list, { id = perk:getId(), level = level })
-            end
+    for i = 0, PerkFactory.PerkList:size() - 1 do
+        local perk = PerkFactory.PerkList:get(i)
+        local level = target:getPerkLevel(perk)
+        if level and level > 0 then
+            table.insert(list, { id = perk:getId(), level = level })
         end
-    end)
+    end
     return list
 end
 
 -- B42 way: getCharacterTraits():getKnownTraits(), getTraits is gone
 local function traitList(target)
     local list = {}
-    pcall(function()
-        local traits = target:getCharacterTraits():getKnownTraits()
-        for i = 0, traits:size() - 1 do
-            local t = traits:get(i)
-            if t then table.insert(list, t:getName()) end
-        end
-    end)
+    local traits = target:getCharacterTraits():getKnownTraits()
+    for i = 0, traits:size() - 1 do
+        local t = traits:get(i)
+        if t then table.insert(list, t:getName()) end
+    end
     return list
 end
 
@@ -126,22 +122,18 @@ local function buildBlock(name)
         return { username = name, missing = true }
     end
     local block = { username = target:getUsername(), hours = 0, kills = 0, x = 0, y = 0, z = 0 }
-    pcall(function() block.hours = math.floor(target:getHoursSurvived() * 10 + 0.5) / 10 end)
-    pcall(function() block.kills = target:getZombieKills() end)
-    pcall(function()
-        block.x = math.floor(target:getX())
-        block.y = math.floor(target:getY())
-        block.z = math.floor(target:getZ())
-    end)
+    block.hours = math.floor(target:getHoursSurvived() * 10 + 0.5) / 10
+    block.kills = target:getZombieKills()
+    block.x = math.floor(target:getX())
+    block.y = math.floor(target:getY())
+    block.z = math.floor(target:getZ())
     pcall(function()
         local inv = target:getInventory()
         block.last = math.floor(inv:getCapacityWeight() * 10 + 0.5) / 10
         block.maxWeight = inv:getMaxWeight()
     end)
-    pcall(function()
-        local weapon = target:getPrimaryHandItem()
-        if weapon then block.weapon = weapon:getFullType() end
-    end)
+    local weapon = target:getPrimaryHandItem()
+    if weapon then block.weapon = weapon:getFullType() end
     block.skills = skillList(target)
     block.traits = traitList(target)
     block.inv, block.invTruncated = inventoryList(target)
@@ -176,12 +168,10 @@ Commands.compareData = function(player, args)
         local pa = findPlayer(args.a)
         local pb = findPlayer(args.b)
         if pa and pb then
-            pcall(function()
-                local dx = pa:getX() - pb:getX()
-                local dy = pa:getY() - pb:getY()
-                reply.distance = math.floor(math.sqrt(dx * dx + dy * dy) + 0.5)
-                reply.floors = math.abs(math.floor(pa:getZ()) - math.floor(pb:getZ()))
-            end)
+            local dx = pa:getX() - pb:getX()
+            local dy = pa:getY() - pb:getY()
+            reply.distance = math.floor(math.sqrt(dx * dx + dy * dy) + 0.5)
+            reply.floors = math.abs(math.floor(pa:getZ()) - math.floor(pb:getZ()))
         end
     end
     toClient(player, "compareData", reply)

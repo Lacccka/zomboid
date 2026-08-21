@@ -25,12 +25,10 @@ local perkNames = nil
 local function perkName(id)
     if not perkNames then
         perkNames = {}
-        pcall(function()
-            for i = 0, PerkFactory.PerkList:size() - 1 do
-                local perk = PerkFactory.PerkList:get(i)
-                perkNames[perk:getId()] = perk:getName()
-            end
-        end)
+        for i = 0, PerkFactory.PerkList:size() - 1 do
+            local perk = PerkFactory.PerkList:get(i)
+            perkNames[perk:getId()] = perk:getName()
+        end
     end
     return perkNames[id] or id
 end
@@ -40,13 +38,11 @@ local traitNames = nil
 local function traitName(name)
     if not traitNames then
         traitNames = {}
-        pcall(function()
-            local defs = CharacterTraitDefinition.getTraits()
-            for i = 0, defs:size() - 1 do
-                local def = defs:get(i)
-                traitNames[def:getType():getName()] = def:getLabel()
-            end
-        end)
+        local defs = CharacterTraitDefinition.getTraits()
+        for i = 0, defs:size() - 1 do
+            local def = defs:get(i)
+            traitNames[def:getType():getName()] = def:getLabel()
+        end
     end
     return traitNames[name] or name
 end
@@ -79,9 +75,29 @@ function AegisCompare.open(usernameA)
     o:addToUIManager()
     o:setAlwaysOnTop(true)
     AegisCompare.instance = o
-    if isClient() then pcall(scoreboardUpdate) end
+    if isClient() then scoreboardUpdate() end
     o:request()
     return o
+end
+
+-- every child sits at an absolute offset from the card corner, so moving
+-- the card means moving them along
+function AegisCompare:layout()
+    local cx, cy = self.cardX, self.cardY
+    self.closeBtn:setX(cx + CARD_W - 42)
+    self.closeBtn:setY(cy + 12)
+    self.refreshBtn:setX(cx + CARD_W - 42 - 38)
+    self.refreshBtn:setY(cy + 12)
+    if self.comboB then
+        self.comboB:setX(cx + PAD + COL_W + GAP)
+        self.comboB:setY(cy + 44)
+    end
+    self.skillList:setX(cx + PAD + 1)
+    self.skillList:setY(cy + 219)
+    self.invA:setX(cx + PAD + 1)
+    self.invA:setY(cy + 357)
+    self.invB:setX(cx + PAD + COL_W + GAP + 1)
+    self.invB:setY(cy + 357)
 end
 
 function AegisCompare:createChildren()
@@ -334,14 +350,21 @@ function AegisCompare.drawInvRow(list, y, item, alt)
     if rec.tex then
         list:drawTextureScaledAspect2(rec.tex, 8, y + math.floor((INV_ROW - 20) / 2), 20, 20, 1, 1, 1, 1)
     end
-    local nameW = w - 34 - 96
+    -- the scroll bar sits on top of the right edge, the weight used to
+    -- disappear underneath it as soon as the list had more rows than height
+    local bar = 0
+    if list.isVScrollBarVisible and list:isVScrollBarVisible() and list.vscroll then
+        bar = list.vscroll:getWidth()
+    end
+    local right = w - 10 - bar
+    local nameW = right - 34 - 86
     if rec._fitW ~= nameW then
         rec._fitW = nameW
         rec._fit = Aegis.fitText(rec.name, UIFont.Small, nameW)
     end
     Aegis.text(list, rec._fit, 34, ty, UIFont.Small, c.text)
-    Aegis.textRight(list, tostring(rec.g), w - 10, ty, UIFont.Small, c.muted)
-    Aegis.textRight(list, "x" .. tostring(rec.n), w - 58, ty, UIFont.Small, c.goldHi)
+    Aegis.textRight(list, tostring(rec.g), right, ty, UIFont.Small, c.muted)
+    Aegis.textRight(list, "x" .. tostring(rec.n), right - 48, ty, UIFont.Small, c.goldHi)
     return y + INV_ROW
 end
 
@@ -448,8 +471,34 @@ function AegisCompare:prerender()
     end
 end
 
+-- drag by the card header, the strip left of the two round buttons
 function AegisCompare:onMouseDown(x, y)
-    -- swallow clicks on the dim background
+    local cx, cy = self.cardX, self.cardY
+    if x >= cx and x <= cx + CARD_W - 84 and y >= cy and y <= cy + 54 then
+        self.dragging = true
+        self.dragX = x - cx
+        self.dragY = y - cy
+    end
+end
+
+function AegisCompare:onMouseUp(x, y)
+    self.dragging = false
+end
+
+function AegisCompare:onMouseUpOutside(x, y)
+    self.dragging = false
+end
+
+function AegisCompare:onMouseMove(dx, dy)
+    if not self.dragging then return end
+    local sw, sh = getCore():getScreenWidth(), getCore():getScreenHeight()
+    self.cardX = math.max(0, math.min(sw - CARD_W, self.cardX + dx))
+    self.cardY = math.max(0, math.min(sh - CARD_H, self.cardY + dy))
+    self:layout()
+end
+
+function AegisCompare:onMouseMoveOutside(dx, dy)
+    self:onMouseMove(dx, dy)
 end
 
 Events.OnServerCommand.Add(function(module, command, args)

@@ -213,8 +213,7 @@ function AegisPageSandbox:buildCategoryPanel(idx)
 
     for _, setting in ipairs(cat.settings) do
         local opt = setting.opt
-        local okType, otype = pcall(function() return opt:getType() end)
-        otype = okType and otype or "string"
+        local otype = opt:getType()
         local label = setting.translatedName or setting.name
         local tooltip = setting.tooltip
 
@@ -238,8 +237,7 @@ function AegisPageSandbox:buildCategoryPanel(idx)
                 local combo = ISComboBox:new(ctrlX, y + math.floor((ROW_H - 24) / 2), ctrlW, 24, page, AegisPageSandbox.onRowCombo)
                 combo:initialise()
                 combo.settingRef = setting
-                local okN, num = pcall(function() return opt:getNumValues() end)
-                num = okN and num or (setting.values and #setting.values or 0)
+                local num = opt:getNumValues()
                 for i = 1, num do
                     combo:addOption(enumOptionLabel(setting, i))
                 end
@@ -253,11 +251,13 @@ function AegisPageSandbox:buildCategoryPanel(idx)
                 entry.font = UIFont.Small
                 entry.settingRef = setting
                 entry:setOnlyNumbers(otype == "double" or otype == "integer")
-                local okV, v = pcall(function()
-                    if otype == "double" or otype == "integer" then return opt:getValueAsString() end
-                    return tostring(opt:getValue())
-                end)
-                entry:setText(okV and v or "")
+                local v
+                if otype == "double" or otype == "integer" then
+                    v = opt:getValueAsString()
+                else
+                    v = tostring(opt:getValue())
+                end
+                entry:setText(v)
                 entry.tooltip = tooltip
                 entry.onTextChange = function() AegisPageSandbox.onRowEntry(page, entry) end
                 panel:addChild(entry)
@@ -280,20 +280,20 @@ function AegisPageSandbox:markTouched(setting)
 end
 
 function AegisPageSandbox.onRowToggle(self, checked, toggle)
-    pcall(function() toggle.settingRef.opt:setValue(checked == true) end)
+    toggle.settingRef.opt:setValue(checked == true)
     self:markTouched(toggle.settingRef)
 end
 
 function AegisPageSandbox.onRowCombo(self, combo)
-    pcall(function() combo.settingRef.opt:setValue(combo.selected) end)
+    combo.settingRef.opt:setValue(combo.selected)
     self:markTouched(combo.settingRef)
 end
 
 function AegisPageSandbox.onRowEntry(self, entry)
     local setting = entry.settingRef
-    local okType, otype = pcall(function() return setting.opt:getType() end)
+    local otype = setting.opt:getType()
     local ok = pcall(function()
-        if okType and (otype == "double" or otype == "integer") then
+        if otype == "double" or otype == "integer" then
             setting.opt:parse(entry:getInternalText())
         else
             setting.opt:setValue(entry:getInternalText())
@@ -320,7 +320,7 @@ function AegisPageSandbox.onApply(self)
         end
     end
     -- reparse loot distributions and clutter, like the vanilla editor
-    pcall(function() IsoWorld.parseDistributions() end)
+    IsoWorld.parseDistributions()
     pcall(function() StoryClutter.Init() end)
     -- sendToServer is a pure vanilla channel, the log entry goes through the relay
     local names = {}
@@ -358,12 +358,10 @@ function AegisPageSandbox:restoreState(state)
     if state.options then
         self.options = state.options
         local byName = {}
-        pcall(function()
-            for i = 1, self.options:getNumOptions() do
-                local opt = self.options:getOptionByIndex(i - 1)
-                byName[opt:getName()] = opt
-            end
-        end)
+        for i = 1, self.options:getNumOptions() do
+            local opt = self.options:getOptionByIndex(i - 1)
+            byName[opt:getName()] = opt
+        end
         for _, page in ipairs(self.pages or {}) do
             for _, setting in ipairs(page.settings) do
                 if byName[setting.name] then setting.opt = byName[setting.name] end
@@ -386,10 +384,8 @@ function AegisPageSandbox:restoreState(state)
         -- panels attached and the visible one kept drawing underneath
         -- the rebuilt category, two option sets interleaved on screen
         for _, panel in pairs(self.categoryPanels or {}) do
-            pcall(function()
-                panel:setVisible(false)
-                self:removeChild(panel)
-            end)
+            panel:setVisible(false)
+            self:removeChild(panel)
         end
         self.categoryPanels = {}
         self.activePanel = nil

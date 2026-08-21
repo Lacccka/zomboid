@@ -2,7 +2,7 @@
 require "ISUI/ISPanel"
 
 Aegis = Aegis or {}
-Aegis.version = "2.4.2"
+Aegis.version = "2.5"
 
 -- admin night vision: client-local climate overrides lift the darkness for
 -- THIS admin only (scenario override path, never broadcast). Off restores
@@ -88,10 +88,8 @@ Events.OnTick.Add(function()
     -- flag back on engine side, the pin undoes that until the switch in
     -- the powers page re-enables it
     if Aegis.tagManualOff then
-        pcall(function()
-            local p = getPlayer()
-            if p and p:isShowAdminTag() then p:setShowAdminTag(false) end
-        end)
+        local p = getPlayer()
+        if p and p:isShowAdminTag() then p:setShowAdminTag(false) end
     end
 end)
 
@@ -320,13 +318,13 @@ function Aegis.sound()
     getSoundManager():playUISound("UIActivateButton")
 end
 
--- read in-game clock MP-safe: getHour()/getMinutes() read GameTime.timeOfDay,
+-- read in-game clock MP-safe: getHour/getMinutes read GameTime.timeOfDay,
 -- which after a big jump (Aegis time set) only catches up smoothly over
 -- several in-game minutes (same smoothing that absorbs small net drift). The
 -- vanilla clock (zombie.ui.Clock, bytecode verified) instead reads the public
 -- field GameTime.serverTimeOfDay, which is correct immediately. In MP we read
 -- the same field; in solo there is no server/client split and serverTimeOfDay
--- stays unused (0), so getHour() stays correct there
+-- stays unused (0), so getHour stays correct there
 function Aegis.hourMinute(gt)
     gt = gt or getGameTime()
     if isClient() then
@@ -340,7 +338,7 @@ function Aegis.hourMinute(gt)
     return gt:getHour(), gt:getMinutes()
 end
 
--- in-game calendar date as "DD.MM.YYYY": do NOT use getNightsSurvived(), that
+-- in-game calendar date as "DD.MM.YYYY": do NOT use getNightsSurvived, that
 -- is a pure survival tick counter (bytecode: setDay/setMonth/setYear never
 -- touch it) and freezes after an admin date jump even though the calendar
 -- changed, which made the old "day N" display confusing. The day/month/year
@@ -348,23 +346,19 @@ end
 -- the timeSync broadcast (AegisPageWorld.lua).
 function Aegis.dateText(gt)
     gt = gt or getGameTime()
-    local ok, str = pcall(function()
-        return string.format("%02d.%02d.%d", gt:getDayPlusOne(), gt:getMonth() + 1, gt:getYear())
-    end)
-    if ok then return str end
-    return ""
+    return string.format("%02d.%02d.%d", gt:getDayPlusOne(), gt:getMonth() + 1, gt:getYear())
 end
 
 -- combined line "day N, DD.MM.YYYY": user wants the survival day
--- (getNightsSurvived()+1, pure counter since run start) shown IN ADDITION to
+-- (getNightsSurvived+1, pure counter since run start) shown IN ADDITION to
 -- the real calendar date, not as a replacement. Separator is deliberately a
 -- plain comma: the middle dot U+00B7 is missing from the game's bitmap font and renders as "?"
 -- (user find)
 function Aegis.dayAndDate(gt)
     gt = gt or getGameTime()
-    local okDay, day = pcall(function() return gt:getNightsSurvived() + 1 end)
+    local day = gt:getNightsSurvived() + 1
     local date = Aegis.dateText(gt)
-    if okDay and date ~= "" then
+    if date ~= "" then
         return getText("UI_Aegis_Day") .. " " .. tostring(day) .. ", " .. date
     end
     return date
@@ -390,8 +384,7 @@ end
 function Aegis.teleportSmart(x, y, z, username)
     local p = getPlayer()
     if not p then return end
-    local inVehicle = false
-    pcall(function() inVehicle = p:getVehicle() ~= nil end)
+    local inVehicle = p:getVehicle() ~= nil
     if inVehicle then
         local args
         if username then
@@ -441,11 +434,9 @@ end
 Aegis.powerIntent = Aegis.powerIntent or {}
 
 function Aegis.notePowerIntent(player)
-    pcall(function()
-        Aegis.powerIntent.god = player:isGodMod() == true
-        Aegis.powerIntent.invisible = player:isInvisible() == true
-        Aegis.powerIntent.noclip = player:isNoClip() == true
-    end)
+    Aegis.powerIntent.god = player:isGodMod() == true
+    Aegis.powerIntent.invisible = player:isInvisible() == true
+    Aegis.powerIntent.noclip = player:isNoClip() == true
 end
 
 -- batched sync of admin powers to the server, pattern from ISAdminPowerUI
@@ -460,8 +451,8 @@ function Aegis.syncPowers(player)
 end
 
 -- solo: the cheat setters on the player check Role.hasCapability, but in
--- singleplayer Roles.init() never runs (only the server loads the role DB),
--- getRole() is nil and every setter forces false. So build our own role with
+-- singleplayer Roles.init never runs (only the server loads the role DB),
+-- getRole is nil and every setter forces false. So build our own role with
 -- all capabilities (Role is exposed to Lua) and assign it once.
 function Aegis.ensureSoloRole()
     if isClient() or isServer() then return end
@@ -482,12 +473,12 @@ function Aegis.ensureSoloRole()
             Aegis.soloRole = full
         end
         p:setRole(Aegis.soloRole)
-        pcall(function() p:setShowAdminTag(false) end)
+        p:setShowAdminTag(false)
     end)
 end
 
 -- shared tooltip pattern (modeled on ISButton:updateTooltip), usable by any
--- Aegis widget that carries a .tooltip field; call from prerender()
+-- Aegis widget that carries a .tooltip field; call from prerender
 -- same machinery, but text and position come from the caller. Rows of a
 -- list are drawn and not elements of their own, so they have no tooltip
 -- field the version below could find
@@ -546,7 +537,7 @@ end
 -- access". rightsReq only goes out AFTER the window opens (network round
 -- trip), but the window builds its page navigation immediately; until the
 -- reply arrives EVERY player would briefly see all areas regardless of their
--- real role (live find July 14 2026: a click in this window fired a real
+-- real role: a click in this window fired a real
 -- privileged server command that got the client kicked as suspicious)
 Aegis.rights = nil
 Aegis.rightsLoaded = false
@@ -582,7 +573,7 @@ end
 -- icon on ITS answer catches every such case, not just one renamed level
 --
 -- Solo has no server to send that answer, so it takes the same shortcut
--- canSee() uses above
+-- canSee uses above
 function Aegis.hasAnyArea()
     if not isClient() then return true end
     local r = Aegis.rights

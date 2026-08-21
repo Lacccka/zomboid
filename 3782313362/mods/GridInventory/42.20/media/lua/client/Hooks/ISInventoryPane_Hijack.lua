@@ -151,13 +151,9 @@ Events.OnGameBoot.Add(function()
         
         self.lastBackpackHash = currentBackpackHash
 
-        -- Limpa a UI de Grids antigos se fomos recriar
-        if self.gridContainerUis then
-            for _, gridUi in ipairs(self.gridContainerUis) do
-                if gridUi.destroy then gridUi:destroy() end
-                self:removeChild(gridUi)
-            end
-        end
+        -- Prepara para reaproveitar os GridRenders que não mudaram (evita piscar UI e tooltips no carro)
+        local oldGrids = self.gridContainerUis or {}
+        local gridsToKeep = {}
         self.gridContainerUis = {}
 
         local maxGridWidth = 0
@@ -173,10 +169,28 @@ Events.OnGameBoot.Add(function()
 
             
             for i, gridCoreInstance in ipairs(gridContainer.grids) do
-                -- Inicializamos sempre no Y=0. O prerender vai distribuir eles via FlexBox!
-                -- Passar yOffset aqui fazia a UI Java gravar um tamanho gigantesco no cache
-                local gridUi = GridRender:new(10, 0, gridCoreInstance, self.player, inv, i, cItem, cIcon)
-                gridUi:initialise()
+                -- Tenta reaproveitar o GridRender antigo se o inv e index forem iguais
+                local gridUi = nil
+                for idx, old in ipairs(oldGrids) do
+                    local isSameInv = (old.inventoryContainer == inv) or (old.inventoryContainer and inv and old.inventoryContainer.getType and inv.getType and old.inventoryContainer:getType() == "floor" and inv:getType() == "floor")
+                    if isSameInv and old.gridIndex == i and not old.isOverflow then
+                        gridUi = old
+                        table.remove(oldGrids, idx)
+                        break
+                    end
+                end
+
+                if not gridUi then
+                    -- Inicializamos sempre no Y=0. O prerender vai distribuir eles via FlexBox!
+                    local newUi = GridRender:new(10, 0, gridCoreInstance, self.player, inv, i, cItem, cIcon)
+                    newUi:initialise()
+                    self:addChild(newUi)
+                    gridUi = newUi
+                else
+                    -- Se reaproveitou, garante que o gridCore e o inventário atualizados estejam no render
+                    gridUi.gridCore = gridCoreInstance
+                    gridUi.inventoryContainer = inv
+                end
                 -- Altura base (SEM o footer da controlsUI): usada pelo
                 -- gridInv_positionControlsUI pra ancorar a barra logo abaixo do
                 -- conteúdo. Capturada aqui (e não no update) pra nunca ficar nil
@@ -198,7 +212,9 @@ Events.OnGameBoot.Add(function()
                 gridUi:setX(gridUi.baseX)
                 gridUi.baseY = 0
                 
-                self:addChild(gridUi)
+                if not gridUi:getParent() then
+                    self:addChild(gridUi)
+                end
                 table.insert(self.gridContainerUis, gridUi)
                 
                 if gridUi.width > maxGridWidth then
@@ -211,8 +227,22 @@ Events.OnGameBoot.Add(function()
                 
                 if isLootMode then
                     local OverflowGridRender = require("UI/GridRender/OverflowGridRender")
-                    local overflowUi = OverflowGridRender:new(10, 0, gridContainer.unpositioned, self.player, true, inv, cItem, cIcon)
-                    overflowUi:initialise()
+                    local overflowUi = nil
+                    for idx, old in ipairs(oldGrids) do
+                        local isSameInv = (old.inventoryContainer == inv) or (old.inventoryContainer and inv and old.inventoryContainer.getType and inv.getType and old.inventoryContainer:getType() == "floor" and inv:getType() == "floor")
+                        if isSameInv and old.isOverflow then
+                            overflowUi = old
+                            table.remove(oldGrids, idx)
+                            break
+                        end
+                    end
+                    if not overflowUi then
+                        overflowUi = OverflowGridRender:new(10, 0, gridContainer.unpositioned, self.player, true, inv, cItem, cIcon)
+                        overflowUi:initialise()
+                    else
+                        overflowUi.unpositionedItems = gridContainer.unpositioned
+                        overflowUi.inventoryContainer = inv
+                    end
                     overflowUi.baseGridHeight = overflowUi.height
                     overflowUi.isFloor = GridContainer.containerSignature(inv) == "floor"
                     
@@ -220,7 +250,9 @@ Events.OnGameBoot.Add(function()
                     overflowUi:setX(overflowUi.baseX)
                     overflowUi.baseY = 0
                     
-                    self:addChild(overflowUi)
+                    if not overflowUi:getParent() then
+                        self:addChild(overflowUi)
+                    end
                     table.insert(self.gridContainerUis, overflowUi)
                     
                     if overflowUi.width > maxGridWidth then
@@ -238,8 +270,22 @@ Events.OnGameBoot.Add(function()
         -- Renderiza o Overflow global do Jogador no fundo da janela
         if #allPlayerUnpositioned > 0 then
             local OverflowGridRender = require("UI/GridRender/OverflowGridRender")
-            local overflowUi = OverflowGridRender:new(10, 0, allPlayerUnpositioned, self.player, false, self.inventory, nil, nil)
-            overflowUi:initialise()
+            local overflowUi = nil
+            for idx, old in ipairs(oldGrids) do
+                local isSameInv = (old.inventoryContainer == self.inventory) or (old.inventoryContainer and self.inventory and old.inventoryContainer.getType and self.inventory.getType and old.inventoryContainer:getType() == "floor" and self.inventory:getType() == "floor")
+                if isSameInv and old.isOverflow then
+                    overflowUi = old
+                    table.remove(oldGrids, idx)
+                    break
+                end
+            end
+            if not overflowUi then
+                overflowUi = OverflowGridRender:new(10, 0, allPlayerUnpositioned, self.player, false, self.inventory, nil, nil)
+                overflowUi:initialise()
+            else
+                overflowUi.unpositionedItems = allPlayerUnpositioned
+                overflowUi.inventoryContainer = self.inventory
+            end
             overflowUi.baseGridHeight = overflowUi.height
             overflowUi.isFloor = GridContainer.containerSignature(self.inventory) == "floor"
             
@@ -247,11 +293,19 @@ Events.OnGameBoot.Add(function()
             overflowUi:setX(overflowUi.baseX)
             overflowUi.baseY = 0
             
-            self:addChild(overflowUi)
+            if not overflowUi:getParent() then self:addChild(overflowUi) end
             table.insert(self.gridContainerUis, overflowUi)
             
             if overflowUi.width > maxGridWidth then
                 maxGridWidth = overflowUi.width
+            end
+        end
+
+        -- Destrói os grids órfãos (que não foram reaproveitados)
+        if oldGrids then
+            for _, old in ipairs(oldGrids) do
+                if old.destroy then old:destroy() end
+                self:removeChild(old)
             end
         end
 
@@ -310,7 +364,11 @@ Events.OnGameBoot.Add(function()
             end
         end
         local hasButtons = (gridUi and controlsUI.controls and #controlsUI.controls > 0)
-        if not hasButtons then
+        -- No CONTROLE não dá pra clicar nos botões (Take All etc. — também é
+        -- vanilla); esconde pra não enganar o usuário e não reserva o rodapé.
+        local usingJoypad = JoypadState and JoypadState.players
+            and JoypadState.players[page.player + 1] ~= nil
+        if not hasButtons or usingJoypad then
             controlsUI:setVisible(false)
             return
         end
@@ -505,9 +563,68 @@ Events.OnGameBoot.Add(function()
         -- os outros grids; passada 2 = floor (e seu overflow). Assim qualquer
         -- redraw o reposiciona por último, na base do loot, sem "pular" por cima.
         local orderedGrids = {}
+        local nonFloor = {}
         for _, g in ipairs(self.gridContainerUis) do
-            if not g.isFloor then table.insert(orderedGrids, g) end
+            if not g.isFloor then table.insert(nonFloor, g) end
         end
+        
+        -- Aplica a ordenação customizada para bater com a visualização dos botões
+        local playerObj = getSpecificPlayer(self.player)
+        if playerObj and self.inventoryPage and self.inventoryPage.onCharacter then
+            local modData = playerObj:getModData()
+            local orderStr = modData.GridInventory_ContainerOrderStr or ""
+            local orderTbl = {}
+            for id, i in string.gmatch(orderStr, "([^:,]+):([^:,]+)") do
+                orderTbl[id] = tonumber(i)
+            end
+            
+            local function getGridId(g)
+                if not g.inventoryContainer then return "" end
+                local item = g.inventoryContainer:getContainingItem()
+                if item then
+                    local id = item:getID()
+                    if id and id ~= -1 and id ~= 0 then return tostring(id) end
+                    return item:getFullType() or ""
+                end
+                return ""
+            end
+            
+            local sortData = {}
+            for i, g in ipairs(nonFloor) do
+                local id = getGridId(g)
+                local priority = orderTbl[id]
+                local isMain = false
+                if self.inventoryPage.backpacks and self.inventoryPage.backpacks[1] and self.inventoryPage.backpacks[1].inventory == g.inventoryContainer then
+                    isMain = true
+                end
+                
+                if isMain then
+                    priority = -1
+                elseif not priority then
+                    priority = i * 1000
+                end
+                
+                table.insert(sortData, {
+                    grid = g,
+                    priority = priority,
+                    vanillaIndex = i
+                })
+            end
+            
+            table.sort(sortData, function(a, b)
+                if a.priority ~= b.priority then return a.priority < b.priority end
+                return a.vanillaIndex < b.vanillaIndex
+            end)
+            
+            for _, data in ipairs(sortData) do
+                table.insert(orderedGrids, data.grid)
+            end
+        else
+            for _, g in ipairs(nonFloor) do
+                table.insert(orderedGrids, g)
+            end
+        end
+        
         for _, g in ipairs(self.gridContainerUis) do
             if g.isFloor then table.insert(orderedGrids, g) end
         end
@@ -620,14 +737,15 @@ Events.OnGameBoot.Add(function()
     -- Scroll FORA de um grid = troca o container selecionado (mesmo
     -- comportamento do vanilla na coluna de mochilas/ícones), valendo para o
     -- painel de LOOT e o de INVENTÁRIO. Sobre um grid, rola o painel
-    -- normalmente (comportamento vanilla).
+    -- com multiplicador pra scrollar mais rápido que o vanilla.
+    local SCROLL_MULT = 3
     local og_paneOnMouseWheel = ISInventoryPane.onMouseWheel
     function ISInventoryPane:onMouseWheel(del)
         local page = self.inventoryPage
         if page and not page.isCollapsed and not self:isMouseOverAnyGrid() then
             return page:cycleContainer(del)
         end
-        return og_paneOnMouseWheel(self, del)
+        return og_paneOnMouseWheel(self, del * SCROLL_MULT)
     end
 
     -- Painel COLAPSADO = o pane (filho da página, altura cheia) não pode

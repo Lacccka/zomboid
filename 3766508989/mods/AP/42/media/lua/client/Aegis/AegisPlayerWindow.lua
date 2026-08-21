@@ -4,6 +4,7 @@ require "ISUI/ISPanel"
 require "Aegis/AegisTheme"
 require "Aegis/AegisWidgets"
 require "Aegis/AegisHelp"
+require "Aegis/AegisPageHelp"
 require "Aegis/AegisPlayerCore"
 require "Aegis/AegisBrand"
 -- AegisResizeGrip lives in the admin window file and is shared
@@ -24,7 +25,7 @@ local MIN_H = 540
 local EDGE = 12
 
 -- the player panel counts on its own, separate from the admin panel version
-AegisPlayerWindow.version = "1.3.1"
+AegisPlayerWindow.version = "1.4"
 
 -- pages register here: { id, icon, label (translation key), create(window) }.
 -- Files load alphabetically, so without a fixed order the kits page came
@@ -69,6 +70,23 @@ function AegisPlayerWindow.firstVisiblePage(win)
     return nil
 end
 
+-- Notices when the panel opens: while the tour is unseen it runs first and
+-- the update notice waits for its end. A fresh install has no saved setting
+-- at all, its changelog is parked so a newcomer never sees a list of changes
+-- he did not live through
+local function openNotices(mode)
+    if AegisTour and AegisTour.instance then return end
+    if AegisTour and not AegisTour.seen(mode) then
+        -- a first install has nothing to catch up on, so the change
+        -- list is parked before the tour can hand over to it
+        if AegisWhatsNew and AegisWhatsNew.isFreshInstall() then
+            AegisWhatsNew.markSeen(mode)
+        end
+        if AegisTour.maybeStart(mode) then return end
+    end
+    if AegisWhatsNew then AegisWhatsNew.maybeShow(mode) end
+end
+
 function AegisPlayerWindow.toggle()
     -- no window before the server granted the panel
     if not AegisPlayerClient.enabled() then return end
@@ -83,6 +101,7 @@ function AegisPlayerWindow.toggle()
         o:setVisible(show)
         if show then
             o:bringToTop()
+            openNotices("player")
         else
             o.dragging = false
         end
@@ -99,6 +118,7 @@ function AegisPlayerWindow.toggle()
     o:initialise()
     o:addToUIManager()
     AegisPlayerWindow.instance = o
+    openNotices("player")
 end
 
 function AegisPlayerWindow:new(x, y, w, h)
@@ -138,6 +158,14 @@ function AegisPlayerWindow:createChildren()
     self.helpBtn.radius = 15
     self.helpBtn.tooltip = getText("UI_Aegis_Help")
     self:addChild(self.helpBtn)
+
+    -- hints for the page currently open, next to the manual button
+    self.pageHelpBtn = AegisButton:new(self.width - 44 - 38 * 3, 16, 30, 30, "?", nil, self, function(win)
+        AegisPageHelp.toggle(win, "player")
+    end)
+    self.pageHelpBtn.radius = 15
+    self.pageHelpBtn.tooltip = getText("UI_Aegis_PageHelp")
+    self:addChild(self.pageHelpBtn)
 
     -- bottom right resize grip, the shared class from the admin window
     self.grip = AegisResizeGrip:new(self.width - 22, self.height - 22, 22, 22, self)
@@ -245,7 +273,7 @@ end
 function AegisPlayerWindow:toggleMinimize()
     if self.grip and self.grip.resizing then
         self.grip.resizing = false
-        pcall(function() self.grip:setCapture(false) end)
+        self.grip:setCapture(false)
     end
     self.minimized = true
     self.dragging = false
@@ -264,6 +292,7 @@ function AegisPlayerWindow:placeChrome()
     self.closeBtn:setX(self.width - 44)
     if self.minBtn then self.minBtn:setX(self.width - 44 - 38) end
     if self.helpBtn then self.helpBtn:setX(self.width - 44 - 38 * 2) end
+    if self.pageHelpBtn then self.pageHelpBtn:setX(self.width - 44 - 38 * 3) end
     if self.lockBtn then self.lockBtn:setY(self.height - 50) end
     if self.navPlusBtn then self.navPlusBtn:setY(self.height - 50) end
     if self.restoreMenu then
@@ -650,12 +679,8 @@ end
 
 -- MP safe clock, same route as the admin window (see AegisTheme.lua)
 local function timeString()
-    local ok, str = pcall(function()
-        local h, m = Aegis.hourMinute(getGameTime())
-        return string.format("%02d:%02d", h, m)
-    end)
-    if ok then return str end
-    return ""
+    local h, m = Aegis.hourMinute(getGameTime())
+    return string.format("%02d:%02d", h, m)
 end
 
 local function dayString()
@@ -676,24 +701,20 @@ local function clockGear()
     -- every local player, like the engine clock: in splitscreen one worn
     -- watch shows the time for the shared screen (plain
     -- getPlayer() hits whichever player updated last)
-    pcall(function()
-        for n = 0, (getNumActivePlayers() or 1) - 1 do
-            local p = getSpecificPlayer(n)
-            if p and not p:isDead() then
-                local worn = p:getWornItems()
-                for i = 0, worn:size() - 1 do
-                    local it = worn:getItemByIndex(i)
-                    if it and (instanceof(it, "AlarmClock") or instanceof(it, "AlarmClockClothing")) then
-                        wornClock.time = true
-                        -- hasTag needs the ItemTag OBJECT, a raw string throws
-                        pcall(function()
-                            if it:hasTag(ItemTag.DIGITAL) then wornClock.date = true end
-                        end)
-                    end
+    for n = 0, (getNumActivePlayers() or 1) - 1 do
+        local p = getSpecificPlayer(n)
+        if p and not p:isDead() then
+            local worn = p:getWornItems()
+            for i = 0, worn:size() - 1 do
+                local it = worn:getItemByIndex(i)
+                if it and (instanceof(it, "AlarmClock") or instanceof(it, "AlarmClockClothing")) then
+                    wornClock.time = true
+                    -- hasTag needs the ItemTag OBJECT, a raw string throws
+                    if it:hasTag(ItemTag.DIGITAL) then wornClock.date = true end
                 end
             end
         end
-    end)
+    end
     return wornClock
 end
 
@@ -733,7 +754,7 @@ function AegisPlayerWindow:prerender()
     -- left of the THREE header buttons (help, minimize, close), same
     -- guard the admin window uses (the old two
     -- button offset ran the clock straight into the help button)
-    local clockX = w - 44 - 38 * 2 - 14
+    local clockX = w - 44 - 38 * 3 - 14
     local gear = clockGear()
     if gear.time then
         Aegis.textRight(self, timeString(), clockX, 12, UIFont.Large, c.text)

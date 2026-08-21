@@ -168,10 +168,8 @@ local function mouseTile()
 end
 
 local function screenProjection(wx, wy, z)
-    local ok, anchorX, anchorY = pcall(function()
-        return isoToScreenX(0, wx, wy, z), isoToScreenY(0, wx, wy, z)
-    end)
-    if not ok then return nil end
+    local anchorX = isoToScreenX(0, wx, wy, z)
+    local anchorY = isoToScreenY(0, wx, wy, z)
     local zoom = getCore():getZoom(0)
     local baseX = IsoUtils.XToScreen(wx, wy, z, 0)
     local baseY = IsoUtils.YToScreen(wx, wy, z, 0)
@@ -691,15 +689,14 @@ local function modelFor(sprite)
     local hit = modelCache[sprite]
     if hit ~= nil then return hit or nil end
     local found = false
-    pcall(function()
-        local sm = getScriptManager()
-        if not sm then return end
+    local sm = getScriptManager()
+    if sm then
         if sm:getModelScript("Base." .. sprite) then
             found = "Base." .. sprite
         elseif sm:getModelScript(sprite) then
             found = sprite
         end
-    end)
+    end
     modelCache[sprite] = found
     return found or nil
 end
@@ -751,9 +748,8 @@ local function allSheets()
     sheetCache = {}
     -- 1. the engine list, when it happens to be filled (debug sessions)
     local fromEngine = 0
-    pcall(function()
-        local list = getWorld():getAllTilesName()
-        if not list then return end
+    local list = getWorld():getAllTilesName()
+    if list then
         for i = 0, list:size() - 1 do
             local name = list:get(i)
             if type(name) == "string" and name ~= "" and not set[name] then
@@ -762,7 +758,7 @@ local function allSheets()
                 fromEngine = fromEngine + 1
             end
         end
-    end)
+    end
     -- 2. the sheets our own palette is built from, always available
     local fromCatalog = 0
     for _, cat in ipairs(CATALOG) do
@@ -808,7 +804,7 @@ end
 
 function AegisTileBrowser:close()
     if self.scene then
-        pcall(function() self.scene:setVisible(false) end)
+        self.scene:setVisible(false)
         self.scene = nil
         self.sceneScript = nil
     end
@@ -868,7 +864,7 @@ function AegisTileBrowser:createChildren()
         local jo = sc.javaObject
         -- it must not swallow the mouse, the browser needs every move to
         -- know which tile is hovered and every click to add one
-        pcall(function() jo:setConsumeMouseEvents(false) end)
+        jo:setConsumeMouseEvents(false)
         jo:fromLua1("setDrawGrid", false)
         jo:fromLua1("setDrawGridAxes", false)
         jo:fromLua1("setMaxZoom", 20)

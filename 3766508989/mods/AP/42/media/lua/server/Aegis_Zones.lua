@@ -224,19 +224,15 @@ end
 -- ---------- Safehouse helpers ----------
 local function members(sh)
     local names = {}
-    pcall(function()
-        local pl = sh:getPlayers()
-        for j = 0, pl:size() - 1 do table.insert(names, pl:get(j)) end
-    end)
+    local pl = sh:getPlayers()
+    for j = 0, pl:size() - 1 do table.insert(names, pl:get(j)) end
     return names
 end
 
 local function respawnNames(sh)
     local names = {}
-    pcall(function()
-        local pl = sh:getPlayersRespawn()
-        for j = 0, pl:size() - 1 do table.insert(names, pl:get(j)) end
-    end)
+    local pl = sh:getPlayersRespawn()
+    for j = 0, pl:size() - 1 do table.insert(names, pl:get(j)) end
     return names
 end
 
@@ -260,8 +256,7 @@ local function dropSafehouse(sh)
         -- MetaData packet, which transfers the complete list. Until then
         -- they keep a ghost copy, which the vanilla safehouse UI happily
         -- shows and lets the owner "release" again
-        local at = ""
-        pcall(function() at = " at " .. sh:getX() .. "," .. sh:getY() end)
+        local at = " at " .. sh:getX() .. "," .. sh:getY()
         print("[Aegis] zone removal" .. at .. ": hitPoint path failed, removing without broadcast (clients keep a ghost until reconnect)")
     end
     pcall(function() SafeHouse.removeSafeHouse(sh) end)
@@ -274,15 +269,15 @@ local function buildSafehouse(r, owner, title, names, respawn)
         created = SafeHouse.addSafeHouse(r.x, r.y, r.w, r.h, owner)
     end)
     if not created then return nil end
-    pcall(function() created:setTitle(title) end)
+    created:setTitle(title)
     for _, name in ipairs(names) do
         if name ~= owner then
-            pcall(function() created:addPlayer(name) end)
+            created:addPlayer(name)
         end
     end
     if respawn then
         for _, name in ipairs(respawn) do
-            pcall(function() created:setRespawnInSafehouse(true, name) end)
+            created:setRespawnInSafehouse(true, name)
         end
     end
     syncToAll(created)
@@ -295,10 +290,9 @@ end
 -- (vanilla respawn takes the first match, which must be the main)
 local function alignSafehouse(sh, title, names, respawn, owner)
     local dirty = false
-    local haveTitle = ""
-    pcall(function() haveTitle = sh:getTitle() or "" end)
+    local haveTitle = sh:getTitle() or ""
     if haveTitle ~= title then
-        pcall(function() sh:setTitle(title) end)
+        sh:setTitle(title)
         dirty = true
     end
     local wanted = {}
@@ -316,10 +310,8 @@ local function alignSafehouse(sh, title, names, respawn, owner)
         if not haveSet[name] then differs = true end
     end
     if differs then
-        pcall(function()
-            for name in pairs(haveSet) do sh:removePlayer(name) end
-            for name in pairs(wanted) do sh:addPlayer(name) end
-        end)
+        for name in pairs(haveSet) do sh:removePlayer(name) end
+        for name in pairs(wanted) do sh:addPlayer(name) end
         dirty = true
     end
     local wantSpawn = {}
@@ -329,12 +321,12 @@ local function alignSafehouse(sh, title, names, respawn, owner)
         if wantSpawn[name] then
             wantSpawn[name] = nil
         else
-            pcall(function() sh:setRespawnInSafehouse(false, name) end)
+            sh:setRespawnInSafehouse(false, name)
             dirty = true
         end
     end
     for name in pairs(wantSpawn) do
-        pcall(function() sh:setRespawnInSafehouse(true, name) end)
+        sh:setRespawnInSafehouse(true, name)
         dirty = true
     end
     if dirty then syncToAll(sh) end
@@ -383,10 +375,7 @@ end
 
 -- is the player standing in the full shape (main plus annexes)?
 local function inZone(player, mainRect, parts)
-    local px, py = -1, -1
-    pcall(function()
-        px, py = math.floor(player:getX()), math.floor(player:getY())
-    end)
+    local px, py = math.floor(player:getX()), math.floor(player:getY())
     if inRect(px, py, mainRect) then return true end
     for _, r in ipairs(parts or {}) do
         if inRect(px, py, r) then return true end
@@ -398,33 +387,24 @@ end
 -- Sets are columns: set[x][y] = true. Everything here works on plain
 -- tables, no Java object ever enters a set.
 
--- geometry of a safehouse as a plain rect, nil when the read fails or
--- the engine hands back something degenerate
+-- geometry of a safehouse as a plain rect, nil when the engine hands
+-- back something degenerate
 local function rectOf(sh)
-    local r = nil
-    pcall(function()
-        r = { x = sh:getX(), y = sh:getY(), w = sh:getW(), h = sh:getH() }
-    end)
-    if r and r.x and r.y and r.w and r.h and r.w >= 1 and r.h >= 1 then return r end
+    local r = { x = sh:getX(), y = sh:getY(), w = sh:getW(), h = sh:getH() }
+    if r.w >= 1 and r.h >= 1 then return r end
     return nil
 end
 
 -- one pass over the engine list instead of a findSafehouseAt per
 -- rectangle: anchor -> live safehouse, its geometry and its position in
 -- the list. Removals only take entries out, so the recorded order still
--- describes everything that survives a teardown. Every read stands alone,
--- one bad entry costs one entry
+-- describes everything that survives a teardown
 local function safehouseIndex()
     local map = {}
-    local java = nil
-    pcall(function() java = SafeHouse.getSafehouseList() end)
-    if not java then return map end
-    local count = 0
-    pcall(function() count = java:size() end)
-    for i = 0, count - 1 do
-        local sh = nil
-        pcall(function() sh = java:get(i) end)
-        local r = sh and rectOf(sh)
+    local java = SafeHouse.getSafehouseList()
+    for i = 0, java:size() - 1 do
+        local sh = java:get(i)
+        local r = rectOf(sh)
         if r then
             local key = groupKey(r.x, r.y)
             if not map[key] then map[key] = { sh = sh, idx = i, rect = r } end
@@ -806,15 +786,10 @@ end
 
 -- copy of the safehouse at an anchor, nil when the spot is free
 function AegisZones.safehouseAt(x, y)
-    local out = nil
-    pcall(function()
-        local sh = findSafehouseAt(math.floor(x), math.floor(y))
-        if sh then
-            out = { x = sh:getX(), y = sh:getY(), w = sh:getW(), h = sh:getH(),
-                owner = sh:getOwner() or "", title = sh:getTitle() or "" }
-        end
-    end)
-    return out
+    local sh = findSafehouseAt(math.floor(x), math.floor(y))
+    if not sh then return nil end
+    return { x = sh:getX(), y = sh:getY(), w = sh:getW(), h = sh:getH(),
+        owner = sh:getOwner() or "", title = sh:getTitle() or "" }
 end
 
 -- main rectangles owned by a user; annex anchors are plumbing and
@@ -822,15 +797,13 @@ end
 function AegisZones.ownedBy(username)
     local list = {}
     local annexes = annexAnchors()
-    pcall(function()
-        local java = SafeHouse.getSafehouseList()
-        for i = 0, java:size() - 1 do
-            local sh = java:get(i)
-            if (sh:getOwner() or "") == username and not annexes[groupKey(sh:getX(), sh:getY())] then
-                table.insert(list, { x = sh:getX(), y = sh:getY(), w = sh:getW(), h = sh:getH() })
-            end
+    local java = SafeHouse.getSafehouseList()
+    for i = 0, java:size() - 1 do
+        local sh = java:get(i)
+        if (sh:getOwner() or "") == username and not annexes[groupKey(sh:getX(), sh:getY())] then
+            table.insert(list, { x = sh:getX(), y = sh:getY(), w = sh:getW(), h = sh:getH() })
         end
-    end)
+    end
     return list
 end
 
@@ -932,22 +905,19 @@ local function claimHolderAt(x, y)
 end
 
 local function adminOf(player)
-    local name = nil
-    pcall(function() name = player:getUsername() end)
+    local name = player:getUsername()
     if type(name) ~= "string" then return "" end
     return name
 end
 
 local function shOwner(sh)
-    local owner = nil
-    pcall(function() owner = sh:getOwner() end)
+    local owner = sh:getOwner()
     if type(owner) ~= "string" then return "" end
     return owner
 end
 
 local function shTitle(sh)
-    local title = nil
-    pcall(function() title = sh:getTitle() end)
+    local title = sh:getTitle()
     if type(title) ~= "string" then return "" end
     return title
 end
@@ -999,22 +969,16 @@ local function growBox(box, r)
 end
 
 -- every zone of one owner: main rectangle, its annexes and the live
--- safehouse. Annex anchors are plumbing, they are never a zone of their
--- own. Each engine read stands alone so one bad entry costs one entry
+-- safehouse. Annex anchors are plumbing, they are never a zone of
+-- their own
 local function zonesOfOwner(owner)
     loadGroups()
     local annexes = annexAnchors()
     local list = {}
-    local java = nil
-    pcall(function() java = SafeHouse.getSafehouseList() end)
-    if not java then return list end
-    local count = 0
-    pcall(function() count = java:size() end)
-    for i = 0, count - 1 do
-        local sh = nil
-        pcall(function() sh = java:get(i) end)
-        local main = nil
-        if sh then main = rectOf(sh) end
+    local java = SafeHouse.getSafehouseList()
+    for i = 0, java:size() - 1 do
+        local sh = java:get(i)
+        local main = rectOf(sh)
         if main and shOwner(sh) == owner then
             local key = groupKey(main.x, main.y)
             if not annexes[key] then
@@ -1162,11 +1126,8 @@ local function applyZoneShape(player, main, group, plan, command, note)
     end
     local absorbed = plan.absorbed or {}
 
-    local owner, title = "", ""
-    pcall(function()
-        owner = main:getOwner() or ""
-        title = main:getTitle() or ""
-    end)
+    local owner = main:getOwner() or ""
+    local title = main:getTitle() or ""
     local label = title ~= "" and title or owner
     local ownNames = members(main)
     local ownRespawn = respawnNames(main)
@@ -1404,11 +1365,8 @@ local function growExisting(player, plan, command, note)
     -- growing reshapes an EXISTING zone, so the same rule as the shape
     -- editors applies: the admin has to stand in the resulting area. The
     -- create commands carry no such gate on their own
-    local px, py
-    local ok = pcall(function()
-        px, py = math.floor(player:getX()), math.floor(player:getY())
-    end)
-    if not ok or not px or not hasTile(plan.set, px, py) then
+    local px, py = math.floor(player:getX()), math.floor(player:getY())
+    if not hasTile(plan.set, px, py) then
         zlog(command .. " rejected: admin stands outside the grown area")
         toClient(player, command, { ok = false, reason = "outside" })
         return
@@ -1675,8 +1633,7 @@ Commands.shShape = function(player, args)
     -- ground the admin may already be standing on, and the brush may erase
     -- the very tile under the admin's feet
     if not inZone(player, mainRect, group.parts) then
-        local px, py = -1, -1
-        pcall(function() px, py = math.floor(player:getX()), math.floor(player:getY()) end)
+        local px, py = math.floor(player:getX()), math.floor(player:getY())
         if not hasTile(newSet, px, py) then
             zlog("shShape rejected: admin stands outside zone " .. key)
             toClient(player, "shShape", { ok = false, reason = "outside" })
@@ -1951,11 +1908,8 @@ local function guard()
                 "Safehouse released, zone annexes removed with it (" .. #g.parts .. " parts, owner "
                 .. tostring(owner) .. ")")
         elseif #g.parts > 0 then
-            local owner, title = "", ""
-            pcall(function()
-                owner = main:getOwner() or ""
-                title = main:getTitle() or ""
-            end)
+            local owner = main:getOwner() or ""
+            local title = main:getTitle() or ""
             local label = title ~= "" and title or owner
             local freshest = main:getLastVisited()
             local partShs = {}
@@ -1966,22 +1920,17 @@ local function guard()
                     if sh:getLastVisited() > freshest then freshest = sh:getLastVisited() end
                 end
             end
-            pcall(function()
-                if main:getLastVisited() < freshest then main:setLastVisited(freshest) end
-            end)
+            if main:getLastVisited() < freshest then main:setLastVisited(freshest) end
             local wanted = {}
             for _, name in ipairs(members(main)) do
                 if name ~= owner then wanted[name] = true end
             end
             for _, sh in ipairs(partShs) do
-                pcall(function()
-                    if sh:getLastVisited() < freshest then sh:setLastVisited(freshest) end
-                end)
+                if sh:getLastVisited() < freshest then sh:setLastVisited(freshest) end
                 local dirty = false
-                local haveTitle = ""
-                pcall(function() haveTitle = sh:getTitle() or "" end)
+                local haveTitle = sh:getTitle() or ""
                 if haveTitle ~= label then
-                    pcall(function() sh:setTitle(label) end)
+                    sh:setTitle(label)
                     dirty = true
                 end
                 local differs = false
@@ -1996,10 +1945,8 @@ local function guard()
                     if not haveSet[name] then differs = true end
                 end
                 if differs then
-                    pcall(function()
-                        for name in pairs(haveSet) do sh:removePlayer(name) end
-                        for name in pairs(wanted) do sh:addPlayer(name) end
-                    end)
+                    for name in pairs(haveSet) do sh:removePlayer(name) end
+                    for name in pairs(wanted) do sh:addPlayer(name) end
                     dirty = true
                 end
                 if dirty then syncToAll(sh) end

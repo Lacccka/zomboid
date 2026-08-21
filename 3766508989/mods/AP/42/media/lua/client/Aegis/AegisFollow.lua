@@ -54,7 +54,7 @@ end
 
 local function hudHide()
     if hud then
-        pcall(function() hud:removeFromUIManager() end)
+        hud:removeFromUIManager()
         hud = nil
     end
 end
@@ -80,10 +80,7 @@ end
 -- ------------------------------------------------------------------
 
 local function ghostOn(p)
-    local ok, on = pcall(function()
-        return p:isGodMod() and p:isInvisible() and p:isNoClip() and ISFastTeleportMove.cheat == true
-    end)
-    return ok and on == true
+    return p:isGodMod() and p:isInvisible() and p:isNoClip() and ISFastTeleportMove.cheat == true
 end
 
 -- route through the powers page when it exists so its toggles stay in
@@ -98,13 +95,11 @@ local function ensureGhost(p)
         return
     end
     Aegis.ensureSoloRole()
-    pcall(function() p:setGodMod(true) end)
-    pcall(function() p:setInvisible(true) end)
-    pcall(function() p:setNoClip(true) end)
-    pcall(function()
-        ISFastTeleportMove.cheat = true
-        p:setFastMoveCheat(true)
-    end)
+    p:setGodMod(true)
+    p:setInvisible(true)
+    p:setNoClip(true)
+    ISFastTeleportMove.cheat = true
+    p:setFastMoveCheat(true)
     Aegis.syncPowers(p)
     Aegis.logAction("powers", "Ghost mode enabled")
 end
@@ -246,8 +241,7 @@ Events.OnTick.Add(function()
     if not tx then return end
 
     -- a seated admin would fight the vehicle for the position
-    local seated = false
-    pcall(function() seated = p:getVehicle() ~= nil end)
+    local seated = p:getVehicle() ~= nil
     if seated then return end
 
     local dx, dy = tx - px, ty - py
@@ -262,7 +256,7 @@ Events.OnTick.Add(function()
         -- canonical self teleport for the long hop (anti snapback built in)
         local k = (dist - GAP) / dist
         local jx, jy = px + dx * k, py + dy * k
-        pcall(function() p:teleportTo(jx, jy, math.floor(tz) + 0.0) end)
+        p:teleportTo(jx, jy, math.floor(tz) + 0.0)
         state.lastSelf = { x = jx, y = jy }
     elseif dist > GAP then
         -- dist > GAP > 0 here, the division cannot see a zero
@@ -276,7 +270,7 @@ Events.OnTick.Add(function()
             local f = cap / step
             nx, ny = px + sx * f, py + sy * f
         end
-        pcall(setPlane, p, nx, ny)
+        setPlane(p, nx, ny)
         state.lastSelf = { x = nx, y = ny }
     end
     -- hold the target height every tick, the engine pulls airborne
@@ -284,10 +278,8 @@ Events.OnTick.Add(function()
     -- comparing values instead of floors also catches a leftover fraction
     -- at ground level, where the floor compare wrote nothing at all
     if tz ~= 0 or math.abs(pz - tz) > 0.001 then
-        pcall(function()
-            p:setZ(tz + 0.0)
-            p:setLastZ(tz + 0.0)
-        end)
+        p:setZ(tz + 0.0)
+        p:setLastZ(tz + 0.0)
     end
 end)
 

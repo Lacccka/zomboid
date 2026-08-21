@@ -4,6 +4,7 @@ require "ISUI/ISResizeWidget"
 require "Aegis/AegisTheme"
 require "Aegis/AegisWidgets"
 require "Aegis/AegisHelp"
+require "Aegis/AegisPageHelp"
 require "Aegis/AegisBrand"
 
 AegisWindow = ISPanel:derive("AegisWindow")
@@ -50,6 +51,23 @@ function AegisWindow.pageArea(id)
     return id
 end
 
+-- Notices when the panel opens: while the tour is unseen it runs first and
+-- the update notice waits for its end. A fresh install has no saved setting
+-- at all, its changelog is parked so a newcomer never sees a list of changes
+-- he did not live through
+local function openNotices(mode)
+    if AegisTour and AegisTour.instance then return end
+    if AegisTour and not AegisTour.seen(mode) then
+        -- a first install has nothing to catch up on, so the change
+        -- list is parked before the tour can hand over to it
+        if AegisWhatsNew and AegisWhatsNew.isFreshInstall() then
+            AegisWhatsNew.markSeen(mode)
+        end
+        if AegisTour.maybeStart(mode) then return end
+    end
+    if AegisWhatsNew then AegisWhatsNew.maybeShow(mode) end
+end
+
 function AegisWindow.toggle()
     -- during vehicle placement, zone editor or clearing the window is only hidden
     if AegisVehiclePlacer and AegisVehiclePlacer.instance then
@@ -82,6 +100,7 @@ function AegisWindow.toggle()
             o.dragging = false
         end
         sendClientCommand(getPlayer(), AegisShared.MODULE, "panelSession", { open = show })
+        if show then openNotices("admin") end
         return
     end
     Aegis.ensureSoloRole()
@@ -103,6 +122,7 @@ function AegisWindow.toggle()
     end
     -- session log also in solo, the loopback fires in-process
     sendClientCommand(getPlayer(), AegisShared.MODULE, "panelSession", { open = true })
+    openNotices("admin")
 end
 
 function AegisWindow:new(x, y, w, h)
@@ -144,6 +164,14 @@ function AegisWindow:createChildren()
     self.helpBtn.radius = 15
     self.helpBtn.tooltip = getText("UI_Aegis_Help")
     self:addChild(self.helpBtn)
+
+    -- hints for the page currently open, next to the manual button
+    self.pageHelpBtn = AegisButton:new(self.width - 44 - 38 * 3, 16, 30, 30, "?", nil, self, function(win)
+        AegisPageHelp.toggle(win, "admin")
+    end)
+    self.pageHelpBtn.radius = 15
+    self.pageHelpBtn.tooltip = getText("UI_Aegis_PageHelp")
+    self:addChild(self.pageHelpBtn)
 
     -- unobtrusive padlock in the sidebar footer: open = nav entries can
     -- be dragged into a new order, closed = order fixed
@@ -203,7 +231,7 @@ end
 function AegisWindow:toggleMinimize()
     if self.grip and self.grip.resizing then
         self.grip.resizing = false
-        pcall(function() self.grip:setCapture(false) end)
+        self.grip:setCapture(false)
     end
     self.minimized = true
     self.dragging = false
@@ -243,6 +271,7 @@ function AegisWindow:placeChrome()
     self.closeBtn:setX(self.width - 44)
     self.minBtn:setX(self.width - 44 - 38)
     if self.helpBtn then self.helpBtn:setX(self.width - 44 - 38 * 2) end
+    if self.pageHelpBtn then self.pageHelpBtn:setX(self.width - 44 - 38 * 3) end
     if self.lockBtn then self.lockBtn:setY(self.height - 50) end
     if self.navPlusBtn then self.navPlusBtn:setY(self.height - 50) end
     if self.restoreMenu then
@@ -699,12 +728,8 @@ end
 -- (see Aegis.hourMinute/Aegis.dateText in AegisTheme.lua for the
 -- verified engine reasons)
 local function timeString()
-    local ok, str = pcall(function()
-        local h, m = Aegis.hourMinute(getGameTime())
-        return string.format("%02d:%02d", h, m)
-    end)
-    if ok then return str end
-    return ""
+    local h, m = Aegis.hourMinute(getGameTime())
+    return string.format("%02d:%02d", h, m)
 end
 
 local function dayString()
@@ -760,7 +785,7 @@ function AegisWindow:prerender()
 
     -- left of the three header buttons (help, minimize, close), the old
     -- fixed offset collided with the help button
-    local clockX = w - 44 - 38 * 2 - 14
+    local clockX = w - 44 - 38 * 3 - 14
     Aegis.textRight(self, timeString(), clockX, 12, UIFont.Large, c.text)
     Aegis.textRight(self, dayString(), clockX, 12 + Aegis.fontH(UIFont.Large), UIFont.Small, c.muted)
     Aegis.hairline(self, 1, HEADER_H, w - 2)

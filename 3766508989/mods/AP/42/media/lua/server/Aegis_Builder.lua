@@ -40,9 +40,7 @@ end
 -- stamp and journal exactly like server/Aegis_Construction.lua, so the
 -- pieces appear in radar and log viewer with the regular "bau" action
 local function stamp(obj, name)
-    pcall(function()
-        obj:getModData().aegisBuild = tostring(name):gsub("|", "_") .. "|" .. tostring(AegisShared.realTime())
-    end)
+    obj:getModData().aegisBuild = tostring(name):gsub("|", "_") .. "|" .. tostring(AegisShared.realTime())
 end
 
 local function journal(name, x, y, z, sprite)
@@ -91,8 +89,7 @@ local function buildObject(cell, sq, sprite)
         local objects = sq:getObjects()
         for i = objects:size() - 1, 0, -1 do
             local o = objects:get(i)
-            local n = nil
-            pcall(function() n = o:getSprite() and o:getSprite():getName() end)
+            local n = o:getSprite() and o:getSprite():getName()
             if n == sprite then
                 obj = o
                 break
@@ -111,10 +108,8 @@ end
 -- the modData travels inside the complete-item packet
 local function buildWall(cell, sq, sprite, north, name)
     local obj = IsoThumpable.new(cell, sq, sprite, north, {})
-    pcall(function()
-        obj:setMaxHealth(400)
-        obj:setHealth(400)
-    end)
+    obj:setMaxHealth(400)
+    obj:setHealth(400)
     stamp(obj, name)
     sq:AddSpecialObject(obj)
     if isServer() then pcall(function() obj:transmitCompleteItemToClients() end) end
@@ -163,7 +158,7 @@ Commands.builderApply = function(player, args)
                     pcall(function() obj:transmitModData() end)
                 end
                 journal(name, x, y, z, sprite)
-                pcall(function() sq:RecalcProperties() end)
+                sq:RecalcProperties()
                 built = built + 1
             else
                 skipped = skipped + 1

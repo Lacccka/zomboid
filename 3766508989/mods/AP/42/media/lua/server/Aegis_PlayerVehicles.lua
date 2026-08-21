@@ -12,17 +12,15 @@ require "Aegis_Moderation"
 
 local MODULE = "AegisPlayer"
 local FILE = AegisStore.ROOT .. "/Player/vehicles.txt"
--- how many vehicles a player may remember. Sandbox option since 2.3.5,
+-- how many vehicles a player may remember. Sandbox option,
 -- a missing option keeps the old five so existing servers do not change
 -- behaviour on update. Read on every call, not cached: an admin can
 -- change it live on the sandbox page
 local function maxVehicles()
     local n = nil
-    pcall(function()
-        local v = SandboxVars and SandboxVars.AegisEvents
-            and SandboxVars.AegisEvents.PlayerVehicles
-        if v ~= nil then n = math.floor(tonumber(v) or 0) end
-    end)
+    local v = SandboxVars and SandboxVars.AegisEvents
+        and SandboxVars.AegisEvents.PlayerVehicles
+    if v ~= nil then n = math.floor(tonumber(v) or 0) end
     if not n or n < 0 then n = 5 end
     return math.min(n, 20)
 end
@@ -217,10 +215,12 @@ end
 -- than an empty bar
 
 -- the vehicle wearing this stamp, out of everything the server has
--- loaded. VehicleManager.instance:getVehicles() is an ArrayList on the
+-- loaded. VehicleManager.instance:getVehicles is an ArrayList on the
 -- server, unlike the cell set the client sees
 local function findByStamp(key)
     local found = nil
+    -- some servers do not have this global at all
+    if VehicleManager == nil then return nil end
     pcall(function()
         -- a Java-null instance is not caught by this pcall (bridge
         -- exception, not a Lua error), the crash reports from the
@@ -525,8 +525,8 @@ local function onClientCommand(module, command, player, args)
     if AegisModeration.isSuspended(player) then return end
     local handler = Commands[command]
     if not handler then return end
-    local ok, name = pcall(function() return player:getUsername() end)
-    if not ok or not nameOk(name) then return end
+    local name = player:getUsername()
+    if not nameOk(name) then return end
     if not unlocked(name) then return end
     if throttled(name, command) then return end
     handler(player, name, args or {})

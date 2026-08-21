@@ -26,10 +26,8 @@ local function mouseTile()
 end
 
 local function screenProjection(wx, wy, z)
-    local ok, anchorX, anchorY = pcall(function()
-        return isoToScreenX(0, wx, wy, z), isoToScreenY(0, wx, wy, z)
-    end)
-    if not ok then return nil end
+    local anchorX = isoToScreenX(0, wx, wy, z)
+    local anchorY = isoToScreenY(0, wx, wy, z)
     local zoom = getCore():getZoom(0)
     local baseX = IsoUtils.XToScreen(wx, wy, z, 0)
     local baseY = IsoUtils.YToScreen(wx, wy, z, 0)

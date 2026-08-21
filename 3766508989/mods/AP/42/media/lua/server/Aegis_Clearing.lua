@@ -66,28 +66,21 @@ local function notRestorable(obj)
     for _, cls in ipairs(NOT_BUILDABLE) do
         if instanceof(obj, cls) then return true end
     end
-    local hasFluid = false
-    pcall(function() hasFluid = obj:hasFluid() end)
-    return hasFluid
+    return obj:hasFluid()
 end
 
 local function spriteOf(obj)
-    local name = ""
-    pcall(function() name = obj:getSpriteName() or "" end)
+    local name = obj:getSpriteName() or ""
     return name
 end
 
 local function northOf(obj)
     -- IsoObject has no getNorth, only doors, windows, window frames and
-    -- thumpables do; calling it on anything else throws through pcall
-    local hasNorth = false
-    pcall(function()
-        hasNorth = instanceof(obj, "IsoDoor") or instanceof(obj, "IsoWindow")
-            or instanceof(obj, "IsoWindowFrame") or instanceof(obj, "IsoThumpable")
-    end)
+    -- thumpables do
+    local hasNorth = instanceof(obj, "IsoDoor") or instanceof(obj, "IsoWindow")
+        or instanceof(obj, "IsoWindowFrame") or instanceof(obj, "IsoThumpable")
     if not hasNorth then return false end
-    local north = false
-    pcall(function() north = obj:getNorth() == true end)
+    local north = obj:getNorth() == true
     return north
 end
 
@@ -95,29 +88,25 @@ end
 -- bags inside bags inside furniture are skipped on undo)
 local function captureContainers(obj)
     local list = {}
-    local count = 0
-    pcall(function() count = obj:getContainerCount() end)
+    local count = obj:getContainerCount()
     for ci = 0, count - 1 do
-        local cont = nil
-        pcall(function() cont = obj:getContainerByIndex(ci) end)
+        local cont = obj:getContainerByIndex(ci)
         if cont then
             local items = {}
-            pcall(function()
-                local is = cont:getItems()
-                for i = 0, is:size() - 1 do
-                    local it = is:get(i)
-                    if it then
-                        local e = { full = it:getFullType() }
-                        pcall(function() e.cond = it:getCondition() end)
-                        pcall(function() e.condMax = it:getConditionMax() end)
-                        pcall(function() e.uses = it:getCurrentUses() end)
-                        if instanceof(it, "DrainableComboItem") then
-                            pcall(function() e.usesFloat = it:getCurrentUsesFloat() end)
-                        end
-                        table.insert(items, e)
+            local is = cont:getItems()
+            for i = 0, is:size() - 1 do
+                local it = is:get(i)
+                if it then
+                    local e = { full = it:getFullType() }
+                    e.cond = it:getCondition()
+                    e.condMax = it:getConditionMax()
+                    e.uses = it:getCurrentUses()
+                    if instanceof(it, "DrainableComboItem") then
+                        e.usesFloat = it:getCurrentUsesFloat()
                     end
+                    table.insert(items, e)
                 end
-            end)
+            end
             table.insert(list, { idx = ci, items = items })
         end
     end
@@ -133,21 +122,17 @@ local function captureObject(obj, floor)
     end
     if instanceof(obj, "IsoDoor") then
         local e = { kind = "D", sprite = spriteOf(obj), north = northOf(obj) }
-        pcall(function()
-            e.open = obj:IsOpen()
-            e.locked = obj:isLocked()
-            e.hp = obj:getHealth()
-            e.maxhp = obj:getMaxHealth()
-        end)
+        e.open = obj:IsOpen()
+        e.locked = obj:isLocked()
+        e.hp = obj:getHealth()
+        e.maxhp = obj:getMaxHealth()
         return e
     end
     if instanceof(obj, "IsoWindow") then
         local e = { kind = "W", sprite = spriteOf(obj), north = northOf(obj) }
-        pcall(function()
-            e.smashed = obj:isSmashed()
-            e.locked = obj:isLocked()
-            e.open = obj:IsOpen()
-        end)
+        e.smashed = obj:isSmashed()
+        e.locked = obj:isLocked()
+        e.open = obj:IsOpen()
         return e
     end
     if instanceof(obj, "IsoWindowFrame") then
@@ -155,11 +140,9 @@ local function captureObject(obj, floor)
     end
     if instanceof(obj, "IsoThumpable") then
         local e = { kind = "T", sprite = spriteOf(obj), north = northOf(obj), container = captureContainers(obj) }
-        pcall(function()
-            e.name = obj:getName()
-            e.hp = obj:getHealth()
-            e.maxhp = obj:getMaxHealth()
-        end)
+        e.name = obj:getName()
+        e.hp = obj:getHealth()
+        e.maxhp = obj:getMaxHealth()
         return e
     end
     local sprite = spriteOf(obj)
@@ -210,11 +193,21 @@ end
 -- there, so protecting it would leave the admin no way back. Map floors
 -- stay protected, removing those would tear holes into the world
 local function ownFloor(obj)
-    local stamped = false
+    if not obj:hasModData() then return false end
+    local md = obj:getModData()
+    if md.aegisBuild ~= nil or md.aegisBau ~= nil then return true end
+    -- anything a player put down keeps its materials for the dismantle,
+    -- a map floor carries no mod data at all
+    local built = false
     pcall(function()
-        stamped = obj:hasModData() and obj:getModData().aegisBuild ~= nil
+        for k in pairs(md) do
+            if type(k) == "string" and string.sub(k, 1, 5) == "need:" then
+                built = true
+                return
+            end
+        end
     end)
-    return stamped
+    return built
 end
 
 -- removes everything except the floor; true so multi-tile objects (large
@@ -222,18 +215,61 @@ end
 -- remnants (bytecode: the flag only applies if the object really is
 -- multi-tile, otherwise harmless). Same "obj ~= floor" guard as
 -- Aegis_Backup.lua:restoreSquare keeps existing floors safe automatically
+-- A built floor usually REPLACED the map floor instead of lying on top of
+-- it, so pulling it leaves a black hole. Borrow the ground from a
+-- neighbour and lay it down; unstamped on purpose, the patch stands in
+-- for the map floor and is protected like one
+local NEIGHBOURS = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }
+
+local function patchFloor(sq, x, y, z)
+    local sprite = nil
+    local cell = getCell()
+    for _, o in ipairs(NEIGHBOURS) do
+        if sprite == nil then
+            local n = cell:getGridSquare(x + o[1], y + o[2], z)
+            local f = n and n:getFloor()
+            if f and not ownFloor(f) then
+                local spr = f:getSprite()
+                if spr then sprite = spr:getName() end
+            end
+        end
+    end
+    if sprite == nil then return false end
+    local made = false
+    pcall(function()
+        local obj = IsoObject.new(getCell(), sq, sprite)
+        sq:transmitAddObjectToSquare(obj, 0)
+        made = true
+    end)
+    return made
+end
+
 local function removeAll(sq, x, y, z, job)
     local objects = sq:getObjects()
     local floor = sq:getFloor()
     -- keep passing the real floor to captureObject, it identifies the floor
     -- by that comparison and stores it as one; only the removal guard drops
-    local keep = floor
-    if keep and ownFloor(keep) then keep = nil end
+    -- decided per object, not per square: a built floor can sit ON TOP of
+    -- the original one, and dropping the guard for the whole square took
+    -- the map floor with it and left a black hole
+    local function protectedFloor(obj)
+        -- ONLY the square's real floor object. Stone and crack overlays
+        -- answer isFloor() too and got caught by a wider check, after
+        -- which clearing left every pebble standing
+        if obj ~= floor then return false end
+        if ownFloor(obj) then return false end
+        job.floorsKept = (job.floorsKept or 0) + 1
+        if not job.floorSample then
+            local spr = obj:getSprite()
+            if spr then job.floorSample = spr:getName() end
+        end
+        return true
+    end
     local n = 0
     local block = nil
     for i = objects:size() - 1, 0, -1 do
         local obj = objects:get(i)
-        if obj and obj ~= keep then
+        if obj and not protectedFloor(obj) then
             local ok, captured = pcall(captureObject, obj, floor)
             if ok and captured then
                 block = block or { x = x, y = y, z = z, objects = {} }
@@ -245,6 +281,11 @@ local function removeAll(sq, x, y, z, job)
         end
     end
     if block then table.insert(job.blocks, block) end
+    if n > 0 then
+        if sq:getFloor() == nil and patchFloor(sq, x, y, z) then
+            job.floorsPatched = (job.floorsPatched or 0) + 1
+        end
+    end
     return n
 end
 
@@ -266,8 +307,7 @@ end
 local function restoreContainers(obj, list)
     if not list then return end
     for _, c in ipairs(list) do
-        local cont = nil
-        pcall(function() cont = obj:getContainerByIndex(c.idx) end)
+        local cont = obj:getContainerByIndex(c.idx)
         if cont then
             for _, def in ipairs(c.items) do
                 local it = buildItem(def)
@@ -288,22 +328,18 @@ local function buildObject(cell, sq, e)
     local obj = nil
     if e.kind == "T" then
         obj = IsoThumpable.new(cell, sq, sprite, e.north == true, {})
-        if e.name and e.name ~= "" then pcall(function() obj:setName(e.name) end) end
-        if e.maxhp then pcall(function() obj:setMaxHealth(e.maxhp) end) end
+        if e.name and e.name ~= "" then obj:setName(e.name) end
+        if e.maxhp then obj:setMaxHealth(e.maxhp) end
         if e.hp then pcall(function() obj:setHealth(e.hp) end) end
     elseif e.kind == "D" then
         obj = IsoDoor.new(cell, sq, sprite, e.north == true)
-        pcall(function()
-            if e.open ~= nil then obj:setOpen(e.open) end
-            if e.locked ~= nil then obj:setLocked(e.locked) end
-            if e.hp then obj:setHealth(e.hp) end
-        end)
+        if e.open ~= nil then obj:setOpen(e.open) end
+        if e.locked ~= nil then obj:setLocked(e.locked) end
+        if e.hp then obj:setHealth(e.hp) end
     elseif e.kind == "W" then
         obj = IsoWindow.new(cell, sq, getSprite(sprite), e.north == true)
-        pcall(function()
-            if e.smashed ~= nil then obj:setSmashed(e.smashed) end
-            if e.locked ~= nil then obj:setIsLocked(e.locked) end
-        end)
+        if e.smashed ~= nil then obj:setSmashed(e.smashed) end
+        if e.locked ~= nil then obj:setIsLocked(e.locked) end
     elseif e.kind == "WF" then
         obj = IsoWindowFrame.new(cell, sq, getSprite(sprite), e.north == true)
     elseif e.kind == "O" then
@@ -376,6 +412,16 @@ local function step(job)
         local text = string.format("Area cleared (%s, %dx%d at %d,%d,%d): %d tiles, %d objects removed, %d not loaded, %d not restorable, %d refused by engine",
             job.mode, job.w, job.h, job.x, job.y, job.z, job.tiles, job.removed, job.notLoaded, job.notRestorable, job.notRemoved)
         AegisLog.write("Actions", job.adminName, "Clearing", text)
+        -- a kept floor is the usual reason for "it did not clear", name it
+        -- instead of leaving the admin guessing
+        if (job.floorsPatched or 0) > 0 then
+            print("[Aegis] clearing patched " .. tostring(job.floorsPatched)
+                .. " square(s) with ground from a neighbour")
+        end
+        if (job.floorsKept or 0) > 0 then
+            print("[Aegis] clearing kept " .. tostring(job.floorsKept)
+                .. " map floor(s), first sprite: " .. tostring(job.floorSample or "?"))
+        end
         -- remember as most recent clearing for undo, even if nothing was
         -- captured (undo is then simply a no-op)
         lastClearing[job.adminName] = {

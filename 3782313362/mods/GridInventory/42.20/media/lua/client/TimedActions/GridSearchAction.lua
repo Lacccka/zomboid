@@ -88,6 +88,16 @@ end
 
 function GridSearchAction:update()
     ISBaseTimedAction.update(self)
+    -- Mantém o container como ALVO ativo enquanto a busca roda (mesma regra da
+    -- ISInventoryTransferAction:update do vanilla: enquanto a ação está ativa o
+    -- container vasculhado permanece selecionado no painel de loot).
+    local cont = self.gridRender and self.gridRender.inventoryContainer
+    if cont then
+        local pLoot = getPlayerLoot(self.playerNum)
+        if pLoot and pLoot.selectButtonForContainer then
+            pLoot:selectButtonForContainer(cont)
+        end
+    end
     -- Revela progressivamente conforme o progresso (getJobDelta 0..1).
     -- ATENÇÃO: usar self.jobDelta (campo inexistente) = nil → nunca revelava;
     -- getJobDelta() é o método real (delega pro self.action). Protege se a
@@ -97,6 +107,8 @@ function GridSearchAction:update()
         progress = self.action:getJobDelta() or 0
     end
     local target = math.floor(progress * self.total)
+    -- Cache do emitter fora do loop (evita re-resolver a cadeia Java por item).
+    local emitter = self.character and self.character.getEmitter and self.character:getEmitter()
     while self.revealed < target and self.revealed < self.total do
         local h = self.hiddenLeaders[self.revealed + 1]
         if h and h.itemObj then
@@ -106,8 +118,8 @@ function GridSearchAction:update()
         -- Som one-shot curto a cada item/pilha revelado (feedback "achou algo").
         -- StoreItemPlayerInventory é um clip curto (não loopa). Evita o último
         -- item (a barra já completou) e a revelação em massa (instantânea).
-        if self.character and self.character.getEmitter and self.revealed < self.total then
-            self.character:getEmitter():playSound("StoreItemPlayerInventory")
+        if emitter and self.revealed < self.total then
+            emitter:playSound("StoreItemPlayerInventory")
         end
     end
 end
@@ -120,17 +132,22 @@ function GridSearchAction:start()
     -- do clearVariable + reportEvent("EventLootItem"), senão a animação Loot
     -- trava o personagem pra sempre (sem barra de progresso, preso até ESC).
     local cont = self.gridRender and self.gridRender.inventoryContainer
-    self:setActionAnim("Loot")
-    self:setAnimVariable("LootPosition", "")
-    self:setOverrideHandModels(nil, nil)
-    self.character:clearVariable("LootPosition")
-    if cont and cont.getContainerPosition and cont:getContainerPosition() then
-        self:setAnimVariable("LootPosition", cont:getContainerPosition())
+    
+    -- O jogo crasha se tentarmos tocar animação de "Loot" (que força o personagem a ficar em pé)
+    -- enquanto ele está sentado/dirigindo um veículo.
+    if not self.character:getVehicle() then
+        self:setActionAnim("Loot")
+        self:setAnimVariable("LootPosition", "")
+        self:setOverrideHandModels(nil, nil)
+        self.character:clearVariable("LootPosition")
+        if cont and cont.getContainerPosition and cont:getContainerPosition() then
+            self:setAnimVariable("LootPosition", cont:getContainerPosition())
+        end
+        if cont and cont.getType and cont:getType() == "freezer" and cont.getFreezerPosition and cont:getFreezerPosition() then
+            self:setAnimVariable("LootPosition", cont:getFreezerPosition())
+        end
+        self.character:reportEvent("EventLootItem")
     end
-    if cont and cont.getType and cont:getType() == "freezer" and cont.getFreezerPosition and cont:getFreezerPosition() then
-        self:setAnimVariable("LootPosition", cont:getFreezerPosition())
-    end
-    self.character:reportEvent("EventLootItem")
     -- SEM som de loop aqui: RummageInInventory é um loop contínuo que o vanilla
     -- não consegue parar (FIXME do próprio jogo). O feedback sonoro é o one-shot
     -- por item revelado no update (StoreItemPlayerInventory).
@@ -148,12 +165,19 @@ function GridSearchAction:perform()
         self.action:stopTimedActionAnim()
         self.action:setLoopedAction(false)
     end
+    -- Libera o guard pra permitir busca futura (retoma de itens ainda ocultos).
+    if self.gridRender then
+        self.gridRender._searchActive = false
+    end
     ISBaseTimedAction.perform(self)
     self.started = false
 end
 
 function GridSearchAction:stop()
     ISBaseTimedAction.stop(self)
+    if self.gridRender then
+        self.gridRender._searchActive = false
+    end
     self.started = false
 end
 

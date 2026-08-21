@@ -49,12 +49,10 @@ end
 function AegisPlayerPageMe:bindModel()
     local p = getPlayer()
     if not p then return end
-    pcall(function()
-        self.model:setState("idle")
-        self.model:setDirection(IsoDirections.S)
-        self.model:setIsometric(false)
-        self.model:setCharacter(p)
-    end)
+    self.model:setState("idle")
+    self.model:setDirection(IsoDirections.S)
+    self.model:setIsometric(false)
+    self.model:setCharacter(p)
     self.model:setVisible(true)
 end
 
@@ -62,42 +60,34 @@ function AegisPlayerPageMe:refresh()
     local p = getPlayer()
     if not p then return end
     local d = {}
-    pcall(function()
-        local desc = p:getDescriptor()
-        if desc then d.name = desc:getForename() .. " " .. desc:getSurname() end
-    end)
-    pcall(function() d.username = p:getUsername() end)
-    pcall(function() d.survived = p:getTimeSurvived() end)
-    pcall(function() d.kills = p:getZombieKills() end)
-    pcall(function()
-        local nut = p:getNutrition()
-        if nut then d.weight = math.floor(nut:getWeight() * 10 + 0.5) / 10 end
-    end)
+    local desc = p:getDescriptor()
+    if desc then d.name = desc:getForename() .. " " .. desc:getSurname() end
+    d.username = p:getUsername()
+    d.survived = p:getTimeSurvived()
+    d.kills = p:getZombieKills()
+    local nut = p:getNutrition()
+    if nut then d.weight = math.floor(nut:getWeight() * 10 + 0.5) / 10 end
     -- favourite weapon: highest "Fav:" counter in modData (vanilla pattern,
     -- ISCharacterScreen.loadFavouriteWeapon)
-    pcall(function()
-        local best, swing = nil, 0
-        for k, v in pairs(p:getModData()) do
-            if type(k) == "string" and type(v) == "number" then
-                local name = string.match(k, "^Fav:(.+)")
-                if name and v > swing then
-                    best, swing = name, v
-                end
+    local best, swing = nil, 0
+    for k, v in pairs(p:getModData()) do
+        if type(k) == "string" and type(v) == "number" then
+            local name = string.match(k, "^Fav:(.+)")
+            if name and v > swing then
+                best, swing = name, v
             end
         end
-        d.favWeapon = best
-    end)
+    end
+    d.favWeapon = best
     -- six strongest skills
     d.perks = {}
-    pcall(function()
-        for i = 0, PerkFactory.PerkList:size() - 1 do
-            local perk = PerkFactory.PerkList:get(i)
-            local level = p:getPerkLevel(perk)
-            if level and level > 0 then
-                table.insert(d.perks, { name = perk:getName(), level = level })
-            end
+    for i = 0, PerkFactory.PerkList:size() - 1 do
+        local perk = PerkFactory.PerkList:get(i)
+        local level = p:getPerkLevel(perk)
+        if level and level > 0 then
+            table.insert(d.perks, { name = perk:getName(), level = level })
         end
-    end)
+    end
     table.sort(d.perks, function(a, b) return a.level > b.level end)
     while #d.perks > 6 do table.remove(d.perks) end
     self.data = d
@@ -363,8 +353,8 @@ function AegisPlayerPageStats:prerender()
     elseif #rows == 0 then
         Aegis.textCentre(self, getText("UI_AegisPlayer_TopEmpty"), math.floor(w / 2), rowsY + 20, UIFont.Small, c.muted)
     else
-        local me = nil
-        pcall(function() me = getPlayer():getUsername() end)
+        local p = getPlayer()
+        local me = p and p:getUsername()
         for i, row in ipairs(rows) do
             local yy = rowsY + (i - 1) * 26
             local mine = row.name == me
@@ -397,19 +387,15 @@ local SH_COMPASS = {
 
 local function shDistLine(sh)
     if not sh.x or not sh.y then return nil end
-    local line = nil
-    pcall(function()
-        local p = getPlayer()
-        if not p then return end
-        local dx = (sh.x + (sh.w or 0) / 2) - p:getX()
-        local dy = (sh.y + (sh.h or 0) / 2) - p:getY()
-        local dist = math.sqrt(dx * dx + dy * dy)
-        local bearing = math.deg(math.atan2(dx, -dy))
-        if bearing < 0 then bearing = bearing + 360 end
-        local sector = math.floor((bearing + 22.5) / 45) % 8 + 1
-        line = string.format("%d m %s", math.floor(dist + 0.5), getText(SH_COMPASS[sector]))
-    end)
-    return line
+    local p = getPlayer()
+    if not p then return nil end
+    local dx = (sh.x + (sh.w or 0) / 2) - p:getX()
+    local dy = (sh.y + (sh.h or 0) / 2) - p:getY()
+    local dist = math.sqrt(dx * dx + dy * dy)
+    local bearing = math.deg(math.atan2(dx, -dy))
+    if bearing < 0 then bearing = bearing + 360 end
+    local sector = math.floor((bearing + 22.5) / 45) % 8 + 1
+    return string.format("%d m %s", math.floor(dist + 0.5), getText(SH_COMPASS[sector]))
 end
 
 function AegisPlayerPageSafehouse.create(window, x, y, w, h)
@@ -442,9 +428,10 @@ function AegisPlayerPageSafehouse:createChildren()
             -- optimistic hold, featHold pattern: without it the next sync
             -- yanks the switch back for the round trip
             page.respawnHold = getTimestampMs() + 4000
-            pcall(function()
-                sendClientCommand(getPlayer(), MODULE, "shRespawn", { on = checked == true })
-            end)
+            local p = getPlayer()
+            if p then
+                sendClientCommand(p, MODULE, "shRespawn", { on = checked == true })
+            end
         end)
     self.respawnToggle:setVisible(false)
     self:addChild(self.respawnToggle)
@@ -456,13 +443,12 @@ end
 -- server answer of shInfoReq wins, this runs until it arrives and in solo
 function AegisPlayerPageSafehouse:scan()
     if self.shKnown then return end
-    local me = nil
-    pcall(function() me = getPlayer():getUsername() end)
+    local p = getPlayer()
+    local me = p and p:getUsername()
     if not me then return end
     local found = nil
-    pcall(function()
-        local list = SafeHouse.getSafehouseList()
-        if not list then return end
+    local list = SafeHouse.getSafehouseList()
+    if list then
         for i = 0, list:size() - 1 do
             local sh = list:get(i)
             if sh then
@@ -480,19 +466,17 @@ function AegisPlayerPageSafehouse:scan()
                 if mine then
                     table.insert(names, 1, owner)
                     local rec = { owner = owner, members = names, title = "", w = 0, h = 0 }
-                    pcall(function()
-                        rec.w = sh:getW()
-                        rec.h = sh:getH()
-                        rec.x = sh:getX()
-                        rec.y = sh:getY()
-                    end)
-                    pcall(function() rec.title = tostring(sh:getTitle() or "") end)
+                    rec.w = sh:getW()
+                    rec.h = sh:getH()
+                    rec.x = sh:getX()
+                    rec.y = sh:getY()
+                    rec.title = tostring(sh:getTitle() or "")
                     found = rec
                     break
                 end
             end
         end
-    end)
+    end
     self.sh = found
 end
 
@@ -836,10 +820,7 @@ AegisPlayerWindow.registerPage({
 if MapSpawnSelect and MapSpawnSelect.getSafehouseSpawnRegion then
     function MapSpawnSelect:getSafehouseSpawnRegion()
         if not isClient() then return nil end
-        local allowed = false
-        pcall(function()
-            allowed = getServerOptions():getBoolean("SafehouseAllowRespawn") == true
-        end)
+        local allowed = getServerOptions():getBoolean("SafehouseAllowRespawn") == true
         if not allowed then return nil end
         local username = getClientUsername()
         if MainScreen.instance.inGame then

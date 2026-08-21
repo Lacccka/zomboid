@@ -50,7 +50,7 @@ function AegisBanner.show(text)
     o:initialise()
     o:addToUIManager()
     o:setAlwaysOnTop(true)
-    pcall(function() o.javaObject:setConsumeMouseEvents(false) end)
+    o.javaObject:setConsumeMouseEvents(false)
     AegisBanner.instance = o
     -- also to chat, for anyone looking elsewhere right now; ChatManager
     -- itself can be unavailable for a moment on some clients, and
@@ -104,15 +104,23 @@ local function dockCreate()
     local sw, sh = getCore():getScreenWidth(), getCore():getScreenHeight()
     local x = tonumber(Aegis.getPref("hudDockX"))
     local y = tonumber(Aegis.getPref("hudDockY"))
-    -- a spot stored under another resolution may lie off screen: back to
-    -- the default beats an invisible dock
-    if not x or not y or x < 0 or y < 0 or x > sw - DOCK_W or y > sh - 60 then
+    -- a spot stored under another resolution may lie off screen. Clamp it
+    -- back in instead of discarding it: the folded dock is only the grip
+    -- strip tall and could legally sit lower than a fixed limit allows,
+    -- which threw the remembered spot away on every start
+    if not x or not y then
         x, y = dockDefault()
+    else
+        local folded = Aegis.getPref("hudDockFolded") == "1"
+        local h = folded and DOCK_GRIP or (DOCK_GRIP + DOCK_BTN + DOCK_PAD)
+        x = math.max(0, math.min(x, sw - DOCK_W))
+        y = math.max(0, math.min(y, sh - h))
     end
     local o = ISPanel:new(x, y, DOCK_W, DOCK_GRIP + DOCK_BTN + DOCK_PAD)
     setmetatable(o, AegisHudDock)
     AegisHudDock.__index = AegisHudDock
     o.background = false
+    o.collapsed = Aegis.getPref("hudDockFolded") == "1"
     o:initialise()
     o:addToUIManager()
     -- same as the banner and the mini bar: the dock is born early and would
@@ -160,10 +168,14 @@ end
 function AegisHudDock:onMouseDown(x, y)
     self:bringToTop()
     self.dragging = true
+    -- a click folds the dock, a drag moves it. Same button, so count the
+    -- travelled pixels and only treat it as a click below the threshold
+    self.moved = 0
 end
 
 function AegisHudDock:onMouseMove(dx, dy)
     if self.dragging then
+        self.moved = (self.moved or 0) + math.abs(dx) + math.abs(dy)
         self:setX(self.x + dx)
         self:setY(self.y + dy)
     end
@@ -173,9 +185,15 @@ function AegisHudDock:onMouseMoveOutside(dx, dy)
     self:onMouseMove(dx, dy)
 end
 
+local DRAG_SLOP = 3
+
 local function dockDrop(self)
     if not self.dragging then return end
     self.dragging = false
+    if (self.moved or 0) <= DRAG_SLOP then
+        self.collapsed = not self.collapsed
+        Aegis.setPref("hudDockFolded", self.collapsed and "1" or "0")
+    end
     -- clamp back on screen, then remember the spot for the next session
     local sw, sh = getCore():getScreenWidth(), getCore():getScreenHeight()
     self:setX(math.max(0, math.min(self.x, sw - self.width)))
@@ -204,11 +222,17 @@ Events.OnTick.Add(function()
         if not ok or not made then return end
         dock = made
     end
-    -- an invisible dock neither draws nor takes the mouse
-    dock:setVisible(adminVisible or playerVisible)
+    -- an invisible dock neither draws nor takes the mouse. Step aside
+    -- entirely while the world map or the pause screen covers the game,
+    -- alwaysOnTop would float the buttons over both
+    local covered = (ISWorldMap_instance ~= nil and ISWorldMap_instance:isVisible())
+        or (MainScreen ~= nil and MainScreen.instance ~= nil and MainScreen.instance:isVisible())
+    dock:setVisible((adminVisible or playerVisible) and not covered)
+    if covered then return end
     local btn, pbtn = dock.aegisBtn, dock.aegisPlayerBtn
-    btn:setVisible(adminVisible)
-    pbtn:setVisible(playerVisible)
+    local folded = dock.collapsed == true
+    btn:setVisible(adminVisible and not folded)
+    pbtn:setVisible(playerVisible and not folded)
     -- losing the rights closes an open panel, exactly as before
     if not adminVisible and AegisWindow.instance then AegisWindow.instance:close() end
     if adminVisible then
@@ -221,7 +245,10 @@ Events.OnTick.Add(function()
         pbtn:setY(adminVisible and (DOCK_GRIP + DOCK_BTN + 8) or DOCK_GRIP)
     end
     local slots = (adminVisible and 1 or 0) + (playerVisible and 1 or 0)
-    local h = DOCK_GRIP + slots * DOCK_BTN + (slots > 1 and 8 or 0) + DOCK_PAD
+    local h = DOCK_GRIP
+    if not folded then
+        h = h + slots * DOCK_BTN + (slots > 1 and 8 or 0) + DOCK_PAD
+    end
     if dock:getHeight() ~= h then dock:setHeight(h) end
 end)
 
@@ -402,7 +429,7 @@ Events.OnServerCommand.Add(function(module, command, args)
                     SendCommandToServer("/teleportto " .. tostring(x) .. "," .. tostring(y) .. "," .. tostring(z))
                 elseif p then
                     -- solo: the in-process server part already dismounted
-                    pcall(function() p:teleportTo(x, y, z + 0.0) end)
+                    p:teleportTo(x, y, z + 0.0)
                 end
             end
         elseif args and args.ok == true then
@@ -441,17 +468,15 @@ local function patchWorldMap()
         if result == true then return result end
         local p = getPlayer()
         if not p or not Aegis.allowed(p) or not Aegis.canSee("world") then return result end
-        local ok = pcall(function()
-            local worldX = self.mapAPI:uiToWorldX(x, y)
-            local worldY = self.mapAPI:uiToWorldY(x, y)
-            if not getWorld():getMetaGrid():isValidChunk(worldX / 10, worldY / 10) then return end
-            local context = ISContextMenu.get(0, x + self:getAbsoluteX(), y + self:getAbsoluteY())
-            context:addOption(getText("UI_Aegis_MapTeleport"), self, function(map)
-                Aegis.teleportSmart(worldX, worldY, 0)
-                Aegis.logAction("world", string.format("Map teleport to %d,%d", math.floor(worldX), math.floor(worldY)))
-                -- close the map, otherwise you stand invisible behind the open map
-                pcall(function() map:close() end)
-            end)
+        local worldX = self.mapAPI:uiToWorldX(x, y)
+        local worldY = self.mapAPI:uiToWorldY(x, y)
+        if not getWorld():getMetaGrid():isValidChunk(worldX / 10, worldY / 10) then return result end
+        local context = ISContextMenu.get(0, x + self:getAbsoluteX(), y + self:getAbsoluteY())
+        context:addOption(getText("UI_Aegis_MapTeleport"), self, function(map)
+            Aegis.teleportSmart(worldX, worldY, 0)
+            Aegis.logAction("world", string.format("Map teleport to %d,%d", math.floor(worldX), math.floor(worldY)))
+            -- close the map, otherwise you stand invisible behind the open map
+            map:close()
         end)
         return result
     end
@@ -525,9 +550,8 @@ function AegisHud.enforcePowers(level)
     if not AegisShared.levelIsAdmin(level) then return end
     local intent = Aegis.powerIntent or {}
     local turnedOff = {}
-    pcall(function()
-        local p = getPlayer()
-        if not p then return end
+    local p = getPlayer()
+    if p then
         if p:isGodMod() and not intent.god then
             p:setGodMod(false)
             table.insert(turnedOff, "godmode")
@@ -540,7 +564,7 @@ function AegisHud.enforcePowers(level)
             p:setNoClip(false)
             table.insert(turnedOff, "noclip")
         end
-    end)
+    end
     -- a quiet pass clears the note, otherwise the dedup below swallows the
     -- NEXT occurrence of the same trio for good and the log silently
     -- under-reports. The watcher ticks every two seconds, so dropping the
@@ -551,6 +575,11 @@ function AegisHud.enforcePowers(level)
         powerLastNote = nil
         return
     end
+    -- the off has to reach the server, the same packet the vanilla admin
+    -- panel sends after a toggle. Without it the server keeps the powers
+    -- on, hands them back on every login and overwrites any manual off
+    -- with the next echo
+    if p then Aegis.syncPowers(p) end
     local note = table.concat(turnedOff, ", ")
     if note ~= powerLastNote then
         powerLastNote = note
@@ -575,7 +604,7 @@ Events.OnTick.Add(function()
     if level ~= levelWatchLast then
         local first = levelWatchLast == nil
         levelWatchLast = level
-        -- session start is handled by OnGameStart, only a real change counts
+        -- a real change refetches the rights, both paths strip the powers
         if not first then
             Aegis.rights = nil
             Aegis.rightsLoaded = false
@@ -589,6 +618,10 @@ Events.OnTick.Add(function()
             -- a promotion re-grants the powers, so the recorded intent from
             -- before the demotion is what counts again. This runs in the
             -- SAME frame as the detected change now
+            AegisHud.enforcePowers(level)
+        else
+            -- the login grant lands before the first watch beat, so the
+            -- session start is stripped in the same frame too
             AegisHud.enforcePowers(level)
         end
         return

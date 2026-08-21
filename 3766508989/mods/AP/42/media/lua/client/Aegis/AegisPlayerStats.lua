@@ -41,8 +41,7 @@ local BTN_MAX = 120
 local BTN_H = 20
 
 local function btnWidth(label)
-    local w = 0
-    pcall(function() w = Aegis.strW(UIFont.Small, label or "") end)
+    local w = Aegis.strW(UIFont.Small, label or "")
     return math.max(BTN_MIN, math.min(BTN_MAX, w + 16))
 end
 -- caption column of the identity rows, sized for the longest caption
@@ -84,16 +83,14 @@ local function perks()
     if perkMap then return perkMap end
     local map = {}
     local count = 0
-    pcall(function()
-        for i = 0, PerkFactory.PerkList:size() - 1 do
-            local perk = PerkFactory.PerkList:get(i)
-            local id = perk and perk:getId()
-            if id then
-                map[id] = perk
-                count = count + 1
-            end
+    for i = 0, PerkFactory.PerkList:size() - 1 do
+        local perk = PerkFactory.PerkList:get(i)
+        local id = perk and perk:getId()
+        if id then
+            map[id] = perk
+            count = count + 1
         end
-    end)
+    end
     -- an empty list means the scripts are not parsed yet, do not pin that
     if count > 0 then perkMap = map end
     return map
@@ -472,7 +469,7 @@ function AegisPlayerStats:createChildren()
     -- needs open in their own card next to the window on purpose. The body
     -- here is calibrated by hand down to the pixel, and squeezing a block
     -- of twelve sliders between the existing sections is exactly how the
-    -- two layout regressions of 13 July happened
+    -- happened
     self.needsBtn = AegisButton:new(self.width - 154, 13, 30, 30, nil, "check", self, AegisPlayerStats.onNeeds)
     self.needsBtn.radius = 15
     self.needsBtn.tooltip = getText("UI_Aegis_StatNeeds")
@@ -773,7 +770,7 @@ function AegisPlayerStats:rebuild()
 
     local keep = self.selPerk
     self.skillList:clear()
-    -- clear() puts the selection back on row one, no selection needs -1
+    -- clear puts the selection back on row one, no selection needs -1
     self.skillList.selected = -1
     self.selPerk = nil
     for i, row in ipairs(rows) do
@@ -881,10 +878,8 @@ local function namePrompt(self, title, message, current, kind)
             win:write("statsName", { kind = kind, value = text })
         end,
     })
-    pcall(function()
-        prompt.entry:setMaxTextLength(NAME_MAX)
-        prompt.entry:setText(current or "")
-    end)
+    prompt.entry:setMaxTextLength(NAME_MAX)
+    prompt.entry:setText(current or "")
 end
 
 function AegisPlayerStats:onForename()
@@ -927,16 +922,13 @@ function AegisPlayerStats:onWeight()
             win:write("statsWeight", { weight = value })
         end,
     })
-    pcall(function()
-        prompt.entry:setOnlyNumbers(true)
-        prompt.entry:setText(tostring(math.floor(current + 0.5)))
-    end)
+    prompt.entry:setOnlyNumbers(true)
+    prompt.entry:setText(tostring(math.floor(current + 0.5)))
 end
 
 function AegisPlayerStats:onProfession()
     local held = self.data and self.data.profession or ""
-    local jobless = ""
-    pcall(function() jobless = tostring(CharacterProfession.UNEMPLOYED) end)
+    local jobless = tostring(CharacterProfession.UNEMPLOYED)
     local entries = {}
     pcall(function()
         local defs = CharacterProfessionDefinition.getProfessions()
@@ -1326,8 +1318,8 @@ local function localPlayer(id, username)
     local me = getPlayer()
     if not me then return nil end
     if type(username) == "string" and username ~= "" then
-        local ok, name = pcall(function() return me:getUsername() end)
-        if ok and name == username then return me end
+        local name = me:getUsername()
+        if name == username then return me end
         return nil
     end
     if not isClient() then return me end
@@ -1341,7 +1333,7 @@ local function applyBoosts(args)
     if type(args) ~= "table" or type(args.boosts) ~= "table" then return end
     -- resolve like applyIdentity does: one connection can carry up to four
     -- players in splitscreen, and the targeted send only addresses the
-    -- connection. Writing to getPlayer() would hit the wrong character
+    -- connection. Writing to getPlayer would hit the wrong character
     local me = localPlayer(tonumber(args.id) or -1, args.username)
     if not me then return end
     for _, boost in pairs(args.boosts) do
@@ -1360,24 +1352,20 @@ local function applyIdentity(args)
     if type(args) ~= "table" then return end
     local target = localPlayer(tonumber(args.id) or -1, args.username)
     if not target then return end
-    pcall(function()
-        local d = target:getDescriptor()
-        if type(args.forename) == "string" then d:setForename(args.forename) end
-        if type(args.surname) == "string" then d:setSurname(args.surname) end
-    end)
+    local d = target:getDescriptor()
+    if type(args.forename) == "string" then d:setForename(args.forename) end
+    if type(args.surname) == "string" then d:setSurname(args.surname) end
     if type(args.profession) == "string" and args.profession ~= "" then
         pcall(function()
             local prof = CharacterProfession.get(ResourceLocation.of(args.profession))
             if prof then target:getDescriptor():setCharacterProfession(prof) end
         end)
     end
-    pcall(function()
-        if args.auto == true then
-            target:resetDisplayName()
-        elseif type(args.displayName) == "string" then
-            target:setDisplayName(args.displayName)
-        end
-    end)
+    if args.auto == true then
+        target:resetDisplayName()
+    elseif type(args.displayName) == "string" then
+        target:setDisplayName(args.displayName)
+    end
     pcall(function() triggerEvent("OnMiniScoreboardUpdate") end)
 end
 

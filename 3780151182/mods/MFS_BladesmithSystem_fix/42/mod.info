@@ -1,0 +1,7 @@
+name= MFS_BladesmithSystem_fix
+author = WTigerTw
+id=MFS_BladesmithSystem_fix
+poster=poster.png
+versionMin=42.15.1
+require=BladesmithSystemB42
+

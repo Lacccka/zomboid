@@ -226,13 +226,12 @@ Commands.claimSet = function(player, name, args)
         return
     end
     -- vanilla rule SafehouseDaySurvivedToClaim, suspended when the
-    -- option or the hours cannot be read
+    -- option cannot be read
     local needDays = nil
     pcall(function() needDays = getServerOptions():getInteger("SafehouseDaySurvivedToClaim") end)
     needDays = tonumber(needDays)
     if needDays and needDays > 0 then
-        local hours = nil
-        pcall(function() hours = player:getHoursSurvived() end)
+        local hours = player:getHoursSurvived()
         if tonumber(hours) and tonumber(hours) < needDays * 24 then
             toClient(player, "claimSet", { ok = false, reason = "days", need = needDays })
             return
@@ -330,8 +329,8 @@ local function onClientCommand(module, command, player, args)
     if AegisModeration.isSuspended(player) then return end
     local handler = Commands[command]
     if not handler then return end
-    local ok, name = pcall(function() return player:getUsername() end)
-    if not ok or type(name) ~= "string" or name == "" or #name > 48 or name:find("[%c|]") then return end
+    local name = player:getUsername()
+    if type(name) ~= "string" or name == "" or #name > 48 or name:find("[%c|]") then return end
     if throttled(name, command) then return end
     handler(player, name, args or {})
 end

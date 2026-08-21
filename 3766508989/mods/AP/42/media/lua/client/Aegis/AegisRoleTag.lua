@@ -31,7 +31,7 @@ local run = nil
 
 -- networkUserAction is a fire-and-forget network packet without a return
 -- channel; whether the server really accepted the assignment only shows in
--- the synced getRole() of the target (the same ExtraInfo broadcast that
+-- the synced getRole of the target (the same ExtraInfo broadcast that
 -- also delivers the visible head tag)
 local pendingConfirm = nil
 
@@ -53,7 +53,7 @@ local lift = nil
 -- idempotent and never escalates permissions.
 -- Budget: the server serializes SetRole behind every queued Roles.save
 -- (each moveRole triggers a full save) and processed accepted packets
--- 25 to 60 seconds AFTER sending in the live logs of 27 July. The old
+-- 25 to 60 seconds AFTER sending in the. The old
 -- 4x1500ms budget declared such accepts as failures, so the window now
 -- spans roughly two minutes with gentle resends.
 local SETROLE_ATTEMPTS = 24
@@ -120,16 +120,14 @@ end
 local function isProtectedName(name)
     local lowered = string.lower(name)
     local found = false
-    pcall(function()
-        local roles = getRoles()
-        for i = 0, roles:size() - 1 do
-            local r = roles:get(i)
-            if r and r:isReadOnly() and string.lower(r:getName()) == lowered then
-                found = true
-                break
-            end
+    local roles = getRoles()
+    for i = 0, roles:size() - 1 do
+        local r = roles:get(i)
+        if r and r:isReadOnly() and string.lower(r:getName()) == lowered then
+            found = true
+            break
         end
-    end)
+    end
     return found
 end
 
@@ -139,10 +137,8 @@ function AegisRoleTag.currentRole(username)
     local p = players(username)
     if not p then return nil end
     local name = nil
-    pcall(function()
-        local role = p:getRole()
-        if role then name = role:getName() end
-    end)
+    local role = p:getRole()
+    if role then name = role:getName() end
     return name
 end
 
@@ -178,16 +174,14 @@ end
 -- highest read-only position strictly below pos, nil when none exists
 local function anchorBelow(pos)
     local best = nil
-    pcall(function()
-        local roles = getRoles()
-        for i = 0, roles:size() - 1 do
-            local r = roles:get(i)
-            if r and r:isReadOnly() then
-                local p = r:getPosition()
-                if p < pos and (best == nil or p > best) then best = p end
-            end
+    local roles = getRoles()
+    for i = 0, roles:size() - 1 do
+        local r = roles:get(i)
+        if r and r:isReadOnly() then
+            local p = r:getPosition()
+            if p < pos and (best == nil or p > best) then best = p end
         end
-    end)
+    end
     return best
 end
 
@@ -215,7 +209,7 @@ local function safeCeiling(ownPos, ownReadOnly)
     return a + 1
 end
 
--- solo: Roles.init() never runs, so build the role locally and set it
+-- solo: Roles.init never runs, so build the role locally and set it
 -- directly, same pattern as Aegis.ensureSoloRole
 local function assignSolo(name, color)
     local ok = pcall(function()
@@ -232,7 +226,7 @@ local function assignSolo(name, color)
         role:addCapability(Capability.ToggleWriteRoleNameAbove)
         role:setColor(Color.new(color.r, color.g, color.b, 1.0))
         p:setRole(role)
-        pcall(function() p:setShowAdminTag(true) end)
+        p:setShowAdminTag(true)
     end)
     return ok
 end
@@ -290,8 +284,7 @@ function AegisRoleTag.createAndAssign(username, name, color)
 
     local me = getPlayer()
     local myRole = me and me:getRole()
-    local allowed = false
-    pcall(function() allowed = myRole ~= nil and myRole:hasCapability(Capability.ChangeAccessLevel) == true end)
+    local allowed = myRole ~= nil and myRole:hasCapability(Capability.ChangeAccessLevel) == true
     if not allowed then
         toast("UI_Aegis_HeadTagErrorPermission")
         return
@@ -308,10 +301,8 @@ function AegisRoleTag.createAndAssign(username, name, color)
     -- position hierarchy like the vanilla user list: only someone above the
     -- target may change its role, otherwise the server rejects it
     local rankOk = true
-    pcall(function()
-        local targetRole = target:getRole()
-        if targetRole and myRole and myRole:getPosition() < targetRole:getPosition() then rankOk = false end
-    end)
+    local targetRole = target:getRole()
+    if targetRole and myRole and myRole:getPosition() < targetRole:getPosition() then rankOk = false end
     if not rankOk then
         toast("UI_Aegis_HeadTagErrorRank")
         return
@@ -343,20 +334,16 @@ function AegisRoleTag.createAndAssign(username, name, color)
     -- below "banned" and in the worst case locks the admin himself out of
     -- every further rank check
     local ownPosition, targetPosition = 0, 0
-    pcall(function() ownPosition = myRole:getPosition() end)
-    pcall(function()
-        local targetRole = target:getRole()
-        if targetRole then targetPosition = targetRole:getPosition() end
-    end)
+    ownPosition = myRole:getPosition()
+    targetRole = target:getRole()
+    if targetRole then targetPosition = targetRole:getPosition() end
 
-    local isSelf = false
-    pcall(function() isSelf = target:getUsername() == me:getUsername() end)
-    local ownReadOnly = false
-    pcall(function() ownReadOnly = myRole:isReadOnly() == true end)
+    local isSelf = target:getUsername() == me:getUsername()
+    local ownReadOnly = myRole:isReadOnly() == true
 
     -- pre-flight for the guaranteed rejection: without a read-only anchor
     -- to park the new role under, gate 2 of the server MUST deny (live
-    -- 27 July: the demote cycles had pressed the own rank into the 1000s
+    -- the demote cycles had pressed the own rank into the 1000s
     -- and every further attempt was doomed). Refuse honestly instead of
     -- burning silent attempts; this state needs the documented DB repair
     local ceiling = safeCeiling(ownPosition, ownReadOnly)
@@ -371,16 +358,14 @@ function AegisRoleTag.createAndAssign(username, name, color)
     -- the own (non read-only) band, gate 1 compares a server order the
     -- client mirror cannot verify, so a silent denial is still possible
     if not isSelf and not ownReadOnly then
-        pcall(function()
-            local targetRole = target:getRole()
-            if targetRole and not targetRole:isReadOnly() and targetRole:getName() ~= myRole:getName() then
-                local bandAnchor = anchorBelow(ownPosition)
-                local tp = targetRole:getPosition()
-                if bandAnchor and tp > bandAnchor then
-                    print("[Aegis] tag: warning, target role \"" .. tostring(targetRole:getName()) .. "\"@" .. tostring(tp) .. " shares the own band (own " .. tostring(ownPosition) .. "), server order inside a band is invisible to the client, gate 1 may still deny")
-                end
+        targetRole = target:getRole()
+        if targetRole and not targetRole:isReadOnly() and targetRole:getName() ~= myRole:getName() then
+            local bandAnchor = anchorBelow(ownPosition)
+            local tp = targetRole:getPosition()
+            if bandAnchor and tp > bandAnchor then
+                print("[Aegis] tag: warning, target role \"" .. tostring(targetRole:getName()) .. "\"@" .. tostring(tp) .. " shares the own band (own " .. tostring(ownPosition) .. "), server order inside a band is invisible to the client, gate 1 may still deny")
             end
-        end)
+        end
     end
 
     -- refit of a role the target ALREADY wears: no SetRole and no position
@@ -427,7 +412,7 @@ function AegisRoleTag.createAndAssign(username, name, color)
         step = "role",
         -- generous budget: every push serializes behind a full server side
         -- Roles.save and the position broadcast arrived up to a minute
-        -- late in the live logs of 27 July
+        -- late in the
         deadline = getTimestampMs() + 120000,
         nextAt = 0,
     }
@@ -444,7 +429,7 @@ end
 -- removes an orphaned self-created role (only with our description marker,
 -- safety net against foreign roles). Deletion is rank-gated like every
 -- role change: after a switch the old role sits ABOVE the requester and a
--- plain deleteRole is silently denied (live DB check 16 July: "Owner" and
+-- plain deleteRole is silently denied: "Owner" and
 -- "Test" survived their cleanup). The janitor therefore verifies by
 -- outcome and alternates delete attempts with one-rung push-downs until
 -- the role is gone or the budget is spent
@@ -476,10 +461,8 @@ local function cleanupRole(name)
     if not name then return end
     local r = engineRole(name)
     if r == nil then return end
-    local ok, marked = pcall(function()
-        return not r:isReadOnly() and r:getDescription() == MARKER
-    end)
-    if not ok or not marked then return end
+    local marked = not r:isReadOnly() and r:getDescription() == MARKER
+    if not marked then return end
     for _, j in ipairs(janitor) do
         if j.name == name then return end
     end
@@ -524,10 +507,8 @@ Events.OnTick.Add(function()
                     -- under 1001, below that it slips under the banned
                     -- anchor and poisons every later rank check
                     local pos = nil
-                    pcall(function()
-                        local r = engineRole(j.name)
-                        if r then pos = r:getPosition() end
-                    end)
+                    local r = engineRole(j.name)
+                    if r then pos = r:getPosition() end
                     if pos ~= nil and pos > 1001 then
                         pcall(function() moveRole(-1, j.name) end)
                     end
@@ -561,10 +542,7 @@ function AegisRoleTag.isTagRole(name)
     if not name then return false end
     local r = engineRole(name)
     if r == nil then return false end
-    local ok, marked = pcall(function()
-        return not r:isReadOnly() and r:getDescription() == MARKER
-    end)
-    return ok and marked == true
+    return not r:isReadOnly() and r:getDescription() == MARKER
 end
 
 -- move a player off his marked head-tag role back to a plain engine role.
@@ -580,10 +558,9 @@ end
 local function ownTagFlag(username, on)
     local me = getPlayer()
     if not me then return end
-    local mine = nil
-    pcall(function() mine = me:getUsername() end)
+    local mine = me:getUsername()
     if mine == nil or mine ~= username then return end
-    pcall(function() me:setShowAdminTag(on == true) end)
+    me:setShowAdminTag(on == true)
     Aegis.tagManualOff = not on
     Aegis.setPref("tagOff", on and "0" or "1")
 end
@@ -607,14 +584,10 @@ function AegisRoleTag.resetPlayerTag(username)
         local mine = getPlayer():getRole()
         if mine then ownPos = mine:getPosition() end
     end)
-    pcall(function()
-        local r = engineRole(fallback)
-        if r then fbPos = r:getPosition() end
-    end)
-    pcall(function()
-        local r = engineRole(current)
-        if r then tagPos = r:getPosition() end
-    end)
+    local r = engineRole(fallback)
+    if r then fbPos = r:getPosition() end
+    r = engineRole(current)
+    if r then tagPos = r:getPosition() end
     -- gate 2 pre-flight: the server rejects any SetRole whose new role
     -- ranks above the requester, so climbing back UP (typically the own
     -- reset to admin after a self tag) is impossible from the client.
@@ -723,31 +696,26 @@ Events.OnTick.Add(function()
     if run.step == "position" then
         local role = engineRole(run.name)
         if role == nil then return end
-        local pos = 0
-        pcall(function() pos = role:getPosition() end)
+        local pos = role:getPosition()
 
         -- re-read the target position EVERY time instead of using the
-        -- earlier snapshot: updatePositions() gives ALL non-read-only roles
+        -- earlier snapshot: updatePositions gives ALL non-read-only roles
         -- consecutive values in list order, so every own push also shifts
         -- the target's position. On self-assignment target and admin are
         -- even the same role, the old snapshot was already off after the
         -- first push ("role ranks above own" on
         -- self-tag)
         local targetNow = run.targetPosition
-        pcall(function()
-            local targetRole = run.target and run.target:getRole()
-            if targetRole then targetNow = targetRole:getPosition() end
-        end)
+        local targetRole = run.target and run.target:getRole()
+        if targetRole then targetNow = targetRole:getPosition() end
 
         -- never aim higher than the SAFE ceiling: only "read-only anchor
         -- plus one" positions are provably below the requester on the
         -- server, the order inside the own band is invisible to the
-        -- client mirror (live 27 July: 16 SetRole packets silently denied
+        -- client mirror (16 SetRole packets were silently denied
         -- although the mirror showed the role one rung below the own one)
         local ownNow = run.ownPosition
-        pcall(function()
-            if run.myRole then ownNow = run.myRole:getPosition() end
-        end)
+        if run.myRole then ownNow = run.myRole:getPosition() end
         local ceiling = safeCeiling(ownNow, run.ownReadOnly)
         if ceiling == nil then
             print("[Aegis] tag: abort mid-run, no safe anchor below own position " .. tostring(ownNow))
@@ -794,8 +762,8 @@ Events.OnTick.Add(function()
         run.posBeforePush = pos
         -- wide resend window: every push triggers a full server side
         -- Roles.save, and stacked saves are exactly what delayed the
-        -- SetRole processing by 25 to 60 seconds in the live logs of
-        -- 27 July; one push per observed effect, not per timer tick
+        -- SetRole processing by 25 to 60 seconds; one push per
+        -- observed effect, not per timer tick
         run.pushUntil = now + 5000
         local direction = (pos > upperBound) and -1 or 1
         print("[Aegis] tag: push " .. (direction == 1 and "up" or "down") .. " from " .. tostring(pos) .. " (target " .. tostring(targetNow) .. ", ceiling " .. tostring(upperBound) .. ")")
@@ -806,8 +774,7 @@ Events.OnTick.Add(function()
     if run.step == "settle" then
         local role = engineRole(run.name)
         if role == nil then return end
-        local pos = 0
-        pcall(function() pos = role:getPosition() end)
+        local pos = role:getPosition()
         if pos ~= run.settlePos then
             -- a late broadcast moved the role after we thought we were
             -- done - back to positioning (which can also push down)
@@ -817,9 +784,9 @@ Events.OnTick.Add(function()
             return
         end
         -- positions are unique once converged, so reading the role at or
-        -- above the own role means a double push parked it too high (live
-        -- log 16 July: settle read 6001 while the server already said
-        -- 6002); back to positioning, which pushes it down again
+        -- above the own role means a double push parked it too high
+        -- (settle read 6001 while the server already said 6002); back
+        -- to positioning, which pushes it down again
         local ownPos = nil
         pcall(function()
             local mine = getPlayer():getRole()
@@ -842,12 +809,8 @@ Events.OnTick.Add(function()
         local role = engineRole(run.name)
         local ownRole = nil
         pcall(function() ownRole = getPlayer():getRole() end)
-        local pos = nil
-        pcall(function() pos = role and role:getPosition() end)
-        local ownPosNow = nil
-        pcall(function()
-            if ownRole then ownPosNow = ownRole:getPosition() end
-        end)
+        local pos = role and role:getPosition()
+        local ownPosNow = ownRole and ownRole:getPosition()
         -- the server enforces its position gate for EVERYONE, including
         -- self-assignment (GameServer.changeRole gate 2, bytecode-verified
         -- and live-confirmed). A role read at or above the requester means
@@ -866,7 +829,7 @@ Events.OnTick.Add(function()
         -- If it does NOT find the player it only stores the role silently
         -- in the database, WITHOUT live update or broadcast, and no error
         -- comes back (assignment "unconfirmed", own
-        -- head tag stayed "admin"). getUsername() on the real object is
+        -- head tag stayed "admin"). getUsername on the real object is
         -- guaranteed to be exactly the string the server knows
         local username = run.username
         pcall(function()
@@ -898,8 +861,8 @@ Events.OnTick.Add(function()
             deadline = now + SETROLE_ATTEMPTS * SETROLE_INTERVAL + 2000,
             -- self assignments never demote: the park position is already
             -- provably below the requester (safeCeiling), an unconfirmed
-            -- self run only means the server is slow. The live logs of
-            -- 27 July show accepts arriving 25 to 60 seconds after
+            -- self run only means the server is slow, accepts have
+            -- been seen arriving 25 to 60 seconds after
             -- sending while the old demote cycles flooded Roles.save and
             -- pressed the LIVE own rank down to 1001, sabotaging every
             -- following attempt. Foreign assignments keep a guarded
@@ -917,10 +880,8 @@ local function resendSetRole(b)
     if engineRole(b.name) == nil then return end
     local username = b.username
     if b.isSelf then
-        pcall(function()
-            local p = getPlayer()
-            if p then username = p:getUsername() end
-        end)
+        local p = getPlayer()
+        if p then username = p:getUsername() end
     end
     pcall(function() networkUserAction("SetRole", username, b.name) end)
 end
@@ -982,12 +943,10 @@ Events.OnTick.Add(function()
         end
         if (b.demoteCycles or 0) > 0 and not b.isSelf and current ~= nil and engineRole(b.name) ~= nil then
             local pos = nil
-            pcall(function()
-                local r = engineRole(b.name)
-                if r then pos = r:getPosition() end
-            end)
+            local r = engineRole(b.name)
+            if r then pos = r:getPosition() end
             -- never press a role under 1001, below that it slips under
-            -- the banned anchor (live 27 July: exactly these demotes
+            -- the banned anchor (exactly these demotes
             -- pushed the worn role, and with it the own live rank, to
             -- 1001 and killed every following attempt)
             if pos ~= nil and pos > 1001 then
@@ -1024,8 +983,7 @@ Events.OnTick.Add(function()
         lift = nil
         return
     end
-    local pos = nil
-    pcall(function() pos = r:getPosition() end)
+    local pos = r:getPosition()
     if pos == nil then
         lift = nil
         return
@@ -1054,4 +1012,86 @@ Events.OnTick.Add(function()
     lift.lastPos = pos
     print("[Aegis] tag: lift push up from " .. tostring(pos) .. " (target " .. tostring(lift.target) .. ")")
     pcall(function() moveRole(1, lift.name) end)
+end)
+
+
+-- ---------- tag visibility guard ----------
+-- the engine computes the sent tag bit from the active admin powers
+-- alone (IsoPlayer.calculateShowAdminTag), the flag itself never
+-- travels. So the server keeps a hide list, and every client re-applies
+-- list and tag roles to its local copies; showAdminTag is a bare field
+-- write, nothing goes over the wire
+AegisRoleTag.hidden = {}
+local hideAnswered = false
+local verdictCache = {}
+
+Events.OnServerCommand.Add(function(module, command, args)
+    if module ~= AegisShared.MODULE or command ~= "tagHide" then return end
+    local set = {}
+    for _, n in ipairs(args and args.names or {}) do set[tostring(n)] = true end
+    AegisRoleTag.hidden = set
+    -- keep the local pin in step, it holds the own flag between ticks
+    local me = getPlayer()
+    local mine = me and me:getUsername()
+    if mine then
+        -- first answer on a server that has no list yet: a hide kept only
+        -- in the local prefs would be dropped here, so send it up once
+        -- instead of taking the empty list for an answer
+        if not hideAnswered then
+            hideAnswered = true
+            if Aegis.tagManualOff and not set[mine] then
+                set[mine] = true
+                sendClientCommand(me, AegisShared.MODULE, "tagHide", { on = true })
+                return
+            end
+        end
+        Aegis.tagManualOff = set[mine] == true
+    end
+end)
+
+local function applyTag(p, mine)
+    local name = p:getUsername()
+    if not name then return end
+    if AegisRoleTag.hidden[name] then
+        if p:isShowAdminTag() then p:setShowAdminTag(false) end
+        return
+    end
+    local role = p:getRole()
+    local rname = role and role:getName() or nil
+    if rname == nil then return end
+    local v = verdictCache[name]
+    if v == nil or v.role ~= rname then
+        v = { role = rname, is = AegisRoleTag.isTagRole(rname) }
+        verdictCache[name] = v
+    end
+    if not v.is then return end
+    -- the own manual off wins over the tag role, the pin keeps it down
+    if name == mine and Aegis.tagManualOff then return end
+    if not p:isShowAdminTag() then p:setShowAdminTag(true) end
+end
+
+local hideNextTry = 0
+local hideTries = 0
+local HIDE_MAX_TRIES = 5
+
+Events.OnTick.Add(function()
+    local me = getPlayer()
+    if not me then return end
+    local mine = me:getUsername()
+    if isClient() then
+        local now = getTimestampMs()
+        if not hideAnswered and hideTries < HIDE_MAX_TRIES and now >= hideNextTry then
+            hideTries = hideTries + 1
+            hideNextTry = now + 4000
+            sendClientCommand(me, AegisShared.MODULE, "tagHideReq", {})
+        end
+        local players = getOnlinePlayers()
+        if players then
+            for i = 0, players:size() - 1 do
+                local p = players:get(i)
+                if p then applyTag(p, mine) end
+            end
+        end
+    end
+    applyTag(me, mine)
 end)

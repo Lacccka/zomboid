@@ -51,23 +51,21 @@ function AegisVehicleGlow.show(vehicle)
     o.expiresAt = getTimestampMs() + 1500
     o:initialise()
     o:addToUIManager()
-    pcall(function() o.javaObject:setConsumeMouseEvents(false) end)
+    o.javaObject:setConsumeMouseEvents(false)
     AegisVehicleGlow.instance = o
     return o
 end
 
 function AegisVehicleGlow:render()
-    pcall(function()
-        local c = Aegis.col
-        local remaining = self.expiresAt - getTimestampMs()
-        if remaining <= 0 then return end
-        local z = math.floor(self.vehicle:getZ())
-        local sx = isoToScreenX(0, self.vehicle:getX(), self.vehicle:getY(), z)
-        local sy = isoToScreenY(0, self.vehicle:getX(), self.vehicle:getY(), z)
-        local a = math.min(1, remaining / 400)
-        local r = 30 + (1 - remaining / 1500) * 12
-        self:drawRectBorder(sx - r, sy - r, r * 2, r * 2, a, c.goldHi.r, c.goldHi.g, c.goldHi.b)
-    end)
+    local c = Aegis.col
+    local remaining = self.expiresAt - getTimestampMs()
+    if remaining <= 0 then return end
+    local z = math.floor(self.vehicle:getZ())
+    local sx = isoToScreenX(0, self.vehicle:getX(), self.vehicle:getY(), z)
+    local sy = isoToScreenY(0, self.vehicle:getX(), self.vehicle:getY(), z)
+    local a = math.min(1, remaining / 400)
+    local r = 30 + (1 - remaining / 1500) * 12
+    self:drawRectBorder(sx - r, sy - r, r * 2, r * 2, a, c.goldHi.r, c.goldHi.g, c.goldHi.b)
 end
 
 function AegisVehicleGlow:update()
@@ -309,7 +307,7 @@ end
 -- ==================================================================
 
 -- opens for a vehicle ID; vehicleObj optional (the "Edit" button already
--- has the object from getNearVehicle(), the spawn path only gets the ID
+-- has the object from getNearVehicle, the spawn path only gets the ID
 -- from the server reply and resolves it itself via getVehicleById)
 function AegisVehicleDetail.open(vehicleId, vehicleObj)
     if AegisVehicleDetail.instance and AegisVehicleDetail.instance.vehicleId == vehicleId then
@@ -485,7 +483,7 @@ function AegisVehicleDetail:buildColorUI()
 
     -- own prerender on the tab panel: colour preview swatch. No colour
     -- push onto the 3D mini preview: UI3DScene has no setColorHSV command
-    -- (live test 16 July: "unhandled setColorHSV" thrown every frame, and
+    --: "unhandled setColorHSV" thrown every frame, and
     -- the engine swallows the Java exception internally so pcall reports
     -- success - a failure latch can never arm). The swatch plus the real
     -- vehicle in the world carry the live colour feedback instead.
@@ -723,7 +721,7 @@ function AegisVehicleDetail:refreshParts()
         y = y + 36
     end
     -- without an explicit scroll height the scroll area never scrolls,
-    -- and the card list far exceeds the visible tab (live test 16 July)
+    -- and the card list far exceeds the visible tab
     p:setScrollHeight(y + 8)
 
     -- empty state as a flag rather than a text position dragged along with
@@ -764,7 +762,7 @@ function AegisVehicleDetail:buildPartCard(p, part, w, y)
 
     -- variants stacked two per row instead of squeezed into one line:
     -- German item names ("Autoreifen (Hochleistung) ...") were truncated
-    -- to unreadable stubs at a third of the card width (live test 16 July).
+    -- to unreadable stubs at a third of the card width.
     -- Parts without real alternatives (hood, doors, windows, lights, ...)
     -- show no swap row at all - just name and condition slider
     local perRow = 2
@@ -922,10 +920,7 @@ end
 
 function AegisVehicleDetail:vehicleDisplayName()
     if not self.vehicleObj then return nil end
-    local ok, name = pcall(function()
-        return getTextOrNull("IGUI_VehicleName" .. (self.vehicleObj:getScript() and self.vehicleObj:getScript():getName() or ""))
-    end)
-    return ok and name or nil
+    return getTextOrNull("IGUI_VehicleName" .. (self.vehicleObj:getScript() and self.vehicleObj:getScript():getName() or ""))
 end
 
 -- snapshot of the open vehicle for the template store: live slider values
@@ -1139,7 +1134,7 @@ function AegisVehicleDetail:receive(command, args)
         self.data = args
         -- preview model comes from the server reply, not from a client-side
         -- vehicle object (getVehicleById proved unreliable on the spawn
-        -- path in the live test - preview showed a default model); only
+        -- path (the preview showed a default model); only
         -- re-push when it actually changed, setVehicleScript rebuilds the
         -- scene model
         if self.scene and args.script and self.sceneScript ~= args.script then
@@ -1205,11 +1200,8 @@ end
 -- synced to every client, so other players see the nickname too.
 local prevMechRender = ISVehicleMechanics.render
 function ISVehicleMechanics:render()
-    local nickname
-    pcall(function()
-        local md = self.vehicle and self.vehicle:getModData()
-        nickname = md and md.AegisName
-    end)
+    local md = self.vehicle and self.vehicle:getModData()
+    local nickname = md and md.AegisName
     if nickname and nickname ~= "" then
         local carName
         pcall(function()
@@ -1224,7 +1216,10 @@ function ISVehicleMechanics:render()
             end
             local ok, err = pcall(prevMechRender, self)
             getText = origGetText
-            if not ok then print("[Aegis] mechanics title render failed: " .. tostring(err)) end
+            if not ok and not AegisVehicleDetail.mechWarned then
+            AegisVehicleDetail.mechWarned = true
+            print("[Aegis] mechanics title render failed: " .. tostring(err))
+        end
             return
         end
     end
@@ -1250,8 +1245,8 @@ Events.OnFillWorldObjectContextMenu.Add(function(playerNum, context, worldobject
         if square then break end
     end
     if not square then return end
-    -- IsoCell:getVehicles() returns a java Set without get(i) in B42
-    -- (live stacktrace 16 July), so ask the squares around the click
+    -- IsoCell:getVehicles returns a java Set without get(i) in B42
+    --, so ask the squares around the click
     -- instead: every occupied square knows its vehicle
     local best, bestDist = nil, 4 * 4 + 1
     pcall(function()

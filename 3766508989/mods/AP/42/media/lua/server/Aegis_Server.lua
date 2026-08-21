@@ -153,18 +153,24 @@ end
 -- set max carry weight: applied on server AND target client, persisted
 Commands.carryWeight = function(player, args)
     if not permitted(player, "ToggleUnlimitedCarry", "players") then return end
-    local value = math.floor(tonumber(args and args.value) or 0)
-    if value < 5 or value > 1000 then return end
+    local value = math.floor(tonumber(args and args.value) or -1)
+    -- 0 asks for the reset, everything else must sit inside the range
+    if value ~= 0 and (value < 5 or value > 1000) then return end
     local target = resolveTarget(player, args)
     if not target then return end
     carryLoad()
     local user = target:getUsername()
     if value <= 8 then
-        -- back to engine default: forget the entry instead of pinning it
+        -- back to the engine default: forget the entry, and apply the
+        -- default itself. Applying the typed value here pinned 5 to 7
+        -- as a NEW limit while the ledger already said default
         carryWeights[user] = nil
-    else
-        carryWeights[user] = value
+        carrySave()
+        carryApply(target, 8)
+        AegisLog.write("Actions", player:getUsername(), user, "Carry weight reset to default")
+        return
     end
+    carryWeights[user] = value
     carrySave()
     carryApply(target, value)
     AegisLog.write("Actions", player:getUsername(), user, "Carry weight set to " .. value)
@@ -172,7 +178,7 @@ end
 
 -- enforcement sweep: re-applies stored values after logins and deaths.
 -- Fast cadence on purpose: a player logging in with a heavy pack would
--- collapse under the engine default within a minute (user point)
+-- collapse under the engine default within a minute
 local carryNextSweep = 0
 Events.OnTick.Add(function()
     local now = getTimestampMs()
@@ -212,16 +218,14 @@ Commands.care = function(player, args)
     if not permitted(player, "UseHealthCheat", area) then return end
     local target = resolveTarget(player, args)
     if not target then return end
-    pcall(function()
-        local stats = target:getStats()
-        stats:set(CharacterStat.HUNGER, 0)
-        stats:set(CharacterStat.THIRST, 0)
-        stats:set(CharacterStat.FATIGUE, 0)
-        stats:set(CharacterStat.STRESS, 0)
-        stats:set(CharacterStat.PANIC, 0)
-        stats:set(CharacterStat.BOREDOM, 0)
-        stats:set(CharacterStat.ENDURANCE, 1)
-    end)
+    local stats = target:getStats()
+    stats:set(CharacterStat.HUNGER, 0)
+    stats:set(CharacterStat.THIRST, 0)
+    stats:set(CharacterStat.FATIGUE, 0)
+    stats:set(CharacterStat.STRESS, 0)
+    stats:set(CharacterStat.PANIC, 0)
+    stats:set(CharacterStat.BOREDOM, 0)
+    stats:set(CharacterStat.ENDURANCE, 1)
     AegisLog.write("Actions", player:getUsername(), target:getUsername(), "Basic needs reset")
 end
 
@@ -235,7 +239,7 @@ Commands.horde = function(player, args)
     local onFire = args.onFire == true
     local sprinter = args.sprinter == true
     local paratrooper = args.paratrooper == true
-    -- heightOffset is no floor number, it is added directly to getZ()
+    -- heightOffset is no floor number, it is added directly to getZ
     -- (bytecode verified), cap kept low on purpose against bad client
     -- input, matching the slider (1 to 8)
     local heightOffset = paratrooper and math.min(8, math.max(1, tonumber(args.height) or 4)) or 0
@@ -270,24 +274,20 @@ Commands.horde = function(player, args)
                 for j = 0, zeds:size() - 1 do
                     local zed = zeds:get(j)
                     if isServer() then
-                        pcall(function() table.insert(paraIds, zed:getOnlineID()) end)
+                        table.insert(paraIds, zed:getOnlineID())
                     else
                         -- solo runs in-process: lift directly, the engine
                         -- fall physics land it (proven by the debug UI)
-                        pcall(function()
-                            zed:setZ(pz + heightOffset)
-                            zed:setbFalling(true)
-                        end)
+                        zed:setZ(pz + heightOffset)
+                        zed:setbFalling(true)
                     end
                 end
             end
             if sprinter then
                 for j = 0, zeds:size() - 1 do
                     local zed = zeds:get(j)
-                    pcall(function()
-                        zed:setWalkType("sprint" .. tostring(ZombRand(2) + 1))
-                        zed:setSpeedTypeFromWalkType()
-                    end)
+                    zed:setWalkType("sprint" .. tostring(ZombRand(2) + 1))
+                    zed:setSpeedTypeFromWalkType()
                 end
             end
         end
@@ -323,6 +323,22 @@ Commands.horde = function(player, args)
 end
 
 -- spawn vehicle at the chosen position with facing direction
+-- A debug spawn hands out a factory fresh car. setGeneralPartCondition
+-- is the engine's own way to age one: the first number caps the
+-- condition a damaged part may keep, the second raises the chance that
+-- a part is damaged at all. Vanilla uses the same call for its beaten
+-- up scenario cars.
+local WEAR = {
+    used  = { 0.85, 25 },
+    wreck = { 0.35, 70 },
+}
+
+local function applyWear(car, wear)
+    local v = WEAR[tostring(wear or "")]
+    if not v then return end
+    car:setGeneralPartCondition(v[1], v[2])
+end
+
 Commands.spawnvehicle = function(player, args)
     local function reply(ok, id, x, y, z)
         toClient(player, "spawnvehicle", { ok = ok, name = args and args.name or nil, id = id, x = x, y = y, z = z })
@@ -344,8 +360,9 @@ Commands.spawnvehicle = function(player, args)
             if car and car:getId() ~= -1 then
                 spawned = true
                 newId = car:getId()
-                pcall(function() car:setAngles(0, AegisShared.worldAngle(angle), 0) end)
+                car:setAngles(0, AegisShared.worldAngle(angle), 0)
                 AegisShared.vehicleHandover(car, player)
+                applyWear(car, args.wear)
             end
         end
     end)
@@ -420,7 +437,7 @@ end
 -- persisted in ModData, survives server restarts
 local function createSnapshot(car)
     local snap = { hue = car:getColorHue(), sat = car:getColorSaturation(), val = car:getColorValue(), skin = 0 }
-    pcall(function() snap.skin = car:getSkinIndex() end)
+    snap.skin = car:getSkinIndex()
     snap.parts = {}
     for _, p in ipairs(partsList(car)) do
         snap.parts[p.part] = (p.current or "") .. "|" .. string.format("%d", p.condition)
@@ -461,29 +478,21 @@ Commands.vehicleData = function(player, args)
     if not car:getModData().AegisSnapshot then
         writeSnapshot(car, createSnapshot(car))
     end
-    local name = ""
-    pcall(function() name = car:getModData().AegisName or "" end)
+    local name = car:getModData().AegisName or ""
     local hasKey = true
-    pcall(function()
-        local script = car:getScript()
-        if script and (script:getPassengerCount() == 0 or script:neverSpawnKey()) then hasKey = false end
-    end)
-    local skinCount = 1
-    pcall(function() skinCount = car:getSkinCount() end)
-    local skinIndex = 0
-    pcall(function() skinIndex = car:getSkinIndex() end)
+    local script = car:getScript()
+    if script and (script:getPassengerCount() == 0 or script:neverSpawnKey()) then hasKey = false end
+    local skinCount = car:getSkinCount()
+    local skinIndex = car:getSkinIndex()
     -- script identity travels with the reply so the client never has to
     -- resolve the vehicle object itself (getVehicleById proved unreliable
-    -- client-side in the live test: preview showed a default model and the
+    -- client-side: the preview showed a default model and the
     -- title fell back to the generic label on the spawn path)
     local scriptFull, scriptName = nil, nil
-    pcall(function()
-        local script = car:getScript()
-        if script then
-            scriptFull = script:getFullName()
-            scriptName = script:getName()
-        end
-    end)
+    if script then
+        scriptFull = script:getFullName()
+        scriptName = script:getName()
+    end
     -- fuel and battery charge as percentages (nil when the vehicle has no
     -- such part), for the live level sliders on the service tab
     local fuel, battery = nil, nil
@@ -877,8 +886,7 @@ Commands.vehicleNewKey = function(player, args)
         if not key then error("engine returned no key") end
         -- keep the key label in sync with an existing nickname, same
         -- pattern as Commands.vehicleName
-        local name = nil
-        pcall(function() name = car:getModData().AegisName end)
+        local name = car:getModData().AegisName
         if name and name ~= "" then
             local base = Translator.getText(key:getScriptItem():getDisplayName())
             key:setName(base .. " - " .. name)
@@ -921,8 +929,7 @@ end
 Commands.vehicleSkin = function(player, args)
     local car = vehicleOrDeny(player, args, "vehicleSkin")
     if not car then return end
-    local count = 1
-    pcall(function() count = car:getSkinCount() end)
+    local count = car:getSkinCount()
     local index = math.max(0, math.min(count - 1, math.floor(tonumber(args.index) or 0)))
     local ok, err = pcall(function()
         car:setSkinIndex(index)
@@ -993,21 +1000,15 @@ end
 local function captureVehicle(car)
     local snap = { parts = {} }
     snap.script = car:getScriptName()
-    pcall(function() snap.angle = car:getAngleY() end)
-    pcall(function()
-        snap.hue, snap.sat, snap.val = car:getColorHue(), car:getColorSaturation(), car:getColorValue()
-    end)
-    pcall(function() snap.skin = car:getSkinIndex() end)
-    pcall(function() snap.rust = car:getRust() end)
-    pcall(function()
-        snap.engineQuality = car:getEngineQuality()
-        snap.engineLoudness = car:getEngineLoudness()
-        snap.enginePower = car:getEnginePower()
-    end)
-    pcall(function()
-        snap.hotwired = car:isHotwired()
-        snap.hotwireBroken = car:isHotwiredBroken()
-    end)
+    snap.angle = car:getAngleY()
+    snap.hue, snap.sat, snap.val = car:getColorHue(), car:getColorSaturation(), car:getColorValue()
+    snap.skin = car:getSkinIndex()
+    snap.rust = car:getRust()
+    snap.engineQuality = car:getEngineQuality()
+    snap.engineLoudness = car:getEngineLoudness()
+    snap.enginePower = car:getEnginePower()
+    snap.hotwired = car:isHotwired()
+    snap.hotwireBroken = car:isHotwiredBroken()
     pcall(function() snap.modData = copyPlainTable(car:getModData()) end)
     pcall(function()
         for i = 0, car:getPartCount() - 1 do
@@ -1101,8 +1102,8 @@ local function recreateVehicleAt(oldCar, square, player)
         return nil, "no free spot at target"
     end
     -- getAngleY and setAngles disagree by half a turn on spawned
-    -- vehicles (live test: the moved car faced backwards)
-    pcall(function() newCar:setAngles(0, ((tonumber(snap.angle) or 0) + 180) % 360, 0) end)
+    -- vehicles (the moved car faced backwards)
+    newCar:setAngles(0, ((tonumber(snap.angle) or 0) + 180) % 360, 0)
     pcall(function()
         newCar:setColorHSV(tonumber(snap.hue) or 0, tonumber(snap.sat) or 0, tonumber(snap.val) or 0)
         newCar:transmitColorHSV()
@@ -1145,8 +1146,7 @@ local function recreateVehicleAt(oldCar, square, player)
                 end
             end)
         end
-        local newPart = nil
-        pcall(function() newPart = newCar:getPartById(p.id) end)
+        local newPart = newCar:getPartById(p.id)
         if newPart then
             if p.capacity then
                 pcall(function()
@@ -1214,8 +1214,7 @@ Commands.teleportVehicle = function(player, args)
         print("[Aegis] vehicle teleport refused: missing capability or area right")
         return
     end
-    local car = nil
-    pcall(function() car = player:getVehicle() end)
+    local car = player:getVehicle()
     if not car then refuseVehicleMove(player, "sender not in a vehicle") return end
     local x, y, z
     if args and args.username then
@@ -1232,20 +1231,17 @@ Commands.teleportVehicle = function(player, args)
     -- only the admin himself may be aboard: other seated players hold
     -- client side seat state the move would tear apart
     local occupied = false
-    pcall(function()
-        for i = 0, car:getMaxPassengers() - 1 do
-            local c = car:getCharacter(i)
-            if c and c ~= player then occupied = true end
-        end
-    end)
+    for i = 0, car:getMaxPassengers() - 1 do
+        local c = car:getCharacter(i)
+        if c and c ~= player then occupied = true end
+    end
     if occupied then refuseVehicleMove(player, "another player is aboard") return end
     local okA, hasHitch = pcall(function() return car:attachmentExist("trailer") end)
     if not (okA and hasHitch == true) then
         refuseVehicleMove(player, "vehicle script has no trailer attachment")
         return
     end
-    local trailer = nil
-    pcall(function() trailer = car:getVehicleTowing() end)
+    local trailer = car:getVehicleTowing()
     if trailer then
         local okT, resT = pcall(function() return trailer:attachmentExist("trailer") end)
         if not (okT and resT == true) then
@@ -1281,8 +1277,7 @@ local function vehicleMoveWatch()
         local m = pendingVehicleMoves[i]
         local car = getVehicleById(m.carId)
         local finished, moved, reason = false, false, nil
-        local driver = true
-        pcall(function() driver = car and car:getDriver() end)
+        local driver = car and car:getDriver()
         local square = getCell():getGridSquare(m.x, m.y, m.z)
         if not car then
             finished = true
@@ -1293,8 +1288,7 @@ local function vehicleMoveWatch()
             if newCar then
                 moved = true
                 m.newId = newCar:getId()
-                local oldTrailer = nil
-                pcall(function() oldTrailer = car:getVehicleTowing() end)
+                local oldTrailer = car:getVehicleTowing()
                 if oldTrailer then
                     local tSq = trailerSquare(newCar)
                     local newTrailer, tReason = nil, nil
@@ -1457,7 +1451,7 @@ Commands.vehicleName = function(player, args)
         print("[Aegis] vehicleName failed: " .. tostring(err))
     end
     -- key rename is best-effort enrichment, not the primary outcome: a
-    -- vehicle legitimately having no key (script:neverSpawnKey()/0
+    -- vehicle legitimately having no key (script:neverSpawnKey/0
     -- passengers) is a valid state, not a failure, so this never flips
     -- the overall ok flag - it only gets its own diagnostic on a genuine
     -- unexpected throw
@@ -1545,7 +1539,7 @@ Commands.spawnanimal = function(player, args)
         local animal = addAnimal(getCell(), x, y, z, args.type, breed, false)
         if animal then
             animal:addToWorld()
-            pcall(function() animal:faceDirection(animalDirection(angle)) end)
+            animal:faceDirection(animalDirection(angle))
             spawned = true
         end
     end)
@@ -1586,7 +1580,7 @@ Commands.settime = function(player, args)
     if minute > 59 then minute = 59 end
     getGameTime():setTimeOfDay(hour + minute / 60)
     -- rebuild day infos right away instead of waiting for the climate tick
-    pcall(function() getClimateManager():forceDayInfoUpdate() end)
+    getClimateManager():forceDayInfoUpdate()
     broadcastDate()
     AegisLog.write("Actions", player:getUsername(), player:getUsername(),
         string.format("Time set to %02d:%02d", hour, minute))
@@ -1626,7 +1620,7 @@ Commands.setWorldTime = function(player, args)
     end
     if #parts == 0 then return end
     -- rebuild day infos right away instead of waiting for the next climate tick
-    pcall(function() getClimateManager():forceDayInfoUpdate() end)
+    getClimateManager():forceDayInfoUpdate()
     broadcastDate()
     AegisLog.write("Actions", player:getUsername(), player:getUsername(),
         "In-game time set: " .. table.concat(parts, ", "))
@@ -1670,7 +1664,7 @@ local restartPlan = nil
 local interval = nil
 local RESTART_FILE = AegisStore.ROOT .. "/Status/restart.txt"
 -- OnServerStarted and OnGameStart both fire on boot, without this guard
--- loadRestartPlan() loads the plan twice and the banners go out twice
+-- loadRestartPlan loads the plan twice and the banners go out twice
 -- (same pattern as leftoversChecked in Aegis_Log.lua)
 local restartLoaded = false
 
@@ -1855,6 +1849,14 @@ local function restartWatch()
             AegisLog.write("Actions", restartPlan.by, restartPlan.by, "Server restart triggered")
         end
         if isServer() then
+            -- the server queues its own quit first, the same call /quit
+            -- makes. Whether it really takes the server down cannot be
+            -- observed from here, so the relay still goes out and the
+            -- retry loop below stays in charge. A server that is already
+            -- shutting down simply never runs the next attempt
+            if ServerMap ~= nil then
+                pcall(function() ServerMap.instance:QueueQuit() end)
+            end
             -- ANY online client with QuitWorld answers, always, not just the
             -- planner. It used to gate on "by" whenever the planner was
             -- still online, which sounds like the safer default but was
@@ -1959,6 +1961,11 @@ local function loadRestartPlan()
 end
 
 Events.OnServerStarted.Add(loadRestartPlan)
+-- says once per boot which way a scheduled restart will take
+Events.OnServerStarted.Add(function()
+    print("[Aegis] restart: server-side quit "
+        .. (ServerMap ~= nil and "available" or "unavailable, falling back to the client relay"))
+end)
 Events.OnGameStart.Add(loadRestartPlan)
 
 -- keep lures alive: a fresh noise pulse at the fixed spot every minute
@@ -1982,6 +1989,50 @@ local function lureWatch()
 end
 
 Events.EveryOneMinute.Add(lureWatch)
+
+-- ---------- head tag visibility ----------
+-- the engine derives the sent tag bit from active admin powers alone,
+-- so a plain tag role never shows and a hidden tag only vanishes on the
+-- own screen. This ledger makes both choices global, every client
+-- re-applies it to its local copies (see AegisRoleTag). One name per
+-- line, a listed name wants its tag hidden
+local hideTags = nil
+local HIDE_FILE = AegisStore.ROOT .. "/Roles/hidetags.txt"
+
+local function loadHideTags()
+    if hideTags then return end
+    hideTags = {}
+    local lines = AegisStore.readLines(HIDE_FILE, 2000)
+    for _, n in ipairs(lines or {}) do
+        if n ~= "" then hideTags[n] = true end
+    end
+end
+
+local function hideNames()
+    local out = {}
+    for n in pairs(hideTags) do table.insert(out, n) end
+    table.sort(out)
+    return out
+end
+
+Commands.tagHide = function(player, args)
+    if not AegisRoles.canArea(player, "powers") then return end
+    loadHideTags()
+    local name = player:getUsername()
+    if not name then return end
+    local on = args and args.on == true
+    if (hideTags[name] == true) == on then return end
+    hideTags[name] = on and true or nil
+    local names = hideNames()
+    AegisStore.write(HIDE_FILE, #names > 0 and (table.concat(names, "\n") .. "\n") or "")
+    AegisLog.write("Actions", name, name, on and "Head tag hidden" or "Head tag shown")
+    sendServerCommand(AegisShared.MODULE, "tagHide", { names = names })
+end
+
+Commands.tagHideReq = function(player, args)
+    loadHideTags()
+    sendServerCommand(player, AegisShared.MODULE, "tagHide", { names = hideNames() })
+end
 
 local function onClientCommand(module, command, player, args)
     if module ~= "AegisAdmin" then return end

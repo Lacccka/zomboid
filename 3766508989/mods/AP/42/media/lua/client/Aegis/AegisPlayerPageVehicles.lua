@@ -26,11 +26,9 @@ local PREVIEW_H = 250
 -- readable on both sides
 local function maxVehicles()
     local n = nil
-    pcall(function()
-        local v = SandboxVars and SandboxVars.AegisEvents
-            and SandboxVars.AegisEvents.PlayerVehicles
-        if v ~= nil then n = math.floor(tonumber(v) or 0) end
-    end)
+    local v = SandboxVars and SandboxVars.AegisEvents
+        and SandboxVars.AegisEvents.PlayerVehicles
+    if v ~= nil then n = math.floor(tonumber(v) or 0) end
     if not n or n < 0 then n = 5 end
     return math.min(n, 20)
 end
@@ -47,12 +45,10 @@ local COMPASS_KEYS = {
 
 local function playerPos()
     local x, y = nil, nil
-    pcall(function()
-        local p = getPlayer()
-        if p then
-            x, y = p:getX(), p:getY()
-        end
-    end)
+    local p = getPlayer()
+    if p then
+        x, y = p:getX(), p:getY()
+    end
     return x, y
 end
 
@@ -120,22 +116,20 @@ end
 -- variants but has none installed counts as zero
 local function generalCondition(car)
     local out = nil
-    pcall(function()
-        local sum, n = 0, 0
-        for i = 0, car:getPartCount() - 1 do
-            local part = car:getPartByIndex(i)
-            if part then
-                local cond = part:getCondition()
-                local types = part:getItemType()
-                if types and not types:isEmpty() and not part:getInventoryItem() then
-                    cond = 0
-                end
-                sum = sum + cond
-                n = n + 1
+    local sum, n = 0, 0
+    for i = 0, car:getPartCount() - 1 do
+        local part = car:getPartByIndex(i)
+        if part then
+            local cond = part:getCondition()
+            local types = part:getItemType()
+            if types and not types:isEmpty() and not part:getInventoryItem() then
+                cond = 0
             end
+            sum = sum + cond
+            n = n + 1
         end
-        if n > 0 then out = math.floor(sum / n + 0.5) end
-    end)
+    end
+    if n > 0 then out = math.floor(sum / n + 0.5) end
     return out
 end
 
@@ -156,19 +150,15 @@ local function readState(car)
     end)
     -- the battery part has no container at all, its charge is the
     -- remaining uses of the battery item (getBatteryCharge is 0..1)
-    pcall(function()
-        local bat = car:getPartById("Battery")
-        if bat and bat:getInventoryItem() then
-            st.batt = math.floor(car:getBatteryCharge() * 100 + 0.5)
-        end
-    end)
+    local bat = car:getPartById("Battery")
+    if bat and bat:getInventoryItem() then
+        st.batt = math.floor(car:getBatteryCharge() * 100 + 0.5)
+    end
     -- engine condition, the percentage the mechanics window prints next
     -- to the engine part. getEngineQuality is a fixed spawn attribute
     -- that never moves with wear and would be a dead bar
-    pcall(function()
-        local eng = car:getPartById("Engine")
-        if eng then st.engine = eng:getCondition() end
-    end)
+    local eng = car:getPartById("Engine")
+    if eng then st.engine = eng:getCondition() end
     -- clamped field by field, never by clearing keys inside pairs: a
     -- Kahlua table does not like losing entries mid traversal
     st.cond, st.fuel = clampPct(st.cond), clampPct(st.fuel)
@@ -236,25 +226,21 @@ local function knoxScan()
     local now = getTimestampMs()
     if now < knoxScanAt then return end
     knoxScanAt = now + KNOX_SCAN_MS
-    pcall(function()
-        local p = getPlayer()
-        if not p then return end
-        local cell = getCell()
-        local px, py, pz = math.floor(p:getX()), math.floor(p:getY()), math.floor(p:getZ())
-        for dy = -KNOX_SCAN, KNOX_SCAN, 2 do
-            for dx = -KNOX_SCAN, KNOX_SCAN, 2 do
-                local sq = cell:getGridSquare(px + dx, py + dy, pz)
-                local v = sq and sq:getVehicleContainer()
-                if v then
-                    pcall(function()
-                        local md = v:getModData()
-                        if md.KnoxClaimKey then knoxCar[tostring(md.KnoxClaimKey)] = v end
-                        if md.aegisVehKey then knoxCar[tostring(md.aegisVehKey)] = v end
-                    end)
-                end
+    local p = getPlayer()
+    if not p then return end
+    local cell = getCell()
+    local px, py, pz = math.floor(p:getX()), math.floor(p:getY()), math.floor(p:getZ())
+    for dy = -KNOX_SCAN, KNOX_SCAN, 2 do
+        for dx = -KNOX_SCAN, KNOX_SCAN, 2 do
+            local sq = cell:getGridSquare(px + dx, py + dy, pz)
+            local v = sq and sq:getVehicleContainer()
+            if v then
+                local md = v:getModData()
+                if md.KnoxClaimKey then knoxCar[tostring(md.KnoxClaimKey)] = v end
+                if md.aegisVehKey then knoxCar[tostring(md.aegisVehKey)] = v end
             end
         end
-    end)
+    end
 end
 
 local function knoxVehicleFor(key, net)
@@ -296,12 +282,11 @@ local function carFor(e)
         local car = knoxVehicleFor(e.key, e.id)
         if not car then return nil end
         local near = false
-        pcall(function()
-            local p = getPlayer()
-            if not p then return end
+        local p = getPlayer()
+        if p then
             local dx, dy = car:getX() - p:getX(), car:getY() - p:getY()
             near = (dx * dx + dy * dy) <= STATE_RANGE * STATE_RANGE
-        end)
+        end
         return near and car or nil
     end
     local car = knoxVehicleFor(e.knoxKey, e.net)
@@ -311,12 +296,11 @@ local function carFor(e)
     -- part list stayed on "too far away" while the bars right above it
     -- were happily updating from the very same vehicle
     local near = false
-    pcall(function()
-        local p = getPlayer()
-        if not p then return end
+    local p = getPlayer()
+    if p then
         local dx, dy = car:getX() - p:getX(), car:getY() - p:getY()
         near = (dx * dx + dy * dy) <= STATE_RANGE * STATE_RANGE
-    end)
+    end
     return near and car or nil
 end
 
@@ -362,10 +346,8 @@ local function knoxEntries()
     pcall(function()
         local me = getPlayer():getUsername()
         local faction = nil
-        pcall(function()
-            local f = Faction.getPlayerFaction(getPlayer())
-            if f then faction = f:getName() end
-        end)
+        local f = Faction.getPlayerFaction(getPlayer())
+        if f then faction = f:getName() end
         for key, rec in pairs(KnoxClaim.Client.vehicles or {}) do
             local mine = (rec.ownerType == "faction") and (rec.owner == faction)
                 or (rec.ownerType ~= "faction") and (rec.owner == me)
@@ -383,13 +365,11 @@ local function knoxEntries()
                 -- key and cached, never by the stored number alone
                 local car = knoxVehicleFor(key, rec.net)
                 if car then
-                    pcall(function()
-                        e.x, e.y = car:getX(), car:getY()
-                        local st = readState(car)
-                        e.cond, e.fuel = st.cond, st.fuel
-                        e.batt, e.engine = st.batt, st.engine
-                        e.fresh = true
-                    end)
+                    e.x, e.y = car:getX(), car:getY()
+                    local st = readState(car)
+                    e.cond, e.fuel = st.cond, st.fuel
+                    e.batt, e.engine = st.batt, st.engine
+                    e.fresh = true
                 end
                 out[#out + 1] = e
             end
@@ -476,8 +456,7 @@ end
 -- dropped the way the vanilla mechanics window does it, a part that
 -- offers item variants without one installed reads as missing
 local function measureParts(car)
-    local count = 0
-    pcall(function() count = car:getPartCount() or 0 end)
+    local count = car:getPartCount() or 0
     if count <= 0 then return nil end
     local byCat = {}
     for i = 0, count - 1 do
@@ -598,7 +577,7 @@ function AegisPlayerVehNavi.start(entry)
         o.background = false
         o:initialise()
         o:addToUIManager()
-        pcall(function() o.javaObject:setConsumeMouseEvents(false) end)
+        o.javaObject:setConsumeMouseEvents(false)
         AegisPlayerVehNavi.instance = o
     end
     local o = AegisPlayerVehNavi.instance
@@ -693,11 +672,8 @@ function AegisPlayerVehNavi:render()
         Aegis.textCentre(self, text, math.floor(sw / 2), 105, UIFont.Medium, c.accentHi)
         return
     end
-    local sx, sy = nil, nil
-    pcall(function()
-        sx = isoToScreenX(0, t.x, t.y, 0)
-        sy = isoToScreenY(0, t.x, t.y, 0)
-    end)
+    local sx = isoToScreenX(0, t.x, t.y, 0)
+    local sy = isoToScreenY(0, t.x, t.y, 0)
     if not sx or not sy then return end
     local pulse = 0.5 + 0.5 * math.sin(now / 260)
     local label = Aegis.fitText(t.name, UIFont.Small, 170)
@@ -1332,8 +1308,7 @@ function AegisPlayerPageVehicles.onSave(self)
     if AegisPlayerPageVehicles.knoxOwns() then return end
     local veh = self.nearVeh
     if not veh then return end
-    local id = nil
-    pcall(function() id = veh:getId() end)
+    local id = veh:getId()
     if not id then return end
     self.statusKey = nil
     -- the car is right here, so its state travels with the entry and the
@@ -1442,7 +1417,7 @@ function AegisPlayerPageVehicles:update()
                 e.fresh = true
                 -- the live position beats the stored one; without this a
                 -- healed entry kept pointing at the old parking spot
-                pcall(function() e.x, e.y = car:getX(), car:getY() end)
+                e.x, e.y = car:getX(), car:getY()
             end
         end
     end
@@ -1467,8 +1442,9 @@ function AegisPlayerPageVehicles:update()
         -- causes; one line per change says which one it was instead of
         -- leaving the next report to guesswork
         local why = self.parts and "ok" or (car and "vehicle found, no parts" or "no vehicle in reach")
-        if why ~= self.partsWhy then
+        if why ~= self.partsWhy and getTimestampMs() >= (self.partsWhyAt or 0) then
             self.partsWhy = why
+        self.partsWhyAt = getTimestampMs() + 30000
             print("[Aegis] vehicle parts (" .. tostring(selId) .. "): " .. why)
         end
         self:layoutParts()
@@ -1477,13 +1453,11 @@ function AegisPlayerPageVehicles:update()
     if now >= (self.nearNext or 0) then
         self.nearNext = now + 500
         local veh = nil
-        pcall(function()
-            local p = getPlayer()
-            if p then
-                veh = p:getVehicle()
-                if not veh then veh = p:getNearVehicle() end
-            end
-        end)
+        local p = getPlayer()
+        if p then
+            veh = p:getVehicle()
+            if not veh then veh = p:getNearVehicle() end
+        end
         self.nearVeh = veh
     end
     if self.saveBtn then
@@ -1578,7 +1552,7 @@ function AegisPlayerPageVehicles:prerender()
         ty = ty + smallH + 4
         local seen = ""
         if e.epoch and e.epoch > 0 then
-            pcall(function() seen = AegisShared.timestampReadable(e.epoch) end)
+            seen = AegisShared.timestampReadable(e.epoch)
         end
         if seen ~= "" and ty + smallH <= bottom then
             Aegis.text(self, Aegis.fitText(getText("UI_AegisPlayer_VehSeen", seen), UIFont.Small, rw - 32),
@@ -1668,7 +1642,7 @@ Events.OnServerCommand.Add(function(module, command, args)
         -- overwrites the stored snapshot right in place
         local live = AegisPlayerVehNavi.target ~= nil
         if not live and page then
-            pcall(function() live = page:isVisible() == true end)
+            live = page:isVisible() == true
         end
         if live then pushStates(entries) end
         -- the navi keeps listening even with the window closed

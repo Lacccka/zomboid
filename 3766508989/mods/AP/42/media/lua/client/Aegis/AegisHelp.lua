@@ -27,6 +27,10 @@ local ART_BAR_X = 28
 local ART_INSET = 34
 -- gutter on the right of the section list for its own scrollbar
 local NAV_GUTTER = 18
+-- search box between the tab row and the section list
+local SEARCH_Y = HEADER + 46
+local SEARCH_H = 26
+local NAV_TOP = SEARCH_Y + SEARCH_H + 8
 
 -- admin palette with the gold family exposed as accent, mirror of
 -- AegisPlayerCol so both modes draw through the same keys
@@ -77,6 +81,20 @@ function AegisHelp:createChildren()
     self.closeBtn.radius = 15
     self:addChild(self.closeBtn)
 
+    -- reopens the update notice that only shows itself once per version
+    self.newsBtn = AegisButton:new(self.width - 40 - 150, 13, 142, 30, getText("UI_Aegis_WhatsNew"), nil, self, function(panel)
+        if AegisWhatsNew then AegisWhatsNew.show(panel.mode) end
+    end)
+    self:addChild(self.newsBtn)
+
+    -- starts the guided tour, the help window steps aside so the highlights show
+    self.tourBtn = AegisButton:new(self.width - 40 - 300, 13, 142, 30, getText("UI_Aegis_TourStart"), nil, self, function(panel)
+        local mode = panel.mode
+        panel:close()
+        if AegisTour then AegisTour.start(mode) end
+    end)
+    self:addChild(self.tourBtn)
+
     local half = math.floor((NAV_W - 24) / 2)
     self.helpTabBtn = AegisButton:new(12, HEADER + 10, half, 30, getText("UI_Aegis_HelpTab"), nil, self, function(panel)
         panel:setTab("help")
@@ -90,6 +108,19 @@ function AegisHelp:createChildren()
     self.logTabBtn.owner = self
     self.logTabBtn.render = AegisHelp.renderTab
     self:addChild(self.logTabBtn)
+
+    -- filters the section list, titles and body text both count
+    self.searchEntry = ISTextEntryBox:new("", 12, SEARCH_Y, half * 2 + 6, SEARCH_H)
+    self.searchEntry:initialise()
+    self.searchEntry:instantiate()
+    self.searchEntry.font = UIFont.Small
+    self.searchEntry:setClearButton(true)
+    self.searchEntry.backgroundColor = { r = self.col.dark.r, g = self.col.dark.g, b = self.col.dark.b, a = 1 }
+    self.searchEntry.borderColor = { r = self.col.line.r, g = self.col.line.g, b = self.col.line.b, a = 1 }
+    self.searchEntry:setPlaceholderText(getText("UI_Aegis_HelpSearch"))
+    local win = self
+    self.searchEntry.onTextChange = function() win:onSearch() end
+    self:addChild(self.searchEntry)
 
     -- article area scrolls, the text panel inside draws the wrapped lines
     self.scroll = AegisScrollArea:new(NAV_W, HEADER + 1, self.width - NAV_W - 12, self.height - HEADER - GRIP_CHIN)
@@ -142,7 +173,55 @@ end
 function AegisHelp:setTab(tab)
     self.tab = tab
     self.section = 1
+    if self.searchEntry then self.searchEntry:setVisible(tab == "help") end
+    self:applyFilter()
     self:layoutText()
+end
+
+-- lowercased text per section, built once, keystrokes only scan strings
+function AegisHelp:searchBlobs()
+    if not self.blobCache then
+        local cache = {}
+        for i, sec in ipairs(self.content.help) do
+            local parts = { string.lower(sec.title or "") }
+            for _, line in ipairs(sec.lines or {}) do
+                parts[#parts + 1] = string.lower(line)
+            end
+            cache[i] = table.concat(parts, "\n")
+        end
+        self.blobCache = cache
+    end
+    return self.blobCache
+end
+
+-- filtered view over the section list. Nav drawing and hit tests read it,
+-- so this runs on keystrokes and tab switches, never per frame
+function AegisHelp:applyFilter()
+    local needle = string.lower(self.searchEntry and self.searchEntry:getInternalText() or "")
+    local vis = {}
+    if needle == "" then
+        for i = 1, #self.content.help do vis[i] = i end
+    else
+        local blobs = self:searchBlobs()
+        for i = 1, #self.content.help do
+            if string.find(blobs[i], needle, 1, true) then
+                vis[#vis + 1] = i
+            end
+        end
+    end
+    self.visibleSections = vis
+    for _, idx in ipairs(vis) do
+        if idx == self.section then return end
+    end
+    -- the selected section fell out of the filter, take the first visible
+    self.section = vis[1]
+    self.navScroll = 0
+end
+
+function AegisHelp:onSearch()
+    local before = self.section
+    self:applyFilter()
+    if self.section ~= before then self:layoutText() end
 end
 
 -- ------------------------------------------------------------------
@@ -273,6 +352,8 @@ end
 -- scrollbar re-anchors its lua side too, setWidth alone leaves it stale
 function AegisHelp:placeChrome()
     self.closeBtn:setX(self.width - 40)
+    if self.newsBtn then self.newsBtn:setX(self.width - 40 - 150) end
+    if self.tourBtn then self.tourBtn:setX(self.width - 40 - 300) end
     self.scroll:setWidth(self.width - NAV_W - 12)
     self.scroll:setHeight(self.height - HEADER - GRIP_CHIN)
     if self.scroll.vscroll then
@@ -311,8 +392,9 @@ function AegisHelp:prerender()
     -- scrollbar on its right, the same pattern as the tile browser
     self.sectionRects = {}
     if self.tab == "help" then
-        local total = #self.content.help
-        local top = HEADER + 52
+        local vis = self.visibleSections
+        local total = #vis
+        local top = NAV_TOP
         local avail = self.height - top - 12
         local lineH = Aegis.fontH(UIFont.Small) + 12
         local visible = math.max(1, math.floor(avail / lineH))
@@ -322,22 +404,23 @@ function AegisHelp:prerender()
         local textW = NAV_W - 20 - (maxScroll > 0 and NAV_GUTTER or 8)
         local sy = top
         for i = self.navScroll + 1, math.min(total, self.navScroll + visible) do
-            local sec = self.content.help[i]
-            local active = i == self.section
+            local idx = vis[i]
+            local sec = self.content.help[idx]
+            local active = idx == self.section
             if active then
                 Aegis.roundRect(self, 8, sy, NAV_W - 16, lineH - 2, 8, 1, c.card)
             end
             Aegis.text(self, Aegis.fitText(sec.title, UIFont.Small, textW), 20,
                 sy + math.floor((lineH - Aegis.fontH(UIFont.Small)) / 2),
                 UIFont.Small, active and c.text or c.muted)
-            table.insert(self.sectionRects, { y = sy, h = lineH - 2, idx = i })
+            table.insert(self.sectionRects, { y = sy, h = lineH - 2, idx = idx })
             sy = sy + lineH
         end
         local bar = self:navBar()
         if bar then
             Aegis.roundRect(self, bar.x, bar.y, bar.w, bar.h, 5, 1, c.dark)
             Aegis.roundRect(self, bar.x, bar.thumbY, bar.w, bar.thumbH, 5, 1,
-                self.navDrag and c.goldDim or c.line)
+                self.navDrag and c.accentDim or c.line)
         end
     end
     self:drawRect(NAV_W - 1, HEADER + 1, 1, self.height - HEADER - 2, 1, c.line.r, c.line.g, c.line.b)
@@ -358,8 +441,8 @@ end
 -- Drawing and hit testing share it, the tile browser pattern
 function AegisHelp:navBar()
     if self.tab ~= "help" then return nil end
-    local total = #self.content.help
-    local top = HEADER + 52
+    local total = #self.visibleSections
+    local top = NAV_TOP
     local avail = self.height - top - 12
     local lineH = Aegis.fontH(UIFont.Small) + 12
     local visible = math.max(1, math.floor(avail / lineH))

@@ -24,12 +24,10 @@ end
 -- key of the Aegis panel, 0 when none is bound
 local function panelKey()
     local key = 0
-    pcall(function()
-        if AegisHud and AegisHud.keybind then
-            local v = AegisHud.keybind:getValue()
-            if type(v) == "number" then key = v end
-        end
-    end)
+    if AegisHud and AegisHud.keybind then
+        local v = AegisHud.keybind:getValue()
+        if type(v) == "number" then key = v end
+    end
     return key
 end
 
@@ -58,14 +56,14 @@ local function enable(withWeather)
     local p = getPlayer()
     if not p or not Aegis.allowed(p) then return end
 
-    -- snapshot first, each value guarded individually
+    -- snapshot first
     local m = { withWeather = withWeather }
-    pcall(function() m.hud = ISUIHandler.allUIVisible ~= false end)
-    pcall(function() m.pauseText = UIManager.isShowPausedMessage() end)
-    pcall(function() m.ownName = getCore():isShowYourUsername() end)
-    pcall(function() m.seeAll = p:canSeeAll() end)
+    m.hud = ISUIHandler.allUIVisible ~= false
+    m.pauseText = UIManager.isShowPausedMessage()
+    m.ownName = getCore():isShowYourUsername()
+    m.seeAll = p:canSeeAll()
     if AegisShared.isSoloSP() then
-        pcall(function() m.speed = UIManager.getSpeedControls():getCurrentGameSpeed() end)
+        m.speed = UIManager.getSpeedControls():getCurrentGameSpeed()
     end
     AegisPhotoMode.memo = m
     AegisPhotoMode.on = true
@@ -73,14 +71,14 @@ local function enable(withWeather)
     showHint()
     Aegis.logAction("world", withWeather and "Photo mode on (weather calmed)" or "Photo mode on")
 
-    pcall(function() UIManager.setShowPausedMessage(false) end)
-    pcall(function() getCore():setShowYourUsername(false) end)
-    pcall(function() p:setCanSeeAll(false) end)
-    pcall(function() Aegis.syncPowers(p) end)
+    UIManager.setShowPausedMessage(false)
+    getCore():setShowYourUsername(false)
+    p:setCanSeeAll(false)
+    Aegis.syncPowers(p)
 
     -- real time stop only in solo, an MP client cannot pause
     if AegisShared.isSoloSP() then
-        pcall(function() UIManager.getSpeedControls():SetCurrentGameSpeed(0) end)
+        UIManager.getSpeedControls():SetCurrentGameSpeed(0)
     end
 
     if withWeather then
@@ -113,14 +111,14 @@ local function disable()
     AegisPhotoMode.memo = nil
     AegisPhotoMode.hudAb = nil
 
-    pcall(function() UIManager.setShowPausedMessage(m.pauseText ~= false) end)
-    pcall(function() getCore():setShowYourUsername(m.ownName ~= false) end)
+    UIManager.setShowPausedMessage(m.pauseText ~= false)
+    getCore():setShowYourUsername(m.ownName ~= false)
     if p then
-        pcall(function() p:setCanSeeAll(m.seeAll == true) end)
-        pcall(function() Aegis.syncPowers(p) end)
+        p:setCanSeeAll(m.seeAll == true)
+        Aegis.syncPowers(p)
     end
     if AegisShared.isSoloSP() then
-        pcall(function() UIManager.getSpeedControls():SetCurrentGameSpeed(m.speed or 1) end)
+        UIManager.getSpeedControls():SetCurrentGameSpeed(m.speed or 1)
     end
     if m.withWeather then
         -- weather restore means: admin override off again, no guessing of
@@ -136,7 +134,7 @@ local function disable()
 
     -- HUD back as the last step, only if we hid it ourselves
     if m.hudHidden then
-        pcall(function() ISUIHandler.setVisibleAllUI(true) end)
+        ISUIHandler.setVisibleAllUI(true)
         ISUIHandler.allUIVisible = true
     end
 
@@ -168,7 +166,7 @@ Events.OnTickEvenPaused.Add(function()
     -- if the HUD was already off before, it stays untouched
     if m.hud == false then return end
     m.hudHidden = true
-    pcall(function() ISUIHandler.setVisibleAllUI(false) end)
+    ISUIHandler.setVisibleAllUI(false)
     -- sync with the vanilla toggle, setVisibleAllUI does not update the flag
     ISUIHandler.allUIVisible = false
 end)

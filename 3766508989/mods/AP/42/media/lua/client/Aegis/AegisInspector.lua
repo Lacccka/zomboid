@@ -29,30 +29,22 @@ end
 -- interior floor behind it
 local function collectRows(sq, skipFloor, hitTest)
     local rows = {}
-    local floorObj = nil
-    pcall(function() floorObj = sq:getFloor() end)
+    local floorObj = sq:getFloor()
     local function add(obj)
         if skipFloor and obj == floorObj then return end
         if hitTest and not hitTest(obj) then return end
-        local sprite = nil
-        pcall(function()
-            local spr = obj:getSprite()
-            if spr then sprite = spr:getName() end
-        end)
+        local spr = obj:getSprite()
+        local sprite = spr and spr:getName() or nil
         if not sprite then return end
         local info = shortType(obj)
-        pcall(function()
-            local cont = obj:getContainer()
-            if cont then info = info .. ", container: " .. tostring(cont:getType()) end
-        end)
+        local cont = obj:getContainer()
+        if cont then info = info .. ", container: " .. tostring(cont:getType()) end
         table.insert(rows, { sprite = sprite, info = info })
     end
-    pcall(function()
-        local objects = sq:getObjects()
-        for i = 0, objects:size() - 1 do add(objects:get(i)) end
-        local special = sq:getSpecialObjects()
-        for i = 0, special:size() - 1 do add(special:get(i)) end
-    end)
+    local objects = sq:getObjects()
+    for i = 0, objects:size() - 1 do add(objects:get(i)) end
+    local special = sq:getSpecialObjects()
+    for i = 0, special:size() - 1 do add(special:get(i)) end
     return rows
 end
 
@@ -79,8 +71,7 @@ function AegisInspectorOverlay:update()
         -- hits its rendered pixels (sprite mask). Facade signs and walls
         -- live on neighbor squares, hence the 3x3 sweep per level. The
         -- mask wants zoomed coordinates, both spaces are tried
-        local zoom = 1
-        pcall(function() zoom = getCore():getZoom(0) end)
+        local zoom = getCore():getZoom(0)
         local zx = math.floor(mx * zoom)
         local zy = math.floor(my * zoom)
         local function maskHit(obj)
@@ -93,10 +84,8 @@ function AegisInspectorOverlay:update()
         -- indoors the levels above are cut away, their masks would still
         -- hit
         local topZ = MAX_LEVEL
-        pcall(function()
-            local sq = p:getSquare()
-            if sq and sq:getRoom() then topZ = math.floor(p:getZ()) end
-        end)
+        local psq = p:getSquare()
+        if psq and psq:getRoom() then topZ = math.floor(p:getZ()) end
         for z = topZ, 0, -1 do
             local wx = math.floor(screenToIsoX(0, mx, my, z))
             local wy = math.floor(screenToIsoY(0, mx, my, z))
@@ -199,7 +188,7 @@ function AegisInspector.setOn(on)
         o.background = false
         o:initialise()
         o:addToUIManager()
-        pcall(function() o.javaObject:setConsumeMouseEvents(false) end)
+        o.javaObject:setConsumeMouseEvents(false)
         overlay = o
     elseif not on and overlay then
         overlay:removeFromUIManager()
@@ -218,7 +207,7 @@ Events.OnMouseDown.Add(function(x, y)
     local window = AegisWindow and AegisWindow.instance
     if window and window:isVisible() and window:isMouseOver() then return end
     local sprite = overlay.clickTarget or overlay.rows[#overlay.rows].sprite
-    pcall(function() Clipboard.setClipboard(sprite) end)
+    Clipboard.setClipboard(sprite)
     -- the same click also feeds the builder's custom category; the toast
     -- names the store only the first time a sprite lands there
     local added = false

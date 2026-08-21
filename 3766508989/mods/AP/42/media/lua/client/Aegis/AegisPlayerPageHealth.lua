@@ -346,14 +346,11 @@ local colorScheme = nil
 local function figureScheme()
     if colorScheme then return colorScheme end
     local c = AegisPlayerCol
-    local ok, s = pcall(function()
-        return {
-            { val = 0.0, color = Color.new(c.danger.r, c.danger.g, c.danger.b, 1) },
-            { val = 0.5, color = Color.new(AMBER.r, AMBER.g, AMBER.b, 1) },
-            { val = 1.0, color = Color.new(BODY_OK.r, BODY_OK.g, BODY_OK.b, 1) },
-        }
-    end)
-    if ok then colorScheme = s end
+    colorScheme = {
+        { val = 0.0, color = Color.new(c.danger.r, c.danger.g, c.danger.b, 1) },
+        { val = 0.5, color = Color.new(AMBER.r, AMBER.g, AMBER.b, 1) },
+        { val = 1.0, color = Color.new(BODY_OK.r, BODY_OK.g, BODY_OK.b, 1) },
+    }
     return colorScheme
 end
 
@@ -401,12 +398,10 @@ function AegisHealthFigure:applyPart(idx, value, level, rim)
     if not bp then return end
     bp.aegisLevel = level or 0
     bp.aegisRim = rim == true
-    pcall(function() self:setValue(bp.bodyPartType, value, true) end)
-    pcall(function()
-        bp.aegisR = bp.color:getRedFloat()
-        bp.aegisG = bp.color:getGreenFloat()
-        bp.aegisB = bp.color:getBlueFloat()
-    end)
+    self:setValue(bp.bodyPartType, value, true)
+    bp.aegisR = bp.color:getRedFloat()
+    bp.aegisG = bp.color:getGreenFloat()
+    bp.aegisB = bp.color:getBlueFloat()
 end
 
 function AegisHealthFigure:clearSelection()
@@ -623,18 +618,11 @@ function AegisPlayerPageHealth:buildFigure()
         return f
     end)
     if not ok or not fig then return end
-    -- each step on its own, a failing one must not skip the others and
-    -- above all not the setup that fills the render caches
-    pcall(function() fig:setAlphas(0.88, 1.0, 1.0, 0.34, 0.9) end)
-    pcall(function()
-        local scheme = figureScheme()
-        if scheme then fig:setColorScheme(scheme) end
-    end)
-    pcall(function()
-        fig:enableNodes("media/ui/BodyParts/bps_node_diamond",
-            "media/ui/BodyParts/bps_node_diamond_outline")
-    end)
-    pcall(function() fig:setup() end)
+    fig:setAlphas(0.88, 1.0, 1.0, 0.34, 0.9)
+    fig:setColorScheme(figureScheme())
+    fig:enableNodes("media/ui/BodyParts/bps_node_diamond",
+        "media/ui/BodyParts/bps_node_diamond_outline")
+    fig:setup()
     self.figure = fig
     self:addChild(fig)
 end
@@ -647,7 +635,7 @@ end
 -- hand us a different one while the page lives on
 function AegisPlayerPageHealth:rebuildFigure()
     if self.figure then
-        pcall(function() self:removeChild(self.figure) end)
+        self:removeChild(self.figure)
         self.figure = nil
     end
     self.selected = nil

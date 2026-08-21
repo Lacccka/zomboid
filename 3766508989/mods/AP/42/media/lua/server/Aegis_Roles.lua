@@ -229,14 +229,11 @@ AegisRoles.isVanillaAdmin = isVanillaAdmin
 -- himself out, everyone else needs the area granted explicitly
 local function hasVanillaRolesWrite(player)
     if not isServer() then return true end
-    local ok, res = pcall(function()
-        local role = player and player:getRole()
-        if not role then return false end
-        local cap = Capability and Capability.RolesWrite
-        if not cap then return false end
-        return role:hasCapability(cap) == true
-    end)
-    return ok and res == true
+    local role = player and player:getRole()
+    if not role then return false end
+    local cap = Capability and Capability.RolesWrite
+    if not cap then return false end
+    return role:hasCapability(cap) == true
 end
 
 AegisRoles.hasVanillaRolesWrite = hasVanillaRolesWrite

@@ -248,17 +248,12 @@ end
 -- ---------- exports ----------
 
 local function scriptFor(fullType)
-    local script = nil
-    pcall(function() script = getScriptManager():FindItem(fullType) end)
+    local script = getScriptManager():FindItem(fullType)
     if not script then return nil end
-    local ok = true
     -- exclude corpses by script name, getTypeString does not exist on the
     -- script in B42 (see the moderation cart)
-    pcall(function()
-        local n = script:getName()
-        if n and n:find("Corpse") then ok = false end
-    end)
-    if not ok then return nil end
+    local n = script:getName()
+    if n and n:find("Corpse") then return nil end
     return script
 end
 
@@ -453,8 +448,8 @@ end
 function AegisKits.claim(player, kitId, boostOnly)
     loadKits()
     loadClaims()
-    local ok, name = pcall(function() return player:getUsername() end)
-    if not ok or type(name) ~= "string" or name == "" or name:find("[%c|]") then
+    local name = player:getUsername()
+    if type(name) ~= "string" or name == "" or name:find("[%c|]") then
         return false, "error"
     end
     if claimsIncomplete then
@@ -471,9 +466,7 @@ function AegisKits.claim(player, kitId, boostOnly)
         if hasBoosterGate(kit) and boostStoreDown() then return false, "unavailable" end
         return false, "gone"
     end
-    local dead = true
-    pcall(function() dead = player:isDead() == true end)
-    if dead then return false, "error" end
+    if player:isDead() then return false, "error" end
     local now = AegisShared.realTime()
     local last = claims[name] and claims[name][kit.id]
     if last then
@@ -630,8 +623,8 @@ local function throttled(name, command, seconds)
 end
 
 local function senderName(player)
-    local ok, name = pcall(function() return player:getUsername() end)
-    if ok and type(name) == "string" and name ~= "" then return name end
+    local name = player:getUsername()
+    if type(name) == "string" and name ~= "" then return name end
     return nil
 end
 

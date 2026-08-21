@@ -26,7 +26,7 @@ function AegisConstruction.setOn(on)
         o.background = false
         o:initialise()
         o:addToUIManager()
-        pcall(function() o.javaObject:setConsumeMouseEvents(false) end)
+        o.javaObject:setConsumeMouseEvents(false)
         AegisConstructionOverlay.instance = o
     elseif not on and AegisConstructionOverlay.instance then
         AegisConstructionOverlay.instance:removeFromUIManager()
@@ -70,7 +70,7 @@ local function drawCard(el, card)
     Aegis.text(el, sprite, tx, ty, f, c.muted)
 end
 
--- UIManager.getLastPicked() does NOT work: UIManager.updateTooltip()
+-- UIManager.getLastPicked does NOT work: UIManager.updateTooltip
 -- (bytecode verified) first looks for a UI element under the mouse each
 -- frame and aborts the world object search entirely once one is found,
 -- a check that runs purely on the bounding box and ignores
@@ -84,29 +84,27 @@ end
 -- (walls/doors/windows/build stations)
 local function pickObject()
     local mx, my = getMouseX(), getMouseY()
-    local obj = nil
-    pcall(function() obj = IsoObjectPicker.Instance:PickThumpable(mx, my) end)
+    local obj = IsoObjectPicker.Instance:PickThumpable(mx, my)
     if obj then return obj end
-    pcall(function() obj = IsoObjectPicker.Instance:PickDoor(mx, my, true) end)
+    obj = IsoObjectPicker.Instance:PickDoor(mx, my, true)
     if obj then return obj end
-    pcall(function() obj = IsoObjectPicker.Instance:PickWindow(mx, my) end)
+    obj = IsoObjectPicker.Instance:PickWindow(mx, my)
     if obj then return obj end
-    pcall(function() obj = IsoObjectPicker.Instance:PickWindowFrame(mx, my) end)
+    obj = IsoObjectPicker.Instance:PickWindowFrame(mx, my)
     if obj then return obj end
-    pcall(function() obj = IsoObjectPicker.Instance:PickHoppable(mx, my) end)
+    obj = IsoObjectPicker.Instance:PickHoppable(mx, my)
     if obj then return obj end
     -- floors have no engine picker: resolve the square under the mouse on
     -- the player's level and use its floor object (the stamp check in the
     -- caller keeps unstamped map floors silent)
-    pcall(function()
-        local p = getPlayer()
-        if not p then return end
+    local p = getPlayer()
+    if p then
         local z = math.floor(p:getZ())
         local wx = math.floor(screenToIsoX(0, mx, my, z))
         local wy = math.floor(screenToIsoY(0, mx, my, z))
         local sq = getCell():getGridSquare(wx, wy, z)
         if sq then obj = sq:getFloor() end
-    end)
+    end
     return obj
 end
 
@@ -133,17 +131,13 @@ function AegisConstructionOverlay:render()
         self.freshUntil = now + 500
         self.card = nil
         local raw = nil
-        pcall(function()
-            if obj:hasModData() then raw = obj:getModData().aegisBuild or obj:getModData().aegisBau end
-        end)
+        if obj:hasModData() then raw = obj:getModData().aegisBuild or obj:getModData().aegisBau end
         if type(raw) == "string" then
             local name, epoch = raw:match("^([^|]+)|(%d+)$")
             if name then
                 local sprite = nil
-                pcall(function()
-                    local spr = obj:getSprite()
-                    if spr then sprite = spr:getName() end
-                end)
+                local spr = obj:getSprite()
+                if spr then sprite = spr:getName() end
                 self.card = {
                     name = name,
                     time = AegisShared.timestampReadable(tonumber(epoch) or 0),
@@ -159,7 +153,7 @@ function AegisConstructionOverlay:render()
 end
 
 -- ---------- restore ghost preview ----------
--- user wish 25.7.: before rebuilding, show WHAT stood there as a ghost
+--: before rebuilding, show WHAT stood there as a ghost
 -- in the world instead of only a sprite name in a text confirm. The
 -- fullscreen layer stays click-through and only draws; the card at the
 -- bottom is its own small panel and carries the actual buttons, so the
@@ -216,10 +210,10 @@ function AegisRestorePreview.start(row)
     layer.pieces = pieces
     layer:initialise()
     layer:addToUIManager()
-    pcall(function() layer.javaObject:setConsumeMouseEvents(false) end)
+    layer.javaObject:setConsumeMouseEvents(false)
     AegisRestorePreview.layer = layer
     -- same pattern as the build brush: the panel steps aside so the
-    -- ghost is actually visible, stop() brings it back
+    -- ghost is actually visible, stop brings it back
     if AegisWindow.instance then AegisWindow.instance:setVisible(false) end
 
     -- top left by default so the ghost in the world stays clear, and the
@@ -286,14 +280,12 @@ function PreviewCard:prerender()
     -- live distance so the admin sees right away whether the ghost can
     -- even be on screen or a jump is needed first
     local where = self.row.x .. "," .. self.row.y .. "," .. self.row.z
-    pcall(function()
-        local p = getPlayer()
-        if p then
-            local dx, dy = p:getX() - self.row.x, p:getY() - self.row.y
-            local d = math.floor(math.sqrt(dx * dx + dy * dy))
-            where = where .. "  (" .. d .. "m)"
-        end
-    end)
+    local p = getPlayer()
+    if p then
+        local dx, dy = p:getX() - self.row.x, p:getY() - self.row.y
+        local d = math.floor(math.sqrt(dx * dx + dy * dy))
+        where = where .. "  (" .. d .. "m)"
+    end
     Aegis.textRight(self, where, self.width - 16, 16, f, c.goldDim)
     Aegis.text(self, getText("UI_Aegis_ClPreviewHint"), 16, 14 + Aegis.fontH(UIFont.Medium) + 6, f, c.muted)
 end

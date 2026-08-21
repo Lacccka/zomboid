@@ -276,35 +276,27 @@ function AegisPagePlayers:fillList()
     end
 end
 
--- a full user catalog pass is expensive (several pcall field reads per
--- user); the result is cached within one fillList pass (repeated calls
--- read the same build), but fillList itself drops the cache on every
--- pass, otherwise the offline view lags behind online changes
+-- a full user catalog pass is cached within one fillList pass (repeated
+-- calls read the same build), but fillList itself drops the cache on
+-- every pass, otherwise the offline view lags behind online changes
 function AegisPagePlayers:offlineUsers()
     if self.offlineCache then return self.offlineCache end
     local list = {}
-    local ok, users = pcall(getUsers)
-    if ok and users then
+    local users = getUsers()
+    if users then
         for i = 0, users:size() - 1 do
             local u = users:get(i)
-            local name = nil
-            pcall(function() name = u:getUsername() end)
-            local online = true
-            pcall(function() online = u:isOnline() end)
+            local name = u:getUsername()
+            local online = u:isOnline()
             if name and not online then
-                local display = name
-                pcall(function() display = u:getDisplayName() end)
+                local display = u:getDisplayName()
                 if not display or display == "" then display = name end
-                local lastConn = nil
-                pcall(function() lastConn = u:getLastConnection() end)
+                local lastConn = u:getLastConnection()
                 -- a vanilla ban is already visible client side here
                 -- (NetworkUser role "banned"); the Aegis ban list is
                 -- known only to the server, see banStatus
-                local vanillaBanned = false
-                pcall(function()
-                    local r = u:getRole()
-                    vanillaBanned = r ~= nil and r:getName() == "banned"
-                end)
+                local r = u:getRole()
+                local vanillaBanned = r ~= nil and r:getName() == "banned"
                 table.insert(list, {
                     username = name, displayName = display, avatar = nil,
                     online = false, lastConnection = lastConn, vanillaBanned = vanillaBanned,
@@ -320,7 +312,7 @@ function AegisPagePlayers.onToggleOffline(self)
     self.showOffline = not self.showOffline
     self.offlineCache = nil
     if self.showOffline and isClient() then
-        pcall(requestUsers)
+        requestUsers()
     end
     self:fillList()
 end
@@ -386,12 +378,10 @@ function AegisPagePlayers:select(data)
         end
     end
     if self.selectedObj then
-        pcall(function()
-            self.model:setState("idle")
-            self.model:setDirection(IsoDirections.S)
-            self.model:setIsometric(false)
-            self.model:setCharacter(self.selectedObj)
-        end)
+        self.model:setState("idle")
+        self.model:setDirection(IsoDirections.S)
+        self.model:setIsometric(false)
+        self.model:setCharacter(self.selectedObj)
         self.model:setVisible(true)
     else
         self.model:setVisible(false)
@@ -547,14 +537,16 @@ function AegisPagePlayers.on_carry(self)
     local target = self.selected.displayName or self.selected.username
     local prompt = AegisPrompt.show{
         title = getText("UI_Aegis_CarryWeight"),
-        message = getText("UI_Aegis_CarryWeightPrompt", target),
+        message = getText("UI_Aegis_CarryWeightPrompt", target) .. " " .. getText("UI_Aegis_CarryWeightHint"),
         confirmLabel = getText("UI_Aegis_Apply"),
         reasonRequired = true,
         target = self,
         onConfirm = function(page, textValue)
             local value = tonumber(textValue)
             if not value then return end
-            value = math.floor(math.max(5, math.min(1000, value)))
+            value = math.floor(value)
+            -- 0 restores the game default, everything else clamps to range
+            if value ~= 0 then value = math.max(5, math.min(1000, value)) end
             local args = { value = value }
             if isClient() then
                 args.id = -1
@@ -598,17 +590,13 @@ end
 function AegisPagePlayers.on_repair(self)
     local p = getPlayer()
     if not p then return end
-    pcall(function()
-        local items = p:getInventory():getItems()
-        for i = 0, items:size() - 1 do
-            local it = items:get(i)
-            pcall(function()
-                if it:getCondition() < it:getConditionMax() then
-                    it:setCondition(it:getConditionMax())
-                end
-            end)
+    local items = p:getInventory():getItems()
+    for i = 0, items:size() - 1 do
+        local it = items:get(i)
+        if it:getCondition() < it:getConditionMax() then
+            it:setCondition(it:getConditionMax())
         end
-    end)
+    end
     Aegis.logAction("players", "Own gear repaired")
     Aegis.showToast(getText("UI_Aegis_Repair"))
 end

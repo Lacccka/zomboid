@@ -439,8 +439,8 @@ end
 -- throttle|locked|nokey|format|sig|expired|idtaken|playerbound|used|error
 function AegisBoost.redeem(player, code)
     -- the sender is always the player object, never anything from args
-    local ok, name = pcall(function() return player:getUsername() end)
-    if not ok or not nameOk(name) then return false, "error" end
+    local name = player and player:getUsername()
+    if not nameOk(name) then return false, "error" end
     local pass, why = gate(name)
     if not pass then return false, why end
     loadKey()
@@ -519,8 +519,8 @@ local function toClient(player, module, command, args)
 end
 
 local function senderName(player)
-    local ok, name = pcall(function() return player:getUsername() end)
-    if ok and nameOk(name) then return name end
+    local name = player and player:getUsername()
+    if nameOk(name) then return name end
     return nil
 end
 
@@ -538,24 +538,18 @@ local function findOnline(name)
         -- solo runs both sides in one process, the workshop player is the
         -- only possible target
         local p = getPlayer()
-        local ok, u = pcall(function() return p and p:getUsername() end)
-        if ok and u == name then return p end
+        local u = p and p:getUsername()
+        if u == name then return p end
         return nil
     end
-    local found = nil
-    pcall(function()
-        local players = getOnlinePlayers()
-        if not players then return end
-        for i = 0, players:size() - 1 do
-            local p = players:get(i)
-            local u = p and p:getUsername()
-            if u == name then
-                found = p
-                return
-            end
-        end
-    end)
-    return found
+    local players = getOnlinePlayers()
+    if not players then return nil end
+    for i = 0, players:size() - 1 do
+        local p = players:get(i)
+        local u = p and p:getUsername()
+        if u == name then return p end
+    end
+    return nil
 end
 
 -- the secret itself never goes out, only whether one is configured

@@ -128,11 +128,8 @@ end
 -- yardstick as the rest of Aegis (levelIsAdmin resolves custom ranks
 -- through the role registry instead of trusting the raw level string)
 local function isAdminChar(c)
-    local ok, res = pcall(function()
-        local level = tostring(c:getAccessLevel() or ""):lower()
-        return AegisShared.levelIsAdmin(level)
-    end)
-    return ok and res == true
+    local level = tostring(c:getAccessLevel() or ""):lower()
+    return AegisShared.levelIsAdmin(level) == true
 end
 
 -- ---------- minute samplers ----------
@@ -222,8 +219,7 @@ local function minuteTick()
     local players = nil
     pcall(function() players = getOnlinePlayers() end)
     if players then
-        local n = 0
-        pcall(function() n = players:size() end)
+        local n = players:size()
         for i = 0, n - 1 do
             pcall(function()
                 local p = players:get(i)
@@ -243,14 +239,10 @@ Events.EveryOneMinute.Add(minuteTick)
 local lastDeath = {}
 
 local function onCharacterDeath(c)
-    local isPlayer = false
-    pcall(function()
-        isPlayer = c ~= nil and not c:isZombie() and not c:isAnimal()
-            and instanceof(c, "IsoPlayer")
-    end)
+    local isPlayer = c ~= nil and not c:isZombie() and not c:isAnimal()
+        and instanceof(c, "IsoPlayer")
     if not isPlayer then return end
-    local name
-    pcall(function() name = c:getUsername() end)
+    local name = c:getUsername()
     if not nameOk(name) then return end
     if isAdminChar(c) and not AegisShared.featureOn("PlayerStatsForAdmins") then return end
     local now = AegisShared.realTime()
@@ -258,9 +250,8 @@ local function onCharacterDeath(c)
     lastDeath[name] = now
     local e = entry(name)
     e.deaths = e.deaths + 1
-    local hours, kills = 0, 0
-    pcall(function() hours = tonumber(c:getHoursSurvived()) or 0 end)
-    pcall(function() kills = tonumber(c:getZombieKills()) or 0 end)
+    local hours = tonumber(c:getHoursSurvived()) or 0
+    local kills = tonumber(c:getZombieKills()) or 0
     -- close out the kill ledger of this life before the counter resets;
     -- with no earlier sample the tail stays uncounted on purpose, an
     -- unknown base could double count a previous session
@@ -288,10 +279,7 @@ Events.OnCharacterDeath.Add(onCharacterDeath)
 -- scan: the workshop id string differs between installs while the
 -- globals load with the mod wherever this file runs
 local function banditsActive()
-    local ok, res = pcall(function()
-        return BanditServer ~= nil or BanditBrain ~= nil
-    end)
-    return ok and res == true
+    return BanditServer ~= nil or BanditBrain ~= nil
 end
 
 local banditBudget = {}
@@ -416,8 +404,8 @@ end
 local Commands = {}
 
 Commands.banditKill = function(player, args)
-    local ok, name = pcall(function() return player:getUsername() end)
-    if not ok or not nameOk(name) then return end
+    local name = player:getUsername()
+    if not nameOk(name) then return end
     if not banditsActive() then return end
     if not banditAllowed(name) then return end
     AegisPlayerStats.addBandit(name)
@@ -437,7 +425,7 @@ Commands.statsReset = function(player, args)
         bestHours = true, bestKills = true, bandits = true, pvp = true }
     if not FIELDS[field] then return end
     load()
-    local admin = pcall(function() return player:getUsername() end) and player:getUsername() or "?"
+    local admin = player:getUsername() or "?"
     local touched = 0
     for user, e in pairs(stats) do
         if who == nil or user == who then

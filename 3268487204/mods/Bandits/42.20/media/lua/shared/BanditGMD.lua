@@ -18,13 +18,6 @@ local function initBanditModData(isNewGame)
     if isClient() then
         ModData.request("Bandit")
     end
-
-    -- if not globalData.Queue then globalData.Queue = {} end
-    
-    -- uncomment these to reset all bandits on server restart
-    -- if isServer() then
-    --    globalData.Queue = {}
-    -- end
     
     if not globalData.Scenes then globalData.Scenes = {} end
     if not globalData.Bandits then globalData.Bandits = {} end
@@ -114,7 +107,7 @@ local function everyTenMinutes()
         for _, _ in pairs(globalData) do
             cnt = cnt + 1
         end
-        print ("[GMD] Cluster " .. i .. " is " .. cnt .. " long.")
+        -- print ("[GMD] Cluster " .. i .. " is " .. cnt .. " long.")
     end
 end
 

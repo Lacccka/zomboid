@@ -31,10 +31,8 @@ local function displayName(fullType)
     local name = nil
     pcall(function() name = getItemNameFromFullType(fullType) end)
     if type(name) == "string" and name ~= "" then return name end
-    pcall(function()
-        local script = getScriptManager():FindItem(fullType)
-        if script then name = script:getDisplayName() end
-    end)
+    local script = getScriptManager():FindItem(fullType)
+    if script then name = script:getDisplayName() end
     if type(name) == "string" and name ~= "" then return name end
     return fullType:match("%.(.+)$") or fullType
 end

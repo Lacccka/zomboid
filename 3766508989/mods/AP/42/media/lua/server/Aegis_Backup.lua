@@ -50,28 +50,21 @@ local function zoneKey(hx, hy)
 end
 
 local function findSafehouse(x, y)
-    local found = nil
-    pcall(function()
-        local list = SafeHouse.getSafehouseList()
-        for i = 0, list:size() - 1 do
-            local sh = list:get(i)
-            if sh:getX() == x and sh:getY() == y then
-                found = sh
-                return
-            end
+    local list = SafeHouse.getSafehouseList()
+    for i = 0, list:size() - 1 do
+        local sh = list:get(i)
+        if sh:getX() == x and sh:getY() == y then
+            return sh
         end
-    end)
-    return found
+    end
+    return nil
 end
 
 local function zoneTitle(hx, hy)
     local sh = findSafehouse(hx, hy)
     if not sh then return nil end
-    local title = ""
-    pcall(function()
-        title = sh:getTitle() or ""
-        if title == "" then title = sh:getOwner() or "" end
-    end)
+    local title = sh:getTitle() or ""
+    if title == "" then title = sh:getOwner() or "" end
     return title ~= "" and title or nil
 end
 
@@ -151,23 +144,16 @@ end
 
 -- ---------- save: object to line ----------
 local function spriteOf(obj)
-    local name = ""
-    pcall(function() name = obj:getSpriteName() or "" end)
-    return name
+    return obj:getSpriteName() or ""
 end
 
 local function northOf(obj)
     -- IsoObject has no getNorth, only doors, windows, window frames and
-    -- thumpables do; calling it on anything else throws through pcall
-    local hasNorth = false
-    pcall(function()
-        hasNorth = instanceof(obj, "IsoDoor") or instanceof(obj, "IsoWindow")
-            or instanceof(obj, "IsoWindowFrame") or instanceof(obj, "IsoThumpable")
-    end)
+    -- thumpables do
+    local hasNorth = instanceof(obj, "IsoDoor") or instanceof(obj, "IsoWindow")
+        or instanceof(obj, "IsoWindowFrame") or instanceof(obj, "IsoThumpable")
     if not hasNorth then return false end
-    local north = false
-    pcall(function() north = obj:getNorth() == true end)
-    return north
+    return obj:getNorth() == true
 end
 
 local itemLines
@@ -176,9 +162,9 @@ itemLines = function(lines, cont, depth)
     for i = 0, items:size() - 1 do
         local it = items:get(i)
         if it then
-            local cond, condMax, uses, floatUses = "", "", "", ""
-            pcall(function() cond = intStr(it:getCondition()) end)
-            pcall(function() condMax = intStr(it:getConditionMax()) end)
+            local cond = intStr(it:getCondition())
+            local condMax = intStr(it:getConditionMax())
+            local uses, floatUses = "", ""
             pcall(function() uses = intStr(it:getCurrentUses()) end)
             if instanceof(it, "DrainableComboItem") then
                 pcall(function() floatUses = floatStr(it:getCurrentUsesFloat()) end)
@@ -186,8 +172,7 @@ itemLines = function(lines, cont, depth)
             table.insert(lines, "I|" .. depth .. "|" .. esc(it:getFullType())
                 .. "|" .. cond .. "|" .. condMax .. "|" .. uses .. "|" .. floatUses)
             if depth < 3 and instanceof(it, "InventoryContainer") then
-                local inner = nil
-                pcall(function() inner = it:getInventory() end)
+                local inner = it:getInventory()
                 if inner then itemLines(lines, inner, depth + 1) end
             end
         end
@@ -195,93 +180,71 @@ itemLines = function(lines, cont, depth)
 end
 
 local function saveContainers(lines, obj)
-    local count = 0
-    pcall(function() count = obj:getContainerCount() end)
-    for ci = 0, count - 1 do
-        local cont = nil
-        pcall(function() cont = obj:getContainerByIndex(ci) end)
+    for ci = 0, obj:getContainerCount() - 1 do
+        local cont = obj:getContainerByIndex(ci)
         if cont then
-            local type, explored = "", false
-            pcall(function() type = cont:getType() or "" end)
-            pcall(function() explored = cont:isExplored() end)
+            local type = cont:getType() or ""
+            local explored = cont:isExplored()
             table.insert(lines, "C|" .. ci .. "|" .. esc(type) .. "||" .. b01(explored))
-            pcall(itemLines, lines, cont, 0)
+            itemLines(lines, cont, 0)
         end
     end
 end
 
 local function saveModData(lines, obj)
-    local has = false
-    pcall(function() has = obj:hasModData() end)
-    if not has then return end
-    pcall(function()
-        for k, v in pairs(obj:getModData()) do
-            local t = type(v)
-            if type(k) == "string" then
-                if t == "string" then
-                    table.insert(lines, "M|" .. esc(k) .. "|s|" .. esc(v))
-                elseif t == "number" then
-                    table.insert(lines, "M|" .. esc(k) .. "|n|" .. floatStr(v))
-                elseif t == "boolean" then
-                    table.insert(lines, "M|" .. esc(k) .. "|b|" .. b01(v))
-                end
+    if not obj:hasModData() then return end
+    for k, v in pairs(obj:getModData()) do
+        local t = type(v)
+        if type(k) == "string" then
+            if t == "string" then
+                table.insert(lines, "M|" .. esc(k) .. "|s|" .. esc(v))
+            elseif t == "number" then
+                table.insert(lines, "M|" .. esc(k) .. "|n|" .. floatStr(v))
+            elseif t == "boolean" then
+                table.insert(lines, "M|" .. esc(k) .. "|b|" .. b01(v))
             end
         end
-    end)
+    end
 end
 
 local function saveBarricades(lines, obj)
     local function one(b, side)
         if not b then return end
-        local type, planks, hp = "plank", 0, 0
-        pcall(function()
-            if b:isMetal() then
-                type = "metal"
-            elseif b:isMetalBar() then
-                type = "metalbar"
-            end
-            planks = b:getNumPlanks()
-            hp = b:getHealth()
-        end)
-        table.insert(lines, "B|" .. side .. "|" .. type .. "|" .. intStr(planks) .. "|" .. intStr(hp))
+        local type = "plank"
+        if b:isMetal() then
+            type = "metal"
+        elseif b:isMetalBar() then
+            type = "metalbar"
+        end
+        table.insert(lines, "B|" .. side .. "|" .. type .. "|" .. intStr(b:getNumPlanks()) .. "|" .. intStr(b:getHealth()))
     end
-    pcall(function() one(obj:getBarricadeOnSameSquare(), "same") end)
-    pcall(function() one(obj:getBarricadeOnOppositeSquare(), "opp") end)
+    one(obj:getBarricadeOnSameSquare(), "same")
+    one(obj:getBarricadeOnOppositeSquare(), "opp")
 end
 
 -- fields exactly as in the vanilla serializer saveThumpableParameters
 local function thumpLine(idx, obj)
-    local name, hp, maxhp, sound = "", 0, 0, ""
-    pcall(function()
-        name = obj:getName() or ""
-        hp = obj:getHealth()
-        maxhp = obj:getMaxHealth()
-        sound = obj:getThumpSound() or ""
-    end)
-    local padlock = false
-    pcall(function() padlock = obj:canBeLockByPadlock() end)
+    local name = obj:getName() or ""
+    local hp = obj:getHealth()
+    local maxhp = obj:getMaxHealth()
+    local sound = obj:getThumpSound() or ""
+    local padlock = obj:canBeLockByPadlock()
     local keyId, code = "", ""
-    pcall(function()
-        if obj:isLockedByPadlock() and obj:getKeyId() ~= -1 then keyId = intStr(obj:getKeyId()) end
-        if obj:getLockedByCode() > 0 then code = intStr(obj:getLockedByCode()) end
-    end)
+    if obj:isLockedByPadlock() and obj:getKeyId() ~= -1 then keyId = intStr(obj:getKeyId()) end
+    if obj:getLockedByCode() > 0 then code = intStr(obj:getLockedByCode()) end
     local r, g, b, a = "", "", "", ""
-    pcall(function()
-        local color = obj:getCustomColor()
-        if color then
-            r, g, b, a = floatStr(color:getR()), floatStr(color:getG()), floatStr(color:getB()), floatStr(color:getA())
-        end
-    end)
+    local color = obj:getCustomColor()
+    if color then
+        r, g, b, a = floatStr(color:getR()), floatStr(color:getG()), floatStr(color:getB()), floatStr(color:getA())
+    end
     local lr, lx, ly, ll, lf = "", "", "", "", ""
-    pcall(function()
-        if obj:getLightSourceRadius() > 0 then
-            lr = intStr(obj:getLightSourceRadius())
-            lx = intStr(obj:getLightSourceXOffset())
-            ly = intStr(obj:getLightSourceYOffset())
-            ll = floatStr(obj:getLifeLeft())
-            lf = esc(obj:getLightSourceFuel() or "")
-        end
-    end)
+    if obj:getLightSourceRadius() > 0 then
+        lr = intStr(obj:getLightSourceRadius())
+        lx = intStr(obj:getLightSourceXOffset())
+        ly = intStr(obj:getLightSourceYOffset())
+        ll = floatStr(obj:getLifeLeft())
+        lf = esc(obj:getLightSourceFuel() or "")
+    end
     return "T|" .. idx .. "|" .. esc(spriteOf(obj)) .. "|" .. b01(northOf(obj)) .. "|" .. esc(name)
         .. "|" .. intStr(hp) .. "|" .. intStr(maxhp) .. "|" .. esc(sound) .. "|" .. b01(padlock)
         .. "|" .. keyId .. "|" .. code .. "|" .. r .. "|" .. g .. "|" .. b .. "|" .. a
@@ -289,28 +252,22 @@ local function thumpLine(idx, obj)
 end
 
 local function doorLine(idx, obj)
-    local open, locked, byKey, keyId, hp, maxhp = false, false, false, -1, 0, 0
-    pcall(function()
-        open = obj:IsOpen()
-        locked = obj:isLocked()
-        byKey = obj:isLockedByKey()
-        keyId = obj:getKeyId()
-        hp = obj:getHealth()
-        maxhp = obj:getMaxHealth()
-    end)
+    local open = obj:IsOpen()
+    local locked = obj:isLocked()
+    local byKey = obj:isLockedByKey()
+    local keyId = obj:getKeyId()
+    local hp = obj:getHealth()
+    local maxhp = obj:getMaxHealth()
     return "D|" .. idx .. "|" .. esc(spriteOf(obj)) .. "|" .. b01(northOf(obj)) .. "|" .. b01(open)
         .. "|" .. b01(locked) .. "|" .. b01(byKey) .. "|" .. intStr(keyId) .. "|" .. intStr(hp) .. "|" .. intStr(maxhp)
 end
 
 local function windowLine(idx, obj)
-    local smashed, glass, perma, locked, open = false, false, false, false, false
-    pcall(function()
-        smashed = obj:isSmashed()
-        glass = obj:isGlassRemoved()
-        perma = obj:isPermaLocked()
-        locked = obj:isLocked()
-        open = obj:IsOpen()
-    end)
+    local smashed = obj:isSmashed()
+    local glass = obj:isGlassRemoved()
+    local perma = obj:isPermaLocked()
+    local locked = obj:isLocked()
+    local open = obj:IsOpen()
     return "W|" .. idx .. "|" .. esc(spriteOf(obj)) .. "|" .. b01(northOf(obj)) .. "|" .. b01(smashed)
         .. "|" .. b01(glass) .. "|" .. b01(perma) .. "|" .. b01(locked) .. "|" .. b01(open)
 end
@@ -379,14 +336,14 @@ local function buildObject(cell, sq, e)
     if e.kind == "T" then
         obj = IsoThumpable.new(cell, sq, sprite, north, {})
         local name = unesc(f[5] or "")
-        if name ~= "" then pcall(function() obj:setName(name) end) end
+        if name ~= "" then obj:setName(name) end
         pcall(function()
             obj:setMaxHealth(tonumber(f[7]) or 100)
             obj:setHealth(tonumber(f[6]) or 100)
         end)
         local sound = unesc(f[8] or "")
-        if sound ~= "" then pcall(function() obj:setThumpSound(sound) end) end
-        if f[9] == "1" then pcall(function() obj:setCanBeLockByPadlock(true) end) end
+        if sound ~= "" then obj:setThumpSound(sound) end
+        if f[9] == "1" then obj:setCanBeLockByPadlock(true) end
         if f[10] ~= "" and tonumber(f[10]) then
             pcall(function()
                 obj:setLockedByPadlock(true)
@@ -417,9 +374,9 @@ local function buildObject(cell, sq, e)
             obj:setLockedByKey(f[7] == "1")
         end)
         local keyId = tonumber(f[8])
-        if keyId and keyId >= 0 then pcall(function() obj:setKeyId(keyId) end) end
+        if keyId and keyId >= 0 then obj:setKeyId(keyId) end
         local hp = tonumber(f[9])
-        if hp then pcall(function() obj:setHealth(hp) end) end
+        if hp then obj:setHealth(hp) end
     elseif e.kind == "W" then
         obj = IsoWindow.new(cell, sq, getSprite(sprite), north)
         pcall(function()
@@ -663,7 +620,7 @@ local function restoreSquare(job, block)
             end
         end
     end
-    pcall(function() sq:RecalcProperties() end)
+    sq:RecalcProperties()
     job.tiles = job.tiles + 1
 end
 

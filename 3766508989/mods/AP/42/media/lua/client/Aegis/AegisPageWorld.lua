@@ -216,7 +216,7 @@ end
 
 function AegisPageWorld:onShow()
     if isClient() then
-        pcall(function() getClimateManager():transmitRequestAdminVars() end)
+        getClimateManager():transmitRequestAdminVars()
     end
 end
 
@@ -864,14 +864,12 @@ function AegisPageWorld:prerender()
     local sy = self.eventsBottom + 12
     local sh = 74
     Aegis.roundFrame(self, ex, sy, self.colW, sh, 10, 1, c.line, c.panel)
-    local okw, running, progress = pcall(function()
-        local wp = getClimateManager():getWeatherPeriod()
-        if wp and wp:isRunning() then
-            return true, wp:getTotalProgress()
-        end
-        return false, 0
-    end)
-    if okw and running then
+    local running, progress = false, 0
+    local wp = getClimateManager():getWeatherPeriod()
+    if wp and wp:isRunning() then
+        running, progress = true, wp:getTotalProgress()
+    end
+    if running then
         Aegis.text(self, getText("UI_Aegis_WeatherRunning"), ex + 14, sy + 12, UIFont.Small, c.text)
         local barW = self.colW - 28
         Aegis.roundRect(self, ex + 14, sy + 42, barW, 6, 3, 1, c.line)

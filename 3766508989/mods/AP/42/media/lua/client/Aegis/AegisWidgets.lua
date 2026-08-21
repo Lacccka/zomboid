@@ -578,9 +578,7 @@ end
 AegisTimePicker = ISPanel:derive("AegisTimePicker")
 
 local function clock24()
-    local h24 = true
-    pcall(function() h24 = getCore():getOptionClock24Hour() end)
-    return h24
+    return getCore():getOptionClock24Hour()
 end
 
 function AegisTimePicker.format(hour, minute)

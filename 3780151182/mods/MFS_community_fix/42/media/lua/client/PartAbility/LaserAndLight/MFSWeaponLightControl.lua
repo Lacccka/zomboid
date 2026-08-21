@@ -402,6 +402,18 @@ local function onKeyPressed(key)
     if key ~= core:getKey(Control.BIND) then
         return
     end
+
+    -- B42 bindings can carry a Shift/Ctrl/Alt modifier, and getKey() returns
+    -- only the bare key code - so without this a binding of Shift+F would fire
+    -- on a press of F alone. The engine does not filter for us; confirmed by
+    -- probe. See client/MFSKeyBindModifiers.lua for the full finding.
+    -- Falls through unchanged if the module is unavailable.
+    if MFSKeyBindModifiers and MFSKeyBindModifiers.satisfied then
+        if not MFSKeyBindModifiers.satisfied(Control.BIND) then
+            return
+        end
+    end
+
     toggleLight(getPlayer())
 end
 

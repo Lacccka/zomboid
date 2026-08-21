@@ -171,14 +171,13 @@ local Commands = {}
 -- trusted; args = {} arrives as nil
 Commands.deathReport = function(player, args)
     args = args or {}
-    local ok, name = pcall(function() return player:getUsername() end)
-    if not ok or type(name) ~= "string" or name == "" then return end
+    local name = player:getUsername()
+    if type(name) ~= "string" or name == "" then return end
     local now = AegisShared.realTime()
     if lastReport[name] and now - lastReport[name] < THROTTLE then return end
     lastReport[name] = now
     -- position: the server's own view wins, client numbers are the fallback
-    local x, y, z
-    pcall(function() x, y, z = player:getX(), player:getY(), player:getZ() end)
+    local x, y, z = player:getX(), player:getY(), player:getZ()
     x = x or tonumber(args.x)
     y = y or tonumber(args.y)
     z = z or tonumber(args.z) or 0
@@ -186,8 +185,7 @@ Commands.deathReport = function(player, args)
     -- sender is dead, or OnCharacterDeath already parked this death.
     -- Anything else waits in held until the death confirms, otherwise
     -- a living client could mint evidence files at will
-    local dead = false
-    pcall(function() dead = player:isDead() == true end)
+    local dead = player:isDead() == true
     if dead or pending[name] then
         writeReport(name, args, x, y, z)
     else
@@ -202,14 +200,10 @@ end
 -- The client report usually arrives seconds after this, so the minimal
 -- facts are parked and only written once no report showed up in time.
 local function onCharacterDeath(c)
-    local isPlayer = false
-    pcall(function()
-        isPlayer = c ~= nil and not c:isZombie() and not c:isAnimal()
-            and instanceof(c, "IsoPlayer")
-    end)
+    local isPlayer = c ~= nil and not c:isZombie() and not c:isAnimal()
+        and instanceof(c, "IsoPlayer")
     if not isPlayer then return end
-    local name
-    pcall(function() name = c:getUsername() end)
+    local name = c:getUsername()
     if type(name) ~= "string" or name == "" then return end
     local now = AegisShared.realTime()
     -- a held client report was waiting exactly for this confirmation
@@ -223,7 +217,7 @@ local function onCharacterDeath(c)
     if lastReport[name] and now - lastReport[name] < THROTTLE then return end
 
     local facts = { epoch = now }
-    pcall(function() facts.x, facts.y, facts.z = c:getX(), c:getY(), c:getZ() end)
+    facts.x, facts.y, facts.z = c:getX(), c:getY(), c:getZ()
     pcall(function()
         local sq = c:getCurrentSquare()
         if sq then
@@ -242,9 +236,9 @@ local function onCharacterDeath(c)
             end
         end
     end)
-    pcall(function() facts.onFire = c:isOnFire() end)
-    pcall(function() facts.hours = c:getHoursSurvived() end)
-    pcall(function() facts.kills = c:getZombieKills() end)
+    facts.onFire = c:isOnFire()
+    facts.hours = c:getHoursSurvived()
+    facts.kills = c:getZombieKills()
     -- neighbours now, at flush time they have long moved on
     facts.near = nearbyLines(facts.x, facts.y, name)
     pending[name] = facts
@@ -309,7 +303,7 @@ local function flushPending()
             end
         end)
         local dead = false
-        if p then pcall(function() dead = p:isDead() == true end) end
+        if p then dead = p:isDead() == true end
         if dead then
             held[name] = nil
             writeReport(name, h.args, h.x, h.y, h.z)

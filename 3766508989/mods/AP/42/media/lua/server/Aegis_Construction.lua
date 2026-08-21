@@ -35,25 +35,19 @@ end
 -- ---------- Stamp and journal ----------
 local function playerName(chr)
     if not chr or not instanceof(chr, "IsoPlayer") then return nil end
-    local name = nil
-    pcall(function() name = chr:getUsername() end)
+    local name = chr:getUsername()
     if type(name) == "string" and name ~= "" then return name end
     return nil
 end
 
 local function timestamp(obj, name)
-    pcall(function()
-        obj:getModData().aegisBuild = tostring(name):gsub("|", "_") .. "|" .. tostring(AegisShared.realTime())
-    end)
+    obj:getModData().aegisBuild = tostring(name):gsub("|", "_") .. "|" .. tostring(AegisShared.realTime())
 end
 
 local function spriteName(obj)
-    local name = nil
-    pcall(function()
-        local spr = obj:getSprite()
-        if spr then name = spr:getName() end
-    end)
-    return name
+    local spr = obj:getSprite()
+    if spr then return spr:getName() end
+    return nil
 end
 
 -- Line format: time|user|action|x,y,z|sprite|kind|north|parts
@@ -96,9 +90,7 @@ local function objectKind(obj)
     -- one as a plain object stacked one fake tile on top of the real
     -- remaining steps.
     -- Flag it so restore can refuse cleanly instead of faking a result
-    local isStairs = false
-    pcall(function() isStairs = obj:isStairsObject() == true end)
-    if isStairs then return "stairs" end
+    if obj:isStairsObject() then return "stairs" end
     -- garage doors are a LINKED CHAIN of IsoDoor pieces (engine statics
     -- getGarageDoorNext/Prev, destroyGarageDoor tears down the whole
     -- chain in one action); same problem as stairs, one tile came back
@@ -126,11 +118,8 @@ end
 -- throws a Java exception that travels THROUGH pcall and kills the whole
 -- action handler, so the type is checked first (live crash on a server)
 local function objectNorth(obj)
-    local hasNorth = false
-    pcall(function()
-        hasNorth = instanceof(obj, "IsoDoor") or instanceof(obj, "IsoWindow")
-            or instanceof(obj, "IsoWindowFrame") or instanceof(obj, "IsoThumpable")
-    end)
+    local hasNorth = instanceof(obj, "IsoDoor") or instanceof(obj, "IsoWindow")
+        or instanceof(obj, "IsoWindowFrame") or instanceof(obj, "IsoThumpable")
     if not hasNorth then return false end
     local north = false
     pcall(function() north = obj:getNorth() == true end)
@@ -138,8 +127,7 @@ local function objectNorth(obj)
 end
 
 local function journalObject(name, action, obj, sprite, kind)
-    local sq = nil
-    pcall(function() sq = obj:getSquare() end)
+    local sq = obj:getSquare()
     if not sq then return end
     journal(name, action, sq:getX(), sq:getY(), sq:getZ(), sprite or spriteName(obj),
         kind or objectKind(obj), objectNorth(obj))
@@ -166,8 +154,7 @@ local function structureParts(obj)
         if #list == 0 then return end
         local parts = {}
         for _, o in ipairs(list) do
-            local sq = nil
-            pcall(function() sq = o:getSquare() end)
+            local sq = o:getSquare()
             local spr = spriteName(o)
             if sq and spr then
                 local isFloor = false
@@ -269,8 +256,7 @@ end
 -- count so no unrelated object falls into the trap
 local function matchesTarget(obj, target)
     if not target then return false end
-    local sq = nil
-    pcall(function() sq = obj:getSquare() end)
+    local sq = obj:getSquare()
     if not sq then return false end
     return sq:getZ() == target:getZ()
         and math.abs(sq:getX() - target:getX()) <= 4
@@ -370,8 +356,7 @@ if not ISDestroyStuffAction.aegisBuild then
             -- pieces is still standing to be captured
             local group = structureParts(self.item)
             if group then
-                local sq = nil
-                pcall(function() sq = self.item:getSquare() end)
+                local sq = self.item:getSquare()
                 if sq then
                     journal(name, "abriss", sq:getX(), sq:getY(), sq:getZ(),
                         spriteName(self.item), group.kind, objectNorth(self.item),
@@ -396,8 +381,7 @@ end
 local function activity(chr, text)
     local name = playerName(chr)
     if not name then return end
-    local sq = nil
-    pcall(function() sq = chr:getSquare() end)
+    local sq = chr:getSquare()
     if sq then
         text = text .. " at " .. sq:getX() .. "," .. sq:getY() .. "," .. sq:getZ()
     end
@@ -408,14 +392,10 @@ end
 -- the admin sees everywhere else in the panel, the script name is the
 -- fallback so a modded vehicle without a translation still says something
 local function vehicleLabel(veh)
-    local label = nil
-    pcall(function()
-        local script = veh and veh:getScript()
-        if not script then return end
-        local key = script:getName()
-        label = getTextOrNull("IGUI_VehicleName" .. key) or key
-    end)
-    return label or "vehicle"
+    local script = veh and veh:getScript()
+    if not script then return "vehicle" end
+    local key = script:getName()
+    return getTextOrNull("IGUI_VehicleName" .. key) or key
 end
 
 if ISSmashWindow and not ISSmashWindow.aegisActivity then
@@ -431,10 +411,8 @@ if ISSmashWindow and not ISSmashWindow.aegisActivity then
             end
             -- name the car and the window, a bare coordinate did not say
             -- whose vehicle it was
-            local veh = nil
-            pcall(function() veh = self.vehiclePart:getVehicle() end)
-            local part = nil
-            pcall(function() part = self.vehiclePart:getId() end)
+            local veh = self.vehiclePart:getVehicle()
+            local part = self.vehiclePart:getId()
             local text = "Smashed the window of a " .. vehicleLabel(veh)
             if part and part ~= "" then text = text .. " (" .. tostring(part) .. ")" end
             activity(self.character, text)
@@ -483,10 +461,8 @@ end
 
 local function restoreWall(cell, sq, sprite, north, name)
     local obj = IsoThumpable.new(cell, sq, sprite, north, {})
-    pcall(function()
-        obj:setMaxHealth(400)
-        obj:setHealth(400)
-    end)
+    obj:setMaxHealth(400)
+    obj:setHealth(400)
     timestamp(obj, name)
     sq:AddSpecialObject(obj)
     if isServer() then pcall(function() obj:transmitCompleteItemToClients() end) end
@@ -513,7 +489,7 @@ end
 
 local function restoreWindow(cell, sq, sprite, north, name)
     local obj = IsoWindow.new(cell, sq, getSprite(sprite), north)
-    pcall(function() obj:setIsLocked(false) end)
+    obj:setIsLocked(false)
     timestamp(obj, name)
     sq:AddSpecialObject(obj)
     if isServer() then pcall(function() obj:transmitCompleteItemToClients() end) end
@@ -636,7 +612,7 @@ Commands.constructionRestore = function(player, args)
             timestamp(obj, name)
             pcall(function() obj:transmitModData() end)
         end
-        pcall(function() psq:RecalcProperties() end)
+        psq:RecalcProperties()
         return obj
     end
 

@@ -30,8 +30,7 @@ function ISWidgetHandCraftControl:prerender()
     if AegisCraftCheat and self.buttonCraft and self.logic then
         -- free the button, but never mid craft (the original disables it
         -- while the timed action runs, that stays)
-        local busy = false
-        pcall(function() busy = self.logic:isCraftActionInProgress() end)
+        local busy = self.logic:isCraftActionInProgress()
         if not busy then self.buttonCraft.enable = true end
     end
 end
@@ -41,20 +40,21 @@ local GROUPS = {
     {
         title = "UI_Aegis_GroupSurvival",
         powers = {
-            -- master switch for the red role tag above the head: the engine
-            -- only renders it while an admin power is active AND this flag
-            -- is on (calculateShowAdminTag, bytecode-verified); the flag
-            -- travels to every client via the same ExtraInfoPacket the
-            -- power sync already uses, so one click hides the tag for all
-            -- manual off is sticky: the pin in AegisTheme keeps the flag
-            -- down even when further powers get toggled, off never happens
-            -- by itself, only through this switch
+            -- master switch for the own head tag. The engine derives the
+            -- SENT tag bit from the active powers alone, this flag stays
+            -- local; hiding for everyone runs through the server hide
+            -- list and the guard in AegisRoleTag. The pin in AegisTheme
+            -- keeps the flag down between ticks, off never happens by
+            -- itself, only through this switch
             { key = "AdminTag", label = "UI_Aegis_PowerAdminTag", icon = "crown", cap = "ToggleWriteRoleNameAbove",
               get = function(p) return p:isShowAdminTag() end,
               set = function(p, v)
                   Aegis.tagManualOff = not v
                   Aegis.setPref("tagOff", v and "0" or "1")
                   p:setShowAdminTag(v)
+                  if isClient() then
+                      sendClientCommand(p, AegisShared.MODULE, "tagHide", { on = not v })
+                  end
               end },
             -- pure client visual, no engine capability involved (cap nil)
             { key = "NightVision", label = "UI_Aegis_PowerNightVision", icon = "fog",

@@ -31,8 +31,8 @@ local function cap(v, max)
 end
 
 local function username(player)
-    local ok, name = pcall(function() return player:getUsername() end)
-    if not ok or type(name) ~= "string" or name == "" then return nil end
+    local name = player and player:getUsername()
+    if type(name) ~= "string" or name == "" then return nil end
     return name
 end
 
@@ -71,10 +71,8 @@ AegisPlayerPanel = AegisPlayerPanel or {}
 -- Missing option means on, so existing servers keep what they had
 function AegisPlayerPanel.allowed()
     local on = true
-    pcall(function()
-        local v = SandboxVars and SandboxVars.AegisEvents and SandboxVars.AegisEvents.PlayerPanel
-        if v ~= nil then on = v == true end
-    end)
+    local v = SandboxVars and SandboxVars.AegisEvents and SandboxVars.AegisEvents.PlayerPanel
+    if v ~= nil then on = v == true end
     return on
 end
 
@@ -250,12 +248,10 @@ Commands.shInfoReq = function(player, args)
     -- neither read the flag nor find the object to set it
     local respawn, respawnAllowed = nil, false
     if rec then
-        pcall(function()
-            respawnAllowed = getServerOptions():getBoolean("SafehouseAllowRespawn") == true
-            if respawnAllowed then
-                respawn = rec.sh:isRespawnInSafehouse(name) == true
-            end
-        end)
+        respawnAllowed = getServerOptions():getBoolean("SafehouseAllowRespawn") == true
+        if respawnAllowed then
+            respawn = rec.sh:isRespawnInSafehouse(name) == true
+        end
     end
     toClient(player, "shInfoSync", {
         days = days, known = true,
@@ -304,8 +300,7 @@ Commands.sos = function(player, args)
     end
     lastSos[name] = now
     local text = cap(args and args.text or "", 200)
-    local x, y, z
-    pcall(function() x, y, z = player:getX(), player:getY(), player:getZ() end)
+    local x, y, z = player:getX(), player:getY(), player:getZ()
     -- toast for every online admin over the player module, the client
     -- listener shows it only when the receiver is an admin; solo has
     -- nobody else to notify

@@ -1,0 +1,7 @@
+name= MFS_BackpackSystem_fix
+author = WTigerTw
+id=MFS_BackpackSystem_fix
+poster=poster.png
+versionMin=42.15.1
+require=BackpackSystemB42
+

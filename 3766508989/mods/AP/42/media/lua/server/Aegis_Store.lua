@@ -57,7 +57,7 @@ end
 -- ensures file+folder exist WITHOUT touching existing content: getFileWriter
 -- in append mode creates the full folder path via mkdirs when needed
 -- and writes nothing (known safe, see AegisStore.append).
--- getFileReader in contrast calls File.createNewFile() internally and throws
+-- getFileReader in contrast calls File.createNewFile internally and throws
 -- a java.io.IOException "No such file or directory" when the parent folder
 -- was never created; this happens on EVERY first access to a fresh branch
 -- (new server, freshly renamed folder) and the engine logs it as a raw
@@ -98,11 +98,11 @@ function AegisStore.readLines(relPath, maxLines)
     return lines, truncated
 end
 
--- like readLines but WITHOUT ensureFile(): for pure probe reads on
+-- like readLines but WITHOUT ensureFile: for pure probe reads on
 -- paths that are intentionally absent (migrateIf checks the old
 -- deprecated path for legacy data; hitting a never-created folder
 -- must not create an empty shell there, nil comes back as before,
--- exactly like prior to the ensureFile() introduction)
+-- exactly like prior to the ensureFile introduction)
 function AegisStore.readLinesReadOnly(relPath, maxLines)
     if not pathOk(relPath) then return nil end
     maxLines = maxLines or 500
@@ -246,7 +246,7 @@ end
 Events.OnGameStart.Add(selfTest)
 Events.OnServerStarted.Add(selfTest)
 
--- one-time migration after the English folder rename (14 July 2026):
+-- one-time migration after the English folder rename:
 -- copies the content of a known file from the old German path to the
 -- new one if nothing is there yet. Kahlua cannot delete the old folder
 -- (see AegisStore.delete), it stays behind as an empty leftover,

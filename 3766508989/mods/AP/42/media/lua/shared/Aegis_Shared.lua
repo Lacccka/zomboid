@@ -125,17 +125,15 @@ end
 -- keep what they had
 function AegisShared.featureOn(name)
     local on = true
-    pcall(function()
-        local v = SandboxVars and SandboxVars.AegisEvents and SandboxVars.AegisEvents[name]
-        if v ~= nil then on = v == true end
-    end)
+    local v = SandboxVars and SandboxVars.AegisEvents and SandboxVars.AegisEvents[name]
+    if v ~= nil then on = v == true end
     return on
 end
 
 -- epoch seconds of the real clock, independent of game time
 function AegisShared.realTime()
-    local ok, t = pcall(getTimestamp)
-    if ok and type(t) == "number" and t > 0 then return t end
+    local t = getTimestamp()
+    if type(t) == "number" and t > 0 then return t end
     return 0
 end
 
@@ -296,12 +294,10 @@ function AegisShared.fullHeal(player)
         -- clear bite and wound infection flags too, RestoreToFullHealth
         -- leaves them set (vanilla cure precedent: ClientCommands.lua
         -- "bite" action clears exactly these three)
-        pcall(function()
-            part:SetBitten(false)
-            part:SetInfected(false)
-            part:SetFakeInfected(false)
-            part:setInfectedWound(false)
-        end)
+        part:SetBitten(false)
+        part:SetInfected(false)
+        part:SetFakeInfected(false)
+        part:setInfectedWound(false)
         if part:getStiffness() > 0 then
             part:setStiffness(0)
             player:getFitness():removeStiffnessValue(BodyPartType.ToString(part:getType()))
@@ -309,12 +305,10 @@ function AegisShared.fullHeal(player)
     end
     -- the systemic Knox infection is what actually kills: without this a
     -- bitten player kept zombifying after a full heal
-    pcall(function()
-        local bd = player:getBodyDamage()
-        bd:setInfected(false)
-        bd:setInfectionTime(-1)
-        bd:setInfectionMortalityDuration(-1)
-    end)
+    local bd = player:getBodyDamage()
+    bd:setInfected(false)
+    bd:setInfectionTime(-1)
+    bd:setInfectionMortalityDuration(-1)
 end
 
 -- vegetation detection like the vanilla sledgehammer guard (model:

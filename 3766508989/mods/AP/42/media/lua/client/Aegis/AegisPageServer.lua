@@ -122,7 +122,7 @@ function AegisPageServer:createChildren()
             page:setFeature(def.opt, checked)
         end)
         -- hover explains what the switch does, same texts the sandbox shows
-        pcall(function() t.tooltip = getTextOrNull(def.tip) end)
+        t.tooltip = getTextOrNull(def.tip)
         t:setChecked(AegisShared.featureOn(def.opt))
         self:addChild(t)
         self.featToggles[def.opt] = t
@@ -248,9 +248,7 @@ end
 -- current grid state from the live option computation
 function AegisPageServer:readGrids()
     if not self.powerToggle then return end
-    pcall(function()
-        self.powerToggle:setChecked(getSandboxOptions():doesPowerGridExist())
-    end)
+    self.powerToggle:setChecked(getSandboxOptions():doesPowerGridExist())
     pcall(function()
         local days = getWorld():getWorldAgeDays()
         local limit = getSandboxOptions():getOptionByName("WaterShutModifier"):getValue()
@@ -263,44 +261,36 @@ end
 -- in solo set directly plus toLua for the SandboxVars readers
 function AegisPageServer:setGrid(option, on)
     local value = on and 2147483647 or -1
-    local ok = pcall(function()
-        if isClient() then
-            local copy = SandboxOptions.new()
-            copy:copyValuesFrom(getSandboxOptions())
-            copy:set(option, value)
-            copy:sendToServer()
-        else
-            getSandboxOptions():set(option, value)
-            getSandboxOptions():toLua()
-        end
-    end)
-    if ok then
-        local grid = option == "ElecShutModifier" and "power grid" or "water grid"
-        Aegis.logAction("server", grid .. (on and " turned on" or " turned off"))
-        Aegis.showToast((option == "ElecShutModifier" and getText("UI_Aegis_PowerGrid") or getText("UI_Aegis_WaterGrid")))
+    if isClient() then
+        local copy = SandboxOptions.new()
+        copy:copyValuesFrom(getSandboxOptions())
+        copy:set(option, value)
+        copy:sendToServer()
+    else
+        getSandboxOptions():set(option, value)
+        getSandboxOptions():toLua()
     end
+    local grid = option == "ElecShutModifier" and "power grid" or "water grid"
+    Aegis.logAction("server", grid .. (on and " turned on" or " turned off"))
+    Aegis.showToast((option == "ElecShutModifier" and getText("UI_Aegis_PowerGrid") or getText("UI_Aegis_WaterGrid")))
 end
 
 -- feature switch through the same vanilla sandbox channel as the grids:
 -- the server persists and distributes, every client sees the new value
 function AegisPageServer:setFeature(option, on)
-    local ok = pcall(function()
-        if isClient() then
-            local copy = SandboxOptions.new()
-            copy:copyValuesFrom(getSandboxOptions())
-            copy:set("AegisEvents." .. option, on == true)
-            copy:sendToServer()
-        else
-            getSandboxOptions():set("AegisEvents." .. option, on == true)
-            getSandboxOptions():toLua()
-        end
-    end)
-    if ok then
-        -- hold the frame sync off until the server echoes the new value,
-        -- otherwise the toggle snaps back for the round trip
-        self.featHold = getTimestampMs() + 3000
-        Aegis.logAction("server", "Feature " .. option .. (on and " turned on" or " turned off"))
+    if isClient() then
+        local copy = SandboxOptions.new()
+        copy:copyValuesFrom(getSandboxOptions())
+        copy:set("AegisEvents." .. option, on == true)
+        copy:sendToServer()
+    else
+        getSandboxOptions():set("AegisEvents." .. option, on == true)
+        getSandboxOptions():toLua()
     end
+    -- hold the frame sync off until the server echoes the new value,
+    -- otherwise the toggle snaps back for the round trip
+    self.featHold = getTimestampMs() + 3000
+    Aegis.logAction("server", "Feature " .. option .. (on and " turned on" or " turned off"))
 end
 
 -- the LOCAL wall clock. The engine global getHourMinute() reads
@@ -310,10 +300,10 @@ end
 -- was off by the timezone: entering 00:11 restarted at 02:11 local. Falls back to the UTC parts if the global ever goes away
 local function localClock()
     local h, m = nil, nil
-    pcall(function()
+    if getHourMinute then
         local hh, mm = tostring(getHourMinute() or ""):match("(%d+)%D+(%d+)")
         h, m = tonumber(hh), tonumber(mm)
-    end)
+    end
     if h and m and h >= 0 and h <= 23 and m >= 0 and m <= 59 then
         return { hour = h, min = m }
     end
@@ -432,8 +422,8 @@ end
 -- ---------- director combos, all knobs from the sandbox ----------
 
 local function eventValue(name, default)
-    local ok, value = pcall(function() return SandboxVars.AegisEvents[name] end)
-    if ok and value ~= nil then return value end
+    local value = SandboxVars and SandboxVars.AegisEvents and SandboxVars.AegisEvents[name]
+    if value ~= nil then return value end
     return default
 end
 
@@ -443,7 +433,7 @@ function AegisPageServer.onStormShow(self)
     if isClient() then
         cm:transmitTriggerStorm(duration)
     else
-        pcall(function() cm:triggerCustomWeatherStage(WeatherPeriod.STAGE_STORM, duration) end)
+        cm:triggerCustomWeatherStage(WeatherPeriod.STAGE_STORM, duration)
     end
     pcall(function() AegisPageWorld.weatherKick("STAGE_STORM") end)
     -- thunder volley via own tick in update
@@ -489,7 +479,7 @@ function AegisPageServer.onHeliAlarm(self)
     if isClient() then
         SendCommandToServer("/chopper")
     else
-        pcall(function() testHelicopter() end)
+        testHelicopter()
     end
     local count = tonumber(eventValue("HeliCount", 15)) or 15
     if count > 0 then
@@ -510,7 +500,7 @@ function AegisPageServer.onAirdrop(self)
     if isClient() then
         SendCommandToServer("/chopper")
     else
-        pcall(function() testHelicopter() end)
+        testHelicopter()
     end
     sendClientCommand(p, AegisShared.MODULE, "horde", {
         x = math.floor(p:getX()), y = math.floor(p:getY()), z = math.floor(p:getZ()),
@@ -531,7 +521,7 @@ function AegisPageServer.onFirestorm(self)
     if isClient() then
         cm:transmitTriggerStorm(duration)
     else
-        pcall(function() cm:triggerCustomWeatherStage(WeatherPeriod.STAGE_STORM, duration) end)
+        cm:triggerCustomWeatherStage(WeatherPeriod.STAGE_STORM, duration)
     end
     pcall(function() AegisPageWorld.weatherKick("STAGE_STORM") end)
     self.thunderLeft = tonumber(eventValue("FirestormThunder", 4)) or 4

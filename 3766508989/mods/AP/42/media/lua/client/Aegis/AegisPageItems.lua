@@ -38,11 +38,9 @@ local VANILLA_MOD = "pz-vanilla"
 local function modLabel(id)
     if id == VANILLA_MOD then return "Project Zomboid" end
     local label = id
-    pcall(function()
-        local info = getModInfoByID(id)
-        local name = info and info:getName()
-        if name and name ~= "" then label = name end
-    end)
+    local info = getModInfoByID(id)
+    local name = info and info:getName()
+    if name and name ~= "" then label = name end
     return label
 end
 
@@ -57,8 +55,7 @@ function AegisPageItems:buildCache()
         local it = list:get(i)
         if not it:getObsolete() and not it:isHidden() then
             local cat = it:getDisplayCategory()
-            local mod = VANILLA_MOD
-            pcall(function() mod = it:getModID() or VANILLA_MOD end)
+            local mod = it:getModID() or VANILLA_MOD
             if not modNames[mod] then
                 modNames[mod] = modLabel(mod)
                 table.insert(mods, mod)

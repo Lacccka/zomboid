@@ -59,17 +59,13 @@ function AegisVehiclePlacer.start(vehicle)
     o.background = false
     o.vehicle = vehicle
     o.angle = 0
-    -- footprint and height from the physics extents, fallback compact car.
-    -- Only guard against degenerate values; generous minimums
-    -- (previously 0.8/1.6) painted the van footprint almost twice as
-    -- large as the vehicle itself
-    o.halfW, o.halfL, o.bodyHeight = 1.1, 2.4, 1.6
-    pcall(function()
-        local ext = vehicle.script:getExtents()
-        o.halfW = math.max(0.3, ext:x() / 2)
-        o.halfL = math.max(0.6, ext:z() / 2)
-        o.bodyHeight = math.max(0.5, ext:y())
-    end)
+    -- footprint and height from the physics extents. Only guard against
+    -- degenerate values; generous minimums (previously 0.8/1.6) painted
+    -- the van footprint almost twice as large as the vehicle itself
+    local ext = vehicle.script:getExtents()
+    o.halfW = math.max(0.3, ext:x() / 2)
+    o.halfL = math.max(0.6, ext:z() / 2)
+    o.bodyHeight = math.max(0.5, ext:y())
     o:initialise()
     o:addToUIManager()
     o:setAlwaysOnTop(true)
@@ -147,11 +143,8 @@ function AegisVehiclePlacer:render()
     -- With a cell-center anchor the vehicle stood half a tile off the
     -- preview. isoToScreenX/Y handle camera offset and zoom in one go
     local cx, cy = wx, wy
-    local anchorX, anchorY = getMouseX(), getMouseY()
-    pcall(function()
-        anchorX = isoToScreenX(0, cx, cy, z)
-        anchorY = isoToScreenY(0, cx, cy, z)
-    end)
+    local anchorX = isoToScreenX(0, cx, cy, z)
+    local anchorY = isoToScreenY(0, cx, cy, z)
 
     -- footprint corners rotated by the angle
     local rad = math.rad(self.angle)
@@ -237,6 +230,7 @@ function AegisVehiclePlacer:onMouseDown(x, y)
     sendClientCommand(getPlayer(), "AegisAdmin", "spawnvehicle", {
         script = self.vehicle.full, name = self.vehicle.display,
         x = wx, y = wy, z = z, angle = self.angle,
+        wear = AegisPageVehicles.wear,
     })
     self:finish()
 end
@@ -290,8 +284,7 @@ function AegisPageVehicles:buildCache()
         local name = string.lower(script:getName())
         if not string.contains(name, "burnt") and not string.contains(name, "smashed") then
             local display = getTextOrNull("IGUI_VehicleName" .. script:getName()) or script:getName()
-            local seats = 0
-            pcall(function() seats = script:getPassengerCount() end)
+            local seats = script:getPassengerCount()
             table.insert(self.vehicles, {
                 full = script:getFullName(),
                 display = display,
@@ -304,6 +297,15 @@ function AegisPageVehicles:buildCache()
     end
     table.sort(self.vehicles, function(a, b) return a.display < b.display end)
 end
+
+local WEAR_H = 28
+
+local WEAR_CHOICES = {
+    { key = "new",   label = "UI_Aegis_WearNew",   tip = "UI_Aegis_WearNewTip" },
+    { key = "used",  label = "UI_Aegis_WearUsed",  tip = "UI_Aegis_WearUsedTip" },
+    { key = "wreck", label = "UI_Aegis_WearWreck", tip = "UI_Aegis_WearWreckTip" },
+}
+AegisPageVehicles.wear = AegisPageVehicles.wear or "new"
 
 function AegisPageVehicles:createChildren()
     local pad = 20
@@ -346,7 +348,9 @@ function AegisPageVehicles:createChildren()
     local sw = self.width - sx - pad
     local by = self.height - pad - 50
     local hintH = Aegis.fontH(UIFont.Small)
-    local sceneBottom = by - hintH - 16
+    -- own row for the condition switch, above the hint line
+    local wearY = by - WEAR_H - 10
+    local sceneBottom = wearY - hintH - 14
     pcall(function()
         local scene = AegisVehicleScene:new(sx + 14, pad + 46, sw - 28, sceneBottom - (pad + 46))
         scene:initialise()
@@ -389,6 +393,21 @@ function AegisPageVehicles:createChildren()
     self.placeBtn.tooltip = getText("UI_Aegis_PlaceHint")
     self:addChild(self.placeBtn)
     self.hereBtn = AegisButton:new(sx + 14 + bw + 12, by, bw, 38, getText("UI_Aegis_SpawnHere"), "car", self, AegisPageVehicles.onSpawnHere)
+
+    -- condition of the next spawn, remembered for the session
+    local cw = math.floor((bw * 2 + 12 - 8) / 3)
+    self.wearBtns = {}
+    for i, def in ipairs(WEAR_CHOICES) do
+        local b = AegisButton:new(sx + 14 + (i - 1) * (cw + 4), wearY, cw, WEAR_H,
+            getText(def.label), nil, self, function(page)
+                AegisPageVehicles.wear = def.key
+                page:refreshWear()
+            end)
+        b.tooltip = getText(def.tip)
+        self:addChild(b)
+        table.insert(self.wearBtns, { btn = b, key = def.key })
+    end
+    self:refreshWear()
     self:addChild(self.hereBtn)
 
     self:applyFilter()
@@ -460,6 +479,13 @@ function AegisPageVehicles.onPlace(self)
     AegisVehiclePlacer.start(v)
 end
 
+-- highlights the chosen condition, the others stay quiet
+function AegisPageVehicles:refreshWear()
+    for _, e in ipairs(self.wearBtns or {}) do
+        e.btn.style = (e.key == AegisPageVehicles.wear) and "gold" or nil
+    end
+end
+
 function AegisPageVehicles.onSpawnHere(self)
     local v = self:selectedVehicle()
     if not v then return end
@@ -468,6 +494,7 @@ function AegisPageVehicles.onSpawnHere(self)
     sendClientCommand(p, "AegisAdmin", "spawnvehicle", {
         script = v.full, name = v.display,
         x = math.floor(p:getX()), y = math.floor(p:getY()), z = math.floor(p:getZ()), angle = 0,
+        wear = AegisPageVehicles.wear,
     })
 end
 
@@ -545,7 +572,7 @@ function AegisPageVehicles:prerender()
     end
     local hintH = Aegis.fontH(UIFont.Small)
     Aegis.textCentre(self, getText("UI_Aegis_SceneHint"), sx + math.floor(sw / 2),
-        self.height - pad - 50 - hintH - 8, UIFont.Small, c.muted)
+        self.height - pad - 50 - WEAR_H - 10 - hintH - 6, UIFont.Small, c.muted)
 end
 
 AegisWindow.registerPage({

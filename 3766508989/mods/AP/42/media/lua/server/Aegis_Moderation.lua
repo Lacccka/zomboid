@@ -201,8 +201,8 @@ local function findOnline(username)
     end
     -- solo: the local player is the whole server
     if not isServer() then
-        local ok, p = pcall(getPlayer)
-        if ok and p and p:getUsername() == username then return p end
+        local p = getPlayer()
+        if p and p:getUsername() == username then return p end
     end
     return nil
 end
@@ -542,10 +542,8 @@ Commands.giveItems = function(player, args)
                 -- exclude corpses: script:getTypeString() does not exist in
                 -- B42 (only on item instances, not on the script), the name
                 -- is the right way (e.g. "CorpseAnimal")
-                pcall(function()
-                    local name = script:getName()
-                    if name and name:find("Corpse") then typeOk = false end
-                end)
+                local name = script:getName()
+                if name and name:find("Corpse") then typeOk = false end
             end
             if typeOk then
                 local ok = pcall(function()
