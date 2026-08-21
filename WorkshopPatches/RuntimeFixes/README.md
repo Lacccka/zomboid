@@ -6,27 +6,21 @@ Validated NPC combat, terminal-death and corpse/clothing behavior now belongs to
 
 Validated against the repository snapshot at `3268487204/mods/Bandits/42.20` (`Mod ID: Bandits2`) and the B42.20 dedicated/client failures observed by this server project.
 
-## 1. Empty dedicated server wanderer scheduler
-
-Upstream `BanditServerWanderers.lua` derives `day` from a randomly selected online player in multiplayer. With zero online players, `day` remains nil and the later day-range comparison throws.
-
-LCC does not replace the scheduler. `zzz_LCC_BanditsEmptyServerWandererGuard.lua` wraps `BanditCustom.ClanGetAll()` and returns a fresh empty table only while the runtime is a multiplayer server with zero online players. The existing scheduler therefore performs an empty iteration for that tick. Normal clan data is returned unchanged as soon as a player is online.
-
-## 2. Squareless/despawned zombie lifecycle
+## 1. Squareless/despawned zombie lifecycle
 
 Upstream Bandits caches `IsoZombie` references and B42.20 MP can transiently deliver an object after its square is gone.
 
 `zzz_LCC_BanditsZombieCacheGuard.lua` uses two layers: an existing upstream early-return seam for squareless objects, then post-update/post-flush removal from Bandits caches.
 
-## 3. Farming actions
+## 2. Farming actions
 
 `zzz_LCC_BanditsFarmingGuard.lua` wraps only the affected callbacks and keeps upstream actions authoritative. Invalid/transient watering or stomp states complete cleanly instead of repeatedly throwing or leaving a stuck task.
 
-## 4. Dedicated `BanditZombie.GetInstanceById`
+## 3. Dedicated `BanditZombie.GetInstanceById`
 
 `zzz_LCC_BanditsDedicatedServerGuard.lua` maintains an O(1) registry containing only live Bandits rather than starting Bandits' disabled complete `getZombieList()` scan. Existing Bandit lifecycle seams register/purge references; stale entries are pruned safely.
 
-## 5. Legacy character-screen path
+## 4. Legacy character-screen path
 
 `client/ISUI/ISCharacterScreen.lua` is a tiny path shim redirecting the old module name to B42.20 `XpSystem/ISUI/ISCharacterScreen`. It contains no upstream character-screen source.
 
@@ -40,8 +34,6 @@ Do not add combat targeting, AttackState workarounds, terminal `Die` processing,
 
 Test with the original upstream mods and split patch items; `Bandits-LCC-Dev` must not be copied into the game for a stable regression test.
 
-- leave a dedicated server empty for multiple wanderer scheduler ticks; no nil-day comparison error;
-- join/leave/rejoin; normal clan data resumes with players present;
 - devirtualize populated areas; no squareless `getSquare()` crash or persistent stale Bandit cache growth;
 - exercise valid/invalid NPC farming actions; valid actions remain authoritative and transient invalid states complete cleanly;
 - exercise server paths needing `BanditZombie.GetInstanceById()`; no missing-API exception and no complete-zombie-list fallback scan;
