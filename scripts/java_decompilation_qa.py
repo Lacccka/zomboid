@@ -193,7 +193,7 @@ def write_markdown(path: Path, jar_sha: str, records: list[dict]) -> None:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Audit known CFR-problematic PZ 42.20.3 methods against JVM bytecode.")
     p.add_argument("jar", type=Path, help="Path to the original projectzomboid.jar")
-    p.add_argument("--output", type=Path, default=Path("java-decompilation-qa"))
+    p.add_argument("--output", type=Path, default=Path("build") / "java-decompilation-qa")
     p.add_argument("--javap", default=None, help="Path to javap. Defaults to javap from PATH.")
     p.add_argument("--expected-sha256", default=EXPECTED_JAR_SHA256)
     p.add_argument("--allow-jar-mismatch", action="store_true")
