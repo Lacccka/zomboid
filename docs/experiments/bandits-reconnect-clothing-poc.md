@@ -2,140 +2,165 @@
 
 ## Reproduced defects
 
-B42.20 multiplayer testing separated the clothing problem into two distinct boundaries.
+B42.20 multiplayer testing separated the clothing problem into two independent lifecycle boundaries.
 
-### 1. Live reconnect state
+### Live reconnect state
 
-Persistent Bandits surviving a disconnect/reconnect retain `brain.clothing` and their visual clothing definitions, but their real `WornItems` collapse to zero or nearly zero. `Bandit.ApplyVisuals()` explains this: upstream clears `bandit:getWornItems()` and recreates clothing primarily as standalone `ItemVisual` records.
+Persistent Bandits keep `brain.clothing` and their visual definitions across reconnect, but upstream `Bandit.ApplyVisuals()` clears real `WornItems` and rebuilds clothing primarily as standalone `ItemVisual` records. Old NPCs therefore become visually/physically undressed after a new client session.
 
-### 2. Corpse materialization
+### Corpse materialization
 
-The `real-worn-reconnect-v2` test proved that restoring real typed `WornItems` fixes the live NPC state after reconnect. However, runtime diagnostics also proved that these real worn objects do **not** automatically survive Bandit corpse materialization. A restored Bandit can have the full real worn set immediately before death while the resulting corpse contains only zero, one or two unrelated worn items.
+`real-worn-reconnect-v2` proved that restoring typed real `WornItems` fixes the live persistent NPC. A later runtime test proved that this is still insufficient for corpse creation: a Bandit can have the full real worn set immediately before death while the resulting `IsoDeadBody` contains only zero, one or two worn items.
 
-Upstream `Bandit.UpdateItemsToSpawnAtDeath()` clears/rebuilds the death queue for inventory, weapons, ammunition, generated loot and bags, while its clothing block is commented out.
+## Rejected experiments
 
-## Rejected v1
+### real-worn-reconnect-v1
 
-The first `real-worn-reconnect-v1` experiment incorrectly passed string keys from `brain.clothing` such as `Hat` or `Jacket` directly to B42 `getWornItem()` / `setWornItem()`.
-
-B42 requires an `ItemBodyLocation` object, producing repeated:
+The first restore attempt passed string slot names such as `Hat` and `Jacket` to B42 worn APIs. B42 requires `ItemBodyLocation`, producing repeated:
 
 ```text
 expected argument of type ItemBodyLocation, got String
 ```
 
-That was an LCC PoC bug, not an upstream Bandits failure.
+That was an LCC PoC bug and was removed.
+
+### real-worn-death-queue-v1
+
+The next experiment appended the **same real objects already worn by the Bandit** to `addItemToSpawnAtDeath()` after upstream rebuilt its normal death queue.
+
+Runtime results rejected this mechanism. The queue wrapper ran without errors and reported complete sets such as `queuedRealWorn=13`, while persistent/reconnected Bandit corpses still materialized as `corpseWorn=0..2`.
+
+Therefore the same-object death queue is removed. `zz_LCC_BanditClothingRestore.lua` no longer wraps `Bandit.UpdateItemsToSpawnAtDeath()`.
 
 ## Confirmed live fix: real-worn-reconnect-v2
 
-`WorkshopPatches/Bandits-LCC-Dev/42.20/media/lua/client/zz_LCC_BanditClothingRestore.lua` wraps `Bandit.ApplyVisuals()`.
+`WorkshopPatches/Bandits-LCC-Dev/42.20/media/lua/client/zz_LCC_BanditClothingRestore.lua` still wraps `Bandit.ApplyVisuals()`.
 
-For each instantiated clothing item it obtains the typed slot from:
+For every clothing item it obtains the typed slot from:
 
 ```lua
 item:getBodyLocation()
 ```
 
-Only that `ItemBodyLocation` object is passed to:
+and only passes that object to:
 
 ```lua
 bandit:getWornItem(location)
 bandit:setWornItem(location, item)
 ```
 
-The `brain.clothing` string key remains metadata/tint/cache information only. The same real item object is cached per live Bandit and re-worn after later upstream `ApplyVisuals()` calls clear the worn state again.
+The same real item object is cached per live Bandit and re-worn after later upstream visual rebuilds. Runtime tests confirmed persistent NPCs repeatedly restoring from `beforeWorn=0` to their complete wearable set after reconnect.
 
-The second runtime test confirmed:
-
-- the old `ItemBodyLocation, got String` error disappeared;
-- persistent Bandits commonly restored from `beforeWorn=0` to the complete typed worn set;
-- the same survivors recovered their clothing again after another reconnect;
-- body-visual entries such as makeup can legitimately count in `expectedClothing` without having a real wearable `ItemBodyLocation`;
-- a small number of custom bags still report `BAG_LOCATION_UNAVAILABLE` and remain a separate compatibility case.
-
-## Current corpse PoC: real-worn-death-queue-v1
-
-The same file now also wraps `Bandit.UpdateItemsToSpawnAtDeath()`.
-
-It does **not** re-enable upstream's commented block that creates fresh clothing copies. Instead it appends only the real materialized objects already worn by the Bandit and marked by `real-worn-reconnect-v2`.
-
-Each queued object receives:
+The live wrapper now also records a compact snapshot keyed by Bandit brain id:
 
 ```text
-LCC_BanditsRealClothing=real-worn-reconnect-v2
-LCC_BanditsDeathQueue=real-worn-death-queue-v1
-preserve=true
+LCC_BanditsClothingSnapshots[id] = {
+  clothing = copy of brain.clothing,
+  tint = copy of brain.tint,
+  fullname,
+  position,
+  timestamp
+}
 ```
 
-The flow is now:
+The Bandit modData is tagged with `LCC_BanditsBrainId` to improve corpse correlation. No death queue manipulation remains.
+
+Correct live boot marker:
 
 ```text
-brain.clothing
-  -> typed real WornItem
-  -> Bandit remains visibly/physically clothed after reconnect
-  -> upstream rebuilds normal death queue
-  -> same real worn objects are appended to death queue
-  -> corpse materialization test
+[LCC][BanditsClothingPoC][BOOT] marker=real-worn-reconnect-v2 mode=typed-ItemBodyLocation snapshot=true deathQueue=false
 ```
 
-There is still no `inventory:AddItem()` call and the PoC does not manufacture a second clothing copy for the queue.
+## Current corpse PoC: post-corpse-clothing-repair-v1
 
-`Bandit.ApplyVisuals()` normally invokes the upstream death-queue builder before LCC restores the real worn state. Therefore, after restoration the PoC deliberately rebuilds the queue once more; upstream clears/recreates its normal loot first, then the wrapper appends the currently worn LCC clothing objects.
-
-## Runtime markers
-
-Correct load:
+A new file performs repair only after B42 has already created the native corpse:
 
 ```text
-[LCC][BanditsClothingPoC][BOOT] marker=real-worn-reconnect-v2 deathMarker=real-worn-death-queue-v1 mode=typed-ItemBodyLocation+same-object-death-queue inventoryAdd=false copyClothing=false
+WorkshopPatches/Bandits-LCC-Dev/42.20/media/lua/client/zzzzz_LCC_BanditCorpseClothingRepair.lua
 ```
 
-Live repair:
+It listens to:
 
 ```text
-[LCC][BanditsClothingPoC][RESTORE] marker=real-worn-reconnect-v2 id=... beforeWorn=... expectedClothing=... restored=... created=... afterWorn=... bag=...
+OnZombieDead
+OnDeadBodySpawn
 ```
 
-Death queue:
+Corpse identity uses the same strategy already validated by `BanditsDeathLootDiagnostics`:
+
+1. direct `LCC_BanditsBrainId` / `brainId` / `banditId` from modData when available;
+2. otherwise a recent-death positional match limited to 10 seconds, the same Z level and 2.25 tiles.
+
+Unrelated vanilla corpses are ignored.
+
+### Idempotent repair rules
+
+For every item in the saved `brain.clothing` snapshot:
+
+1. instantiate/probe the item only to obtain its B42 `ItemBodyLocation`;
+2. ignore non-wearable visual entries such as makeup with no typed body location;
+3. if the corpse already wears the expected full type in that slot, do nothing;
+4. if another real item occupies the slot, preserve it and log `SLOT_CONFLICT` rather than overwriting it;
+5. if an unworn item of the expected full type already exists in the corpse container, reuse that object;
+6. only if no matching container item exists, create one directly in the corpse container;
+7. apply the saved Bandit tint and call `IsoDeadBody:setWornItem()` with the typed `ItemBodyLocation`;
+8. if the worn mutation is rejected by B42, leave the item in the corpse container so the loot is still restored without generating another copy.
+
+This makes the PoC deduplicating by both **slot** and **actual corpse container contents** instead of relying on pre-death queue semantics.
+
+Correct corpse boot marker:
 
 ```text
-[LCC][BanditsClothingPoC][DEATH_QUEUE] marker=real-worn-death-queue-v1 id=... queuedRealWorn=... currentWorn=... expectedClothing=... bag=...
+[LCC][BanditsCorpseRepair][BOOT] marker=post-corpse-clothing-repair-v1 snapshotMarker=real-worn-reconnect-v2 mode=post-OnDeadBodySpawn dedupe=slot+container
 ```
 
-Bounded failure diagnostics include:
+Each matched Bandit corpse prints one summary:
 
 ```text
-[BODY_LOCATION_MISSING]
-[BAG_LOCATION_UNAVAILABLE]
-[BODY_LOCATION_API_ERROR]
-[RESTORE_ERROR]
-[SLOT_CONFLICT]
-[DEATH_QUEUE_ERROR]
-[DEATH_QUEUE_REFRESH_ERROR]
+[LCC][BanditsCorpseRepair][REPAIR]
+marker=post-corpse-clothing-repair-v1
+id=...
+match=modData|position
+expected=...
+wearableExpected=...
+beforeItems=...
+beforeWorn=...
+already=...
+reused=...
+created=...
+repaired=...
+conflicts=...
+noLocation=...
+instanceFailures=...
+addFailures=...
+wearFailures=...
+afterItems=...
+afterWorn=...
 ```
 
-## Test matrix
+## Current test matrix
 
-1. Start with several persistent Bandits from an earlier server session.
-2. Join and confirm there is no `ItemBodyLocation, got String` exception.
-3. Confirm old Bandits recover visible clothing and `[RESTORE]` reaches the expected typed worn count.
-4. Confirm `[DEATH_QUEUE]` appears for restored Bandits and `queuedRealWorn` closely tracks `currentWorn`.
-5. Kill at least two restored persistent Bandits, including one with a large clothing set.
-6. Compare `BanditsDeathLoot` `PRE_CLEANUP`/`POST_CLEANUP` worn counts with final corpse `corpseItems`/`corpseWorn`.
-7. Verify the clothing exists on/in the corpse and that no duplicate full types are produced.
-8. Spawn fresh Bandits, repeat the death test, then reconnect once more and repeat with survivors.
-9. Separately note custom bags that still emit `BAG_LOCATION_UNAVAILABLE`.
+1. Start with persistent Bandits that survived the previous server/client session.
+2. Reconnect and confirm they are restored by `real-worn-reconnect-v2`.
+3. Confirm there are no old `DEATH_QUEUE` markers; that experiment is intentionally gone.
+4. Kill at least three restored persistent Bandits with large clothing sets.
+5. Inspect `BanditsCorpseRepair][REPAIR]` and the existing `BanditsDeathLoot][CORPSE]` records for the same ids.
+6. Verify `afterWorn` approaches `wearableExpected` and corpse inventory contains the expected full types.
+7. Verify `created` only covers actually missing items and does not duplicate items already supplied by vanilla corpse materialization.
+8. Repeat with fresh current-session Bandits as a control; healthy vanilla materialization should mostly produce `already > 0` and little/no intervention.
+9. Reconnect again and repeat with survivors.
 
 ## Success criteria
 
 A strong result requires:
 
 - live reconnect restoration remains stable;
-- no new Lua/Java error spam;
-- `DEATH_QUEUE_ERROR=0` and `DEATH_QUEUE_REFRESH_ERROR=0`;
-- queued real worn count matches the materialized wearable set;
-- restored clothing survives corpse creation;
-- no duplicate clothing appears because of simultaneous worn/death-queue handling;
-- normal Bandits weapon/loot/bag death drops remain intact.
+- `DEATH_QUEUE` / `DEATH_QUEUE_ERROR` / `DEATH_QUEUE_REFRESH_ERROR` disappear because that wrapper no longer exists;
+- every matched persistent corpse gets at most one `REPAIR` pass;
+- `addFailures=0` and preferably `wearFailures=0`;
+- `afterWorn` matches the number of wearable expected slots except explicit slot conflicts;
+- no duplicate clothing full types are introduced by repair;
+- fresh Bandit corpses that already materialize correctly require little or no creation;
+- normal weapons, ammo, loot and bags from upstream death processing remain intact.
 
-The death queue mechanism is still experimental. In particular, B42 runtime behavior for the **same object being both worn and queued for death spawn** must be validated before promotion to a public compatibility fix.
+This remains a controlled working-copy experiment until the post-corpse mutation is validated in B42.20 multiplayer.
