@@ -5,10 +5,11 @@
 --   2. B42 corpse creation may still discard those items, even when the same
 --      objects were also queued through addItemToSpawnAtDeath().
 --
--- This PoC therefore waits for OnDeadBodySpawn and repairs only missing wearable
--- clothing from the last brain.clothing snapshot. Existing corpse clothing is
--- preserved and existing matching container items are reused before creating
--- anything new.
+-- This PoC waits for OnDeadBodySpawn and repairs only missing wearable clothing
+-- from the last brain.clothing snapshot. IsoDeadBody exposes its own WornItems
+-- collection, so corpse slots are read/written through WornItems:getItem/setItem
+-- using the original brain.clothing string location. Item:getBodyLocation() is
+-- used only as a typed wearability check.
 if isServer() then return end
 
 local MARKER = "post-corpse-clothing-repair-v1"
@@ -278,6 +279,7 @@ local function repairCorpse(body, id, source, distance)
         local itemType = snapshot.clothing[brainLocation]
         if not itemType then return end
         itemType = tostring(itemType)
+        local slot = tostring(brainLocation)
 
         local existing = firstUnused(index, itemType, used)
         local probe = existing or BanditCompatibility.InstanceItem(itemType)
@@ -286,14 +288,15 @@ local function repairCorpse(body, id, source, distance)
             return
         end
 
-        local location = typedBodyLocation(probe)
-        if not location then
+        -- Makeup and other purely visual entries have no real body location and
+        -- must not become fake corpse inventory items.
+        if not typedBodyLocation(probe) then
             stats.noLocation = stats.noLocation + 1
             return
         end
         stats.wearableExpected = stats.wearableExpected + 1
 
-        local okCurrent, current = pcall(function() return body:getWornItem(location) end)
+        local okCurrent, current = pcall(function() return worn:getItem(slot) end)
         if not okCurrent then
             stats.wearFailures = stats.wearFailures + 1
             return
@@ -308,7 +311,7 @@ local function repairCorpse(body, id, source, distance)
             stats.conflicts = stats.conflicts + 1
             print(string.format(
                 "[LCC][BanditsCorpseRepair][SLOT_CONFLICT] marker=%s id=%s brainLocation=%s expected=%s actual=%s intervention=false",
-                MARKER, id, tostring(brainLocation), itemType, tostring(fullType(current) or "<unknown>")
+                MARKER, id, slot, itemType, tostring(fullType(current) or "<unknown>")
             ))
             return
         end
@@ -333,10 +336,10 @@ local function repairCorpse(body, id, source, distance)
         end
 
         applySnapshotTint(item, snapshot, brainLocation)
-        local okSet = pcall(function() body:setWornItem(location, item) end)
+        local okSet = pcall(function() worn:setItem(slot, item) end)
         if not okSet then
-            -- Keep the item in the corpse container even if IsoDeadBody refuses
-            -- the worn mutation; this still restores loot without duplicating it.
+            -- The item is intentionally left in the corpse container. This
+            -- restores loot even if a custom B42 slot rejects the worn mutation.
             stats.wearFailures = stats.wearFailures + 1
             used[item] = true
             return
@@ -398,7 +401,7 @@ Events.OnDeadBodySpawn.Add(function(body)
 end)
 
 print(string.format(
-    "[LCC][BanditsCorpseRepair][BOOT] marker=%s snapshotMarker=%s mode=post-OnDeadBodySpawn dedupe=slot+container",
+    "[LCC][BanditsCorpseRepair][BOOT] marker=%s snapshotMarker=%s mode=post-OnDeadBodySpawn+wornItems dedupe=slot+container",
     MARKER,
     SNAPSHOT_MARKER
 ))
