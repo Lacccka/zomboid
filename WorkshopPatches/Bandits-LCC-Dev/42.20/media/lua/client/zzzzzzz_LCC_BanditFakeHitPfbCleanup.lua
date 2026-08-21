@@ -1,22 +1,24 @@
--- LCC cleanup for B42.20.3 fake-hit zombie character goals.
+-- LCC cleanup for B42.20.3 fake-hit zombie AI relations.
 --
 -- BanditUtils.Hit uses getCell():getFakeZombieForHit() as the attacker passed to
 -- IsoGameCharacter.Hit(). Runtime tracing showed that hit reaction processing can
--- temporarily promote this engine helper IsoZombie into both IsoZombie.target and
+-- temporarily promote this engine helper IsoZombie into IsoZombie.target and/or
 -- PathFindBehavior2 Goal.Character. NetworkZombieMind cannot serialize a
 -- Goal.Character unless the target is IsoPlayer, producing
--- "NetworkZombieMind: goal character is not set".
+-- "NetworkZombieMind: goal character is not set". A vanilla target pointing at
+-- the same helper is also not a legitimate combat relation and must not survive.
 --
 -- This fix is deliberately exact: it only clears relations to the cell's engine
 -- fake-hit zombie. Real players, Bandits and arbitrary non-player mod targets are
 -- untouched here.
 if isServer() then return end
 
-local MARKER = "fake-hit-pfb-cleanup-v1"
+local MARKER = "fake-hit-relation-cleanup-v2"
 LCC_BANDITS_FAKE_HIT_PFB_CLEANUP = MARKER
 
 local stats = {
     updates = 0,
+    fakeRelations = 0,
     fakeCharacterGoals = 0,
     pfbCancels = 0,
     targetClears = 0,
@@ -57,42 +59,72 @@ local function onZombieUpdate(zombie)
         return
     end
 
-    local pfb = zombie:getPathFindBehavior2()
-    if pfb and pfb:isGoalCharacter() and pfb:getTargetChar() == fakeZombie then
-        stats.fakeCharacterGoals = stats.fakeCharacterGoals + 1
+    local changed = false
+    local targetCleared = false
+    local attackedByCleared = false
+    local pfbCancelled = false
 
-        local targetCleared = false
-        if zombie:getTarget() == fakeZombie then
-            zombie:setTarget(nil)
+    -- Clear the ordinary vanilla target even if PFB has already changed to a
+    -- location goal. The fake helper must never become a durable AI target.
+    local okTarget, target = pcall(function() return zombie:getTarget() end)
+    if okTarget and target == fakeZombie then
+        local okClear = pcall(function() zombie:setTarget(nil) end)
+        if okClear then
             targetCleared = true
+            changed = true
             stats.targetClears = stats.targetClears + 1
-        end
-
-        local attackedByCleared = false
-        local okAttackedBy, attackedBy = pcall(function() return zombie:getAttackedBy() end)
-        if okAttackedBy and attackedBy == fakeZombie then
-            zombie:setAttackedBy(nil)
-            attackedByCleared = true
-            stats.attackedByClears = stats.attackedByClears + 1
-        end
-
-        local okCancel = pcall(function() pfb:cancel() end)
-        if okCancel then
-            stats.pfbCancels = stats.pfbCancels + 1
         else
             stats.errors = stats.errors + 1
         end
+    end
 
+    local okAttackedBy, attackedBy = pcall(function() return zombie:getAttackedBy() end)
+    if okAttackedBy and attackedBy == fakeZombie then
+        local okClear = pcall(function() zombie:setAttackedBy(nil) end)
+        if okClear then
+            attackedByCleared = true
+            changed = true
+            stats.attackedByClears = stats.attackedByClears + 1
+        else
+            stats.errors = stats.errors + 1
+        end
+    end
+
+    local okPfb, pfb = pcall(function() return zombie:getPathFindBehavior2() end)
+    if okPfb and pfb then
+        local okGoal, isCharacter = pcall(function() return pfb:isGoalCharacter() end)
+        if okGoal and isCharacter then
+            local okGoalTarget, goalTarget = pcall(function() return pfb:getTargetChar() end)
+            if okGoalTarget and goalTarget == fakeZombie then
+                stats.fakeCharacterGoals = stats.fakeCharacterGoals + 1
+                local okCancel = pcall(function() pfb:cancel() end)
+                if okCancel then
+                    pfbCancelled = true
+                    changed = true
+                    stats.pfbCancels = stats.pfbCancels + 1
+                else
+                    stats.errors = stats.errors + 1
+                end
+            end
+        elseif not okGoal then
+            stats.errors = stats.errors + 1
+        end
+    elseif not okPfb then
+        stats.errors = stats.errors + 1
+    end
+
+    if changed then
+        stats.fakeRelations = stats.fakeRelations + 1
         if detailBudget > 0 then
             detailBudget = detailBudget - 1
             print(string.format(
-                "[LCC][BanditsFakeHitPfb][CLEAN] marker=%s zombie=%s state=%s targetCleared=%s attackedByCleared=%s pfbCancelled=%s",
+                "[LCC][BanditsFakeHitRelation][CLEAN] marker=%s zombie=%s state=%s targetCleared=%s attackedByCleared=%s pfbCancelled=%s",
                 MARKER,
                 characterId(zombie),
                 tostring(zombie:getActionStateName() or "<none>"),
                 tostring(targetCleared),
                 tostring(attackedByCleared),
-                tostring(okCancel)
+                tostring(pfbCancelled)
             ))
         end
     end
@@ -110,7 +142,7 @@ local function lateRebind()
         rebound = true
         stats.lateRebinds = stats.lateRebinds + 1
         print(string.format(
-            "[LCC][BanditsFakeHitPfb][REBIND] marker=%s tick=%d removeOk=%s addOk=%s",
+            "[LCC][BanditsFakeHitRelation][REBIND] marker=%s tick=%d removeOk=%s addOk=%s",
             MARKER, rebindTicks, tostring(okRemove), tostring(okAdd)
         ))
         pcall(function() Events.OnTick.Remove(lateRebind) end)
@@ -120,9 +152,10 @@ Events.OnTick.Add(lateRebind)
 
 Events.EveryOneMinute.Add(function()
     print(string.format(
-        "[LCC][BanditsFakeHitPfb][SUMMARY] marker=%s updates=%d fakeCharacterGoals=%d pfbCancels=%d targetClears=%d attackedByClears=%d errors=%d lateRebinds=%d",
+        "[LCC][BanditsFakeHitRelation][SUMMARY] marker=%s updates=%d fakeRelations=%d fakeCharacterGoals=%d pfbCancels=%d targetClears=%d attackedByClears=%d errors=%d lateRebinds=%d",
         MARKER,
         stats.updates,
+        stats.fakeRelations,
         stats.fakeCharacterGoals,
         stats.pfbCancels,
         stats.targetClears,
@@ -133,6 +166,6 @@ Events.EveryOneMinute.Add(function()
 end)
 
 print(string.format(
-    "[LCC][BanditsFakeHitPfb][BOOT] marker=%s target=engine-fake-hit-zombie action=clear-target+attackedBy+cancel-pfb",
+    "[LCC][BanditsFakeHitRelation][BOOT] marker=%s target=engine-fake-hit-zombie action=clear-target+attackedBy+cancel-character-pfb",
     MARKER
 ))
