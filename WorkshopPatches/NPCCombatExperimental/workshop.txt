@@ -1,6 +1,6 @@
 version=1
 id=3786817782
 title=Lacccka B42 NPC Combat Experimental
-description=Experimental Build 42.20 NPC combat compatibility tests and admin diagnostics, isolated from the stable Runtime Fixes package. Intended for controlled testing only. Do not use this patch unless you are explicitly testing these changes. This item contains patch files only; the original mods are not included and must be installed separately.
+description=Optional Build 42.20 NPC combat/death diagnostics and admin stress-test tooling for controlled regression testing of the stable NPC fixes. Do not use this patch unless you are explicitly testing these changes. This item contains patch files only; the original mods are not included and must be installed separately.
 tags=Build 42;Multiplayer
 visibility=public
