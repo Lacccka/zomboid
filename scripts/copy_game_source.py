@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""
+r"""
 Build a compact Project Zomboid vanilla source snapshot for compatibility work.
 
 Designed for:
@@ -14,10 +14,11 @@ The script:
   * copies only source-like files useful for mod compatibility/debugging;
   * excludes Workshop content, Steam caches, binaries, textures, audio,
     map cell binaries, JRE files, logs and other runtime junk;
-  * writes BUILD.txt and MANIFEST.sha256.
+  * writes BUILD.txt and MANIFEST.sha256;
+  * preserves an existing verified Java decompilation during normal --clean.
 
 The raw projectzomboid.jar is NOT copied into the repository.
-A later decompilation step can read the JAR directly from the Steam install.
+Java decompilation reads the JAR directly from the Steam installation.
 """
 
 from __future__ import annotations
@@ -29,7 +30,7 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Iterable
 
 
 DEFAULT_REPO_ROOT = Path(r"C:\zomboid")
@@ -86,6 +87,9 @@ SERVER_RUNTIME_FILES = (
     "StartServer64.bat",
     "StartServer64_nosteam.bat",
 )
+
+JAVA_METADATA_MARKER = "Java decompilation:"
+SOURCE_JAR_SHA_LABEL = "Source JAR SHA-256:"
 
 
 @dataclass(frozen=True)
@@ -263,7 +267,64 @@ def safe_remove_generated(path: Path, game_source_root: Path) -> None:
     if not is_within(path, game_source_root):
         raise RuntimeError(f"Refusing to remove path outside game_source:\n{path}")
 
-    shutil.rmtree(path)
+    if path.is_dir():
+        shutil.rmtree(path)
+    else:
+        path.unlink()
+
+
+def directory_has_files(path: Path) -> bool:
+    return path.is_dir() and any(item.is_file() for item in path.rglob("*"))
+
+
+def read_java_decompilation_metadata(build_info: Path) -> str | None:
+    if not build_info.is_file():
+        return None
+
+    text = build_info.read_text(encoding="utf-8")
+    marker_index = text.find(JAVA_METADATA_MARKER)
+    if marker_index < 0:
+        return None
+
+    return text[marker_index:].strip()
+
+
+def metadata_source_jar_sha(metadata: str | None) -> str | None:
+    if not metadata:
+        return None
+
+    lines = metadata.splitlines()
+    for index, line in enumerate(lines):
+        if line.strip() != SOURCE_JAR_SHA_LABEL:
+            continue
+        if index + 1 >= len(lines):
+            return None
+        value = lines[index + 1].strip().lower()
+        if len(value) == 64 and all(ch in "0123456789abcdef" for ch in value):
+            return value
+        return None
+    return None
+
+
+def clean_generated_snapshot(
+    common_dir: Path,
+    client_dir: Path,
+    server_dir: Path,
+    game_source_root: Path,
+    clean_java: bool,
+) -> None:
+    if clean_java:
+        safe_remove_generated(common_dir, game_source_root)
+    else:
+        # Java is expensive to reconstruct and can contain manual Vineflower
+        # fallback replacements. Normal --clean refreshes only imported media
+        # and generated metadata while preserving verified Java output.
+        safe_remove_generated(common_dir / "media", game_source_root)
+        safe_remove_generated(common_dir / "BUILD.txt", game_source_root)
+        safe_remove_generated(common_dir / "MANIFEST.sha256", game_source_root)
+
+    safe_remove_generated(client_dir, game_source_root)
+    safe_remove_generated(server_dir, game_source_root)
 
 
 def copy_selected(
@@ -339,6 +400,7 @@ def write_build_info(
     client_jar_sha: str,
     server_jar_sha: str,
     selected_count: int,
+    java_decompilation_metadata: str | None,
 ) -> None:
     timestamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -391,6 +453,10 @@ Java decompilation target:
 The decompiler should read the JAR directly from:
 {client_root / CLIENT_JAR}
 """
+
+    if java_decompilation_metadata:
+        common_text += "\n" + java_decompilation_metadata.strip() + "\n"
+
     (common_dir / "BUILD.txt").write_text(common_text, encoding="utf-8")
 
     client_text = f"""Project Zomboid client runtime overlay
@@ -451,8 +517,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--clean",
         action="store_true",
         help=(
-            "Remove only the generated common/client/server build directories "
-            "before copying. Does not touch Steam installations."
+            "Refresh generated media/runtime directories before copying. "
+            "Preserves existing verified Java decompilation output."
+        ),
+    )
+    parser.add_argument(
+        "--clean-java",
+        action="store_true",
+        help=(
+            "With --clean, also delete common-<build>/java. Use only when "
+            "you intentionally want to decompile the JAR again."
         ),
     )
     return parser
@@ -460,6 +534,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = build_parser().parse_args()
+
+    if args.clean_java and not args.clean:
+        raise RuntimeError("--clean-java requires --clean.")
 
     repo_root: Path = args.repo_root
     client_root: Path = args.client_root
@@ -508,11 +585,49 @@ def main() -> int:
     common_dir = game_source_root / f"common-{build}"
     client_dir = game_source_root / f"client-{build}"
     server_dir = game_source_root / f"dedicated-server-{build}"
+    java_dir = common_dir / "java"
+
+    java_metadata = read_java_decompilation_metadata(common_dir / "BUILD.txt")
+    java_exists = directory_has_files(java_dir)
+    metadata_jar_sha = metadata_source_jar_sha(java_metadata)
+
+    if java_exists and not args.clean_java:
+        if not java_metadata:
+            raise RuntimeError(
+                "Existing Java decompilation was found, but BUILD.txt has no "
+                "Java provenance section. Refusing to overwrite metadata. "
+                "Restore BUILD.txt provenance or use --clean --clean-java "
+                "and decompile again."
+            )
+        if not metadata_jar_sha:
+            raise RuntimeError(
+                "Existing Java provenance does not contain a valid Source JAR "
+                "SHA-256. Refusing to preserve an unverifiable Java tree."
+            )
+        if metadata_jar_sha != client_jar_sha.lower():
+            raise RuntimeError(
+                "Existing Java decompilation belongs to a different JAR.\n"
+                f"Java source JAR: {metadata_jar_sha}\n"
+                f"Current JAR    : {client_jar_sha}\n"
+                "Use --clean --clean-java, then decompile the current JAR."
+            )
+        print("Java decompilation provenance verified; Java tree will be preserved.")
 
     if args.clean:
-        print("\nCleaning generated build directories...")
-        for path in (common_dir, client_dir, server_dir):
-            safe_remove_generated(path, game_source_root)
+        print("\nCleaning generated snapshot data...")
+        clean_generated_snapshot(
+            common_dir=common_dir,
+            client_dir=client_dir,
+            server_dir=server_dir,
+            game_source_root=game_source_root,
+            clean_java=args.clean_java,
+        )
+        if args.clean_java:
+            java_metadata = None
+            java_exists = False
+            print("Java decompilation removed by explicit --clean-java.")
+        elif java_exists:
+            print("Java decompilation preserved.")
 
     common_dir.mkdir(parents=True, exist_ok=True)
     client_runtime = client_dir / "runtime"
@@ -537,8 +652,8 @@ def main() -> int:
         server_runtime,
     )
 
-    # Reserve the target directory for the next decompilation step.
-    (common_dir / "java").mkdir(parents=True, exist_ok=True)
+    # Reserve the target directory for the Java decompilation step.
+    java_dir.mkdir(parents=True, exist_ok=True)
 
     write_build_info(
         common_dir=common_dir,
@@ -550,6 +665,7 @@ def main() -> int:
         client_jar_sha=client_jar_sha,
         server_jar_sha=server_jar_sha,
         selected_count=len(selected),
+        java_decompilation_metadata=java_metadata,
     )
 
     common_manifest_count = write_manifest(common_dir)
@@ -580,10 +696,14 @@ def main() -> int:
         for name in server_missing:
             print(f"  - {name}")
 
-    print(
-        "\nNext step: decompile the verified common projectzomboid.jar "
-        f"into {common_dir / 'java'}."
-    )
+    if directory_has_files(java_dir):
+        print("\nJava decompilation is present and included in the common manifest.")
+    else:
+        print(
+            "\nNext step: decompile the verified common projectzomboid.jar "
+            f"into {java_dir}."
+        )
+
     return 0
 
 
