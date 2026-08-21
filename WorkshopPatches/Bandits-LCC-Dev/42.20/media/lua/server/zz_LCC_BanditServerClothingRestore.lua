@@ -116,24 +116,18 @@ end
 
 local function ensureInInventory(inventory, item)
     if not inventory or not item then return false, false end
-
     local okContainer, container = pcall(function() return item:getContainer() end)
     if okContainer and container == inventory then return true, false end
-    if okContainer and container ~= nil and container ~= inventory then
-        return false, false
-    end
+    if okContainer and container ~= nil and container ~= inventory then return false, false end
 
-    local okAdd, added = pcall(function() return inventory:AddItem(item) end)
+    local okAdd = pcall(function() inventory:AddItem(item) end)
     if not okAdd then return false, false end
-    -- AddItem(InventoryItem) may return the same item or nil depending on binding;
-    -- membership is authoritative, not the return value.
     local okAfter, after = pcall(function() return item:getContainer() end)
     return okAfter and after == inventory, true
 end
 
 local function ensureSlot(bandit, brain, brainLocation, itemType)
     if not bandit or not brainLocation or not itemType then return end
-
     local inventory = bandit:getInventory()
     if not inventory then
         stats.errors = stats.errors + 1
@@ -141,17 +135,24 @@ local function ensureSlot(bandit, brain, brainLocation, itemType)
         return
     end
 
-    local probe = BanditCompatibility.InstanceItem(itemType)
-    if not probe then
-        stats.errors = stats.errors + 1
-        warnOnce("instance:" .. tostring(itemType), string.format(
-            "[LCC][BanditsServerClothing][INSTANCE_FAILED] id=%s item=%s",
-            characterId(bandit, brain), tostring(itemType)
-        ))
-        return
+    -- Reuse the authoritative object already stored in the Bandit's inventory
+    -- before allocating a new item. Bandit.ApplyVisuals clears WornItems but does
+    -- not remove these marked clothing objects from inventory.
+    local item = findReusableInventoryItem(inventory, brainLocation, itemType)
+    local reused = item ~= nil
+    if not item then
+        item = BanditCompatibility.InstanceItem(itemType)
+        if not item then
+            stats.errors = stats.errors + 1
+            warnOnce("instance:" .. tostring(itemType), string.format(
+                "[LCC][BanditsServerClothing][INSTANCE_FAILED] id=%s item=%s",
+                characterId(bandit, brain), tostring(itemType)
+            ))
+            return
+        end
     end
 
-    local location = typedBodyLocation(probe)
+    local location = typedBodyLocation(item)
     if not location then
         stats.noLocation = stats.noLocation + 1
         return
@@ -173,7 +174,6 @@ local function ensureSlot(bandit, brain, brainLocation, itemType)
             ))
             return
         end
-
         markItem(current, brainLocation)
         applyTint(current, brain, brainLocation)
         local inInventory, attemptedAdd = ensureInInventory(inventory, current)
@@ -187,11 +187,9 @@ local function ensureSlot(bandit, brain, brainLocation, itemType)
         return
     end
 
-    local item = findReusableInventoryItem(inventory, brainLocation, itemType)
-    if item then
+    if reused then
         stats.reusedInventory = stats.reusedInventory + 1
     else
-        item = probe
         markItem(item, brainLocation)
         applyTint(item, brain, brainLocation)
         local inInventory, attemptedAdd = ensureInInventory(inventory, item)
@@ -209,7 +207,6 @@ local function ensureSlot(bandit, brain, brainLocation, itemType)
 
     markItem(item, brainLocation)
     applyTint(item, brain, brainLocation)
-
     local okSet = pcall(function() bandit:setWornItem(location, item) end)
     if not okSet then
         stats.errors = stats.errors + 1
@@ -228,31 +225,25 @@ local function restoreAuthoritativeWorn(bandit, brain)
     local createdBefore = stats.created
     local reusedBefore = stats.reusedInventory
     local addedBefore = stats.inventoryAdds
+    local processed = {}
 
     if BanditCompatibility.GetBodyLocationsOrdered then
         for _, brainLocation in pairs(BanditCompatibility.GetBodyLocationsOrdered()) do
             local itemType = brain.clothing[brainLocation]
-            if itemType then ensureSlot(bandit, brain, brainLocation, itemType) end
+            if itemType then
+                processed[brainLocation] = true
+                ensureSlot(bandit, brain, brainLocation, itemType)
+            end
         end
-    else
-        for brainLocation, itemType in pairs(brain.clothing) do
+    end
+    for brainLocation, itemType in pairs(brain.clothing) do
+        if not processed[brainLocation] then
             ensureSlot(bandit, brain, brainLocation, itemType)
         end
     end
 
-    -- Catch any valid custom locations absent from the compatibility ordering.
-    for brainLocation, itemType in pairs(brain.clothing) do
-        local probe = BanditCompatibility.InstanceItem(itemType)
-        local location = typedBodyLocation(probe)
-        if location then
-            local ok, current = pcall(function() return bandit:getWornItem(location) end)
-            if ok and not current then ensureSlot(bandit, brain, brainLocation, itemType) end
-        end
-    end
-
     local after = bandit:getWornItems() and bandit:getWornItems():size() or -1
-    local inventory = bandit:getInventory()
-    local _, inventoryCount = inventoryItems(inventory)
+    local _, inventoryCount = inventoryItems(bandit:getInventory())
     print(string.format(
         "[LCC][BanditsServerClothing][RESTORE] marker=%s id=%s beforeWorn=%d afterWorn=%d restored=%d created=%d reusedInventory=%d inventoryAdds=%d inventoryItems=%d",
         MARKER,
