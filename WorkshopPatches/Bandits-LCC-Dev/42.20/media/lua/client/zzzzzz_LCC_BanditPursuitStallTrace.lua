@@ -2,18 +2,18 @@
 --
 -- v2 proved that repeated pathToLocationF() was cancelling in-flight pathfind
 -- requests: after coordinate pursuit throttling, pathfind stalls fell from 64 to
--- zero. v2 also over-counted normal combat immobility (onground/getup/bumped/
--- hitreaction) as stalls and its controller field was polluted by the temporary
--- IsController throttle wrapper.
+-- zero. v3 removed normal combat-reaction noise and separated the real MP
+-- controller from the temporary IsController throttle wrapper.
 --
--- v3 tracks only actionable movement states and uses the original MP controller
--- function exported by coordinate-pursuit-throttle-v2. It remains observation
--- only: no target, PFB, state, task or ownership mutation.
+-- v4 follows the source-integrated pursuit throttle in BanditUpdate.lua. The
+-- global IsController wrapper is gone, so controller state is read directly from
+-- BanditUtils.IsController. This tracer remains observation-only: no target, PFB,
+-- state, task or ownership mutation.
 if isServer() then return end
 
 require "BanditZombie"
 
-local MARKER = "pursuit-stall-trace-v3"
+local MARKER = "pursuit-stall-trace-v4"
 LCC_BANDITS_PURSUIT_STALL_TRACE = MARKER
 
 local SAMPLE_MS = 250
@@ -90,10 +90,7 @@ local function isActionableMovementState(state)
 end
 
 local function realIsController(zombie)
-    local fn = LCC_BANDITS_REAL_IS_CONTROLLER
-    if type(fn) ~= "function" then
-        fn = BanditUtils and BanditUtils.IsController or nil
-    end
+    local fn = BanditUtils and BanditUtils.IsController or nil
     if type(fn) ~= "function" then return nil end
 
     local ok, value = pcall(fn, zombie)
@@ -381,8 +378,8 @@ local function onTick()
         rebound = true
         stats.lateRebinds = stats.lateRebinds + 1
         print(string.format(
-            "[LCC][BanditsPursuitStall][REBIND] marker=%s tick=%d removeOk=%s addOk=%s realControllerExport=%s",
-            MARKER, tickCount, tostring(okRemove), tostring(okAdd), tostring(type(LCC_BANDITS_REAL_IS_CONTROLLER) == "function")
+            "[LCC][BanditsPursuitStall][REBIND] marker=%s tick=%d removeOk=%s addOk=%s controllerSource=BanditUtils.IsController",
+            MARKER, tickCount, tostring(okRemove), tostring(okAdd)
         ))
     end
 end
@@ -421,6 +418,6 @@ Events.EveryOneMinute.Add(function()
 end)
 
 print(string.format(
-    "[LCC][BanditsPursuitStall][BOOT] marker=%s sampleMs=%d stallMs=%d actionable=pathfind+walktoward+idle+turnalerted reactionStates=ignored realController=unwrapped observationOnly=true",
+    "[LCC][BanditsPursuitStall][BOOT] marker=%s sampleMs=%d stallMs=%d actionable=pathfind+walktoward+idle+turnalerted reactionStates=ignored realController=direct observationOnly=true",
     MARKER, SAMPLE_MS, STALL_MS
 ))
