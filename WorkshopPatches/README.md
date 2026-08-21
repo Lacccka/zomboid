@@ -1,79 +1,87 @@
 # Split Workshop patches
 
-This directory contains the staged split of `LaccckaCompatibilityPatch` into independent Workshop-ready patch items. The original monolithic patch is intentionally left untouched while this layout is tested.
+`WorkshopPatches/` contains the independent Workshop-ready Lacccka Build 42 compatibility items. There is no supported monolithic compatibility package. Each functional item has a narrow responsibility and may be installed only when that responsibility is needed.
+
+`Bandits-LCC-Dev` is an internal repository test stand. It is deliberately excluded from the published-package audit and must never be copied into a normal split-patch installation.
 
 ## Public naming
 
-The Workshop-facing names are deliberately generic. Public descriptions only state that the item contains targeted Build 42 compatibility/fix files. They do not imply ownership of or bundle the upstream mods.
+Workshop-facing names are deliberately generic. Public descriptions state that an item contains targeted Build 42 compatibility/fix files; they do not imply ownership of or bundle upstream mods.
 
-Every item must keep this warning in its Workshop description:
+Every Workshop item must keep this warning:
 
 > Do not use this patch unless you are sure it is required by your setup. This item contains patch files only; the original mods are not included and must be installed separately.
 
 ## Items
 
-| Folder | Mod ID | Workshop ID | Public title | Internal scope |
+| Folder | Mod ID | Workshop ID | Public title | Responsibility |
 | --- | --- | ---: | --- | --- |
-| `PatchCore` | `LaccckaB4220PatchCore` | `3786175901` | Lacccka B42 Patch Core | Recommended shared guarded-patch helper used by the functional patches. |
-| `RuntimeFixes` | `LaccckaB4220RuntimeFixes` | `3786175979` | Lacccka B42 Runtime Fixes | Source-clean Bandits runtime / dedicated-server / zombie-action compatibility hooks. |
-| `NPCCombatExperimental` | `LaccckaB4220NPCCombatExperimental` | `3786817782` | Lacccka B42 NPC Combat Experimental | In-development NPC combat AttackState observation, death-loot/corpse diagnostics and admin stress-test tooling. |
+| `PatchCore` | `LaccckaB4220PatchCore` | `3786175901` | Lacccka B42 Patch Core | Shared guarded-patch helper used by functional patches. |
+| `RuntimeFixes` | `LaccckaB4220RuntimeFixes` | `3786175979` | Lacccka B42 Runtime Fixes | Low-level runtime, dedicated-server, cache and API compatibility hooks. |
+| `NPCFixes` | `LaccckaB4220NPCFixes` | staging `0` | Lacccka B42 NPC Fixes | Validated NPC combat, terminal-death and corpse/clothing lifecycle fixes. |
+| `NPCCombatExperimental` | `LaccckaB4220NPCCombatExperimental` | `3786817782` | Lacccka B42 NPC Combat Experimental | Diagnostics, corpse tracing and admin stress-test tooling only. |
 | `ActivityFixes` | `LaccckaB4220ActivityFixes` | `3786175725` | Lacccka B42 Activity Fixes | Lifestyle hygiene, Yoga/progression and perk compatibility fixes. |
 | `CompatibilityBridges` | `LaccckaB4220CompatBridges` | `3786175808` | Lacccka B42 Compatibility Bridges | Build 42 legacy module/API redirects used by weapon, vehicle and framework mods. |
 | `SafetyFixes` | `LaccckaB4220SafetyFixes` | `3786176221` | Lacccka B42 Safety Fixes | Defensive inventory/UI compatibility guards. |
 | `RussianTextFixes` | `LaccckaB4220RussianText` | `3786176120` | Lacccka B42 Russian Text Fixes | Russian localization and skill/UI text corrections. |
 
+`NPCFixes` remains a private release-candidate item until its source-clean transformers pass a regression run against the normal installed `Bandits2` rather than `Bandits-LCC-Dev`.
+
 ## Dependency model
 
-`RuntimeFixes`, `NPCCombatExperimental`, `ActivityFixes`, `CompatibilityBridges`, and `SafetyFixes` use `LaccckaB4220PatchCore` as a **recommended soft dependency**. `RussianTextFixes` remains completely standalone.
+`RuntimeFixes`, `NPCFixes`, `NPCCombatExperimental`, `ActivityFixes`, `CompatibilityBridges`, and `SafetyFixes` use `LaccckaB4220PatchCore` as a **recommended soft dependency**. `RussianTextFixes` remains standalone.
 
-The functional patches no longer use the Build 42 `mod.info` `require=` field for Patch Core, because that field makes Core a hard blocker before any fallback Lua can run. Instead, each functional patch declares Patch Core in `loadafter=` and ships the same small `LCC/Guard.lua` bootstrap:
+Functional patches do not use `mod.info require=` for Patch Core. They declare Core in `loadafter=` and ship the same `LCC/Guard.lua` bootstrap:
 
-1. it first tries the Core-only `LCC/CoreGuard` entrypoint;
-2. if Core is present and compatible, the shared guard is returned and the patch runs in `GUARDED` mode;
-3. if Core is absent or incompatible, a local shared fallback is returned and the patch runs in `DEGRADED` mode.
+1. try the Core-only `LCC/CoreGuard` entrypoint;
+2. when compatible Core is available, run in `GUARDED` mode;
+3. otherwise use the local fallback and run in `DEGRADED` mode.
 
-`DEGRADED` mode is intentionally best-effort. The functional fixes remain loadable, but correct behavior and failure isolation are not guaranteed without Patch Core. The fallback exists so a missing/unavailable Core Workshop item does not automatically make every functional patch unloadable.
+`DEGRADED` mode is best-effort. The patch remains loadable, but correct behavior and failure isolation are not guaranteed without Patch Core.
 
-Upstream mods are deliberately not hard-required by these generic patch items because the fixes are guarded/late-loaded and the public rule is to install a patch only for a setup that needs it.
+Upstream mods are not hard-required by the generic patch items because fixes are guarded/late-loaded and users should install only the patches relevant to their setup.
 
 ## RuntimeFixes source-clean contract
 
-`RuntimeFixes` must not contain complete Bandits Lua files. Its compatibility layer is implemented only through LCC-authored hooks, wrappers and narrow path shims:
+`RuntimeFixes` contains LCC-authored hooks, wrappers and narrow path shims only. It must not contain complete Bandits source files. Its current responsibility includes:
 
-- the empty dedicated-server wanderer crash is neutralized through a guarded `BanditCustom.ClanGetAll()` runtime view;
-- squareless/despawned zombie objects are rejected through Bandits' existing compatibility predicate and then removed from its caches;
-- farming callbacks are prechecked and the original `ZombieActions` callbacks remain authoritative;
-- the missing dedicated `BanditZombie.GetInstanceById()` contract is implemented with a server-side on-demand lookup rather than importing `BanditZombie.lua`;
-- the B42 character-screen compatibility file is a small LCC path shim, not an upstream source copy.
+- zero-player dedicated wanderer protection;
+- squareless/despawned Bandits cache protection;
+- farming callback guards;
+- dedicated `BanditZombie.GetInstanceById()` compatibility without complete-zombie-list scans;
+- the B42 character-screen path shim.
 
-The grouped audit must fail if `BanditZombie.lua`, `BanditServerWanderers.lua`, `ZAWaterFarm.lua` or `ZAStompPlant.lua` reappear under `RuntimeFixes`.
+NPC combat/death behavior does not belong in `RuntimeFixes` now that `NPCFixes` exists.
+
+## NPCFixes source-clean contract
+
+`NPCFixes` is the stable destination for validated NPC behavior fixes. It includes combat relationship sanitation, exact fake-hit cleanup, terminal `Die` progress, live clothing restoration and server corpse-clothing repair.
+
+Two Bandits functions are local to upstream files and cannot be safely monkeypatched from another Lua module. For those seams, `NPCFixes` uses small same-path **runtime transformers**, not copies of the original source:
+
+- `client/BanditUpdate.lua` reads the installed `Bandits2` source through `getModFileReader()`, validates exact B42.20 fingerprints, changes only the confirmed pursuit relationships in memory and executes the transformed text;
+- `shared/ZombieActions/ZAShoot.lua` does the same for the unsafe gunshot target bridge.
+
+The Workshop item therefore contains no complete third-party implementation. A fingerprint mismatch must result in a visible bypass warning rather than an unverified guessed patch.
 
 ## NPCCombatExperimental isolation contract
 
-`NPCCombatExperimental` contains only NPC work that is still being actively tested: the zombie -> NPC AttackState probe, its observe-only target diagnostics, the death-loot/corpse pipeline diagnostics, and the admin right-click stress spawner plus its server bridge. These files must not live in `RuntimeFixes` until they are independently validated.
+`NPCCombatExperimental` is optional tooling for controlled tests. Production target-disconnect behavior has been promoted out of it. It retains observe-only target/AttackState diagnostics, death/corpse tracing and the staff-only stress spawner/server bridge.
 
-B42.20.3 testing proved that `bAttack` is read-only through the exposed animation-variable callback, so the experimental package must not call `setVariable("bAttack", false)` and must not claim that an observed `bAttack=true` was blocked. The current AttackState component is diagnostic-only while a safe mutable pre-AttackState seam is investigated.
-
-Death-loot diagnostics are also observation-only. They trace the existing `Bandit.UpdateItemsToSpawnAtDeath()` manifest through `OnZombieDead` and `OnDeadBodySpawn` without adding, deleting, cloning or wearing items. This is intentional because the current upstream death path mixes `ItemVisual` clothing, `getWornItems():clear()` and a `preserve`-based inventory cleanup; a fix should be based on the observed loss boundary rather than guessed and risk duplicate loot.
-
-The public Workshop title and Mod ID intentionally do not name the upstream mod. Internal Lua integration still uses the real `Bandits2`/Bandits API names where required for load ordering and debugging.
-
-The stable RuntimeFixes item must remain usable without enabling this experimental item. Conversely, the experimental item is allowed to load after RuntimeFixes so both can be tested together without modifying the already-published stable package.
+It loads after `RuntimeFixes` and `NPCFixes` when those stable items are present, so diagnostics observe the production stack instead of masking it.
 
 ## Source ownership
 
-The monolithic compatibility patch remains a private regression baseline and can contain historical full-file overrides. Those files are not automatically suitable for public Workshop publication.
+The split Workshop items are the supported distribution model. `Bandits-LCC-Dev` may contain full modified upstream files for research and regression comparison inside this private repository, but those files are not publication payloads and are excluded from the grouped Workshop audit.
 
-Each split item must be reviewed on its own publication contract. In particular, `RuntimeFixes` is intentionally source-clean and does not redistribute Bandits Lua source or assets. The optional-Guard bootstrap and degraded fallback are LCC-authored support code.
+Every stable/experimental Workshop item is reviewed independently for scope and source ownership.
 
 ## Publishing
 
-Each child directory is a separate Workshop staging directory with its own `workshop.txt` and `Contents/mods/.../42/mod.info`.
+Each published/staged child directory has its own `workshop.txt` and `Contents/mods/.../42/mod.info`.
 
-Published items keep their assigned Workshop ID in `workshop.txt`. `NPCCombatExperimental` is published as Workshop item `3786817782`, and the grouped audit pins that ID so it cannot silently return to staging `id=0` or drift to another item.
+Published items keep their assigned Workshop IDs and non-empty previews. A new item may remain `id=0`, `visibility=private`, and without a final preview while it is still a release candidate; it must receive a real Workshop ID and preview before public publication.
 
-Every published split item, including `NPCCombatExperimental`, keeps a non-empty `preview.png` in its Workshop root. The NPC combat preview is tracked through Git LFS and is subject to the same preview-file audit contract as the other published patches.
+## Test rule
 
-## Migration rule
-
-Do not enable the monolithic `LaccckaB4220Compat` together with these split items during normal testing. Some compatibility module paths and behavioral hooks overlap, so simultaneous loading is not a supported configuration.
+Normal regression tests use the original upstream mods plus the relevant split patches. Do not enable or copy `Bandits-LCC-Dev` during a stable-package acceptance test, because that would bypass the source-clean `NPCFixes` integration being validated.
