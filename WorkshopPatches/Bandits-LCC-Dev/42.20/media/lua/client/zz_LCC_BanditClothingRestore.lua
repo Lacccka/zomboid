@@ -1,14 +1,17 @@
--- LCC controlled PoC for the B42.20 Bandits reconnect clothing bug.
--- B42 worn-item APIs require ItemBodyLocation objects, not string slot names.
+-- LCC client-side live clothing repair for B42.20.3 Bandits.
 --
--- v2 proved that persistent Bandits can restore real WornItems after reconnect.
--- This iteration deliberately removes the rejected same-object death-queue path
--- and only records a compact clothing snapshot for the post-corpse repair PoC.
+-- Bandit.ApplyVisuals() clears real WornItems and rebuilds brain.clothing as
+-- ItemVisual-only records. Persistent Bandits therefore look/behave undressed
+-- after reconnect unless real typed WornItems are recreated locally.
+--
+-- This file is intentionally CLIENT-ONLY. Authoritative inventory-backed worn
+-- state is handled separately by server/zz_LCC_BanditServerClothingRestore.lua.
 if isServer() then return end
 
 local MARKER = "real-worn-reconnect-v2"
 LCC_BANDITS_CLOTHING_RESTORE = MARKER
 LCC_BANDITS_CLOTHING_DEATH_QUEUE = nil
+LCC_BANDITS_CORPSE_CLOTHING_REPAIR = nil
 
 if type(Bandit) ~= "table" or type(Bandit.ApplyVisuals) ~= "function" then
     print("[LCC][BanditsClothingPoC][DISABLED] Bandit.ApplyVisuals unavailable")
@@ -22,12 +25,6 @@ end
 local originalApplyVisuals = Bandit.ApplyVisuals
 local stateByBandit = setmetatable({}, { __mode = "k" })
 local warned = {}
-
-local snapshots = rawget(_G, "LCC_BanditsClothingSnapshots")
-if type(snapshots) ~= "table" then
-    snapshots = {}
-    _G.LCC_BanditsClothingSnapshots = snapshots
-end
 
 local function fullType(item)
     if not item then return nil end
@@ -50,25 +47,11 @@ local function warnOnce(key, message)
     print(message)
 end
 
-local function shallowCopy(value)
-    if type(value) ~= "table" then return {} end
-    local result = {}
-    for k, v in pairs(value) do result[k] = v end
-    return result
-end
-
-local function nowMs()
-    if type(getTimestampMs) == "function" then return getTimestampMs() end
-    local gt = getGameTime and getGameTime()
-    if gt then return math.floor(gt:getWorldAgeHours() * 3600000) end
-    return 0
-end
-
 local function wornSize(bandit)
     local ok, worn = pcall(function() return bandit:getWornItems() end)
     if not ok or not worn then return -1 end
     local okSize, size = pcall(function() return worn:size() end)
-    return okSize and size or -1
+    return okSize and tonumber(size) or -1
 end
 
 local function expectedClothingCount(brain)
@@ -95,34 +78,6 @@ local function bagName(brain)
     if type(brain.bag) == "table" then return brain.bag.name end
     if type(brain.bag) == "string" then return brain.bag end
     return nil
-end
-
-local function recordSnapshot(bandit, brain)
-    if not bandit or not brain or type(brain.clothing) ~= "table" then return end
-    local id = characterId(bandit, brain)
-    if id == "nil" then return end
-
-    local x, y, z
-    pcall(function()
-        x, y, z = bandit:getX(), bandit:getY(), bandit:getZ()
-    end)
-
-    snapshots[id] = {
-        id = id,
-        clothing = shallowCopy(brain.clothing),
-        tint = shallowCopy(brain.tint),
-        bag = bagName(brain),
-        fullname = brain.fullname and tostring(brain.fullname) or "<unknown>",
-        x = tonumber(x),
-        y = tonumber(y),
-        z = tonumber(z),
-        at = nowMs(),
-    }
-
-    pcall(function()
-        local md = bandit:getModData()
-        if md then md.LCC_BanditsBrainId = id end
-    end)
 end
 
 local function stateFor(bandit)
@@ -154,8 +109,7 @@ end
 local function typedBodyLocation(item)
     if not item then return nil end
     local ok, location = pcall(function() return item:getBodyLocation() end)
-    if not ok or location == nil then return nil end
-    return location
+    return ok and location or nil
 end
 
 local function ensureSlot(bandit, brain, state, brainLocation, itemType)
@@ -216,7 +170,6 @@ local function ensureSlot(bandit, brain, state, brainLocation, itemType)
         ))
         return 0, created and 1 or 0
     end
-
     return 1, created and 1 or 0
 end
 
@@ -255,23 +208,24 @@ local function restoreRealWorn(bandit, brain)
     if not bandit or not brain or type(brain.clothing) ~= "table" then return end
     if not bandit:isAlive() then return end
 
-    recordSnapshot(bandit, brain)
-
     local state = stateFor(bandit)
     local beforeWorn = wornSize(bandit)
     local restored, created = 0, 0
+    local processed = {}
 
     if BanditCompatibility.GetBodyLocationsOrdered then
         for _, brainLocation in pairs(BanditCompatibility.GetBodyLocationsOrdered()) do
             local itemType = brain.clothing[brainLocation]
             if itemType then
+                processed[brainLocation] = true
                 local r, c = ensureSlot(bandit, brain, state, brainLocation, itemType)
                 restored = restored + r
                 created = created + c
             end
         end
-    else
-        for brainLocation, itemType in pairs(brain.clothing) do
+    end
+    for brainLocation, itemType in pairs(brain.clothing) do
+        if not processed[brainLocation] then
             local r, c = ensureSlot(bandit, brain, state, brainLocation, itemType)
             restored = restored + r
             created = created + c
@@ -301,6 +255,6 @@ Bandit.ApplyVisuals = function(bandit, brain)
 end
 
 print(string.format(
-    "[LCC][BanditsClothingPoC][BOOT] marker=%s mode=typed-ItemBodyLocation snapshot=true deathQueue=false",
+    "[LCC][BanditsClothingPoC][BOOT] marker=%s role=client-live typedBodyLocation=true snapshot=false deathQueue=false postCorpse=false",
     MARKER
 ))
