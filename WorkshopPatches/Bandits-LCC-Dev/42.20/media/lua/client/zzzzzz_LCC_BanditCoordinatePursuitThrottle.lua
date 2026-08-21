@@ -1,23 +1,14 @@
 -- LCC experimental throttle for coordinate-only zombie -> Bandit pursuit.
 --
 -- The current BanditUpdate PoC replaces pathToCharacter(Bandit) with
--- pathToLocationF(banditX, banditY, banditZ). That removes the unsafe character
--- relation, but BanditUpdate calls the helper from OnZombieUpdate and therefore
--- can issue the same location goal every frame.
+-- pathToLocationF(banditX, banditY, banditZ). Build 42.20.3
+-- PathFindBehavior2.setData() cancels the current path request, so reissuing the
+-- same location on every OnZombieUpdate can keep the zombie in pathfind forever.
 --
--- Build 42.20.3 PathFindBehavior2.setData() cancels the current path request.
--- Reissuing an unchanged location every frame can keep a zombie in pathfind
--- without allowing the request to finish. Runtime pursuit-stall tracing confirmed
--- this signature: controller remained true, Goal.Location remained valid, and
--- most sustained stalls were state=pathfind with a destination already at the
--- Bandit's current position.
---
--- Until this logic is folded into the source-clean BanditUpdate override, this
--- wrapper throttles only the IsController() gate used by the local
--- PathZombieToBanditLocation() helper. It suppresses the redundant call when an
--- ordinary zombie already owns an active Goal.Location close to the nearest
--- Bandit and is not idle. A materially moved Bandit, a cancelled/non-location
--- goal, or idle recovery is allowed through.
+-- Runtime 2026-08-21 confirmed the signature: with this throttle enabled,
+-- pathfind stalls dropped from 64 to 0 and Network/Attack regressions stayed at
+-- zero. This remains a temporary external wrapper until the logic is folded into
+-- the source-clean BanditUpdate pursuit helper.
 if isServer() then return end
 
 require "BanditZombie"
@@ -27,7 +18,7 @@ if not BanditUtils or type(BanditUtils.IsController) ~= "function" then
     return
 end
 
-local MARKER = "coordinate-pursuit-throttle-v1"
+local MARKER = "coordinate-pursuit-throttle-v2"
 LCC_BANDITS_PURSUIT_THROTTLE = MARKER
 
 local ALIGN_DIST2 = 0.5625 -- 0.75 tile
@@ -35,11 +26,15 @@ local MAX_BANDIT_DIST2 = 400
 local IDLE_RETRY_MS = 750
 
 local originalIsController = BanditUtils.IsController
+-- Diagnostics must distinguish real MP ownership from the false value returned
+-- by this wrapper to suppress a redundant pathToLocationF().
+LCC_BANDITS_REAL_IS_CONTROLLER = originalIsController
+
 local idleRetryAt = setmetatable({}, { __mode = "k" })
 
 local stats = {
     calls = 0,
-    controllerFalse = 0,
+    realControllerFalse = 0,
     ordinaryControllerCalls = 0,
     suppressedAligned = 0,
     allowedNoBandit = 0,
@@ -109,12 +104,12 @@ BanditUtils.IsController = function(character)
         return false
     end
     if controller ~= true then
-        stats.controllerFalse = stats.controllerFalse + 1
+        stats.realControllerFalse = stats.realControllerFalse + 1
         return false
     end
 
-    -- Do not affect Bandits, players or unrelated callers. The current pursuit
-    -- helper passes an ordinary IsoZombie here.
+    -- Do not affect Bandits, players or unrelated non-zombie callers. The current
+    -- pursuit helper passes an ordinary IsoZombie here.
     if not character or not instanceof(character, "IsoZombie") or isBandit(character) then
         return true
     end
@@ -176,19 +171,19 @@ BanditUtils.IsController = function(character)
         return false
     end
 
-    -- The existing goal is already a suitable Bandit coordinate. Returning false
-    -- here prevents PathZombieToBanditLocation() from calling pathToLocationF()
-    -- again and cancelling the in-flight path request.
+    -- Existing Goal.Location is already close enough to the moving Bandit's
+    -- current position. Returning false suppresses only the redundant
+    -- PathZombieToBanditLocation() call in the current PoC.
     stats.suppressedAligned = stats.suppressedAligned + 1
     return false
 end
 
 Events.EveryOneMinute.Add(function()
     print(string.format(
-        "[LCC][BanditsPursuitThrottle][SUMMARY] marker=%s calls=%d controllerFalse=%d ordinaryControllerCalls=%d suppressedAligned=%d allowedNoBandit=%d allowedNoPfb=%d allowedNonLocation=%d allowedCancelled=%d allowedStale=%d allowedIdleRecovery=%d idleRetrySuppressed=%d errors=%d",
+        "[LCC][BanditsPursuitThrottle][SUMMARY] marker=%s calls=%d realControllerFalse=%d ordinaryControllerCalls=%d suppressedAligned=%d allowedNoBandit=%d allowedNoPfb=%d allowedNonLocation=%d allowedCancelled=%d allowedStale=%d allowedIdleRecovery=%d idleRetrySuppressed=%d errors=%d",
         MARKER,
         stats.calls,
-        stats.controllerFalse,
+        stats.realControllerFalse,
         stats.ordinaryControllerCalls,
         stats.suppressedAligned,
         stats.allowedNoBandit,
@@ -203,6 +198,6 @@ Events.EveryOneMinute.Add(function()
 end)
 
 print(string.format(
-    "[LCC][BanditsPursuitThrottle][BOOT] marker=%s alignDistance=0.75 idleRetryMs=%d mutation=IsController-gate-only characterGoal=false",
+    "[LCC][BanditsPursuitThrottle][BOOT] marker=%s alignDistance=0.75 idleRetryMs=%d mutation=IsController-gate-only realControllerExport=true characterGoal=false",
     MARKER, IDLE_RETRY_MS
 ))
