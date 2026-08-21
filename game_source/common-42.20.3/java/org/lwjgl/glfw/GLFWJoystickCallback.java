@@ -1,0 +1,55 @@
+/*
+ * Decompiled with CFR 0.152.
+ */
+package org.lwjgl.glfw;
+
+import org.jspecify.annotations.Nullable;
+import org.lwjgl.glfw.GLFW;
+import org.lwjgl.glfw.GLFWJoystickCallbackI;
+import org.lwjgl.system.Callback;
+
+public abstract class GLFWJoystickCallback
+extends Callback
+implements GLFWJoystickCallbackI {
+    public static GLFWJoystickCallback create(long functionPointer) {
+        GLFWJoystickCallbackI instance = (GLFWJoystickCallbackI)Callback.get(functionPointer);
+        return instance instanceof GLFWJoystickCallback ? (GLFWJoystickCallback)instance : new Container(functionPointer, instance);
+    }
+
+    public static @Nullable GLFWJoystickCallback createSafe(long functionPointer) {
+        return functionPointer == 0L ? null : GLFWJoystickCallback.create(functionPointer);
+    }
+
+    public static GLFWJoystickCallback create(GLFWJoystickCallbackI instance) {
+        return instance instanceof GLFWJoystickCallback ? (GLFWJoystickCallback)instance : new Container(instance.address(), instance);
+    }
+
+    protected GLFWJoystickCallback() {
+        super(DESCRIPTOR);
+    }
+
+    GLFWJoystickCallback(long functionPointer) {
+        super(functionPointer);
+    }
+
+    public GLFWJoystickCallback set() {
+        GLFW.glfwSetJoystickCallback(this);
+        return this;
+    }
+
+    private static final class Container
+    extends GLFWJoystickCallback {
+        private final GLFWJoystickCallbackI delegate;
+
+        Container(long functionPointer, GLFWJoystickCallbackI delegate) {
+            super(functionPointer);
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void invoke(int jid, int event) {
+            this.delegate.invoke(jid, event);
+        }
+    }
+}
+

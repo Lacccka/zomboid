@@ -1,0 +1,49 @@
+/*
+ * Decompiled with CFR 0.152.
+ */
+package org.apache.commons.compress.harmony.pack200;
+
+import org.apache.commons.compress.harmony.pack200.CPSignature;
+import org.apache.commons.compress.harmony.pack200.CPUTF8;
+import org.apache.commons.compress.harmony.pack200.ConstantPoolEntry;
+
+public class CPNameAndType
+extends ConstantPoolEntry
+implements Comparable {
+    private final CPUTF8 name;
+    private final CPSignature signature;
+
+    public CPNameAndType(CPUTF8 name, CPSignature signature) {
+        this.name = name;
+        this.signature = signature;
+    }
+
+    public int compareTo(Object obj) {
+        if (obj instanceof CPNameAndType) {
+            CPNameAndType nat = (CPNameAndType)obj;
+            int compareSignature = this.signature.compareTo(nat.signature);
+            if (compareSignature == 0) {
+                return this.name.compareTo(nat.name);
+            }
+            return compareSignature;
+        }
+        return 0;
+    }
+
+    public String getName() {
+        return this.name.getUnderlyingString();
+    }
+
+    public int getNameIndex() {
+        return this.name.getIndex();
+    }
+
+    public int getTypeIndex() {
+        return this.signature.getIndex();
+    }
+
+    public String toString() {
+        return this.name + ":" + this.signature;
+    }
+}
+

@@ -1,0 +1,132 @@
+/*
+ * Decompiled with CFR 0.152.
+ */
+package org.javacord.core.entity.message;
+
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.NoSuchElementException;
+import java.util.concurrent.CompletableFuture;
+import org.javacord.api.entity.message.Message;
+import org.javacord.api.entity.message.MessageFlag;
+import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.entity.message.internal.InteractionMessageBuilderDelegate;
+import org.javacord.api.interaction.InteractionBase;
+import org.javacord.api.interaction.MessageComponentInteractionBase;
+import org.javacord.core.entity.message.InteractionCallbackType;
+import org.javacord.core.entity.message.MessageBuilderBaseDelegateImpl;
+import org.javacord.core.entity.message.embed.EmbedBuilderDelegateImpl;
+import org.javacord.core.interaction.InteractionImpl;
+import org.javacord.core.util.FileContainer;
+import org.javacord.core.util.rest.RestEndpoint;
+import org.javacord.core.util.rest.RestMethod;
+import org.javacord.core.util.rest.RestRequest;
+
+public class InteractionMessageBuilderDelegateImpl
+extends MessageBuilderBaseDelegateImpl
+implements InteractionMessageBuilderDelegate {
+    private EnumSet<MessageFlag> messageFlags = null;
+
+    @Override
+    public void setFlags(EnumSet<MessageFlag> messageFlags) {
+        this.messageFlags = messageFlags;
+    }
+
+    @Override
+    public CompletableFuture<Void> sendInitialResponse(InteractionBase interaction) {
+        ObjectNode topBody = JsonNodeFactory.instance.objectNode();
+        topBody.put("type", InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE.getId());
+        ObjectNode body = topBody.putObject("data");
+        this.prepareInteractionWebhookBodyParts(body);
+        return new RestRequest(interaction.getApi(), RestMethod.POST, RestEndpoint.INTERACTION_RESPONSE).setUrlParameters(interaction.getIdAsString(), interaction.getToken()).consumeGlobalRatelimit(false).includeAuthorizationHeader(false).setBody(topBody).execute(result -> null);
+    }
+
+    @Override
+    public CompletableFuture<Void> deleteInitialResponse(InteractionBase interaction) {
+        return new RestRequest(interaction.getApi(), RestMethod.DELETE, RestEndpoint.ORIGINAL_INTERACTION_RESPONSE).setUrlParameters(Long.toUnsignedString(interaction.getApplicationId()), interaction.getToken()).consumeGlobalRatelimit(false).includeAuthorizationHeader(false).execute(result -> null);
+    }
+
+    @Override
+    public CompletableFuture<Message> editOriginalResponse(InteractionBase interaction) {
+        RestRequest<Message> request = new RestRequest(interaction.getApi(), RestMethod.PATCH, RestEndpoint.ORIGINAL_INTERACTION_RESPONSE).setUrlParameters(Long.toUnsignedString(interaction.getApplicationId()), interaction.getToken()).consumeGlobalRatelimit(false).includeAuthorizationHeader(false);
+        return this.executeResponse(request);
+    }
+
+    @Override
+    public CompletableFuture<Message> sendFollowupMessage(InteractionBase interaction) {
+        RestRequest<Message> request = new RestRequest(interaction.getApi(), RestMethod.POST, RestEndpoint.WEBHOOK_SEND).setUrlParameters(Long.toUnsignedString(interaction.getApplicationId()), interaction.getToken()).consumeGlobalRatelimit(false).includeAuthorizationHeader(false);
+        return this.executeResponse(request);
+    }
+
+    @Override
+    public CompletableFuture<Void> updateOriginalMessage(InteractionBase interaction) {
+        ObjectNode topBody = JsonNodeFactory.instance.objectNode();
+        ObjectNode data = JsonNodeFactory.instance.objectNode();
+        this.prepareCommonWebhookMessageBodyParts(data);
+        this.prepareComponents(data, true);
+        topBody.put("type", InteractionCallbackType.UPDATE_MESSAGE.getId());
+        topBody.set("data", data);
+        return new RestRequest(interaction.getApi(), RestMethod.POST, RestEndpoint.INTERACTION_RESPONSE).setUrlParameters(interaction.getIdAsString(), interaction.getToken()).consumeGlobalRatelimit(false).includeAuthorizationHeader(false).setBody(topBody).execute(result -> null);
+    }
+
+    @Override
+    public CompletableFuture<Void> deleteFollowupMessage(InteractionBase interaction, String messageId) {
+        return new RestRequest(interaction.getApi(), RestMethod.DELETE, RestEndpoint.WEBHOOK_MESSAGE).setUrlParameters(Long.toUnsignedString(interaction.getApplicationId()), interaction.getToken(), messageId).consumeGlobalRatelimit(false).includeAuthorizationHeader(false).execute(result -> null);
+    }
+
+    @Override
+    public CompletableFuture<Message> editFollowupMessage(InteractionBase interaction, String messageId) {
+        RestRequest<Message> request = new RestRequest(interaction.getApi(), RestMethod.PATCH, RestEndpoint.WEBHOOK_MESSAGE).setUrlParameters(Long.toUnsignedString(interaction.getApplicationId()), interaction.getToken(), messageId).consumeGlobalRatelimit(false).includeAuthorizationHeader(false);
+        return this.executeResponse(request);
+    }
+
+    @Override
+    public void copy(InteractionBase interaction) {
+        ((InteractionImpl)interaction).asMessageComponentInteraction().map(MessageComponentInteractionBase::getMessage).ifPresent(this::copy);
+    }
+
+    private CompletableFuture<Message> executeResponse(RestRequest<Message> request) {
+        ObjectNode body = JsonNodeFactory.instance.objectNode();
+        this.prepareInteractionWebhookBodyParts(body);
+        return this.checkForAttachmentsAndExecuteRequest(request, body);
+    }
+
+    private void prepareInteractionWebhookBodyParts(ObjectNode body) {
+        this.prepareCommonWebhookMessageBodyParts(body);
+        this.prepareComponents(body, true);
+        if (null != this.messageFlags) {
+            body.put("flags", this.messageFlags.stream().mapToInt(MessageFlag::getId).sum());
+        }
+    }
+
+    private CompletableFuture<Message> checkForAttachmentsAndExecuteRequest(RestRequest<Message> request, ObjectNode body) {
+        if (!this.newAttachments.isEmpty() || this.embeds.stream().anyMatch(EmbedBuilder::requiresAttachments)) {
+            CompletableFuture<Message> future = new CompletableFuture<Message>();
+            request.getApi().getThreadPool().getExecutorService().submit(() -> {
+                try {
+                    ArrayList<FileContainer> tempAttachments = new ArrayList<FileContainer>(this.newAttachments);
+                    for (EmbedBuilder embed : this.embeds) {
+                        tempAttachments.addAll(((EmbedBuilderDelegateImpl)embed.getDelegate()).getRequiredAttachments());
+                    }
+                    this.addMultipartBodyToRequest(request, body, tempAttachments, request.getApi());
+                    request.execute(result -> request.getApi().getOrCreateMessage(request.getApi().getTextChannelById(result.getJsonBody().get("channel_id").asLong()).orElseThrow(() -> new NoSuchElementException("TextChannel is not cached")), result.getJsonBody())).whenComplete((message, throwable) -> {
+                        if (throwable != null) {
+                            future.completeExceptionally((Throwable)throwable);
+                        } else {
+                            future.complete((Message)message);
+                        }
+                    });
+                }
+                catch (Throwable t) {
+                    future.completeExceptionally(t);
+                }
+            });
+            return future;
+        }
+        request.setBody(body);
+        return request.execute(result -> request.getApi().getOrCreateMessage(request.getApi().getTextChannelById(result.getJsonBody().get("channel_id").asLong()).orElseThrow(() -> new NoSuchElementException("TextChannel is not cached")), result.getJsonBody()));
+    }
+}
+

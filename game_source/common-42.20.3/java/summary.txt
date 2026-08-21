@@ -1,0 +1,464 @@
+Summary for C:\Program Files (x86)\Steam\steamapps\common\ProjectZomboid\projectzomboid.jar
+Decompiled with CFR 0.152
+
+
+com.jcraft.jorbis.Drft
+----------------------------
+
+dradbg(int int int int float[] float[] float[] float[] float[] float[] int )
+  Unable to fully structure code
+dradfg(int int int int float[] float[] float[] float[] float[] float[] int )
+  Unable to fully structure code
+
+
+fmod.fmod.FMODManager
+----------------------------
+
+loadZombieTest()
+  Unable to fully structure code
+
+
+se.krka.kahlua.vm.KahluaThread
+----------------------------
+
+luaMainloop()
+  Unable to fully structure code
+
+
+zombie.CollisionManager
+----------------------------
+
+resolveContactsInternal()
+  Unable to fully structure code
+
+
+zombie.CombatManager
+----------------------------
+
+pressedAttack(zombie.characters.IsoPlayer )
+  Unable to fully structure code
+
+
+zombie.characters.IsoGameCharacter
+----------------------------
+
+updateUserName()
+  Unable to fully structure code
+
+
+zombie.characters.IsoPlayer
+----------------------------
+
+getUsername(java.lang.Boolean java.lang.Boolean )
+  Unable to fully structure code
+
+
+zombie.core.Core
+----------------------------
+
+loadOptions_OLD()
+  Unable to fully structure code
+
+
+zombie.gameStates.ChooseGameInfo
+----------------------------
+
+readModInfoAux(java.lang.String )
+  Exception : org.benf.cfr.reader.util.ConfusedCFRException: Tried to end blocks [2[TRYBLOCK]], but top level block is 43[WHILELOOP]
+
+
+zombie.inventory.CompressIdenticalItems
+----------------------------
+
+areItemsIdentical(zombie.inventory.CompressIdenticalItems$PerThreadData zombie.inventory.InventoryItem zombie.inventory.InventoryItem )
+  Exception : org.benf.cfr.reader.util.ConfusedCFRException: Tried to end blocks [1[TRYBLOCK]], but top level block is 7[FORLOOP]
+
+
+zombie.inventory.ItemPickerJava
+----------------------------
+
+doRollItemInternal(zombie.inventory.ItemPickInfo zombie.inventory.ItemPickerJava$ItemPickerContainer zombie.inventory.ItemContainer float zombie.characters.IsoGameCharacter boolean zombie.inventory.ItemPickerJava$ItemPickerRoom boolean )
+  Unable to fully structure code
+rollContainerItemInternal(zombie.inventory.ItemPickInfo zombie.inventory.types.InventoryContainer zombie.characters.IsoGameCharacter zombie.inventory.ItemPickerJava$ItemPickerContainer boolean )
+  Unable to fully structure code
+
+
+zombie.iso.Helicopter
+----------------------------
+
+update()
+  Unable to fully structure code
+
+
+zombie.iso.IsoGridSquare
+----------------------------
+
+renderMinusFloor(int boolean boolean int int int int int zombie.core.opengl.Shader )
+  Unable to fully structure code
+
+
+zombie.iso.fboRenderChunk.FBORenderCell
+----------------------------
+
+calculateObjectTargetAlpha(zombie.iso.IsoObject )
+  Unable to fully structure code
+
+
+zombie.pathfind.PolygonalMap2
+----------------------------
+
+findPath(zombie.pathfind.PathFindRequest boolean )
+  Unable to fully structure code
+
+
+zombie.randomizedWorld.randomizedBuilding.RBTrashed
+----------------------------
+
+trashHouse(zombie.iso.BuildingDef )
+  Unable to fully structure code
+
+
+org.lwjgl.opengl.GL
+----------------------------
+
+createCapabilities(boolean java.util.function.IntFunction<org.lwjgl.PointerBuffer> )
+  Unable to fully structure code
+createCapabilitiesWGLDummy()
+  Loose catch block
+
+
+org.lwjgl.system.macosx.MacOSXLibraryBundle
+----------------------------
+
+getWithIdentifier(java.lang.String )
+  Loose catch block
+create(java.lang.String )
+  Loose catch block
+
+
+com.google.common.util.concurrent.AbstractFuture
+----------------------------
+
+removeWaiter(com.google.common.util.concurrent.AbstractFuture$Waiter )
+  Unable to fully structure code
+
+
+org.apache.commons.compress.compressors.bzip2.BlockSort
+----------------------------
+
+fallbackSort(int[] byte[] int )
+  Unable to fully structure code
+
+
+com.sun.xml.bind.v2.runtime.ValueListBeanInfoImpl
+----------------------------
+
+text(com.sun.xml.bind.v2.runtime.unmarshaller.UnmarshallingContext$State java.lang.CharSequence )
+  Unable to fully structure code
+
+
+io.prometheus.metrics.shaded.com_google_protobuf_4_31_1.CodedInputStreamReader
+----------------------------
+
+readMap(java.util.Map<K, V> io.prometheus.metrics.shaded.com_google_protobuf_4_31_1.MapEntryLite$Metadata<K, V> io.prometheus.metrics.shaded.com_google_protobuf_4_31_1.ExtensionRegistryLite )
+  Unable to fully structure code
+
+
+oshi.ffm.mac.CoreFoundation
+----------------------------
+
+doubleValue()
+  Loose catch block
+
+
+oshi.hardware.platform.windows.WindowsPowerSource
+----------------------------
+
+batteryQueryString(com.sun.jna.platform.win32.WinNT$HANDLE int int )
+  Exception : org.benf.cfr.reader.util.ConfusedCFRException: Tried to end blocks [12[DOLOOP]], but top level block is 3[TRYBLOCK]
+
+
+oshi.software.os.linux.LinuxNetworkParams
+----------------------------
+
+getDomainName()
+  Exception : org.benf.cfr.reader.util.ConfusedCFRException: Tried to end blocks [3[TRYBLOCK]], but top level block is 6[TRYBLOCK]
+
+
+oshi.software.os.mac.MacNetworkParams
+----------------------------
+
+getDomainName()
+  Exception : org.benf.cfr.reader.util.ConfusedCFRException: Tried to end blocks [2[TRYBLOCK]], but top level block is 5[TRYBLOCK]
+
+
+oshi.software.os.unix.freebsd.FreeBsdNetworkParams
+----------------------------
+
+getDomainName()
+  Exception : org.benf.cfr.reader.util.ConfusedCFRException: Tried to end blocks [1[TRYBLOCK]], but top level block is 4[TRYBLOCK]
+
+
+oshi.software.os.windows.WindowsOSProcess
+----------------------------
+
+queryCwdCommandlineEnvironment()
+  Unable to fully structure code
+
+
+org.apache.commons.lang3.CharSequenceUtils
+----------------------------
+
+lastIndexOf(java.lang.CharSequence java.lang.CharSequence int )
+  Unable to fully structure code
+
+
+org.apache.commons.lang3.text.ExtendedMessageFormat
+----------------------------
+
+readArgumentIndex(java.lang.String java.text.ParsePosition )
+  Unable to fully structure code
+
+
+org.javacord.core.util.gateway.DiscordWebSocketAdapter
+----------------------------
+
+onTextMessage(com.neovisionaries.ws.client.WebSocket java.lang.String )
+  Unable to fully structure code
+lambda$onTextMessage$20()
+  Unable to fully structure code
+
+
+okhttp3.CertificatePinner
+----------------------------
+
+matchesCertificate(java.security.cert.X509Certificate )
+  WARNING - bad return control flow
+
+
+okhttp3.internal.Util
+----------------------------
+
+isCivilized(okhttp3.internal.io.FileSystem java.io.File )
+  Exception : org.benf.cfr.reader.util.ConfusedCFRException: Started 2 blocks at once
+
+
+okhttp3.internal.connection.ExchangeFinder
+----------------------------
+
+findConnection(int int int int boolean )
+  Unable to fully structure code
+
+
+okhttp3.internal.connection.RealConnection
+----------------------------
+
+connectSocket(int int okhttp3.Call okhttp3.EventListener )
+  Unable to fully structure code
+
+
+okhttp3.internal.http.RetryAndFollowUpInterceptor
+----------------------------
+
+intercept(okhttp3.Interceptor$Chain )
+  Exception : org.benf.cfr.reader.util.ConfusedCFRException: Started 2 blocks at once
+
+
+okhttp3.internal.publicsuffix.PublicSuffixDatabase
+----------------------------
+
+readTheListUninterruptibly()
+  Exception : org.benf.cfr.reader.util.ConfusedCFRException: Tried to end blocks [4[CATCHBLOCK]], but top level block is 2[TRYBLOCK]
+
+
+com.fasterxml.jackson.core.io.UTF8Writer
+----------------------------
+
+write(char[] int int )
+  Unable to fully structure code
+write(java.lang.String int int )
+  Unable to fully structure code
+
+
+com.fasterxml.jackson.databind.deser.std.BaseNodeDeserializer
+----------------------------
+
+updateObject(com.fasterxml.jackson.core.JsonParser com.fasterxml.jackson.databind.DeserializationContext com.fasterxml.jackson.databind.node.ObjectNode )
+  Unable to fully structure code
+  Could not resolve type clashes
+
+
+com.fasterxml.jackson.databind.type.TypeFactory
+----------------------------
+
+constructSpecializedType(com.fasterxml.jackson.databind.JavaType java.lang.Class<?> boolean )
+  Unable to fully structure code
+
+
+io.vavr.collection.List
+----------------------------
+
+prependAll(java.lang.Iterable<? extends T> )
+  Exception : java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
+removeFirst(java.util.function.Predicate<T> )
+  Exception : java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
+reverse()
+  Exception : java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
+
+
+io.vavr.collection.Queue
+----------------------------
+
+enqueueAll(java.lang.Iterable<? extends T> )
+  Exception : java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
+
+
+io.vavr.collection.Stream
+----------------------------
+
+reverse()
+  Exception : java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
+
+
+org.bouncycastle.crypto.generators.DSAParametersGenerator
+----------------------------
+
+generateParameters_FIPS186_2()
+  Unable to fully structure code
+generateParameters_FIPS186_3()
+  Unable to fully structure code
+
+
+org.bouncycastle.crypto.generators.GOST3410ParametersGenerator
+----------------------------
+
+procedure_B(int int java.math.BigInteger[] )
+  Unable to fully structure code
+procedure_Bb(long long java.math.BigInteger[] )
+  Unable to fully structure code
+
+
+org.bouncycastle.crypto.tls.DTLSRecordLayer
+----------------------------
+
+receive(byte[] int int int )
+  Exception : org.benf.cfr.reader.util.ConfusedCFRException: Tried to end blocks [12[UNCONDITIONALDOLOOP]], but top level block is 0[TRYBLOCK]
+
+
+org.bouncycastle.crypto.tls.TlsServerProtocol
+----------------------------
+
+handleHandshakeMessage(short java.io.ByteArrayInputStream )
+  Unable to fully structure code
+
+
+okio.-Base64
+----------------------------
+
+decodeBase64ToArray(java.lang.String )
+  Unable to fully structure code
+
+
+okio.PeekSource
+----------------------------
+
+read(okio.Buffer long )
+  Unable to fully structure code
+
+
+okio.Utf8
+----------------------------
+
+processUtf8CodePoints(byte[] int int kotlin.jvm.functions.Function1<? super java.lang.Integer, kotlin.Unit> )
+  Unable to fully structure code
+processUtf16Chars(byte[] int int kotlin.jvm.functions.Function1<? super java.lang.Character, kotlin.Unit> )
+  Unable to fully structure code
+
+
+okio.internal.ByteStringKt
+----------------------------
+
+codePointIndexToCharIndex(byte[] int )
+  Unable to fully structure code
+
+
+okio.internal._Utf8Kt
+----------------------------
+
+commonToUtf8String(byte[] int int )
+  Unable to fully structure code
+
+
+kotlin.collections.SlidingWindowKt
+----------------------------
+
+invokeSuspend(java.lang.Object )
+  Unable to fully structure code
+
+
+kotlin.internal.PlatformImplementations
+----------------------------
+
+<clinit>()
+  Unable to fully structure code
+
+
+kotlin.io.FilesKt__UtilsKt
+----------------------------
+
+normalize$FilesKt__UtilsKt(java.util.List<? extends java.io.File> )
+  Could not resolve type clashes
+  Unable to fully structure code
+
+
+kotlin.jvm.JvmClassMappingKt
+----------------------------
+
+getJavaObjectType(kotlin.reflect.KClass<T> )
+  Unable to fully structure code
+  Could not resolve type clashes
+
+
+kotlin.random.Random
+----------------------------
+
+nextDouble(double double )
+  Unable to fully structure code
+
+
+kotlin.reflect.TypesJVMKt
+----------------------------
+
+computeJavaType(kotlin.reflect.KType boolean )
+  Unable to fully structure code
+
+
+kotlin.sequences.SequencesKt__SequencesKt
+----------------------------
+
+invokeSuspend(java.lang.Object )
+  Unable to fully structure code
+invokeSuspend(java.lang.Object )
+  Unable to fully structure code
+
+
+kotlin.sequences.SequencesKt___SequencesKt
+----------------------------
+
+invokeSuspend(java.lang.Object )
+  Unable to fully structure code
+invokeSuspend(java.lang.Object )
+  Unable to fully structure code
+invokeSuspend(java.lang.Object )
+  Unable to fully structure code
+invokeSuspend(java.lang.Object )
+  Unable to fully structure code
+invokeSuspend(java.lang.Object )
+  Unable to fully structure code
+
+
+kotlin.text.DelimitedRangesSequence
+----------------------------
+
+calcNext()
+  Unable to fully structure code

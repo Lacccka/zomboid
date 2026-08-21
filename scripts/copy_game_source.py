@@ -258,10 +258,10 @@ def safe_remove_generated(path: Path, game_source_root: Path) -> None:
         return
 
     if path.resolve() == game_source_root.resolve():
-        raise RuntimeError("Refusing to remove the whole game-source root.")
+        raise RuntimeError("Refusing to remove the whole game_source root.")
 
     if not is_within(path, game_source_root):
-        raise RuntimeError(f"Refusing to remove path outside game-source:\n{path}")
+        raise RuntimeError(f"Refusing to remove path outside game_source:\n{path}")
 
     shutil.rmtree(path)
 
@@ -504,7 +504,7 @@ def main() -> int:
 
     print(f"Verified identical selected files: {len(selected)}")
 
-    game_source_root = repo_root / "game-source"
+    game_source_root = repo_root / "game_source"
     common_dir = game_source_root / f"common-{build}"
     client_dir = game_source_root / f"client-{build}"
     server_dir = game_source_root / f"dedicated-server-{build}"

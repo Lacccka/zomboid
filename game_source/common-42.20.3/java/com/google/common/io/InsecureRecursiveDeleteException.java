@@ -1,0 +1,22 @@
+/*
+ * Decompiled with CFR 0.152.
+ * 
+ * Could not load the following classes:
+ *  javax.annotation.Nullable
+ */
+package com.google.common.io;
+
+import com.google.common.annotations.Beta;
+import com.google.common.annotations.GwtIncompatible;
+import java.nio.file.FileSystemException;
+import javax.annotation.Nullable;
+
+@Beta
+@GwtIncompatible
+public final class InsecureRecursiveDeleteException
+extends FileSystemException {
+    public InsecureRecursiveDeleteException(@Nullable String file) {
+        super(file, null, "unable to guarantee security of recursive delete");
+    }
+}
+

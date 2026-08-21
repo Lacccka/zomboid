@@ -46,3 +46,17 @@ C:\zomboid\game-source\common-42.20.3\java
 
 The decompiler should read the JAR directly from:
 C:\Program Files (x86)\Steam\steamapps\common\ProjectZomboid\projectzomboid.jar
+
+Java decompilation:
+Primary decompiler: CFR 0.152
+Fallback decompiler: Vineflower 1.12.0
+
+CFR decompiled Java files:
+13795
+
+Vineflower fallback classes:
+- zombie.gameStates.ChooseGameInfo
+- zombie.inventory.CompressIdenticalItems
+
+Source JAR SHA-256:
+bda809fb49004a07dbfc560d059c0ee58d0643ab0f33b53351b13bd62f1d8227
