@@ -1,6 +1,6 @@
 version=1
-workshopid=0
+id=3787592350
 title=Lacccka B42 NPC Fixes
-description=Validated Build 42.20 NPC combat, death and corpse-lifecycle compatibility fixes. Stable code; this Workshop project remains private only until a real Workshop ID and final preview are assigned. Do not use this patch unless you are sure it is required by your setup. This item contains patch files only; the original mods are not included and must be installed separately.
+description=Validated Build 42.20 NPC combat, death and corpse-lifecycle compatibility fixes. Do not use this patch unless you are sure it is required by your setup. This item contains patch files only; the original mods are not included and must be installed separately.
 tags=Build 42;Multiplayer
-visibility=private
+visibility=public
