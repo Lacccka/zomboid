@@ -4,6 +4,10 @@ Stable, source-clean Build 42.20 compatibility fixes for NPC combat and the NPC 
 
 This Workshop item contains LCC-authored shims, guards and lifecycle repairs only. It does **not** redistribute complete third-party Lua files or assets. The original mod must be installed separately.
 
+Current stable code version: `1.0.0`.
+
+The source-clean architecture was accepted on 2026-08-21 against the normal Workshop `Bandits2` installation (Workshop ID `3268487204`), without `Bandits-LCC-Dev`. Both runtime transformers loaded in `mode=PATCHED`; `ClassCastException`, `AttackState.triggerPlayerReaction` and `NetworkZombieMind: goal character is not set` remained zero. See `docs/final-reports/npcfixes-source-clean-bandits-acceptance-2026-08-21.md`.
+
 ## Scope
 
 ### Zombie -> NPC combat
@@ -55,29 +59,29 @@ The transformers are intentionally version-pinned by exact fingerprints. A finge
 - `NPCCombatExperimental` is diagnostics and admin stress tooling only. It may be enabled for regression testing, but is not required for normal play.
 - `Bandits-LCC-Dev` is an internal repository test stand and is not a Workshop package.
 
-## RC regression checklist
+## Stable regression contract
 
-Test with the original `Bandits2` plus the split patches. Do **not** copy `Bandits-LCC-Dev` into the game for this test.
+Normal regression tests use the original `Bandits2` plus the split patches. Do **not** copy `Bandits-LCC-Dev` into the game.
 
-Required boot markers:
+Required transformer boot markers:
 
 - `[LCC][NPCFixes][BanditUpdateShim][BOOT] ... mode=PATCHED`
 - `[LCC][NPCFixes][ZAShootShim][BOOT] ... mode=PATCHED`
 
-Any `BYPASS_FINGERPRINT` or `BYPASS_COMPILE` means the source-clean transformer was not validated and the RC must not be promoted.
+Any `BYPASS_FINGERPRINT`, `BYPASS_COMPILE` or `[FATAL]` means the installed upstream version is outside the currently accepted transformer contract and must be investigated before support is claimed.
 
-Combat acceptance:
+Stable acceptance criteria remain:
 
 - no `AttackState.triggerPlayerReaction` / `IsoZombie -> IsoPlayer ClassCastException`;
 - no `NetworkZombieMind: goal character is not set`;
-- no sustained zombie pathfind/walktoward freezes;
+- no sustained zombie pathfind/walktoward freeze;
 - zombies remain active without a nearby player waking them;
-- original custom Bite/BiteLow continues to cause real Bandit health loss;
 - normal zombie -> player attacks remain unchanged;
-- a downed Bandit with terminal `Die` does not remain alive as a horde target magnet.
+- no long-lived living `onground` Bandit target magnet after terminal `Die` is assigned;
+- client live/reconnect clothing repair remains functional;
+- server clothing primary/fallback keep `errors=0`;
+- corpses retain the configured wearable set without duplicate-loot regression.
 
-Corpse acceptance:
+## Publication state
 
-- live/reconnected Bandits retain real worn clothing;
-- server clothing repair/fallback report `errors=0`;
-- observed corpses contain at least the expected configured wearable set without duplicate-loot regressions.
+The code is stable `1.0.0`. The repository Workshop project may remain `id=0` / `visibility=private` until a real Workshop item ID and final preview are assigned. This staging metadata does not change the stability classification of the code itself.
