@@ -1,29 +1,41 @@
--- LCC B42.20.3 server-authoritative clothing repair for Bandits.
+-- LCC B42.20.3 server-authoritative corpse clothing repair for Bandits.
 --
--- Decompiled IsoDeadBody proves that corpse construction copies the dying
--- character's WornItems, and corpse serialization stores each worn item as an
--- index into the corpse ItemContainer. Therefore a durable fix must restore the
--- same InventoryItem on the dedicated server, keep it in the Bandit's inventory,
--- and wear that exact object before death.
+-- Exact 42.20.3 Java lifecycle:
+--   IsoZombie.DoZombieInventory()
+--   Events.OnZombieDead
+--   IsoZombie.DoDeath() -> new IsoDeadBody(died)
+--
+-- IsoDeadBody then takes died.getInventory() as its container and copies
+-- died.getWornItems(). During corpse save every worn entry is serialized as an
+-- index into that container. Therefore the durable invariant is:
+--
+--   the SAME InventoryItem object must be in zombie inventory AND WornItems
+--   before IsoDeadBody is constructed.
+--
+-- We enforce that invariant just-in-time on the dedicated server. This avoids
+-- modifying live server inventory throughout the NPC lifetime and also covers
+-- persistent Bandits that never pass through Bandit.ApplyVisuals after restart.
 if not isServer() then return end
 
-local MARKER = "server-authoritative-worn-v1"
-local CLIENT_MARKER = "real-worn-reconnect-v2"
+local MARKER = "server-authoritative-death-worn-v2"
 LCC_BANDITS_SERVER_CLOTHING_RESTORE = MARKER
 
-if type(Bandit) ~= "table" or type(Bandit.ApplyVisuals) ~= "function" then
-    print("[LCC][BanditsServerClothing][DISABLED] Bandit.ApplyVisuals unavailable")
-    return
-end
 if type(BanditCompatibility) ~= "table" or type(BanditCompatibility.InstanceItem) ~= "function" then
     print("[LCC][BanditsServerClothing][DISABLED] BanditCompatibility.InstanceItem unavailable")
     return
 end
+if type(GetBanditClusterData) ~= "function" then
+    print("[LCC][BanditsServerClothing][DISABLED] GetBanditClusterData unavailable")
+    return
+end
 
-local originalApplyVisuals = Bandit.ApplyVisuals
 local warned = {}
 local stats = {
-    applyCalls = 0,
+    deathsSeen = 0,
+    banditDeathsMatched = 0,
+    deathRepairs = 0,
+    expected = 0,
+    wearableExpected = 0,
     restored = 0,
     created = 0,
     reusedInventory = 0,
@@ -46,19 +58,55 @@ local function fullType(item)
     return ok and value and tostring(value) or nil
 end
 
-local function characterId(character, brain)
-    if brain and brain.id ~= nil then return tostring(brain.id) end
-    if character and BanditUtils and type(BanditUtils.GetCharacterID) == "function" then
-        local ok, value = pcall(BanditUtils.GetCharacterID, character)
-        if ok and value ~= nil then return tostring(value) end
-    end
-    return "nil"
-end
-
 local function typedBodyLocation(item)
     if not item then return nil end
     local ok, location = pcall(function() return item:getBodyLocation() end)
     return ok and location or nil
+end
+
+local function wornSize(character)
+    if not character then return -1 end
+    local ok, worn = pcall(function() return character:getWornItems() end)
+    if not ok or not worn then return -1 end
+    local okSize, size = pcall(function() return worn:size() end)
+    return okSize and tonumber(size) or -1
+end
+
+local function inventoryItems(inventory)
+    if not inventory then return nil, -1 end
+    local ok, items = pcall(function() return inventory:getItems() end)
+    if not ok or not items then return nil, -1 end
+    local okSize, size = pcall(function() return items:size() end)
+    return items, okSize and tonumber(size) or -1
+end
+
+local function inventoryCount(character)
+    if not character then return -1 end
+    local ok, inventory = pcall(function() return character:getInventory() end)
+    if not ok or not inventory then return -1 end
+    local _, size = inventoryItems(inventory)
+    return size
+end
+
+local function characterId(character)
+    if not character then return nil end
+    local ok, value = pcall(function() return character:getPersistentOutfitID() end)
+    if ok and value ~= nil then return value end
+    return nil
+end
+
+local function resolveBrain(zombie)
+    local id = characterId(zombie)
+    if id == nil then return nil, nil end
+
+    local okCluster, cluster = pcall(GetBanditClusterData, id)
+    if not okCluster or type(cluster) ~= "table" then return id, nil end
+
+    local brain = cluster[id]
+    if brain == nil then brain = cluster[tostring(id)] end
+    if type(brain) ~= "table" then return id, nil end
+    if brain.id ~= nil and tostring(brain.id) ~= tostring(id) then return id, nil end
+    return id, brain
 end
 
 local function applyTint(item, brain, brainLocation)
@@ -73,93 +121,100 @@ local function applyTint(item, brain, brainLocation)
     end)
 end
 
-local function markItem(item, brainLocation)
+local function markItem(item, id, brainLocation)
     if not item then return end
     pcall(function()
         local md = item:getModData()
-        if md then
-            md.LCC_BanditsServerClothing = MARKER
-            md.LCC_BanditsRealClothing = CLIENT_MARKER
-            md.LCC_BanditsBrainLocation = tostring(brainLocation)
-            md.preserve = true
-        end
+        if not md then return end
+        md.LCC_BanditsServerClothing = MARKER
+        md.LCC_BanditsBrainId = id
+        md.LCC_BanditsBrainLocation = tostring(brainLocation)
+        md.preserve = true
     end)
 end
 
-local function inventoryItems(inventory)
-    if not inventory then return nil, -1 end
-    local ok, items = pcall(function() return inventory:getItems() end)
-    if not ok or not items then return nil, -1 end
-    local okSize, size = pcall(function() return items:size() end)
-    return items, okSize and tonumber(size) or -1
-end
-
-local function findReusableInventoryItem(inventory, brainLocation, itemType)
-    local items, size = inventoryItems(inventory)
-    if not items or size < 0 then return nil end
-    local wantedLocation = tostring(brainLocation)
-    local wantedType = tostring(itemType)
-
-    for i = 0, size - 1 do
-        local okItem, item = pcall(function() return items:get(i) end)
-        if okItem and item and fullType(item) == wantedType then
-            local okMd, md = pcall(function() return item:getModData() end)
-            if okMd and md
-                    and md.LCC_BanditsServerClothing == MARKER
-                    and tostring(md.LCC_BanditsBrainLocation or "") == wantedLocation then
-                return item
-            end
-        end
-    end
-    return nil
+local function isWorn(character, item)
+    if not character or not item then return false end
+    local ok, worn = pcall(function() return character:getWornItems() end)
+    if not ok or not worn then return false end
+    local okContains, result = pcall(function() return worn:contains(item) end)
+    return okContains and result == true
 end
 
 local function ensureInInventory(inventory, item)
     if not inventory or not item then return false, false end
+
     local okContainer, container = pcall(function() return item:getContainer() end)
     if okContainer and container == inventory then return true, false end
     if okContainer and container ~= nil and container ~= inventory then return false, false end
 
     local okAdd = pcall(function() inventory:AddItem(item) end)
     if not okAdd then return false, false end
+
     local okAfter, after = pcall(function() return item:getContainer() end)
     return okAfter and after == inventory, true
 end
 
-local function ensureSlot(bandit, brain, brainLocation, itemType)
-    if not bandit or not brainLocation or not itemType then return end
-    local inventory = bandit:getInventory()
-    if not inventory then
+local function findReusableInventoryItem(character, inventory, id, brainLocation, itemType)
+    local items, size = inventoryItems(inventory)
+    if not items or size < 0 then return nil end
+
+    local wantedType = tostring(itemType)
+    local wantedLocation = tostring(brainLocation)
+    local fallback = nil
+
+    for i = 0, size - 1 do
+        local okItem, item = pcall(function() return items:get(i) end)
+        if okItem and item and fullType(item) == wantedType and not isWorn(character, item) then
+            local okMd, md = pcall(function() return item:getModData() end)
+            if okMd and md
+                    and md.LCC_BanditsServerClothing == MARKER
+                    and tostring(md.LCC_BanditsBrainId or "") == tostring(id)
+                    and tostring(md.LCC_BanditsBrainLocation or "") == wantedLocation then
+                return item
+            end
+            if fallback == nil then fallback = item end
+        end
+    end
+    return fallback
+end
+
+local function ensureSlot(zombie, id, brain, brainLocation, itemType, localStats)
+    if not brainLocation or not itemType then return end
+    localStats.expected = localStats.expected + 1
+    stats.expected = stats.expected + 1
+
+    local probe = BanditCompatibility.InstanceItem(itemType)
+    if not probe then
+        localStats.errors = localStats.errors + 1
         stats.errors = stats.errors + 1
-        warnOnce("inventory", "[LCC][BanditsServerClothing][ERROR] Bandit inventory unavailable")
+        warnOnce("instance:" .. tostring(itemType), string.format(
+            "[LCC][BanditsServerClothing][INSTANCE_FAILED] id=%s item=%s",
+            tostring(id), tostring(itemType)
+        ))
         return
     end
 
-    -- Reuse the authoritative object already stored in the Bandit's inventory
-    -- before allocating a new item. Bandit.ApplyVisuals clears WornItems but does
-    -- not remove these marked clothing objects from inventory.
-    local item = findReusableInventoryItem(inventory, brainLocation, itemType)
-    local reused = item ~= nil
-    if not item then
-        item = BanditCompatibility.InstanceItem(itemType)
-        if not item then
-            stats.errors = stats.errors + 1
-            warnOnce("instance:" .. tostring(itemType), string.format(
-                "[LCC][BanditsServerClothing][INSTANCE_FAILED] id=%s item=%s",
-                characterId(bandit, brain), tostring(itemType)
-            ))
-            return
-        end
-    end
-
-    local location = typedBodyLocation(item)
+    local location = typedBodyLocation(probe)
     if not location then
+        localStats.noLocation = localStats.noLocation + 1
         stats.noLocation = stats.noLocation + 1
         return
     end
+    localStats.wearableExpected = localStats.wearableExpected + 1
+    stats.wearableExpected = stats.wearableExpected + 1
 
-    local okCurrent, current = pcall(function() return bandit:getWornItem(location) end)
+    local inventory = zombie:getInventory()
+    if not inventory then
+        localStats.errors = localStats.errors + 1
+        stats.errors = stats.errors + 1
+        warnOnce("inventory", "[LCC][BanditsServerClothing][ERROR] zombie inventory unavailable")
+        return
+    end
+
+    local okCurrent, current = pcall(function() return zombie:getWornItem(location) end)
     if not okCurrent then
+        localStats.errors = localStats.errors + 1
         stats.errors = stats.errors + 1
         warnOnce("get-worn", "[LCC][BanditsServerClothing][ERROR] getWornItem(ItemBodyLocation) failed")
         return
@@ -167,112 +222,185 @@ local function ensureSlot(bandit, brain, brainLocation, itemType)
 
     if current then
         if fullType(current) ~= tostring(itemType) then
+            localStats.conflicts = localStats.conflicts + 1
             stats.conflicts = stats.conflicts + 1
             print(string.format(
-                "[LCC][BanditsServerClothing][SLOT_CONFLICT] id=%s brainLocation=%s expected=%s actual=%s intervention=false",
-                characterId(bandit, brain), tostring(brainLocation), tostring(itemType), tostring(fullType(current) or "<unknown>")
+                "[LCC][BanditsServerClothing][SLOT_CONFLICT] marker=%s id=%s brainLocation=%s expected=%s actual=%s intervention=false",
+                MARKER, tostring(id), tostring(brainLocation), tostring(itemType), tostring(fullType(current) or "<unknown>")
             ))
             return
         end
-        markItem(current, brainLocation)
+
+        markItem(current, id, brainLocation)
         applyTint(current, brain, brainLocation)
         local inInventory, attemptedAdd = ensureInInventory(inventory, current)
-        if attemptedAdd then stats.inventoryAdds = stats.inventoryAdds + 1 end
+        if attemptedAdd then
+            localStats.inventoryAdds = localStats.inventoryAdds + 1
+            stats.inventoryAdds = stats.inventoryAdds + 1
+        end
         if not inInventory then
+            localStats.errors = localStats.errors + 1
             stats.errors = stats.errors + 1
-            warnOnce("current-not-in-inventory", "[LCC][BanditsServerClothing][ERROR] existing worn item is not inventory-backed")
+            warnOnce("worn-not-in-inventory:" .. tostring(itemType), string.format(
+                "[LCC][BanditsServerClothing][INVARIANT_ERROR] id=%s worn item=%s is not inventory-backed",
+                tostring(id), tostring(itemType)
+            ))
             return
         end
+        localStats.alreadyWorn = localStats.alreadyWorn + 1
         stats.alreadyWorn = stats.alreadyWorn + 1
         return
     end
 
-    if reused then
+    local item = findReusableInventoryItem(zombie, inventory, id, brainLocation, itemType)
+    if item then
+        localStats.reusedInventory = localStats.reusedInventory + 1
         stats.reusedInventory = stats.reusedInventory + 1
     else
-        markItem(item, brainLocation)
-        applyTint(item, brain, brainLocation)
+        item = probe
         local inInventory, attemptedAdd = ensureInInventory(inventory, item)
-        if attemptedAdd then stats.inventoryAdds = stats.inventoryAdds + 1 end
+        if attemptedAdd then
+            localStats.inventoryAdds = localStats.inventoryAdds + 1
+            stats.inventoryAdds = stats.inventoryAdds + 1
+        end
         if not inInventory then
+            localStats.errors = localStats.errors + 1
             stats.errors = stats.errors + 1
             warnOnce("add:" .. tostring(itemType), string.format(
                 "[LCC][BanditsServerClothing][INVENTORY_ADD_FAILED] id=%s item=%s",
-                characterId(bandit, brain), tostring(itemType)
+                tostring(id), tostring(itemType)
             ))
             return
         end
+        localStats.created = localStats.created + 1
         stats.created = stats.created + 1
     end
 
-    markItem(item, brainLocation)
+    markItem(item, id, brainLocation)
     applyTint(item, brain, brainLocation)
-    local okSet = pcall(function() bandit:setWornItem(location, item) end)
+
+    local okSet = pcall(function() zombie:setWornItem(location, item) end)
     if not okSet then
+        localStats.errors = localStats.errors + 1
         stats.errors = stats.errors + 1
         warnOnce("set-worn", "[LCC][BanditsServerClothing][ERROR] setWornItem(ItemBodyLocation, item) failed")
         return
     end
+
+    local okVerify, verify = pcall(function() return zombie:getWornItem(location) end)
+    local okContainer, container = pcall(function() return item:getContainer() end)
+    if not okVerify or verify ~= item or not okContainer or container ~= inventory then
+        localStats.errors = localStats.errors + 1
+        stats.errors = stats.errors + 1
+        warnOnce("verify:" .. tostring(itemType), string.format(
+            "[LCC][BanditsServerClothing][INVARIANT_ERROR] id=%s item=%s sameObject=false",
+            tostring(id), tostring(itemType)
+        ))
+        return
+    end
+
+    localStats.restored = localStats.restored + 1
     stats.restored = stats.restored + 1
 end
 
-local function restoreAuthoritativeWorn(bandit, brain)
-    if not bandit or not brain or type(brain.clothing) ~= "table" then return end
-    if not bandit:isAlive() then return end
+local function repairBeforeCorpse(zombie, id, brain)
+    if not zombie or not brain or type(brain.clothing) ~= "table" then return end
 
-    local before = bandit:getWornItems() and bandit:getWornItems():size() or -1
-    local restoredBefore = stats.restored
-    local createdBefore = stats.created
-    local reusedBefore = stats.reusedInventory
-    local addedBefore = stats.inventoryAdds
+    local md = zombie:getModData()
+    if md and md.LCC_BanditsServerDeathRepair == MARKER then return end
+
+    local localStats = {
+        expected = 0,
+        wearableExpected = 0,
+        restored = 0,
+        created = 0,
+        reusedInventory = 0,
+        inventoryAdds = 0,
+        alreadyWorn = 0,
+        noLocation = 0,
+        conflicts = 0,
+        errors = 0,
+    }
+
+    local beforeWorn = wornSize(zombie)
+    local beforeInventory = inventoryCount(zombie)
     local processed = {}
 
-    if BanditCompatibility.GetBodyLocationsOrdered then
+    if type(BanditCompatibility.GetBodyLocationsOrdered) == "function" then
         for _, brainLocation in pairs(BanditCompatibility.GetBodyLocationsOrdered()) do
             local itemType = brain.clothing[brainLocation]
             if itemType then
                 processed[brainLocation] = true
-                ensureSlot(bandit, brain, brainLocation, itemType)
+                ensureSlot(zombie, id, brain, brainLocation, itemType, localStats)
             end
         end
     end
     for brainLocation, itemType in pairs(brain.clothing) do
         if not processed[brainLocation] then
-            ensureSlot(bandit, brain, brainLocation, itemType)
+            ensureSlot(zombie, id, brain, brainLocation, itemType, localStats)
         end
     end
 
-    local after = bandit:getWornItems() and bandit:getWornItems():size() or -1
-    local _, inventoryCount = inventoryItems(bandit:getInventory())
+    if md then
+        md.LCC_BanditsServerDeathRepair = MARKER
+        md.LCC_BanditsBrainId = id
+    end
+
+    stats.deathRepairs = stats.deathRepairs + 1
+    local afterWorn = wornSize(zombie)
+    local afterInventory = inventoryCount(zombie)
+
     print(string.format(
-        "[LCC][BanditsServerClothing][RESTORE] marker=%s id=%s beforeWorn=%d afterWorn=%d restored=%d created=%d reusedInventory=%d inventoryAdds=%d inventoryItems=%d",
+        "[LCC][BanditsServerClothing][DEATH_REPAIR] marker=%s id=%s fullname=%s expected=%d wearableExpected=%d beforeWorn=%d afterWorn=%d beforeInventory=%d afterInventory=%d restored=%d created=%d reusedInventory=%d inventoryAdds=%d alreadyWorn=%d noLocation=%d conflicts=%d errors=%d invariant=inventory+same-worn-object",
         MARKER,
-        characterId(bandit, brain),
-        before,
-        after,
-        stats.restored - restoredBefore,
-        stats.created - createdBefore,
-        stats.reusedInventory - reusedBefore,
-        stats.inventoryAdds - addedBefore,
-        inventoryCount
+        tostring(id),
+        tostring(brain.fullname or "<unknown>"):gsub("%s+", "_"),
+        localStats.expected,
+        localStats.wearableExpected,
+        beforeWorn,
+        afterWorn,
+        beforeInventory,
+        afterInventory,
+        localStats.restored,
+        localStats.created,
+        localStats.reusedInventory,
+        localStats.inventoryAdds,
+        localStats.alreadyWorn,
+        localStats.noLocation,
+        localStats.conflicts,
+        localStats.errors
     ))
 end
 
-Bandit.ApplyVisuals = function(bandit, brain)
-    originalApplyVisuals(bandit, brain)
-    stats.applyCalls = stats.applyCalls + 1
-    local ok, err = pcall(restoreAuthoritativeWorn, bandit, brain)
+local function onZombieDead(zombie)
+    stats.deathsSeen = stats.deathsSeen + 1
+    if not zombie then return end
+
+    local id, brain = resolveBrain(zombie)
+    if not brain then return end
+    stats.banditDeathsMatched = stats.banditDeathsMatched + 1
+
+    local ok, err = pcall(repairBeforeCorpse, zombie, id, brain)
     if not ok then
         stats.errors = stats.errors + 1
-        warnOnce("runtime", "[LCC][BanditsServerClothing][RESTORE_ERROR] " .. tostring(err))
+        print(string.format(
+            "[LCC][BanditsServerClothing][DEATH_REPAIR_ERROR] marker=%s id=%s error=%s",
+            MARKER, tostring(id), tostring(err)
+        ))
     end
 end
 
+Events.OnZombieDead.Add(onZombieDead)
+
 Events.EveryOneMinute.Add(function()
     print(string.format(
-        "[LCC][BanditsServerClothing][SUMMARY] marker=%s applyCalls=%d restored=%d created=%d reusedInventory=%d inventoryAdds=%d alreadyWorn=%d noLocation=%d conflicts=%d errors=%d",
+        "[LCC][BanditsServerClothing][SUMMARY] marker=%s deathsSeen=%d banditDeathsMatched=%d deathRepairs=%d expected=%d wearableExpected=%d restored=%d created=%d reusedInventory=%d inventoryAdds=%d alreadyWorn=%d noLocation=%d conflicts=%d errors=%d",
         MARKER,
-        stats.applyCalls,
+        stats.deathsSeen,
+        stats.banditDeathsMatched,
+        stats.deathRepairs,
+        stats.expected,
+        stats.wearableExpected,
         stats.restored,
         stats.created,
         stats.reusedInventory,
@@ -285,6 +413,6 @@ Events.EveryOneMinute.Add(function()
 end)
 
 print(string.format(
-    "[LCC][BanditsServerClothing][BOOT] marker=%s authority=dedicated-server inventoryBacked=true corpseSource=died.WornItems",
+    "[LCC][BanditsServerClothing][BOOT] marker=%s authority=dedicated-server boundary=OnZombieDead timing=after-DoZombieInventory-before-IsoDeadBody invariant=inventory+same-worn-object liveInventoryMutation=false",
     MARKER
 ))
