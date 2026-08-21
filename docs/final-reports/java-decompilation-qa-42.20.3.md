@@ -177,6 +177,24 @@ The retained local variables include `playerIndex`, `renderLayer`, `t`, `isOpenD
 
 **Decision:** safe clean-reconstruction candidate.
 
+## Applying the two verified cleanups
+
+The repository contains `scripts/apply_java_decompilation_fixes.py`. It applies only the two bytecode-verified clean reconstructions above. The patcher validates the Build 42.20.3 Java provenance, refuses an unexpected source shape, removes the CFR synthetic control-flow artifacts, records the clean reconstructions in `BUILD.txt`, and regenerates `MANIFEST.sha256`.
+
+Validation only:
+
+```powershell
+python scripts\apply_java_decompilation_fixes.py --check
+```
+
+Apply:
+
+```powershell
+python scripts\apply_java_decompilation_fixes.py
+```
+
+The patcher is idempotent: after a successful application, a subsequent `--check` reports both methods as `already-clean`.
+
 ## Remaining CFR partial methods
 
 The other ten CFR-partial methods are deliberately **not manually rewritten**. Their bytecode is too large or control-flow-heavy for a trustworthy hand reconstruction when no independent whole-method decompiler result is available in the audit environment.
