@@ -5,13 +5,14 @@
 -- that command reaches the server before the server's own OnZombieDead callback,
 -- server-authoritative-death-worn-v2 can no longer resolve brain.clothing.
 --
--- This file snapshots only the minimal clothing data immediately BEFORE the
--- cluster entry is deleted. Its OnZombieDead callback runs after the primary
--- death-boundary repair and is used only when that primary repair did not run.
+-- v2 also handles the inverse ordering. When primary OnZombieDead wins the race,
+-- BanditRemove may arrive later; v1 would capture a snapshot that could never be
+-- consumed. We remember the already-handled id briefly so that late BanditRemove
+-- skips snapshot creation, and prune any stale race state after two minute ticks.
 -- No live InventoryItem/WornItems mutation is performed before death.
 if not isServer() then return end
 
-local MARKER = "server-death-worn-remove-snapshot-v1"
+local MARKER = "server-death-worn-remove-snapshot-v2"
 local PRIMARY_MARKER = "server-authoritative-death-worn-v2"
 LCC_BANDITS_SERVER_CLOTHING_REMOVE_SNAPSHOT = MARKER
 
@@ -30,11 +31,16 @@ if type(BanditServer) ~= "table" or type(BanditServer.Commands) ~= "table"
 end
 
 local snapshots = {}
+local handledIds = {}
+local epoch = 0
 local warned = {}
 local stats = {
     removeCalls = 0,
+    removeAfterPrimary = 0,
     snapshotsCaptured = 0,
     snapshotMissesAtRemove = 0,
+    snapshotsPruned = 0,
+    handledPruned = 0,
     deathsSeen = 0,
     primaryAlreadyHandled = 0,
     fallbackMatches = 0,
@@ -82,6 +88,7 @@ local function captureBrain(id, brain)
         fullname = brain.fullname,
         clothing = copyScalars(brain.clothing),
         tint = copyScalars(brain.tint),
+        _epoch = epoch,
     }
     stats.snapshotsCaptured = stats.snapshotsCaptured + 1
     return true
@@ -92,9 +99,18 @@ BanditServer.Commands.BanditRemove = function(player, args)
     stats.removeCalls = stats.removeCalls + 1
     local id = args and args.id or nil
     if id ~= nil then
-        local brain = clusterBrain(id)
-        if not captureBrain(id, brain) then
-            stats.snapshotMissesAtRemove = stats.snapshotMissesAtRemove + 1
+        local key = tostring(id)
+        if handledIds[key] ~= nil then
+            -- Primary OnZombieDead already repaired this Bandit. This remove is
+            -- the late half of the opposite race ordering; no snapshot is useful.
+            stats.removeAfterPrimary = stats.removeAfterPrimary + 1
+            handledIds[key] = nil
+            snapshots[key] = nil
+        else
+            local brain = clusterBrain(id)
+            if not captureBrain(id, brain) then
+                stats.snapshotMissesAtRemove = stats.snapshotMissesAtRemove + 1
+            end
         end
     end
     return originalBanditRemove(player, args)
@@ -362,15 +378,19 @@ local function onZombieDead(zombie)
     if id == nil then return end
 
     local key = tostring(id)
-    local snapshot = snapshots[key]
-    if not snapshot then return end
-
     local md = zombie:getModData()
+
+    -- Primary callback is registered before this fallback. Remember the id so a
+    -- later BanditRemove does not create a snapshot after the death already won.
     if md and md.LCC_BanditsServerDeathRepair == PRIMARY_MARKER then
         stats.primaryAlreadyHandled = stats.primaryAlreadyHandled + 1
+        handledIds[key] = epoch
         snapshots[key] = nil
         return
     end
+
+    local snapshot = snapshots[key]
+    if not snapshot then return end
 
     stats.fallbackMatches = stats.fallbackMatches + 1
     local ok, err = pcall(repairFromSnapshot, zombie, id, snapshot)
@@ -386,13 +406,39 @@ end
 
 Events.OnZombieDead.Add(onZombieDead)
 
+local function countEntries(t)
+    local count = 0
+    for _ in pairs(t) do count = count + 1 end
+    return count
+end
+
 Events.EveryOneMinute.Add(function()
+    epoch = epoch + 1
+
+    for key, snapshot in pairs(snapshots) do
+        if type(snapshot) ~= "table" or epoch - tonumber(snapshot._epoch or epoch) > 2 then
+            snapshots[key] = nil
+            stats.snapshotsPruned = stats.snapshotsPruned + 1
+        end
+    end
+    for key, handledEpoch in pairs(handledIds) do
+        if epoch - tonumber(handledEpoch or epoch) > 2 then
+            handledIds[key] = nil
+            stats.handledPruned = stats.handledPruned + 1
+        end
+    end
+
     print(string.format(
-        "[LCC][BanditsServerClothingFallback][SUMMARY] marker=%s removeCalls=%d snapshotsCaptured=%d snapshotMissesAtRemove=%d deathsSeen=%d primaryAlreadyHandled=%d fallbackMatches=%d fallbackRepairs=%d expected=%d wearableExpected=%d restored=%d created=%d reusedInventory=%d inventoryAdds=%d alreadyWorn=%d noLocation=%d conflicts=%d errors=%d",
+        "[LCC][BanditsServerClothingFallback][SUMMARY] marker=%s removeCalls=%d removeAfterPrimary=%d snapshotsCaptured=%d snapshotMissesAtRemove=%d activeSnapshots=%d activeHandled=%d snapshotsPruned=%d handledPruned=%d deathsSeen=%d primaryAlreadyHandled=%d fallbackMatches=%d fallbackRepairs=%d expected=%d wearableExpected=%d restored=%d created=%d reusedInventory=%d inventoryAdds=%d alreadyWorn=%d noLocation=%d conflicts=%d errors=%d",
         MARKER,
         stats.removeCalls,
+        stats.removeAfterPrimary,
         stats.snapshotsCaptured,
         stats.snapshotMissesAtRemove,
+        countEntries(snapshots),
+        countEntries(handledIds),
+        stats.snapshotsPruned,
+        stats.handledPruned,
         stats.deathsSeen,
         stats.primaryAlreadyHandled,
         stats.fallbackMatches,
@@ -411,6 +457,6 @@ Events.EveryOneMinute.Add(function()
 end)
 
 print(string.format(
-    "[LCC][BanditsServerClothingFallback][BOOT] marker=%s source=BanditRemove preDeleteSnapshot=true primary=%s liveInventoryMutation=false",
+    "[LCC][BanditsServerClothingFallback][BOOT] marker=%s source=BanditRemove preDeleteSnapshot=true primary=%s lateRemoveSkip=true staleRetentionMinutes=2 liveInventoryMutation=false",
     MARKER, PRIMARY_MARKER
 ))
