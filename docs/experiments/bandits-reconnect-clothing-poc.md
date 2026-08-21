@@ -16,7 +16,7 @@ Persistent Bandits keep `brain.clothing` and their visual definitions across rec
 
 ### real-worn-reconnect-v1
 
-The first restore attempt passed string slot names such as `Hat` and `Jacket` to B42 worn APIs. B42 requires `ItemBodyLocation`, producing repeated:
+The first restore attempt passed string slot names such as `Hat` and `Jacket` to B42 live-character worn APIs. B42 requires `ItemBodyLocation`, producing repeated:
 
 ```text
 expected argument of type ItemBodyLocation, got String
@@ -42,7 +42,7 @@ For every clothing item it obtains the typed slot from:
 item:getBodyLocation()
 ```
 
-and only passes that object to:
+and only passes that object to the live-character APIs:
 
 ```lua
 bandit:getWornItem(location)
@@ -93,17 +93,34 @@ Corpse identity uses the same strategy already validated by `BanditsDeathLootDia
 
 Unrelated vanilla corpses are ignored.
 
+### IsoDeadBody worn API
+
+The live Bandit and the corpse intentionally use different APIs.
+
+For a live `IsoZombie`, `item:getBodyLocation()` supplies the typed `ItemBodyLocation` required by `bandit:getWornItem()` / `bandit:setWornItem()`.
+
+For an `IsoDeadBody`, the repair works through its `WornItems` collection:
+
+```lua
+local worn = body:getWornItems()
+local slot = tostring(brainLocation)
+local current = worn:getItem(slot)
+worn:setItem(slot, item)
+```
+
+`item:getBodyLocation()` is still used on the corpse path, but only as a **wearability check**. Entries with no real body location, such as makeup-only visuals, are not manufactured as corpse items.
+
 ### Idempotent repair rules
 
 For every item in the saved `brain.clothing` snapshot:
 
-1. instantiate/probe the item only to obtain its B42 `ItemBodyLocation`;
-2. ignore non-wearable visual entries such as makeup with no typed body location;
-3. if the corpse already wears the expected full type in that slot, do nothing;
+1. instantiate/probe the item and require a real `item:getBodyLocation()`; visual-only entries are skipped;
+2. use the original `brain.clothing` key as the `WornItems` slot string;
+3. if `worn:getItem(slot)` already contains the expected full type, do nothing;
 4. if another real item occupies the slot, preserve it and log `SLOT_CONFLICT` rather than overwriting it;
 5. if an unworn item of the expected full type already exists in the corpse container, reuse that object;
 6. only if no matching container item exists, create one directly in the corpse container;
-7. apply the saved Bandit tint and call `IsoDeadBody:setWornItem()` with the typed `ItemBodyLocation`;
+7. apply the saved Bandit tint and call `worn:setItem(slot, item)`;
 8. if the worn mutation is rejected by B42, leave the item in the corpse container so the loot is still restored without generating another copy.
 
 This makes the PoC deduplicating by both **slot** and **actual corpse container contents** instead of relying on pre-death queue semantics.
@@ -111,7 +128,7 @@ This makes the PoC deduplicating by both **slot** and **actual corpse container 
 Correct corpse boot marker:
 
 ```text
-[LCC][BanditsCorpseRepair][BOOT] marker=post-corpse-clothing-repair-v1 snapshotMarker=real-worn-reconnect-v2 mode=post-OnDeadBodySpawn dedupe=slot+container
+[LCC][BanditsCorpseRepair][BOOT] marker=post-corpse-clothing-repair-v1 snapshotMarker=real-worn-reconnect-v2 mode=post-OnDeadBodySpawn+wornItems dedupe=slot+container
 ```
 
 Each matched Bandit corpse prints one summary:
