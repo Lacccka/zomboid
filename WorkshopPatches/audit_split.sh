@@ -417,10 +417,10 @@ for folder in "${expected_patch_dirs[@]}"; do
     fi
 
     if [[ "$folder" == "NPCFixes" ]]; then
-        grep -Fxq 'name=Lacccka B42 NPC Fixes' "$modinfo" || error "$folder: wrong RC public mod name"
-        grep -Fxq 'modversion=0.9.0' "$modinfo" || error "$folder: RC version must remain 0.9.0 until source-clean regression passes"
-        grep -Fxq 'title=Lacccka B42 NPC Fixes' "$workshop" || error "$folder: wrong RC Workshop title"
-        grep -Fxq 'visibility=private' "$workshop" || error "$folder: RC Workshop item must remain private while id=0"
+        grep -Fxq 'name=Lacccka B42 NPC Fixes' "$modinfo" || error "$folder: wrong stable public mod name"
+        grep -Fxq 'modversion=1.0.0' "$modinfo" || error "$folder: stable version must be 1.0.0"
+        grep -Fxq 'title=Lacccka B42 NPC Fixes' "$workshop" || error "$folder: wrong stable Workshop title"
+        grep -Fxq 'visibility=private' "$workshop" || error "$folder: staging Workshop item must remain private while id=0"
     fi
     if [[ "$folder" == "NPCCombatExperimental" ]]; then
         grep -Fxq 'name=Lacccka B42 NPC Combat Experimental' "$modinfo" || error "$folder: public mod name must remain neutral"
@@ -476,4 +476,4 @@ if (( fail != 0 )); then
     exit 1
 fi
 
-printf 'Grouped Workshop patches audit: OK (8 package directories; NPCFixes=private RC id=0; NPCCombatExperimental=diagnostics-only 0.2.0; Bandits-LCC-Dev excluded as internal)\n'
+printf 'Grouped Workshop patches audit: OK (8 package directories; NPCFixes=stable 1.0.0 private staging id=0; NPCCombatExperimental=diagnostics-only 0.2.0; Bandits-LCC-Dev excluded as internal)\n'
