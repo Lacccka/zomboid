@@ -42,7 +42,7 @@ Explicitly excluded:
 - raw projectzomboid.jar
 
 Java decompilation target:
-C:\zomboid\game-source\common-42.20.3\java
+C:\zomboid\game_source\common-42.20.3\java
 
 The decompiler should read the JAR directly from:
 C:\Program Files (x86)\Steam\steamapps\common\ProjectZomboid\projectzomboid.jar
