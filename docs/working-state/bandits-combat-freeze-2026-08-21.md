@@ -2,15 +2,15 @@
 
 Branch: `agent/b42-20-compatibility-patch`
 
-Runtime archive used for this checkpoint: `ZomboidLogs_2026-08-21_17-08-24.zip`.
+Runtime archive used for behavioral freeze: `ZomboidLogs_2026-08-21_17-08-24.zip`.
 
-This checkpoint freezes the **behavioral architecture** of the current Bandits combat fix before source cleanup / promotion into the final Compatibility Patch.
+This checkpoint freezes the **behavioral architecture** of the current Bandits combat fix and records the first source-clean pursuit integration that must now pass a final regression run.
 
 ## Result
 
-The current combat architecture is considered behaviorally validated under stress load.
+The combat architecture is behaviorally validated under stress load.
 
-Confirmed across the latest regression run:
+Confirmed across the latest regression run before source cleanup:
 
 - `NetworkZombieMind: goal character is not set` = **0**;
 - `ClassCastException` = **0**;
@@ -36,7 +36,7 @@ The safe pursuit architecture is therefore:
 
 Build 42.20.3 `PathFindBehavior2.pathToLocationF()` calls `setData()`. `setData()` cancels the current path request and resets path state. Reissuing the same Bandit coordinates every `OnZombieUpdate` therefore caused pathfind starvation.
 
-The temporary coordinate pursuit throttle proved the fix: unchanged/aligned location goals are not reissued every frame. New location commands are allowed when the goal is missing/cancelled/non-location, when the Bandit has moved materially relative to the active destination, or during bounded idle recovery.
+The coordinate pursuit throttle proved the fix: unchanged/aligned location goals are not reissued every frame. New location commands are allowed when the goal is missing/cancelled/non-location, when the Bandit has moved materially relative to the active destination, or during bounded idle recovery.
 
 Historical stall comparison:
 
@@ -45,6 +45,30 @@ Historical stall comparison:
 - latest two-session regression: only 3 short (~2.5 s) pathfind observations across roughly one million ordinary-zombie updates, with `realController=true`, valid `Goal.Location`, no stale destination and no `walktoward` stalls.
 
 This residual rate is not the former persistent cancel/restart defect and should not trigger another behavioral redesign without new visual/runtime evidence.
+
+## Source-integrated pursuit — current HEAD
+
+The temporary global `BanditUtils.IsController` wrapper has now been removed.
+
+`BanditUpdate.lua` marker:
+
+`upstream-coordinate-pursuit-v3`
+
+`PathZombieToBanditLocation()` now owns the confirmed throttle logic directly:
+
+1. require the real `BanditUtils.IsController(zombie)` result;
+2. inspect the current `PathFindBehavior2`;
+3. if an active `Goal.Location` destination is already within 0.75 tile of the Bandit's cached position and the Z level matches, do not reissue `pathToLocationF()`;
+4. if the zombie is `idle`, allow bounded recovery no more often than once every 750 ms;
+5. issue a new coordinate path immediately when the goal is cancelled, missing/non-location, or materially stale.
+
+Important commits:
+
+- `aed55ff31240cc3c654bb86ef241fb3b57de3a5f` — integrate throttle into `BanditUpdate.lua`;
+- `fa244a8347b2b5f29d75ef5e9a50e830f3b6a8ac` — remove temporary `zzzzzz_LCC_BanditCoordinatePursuitThrottle.lua`;
+- `22900c812a2cf27d5bbab24d466f2d5dfa4f582c` — update pursuit tracer for direct controller observation.
+
+This is intentionally a behavior-preserving cleanup of the already validated algorithm, not a new AI experiment.
 
 ## Fake-hit zombie cleanup
 
@@ -69,7 +93,7 @@ Latest regression:
 
 ## Pursuit regression metrics
 
-Latest session 1 final summary:
+Latest session 1 final summary before source integration:
 
 - updates: 838856
 - pursuitCandidates: 23960
@@ -83,7 +107,7 @@ Latest session 1 final summary:
 - pfbCharacterStalls: 0
 - staleLocationStalls: 0
 
-Latest session 2 final summary:
+Latest session 2 final summary before source integration:
 
 - updates: 208923
 - pursuitCandidates: 2811
@@ -97,7 +121,13 @@ Latest session 2 final summary:
 - pfbCharacterStalls: 0
 - staleLocationStalls: 0
 
-Do not compare these counts directly with the older v2 tracer because v3 excludes normal reaction states such as `onground`, `getup`, `bumped` and `hitreaction`.
+Do not compare these counts directly with the older v2 tracer because v3+ excludes normal reaction states such as `onground`, `getup`, `bumped` and `hitreaction`.
+
+Current observation tracer marker after source integration:
+
+`pursuit-stall-trace-v4`
+
+It reads the controller directly from `BanditUtils.IsController`; there is no longer an exported/original-controller shim.
 
 ## Bite regression
 
@@ -144,30 +174,34 @@ During cleanup, preserve all of these:
 7. Keep custom Bite/BiteLow close-range damage path.
 8. Do not introduce broad cancellation of arbitrary living non-player `Goal.Character` targets; other NPC/animal mods may use them.
 
-## Temporary PoC pieces still to clean
+## Remaining PoC/diagnostic pieces
 
-Current temporary files include:
+The global coordinate-pursuit wrapper is no longer present.
 
-- `zzzzzz_LCC_BanditCoordinatePursuitThrottle.lua` (`coordinate-pursuit-throttle-v2`);
-- `zzzzzz_LCC_BanditPursuitStallTrace.lua` (`pursuit-stall-trace-v3`);
+Remaining temporary diagnostics/safety layers include:
+
+- `zzzzzz_LCC_BanditPursuitStallTrace.lua` (`pursuit-stall-trace-v4`);
 - `zzzzz_LCC_BanditPfbLateSweep.lua` (diagnostic/safety tail);
-- bite and attack diagnostic traces.
+- bite and attack diagnostic traces;
+- NPCCombatExperimental attack-state/target guards used only for verification.
 
-The throttle currently wraps `BanditUtils.IsController` only as an experimental interception point. This is **not** the desired final architecture.
+Do not remove these until the first runtime test of `upstream-coordinate-pursuit-v3` passes.
 
-## Next implementation step
+## Immediate next step
 
-Promote the confirmed throttle logic directly into the local `PathZombieToBanditLocation()` helper in `BanditUpdate.lua`, preserving the same thresholds/behavior, then remove the global `BanditUtils.IsController` throttle wrapper.
+Run one final stress/regression test with the in-source pursuit implementation and **without** `zzzzzz_LCC_BanditCoordinatePursuitThrottle.lua`.
 
-After that source cleanup, perform one final regression run using this checkpoint as the baseline. Required acceptance criteria:
+Required acceptance criteria:
 
-- NetworkZombieMind = 0
-- ClassCastException = 0
-- AttackState.triggerPlayerReaction = 0
-- targetLeaks = 0
-- pfbCharacterStalls = 0
-- no recurring/persistent pathfind or walktoward freeze
-- Bite remains functional
-- corpse clothing remains complete under server repair/fallback
+- `NetworkZombieMind = 0`;
+- `ClassCastException = 0`;
+- `AttackState.triggerPlayerReaction = 0`;
+- `targetLeaks = 0`;
+- `pfbCharacterStalls = 0`;
+- `realControllerFalseStalls = 0` for controlled pursuit candidates;
+- no recurring/persistent `pathfind` or `walktoward` freeze;
+- Bite remains functional;
+- corpse clothing remains complete under server repair/fallback;
+- visual behavior remains active without player-proximity wake-up.
 
-Once those hold after cleanup, the combat fix can be separated from the experimental Bandits working copy and promoted into the final Lacccka B42.20 Compatibility Patch.
+If those hold, the pursuit cleanup is accepted. Then remove/reduce diagnostic-only layers and begin separating the minimal Bandits compatibility changes from the full experimental working copy into the final Lacccka B42.20 Compatibility Patch.
