@@ -3,6 +3,11 @@ require "ISUI/InventoryWindow/ISInventoryWindowControlHandler"
 require "ISUI/LootWindow/ISLootWindowContainerControls"
 require "ISUI/LootWindow/ISLootWindowObjectControlHandler"
 
+-- Explicit load order for the addon layers. Guards inside each module make this
+-- safe even when the PZ loader has already executed a nested client file.
+pcall(require, "LCC/GridMultiPage")
+pcall(require, "LCC/GridPaneUX")
+
 local okSort, GridAutoSort = pcall(require, "LCC/GridAutoSort")
 if not okSort or not GridAutoSort then
     print("[LCC GridSort] GridInventory API unavailable; addon disabled")
@@ -25,7 +30,7 @@ local REASON_TOOLTIP = {
     busy = { "UI_LCC_GridSort_Busy", "Wait for the current inventory action to finish." },
     locked = { "UI_LCC_GridSort_Locked", "This nested container is currently locked." },
     nothing = { "UI_LCC_GridSort_Nothing", "There is nothing to sort in this container." },
-    ["no-space"] = { "UI_LCC_GridSort_NoSpace", "These items cannot all fit in the primary grid, even after auto-sort." },
+    ["no-space"] = { "UI_LCC_GridSort_NoSpace", "These items cannot be represented safely in the available grid pages." },
     unavailable = { "UI_LCC_GridSort_Unavailable", "Auto-sort is unavailable for this grid." },
 }
 
@@ -245,7 +250,7 @@ end
 
 -- This is the supported Build 42 extension point. GridInventory's optimized
 -- arrange() implementation also iterates these same handler lists, so the sort
--- control now survives every footer rebuild naturally instead of being injected
+-- control survives every footer rebuild naturally instead of being injected
 -- back into controls[] after the fact.
 ISInventoryWindowContainerControls.AddHandler(LCC_InventorySortHandler)
 ISLootWindowContainerControls.AddHandler(LCC_LootSortHandler)
