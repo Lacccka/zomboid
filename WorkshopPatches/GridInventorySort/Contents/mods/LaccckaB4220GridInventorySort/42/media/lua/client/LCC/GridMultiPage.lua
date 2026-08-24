@@ -22,6 +22,7 @@ local function descriptor(item)
     if not w or not h or w < 1 or h < 1 then return nil end
     local compatKey, stackInfo = GridContainer.getStackInfo(item)
     local md = item.getModData and item:getModData() or nil
+    local savedPage = md and tonumber(md.gridPage) or 1
     return {
         id = itemId(item), itemObj = item,
         w = w, h = h,
@@ -29,15 +30,17 @@ local function descriptor(item)
         savedX = md and tonumber(md.gridX) or nil,
         savedY = md and tonumber(md.gridY) or nil,
         savedRot = md and md.gridRot and true or false,
-        savedPage = md and tonumber(md.gridPage) or 1,
+        savedPage = savedPage,
+        persistedPage = savedPage > 1,
         manual = md and md.gridManual and true or false,
         area = w * h,
     }
 end
 
 local function compareDescriptors(a, b)
-    if a.manual ~= b.manual then return a.manual end
+    if a.persistedPage ~= b.persistedPage then return a.persistedPage end
     if a.savedPage ~= b.savedPage then return a.savedPage < b.savedPage end
+    if a.manual ~= b.manual then return a.manual end
     if a.area ~= b.area then return a.area > b.area end
     return tostring(a.id) < tostring(b.id)
 end
@@ -108,24 +111,24 @@ local function extendOverflowIntoPages(self)
 
     local width, height = GridContainer.getGridSize(container)
     local sig = GridContainer.containerSignature(container)
-    local manualPages = {}
+    local persistedPages = {}
     local overflow = {}
     local seen = {}
 
-    -- Manual positions persisted on page > 1 must stay on that page even
-    -- though upstream refresh only understands page 1. Remove those temporary
-    -- page-1 placements first; doing so may free cells for ordinary overflow.
+    -- Upstream refresh understands only one page. Any item already assigned to
+    -- page >1 (manual OR automatic/server-synced) may therefore be temporarily
+    -- inserted into page 1 from its x/y. Remove it and rebuild its real page.
     if container.getItems then
         local items = container:getItems()
         for i = 0, items:size() - 1 do
             local item = items:get(i)
             local md = item and item.getModData and item:getModData() or nil
-            if GridSortState.isGridItem(item) and md and md.gridManual
+            if GridSortState.isGridItem(item) and md
                 and tonumber(md.gridPage) and tonumber(md.gridPage) > 1 then
                 local d = descriptor(item)
                 if d then
                     seen[d.id] = true
-                    table.insert(manualPages, d)
+                    table.insert(persistedPages, d)
                     for _, grid in ipairs(self.grids or {}) do
                         if grid.items and grid.items[d.id] then grid:removeItem(d.id) end
                     end
@@ -145,14 +148,14 @@ local function extendOverflowIntoPages(self)
         end
     end
 
-    if #manualPages == 0 and #overflow == 0 then return end
+    if #persistedPages == 0 and #overflow == 0 then return end
 
-    table.sort(manualPages, compareDescriptors)
+    table.sort(persistedPages, compareDescriptors)
     table.sort(overflow, compareDescriptors)
 
-    -- A manual page-2 item may have temporarily occupied page 1 during the
-    -- upstream refresh and pushed an otherwise fitting item to unpositioned.
-    -- Retry ordinary overflow against the newly freed base page first.
+    -- A page-2 item may have temporarily occupied page 1 during upstream
+    -- refresh and pushed an otherwise fitting item to unpositioned. Retry those
+    -- ordinary overflow items against the newly freed base page first.
     local base = self.grids and self.grids[1] or nil
     local pagePending = {}
     if base then
@@ -168,36 +171,46 @@ local function extendOverflowIntoPages(self)
         for _, d in ipairs(overflow) do table.insert(pagePending, d) end
     end
 
-    -- Manual persisted pages are placed before auto overflow so their explicit
-    -- cells win. Ordinary overflow fills remaining cells around them.
+    -- Existing page assignments win their saved pages first. New overflow then
+    -- fills the remaining cells and opens later pages as needed.
     local pending = {}
-    for _, d in ipairs(manualPages) do table.insert(pending, d) end
+    for _, d in ipairs(persistedPages) do table.insert(pending, d) end
     for _, d in ipairs(pagePending) do table.insert(pending, d) end
 
     local stillUnpositioned = {}
+    local autoAssignments = {}
     for _, d in ipairs(pending) do
         local placed = false
-        local startPage = (d.manual and d.savedPage > 1) and d.savedPage or 2
+        local wasPersisted = d.persistedPage
+        local startPage = wasPersisted and d.savedPage or 2
         local page = startPage
         while page <= GridSortState.MAX_PAGES do
             local grid = ensurePage(self, page, width, height)
             if not grid then break end
-            local x, y, rotated, ew, eh = findPlacement(grid, d, d.manual and page == d.savedPage)
+            local x, y, rotated, ew, eh = findPlacement(grid, d, wasPersisted and page == d.savedPage)
             if x and y then
                 insertDescriptor(grid, d, x, y, rotated, ew, eh)
 
-                -- Persist only positions that are already manual/server-backed.
-                -- Auto overflow pages are deterministic UI state; writing their
-                -- page into ModData here would make the client's authority state
-                -- differ from the server before any network action.
-                if d.manual then
-                    local md = d.itemObj:getModData()
-                    md.gridX = x
-                    md.gridY = y
-                    md.gridRot = rotated and true or false
-                    md.gridPage = page
-                    md.gridContainer = sig
+                local md = d.itemObj:getModData()
+                md.gridX = x
+                md.gridY = y
+                md.gridRot = rotated and true or false
+                md.gridPage = page
+                md.gridContainer = sig
+
+                if not wasPersisted then
+                    -- This is automatic presentation/page routing, not a user
+                    -- placement. Keep it out of authorityHash while still making
+                    -- page routing persistent and synchronizable in MP.
+                    md.gridManual = nil
+                    table.insert(autoAssignments, {
+                        itemId = d.id,
+                        x = x, y = y,
+                        page = page,
+                        rotated = rotated and true or false,
+                    })
                 end
+
                 placed = true
                 break
             end
@@ -207,6 +220,13 @@ local function extendOverflowIntoPages(self)
     end
 
     self.unpositioned = stillUnpositioned
+
+    if #autoAssignments > 0 and isClient and isClient() then
+        local okNet, GridSortNetwork = pcall(require, "LCC/GridSortNetwork")
+        if okNet and GridSortNetwork and GridSortNetwork.sendPageAssignments then
+            GridSortNetwork.sendPageAssignments(container, autoAssignments, sig)
+        end
+    end
 end
 
 function GridContainer:refresh(...)
