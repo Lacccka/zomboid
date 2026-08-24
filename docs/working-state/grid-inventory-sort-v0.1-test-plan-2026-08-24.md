@@ -7,7 +7,19 @@ Upstream target: `GridInventory` (`3782313362`), Build 42.20
 
 ## Scope implemented
 
-The addon adds a localized `SORT` / `СОРТ.` control to GridInventory's existing active-container footer. It does not replace GridInventory source files.
+The addon adds a compact sort icon to GridInventory's existing active-container footer. Hover text is localized; the button itself has no text label. The addon does not replace GridInventory source files.
+
+### Native footer integration
+
+The current implementation uses the supported Build 42 container-control handler API instead of injecting a child button after `arrange()`:
+
+- player inventory: `ISInventoryWindowControlHandler` + `ISInventoryWindowContainerControls.AddHandler(...)`;
+- loot/world containers: `ISLootWindowObjectControlHandler` + `ISLootWindowContainerControls.AddHandler(...)`;
+- floor: no sort handler is registered because floor sorting is intentionally unsupported in v0.1.
+
+This is required because vanilla `arrange()` removes every current footer child, wipes `controls[]`, and reconstructs the footer exclusively from registered handlers. GridInventory's optimized `arrange()` uses the same handler lists. Therefore the sort icon now participates in normal footer rebuilds instead of being repaired after them.
+
+The obsolete `zzzz_LCC_GridInventorySortVisibility.lua`, `arrange()` wrapper, `ISInventoryPage.update` wrapper, and manual `controls[]` repair path have been removed.
 
 The sorter:
 
@@ -57,15 +69,13 @@ Expected addon-specific result:
 GridInventorySort static contract audit: OK
 ```
 
-The addon audit checks package metadata, EN/RU JSON translations, the expected GridInventory integration seams, the MP nested-bag guard, and verifies that the addon does not contain copied upstream implementation files.
-
-The grouped `WorkshopPatches/audit_split.sh` has also been updated to the current nine-package set and current published metadata (`NPCFixes 1.0.1`, `NPCCombatExperimental 0.2.1`, `GridInventorySort 0.1.0`).
+The addon audit checks package metadata, EN/RU JSON translations, native Build 42 handler registration, the MP nested-bag guard, source-clean packaging, and explicitly rejects the removed footer-repair architecture.
 
 ## Offline Lua checks performed
 
-Both addon Lua chunks were parsed successfully with `loadfile()` in an available Lua VM.
+Both active addon Lua chunks parse successfully with `loadfile()` in an available Lua VM.
 
-A minimal GridInventory-compatible Lua harness also passed:
+The sorter harness covers:
 
 - deterministic mixed-footprint packing;
 - a case where rotation is required to fit;
@@ -74,24 +84,58 @@ A minimal GridInventory-compatible Lua harness also passed:
 - exactly one batch reorder + one dirty mark for a successful sort;
 - busy/active-drag gate.
 
+A separate native-footer lifecycle harness covers the regression reported during runtime testing:
+
+- inventory footer rebuild with ordinary handlers hidden -> visible -> hidden;
+- loot footer rebuild with ordinary handlers hidden -> visible -> hidden;
+- sort handler remains part of every rebuild;
+- loot sort handler stays before the right-side object-action group;
+- floor receives no sort handler;
+- handler click reaches `GridAutoSort.sort()`.
+
+Expected harness marker:
+
+```text
+NATIVE HANDLER REBUILD HARNESS PASSED
+```
+
 These checks validate the addon logic but do not replace a Project Zomboid/Kahlua runtime test.
 
 ## Runtime smoke matrix
 
-### 1. UI / load order
+### 1. UI / native handler lifecycle
 
 1. Enable upstream `GridInventory`.
 2. Enable local `LaccckaB4220GridInventorySort` after it.
-3. Open player inventory and a world loot container.
-4. Confirm one localized sort button appears in the active GridInventory footer and no duplicate button appears after switching bags/containers repeatedly.
-5. Confirm console contains one install line from `[LCC GridSort]` and no Lua exception.
+3. Open player inventory and an ordinary world loot container such as a crate/cabinet/trunk.
+4. Confirm one compact sort icon is present in each supported active-container footer.
+5. Add/remove items until the vanilla/GridInventory footer changes between zero, one, two and three ordinary action buttons.
+6. Confirm the sort icon survives every rebuild and remains in the normal left-side button group.
+7. Switch bags/containers repeatedly and close/reopen both panels; no duplicate sort icon may appear.
+8. Confirm the floor does **not** show a sort icon in v0.1.
+9. Confirm console contains:
+
+```text
+[LCC GridSort] native footer handlers registered
+```
+
+The following obsolete markers must no longer appear:
+
+```text
+[LCC GridSort] footer hooks installed
+[LCC GridSort] footer visibility hook installed
+[LCC GridSort] sort button created
+[LCC GridSort] footer membership repaired
+```
+
+If obsolete markers appear after running the updater, the local mod directory was not replaced with the current package.
 
 ### 2. Basic deterministic packing
 
-Prepare a container with mixed footprints (1x1, 1x2, 2x2, 2x3, 3x1 or larger).
+Prepare a supported container with mixed footprints (1x1, 1x2, 2x2, 2x3, 3x1 or larger).
 
 1. Manually scatter the items.
-2. Press sort.
+2. Press the sort icon.
 3. Confirm all items remain in the same physical ItemContainer.
 4. Confirm the layout compacts toward the top-left and may rotate non-square items.
 5. Press sort again; the second press must be a no-op visually.
@@ -160,18 +204,19 @@ SP control case:
 
 ### 8. Explicit v0.1 exclusions
 
-Confirm the button is disabled for:
+Confirm the sort action is unavailable for:
 
 - floor;
 - corpse inventory;
 - nested-bag target in MP only.
 
-Do not treat those disabled cases as test failures for v0.1.
+Do not treat those disabled/absent cases as test failures for v0.1.
 
 ## Acceptance criteria
 
 The first version is acceptable for wider testing when:
 
+- the native sort handler survives all footer rebuild transitions;
 - no Lua exceptions occur across the matrix;
 - the same input set produces a stable layout on repeated sorts;
 - no physical item transfer is caused by sorting;
