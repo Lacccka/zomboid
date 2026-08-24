@@ -17,9 +17,12 @@ end
 local REASON_TOOLTIP = {
     floor = { "UI_LCC_GridSort_Floor", "Auto-sort is disabled on the floor." },
     corpse = { "UI_LCC_GridSort_Corpse", "Corpse auto-sort is disabled in this version." },
+    nested = { "UI_LCC_GridSort_Nested", "Nested bags are temporarily not auto-sorted in multiplayer." },
     search = { "UI_LCC_GridSort_SearchFirst", "Search this container before sorting." },
     busy = { "UI_LCC_GridSort_Busy", "Wait for the current inventory action to finish." },
     locked = { "UI_LCC_GridSort_Locked", "This nested container is currently locked." },
+    nothing = { "UI_LCC_GridSort_Nothing", "There is nothing to sort in this container." },
+    ["no-space"] = { "UI_LCC_GridSort_NoSpace", "These items cannot all fit in the primary grid, even after auto-sort." },
     unavailable = { "UI_LCC_GridSort_Unavailable", "Auto-sort is unavailable for this grid." },
 }
 
@@ -119,11 +122,19 @@ local function onSortClicked(controlsUI)
 
     local ok, reason = GridAutoSort.sort(grid)
     if ok then
+        controlsUI._lccGridSortStatusReason = nil
+        controlsUI._lccGridSortStatusUntil = nil
         if reason == "sorted" then
             print("[LCC GridSort] sorted " .. tostring(grid.inventoryContainer:getType()))
         end
         return
     end
+
+    -- Keep a failure explanation visible for a short time. arrange() runs very
+    -- frequently and would otherwise replace the tooltip with the generic one
+    -- on the next frame, making no-space/nothing feedback impossible to read.
+    controlsUI._lccGridSortStatusReason = reason
+    controlsUI._lccGridSortStatusUntil = getTimeInMillis() + 2500
 
     local button = controlsUI._lccGridSortButton
     if button then button:setTooltip(tooltipForReason(reason)) end
@@ -182,9 +193,18 @@ local function ensureSortControl(controlsUI)
     else
         button.enable = canSort
     end
-    button:setTooltip(canSort
-        and text("UI_LCC_GridSort_Tooltip", "Auto-sort this container.")
-        or tooltipForReason(reason))
+
+    local stickyReason = controlsUI._lccGridSortStatusReason
+    local stickyUntil = controlsUI._lccGridSortStatusUntil
+    if stickyReason and stickyUntil and getTimeInMillis() < stickyUntil then
+        button:setTooltip(tooltipForReason(stickyReason))
+    else
+        controlsUI._lccGridSortStatusReason = nil
+        controlsUI._lccGridSortStatusUntil = nil
+        button:setTooltip(canSort
+            and text("UI_LCC_GridSort_Tooltip", "Auto-sort this container.")
+            or tooltipForReason(reason))
+    end
     button:setVisible(true)
 
     compactLeftControls(controlsUI, button)
