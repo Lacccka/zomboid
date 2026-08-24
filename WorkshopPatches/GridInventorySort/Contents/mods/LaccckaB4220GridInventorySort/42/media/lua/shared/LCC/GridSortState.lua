@@ -2,6 +2,8 @@ local GridSortState = {}
 
 GridSortState.MODULE = "LCCGridInventorySort"
 GridSortState.COMMANDS = {
+    SORT_PREPARE = "SortPrepare",
+    SORT_TOKEN = "SortToken",
     SORT_REQUEST = "SortRequest",
     PAGE_MOVE = "PageMove",
     PAGE_REORDER = "PageReorder",
@@ -62,12 +64,11 @@ local function feedHash(h, text)
     return h
 end
 
--- Hash used for optimistic concurrency. It intentionally ignores coordinates
--- that GridInventory auto-fitted locally (gridManual ~= true): those positions
--- are presentation state and can legitimately differ between client/server.
--- Membership is always included. Manual/server-authoritative positions are
--- included, so the first successful concurrent sort changes the hash and any
--- later request based on the old state is rejected atomically.
+-- Server-side revision token payload. It intentionally ignores coordinates that
+-- are automatic/presentation-only (gridManual ~= true), while always including
+-- membership and every manual/server-committed position. In MP the CLIENT must
+-- never use its own value as the CAS precondition: the dedicated server issues
+-- this token through SortPrepare/SortToken immediately before SortRequest.
 function GridSortState.authorityHash(container)
     local h = 17
     local items = GridSortState.collectItems(container)
