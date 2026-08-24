@@ -97,6 +97,15 @@ local function extendOverflowIntoPages(self)
     local container = self.inventory
     if not container or isFloor(container) then return end
 
+    -- IMPORTANT: the player's root inventory is deliberately NOT multi-page.
+    -- GridInventory's own AutoDrop uses root-inventory unpositioned items as a
+    -- staging signal and redistributes them into worn bags. Rescuing those items
+    -- into extra 3x4 pages makes the character inventory absorb everything and
+    -- prevents that routing, which produced dozens of tiny player grids and a
+    -- massively overloaded root inventory. Bags/world containers still use the
+    -- real multi-page rescue below; vanilla capacity remains authoritative.
+    if GridSortState.isPlayerRootContainer(container) then return end
+
     local width, height = GridContainer.getGridSize(container)
     local sig = GridContainer.containerSignature(container)
     local manualPages = {}
@@ -143,9 +152,7 @@ local function extendOverflowIntoPages(self)
 
     -- A manual page-2 item may have temporarily occupied page 1 during the
     -- upstream refresh and pushed an otherwise fitting item to unpositioned.
-    -- Retry those ordinary overflow items against the newly freed base page
-    -- before creating another page. These placements are UI-only, like the
-    -- extra-page auto placements below, so CAS hashes remain server-based.
+    -- Retry ordinary overflow against the newly freed base page first.
     local base = self.grids and self.grids[1] or nil
     local pagePending = {}
     if base then
@@ -181,8 +188,8 @@ local function extendOverflowIntoPages(self)
 
                 -- Persist only positions that are already manual/server-backed.
                 -- Auto overflow pages are deterministic UI state; writing their
-                -- page into ModData here would make the client's CAS hash differ
-                -- from the authoritative server before any network action.
+                -- page into ModData here would make the client's authority state
+                -- differ from the server before any network action.
                 if d.manual then
                     local md = d.itemObj:getModData()
                     md.gridX = x
