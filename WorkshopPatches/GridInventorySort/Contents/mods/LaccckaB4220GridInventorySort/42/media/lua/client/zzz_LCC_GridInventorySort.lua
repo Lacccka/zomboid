@@ -3,11 +3,10 @@ require "ISUI/InventoryWindow/ISInventoryWindowControlHandler"
 require "ISUI/LootWindow/ISLootWindowContainerControls"
 require "ISUI/LootWindow/ISLootWindowObjectControlHandler"
 
--- Explicit load order for the addon layers. Guards inside each module make this
--- safe even when the PZ loader has already executed a nested client file.
-pcall(require, "LCC/GridMultiPage")
+-- Explicit load order for the addon layers. One physical ItemContainer is kept
+-- as one GridCore/one panel; no pagination or hidden GridRender bookkeeping.
+pcall(require, "LCC/GridContinuousGrid")
 pcall(require, "LCC/GridPaneUX")
-pcall(require, "LCC/GridPageView")
 
 local okSort, GridAutoSort = pcall(require, "LCC/GridAutoSort")
 if not okSort or not GridAutoSort then
@@ -31,7 +30,7 @@ local REASON_TOOLTIP = {
     busy = { "UI_LCC_GridSort_Busy", "Wait for the current inventory action to finish." },
     locked = { "UI_LCC_GridSort_Locked", "This nested container is currently locked." },
     nothing = { "UI_LCC_GridSort_Nothing", "There is nothing to sort in this container." },
-    ["no-space"] = { "UI_LCC_GridSort_NoSpace", "These items cannot be represented safely in the available grid pages." },
+    ["no-space"] = { "UI_LCC_GridSort_NoSpace", "These items cannot be represented safely in the available grid." },
     unavailable = { "UI_LCC_GridSort_Unavailable", "Auto-sort is unavailable for this grid." },
 }
 
@@ -65,16 +64,9 @@ end
 
 local function setButtonEnabled(button, enabled)
     if not button then return end
-    if button.setEnable then
-        button:setEnable(enabled)
-    else
-        button.enable = enabled
-    end
+    if button.setEnable then button:setEnable(enabled) else button.enable = enabled end
 end
 
--- Draw the icon on the normal vanilla handler button. This keeps all ownership,
--- add/remove, row wrapping and footer sizing in the game's control-handler
--- system while avoiding a separate PNG asset.
 local function decorateSortButton(button)
     if not button or button._lccGridSortIconInstalled then return end
     button._lccGridSortIconInstalled = true
@@ -137,9 +129,7 @@ local function refreshHandlerState(handler)
 
     local grid = getActiveGrid(handler)
     local canSort, reason = false, "unavailable"
-    if grid then
-        canSort, reason = GridAutoSort.canSort(grid)
-    end
+    if grid then canSort, reason = GridAutoSort.canSort(grid) end
 
     setButtonEnabled(button, canSort)
 
@@ -156,8 +146,6 @@ end
 
 local function handlerShouldBeVisible(handler)
     local container = handler and handler.container
-    -- Floor uses the separate vanilla FloorHandlerList. GridAutoSort intentionally
-    -- does not support floor grids, so never register a fake floor control.
     if not container or isFloor(container) then return false end
     refreshHandlerState(handler)
     return true
@@ -195,52 +183,25 @@ local function handlerPerform(handler)
 end
 
 LCC_InventorySortHandler = ISInventoryWindowControlHandler:derive("LCC_InventorySortHandler")
-
-function LCC_InventorySortHandler:shouldBeVisible()
-    return handlerShouldBeVisible(self)
-end
-
-function LCC_InventorySortHandler:getControl()
-    return handlerGetControl(self)
-end
-
-function LCC_InventorySortHandler:perform()
-    handlerPerform(self)
-end
-
-function LCC_InventorySortHandler:new()
-    return ISInventoryWindowControlHandler.new(self)
-end
+function LCC_InventorySortHandler:shouldBeVisible() return handlerShouldBeVisible(self) end
+function LCC_InventorySortHandler:getControl() return handlerGetControl(self) end
+function LCC_InventorySortHandler:perform() handlerPerform(self) end
+function LCC_InventorySortHandler:new() return ISInventoryWindowControlHandler.new(self) end
 
 LCC_LootSortHandler = ISLootWindowObjectControlHandler:derive("LCC_LootSortHandler")
-
-function LCC_LootSortHandler:shouldBeVisible()
-    return handlerShouldBeVisible(self)
-end
-
-function LCC_LootSortHandler:getControl()
-    return handlerGetControl(self)
-end
-
-function LCC_LootSortHandler:perform()
-    handlerPerform(self)
-end
-
-function LCC_LootSortHandler:new()
-    return ISLootWindowObjectControlHandler.new(self)
-end
+function LCC_LootSortHandler:shouldBeVisible() return handlerShouldBeVisible(self) end
+function LCC_LootSortHandler:getControl() return handlerGetControl(self) end
+function LCC_LootSortHandler:perform() handlerPerform(self) end
+function LCC_LootSortHandler:new() return ISLootWindowObjectControlHandler.new(self) end
 
 local function moveLootHandlerBeforeRightGroup(handlerClass)
     local list = ISLootWindowContainerControls_HandlerList
     if not list then return end
 
-    local currentIndex = nil
-    local firstRight = nil
+    local currentIndex, firstRight = nil, nil
     for i, class in ipairs(list) do
         if class == handlerClass then currentIndex = i end
-        if class ~= handlerClass and firstRight == nil and class.displayToRight then
-            firstRight = i
-        end
+        if class ~= handlerClass and firstRight == nil and class.displayToRight then firstRight = i end
     end
 
     if currentIndex and firstRight and currentIndex > firstRight then
@@ -249,10 +210,6 @@ local function moveLootHandlerBeforeRightGroup(handlerClass)
     end
 end
 
--- This is the supported Build 42 extension point. GridInventory's optimized
--- arrange() implementation also iterates these same handler lists, so the sort
--- control survives every footer rebuild naturally instead of being injected
--- back into controls[] after the fact.
 ISInventoryWindowContainerControls.AddHandler(LCC_InventorySortHandler)
 ISLootWindowContainerControls.AddHandler(LCC_LootSortHandler)
 moveLootHandlerBeforeRightGroup(LCC_LootSortHandler)
