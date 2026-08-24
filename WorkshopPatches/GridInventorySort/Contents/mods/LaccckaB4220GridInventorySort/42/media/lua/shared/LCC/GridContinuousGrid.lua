@@ -23,6 +23,7 @@ local originalRefresh = GridContainer.refresh
 -- remains authoritative for whether NEW items may be inserted.
 local MAX_HEIGHT = 60
 local SAFETY_ROWS = 3
+local ROW_STEP = 4
 
 local function isEligible(container)
     if not container then return false end
@@ -131,6 +132,13 @@ function GridContinuousGrid.getGridSize(container)
     -- for the next vanilla-approved transfer without a page allocator.
     local areaRows = math.ceil(area / math.max(1, baseW))
     local desiredH = math.max(baseH, areaRows + maxItemH + SAFETY_ROWS, manualBottom + 1)
+
+    -- Do not resize the GridCore for every single added/removed row. Growing in
+    -- four-row buckets keeps the UI stable during batches of transfers while
+    -- still presenting one continuous Tarkov-style grid.
+    if desiredH > baseH then
+        desiredH = math.ceil(desiredH / ROW_STEP) * ROW_STEP
+    end
     desiredH = math.min(MAX_HEIGHT, desiredH)
     return baseW, desiredH
 end
