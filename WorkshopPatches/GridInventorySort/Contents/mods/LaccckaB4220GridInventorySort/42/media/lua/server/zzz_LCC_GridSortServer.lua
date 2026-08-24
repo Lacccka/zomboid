@@ -117,6 +117,63 @@ local function applyPosition(item, move, gridContainer, manual, container)
     if manual ~= nil then md.gridManual = manual and true or nil end
 end
 
+local function processPageAssign(player, args)
+    if not args or not args.ref or not args.moves or #args.moves == 0 then return "invalid" end
+    local target = GridProtocol.resolveContainerRef(args.ref, player)
+    if not target or GridSortState.isPlayerRootContainer(target) then return "invalid" end
+
+    local movedSet = {}
+    local resolved = {}
+    for _, move in ipairs(args.moves) do
+        local page = tonumber(move.page) or 1
+        if move.itemId == nil or move.x == nil or move.y == nil
+            or not validPage(page) or page <= 1 then
+            return "invalid"
+        end
+        local item = findItem(player, args.ref, move.itemId, nil)
+        if not item then return "notfound" end
+        if item.isEquipped and item:isEquipped() then return "invalid" end
+        movedSet[item:getID()] = true
+        table.insert(resolved, {
+            item = item,
+            move = {
+                itemId = move.itemId,
+                x = move.x, y = move.y,
+                page = page,
+                rotated = move.rotated,
+            },
+        })
+    end
+
+    local w, h = GridContainer.getGridSize(target)
+    local pages = {}
+    for _, entry in ipairs(resolved) do
+        local page = entry.move.page
+        if not pages[page] then
+            pages[page] = buildPageOccupancy(target, page, movedSet)
+            if not pages[page] then return "invalid" end
+        end
+        local item, move = entry.item, entry.move
+        local fw, fh = ItemFootprint.getSize(item)
+        local rotated = move.rotated and true or false
+        local ew, eh = rotated and fh or fw, rotated and fw or fh
+        local compatKey, stackInfo = GridContainer.getStackInfo(item)
+        if not pages[page]:insertItem(item:getID(), tonumber(move.x), tonumber(move.y), ew, eh,
+            rotated, item, compatKey, stackInfo, movedSet) then
+            return "invalid"
+        end
+    end
+
+    -- Auto page assignment is authoritative only for page routing. Keep
+    -- gridManual=false so authorityHash deliberately remains unchanged and a
+    -- presentation rescue cannot manufacture a false CAS conflict.
+    for _, entry in ipairs(resolved) do
+        applyPosition(entry.item, entry.move, args.gridContainer, false, target)
+        broadcastItem(entry.item, target, false)
+    end
+    return "ok"
+end
+
 local function processPageMove(player, args)
     if not args or not args.ref or args.itemId == nil then return "invalid" end
     local target = GridProtocol.resolveContainerRef(args.ref, player)
@@ -307,6 +364,7 @@ end
 
 local function dispatch(player, command, args)
     if command == GridSortState.COMMANDS.SORT_REQUEST then return processSort(player, args) end
+    if command == GridSortState.COMMANDS.PAGE_ASSIGN then return processPageAssign(player, args) end
     if command == GridSortState.COMMANDS.PAGE_MOVE then return processPageMove(player, args) end
     if command == GridSortState.COMMANDS.PAGE_CLEAR then
         args = args or {}; args.clear = true
