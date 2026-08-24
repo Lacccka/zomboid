@@ -22,7 +22,7 @@ local originalRefresh = GridContainer.refresh
 -- than GridInventory's base dimensions provide. Vanilla ItemContainer capacity
 -- remains authoritative for whether NEW items may be inserted.
 local MAX_HEIGHT = 60
-local SAFETY_ROWS = 2
+local SAFETY_ROWS = 3
 
 local function isEligible(container)
     if not container then return false end
@@ -72,8 +72,7 @@ local function measureContents(container, gridW)
             end
 
             local md = item.getModData and item:getModData() or nil
-            local legacyPage = md and tonumber(md.gridPage) or 1
-            if legacyPage <= 1 and md and md.gridManual and md.gridY then
+            if md and md.gridManual and md.gridY then
                 local rotated = md.gridRot and true or false
                 local eh = rotated and w or h
                 manualBottom = math.max(manualBottom, tonumber(md.gridY) + eh - 1)
@@ -88,22 +87,6 @@ local function measureContents(container, gridW)
     end
 
     return area, maxItemH, manualBottom
-end
-
-function GridContinuousGrid.getGridSize(container)
-    local baseW, baseH = originalGetGridSize(container)
-    if not isEligible(container) then return baseW, baseH end
-
-    local area, maxItemH, manualBottom = measureContents(container, baseW)
-    if area <= 0 then return baseW, baseH end
-
-    -- Area rows are the lower bound. Adding the tallest possible item plus a
-    -- tiny safety band absorbs normal first-fit fragmentation without a page
-    -- allocator, extra GridRender objects or per-frame UI bookkeeping.
-    local areaRows = math.ceil(area / math.max(1, baseW))
-    local desiredH = math.max(baseH, areaRows + maxItemH + SAFETY_ROWS, manualBottom + 1)
-    desiredH = math.min(MAX_HEIGHT, desiredH)
-    return baseW, desiredH
 end
 
 function GridContinuousGrid.normalizeLegacyPages(container)
@@ -129,6 +112,27 @@ function GridContinuousGrid.normalizeLegacyPages(container)
         end
     end
     return changed
+end
+
+function GridContinuousGrid.getGridSize(container)
+    local baseW, baseH = originalGetGridSize(container)
+    if not isEligible(container) then return baseW, baseH end
+
+    -- One-time migration is deliberately tied to this shared query. Both the
+    -- client UI and the original dedicated GridServerNetwork ask getGridSize(),
+    -- so stale page-local coordinates cannot survive on only one side.
+    GridContinuousGrid.normalizeLegacyPages(container)
+
+    local area, maxItemH, manualBottom = measureContents(container, baseW)
+    if area <= 0 then return baseW, baseH end
+
+    -- Area rows are the lower bound. Adding the tallest possible item plus a
+    -- small safety band absorbs normal first-fit fragmentation and leaves room
+    -- for the next vanilla-approved transfer without a page allocator.
+    local areaRows = math.ceil(area / math.max(1, baseW))
+    local desiredH = math.max(baseH, areaRows + maxItemH + SAFETY_ROWS, manualBottom + 1)
+    desiredH = math.min(MAX_HEIGHT, desiredH)
+    return baseW, desiredH
 end
 
 GridContainer.getGridSize = function(container)
