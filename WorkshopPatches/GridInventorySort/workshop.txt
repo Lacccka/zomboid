@@ -1,6 +1,6 @@
 version=1
 id=0
 title=Lacccka B42 Grid Inventory Sort
-description=Adds fast rotation-aware auto-sort, bag/world multi-page overflow rescue with single-panel page switching, unified inventory scrolling and server-issued token/CAS conflict-safe sorting to GridInventory for Build 42.20. This item contains integration files only; the original GridInventory mod is not included and must be installed separately.
+description=Adds fast rotation-aware auto-sort, an adaptive single continuous grid for overfull bag/world containers, unified inventory scrolling and server-issued token/CAS conflict-safe sorting to GridInventory for Build 42.20. This item contains integration files only; the original GridInventory mod is not included and must be installed separately.
 tags=Build 42;Multiplayer;Interface
 visibility=private
