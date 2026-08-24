@@ -56,6 +56,7 @@ local function findPlacement(grid, d, preferSaved)
     local function consider(rotated)
         local ew = rotated and d.h or d.w
         local eh = rotated and d.w or d.h
+        if ew > grid.width or eh > grid.height then return end
         for y = 1, grid.height - eh + 1 do
             for x = 1, grid.width - ew + 1 do
                 if grid:canPlaceItem(d.id, x, y, ew, eh, nil,
@@ -87,17 +88,24 @@ local function isFloor(container)
     return container and container.getType and container:getType() == "floor"
 end
 
+local function insertDescriptor(grid, d, x, y, rotated, ew, eh)
+    return grid:insertItem(d.id, x, y, ew, eh, rotated,
+        d.itemObj, d.compatKey, d.stackInfo)
+end
+
 local function extendOverflowIntoPages(self)
     local container = self.inventory
     if not container or isFloor(container) then return end
 
     local width, height = GridContainer.getGridSize(container)
     local sig = GridContainer.containerSignature(container)
-    local pending = {}
+    local manualPages = {}
+    local overflow = {}
     local seen = {}
 
     -- Manual positions persisted on page > 1 must stay on that page even
-    -- though upstream refresh only understands page 1.
+    -- though upstream refresh only understands page 1. Remove those temporary
+    -- page-1 placements first; doing so may free cells for ordinary overflow.
     if container.getItems then
         local items = container:getItems()
         for i = 0, items:size() - 1 do
@@ -108,7 +116,7 @@ local function extendOverflowIntoPages(self)
                 local d = descriptor(item)
                 if d then
                     seen[d.id] = true
-                    table.insert(pending, d)
+                    table.insert(manualPages, d)
                     for _, grid in ipairs(self.grids or {}) do
                         if grid.items and grid.items[d.id] then grid:removeItem(d.id) end
                     end
@@ -123,16 +131,43 @@ local function extendOverflowIntoPages(self)
             local d = descriptor(item)
             if d then
                 seen[id] = true
-                table.insert(pending, d)
+                table.insert(overflow, d)
             end
         end
     end
 
-    if #pending == 0 then return end
+    if #manualPages == 0 and #overflow == 0 then return end
 
-    table.sort(pending, compareDescriptors)
+    table.sort(manualPages, compareDescriptors)
+    table.sort(overflow, compareDescriptors)
+
+    -- A manual page-2 item may have temporarily occupied page 1 during the
+    -- upstream refresh and pushed an otherwise fitting item to unpositioned.
+    -- Retry those ordinary overflow items against the newly freed base page
+    -- before creating another page. These placements are UI-only, like the
+    -- extra-page auto placements below, so CAS hashes remain server-based.
+    local base = self.grids and self.grids[1] or nil
+    local pagePending = {}
+    if base then
+        for _, d in ipairs(overflow) do
+            local x, y, rotated, ew, eh = findPlacement(base, d, false)
+            if x and y then
+                insertDescriptor(base, d, x, y, rotated, ew, eh)
+            else
+                table.insert(pagePending, d)
+            end
+        end
+    else
+        for _, d in ipairs(overflow) do table.insert(pagePending, d) end
+    end
+
+    -- Manual persisted pages are placed before auto overflow so their explicit
+    -- cells win. Ordinary overflow fills remaining cells around them.
+    local pending = {}
+    for _, d in ipairs(manualPages) do table.insert(pending, d) end
+    for _, d in ipairs(pagePending) do table.insert(pending, d) end
+
     local stillUnpositioned = {}
-
     for _, d in ipairs(pending) do
         local placed = false
         local startPage = (d.manual and d.savedPage > 1) and d.savedPage or 2
@@ -142,8 +177,7 @@ local function extendOverflowIntoPages(self)
             if not grid then break end
             local x, y, rotated, ew, eh = findPlacement(grid, d, d.manual and page == d.savedPage)
             if x and y then
-                grid:insertItem(d.id, x, y, ew, eh, rotated,
-                    d.itemObj, d.compatKey, d.stackInfo)
+                insertDescriptor(grid, d, x, y, rotated, ew, eh)
 
                 -- Persist only positions that are already manual/server-backed.
                 -- Auto overflow pages are deterministic UI state; writing their
