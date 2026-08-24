@@ -42,7 +42,14 @@ end
 
 function GridSortNetwork.isPending(container)
     local key = keyFor(container)
-    return key and GridSortNetwork.pending[key] ~= nil or false
+    if not key then return false end
+    local p = GridSortNetwork.pending[key]
+    if p and getTimestampMs() - (p.startedAt or 0) > 5000 then
+        GridSortNetwork.pending[key] = nil
+        print("[LCC GridSort] pending sort timed out; control unlocked")
+        return false
+    end
+    return p ~= nil
 end
 
 function GridSortNetwork.sendSort(container, targets, expectedHash, gridContainer)
@@ -67,16 +74,18 @@ function GridSortNetwork.sendSort(container, targets, expectedHash, gridContaine
     if #moves == 0 then return false end
 
     local key = keyFor(container)
-    GridSortNetwork.pending[key] = {
-        expectedHash = expectedHash,
-        startedAt = getTimestampMs(),
-    }
-    return send(GridSortState.COMMANDS.SORT_REQUEST, {
+    local ok = send(GridSortState.COMMANDS.SORT_REQUEST, {
         ref = ref,
         expectedHash = expectedHash,
         gridContainer = gridContainer,
         moves = moves,
     })
+    if not ok then return false end
+    GridSortNetwork.pending[key] = {
+        expectedHash = expectedHash,
+        startedAt = getTimestampMs(),
+    }
+    return true
 end
 
 function GridSortNetwork.sendPageMove(container, itemId, x, y, rotated, gridContainer, manual, page)
