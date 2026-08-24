@@ -1,0 +1,10 @@
+{
+    "UI_LCC_GridSort_Button": "SORT",
+    "UI_LCC_GridSort_Tooltip": "Auto-sort this container.",
+    "UI_LCC_GridSort_Floor": "Auto-sort is disabled on the floor.",
+    "UI_LCC_GridSort_Corpse": "Corpse auto-sort is disabled in this version.",
+    "UI_LCC_GridSort_SearchFirst": "Search this container before sorting.",
+    "UI_LCC_GridSort_Busy": "Wait for the current inventory action to finish.",
+    "UI_LCC_GridSort_Locked": "This nested container is currently locked.",
+    "UI_LCC_GridSort_Unavailable": "Auto-sort is unavailable for this grid."
+}
