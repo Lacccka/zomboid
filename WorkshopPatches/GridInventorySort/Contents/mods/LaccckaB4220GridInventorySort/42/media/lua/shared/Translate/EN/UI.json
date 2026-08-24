@@ -8,6 +8,6 @@
     "UI_LCC_GridSort_Busy": "Wait for the current inventory action to finish.",
     "UI_LCC_GridSort_Locked": "This nested container is currently locked.",
     "UI_LCC_GridSort_Nothing": "There is nothing to sort in this container.",
-    "UI_LCC_GridSort_NoSpace": "These items cannot all fit in the primary grid, even after auto-sort.",
+    "UI_LCC_GridSort_NoSpace": "These items cannot be represented safely in the available grid pages.",
     "UI_LCC_GridSort_Unavailable": "Auto-sort is unavailable for this grid."
 }
