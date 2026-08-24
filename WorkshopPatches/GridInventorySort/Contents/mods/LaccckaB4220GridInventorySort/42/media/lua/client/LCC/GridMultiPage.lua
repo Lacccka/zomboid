@@ -96,6 +96,71 @@ local function insertDescriptor(grid, d, x, y, rotated, ew, eh)
         d.itemObj, d.compatKey, d.stackInfo)
 end
 
+local function hasPlacementInPages(gc, d)
+    for _, grid in ipairs((gc and gc.grids) or {}) do
+        local x, y = findPlacement(grid, d, false)
+        if x and y then return true end
+    end
+    return false
+end
+
+-- Upstream GridAutoDrop routes root-inventory overflow into worn bags before it
+-- drops to the floor, but its private canItemFitInContainer() only scans pages
+-- that ALREADY exist. Therefore a bag whose page 1 is full is incorrectly
+-- skipped even when vanilla hasRoomFor() still allows the item and our page 2
+-- could represent it. We do not replace AutoDrop; we only pre-warm ONE empty
+-- mathematical page in an eligible worn bag so its existing routing sees room.
+-- The next real bag refresh removes/rebuilds this temporary page around the
+-- transferred item, at which point normal multi-page rescue persists page 2.
+local function prepareWornBagRouting(self)
+    local overflow = self.unpositioned or {}
+    if #overflow == 0 then return end
+
+    local player = getSpecificPlayer and getSpecificPlayer(self.playerNum or 0) or nil
+    if not player or not player.getWornItems then return end
+    local worn = player:getWornItems()
+    if not worn then return end
+
+    for _, item in ipairs(overflow) do
+        -- Mirrors upstream AutoDrop: Moveables are intentionally not routed into
+        -- worn bags because the placement system expects them in the hands.
+        if not (instanceof and instanceof(item, "Moveable")) then
+            local d = descriptor(item)
+            if d then
+                for i = 0, worn:size() - 1 do
+                    local wornEntry = worn:get(i)
+                    local wornItem = wornEntry and wornEntry.getItem and wornEntry:getItem() or nil
+                    local targetInv = wornItem and wornItem.IsInventoryContainer
+                        and wornItem:IsInventoryContainer() and wornItem:getInventory() or nil
+                    if targetInv and targetInv ~= self.inventory then
+                        local allowed = not targetInv.isItemAllowed or targetInv:isItemAllowed(item)
+                        local room = targetInv.hasRoomFor and targetInv:hasRoomFor(player, item)
+                        if allowed and room then
+                            local targetGc = GridContainer.getOrCreate(targetInv, self.playerNum or 0)
+                            -- Ensure existing page occupancy is current before we
+                            -- decide whether an extra page is actually necessary.
+                            targetGc:refresh()
+                            if hasPlacementInPages(targetGc, d) then
+                                break
+                            end
+
+                            if #targetGc.grids < GridSortState.MAX_PAGES then
+                                local w, h = GridContainer.getGridSize(targetInv)
+                                local probe = GridCore.new(w, h)
+                                local x, y = findPlacement(probe, d, false)
+                                if x and y then
+                                    table.insert(targetGc.grids, probe)
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
 local function extendOverflowIntoPages(self)
     local container = self.inventory
     if not container or isFloor(container) then return end
@@ -105,9 +170,11 @@ local function extendOverflowIntoPages(self)
     -- staging signal and redistributes them into worn bags. Rescuing those items
     -- into extra 3x4 pages makes the character inventory absorb everything and
     -- prevents that routing, which produced dozens of tiny player grids and a
-    -- massively overloaded root inventory. Bags/world containers still use the
-    -- real multi-page rescue below; vanilla capacity remains authoritative.
-    if GridSortState.isPlayerRootContainer(container) then return end
+    -- massively overloaded root inventory.
+    if GridSortState.isPlayerRootContainer(container) then
+        prepareWornBagRouting(self)
+        return
+    end
 
     local width, height = GridContainer.getGridSize(container)
     local sig = GridContainer.containerSignature(container)
