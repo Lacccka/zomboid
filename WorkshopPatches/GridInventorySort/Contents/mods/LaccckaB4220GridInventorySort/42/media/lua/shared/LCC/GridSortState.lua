@@ -5,6 +5,7 @@ GridSortState.COMMANDS = {
     SORT_REQUEST = "SortRequest",
     PAGE_MOVE = "PageMove",
     PAGE_REORDER = "PageReorder",
+    PAGE_ASSIGN = "PageAssign",
     PAGE_CLEAR = "PageClear",
     SYNC_LAYOUT = "SyncLayout",
     SYNC_ITEM = "SyncItem",
