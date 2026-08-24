@@ -19,13 +19,13 @@ Every Workshop item must keep this warning:
 | `PatchCore` | `LaccckaB4220PatchCore` | `3786175901` | Lacccka B42 Patch Core | Shared guarded-patch helper used by functional patches. |
 | `RuntimeFixes` | `LaccckaB4220RuntimeFixes` | `3786175979` | Lacccka B42 Runtime Fixes | Low-level runtime, dedicated-server, cache and API compatibility hooks. |
 | `NPCFixes` | `LaccckaB4220NPCFixes` | staging `0` | Lacccka B42 NPC Fixes | Stable NPC combat, terminal-death and corpse/clothing lifecycle fixes. |
-| `NPCCombatExperimental` | `LaccckaB4220NPCCombatExperimental` | `3786817782` | Lacccka B42 NPC Combat Experimental | Diagnostics, corpse tracing and admin stress-test tooling only. |
+| `NPCCombatExperimental` | `LaccckaB4220NPCCombatExperimental` | `3786817782` | Lacccka B42 NPC Combat Experimental | Diagnostics, stable-fix heartbeat summaries, corpse tracing and admin stress-test tooling only. |
 | `ActivityFixes` | `LaccckaB4220ActivityFixes` | `3786175725` | Lacccka B42 Activity Fixes | Lifestyle hygiene, Yoga/progression and perk compatibility fixes. |
 | `CompatibilityBridges` | `LaccckaB4220CompatBridges` | `3786175808` | Lacccka B42 Compatibility Bridges | Build 42 legacy module/API redirects used by weapon, vehicle and framework mods. |
 | `SafetyFixes` | `LaccckaB4220SafetyFixes` | `3786176221` | Lacccka B42 Safety Fixes | Defensive inventory/UI compatibility guards. |
 | `RussianTextFixes` | `LaccckaB4220RussianText` | `3786176120` | Lacccka B42 Russian Text Fixes | Russian localization and skill/UI text corrections. |
 
-`NPCFixes` code is stable `1.0.0`. Its source-clean transformers passed an acceptance run against the normal Workshop `Bandits2` installation on 2026-08-21. The Workshop project remains private with staging `id=0` only until a real Workshop ID and final preview are assigned.
+`NPCFixes` code is stable `1.0.1`. Its source-clean transformers passed an acceptance run against the normal Workshop `Bandits2` installation on 2026-08-21. The Workshop project remains private with staging `id=0` only until a real Workshop ID and final preview are assigned.
 
 ## Dependency model
 
@@ -68,9 +68,9 @@ Stable acceptance evidence is stored in `docs/final-reports/npcfixes-source-clea
 
 ## NPCCombatExperimental isolation contract
 
-`NPCCombatExperimental` is optional tooling for controlled tests. Production target-disconnect behavior has been promoted out of it. It retains observe-only target/AttackState diagnostics, death/corpse tracing and the staff-only stress spawner/server bridge.
+`NPCCombatExperimental` is optional tooling for controlled tests. Production target-disconnect behavior has been promoted out of it. It retains observe-only target/AttackState diagnostics, death/corpse tracing, the relocated periodic stable clothing/fallback `SUMMARY` output, and the staff-only stress spawner/server bridge.
 
-It loads after `RuntimeFixes` and `NPCFixes` when those stable items are present, so diagnostics observe the production stack instead of masking it.
+It loads after `RuntimeFixes` and `NPCFixes` when those stable items are present, so diagnostics observe the production stack instead of masking it. `NPCFixes` continues to maintain its internal counters and stale-state pruning even when the experimental package is disabled; only periodic printing is delegated to the experimental package.
 
 ## Source ownership
 
