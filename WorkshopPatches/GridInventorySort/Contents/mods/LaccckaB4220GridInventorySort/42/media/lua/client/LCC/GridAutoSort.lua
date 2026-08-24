@@ -72,7 +72,9 @@ local function collectDescriptors(container, playerNum)
 end
 
 local function compareId(a, b)
-    return tonumber(a.id) < tonumber(b.id)
+    local ai, bi = tonumber(a.id), tonumber(b.id)
+    if ai and bi then return ai < bi end
+    return tostring(a.id) < tostring(b.id)
 end
 
 local SORTERS = {
@@ -129,6 +131,43 @@ local function betterCandidate(a, b, currentBottom, preferWide, currentRotated)
 end
 
 local function choosePlacement(grid, d, currentBottom, preferWide)
+    -- Stack first: findFreeSpace() is intentionally top-left-first and would
+    -- choose an earlier empty cell before a compatible pile later in the row.
+    -- Auto-sort should consolidate compatible virtual stacks whenever the
+    -- configured maxStack allows it, so probe real piles explicitly first.
+    if d.compatKey and grid.findCompatibleStack then
+        local stackBest = nil
+
+        local sx, sy, srot = grid:findCompatibleStack(
+            d.id, d.originalW, d.originalH, d.compatKey, d.stackInfo
+        )
+        if sx and sy then
+            stackBest = {
+                x = sx, y = sy,
+                w = d.originalW, h = d.originalH,
+                rotated = srot and true or false,
+            }
+        end
+
+        if d.originalW ~= d.originalH then
+            local rx, ry, rrot = grid:findCompatibleStack(
+                d.id, d.originalH, d.originalW, d.compatKey, d.stackInfo
+            )
+            if rx and ry then
+                local rotatedStack = {
+                    x = rx, y = ry,
+                    w = d.originalH, h = d.originalW,
+                    rotated = rrot and true or false,
+                }
+                stackBest = betterCandidate(
+                    stackBest, rotatedStack, currentBottom, preferWide, d.currentRotated
+                )
+            end
+        end
+
+        if stackBest then return stackBest end
+    end
+
     local best = nil
 
     local x, y = grid:findFreeSpace(
