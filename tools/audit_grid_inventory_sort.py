@@ -23,6 +23,7 @@ FILES = {
     "multipage": MOD / "media" / "lua" / "client" / "LCC" / "GridMultiPage.lua",
     "network": MOD / "media" / "lua" / "client" / "LCC" / "GridSortNetwork.lua",
     "paneux": MOD / "media" / "lua" / "client" / "LCC" / "GridPaneUX.lua",
+    "pageview": MOD / "media" / "lua" / "client" / "LCC" / "GridPageView.lua",
     "state": MOD / "media" / "lua" / "shared" / "LCC" / "GridSortState.lua",
     "server": MOD / "media" / "lua" / "server" / "zzz_LCC_GridSortServer.lua",
     "hook": MOD / "media" / "lua" / "client" / "zzz_LCC_GridInventorySort.lua",
@@ -56,6 +57,7 @@ algorithm = require_file("algorithm")
 multipage = require_file("multipage")
 network = require_file("network")
 paneux = require_file("paneux")
+pageview = require_file("pageview")
 state = require_file("state")
 server = require_file("server")
 hook = require_file("hook")
@@ -66,7 +68,7 @@ require_markers(
     modinfo,
     (
         "id=LaccckaB4220GridInventorySort",
-        "modversion=0.2.1",
+        "modversion=0.3.0",
         "versionMin=42.20.0",
         "require=\\GridInventory",
         "loadafter=\\GridInventory",
@@ -90,8 +92,7 @@ require_markers(
         "packGreedySingle",
         "packGreedyMulti",
         "GridSortState.isPlayerRootContainer",
-        "GridSortState.authorityHash",
-        "GridSortNetwork.sendSort",
+        "GridSortNetwork.prepareSort",
         "GridClientNetwork.markGridChanged",
         "isNestedBagContainer",
         'return false, "nested"',
@@ -101,6 +102,11 @@ require_markers(
         'return false, "search"',
     ),
 )
+
+# MP sort must never compute its own CAS version from client-side ModData again.
+mp_sort_block = algorithm.split("if isClient and isClient() then", 1)
+if len(mp_sort_block) == 2 and "GridSortState.authorityHash(container)" in mp_sort_block[1].split("-- SP:", 1)[0]:
+    errors.append("GridAutoSort.lua: client still manufactures authorityHash for MP CAS")
 
 # The blocking v0.2 beam implementation cloned/rescanned full grids per
 # candidate and caused visible UI freezes. It must not silently return.
@@ -133,10 +139,27 @@ require_markers(
 )
 
 require_markers(
+    "GridPageView.lua",
+    pageview,
+    (
+        "_lccGridSortPageViewInstalled",
+        "_lccAllGridUis",
+        "_lccSelectedGridPages",
+        "GridPageView.selectRelative",
+        "originalRefreshContainer",
+        "self.gridIndex = 1",
+        'local label = tostring(pageNumber) .. "/" .. tostring(pageCount)',
+        "single-panel multi-page view installed",
+    ),
+)
+
+require_markers(
     "GridSortState.lua",
     state,
     (
         'MODULE = "LCCGridInventorySort"',
+        'SORT_PREPARE = "SortPrepare"',
+        'SORT_TOKEN = "SortToken"',
         'SORT_REQUEST = "SortRequest"',
         'PAGE_ASSIGN = "PageAssign"',
         'REJECT_LAYOUT = "RejectLayout"',
@@ -154,6 +177,11 @@ require_markers(
     (
         "containerHasExtraPages",
         'return "item:" .. tostring(containing:getID())',
+        "function GridSortNetwork.prepareSort",
+        "pendingByRequest",
+        "GridSortState.COMMANDS.SORT_PREPARE",
+        "GridSortState.COMMANDS.SORT_TOKEN",
+        "expectedToken",
         "function GridSortNetwork.sendPageAssignments",
         "GridSortState.COMMANDS.PAGE_ASSIGN",
         "GridSortState.COMMANDS.SORT_REQUEST",
@@ -171,6 +199,10 @@ require_markers(
     server,
     (
         "GridSortState.authorityHash(target)",
+        "local function processSortPrepare",
+        "GridSortState.COMMANDS.SORT_PREPARE",
+        "GridSortState.COMMANDS.SORT_TOKEN",
+        "expectedToken",
         "local function processPageAssign",
         "GridSortState.COMMANDS.PAGE_ASSIGN",
         "applyPosition(entry.item, entry.move, args.gridContainer, false, target)",
@@ -178,7 +210,7 @@ require_markers(
         'REJECT_LAYOUT, "stale-after-validate"',
         "sameItemSet",
         "GridCore.new(w, h)",
-        "server CAS/page authority installed",
+        "server token/CAS page authority installed",
     ),
 )
 
@@ -199,6 +231,7 @@ require_markers(
     (
         'pcall(require, "LCC/GridMultiPage")',
         'pcall(require, "LCC/GridPaneUX")',
+        'pcall(require, "LCC/GridPageView")',
         'pcall(require, "LCC/GridAutoSort")',
         'require "ISUI/InventoryWindow/ISInventoryWindowContainerControls"',
         'require "ISUI/InventoryWindow/ISInventoryWindowControlHandler"',
