@@ -90,15 +90,42 @@ require_markers(
     hook,
     (
         'pcall(require, "LCC/GridAutoSort")',
-        "ISInventoryWindowContainerControls",
-        "ISLootWindowContainerControls",
-        "_lccGridSortArrangeWrapped",
+        'require "ISUI/InventoryWindow/ISInventoryWindowContainerControls"',
+        'require "ISUI/InventoryWindow/ISInventoryWindowControlHandler"',
+        'require "ISUI/LootWindow/ISLootWindowContainerControls"',
+        'require "ISUI/LootWindow/ISLootWindowObjectControlHandler"',
+        'ISInventoryWindowContainerControls.AddHandler(LCC_InventorySortHandler)',
+        'ISLootWindowContainerControls.AddHandler(LCC_LootSortHandler)',
+        'ISInventoryWindowControlHandler:derive("LCC_InventorySortHandler")',
+        'ISLootWindowObjectControlHandler:derive("LCC_LootSortHandler")',
         "GridAutoSort.canSort",
         "GridAutoSort.sort",
         "LCC_GRID_AUTO_SORT",
-        "_lccGridSortStatusUntil",
+        "native footer handlers registered",
     ),
 )
+
+# The old implementation wrapped arrange()/ISInventoryPage.update and fought
+# vanilla footer rebuilds. It must never come back.
+obsolete_visibility = (
+    MOD / "media" / "lua" / "client" / "zzzz_LCC_GridInventorySortVisibility.lua"
+)
+if obsolete_visibility.exists():
+    errors.append(
+        "obsolete footer-repair hook must stay deleted: "
+        + str(obsolete_visibility.relative_to(ROOT))
+    )
+for forbidden_marker in (
+    "_lccGridSortArrangeWrapper",
+    "_lccGridSortArrangeWrapped",
+    "_lccGridSortVisibilityUpdateWrapper",
+    "footer membership repaired",
+):
+    if forbidden_marker in hook:
+        errors.append(
+            f"zzz_LCC_GridInventorySort.lua: obsolete injection marker present: "
+            f"{forbidden_marker}"
+        )
 
 require_markers(
     "workshop.txt",
