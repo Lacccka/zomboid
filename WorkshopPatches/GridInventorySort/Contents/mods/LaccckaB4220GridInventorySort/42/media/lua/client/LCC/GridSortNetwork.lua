@@ -5,6 +5,9 @@ local GridSortState = require("LCC/GridSortState")
 
 local GridSortNetwork = {}
 GridSortNetwork.pending = {}
+GridSortNetwork.pendingByRequest = {}
+
+local requestSeq = 0
 
 local function playerNum()
     local p = getPlayer()
@@ -21,6 +24,27 @@ local function keyFor(container)
         return "item:" .. tostring(containing:getID())
     end
     return GridContainer.containerSignature(container) or tostring(container)
+end
+
+local function nextRequestId()
+    requestSeq = requestSeq + 1
+    if requestSeq > 1000000000 then requestSeq = 1 end
+    return tostring(getTimestampMs()) .. ":" .. tostring(requestSeq)
+end
+
+local function clearPendingKey(key)
+    if not key then return end
+    local p = GridSortNetwork.pending[key]
+    if p and p.requestId then
+        GridSortNetwork.pendingByRequest[p.requestId] = nil
+    end
+    GridSortNetwork.pending[key] = nil
+end
+
+local function clearPendingRequest(requestId)
+    if requestId == nil then return end
+    local key = GridSortNetwork.pendingByRequest[tostring(requestId)]
+    if key then clearPendingKey(key) end
 end
 
 local function findGridPage(container, itemId)
@@ -64,26 +88,9 @@ local function send(command, args)
     return true
 end
 
-function GridSortNetwork.isPending(container)
-    local key = keyFor(container)
-    if not key then return false end
-    local p = GridSortNetwork.pending[key]
-    if p and getTimestampMs() - (p.startedAt or 0) > 5000 then
-        GridSortNetwork.pending[key] = nil
-        print("[LCC GridSort] pending sort timed out; control unlocked")
-        return false
-    end
-    return p ~= nil
-end
-
-function GridSortNetwork.sendSort(container, targets, expectedHash, gridContainer)
-    if not isClient() then return false end
-    if not container or not targets or #targets == 0 then return false end
-    local ref = GridProtocol.buildContainerRef(container)
-    if not ref then return false end
-
+local function buildSortMoves(targets)
     local moves = {}
-    for _, t in ipairs(targets) do
+    for _, t in ipairs(targets or {}) do
         local item = t.item and t.item.itemObj
         if item and item.getID then
             table.insert(moves, {
@@ -95,22 +102,63 @@ function GridSortNetwork.sendSort(container, targets, expectedHash, gridContaine
             })
         end
     end
+    return moves
+end
+
+function GridSortNetwork.isPending(container)
+    local key = keyFor(container)
+    if not key then return false end
+    local p = GridSortNetwork.pending[key]
+    if p and getTimestampMs() - (p.startedAt or 0) > 5000 then
+        clearPendingKey(key)
+        print("[LCC GridSort] pending sort timed out; control unlocked")
+        return false
+    end
+    return p ~= nil
+end
+
+-- Two-phase MP sort:
+--  1) ask the dedicated server for a token representing the authoritative
+--     container state RIGHT NOW;
+--  2) submit the already-computed layout with that token as the CAS base.
+-- The client never manufactures the expected version from local GridInventory
+-- ModData, eliminating false stale rejects caused by client-only auto-fit state.
+function GridSortNetwork.prepareSort(container, targets, gridContainer)
+    if not isClient() then return false end
+    if not container or not targets or #targets == 0 then return false end
+    local ref = GridProtocol.buildContainerRef(container)
+    if not ref then return false end
+
+    local moves = buildSortMoves(targets)
     if #moves == 0 then return false end
 
     local key = keyFor(container)
-    local ok = send(GridSortState.COMMANDS.SORT_REQUEST, {
+    if not key or GridSortNetwork.pending[key] then return false end
+
+    local requestId = nextRequestId()
+    local pending = {
+        requestId = requestId,
         ref = ref,
-        expectedHash = expectedHash,
-        gridContainer = gridContainer,
         moves = moves,
-    })
-    if not ok then return false end
-    GridSortNetwork.pending[key] = {
-        expectedHash = expectedHash,
+        gridContainer = gridContainer,
+        phase = "prepare",
         startedAt = getTimestampMs(),
     }
+    GridSortNetwork.pending[key] = pending
+    GridSortNetwork.pendingByRequest[requestId] = key
+
+    if not send(GridSortState.COMMANDS.SORT_PREPARE, {
+        ref = ref,
+        requestId = requestId,
+    }) then
+        clearPendingKey(key)
+        return false
+    end
     return true
 end
+
+-- Backward-compatible name for any local code that still calls sendSort.
+GridSortNetwork.sendSort = GridSortNetwork.prepareSort
 
 function GridSortNetwork.sendPageAssignments(container, assignments, gridContainer)
     if not isClient() then return false end
@@ -221,12 +269,37 @@ local function applyLayout(args)
     end
     for container in pairs(touched) do
         GridClientNetwork.markGridChanged(container, playerNum())
-        GridSortNetwork.pending[keyFor(container)] = nil
+        clearPendingKey(keyFor(container))
+    end
+    if args and args.requestId then clearPendingRequest(args.requestId) end
+end
+
+local function handleSortToken(args)
+    if not args or args.requestId == nil or args.token == nil then return end
+    local requestId = tostring(args.requestId)
+    local key = GridSortNetwork.pendingByRequest[requestId]
+    local p = key and GridSortNetwork.pending[key] or nil
+    if not p or p.requestId ~= requestId or p.phase ~= "prepare" then return end
+
+    p.phase = "commit"
+    p.startedAt = getTimestampMs()
+    if not send(GridSortState.COMMANDS.SORT_REQUEST, {
+        ref = p.ref,
+        requestId = requestId,
+        expectedToken = tostring(args.token),
+        gridContainer = p.gridContainer,
+        moves = p.moves,
+    }) then
+        clearPendingKey(key)
     end
 end
 
 local function OnServerCommand(module, command, args)
     if module ~= GridSortState.MODULE then return end
+    if command == GridSortState.COMMANDS.SORT_TOKEN then
+        handleSortToken(args)
+        return
+    end
     if command == GridSortState.COMMANDS.SYNC_ITEM then
         local container = applyOne(args)
         if container then GridClientNetwork.markGridChanged(container, playerNum()) end
@@ -238,6 +311,7 @@ local function OnServerCommand(module, command, args)
     end
     if command == GridSortState.COMMANDS.REJECT_LAYOUT then
         applyLayout(args)
+        clearPendingRequest(args and args.requestId)
         print("[LCC GridSort] server rejected layout: " .. tostring(args and args.reason or "unknown") .. "; authoritative snapshot restored")
         return
     end
