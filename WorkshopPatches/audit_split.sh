@@ -71,6 +71,7 @@ max_size() {
 expected_patch_dirs=(
     ActivityFixes
     CompatibilityBridges
+    GridInventorySort
     NPCCombatExperimental
     NPCFixes
     PatchCore
@@ -88,7 +89,7 @@ find "$SPLIT" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' \
     | sort > "$tmp_actual_dirs"
 printf '%s\n' "${expected_patch_dirs[@]}" | sort > "$tmp_expected_dirs"
 if ! diff -u "$tmp_expected_dirs" "$tmp_actual_dirs"; then
-    error "WorkshopPatches published/staged set must contain exactly the eight supported package directories; Bandits-LCC-Dev is ignored as internal research"
+    error "WorkshopPatches published/staged set must contain exactly the nine supported package directories; Bandits-LCC-Dev is ignored as internal research"
 fi
 
 core="$SPLIT/PatchCore/Contents/mods/LaccckaB4220PatchCore/42/media"
@@ -98,6 +99,7 @@ experimental="$SPLIT/NPCCombatExperimental/Contents/mods/LaccckaB4220NPCCombatEx
 activity="$SPLIT/ActivityFixes/Contents/mods/LaccckaB4220ActivityFixes/42/media"
 bridges="$SPLIT/CompatibilityBridges/Contents/mods/LaccckaB4220CompatBridges/42/media"
 safety="$SPLIT/SafetyFixes/Contents/mods/LaccckaB4220SafetyFixes/42/media"
+grid_sort="$SPLIT/GridInventorySort/Contents/mods/LaccckaB4220GridInventorySort/42/media"
 text42="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/media"
 text_common="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/common/media"
 
@@ -150,6 +152,11 @@ required_files=(
     "$safety/lua/client/zzz_LCC_AegisTransferGuard.lua"
     "$safety/lua/client/zzz_LCC_ChimeraGhillieFix.lua"
     "$safety/lua/shared/LCC/Guard.lua"
+
+    "$grid_sort/lua/client/LCC/GridAutoSort.lua"
+    "$grid_sort/lua/client/zzz_LCC_GridInventorySort.lua"
+    "$grid_sort/lua/shared/Translate/EN/UI.json"
+    "$grid_sort/lua/shared/Translate/RU/UI.json"
 )
 
 for path in "${required_files[@]}"; do
@@ -343,6 +350,25 @@ require_marker "$safety_aegis" 'ISInventoryTransferAction.isValid' "SafetyFixes 
 require_marker "$safety_aegis" 'not self.item or not self.srcContainer or not self.destContainer' "SafetyFixes Aegis guard lost nil-container precheck"
 require_marker "$safety_chimera" 'Guard.install' "SafetyFixes Chimera guard lost guarded install contract"
 
+# GridInventorySort: optional source-clean addon; upstream GridInventory is required.
+grid_sort_algorithm="$grid_sort/lua/client/LCC/GridAutoSort.lua"
+grid_sort_hook="$grid_sort/lua/client/zzz_LCC_GridInventorySort.lua"
+require_marker "$grid_sort_algorithm" 'GridClientNetwork.sendReorder' "GridInventorySort lost authoritative GridInventory batch reorder path"
+require_marker "$grid_sort_algorithm" 'grid:findCompatibleStack' "GridInventorySort lost virtual stack consolidation"
+require_marker "$grid_sort_algorithm" 'grid:findFreeSpace' "GridInventorySort lost first-fit placement"
+require_marker "$grid_sort_algorithm" 'return false, "floor"' "GridInventorySort v0.1 must fail closed on floor grids"
+require_marker "$grid_sort_algorithm" 'return false, "corpse"' "GridInventorySort v0.1 must fail closed on corpse grids"
+require_marker "$grid_sort_hook" 'ISInventoryWindowContainerControls' "GridInventorySort lost inventory footer integration"
+require_marker "$grid_sort_hook" 'ISLootWindowContainerControls' "GridInventorySort lost loot footer integration"
+for forbidden in GridRender.lua GridContainer.lua GridCore.lua GridClientNetwork.lua GridServerNetwork.lua GridReorder.lua; do
+    if find "$grid_sort" -type f -name "$forbidden" -print -quit | grep -q .; then
+        error "GridInventorySort must not bundle upstream GridInventory implementation file: $forbidden"
+    fi
+done
+for json in "$grid_sort/lua/shared/Translate/EN/UI.json" "$grid_sort/lua/shared/Translate/RU/UI.json"; do
+    [[ -f "$json" ]] && python3 -m json.tool "$json" >/dev/null 2>&1 || error "GridInventorySort invalid/missing translation JSON: ${json#$ROOT/}"
+done
+
 # RussianTextFixes: standalone RU-only package.
 ru42="$text42/lua/shared/Translate/RU"
 ru_common="$text_common/lua/shared/Translate/RU"
@@ -378,16 +404,18 @@ declare -A expected_ids=(
     [ActivityFixes]="LaccckaB4220ActivityFixes"
     [CompatibilityBridges]="LaccckaB4220CompatBridges"
     [SafetyFixes]="LaccckaB4220SafetyFixes"
+    [GridInventorySort]="LaccckaB4220GridInventorySort"
     [RussianTextFixes]="LaccckaB4220RussianText"
 )
 declare -A expected_workshop_ids=(
     [PatchCore]="3786175901"
     [RuntimeFixes]="3786175979"
-    [NPCFixes]="0"
+    [NPCFixes]="3787592350"
     [NPCCombatExperimental]="3786817782"
     [ActivityFixes]="3786175725"
     [CompatibilityBridges]="3786175808"
     [SafetyFixes]="3786176221"
+    [GridInventorySort]="0"
     [RussianTextFixes]="3786176120"
 )
 
@@ -413,20 +441,26 @@ for folder in "${expected_patch_dirs[@]}"; do
     if [[ -f "$workshop" ]]; then
         grep -Fxq "id=$workshop_id" "$workshop" || error "$folder: wrong Workshop ID"
         grep -Fqi 'Do not use' "$workshop" || error "$folder: Workshop warning is missing"
-        grep -Eqi 'original mod(s| Lua files| files)?.*not included|original mods are not included' "$workshop" || error "$folder: no-bundled-mods disclaimer is missing"
+        grep -Eqi 'original .*mod.*not included|original mod(s| Lua files| files)?.*not included|original mods are not included' "$workshop" || error "$folder: no-bundled-mods disclaimer is missing"
     fi
 
     if [[ "$folder" == "NPCFixes" ]]; then
         grep -Fxq 'name=Lacccka B42 NPC Fixes' "$modinfo" || error "$folder: wrong stable public mod name"
-        grep -Fxq 'modversion=1.0.0' "$modinfo" || error "$folder: stable version must be 1.0.0"
+        grep -Fxq 'modversion=1.0.1' "$modinfo" || error "$folder: stable version must be 1.0.1"
         grep -Fxq 'title=Lacccka B42 NPC Fixes' "$workshop" || error "$folder: wrong stable Workshop title"
-        grep -Fxq 'visibility=private' "$workshop" || error "$folder: staging Workshop item must remain private while id=0"
+        grep -Fxq 'visibility=public' "$workshop" || error "$folder: published stable Workshop item must remain public"
     fi
     if [[ "$folder" == "NPCCombatExperimental" ]]; then
         grep -Fxq 'name=Lacccka B42 NPC Combat Experimental' "$modinfo" || error "$folder: public mod name must remain neutral"
-        grep -Fxq 'modversion=0.2.0' "$modinfo" || error "$folder: diagnostics-only package version must be 0.2.0"
+        grep -Fxq 'modversion=0.2.1' "$modinfo" || error "$folder: diagnostics-only package version must be 0.2.1"
         grep -Fxq 'title=Lacccka B42 NPC Combat Experimental' "$workshop" || error "$folder: Workshop title must remain neutral"
         grep -Fxq 'visibility=public' "$workshop" || error "$folder: published Workshop item must remain public"
+    fi
+    if [[ "$folder" == "GridInventorySort" ]]; then
+        grep -Fxq 'name=Lacccka B42 Grid Inventory Sort' "$modinfo" || error "$folder: wrong addon public mod name"
+        grep -Fxq 'modversion=0.1.0' "$modinfo" || error "$folder: staged addon version must be 0.1.0"
+        grep -Fxq 'title=Lacccka B42 Grid Inventory Sort' "$workshop" || error "$folder: wrong addon Workshop title"
+        grep -Fxq 'visibility=private' "$workshop" || error "$folder: staging Workshop item must remain private while id=0"
     fi
 
     grep -Fqx "$id" <<<"$seen_mod_ids" && error "$folder: duplicate mod ID $id"
@@ -452,6 +486,7 @@ experimental_modinfo="$SPLIT/NPCCombatExperimental/Contents/mods/LaccckaB4220NPC
 activity_modinfo="$SPLIT/ActivityFixes/Contents/mods/LaccckaB4220ActivityFixes/42/mod.info"
 bridges_modinfo="$SPLIT/CompatibilityBridges/Contents/mods/LaccckaB4220CompatBridges/42/mod.info"
 safety_modinfo="$SPLIT/SafetyFixes/Contents/mods/LaccckaB4220SafetyFixes/42/mod.info"
+grid_sort_modinfo="$SPLIT/GridInventorySort/Contents/mods/LaccckaB4220GridInventorySort/42/mod.info"
 text_modinfo="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/mod.info"
 require_marker "$runtime_modinfo" '\Bandits2' "RuntimeFixes loadafter lost Bandits2"
 require_marker "$npc_modinfo" '\Bandits2' "NPCFixes loadafter lost Bandits2"
@@ -466,6 +501,8 @@ done
 for dep in AP GridInventory Federal_Rangers_Chimera; do
     require_marker "$safety_modinfo" "\\$dep" "SafetyFixes loadafter lost dependency: $dep"
 done
+require_marker "$grid_sort_modinfo" 'require=\GridInventory' "GridInventorySort must hard-require GridInventory"
+require_marker "$grid_sort_modinfo" 'loadafter=\GridInventory' "GridInventorySort must load after GridInventory"
 require_marker "$text_modinfo" '\Bandits2' "RussianTextFixes loadafter lost Bandits2"
 require_marker "$text_modinfo" '\LifestyleHobbies' "RussianTextFixes loadafter lost LifestyleHobbies"
 if [[ -f "$text_modinfo" ]] && grep -Fq '\LaccckaB4220PatchCore' "$text_modinfo"; then
@@ -476,4 +513,4 @@ if (( fail != 0 )); then
     exit 1
 fi
 
-printf 'Grouped Workshop patches audit: OK (8 package directories; NPCFixes=stable 1.0.0 private staging id=0; NPCCombatExperimental=diagnostics-only 0.2.0; Bandits-LCC-Dev excluded as internal)\n'
+printf 'Grouped Workshop patches audit: OK (9 package directories; NPCFixes=stable 1.0.1 published; NPCCombatExperimental=diagnostics-only 0.2.1; GridInventorySort=0.1.0 private staging id=0; Bandits-LCC-Dev excluded as internal)\n'
