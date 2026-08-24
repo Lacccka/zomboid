@@ -1,6 +1,6 @@
 version=1
 id=0
 title=Lacccka B42 Grid Inventory Sort
-description=Adds deterministic one-click auto-sort to GridInventory for Build 42.20. Requires the original GridInventory mod; this item contains integration files only and does not include the original mod.
+description=Adds deterministic one-click auto-sort to GridInventory for Build 42.20. Do not use this patch unless you are sure it is required by your setup. This item contains integration files only; the original GridInventory mod is not included and must be installed separately.
 tags=Build 42;Multiplayer;Interface
 visibility=private
