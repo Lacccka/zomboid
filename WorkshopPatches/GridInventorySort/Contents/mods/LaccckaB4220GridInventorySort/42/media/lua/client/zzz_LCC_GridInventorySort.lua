@@ -7,6 +7,7 @@ require "ISUI/LootWindow/ISLootWindowObjectControlHandler"
 -- safe even when the PZ loader has already executed a nested client file.
 pcall(require, "LCC/GridMultiPage")
 pcall(require, "LCC/GridPaneUX")
+pcall(require, "LCC/GridPageView")
 
 local okSort, GridAutoSort = pcall(require, "LCC/GridAutoSort")
 if not okSort or not GridAutoSort then
