@@ -57,6 +57,16 @@ local stats = {
     errors = 0,
 }
 
+-- Export counters and live race-state tables for optional
+-- NPCCombatExperimental diagnostics. Stable NPCFixes keeps the pruning callback
+-- below, but no longer emits periodic SUMMARY heartbeat lines itself.
+LCC_BANDITS_SERVER_CLOTHING_FALLBACK_DIAGNOSTICS = {
+    marker = MARKER,
+    stats = stats,
+    snapshots = snapshots,
+    handledIds = handledIds,
+}
+
 local function warnOnce(key, message)
     if warned[key] then return end
     warned[key] = true
@@ -406,12 +416,8 @@ end
 
 Events.OnZombieDead.Add(onZombieDead)
 
-local function countEntries(t)
-    local count = 0
-    for _ in pairs(t) do count = count + 1 end
-    return count
-end
-
+-- This maintenance tick is functional, not diagnostic: it bounds stale race
+-- state even when NPCCombatExperimental is disabled.
 Events.EveryOneMinute.Add(function()
     epoch = epoch + 1
 
@@ -427,33 +433,6 @@ Events.EveryOneMinute.Add(function()
             stats.handledPruned = stats.handledPruned + 1
         end
     end
-
-    print(string.format(
-        "[LCC][BanditsServerClothingFallback][SUMMARY] marker=%s removeCalls=%d removeAfterPrimary=%d snapshotsCaptured=%d snapshotMissesAtRemove=%d activeSnapshots=%d activeHandled=%d snapshotsPruned=%d handledPruned=%d deathsSeen=%d primaryAlreadyHandled=%d fallbackMatches=%d fallbackRepairs=%d expected=%d wearableExpected=%d restored=%d created=%d reusedInventory=%d inventoryAdds=%d alreadyWorn=%d noLocation=%d conflicts=%d errors=%d",
-        MARKER,
-        stats.removeCalls,
-        stats.removeAfterPrimary,
-        stats.snapshotsCaptured,
-        stats.snapshotMissesAtRemove,
-        countEntries(snapshots),
-        countEntries(handledIds),
-        stats.snapshotsPruned,
-        stats.handledPruned,
-        stats.deathsSeen,
-        stats.primaryAlreadyHandled,
-        stats.fallbackMatches,
-        stats.fallbackRepairs,
-        stats.expected,
-        stats.wearableExpected,
-        stats.restored,
-        stats.created,
-        stats.reusedInventory,
-        stats.inventoryAdds,
-        stats.alreadyWorn,
-        stats.noLocation,
-        stats.conflicts,
-        stats.errors
-    ))
 end)
 
 print(string.format(
