@@ -133,19 +133,28 @@ local function processPageAssign(player, args)
         local item = findItem(player, args.ref, move.itemId, nil)
         if not item then return "notfound" end
         if item.isEquipped and item:isEquipped() then return "invalid" end
-        movedSet[item:getID()] = true
-        table.insert(resolved, {
-            item = item,
-            move = {
-                itemId = move.itemId,
-                x = move.x, y = move.y,
-                page = page,
-                rotated = move.rotated,
-            },
-        })
+
+        -- A delayed automatic page-routing packet must never overwrite a sort
+        -- or manual placement that the server has already committed. This can
+        -- happen when two clients observe the same overflow and one sorts while
+        -- another still has an older PAGE_ASSIGN in flight.
+        local md = item.getModData and item:getModData() or nil
+        if not (md and md.gridManual) then
+            movedSet[item:getID()] = true
+            table.insert(resolved, {
+                item = item,
+                move = {
+                    itemId = move.itemId,
+                    x = move.x, y = move.y,
+                    page = page,
+                    rotated = move.rotated,
+                },
+            })
+        end
     end
 
-    local w, h = GridContainer.getGridSize(target)
+    if #resolved == 0 then return "ok" end
+
     local pages = {}
     for _, entry in ipairs(resolved) do
         local page = entry.move.page
