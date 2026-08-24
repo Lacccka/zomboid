@@ -165,6 +165,7 @@ local function ensureSortControl(controlsUI)
         button:instantiate()
         button.internal = "LCC_GRID_AUTO_SORT"
         controlsUI._lccGridSortButton = button
+        print("[LCC GridSort] sort button created")
     else
         button:setWidth(buttonW)
         button:setHeight(buttonH)
@@ -210,16 +211,26 @@ local function ensureSortControl(controlsUI)
     compactLeftControls(controlsUI, button)
 end
 
-local function wrapArrange(classTable, flagName)
-    if not classTable or classTable[flagName] then return false end
+local function wrapArrange(classTable, slotName)
+    if not classTable then return false end
     local original = classTable.arrange
     if not original then return false end
-    classTable[flagName] = true
 
-    function classTable:arrange()
+    -- Store the actual wrapper function, not a boolean. GridInventory replaces
+    -- arrange() during its own client bootstrap. If that happens after our
+    -- first pass, OnGameStart must be able to detect the replacement and wrap
+    -- the new final implementation instead of incorrectly treating it as done.
+    local installedWrapper = classTable[slotName]
+    if installedWrapper and original == installedWrapper then return false end
+
+    local wrapper
+    wrapper = function(self)
         original(self)
         ensureSortControl(self)
     end
+
+    classTable.arrange = wrapper
+    classTable[slotName] = wrapper
     return true
 end
 
@@ -228,13 +239,13 @@ local function installHooks()
     if ISInventoryWindowContainerControls then
         installed = wrapArrange(
             ISInventoryWindowContainerControls,
-            "_lccGridSortArrangeWrapped"
+            "_lccGridSortArrangeWrapper"
         ) or installed
     end
     if ISLootWindowContainerControls then
         installed = wrapArrange(
             ISLootWindowContainerControls,
-            "_lccGridSortArrangeWrapped"
+            "_lccGridSortArrangeWrapper"
         ) or installed
     end
     if installed then
@@ -244,7 +255,8 @@ end
 
 installHooks()
 
--- Defensive retry for load-order changes in future GridInventory builds.
+-- Defensive retry after every mod has finished bootstrapping. This is required
+-- because GridInventory itself replaces the vanilla controls arrange() method.
 if Events and Events.OnGameStart then
     Events.OnGameStart.Add(installHooks)
 end
