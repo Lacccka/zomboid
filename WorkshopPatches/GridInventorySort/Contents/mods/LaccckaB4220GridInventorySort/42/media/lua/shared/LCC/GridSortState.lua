@@ -28,6 +28,13 @@ function GridSortState.isGridItem(item)
     return isGridItem(item)
 end
 
+function GridSortState.isPlayerRootContainer(container)
+    if not container then return false end
+    if container.getContainingItem and container:getContainingItem() then return false end
+    local parent = container.getParent and container:getParent()
+    return parent and instanceof and instanceof(parent, "IsoPlayer") or false
+end
+
 function GridSortState.collectItems(container)
     local out = {}
     if not container or not container.getItems then return out end
@@ -54,12 +61,52 @@ local function feedHash(h, text)
     return h
 end
 
+-- Hash used for optimistic concurrency. It intentionally ignores coordinates
+-- that GridInventory auto-fitted locally (gridManual ~= true): those positions
+-- are presentation state and can legitimately differ between client/server.
+-- Membership is always included. Manual/server-authoritative positions are
+-- included, so the first successful concurrent sort changes the hash and any
+-- later request based on the old state is rejected atomically.
+function GridSortState.authorityHash(container)
+    local h = 17
+    local items = GridSortState.collectItems(container)
+    local rootPlayer = GridSortState.isPlayerRootContainer(container)
+    for _, item in ipairs(items) do
+        local md = item.getModData and item:getModData() or nil
+        local manual = md and md.gridManual and true or false
+        h = feedHash(h, item:getID())
+        h = feedHash(h, ":")
+        if manual then
+            local page = rootPlayer and 1 or (md and tonumber(md.gridPage) or 1)
+            local x = md and tonumber(md.gridX) or 0
+            local y = md and tonumber(md.gridY) or 0
+            local rot = md and md.gridRot and 1 or 0
+            h = feedHash(h, "M,")
+            h = feedHash(h, page)
+            h = feedHash(h, ",")
+            h = feedHash(h, x)
+            h = feedHash(h, ",")
+            h = feedHash(h, y)
+            h = feedHash(h, ",")
+            h = feedHash(h, rot)
+        else
+            h = feedHash(h, "A")
+        end
+        h = feedHash(h, ";")
+    end
+    return tostring(#items) .. ":" .. tostring(h)
+end
+
+-- Exact layout hash retained for diagnostics only. Do not use this as the CAS
+-- precondition because automatic client-side GridInventory coordinates are not
+-- authoritative and can diverge from the dedicated server without a conflict.
 function GridSortState.layoutHash(container)
     local h = 17
     local items = GridSortState.collectItems(container)
+    local rootPlayer = GridSortState.isPlayerRootContainer(container)
     for _, item in ipairs(items) do
         local md = item.getModData and item:getModData() or nil
-        local page = md and tonumber(md.gridPage) or 1
+        local page = rootPlayer and 1 or (md and tonumber(md.gridPage) or 1)
         local x = md and tonumber(md.gridX) or 0
         local y = md and tonumber(md.gridY) or 0
         local rot = md and md.gridRot and 1 or 0
@@ -79,14 +126,16 @@ end
 
 function GridSortState.snapshot(container)
     local out = {}
+    local rootPlayer = GridSortState.isPlayerRootContainer(container)
     for _, item in ipairs(GridSortState.collectItems(container)) do
         local md = item.getModData and item:getModData() or nil
+        local page = rootPlayer and 1 or (md and tonumber(md.gridPage) or 1)
         table.insert(out, {
             itemId = item:getID(),
             x = md and tonumber(md.gridX) or nil,
             y = md and tonumber(md.gridY) or nil,
             rotated = md and md.gridRot and true or false,
-            page = md and tonumber(md.gridPage) or 1,
+            page = page,
             gridContainer = md and md.gridContainer or nil,
             manual = md and md.gridManual and true or false,
         })
