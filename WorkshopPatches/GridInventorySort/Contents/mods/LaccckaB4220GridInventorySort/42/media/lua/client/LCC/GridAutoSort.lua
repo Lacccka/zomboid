@@ -37,14 +37,15 @@ end
 
 local function collectDescriptors(container, playerNum)
     local model = GridContainer.getOrCreate(container, playerNum)
-    model:refresh()
 
     local out = {}
     local seen = {}
 
-    -- Use the GridContainer model instead of container:getItems() directly.
-    -- This preserves GridInventory's own filtering (equipped/attached/hidden)
-    -- and includes items that currently live in overflow/unpositioned.
+    -- The active GridRender is backed by this same cached model, so do NOT call
+    -- model:refresh() here. refresh() can perform GridInventory housekeeping
+    -- (including stack consolidation/network updates); a sort that later fails
+    -- with no-space must not have changed the container as a side effect.
+    -- Read the already-rendered model, including its overflow/unpositioned list.
     for _, grid in ipairs(model.grids or {}) do
         for id, data in pairs(grid.items or {}) do
             if not seen[id] and data and data.itemObj then
@@ -298,6 +299,15 @@ local function hasPendingWork(container, model)
     return false
 end
 
+local function isNestedBagContainer(container)
+    if not container or not container.getContainingItem then return false end
+    local containingItem = container:getContainingItem()
+    if not containingItem or not containingItem.getContainer then return false end
+    local parentContainer = containingItem:getContainer()
+    if not parentContainer or not parentContainer.getContainingItem then return false end
+    return parentContainer:getContainingItem() ~= nil
+end
+
 function GridAutoSort.canSort(gridUi)
     if not gridUi or gridUi.isOverflow or not gridUi.inventoryContainer then
         return false, "unavailable"
@@ -314,6 +324,16 @@ function GridAutoSort.canSort(gridUi)
         -- the ItemContainer. REQUEST_REORDER cannot authoritatively resolve all
         -- of them yet, so keep v1 fail-closed instead of risking partial state.
         return false, "corpse"
+    end
+
+    -- Dedicated/MP safety: current GridInventory has a reported exception path
+    -- around nested bags with contents while the server rebuilds occupancy.
+    -- Auto-sort uses that same authoritative REQUEST_REORDER/buildOccupancy path.
+    -- Do not create a new trigger for the known bug. SP remains allowed; direct
+    -- bags remain allowed; only a bag container whose item is itself inside
+    -- another bag is blocked while connected as a multiplayer client.
+    if isClient and isClient() and isNestedBagContainer(container) then
+        return false, "nested"
     end
 
     if gridUi.needsSearch and gridUi:needsSearch() then
@@ -371,7 +391,8 @@ function GridAutoSort.sort(gridUi)
             if tonumber(md.gridX) ~= t.tx
                 or tonumber(md.gridY) ~= t.ty
                 or (md.gridRot and true or false) ~= (t.item.rotated and true or false)
-                or md.gridContainer ~= signature then
+                or md.gridContainer ~= signature
+                or md.gridManual ~= true then
                 changed = true
             end
             md.gridX = t.tx
