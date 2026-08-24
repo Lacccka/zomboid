@@ -116,12 +116,12 @@ end
 
 function GridContinuousGrid.getGridSize(container)
     local baseW, baseH = originalGetGridSize(container)
-    if not isEligible(container) then return baseW, baseH end
 
-    -- One-time migration is deliberately tied to this shared query. Both the
-    -- client UI and the original dedicated GridServerNetwork ask getGridSize(),
-    -- so stale page-local coordinates cannot survive on only one side.
+    -- Migration must also run for the player root. Root inventory deliberately
+    -- stays at its upstream dimensions, but old page-local coordinates from the
+    -- abandoned prototype must not remain on the dedicated server.
     GridContinuousGrid.normalizeLegacyPages(container)
+    if not isEligible(container) then return baseW, baseH end
 
     local area, maxItemH, manualBottom = measureContents(container, baseW)
     if area <= 0 then return baseW, baseH end
