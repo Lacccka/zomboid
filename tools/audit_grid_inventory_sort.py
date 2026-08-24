@@ -76,6 +76,8 @@ require_markers(
         "GridContainer.containerSignature",
         "GridClientNetwork.sendReorder",
         "GridClientNetwork.markGridChanged",
+        "isNestedBagContainer",
+        'return false, "nested"',
         'return false, "floor"',
         'return false, "corpse"',
         'return false, "busy"',
@@ -94,6 +96,7 @@ require_markers(
         "GridAutoSort.canSort",
         "GridAutoSort.sort",
         "LCC_GRID_AUTO_SORT",
+        "_lccGridSortStatusUntil",
     ),
 )
 
@@ -112,9 +115,12 @@ expected_keys = {
     "UI_LCC_GridSort_Tooltip",
     "UI_LCC_GridSort_Floor",
     "UI_LCC_GridSort_Corpse",
+    "UI_LCC_GridSort_Nested",
     "UI_LCC_GridSort_SearchFirst",
     "UI_LCC_GridSort_Busy",
     "UI_LCC_GridSort_Locked",
+    "UI_LCC_GridSort_Nothing",
+    "UI_LCC_GridSort_NoSpace",
     "UI_LCC_GridSort_Unavailable",
 }
 
