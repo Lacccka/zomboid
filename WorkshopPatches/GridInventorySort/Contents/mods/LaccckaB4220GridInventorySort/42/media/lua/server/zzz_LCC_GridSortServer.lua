@@ -48,7 +48,8 @@ local function findItem(player, ref, itemId, sourceRef)
     return nil
 end
 
-local function pageOf(item)
+local function pageOf(item, container)
+    if GridSortState.isPlayerRootContainer(container) then return 1 end
     local md = item and item.getModData and item:getModData() or nil
     local page = md and tonumber(md.gridPage) or 1
     if page < 1 then page = 1 end
@@ -60,7 +61,7 @@ local function buildPageOccupancy(container, page, ignoreSet)
     local grid = GridCore.new(w, h)
     for _, item in ipairs(GridSortState.collectItems(container)) do
         local id = item:getID()
-        if not (ignoreSet and ignoreSet[id]) and pageOf(item) == page then
+        if not (ignoreSet and ignoreSet[id]) and pageOf(item, container) == page then
             local md = item:getModData()
             local x, y = tonumber(md.gridX), tonumber(md.gridY)
             if x and y then
@@ -86,12 +87,12 @@ end
 local function sendSnapshot(player, container, command, reason)
     sendServerCommand(player, GridSortState.MODULE, command, {
         reason = reason,
-        authoritativeHash = GridSortState.layoutHash(container),
+        authoritativeHash = GridSortState.authorityHash(container),
         moves = GridSortState.snapshot(container),
     })
 end
 
-local function broadcastItem(item, clear)
+local function broadcastItem(item, container, clear)
     local md = item:getModData()
     sendServerCommand(GridSortState.MODULE, GridSortState.COMMANDS.SYNC_ITEM, {
         itemId = item:getID(),
@@ -99,18 +100,18 @@ local function broadcastItem(item, clear)
         x = clear and nil or tonumber(md.gridX),
         y = clear and nil or tonumber(md.gridY),
         rotated = clear and false or (md.gridRot and true or false),
-        page = clear and 1 or pageOf(item),
+        page = clear and 1 or pageOf(item, container),
         gridContainer = clear and nil or md.gridContainer,
         manual = clear and false or (md.gridManual and true or false),
     })
 end
 
-local function applyPosition(item, move, gridContainer, manual)
+local function applyPosition(item, move, gridContainer, manual, container)
     local md = item:getModData()
     md.gridX = tonumber(move.x)
     md.gridY = tonumber(move.y)
     md.gridRot = move.rotated and true or false
-    local page = tonumber(move.page) or 1
+    local page = GridSortState.isPlayerRootContainer(container) and 1 or (tonumber(move.page) or 1)
     md.gridPage = page > 1 and page or nil
     if gridContainer ~= nil then md.gridContainer = gridContainer end
     if manual ~= nil then md.gridManual = manual and true or nil end
@@ -131,12 +132,12 @@ local function processPageMove(player, args)
         md.gridPage = nil
         md.gridContainer = nil
         md.gridManual = nil
-        broadcastItem(item, true)
+        broadcastItem(item, target, true)
         return "ok"
     end
 
     if args.x == nil or args.y == nil or not validPage(args.page) then return "invalid" end
-    local page = tonumber(args.page) or 1
+    local page = GridSortState.isPlayerRootContainer(target) and 1 or (tonumber(args.page) or 1)
     local ignoreSet = { [item:getID()] = true }
     local grid = buildPageOccupancy(target, page, ignoreSet)
     if not grid then return "invalid" end
@@ -150,8 +151,12 @@ local function processPageMove(player, args)
         return "invalid"
     end
 
-    applyPosition(item, args, args.gridContainer, args.manual)
-    broadcastItem(item, false)
+    local move = {
+        x = args.x, y = args.y, rotated = args.rotated,
+        page = page,
+    }
+    applyPosition(item, move, args.gridContainer, args.manual, target)
+    broadcastItem(item, target, false)
     return "ok"
 end
 
@@ -168,11 +173,16 @@ local function processPageReorder(player, args)
         end
         local item = findItem(player, args.ref, move.itemId, args.sourceRef)
         if not item then return "notfound" end
-        local movePage = tonumber(move.page) or 1
+        local movePage = GridSortState.isPlayerRootContainer(target) and 1 or (tonumber(move.page) or 1)
         if page == nil then page = movePage end
         if page ~= movePage then return "invalid" end
         movedSet[item:getID()] = true
-        table.insert(moves, { item = item, move = move })
+        table.insert(moves, { item = item, move = {
+            itemId = move.itemId,
+            x = move.x, y = move.y,
+            page = movePage,
+            rotated = move.rotated,
+        } })
     end
 
     local grid = buildPageOccupancy(target, page or 1, movedSet)
@@ -190,10 +200,10 @@ local function processPageReorder(player, args)
     end
 
     for _, entry in ipairs(moves) do
-        applyPosition(entry.item, entry.move, args.gridContainer, args.manual)
+        applyPosition(entry.item, entry.move, args.gridContainer, args.manual, target)
     end
     sendServerCommand(GridSortState.MODULE, GridSortState.COMMANDS.SYNC_LAYOUT, {
-        authoritativeHash = GridSortState.layoutHash(target),
+        authoritativeHash = GridSortState.authorityHash(target),
         moves = GridSortState.snapshot(target),
     })
     return "ok"
@@ -223,7 +233,7 @@ local function processSort(player, args)
     local parent = target.getParent and target:getParent()
     if parent and instanceof and instanceof(parent, "IsoDeadBody") then return "invalid" end
 
-    local currentHash = GridSortState.layoutHash(target)
+    local currentHash = GridSortState.authorityHash(target)
     if tostring(args.expectedHash or "") ~= tostring(currentHash) then
         sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "stale")
         return "stale"
@@ -236,6 +246,7 @@ local function processSort(player, args)
     local w, h = GridContainer.getGridSize(target)
     local pages = {}
     local resolved = {}
+    local rootPlayer = GridSortState.isPlayerRootContainer(target)
     for _, move in ipairs(args.moves) do
         if move.x == nil or move.y == nil or not validPage(move.page) then
             sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "bounds")
@@ -246,7 +257,7 @@ local function processSort(player, args)
             sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "missing-item")
             return "invalid"
         end
-        local page = tonumber(move.page) or 1
+        local page = rootPlayer and 1 or (tonumber(move.page) or 1)
         pages[page] = pages[page] or GridCore.new(w, h)
         local fw, fh = ItemFootprint.getSize(item)
         local rotated = move.rotated and true or false
@@ -257,22 +268,29 @@ local function processSort(player, args)
             sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "collision")
             return "invalid"
         end
-        table.insert(resolved, { item = item, move = move })
+        table.insert(resolved, { item = item, move = {
+            itemId = move.itemId,
+            x = move.x, y = move.y,
+            page = page,
+            rotated = move.rotated,
+        } })
     end
 
-    -- Compare-and-swap: the event loop is sequential. The first concurrent
-    -- sort commits, changes this hash, and the later request is rejected.
-    if GridSortState.layoutHash(target) ~= currentHash then
+    -- Compare-and-swap: automatic GridInventory coordinates are deliberately
+    -- excluded from authorityHash, while membership and manual positions are
+    -- included. The first concurrent writer makes every sorted item manual,
+    -- changing the hash; a later request based on the old state is rejected.
+    if GridSortState.authorityHash(target) ~= currentHash then
         sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "stale-after-validate")
         return "stale"
     end
 
     for _, entry in ipairs(resolved) do
-        applyPosition(entry.item, entry.move, args.gridContainer, true)
+        applyPosition(entry.item, entry.move, args.gridContainer, true, target)
     end
 
     sendServerCommand(GridSortState.MODULE, GridSortState.COMMANDS.SYNC_LAYOUT, {
-        authoritativeHash = GridSortState.layoutHash(target),
+        authoritativeHash = GridSortState.authorityHash(target),
         moves = GridSortState.snapshot(target),
     })
     return "ok"
