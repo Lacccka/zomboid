@@ -9,7 +9,7 @@ local GridAutoSort = {}
 
 -- Sorting is executed on the UI thread. The previous bounded beam search still
 -- cloned/re-scanned many complete grids and caused visible freezes on large
--- inventories. v0.2.1 uses several cheap deterministic best-fit passes instead:
+-- inventories. v0.2.1+ uses several cheap deterministic best-fit passes instead:
 -- all cells + both rotations are still considered, but only one live GridCore is
 -- maintained per pass. Extra passes stop once the small interactive-time budget
 -- is consumed and a valid layout is already available.
@@ -509,12 +509,10 @@ function GridAutoSort.sort(gridUi)
     if not changed then return true, "already-sorted" end
 
     if isClient and isClient() then
-        -- CAS uses only membership + manual/server-authoritative positions.
-        -- Client-only auto-fit coordinates are intentionally excluded, avoiding
-        -- false stale rejects while retaining first-writer-wins for concurrent
-        -- sorts of the same container.
-        local expectedHash = GridSortState.authorityHash(container)
-        if not GridSortNetwork.sendSort(container, targets, expectedHash, signature) then
+        -- The client only proposes the layout. GridSortNetwork first requests a
+        -- revision token from the dedicated server, then submits this proposal
+        -- against that exact token. No local hash is trusted as a CAS version.
+        if not GridSortNetwork.prepareSort(container, targets, signature) then
             return false, "unavailable"
         end
         return true, "pending"
