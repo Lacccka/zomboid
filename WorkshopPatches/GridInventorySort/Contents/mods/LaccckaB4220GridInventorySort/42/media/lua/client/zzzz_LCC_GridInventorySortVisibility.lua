@@ -43,6 +43,73 @@ local function isControlVisible(control)
     return control.visible ~= false
 end
 
+-- Draw a compact sort glyph directly on the button so the addon does not need
+-- a separate texture asset. The vanilla ISButton still supplies the normal
+-- background/hover/pressed visuals; this hook only draws the foreground glyph.
+-- Shape: vertical up/down arrow + three descending horizontal bars.
+local function decorateSortButton(button)
+    if not button or button._lccGridSortIconInstalled then return end
+    button._lccGridSortIconInstalled = true
+
+    if button.setTitle then button:setTitle("") end
+
+    local originalPrerender = button.prerender
+    button.prerender = function(self)
+        if originalPrerender then originalPrerender(self) end
+
+        local w = self.getWidth and self:getWidth() or self.width or 0
+        local h = self.getHeight and self:getHeight() or self.height or 0
+        if w <= 0 or h <= 0 then return end
+
+        local size = math.min(w, h)
+        local ox = math.floor((w - size) / 2)
+        local oy = math.floor((h - size) / 2)
+        local enabled = self.enable ~= false
+        local alpha = enabled and 0.90 or 0.35
+        if enabled and self.mouseOver then alpha = 1.0 end
+
+        local r, g, b = 0.92, 0.92, 0.92
+        local arrowX = ox + math.floor(size * 0.27)
+        local topY = oy + math.floor(size * 0.18)
+        local bottomY = oy + math.floor(size * 0.82)
+        local shaftTop = topY + 4
+        local shaftBottom = bottomY - 4
+
+        -- Vertical shaft.
+        self:drawRect(arrowX, shaftTop, 2, math.max(2, shaftBottom - shaftTop), alpha, r, g, b)
+
+        -- Up arrow head (stepped triangle).
+        self:drawRect(arrowX - 3, topY + 4, 8, 2, alpha, r, g, b)
+        self:drawRect(arrowX - 2, topY + 2, 6, 2, alpha, r, g, b)
+        self:drawRect(arrowX - 1, topY, 4, 2, alpha, r, g, b)
+
+        -- Down arrow head.
+        self:drawRect(arrowX - 3, bottomY - 5, 8, 2, alpha, r, g, b)
+        self:drawRect(arrowX - 2, bottomY - 3, 6, 2, alpha, r, g, b)
+        self:drawRect(arrowX - 1, bottomY - 1, 4, 2, alpha, r, g, b)
+
+        -- Descending horizontal bars.
+        local barsX = ox + math.floor(size * 0.52)
+        local barY = oy + math.floor(size * 0.27)
+        local maxLen = math.max(7, math.floor(size * 0.30))
+        self:drawRect(barsX, barY, maxLen, 2, alpha, r, g, b)
+        self:drawRect(barsX, barY + math.floor(size * 0.20), math.max(6, maxLen - 2), 2, alpha, r, g, b)
+        self:drawRect(barsX, barY + math.floor(size * 0.40), math.max(5, maxLen - 4), 2, alpha, r, g, b)
+    end
+end
+
+-- Keep the sort control visually consistent with GridInventory's compact icon
+-- footer: square button, no visible text. Tooltip remains unchanged.
+local function normalizeSortButtonSize(button)
+    if not button then return end
+    local h = button.getHeight and button:getHeight() or button.height or 0
+    if h <= 0 then return end
+    local targetW = math.max(24, h)
+    local w = button.getWidth and button:getWidth() or button.width or 0
+    if w ~= targetW then button:setWidth(targetW) end
+    if button.setTitle then button:setTitle("") end
+end
+
 -- Keep SORT in the normal left-side footer flow without disturbing controls
 -- that vanilla/GridInventory anchors on the right (object actions, settings,
 -- etc.). We find the contiguous group that starts at x=0 and place SORT right
@@ -101,6 +168,9 @@ local function ensureGridSortFooter(page)
     local controlsUI = page and page.controlsUI
     local button = controlsUI and controlsUI._lccGridSortButton
     if not button then return end
+
+    decorateSortButton(button)
+    normalizeSortButtonSize(button)
 
     local repaired = false
 
