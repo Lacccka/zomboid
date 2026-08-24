@@ -144,8 +144,6 @@ local function processPageAssign(player, args)
         if not item then return "notfound" end
         if item.isEquipped and item:isEquipped() then return "invalid" end
 
-        -- A delayed automatic page-routing packet must never overwrite a sort
-        -- or manual placement that the server has already committed.
         local md = item.getModData and item:getModData() or nil
         if not (md and md.gridManual) then
             movedSet[item:getID()] = true
@@ -181,8 +179,6 @@ local function processPageAssign(player, args)
         end
     end
 
-    -- Automatic page routing is server-known but not a manual layout revision,
-    -- so it deliberately leaves authorityHash unchanged.
     for _, entry in ipairs(resolved) do
         applyPosition(entry.item, entry.move, args.gridContainer, false, target)
         broadcastItem(entry.item, target, false)
@@ -302,9 +298,6 @@ local function processSortPrepare(player, args)
     local target = resolveSortableTarget(player, args.ref)
     if not target then return "invalid" end
 
-    -- This token is generated exclusively from the server's current state. The
-    -- client never guesses it from local ModData. Any real mutation between
-    -- prepare and commit changes the token and makes the later SortRequest stale.
     sendServerCommand(player, GridSortState.MODULE, GridSortState.COMMANDS.SORT_TOKEN, {
         requestId = tostring(args.requestId),
         token = GridSortState.authorityHash(target),
@@ -324,7 +317,7 @@ local function processSort(player, args)
     end
     if not sameItemSet(target, args.moves) then
         sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "membership", args.requestId)
-        return "invalid"
+        return "handled"
     end
 
     local w, h = GridContainer.getGridSize(target)
@@ -334,12 +327,12 @@ local function processSort(player, args)
     for _, move in ipairs(args.moves) do
         if move.x == nil or move.y == nil or not validPage(move.page) then
             sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "bounds", args.requestId)
-            return "invalid"
+            return "handled"
         end
         local item = findItem(player, args.ref, move.itemId, nil)
         if not item then
             sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "missing-item", args.requestId)
-            return "invalid"
+            return "handled"
         end
         local page = rootPlayer and 1 or (tonumber(move.page) or 1)
         pages[page] = pages[page] or GridCore.new(w, h)
@@ -350,7 +343,7 @@ local function processSort(player, args)
         if not pages[page]:insertItem(item:getID(), tonumber(move.x), tonumber(move.y), ew, eh,
             rotated, item, compatKey, stackInfo) then
             sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "collision", args.requestId)
-            return "invalid"
+            return "handled"
         end
         table.insert(resolved, { item = item, move = {
             itemId = move.itemId,
@@ -360,9 +353,6 @@ local function processSort(player, args)
         } })
     end
 
-    -- The server event loop is sequential. If another player sorted/moved an
-    -- item after SortPrepare but while this request was being validated, the
-    -- token changes and this batch is rejected before any ModData is written.
     if GridSortState.authorityHash(target) ~= currentToken then
         sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "stale-after-validate", args.requestId)
         return "stale"
