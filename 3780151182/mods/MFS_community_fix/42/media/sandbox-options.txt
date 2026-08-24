@@ -7,3 +7,23 @@ option ModernFirearmsSystemSandboxGun._MSR7T_Rifle_Spawn
     page = ModernFirearmsSystemSandbox_Gun,
     translation = ModernFirearmsSystemSandboxGun_MSR7T_Rifle_Spawn,
 }
+
+option ModernFirearmsSystemSandboxGun._Revolver_Short_Spawn
+{
+
+type = boolean,
+default = true,
+page = ModernFirearmsSystemSandbox_Gun,
+translation = ModernFirearmsSystemSandboxGun_Revolver_Short_Spawn,
+
+}
+
+option ModernFirearmsSystemSandboxGun._DoubleBarrelShotgunSawnoff_Spawn
+{
+
+type = boolean,
+default = true,
+page = ModernFirearmsSystemSandbox_Gun,
+translation = ModernFirearmsSystemSandboxGun_DoubleBarrelShotgunSawnoff_Spawn,
+
+}

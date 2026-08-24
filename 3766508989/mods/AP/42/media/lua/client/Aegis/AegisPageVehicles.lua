@@ -281,15 +281,27 @@ function AegisPageVehicles:buildCache()
     local scripts = getScriptManager():getAllVehicleScripts()
     for i = 1, scripts:size() do
         local script = scripts:get(i - 1)
-        local name = string.lower(script:getName())
-        if not string.contains(name, "burnt") and not string.contains(name, "smashed") then
-            local display = getTextOrNull("IGUI_VehicleName" .. script:getName()) or script:getName()
+        local raw = script:getName()
+        local name = string.lower(raw)
+        -- the smashed entries are damage states of a car that is already in
+        -- the list; the burnt ones are separate wrecks and belong in it
+        local wreck = string.contains(name, "burnt")
+        if not string.contains(name, "smashed") then
+            local display = getTextOrNull("IGUI_VehicleName" .. raw)
+            if not display and wreck then
+                -- only a third of the burnt scripts carry their own name,
+                -- the rest fall back to the intact model plus the row tag
+                local base = raw:gsub("[Bb]urnt", "")
+                display = getTextOrNull("IGUI_VehicleName" .. base)
+            end
+            display = display or raw
             local seats = script:getPassengerCount()
             table.insert(self.vehicles, {
                 full = script:getFullName(),
                 display = display,
                 script = script,
                 seats = seats,
+                wreck = wreck,
                 trailer = string.lower(script:getFullName()):find("trailer", 1, true) ~= nil,
                 search = string.lower(display .. " " .. script:getFullName()),
             })
@@ -442,7 +454,11 @@ function AegisPageVehicles.drawRow(list, y, item, alt)
     -- no seats means not enterable; skip the tag for trailers,
     -- their name already says so and it would show twice
     local tagW = 0
-    if rec.seats == 0 and not rec.trailer then
+    if rec.wreck then
+        local tag = getText("UI_Aegis_VehicleWreck")
+        tagW = Aegis.strW(UIFont.Small, tag) + 12
+        Aegis.textRight(list, tag, list:getWidth() - 12, y + math.floor((ROW_H - Aegis.fontH(UIFont.Small)) / 2), UIFont.Small, c.goldDim)
+    elseif rec.seats == 0 and not rec.trailer then
         local tag = getText("UI_Aegis_NoSeats")
         tagW = Aegis.strW(UIFont.Small, tag) + 12
         Aegis.textRight(list, tag, list:getWidth() - 12, y + math.floor((ROW_H - Aegis.fontH(UIFont.Small)) / 2), UIFont.Small, c.goldDim)

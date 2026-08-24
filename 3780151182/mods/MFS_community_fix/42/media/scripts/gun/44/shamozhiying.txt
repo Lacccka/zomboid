@@ -167,7 +167,7 @@ module Base
         ModelWeaponPart = Gunpart.XY_XDZT Gunpart.XY_XDZT Canon Canon,
         ModelWeaponPart = Gunpart.XY_1911 Gunpart.XY_1911 Canon Canon,
         ModelWeaponPart = Gunpart.XY_109 Gunpart.XY_109 Canon Canon,
-        ModelWeaponPart = Gunpart.XY_CARVER Gunpart.XY_CARVER slience3 slience3,
+        ModelWeaponPart = Gunpart.XY_CARVER Gunpart.XY_CARVER Canon Canon,
         ModelWeaponPart = Gunpart.XY_Beowulf Gunpart.XY_Beowulf Canon Canon,
         ModelWeaponPart = Gunpart.QT_F93 Gunpart.QT_F93 Stock Stock,
         ModelWeaponPart = Gunpart.QT_Gen3 Gunpart.QT_Gen3 Stock Stock,

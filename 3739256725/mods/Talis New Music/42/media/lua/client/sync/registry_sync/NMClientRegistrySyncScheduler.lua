@@ -143,6 +143,30 @@ function NMClientRegistrySyncScheduler.shouldRunThisTick(state)
     return false, "movement_check_wait"
 end
 
+function NMClientRegistrySyncScheduler.getNextRunTick(state)
+    if not NMCore.isMPClientRuntime() then
+        return math.huge
+    end
+    local snapshot = NMClientRegistrySyncState.snapshot(state)
+    local timeoutTicks = NMRuntimeConfig.getRegistryRequestTimeoutTicks and NMRuntimeConfig.getRegistryRequestTimeoutTicks() or 180
+    if snapshot.state.syncPending == true then
+        if snapshot.state.initialSyncInFlight == true then
+            return (tonumber(snapshot.state.initialSyncRequestTick) or snapshot.tick) + math.max(30, tonumber(timeoutTicks) or 180)
+        end
+        return tonumber(snapshot.syncNextTick) or snapshot.tick
+    end
+    if snapshot.state.inventorySyncPending == true and snapshot.state.inventorySyncSent ~= true then
+        return snapshot.tick
+    end
+    if snapshot.state.resyncInFlight == true then
+        return (tonumber(snapshot.state.resyncRequestTick) or snapshot.tick) + math.max(30, tonumber(timeoutTicks) or 180)
+    end
+    return math.max(
+        tonumber(snapshot.resyncNextTick) or snapshot.tick,
+        tonumber(snapshot.resyncCheckNextTick) or snapshot.tick
+    )
+end
+
 function NMClientRegistrySyncScheduler.onTick(state, player)
     if not NMCore.isMPClientRuntime() then
         return false

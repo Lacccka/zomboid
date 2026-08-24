@@ -2,6 +2,8 @@ local env = _G.NMBoomboxWindowEnv
 setfenv(1, env)
 
 local FancySettingsWindow = require "ui/shared/host/NMFancySettingsWindow"
+local ReadoutLabelRenderer = require "ui/shared/NMReadoutLabelRenderer"
+local RenderProbe = require "ui/shared/host/NMFancyUiRenderProbe"
 
 local BUTTON_TEXTURE_BY_KIND = {
     play = "play",
@@ -103,15 +105,14 @@ local function drawTopCollapsedButton(window, textures, kind)
 end
 
 local function drawCassetteLabel(window, labelState, canvasOffsetY)
-    if not labelState then
-        return
-    end
-    local labelRect = offsetRectY(labelState.rect, canvasOffsetY)
-    window:drawRect(labelRect.x, labelRect.y, labelRect.w, labelRect.h, CASSETTE_LABEL_BG.a, CASSETTE_LABEL_BG.r, CASSETTE_LABEL_BG.g, CASSETTE_LABEL_BG.b)
-    local tm = getTextManager and getTextManager() or nil
-    local textH = tm and tm.MeasureStringY and tm:MeasureStringY(UIFont.Small, "Ag") or 10
-    local textY = labelRect.y + math.floor(((labelRect.h - textH) * 0.5) + 0.5)
-    window:drawText(labelState.text, labelRect.x + CASSETTE_LABEL_TEXT_PAD_X, textY, CASSETTE_LABEL_TEXT_COLOR.r, CASSETTE_LABEL_TEXT_COLOR.g, CASSETTE_LABEL_TEXT_COLOR.b, CASSETTE_LABEL_TEXT_COLOR.a, UIFont.Small)
+    return ReadoutLabelRenderer.draw(window, labelState, {
+        offsetY = canvasOffsetY,
+        background = CASSETTE_LABEL_BG,
+        color = CASSETTE_LABEL_TEXT_COLOR,
+        padX = CASSETTE_LABEL_TEXT_PAD_X,
+        font = UIFont.Small,
+        cacheName = "cassette",
+    })
 end
 
 local function resolveVisibleCassetteState(model)
@@ -129,26 +130,89 @@ local function drawCassetteAssembly(window, model, textures, canvasOffsetY)
         drawTextureScaledSafe(window, cassetteState.texture, cassetteState, cassetteState.alpha or 1.0)
     end
     if timedVisible ~= true then
+        local phaseStart = RenderProbe.begin(window)
         drawCassetteLabel(window, model and model.cassetteLabelState or nil, canvasOffsetY)
+        RenderProbe.finish(window, "readout.label", phaseStart)
     end
     if cassetteState and cassetteState.visible == true and textures.spool then
+        local phaseStart = RenderProbe.begin(window)
         local leftRect = window:getCassetteSpoolRect(1, cassetteState)
         local rightRect = window:getCassetteSpoolRect(2, cassetteState)
         drawTextureScaledAngleSafe(window, textures.spool, leftRect, tonumber(window._nmLeftSpoolAngle) or 0.0)
         drawTextureScaledAngleSafe(window, textures.spool, rightRect, tonumber(window._nmRightSpoolAngle) or 0.0)
+        RenderProbe.finish(window, "cassette.spools", phaseStart)
     end
 end
 
+local function resolveLiveBoomboxRenderState(window, resolved, model)
+    local epoch = tonumber(window and window._nmFrameEpoch) or 0
+    local cached = window and window._nmBoomboxLiveRenderState or nil
+    if cached and cached.epoch == epoch then
+        return cached
+    end
+
+    local variant = model and model.variant or window:getBoomboxVariant(resolved)
+    local textures = model and model.textures or window:resolveBoomboxUITextures(variant)
+    local effectiveVolume = window._nmKnobDragging == true and window._nmKnobPreviewVolume or window._nmKnobStableVolume
+    local wheelAngle = window:getVolumeKnobAngle(effectiveVolume or 1.0)
+    local volumeLabelVisible = window:shouldShowVolumeLabel()
+    local volumeLabelText = nil
+    local volumeLabelRect = nil
+    if volumeLabelVisible == true then
+        volumeLabelText = window:getVolumeLabelText()
+        volumeLabelRect = window:getVolumeLabelRect()
+    end
+    local lidState = window:getLidRenderState(textures)
+    local lidEdgeState = window:getLidEdgeRenderState(lidState)
+    local lidIngressVisible = window:shouldShowLidIngressZone()
+    local cassetteMediaState = window:getCassetteDisplayMediaState()
+    local timedCassetteState = window:getTimedCassetteAnimationState()
+    local liveModel = {
+        epoch = epoch,
+        variant = variant,
+        textures = textures,
+        wheelAngle = wheelAngle,
+        powerSwitchOn = window._nmPowerSwitchOn == true,
+        volumeLabelVisible = volumeLabelVisible,
+        lidState = lidState,
+        lidEdgeState = lidEdgeState,
+        lidIngressVisible = lidIngressVisible,
+        cassetteMediaState = cassetteMediaState,
+        timedCassetteState = timedCassetteState,
+    }
+    if liveModel.volumeLabelVisible == true then
+        liveModel.volumeLabelText = volumeLabelText
+        liveModel.volumeLabelRect = volumeLabelRect
+    end
+    if not (timedCassetteState and timedCassetteState.visible == true) then
+        liveModel.cassetteLabelState = window:buildCassetteLabelState(resolved)
+    end
+    window._nmBoomboxLiveRenderState = liveModel
+    return liveModel
+end
+
 function BoomboxWindow:prerender()
+    local perfStart = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(self) or nil
     self:beginFrameEpoch("prerender")
     local resolved = self:resolveContextCached()
-    self:syncPowerSwitchFromTransport(resolved, false)
+    local skipPassiveTransportSync = self:hasPassiveTransportSyncForCurrentFrame()
+    local passiveTransport = nil
+    if skipPassiveTransportSync ~= true then
+        passiveTransport = self:resolvePassiveTransportState(resolved)
+        local phaseStart = RenderProbe.begin(self)
+        self:syncPowerSwitchFromTransport(resolved, false, passiveTransport)
+        self:syncPlayButtonFromTransport(resolved, false, passiveTransport)
+        RenderProbe.finish(self, "transport.passive_sync", phaseStart)
+    end
     local model = self:getRenderModel()
-    self:syncPlayButtonFromTransport(resolved, false)
+    local liveState = resolveLiveBoomboxRenderState(self, resolved, model)
+    local phaseStart = RenderProbe.begin(self)
     ISPanel.prerender(self)
-    local textures = model and model.textures or self:resolveBoomboxUITextures()
+    RenderProbe.finish(self, "panel.children", phaseStart)
+    local textures = liveState and liveState.textures or self:resolveBoomboxUITextures()
     local canvasOffsetY = self:getCanvasOffsetY()
 
+    phaseStart = RenderProbe.begin(self)
     drawTopCollapsedButton(self, textures, "play")
     drawTopCollapsedButton(self, textures, "stop")
     drawTopCollapsedButton(self, textures, "prev")
@@ -156,32 +220,40 @@ function BoomboxWindow:prerender()
 
     drawTextureScaledSafe(self, textures.base, { x = BASE_X, y = BASE_Y + canvasOffsetY, w = BASE_W, h = BASE_H })
     drawTextureScaledSafe(self, textures.front, { x = FRONT_X, y = FRONT_Y + canvasOffsetY, w = FRONT_W, h = FRONT_H })
+    RenderProbe.finish(self, "chrome.static", phaseStart)
     drawTextureScaledSafe(self, textures.powerBg, self:getPowerSwitchBgRect())
-    drawTextureScaledSafe(self, textures.powerSlide, self:getPowerSwitchSlideRect(model and model.powerSwitchOn == true))
-    drawCassetteAssembly(self, model, textures, canvasOffsetY)
+    drawTextureScaledSafe(self, textures.powerSlide, self:getPowerSwitchSlideRect(liveState and liveState.powerSwitchOn == true))
+    drawCassetteAssembly(self, liveState, textures, canvasOffsetY)
+    if NMUIRenderProbe and NMUIRenderProbe.endWindow then
+        NMUIRenderProbe.endWindow(self, "device.prerender", perfStart)
+    end
 end
 
 function BoomboxWindow:render()
+    local perfFrame = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(self) or nil
+    local perfRender = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(self) or nil
     ISPanel.render(self)
     local model = self:getRenderModel()
-    local textures = model and model.textures or self:resolveBoomboxUITextures()
+    local resolved = self:resolveContextCached()
+    local liveState = resolveLiveBoomboxRenderState(self, resolved, model)
+    local textures = liveState and liveState.textures or self:resolveBoomboxUITextures()
     local canvasOffsetY = self:getCanvasOffsetY()
     local volumeBgRect = offsetRectY(self:getVolumeBgRect(), canvasOffsetY)
     drawTextureScaledSafe(self, textures.volumeBg, volumeBgRect)
     if textures.volumeKnob then
         local knobRect = offsetRectY(self:getVolumeKnobRect(), canvasOffsetY)
-        drawTextureScaledAngleSafe(self, textures.volumeKnob, knobRect, tonumber(model and model.wheelAngle) or 0.0)
+        drawTextureScaledAngleSafe(self, textures.volumeKnob, knobRect, tonumber(liveState and liveState.wheelAngle) or 0.0)
     end
 
-    if model and model.lidEdgeState and model.lidEdgeState.visible == true then
-        local lidEdgeState = offsetStateRectY(model.lidEdgeState, canvasOffsetY)
+    if liveState and liveState.lidEdgeState and liveState.lidEdgeState.visible == true then
+        local lidEdgeState = offsetStateRectY(liveState.lidEdgeState, canvasOffsetY)
         drawTextureScaledSafe(self, lidEdgeState.texture, lidEdgeState)
     end
-    if model and model.lidState then
-        local lidState = offsetStateRectY(model.lidState, canvasOffsetY)
+    if liveState and liveState.lidState then
+        local lidState = offsetStateRectY(liveState.lidState, canvasOffsetY)
         drawTextureScaledSafe(self, lidState.texture, lidState)
     end
-    if model and model.lidIngressVisible == true then
+    if liveState and liveState.lidIngressVisible == true then
         local ingressRect = offsetRectY(self:getLidIngressZoneRect(), canvasOffsetY)
         self:drawRectBorder(ingressRect.x, ingressRect.y, ingressRect.w, ingressRect.h, LID_INGRESS_BORDER.a, LID_INGRESS_BORDER.r, LID_INGRESS_BORDER.g, LID_INGRESS_BORDER.b)
     end
@@ -227,8 +299,15 @@ function BoomboxWindow:render()
         end
     end
 
-    if model and model.volumeLabelVisible == true then
-        local labelRect = offsetRectY(model.volumeLabelRect, canvasOffsetY)
-        self:drawText(model.volumeLabelText, labelRect.x, labelRect.y, 1.0, 1.0, 1.0, 1.0, UIFont.Small)
+    if liveState and liveState.volumeLabelVisible == true then
+        local labelRect = offsetRectY(liveState.volumeLabelRect, canvasOffsetY)
+        self:drawText(liveState.volumeLabelText, labelRect.x, labelRect.y, 1.0, 1.0, 1.0, 1.0, UIFont.Small)
+    end
+    if NMUIRenderProbe and NMUIRenderProbe.endWindow then
+        NMUIRenderProbe.endWindow(self, "device.render", perfRender)
+        NMUIRenderProbe.endWindow(self, "device.frame", perfFrame)
+    end
+    if NMUIRenderProbe and NMUIRenderProbe.flush then
+        NMUIRenderProbe.flush(self)
     end
 end

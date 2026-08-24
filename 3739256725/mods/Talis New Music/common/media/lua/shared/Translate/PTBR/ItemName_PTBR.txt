@@ -25,6 +25,7 @@ ItemName_PTBR = {
     ItemName_NewMusic_BoomboxCyan = "Boombox (Ciano)",
     ItemName_NewMusic_BoomboxMagenta = "Boombox (Magenta)",
     ItemName_NewMusic_BoomboxPurple = "Boombox (Roxo)",
+    ItemName_NewMusic_BoomboxOddbolt = "Boombox (Oddbolt)",
     ItemName_NewMusic_CDPlayerBlue = "Leitor de CD (Azul)",
     ItemName_NewMusic_CDPlayerBlack = "Leitor de CD (Preto)",
     ItemName_NewMusic_CDPlayerCow = "Leitor de CD (Moo)",

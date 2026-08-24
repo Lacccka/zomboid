@@ -21,10 +21,12 @@ local VanillaGunOptions = {
     Pistol2 = "_Pistol2_Spawn",
     Pistol3 = "_Pistol3_Spawn",
     Revolver = "_Revolver_Spawn",
+    Revolver_Short = "_Revolver_Short_Spawn",
     Revolver_Long = "_Revolver_Long_Spawn",
     Shotgun = "_Shotgun_Spawn",
     ShotgunSawnoff = "_ShotgunSawnoff_Spawn",
     DoubleBarrelShotgun = "_DoubleBarrelShotgun_Spawn",
+    DoubleBarrelShotgunSawnoff = "_DoubleBarrelShotgunSawnoff_Spawn",
 }
 
 local previousRefreshContainer = ISInventoryPane.refreshContainer

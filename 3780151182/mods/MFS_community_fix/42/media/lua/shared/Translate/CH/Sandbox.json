@@ -85,7 +85,7 @@
     "Sandbox_ModernFirearmsSystemSandboxGun_SRM3_cat_Spawn": "SRM3突擊步槍",
     "Sandbox_ModernFirearmsSystemSandboxGun_M7_cat_Spawn": "M7突擊步槍",
     "Sandbox_ModernFirearmsSystemSandboxGun_VarmintRifle_Spawn": "MSR700 步槍（原版）",
-    "Sandbox_ModernFirearmsSystemSandboxGun_HuntingRifle_Spawn": "雷明頓 MSR（原版）",
+    "Sandbox_ModernFirearmsSystemSandboxGun_HuntingRifle_Spawn": "雷明頓 MSR ",
     "Sandbox_ModernFirearmsSystemSandboxGun_Marlin1894_Spawn": "馬林1894",
     "Sandbox_ModernFirearmsSystemSandboxGun_M1866_cat_Spawn": "M1866步槍",
     "Sandbox_ModernFirearmsSystemSandboxGun_56S_cat_Spawn": "北方工業 56S 型步槍",
@@ -150,5 +150,7 @@
     "Sandbox_ModernFirearmsSystemSandboxGun_L94_Rifle_Spawn": "L94 步槍（原版）",
     "Sandbox_ModernFirearmsSystemSandboxGun_TrapperCarbine_Spawn": "Trapper 卡賓槍（原版）",
     "Sandbox_ModernFirearmsSystemSandboxGun_MSR7T_Rifle_Spawn": "MSR7T 步槍（原版）",
-    "Sandbox_ModernFirearmsSystemSandboxGun_UTS15_cat_Spawn": "UTS15霰彈"
+    "Sandbox_ModernFirearmsSystemSandboxGun_UTS15_cat_Spawn": "UTS15霰彈",
+    "Sandbox_ModernFirearmsSystemSandboxGun_DoubleBarrelShotgunSawnoff_Spawn": "鋸短雙管霰彈槍（原版）",
+    "Sandbox_ModernFirearmsSystemSandboxGun_Revolver_Short_Spawn": "SN38 短管左輪（原版）"
 }

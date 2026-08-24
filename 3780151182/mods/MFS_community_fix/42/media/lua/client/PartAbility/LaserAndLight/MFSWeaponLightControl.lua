@@ -85,15 +85,19 @@ local Control = MFSWeaponLightControl
 Control.VERSION = "1.0.0"
 Control.BIND = "SwtichLightSet"
 
--- Battery is stored on the WEAPON's modData under this key, 0-100. That is the
--- same key and scale the upstream ISGunAddBatteryAction / ISGunRemoveBatteryAction
--- and the BatterySet.lua context menu already use, so "Add/Remove Battery" keeps
--- working unmodified. Do not rename it.
-Control.BATTERY_KEY = "LightBatteryReamin"
-
--- On/off switch, per gun, persisted in the save. A new key rather than the old
--- NowLightSet table, which is left alone so any stale save data is inert.
-Control.STATE_KEY = "MFSGunLightOn"
+-- NO STATE KEYS HERE. Up to RC7D this file kept the switch, the battery and the
+-- low-battery latch on the WEAPON's modData:
+--
+--     Control.BATTERY_KEY = "LightBatteryReamin"
+--     Control.STATE_KEY   = "MFSGunLightOn"
+--     Control.WARNED_KEY  = "MFSGunLightLowWarned"
+--
+-- All three were erased mid-session in multiplayer, because the engine replaces
+-- the weapon's entire modData table a few frames after every shot and again on
+-- reload. State now lives on the PLAYER, in MFSGunLightStore. Read that file's
+-- header before changing anything here - it carries the probe evidence.
+--
+-- Do not reintroduce item-modData state in this file.
 
 -- Drain per in-game minute. 0.1 matches the rate the dead PowerDown() intended,
 -- giving 1000 in-game minutes (~16.7 in-game hours) of continuous use per battery.
@@ -105,9 +109,8 @@ Control.DRAIN_PER_MINUTE = 0.1
 -- without this the light would simply die with no warning at all.
 Control.LOW_WARN_AT = 20
 
--- Per-gun latch so the low warning fires once rather than every in-game minute.
--- Cleared automatically when the charge rises back above the threshold.
-Control.WARNED_KEY = "MFSGunLightLowWarned"
+-- The one-off latch for that warning lives in MFSGunLightStore alongside the
+-- switch and the charge, for the same durability reason.
 
 -- The Light parts declare no light values of their own (see note 4 above), so
 -- the numbers live here. The default deliberately equals the 30 / 9 that
@@ -179,38 +182,44 @@ local function chargeSuffix(value)
     return "(" .. tostring(math.floor(value + 0.5)) .. "%)"
 end
 
--- Battery ---------------------------------------------------------------------
+-- State and battery ------------------------------------------------------------
+--
+-- RC7E: these no longer live on the ITEM. In multiplayer the weapon's entire
+-- modData table is replaced 2-3 frames after every shot and again on reload, so
+-- anything stored there is erased mid-session. That produced the reported
+-- "firing turns the light off", and silently reset the battery to full on every
+-- shot. State now lives on the PLAYER via MFSGunLightStore, keyed by item ID.
+-- The full evidence is in that file's header - read it before changing this.
+--
+-- These wrappers keep the call sites unchanged and degrade safely: if the store
+-- is somehow unavailable, the light reads as off rather than erroring.
 
--- Only ever called for a gun that actually has a Light part, so guns without one
--- never get this key written into their modData.
-local function getBattery(weapon)
-    local modData = weapon:getModData()
-    local value = modData[Control.BATTERY_KEY]
-    if type(value) ~= "number" then
-        -- 100 on first sight, matching the upstream default. A freshly attached
-        -- light therefore arrives charged rather than dead, which is what the
-        -- original design intended and avoids "my new light does nothing".
-        value = 100
-        modData[Control.BATTERY_KEY] = value
+local function getBattery(playerObj, weapon)
+    if not MFSGunLightStore then
+        return 0
     end
-    return value
+    return MFSGunLightStore.getBattery(playerObj, weapon)
 end
 
-local function setBattery(weapon, value)
-    if value < 0 then
-        value = 0
+local function setBattery(playerObj, weapon, value)
+    if not MFSGunLightStore then
+        return
     end
-    weapon:getModData()[Control.BATTERY_KEY] = round1(value)
+    MFSGunLightStore.setBattery(playerObj, weapon, value)
 end
 
--- Switch state ----------------------------------------------------------------
-
-local function isSwitchedOn(weapon)
-    return weapon:getModData()[Control.STATE_KEY] == true
+local function isSwitchedOn(playerObj, weapon)
+    if not MFSGunLightStore then
+        return false
+    end
+    return MFSGunLightStore.isOn(playerObj, weapon)
 end
 
-local function setSwitchedOn(weapon, value)
-    weapon:getModData()[Control.STATE_KEY] = (value == true)
+local function setSwitchedOn(playerObj, weapon, value)
+    if not MFSGunLightStore then
+        return
+    end
+    MFSGunLightStore.setOn(playerObj, weapon, value)
 end
 
 -- Applying the state to the engine ---------------------------------------------
@@ -307,7 +316,7 @@ local function onPlayerUpdate(playerObj)
 
     -- Emit only if the switch is on AND there is charge. A flat battery leaves
     -- the switch on, so fitting a new one brings the light straight back.
-    local wantOn = isSwitchedOn(weapon) and getBattery(weapon) > 0
+    local wantOn = isSwitchedOn(playerObj, weapon) and getBattery(playerObj, weapon) > 0
     applyLight(weapon, wantOn, profileFor(part))
 end
 
@@ -326,34 +335,32 @@ local function drainBattery()
     if not getLightPart(weapon) then
         return
     end
-    if not isSwitchedOn(weapon) then
+    if not isSwitchedOn(playerObj, weapon) then
         return
     end
 
-    local remaining = getBattery(weapon)
+    local remaining = getBattery(playerObj, weapon)
     if remaining <= 0 then
         return
     end
 
     remaining = remaining - Control.DRAIN_PER_MINUTE
-    setBattery(weapon, remaining)
-
-    local modData = weapon:getModData()
+    setBattery(playerObj, weapon, remaining)
 
     if remaining <= 0 then
-        modData[Control.WARNED_KEY] = nil
+        MFSGunLightStore.setWarned(playerObj, weapon, false)
         feedback(playerObj, "IGUI_MFS_GunLight_Depleted")
         return
     end
 
     if remaining <= Control.LOW_WARN_AT then
-        if not modData[Control.WARNED_KEY] then
-            modData[Control.WARNED_KEY] = true
+        if not MFSGunLightStore.isWarned(playerObj, weapon) then
+            MFSGunLightStore.setWarned(playerObj, weapon, true)
             feedback(playerObj, "IGUI_MFS_GunLight_Low", chargeSuffix(remaining))
         end
     else
         -- Recharged past the threshold, so re-arm the warning for next time.
-        modData[Control.WARNED_KEY] = nil
+        MFSGunLightStore.setWarned(playerObj, weapon, false)
     end
 end
 
@@ -372,10 +379,10 @@ local function toggleLight(playerObj)
         return
     end
 
-    local charge = getBattery(weapon)
+    local charge = getBattery(playerObj, weapon)
 
-    if isSwitchedOn(weapon) then
-        setSwitchedOn(weapon, false)
+    if isSwitchedOn(playerObj, weapon) then
+        setSwitchedOn(playerObj, weapon, false)
         -- Charge is reported on the way out too, so the player can check the
         -- level deliberately by tapping the key twice.
         feedback(playerObj, "IGUI_MFS_GunLight_Off", chargeSuffix(charge))
@@ -390,7 +397,7 @@ local function toggleLight(playerObj)
         return
     end
 
-    setSwitchedOn(weapon, true)
+    setSwitchedOn(playerObj, weapon, true)
     feedback(playerObj, "IGUI_MFS_GunLight_On", chargeSuffix(charge))
 end
 

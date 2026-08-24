@@ -1,5 +1,7 @@
 {
-    "Sandbox_ModernFirearmsSystemSandboxGun_MSR7T_Rifle_Spawn": "Vanilla MSR7T Rifle Spawn Chance",
+    "Sandbox_ModernFirearmsSystemSandboxGun_MSR7T_Rifle_Spawn": "MSR7T Rifle Spawn Chance",
+    "Sandbox_ModernFirearmsSystemSandboxGun_DoubleBarrelShotgunSawnoff_Spawn": "Vanilla Sawed-off Double Barrel Shotgun Spawn Chance",
+    "Sandbox_ModernFirearmsSystemSandboxGun_Revolver_Short_Spawn": "Vanilla SN38 Revolver Spawn Chance",
     "Sandbox_ADWWF": "Advanced Firearms",
     "Sandbox_EFK": "Escape From Kentucky",
     "Sandbox_LaserAndGunLightUseBattery": "Laser & Weapon Lights Consume Batteries",
@@ -86,7 +88,7 @@
     "Sandbox_ModernFirearmsSystemSandboxGun_SRM3_cat_Spawn": "SRM3 Spawn Chance",
     "Sandbox_ModernFirearmsSystemSandboxGun_M7_cat_Spawn": "M7 Assault Rifle Spawn Chance",
     "Sandbox_ModernFirearmsSystemSandboxGun_VarmintRifle_Spawn": "Vanilla Varmint Rifle Spawn Chance",
-    "Sandbox_ModernFirearmsSystemSandboxGun_HuntingRifle_Spawn": "Vanilla Hunting Rifle Spawn Chance",
+    "Sandbox_ModernFirearmsSystemSandboxGun_HuntingRifle_Spawn": "Remington MSR Spawn Chance",
     "Sandbox_ModernFirearmsSystemSandboxGun_Marlin1894_Spawn": "Marlin 1894 Lever Rifle Spawn Chance",
     "Sandbox_ModernFirearmsSystemSandboxGun_M1866_cat_Spawn": "M1866 Lever Rifle Spawn Chance",
     "Sandbox_ModernFirearmsSystemSandboxGun_56S_cat_Spawn": "Model 56 Semi-Auto Spawn Chance",

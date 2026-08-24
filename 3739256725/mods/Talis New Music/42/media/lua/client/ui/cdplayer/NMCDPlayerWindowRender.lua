@@ -2,6 +2,7 @@ local env = _G.NMCDPlayerWindowEnv
 setfenv(1, env)
 
 local FancySettingsWindow = require "ui/shared/host/NMFancySettingsWindow"
+require "ui/cdplayer/NMCDPlayerDisplayRenderState"
 
 local function drawTextureScaledAngleSafe(window, texture, rect, angle, alpha, r, g, b)
     if NMFancyDeviceUiScale and NMFancyDeviceUiScale.drawTextureScaledAngle then
@@ -64,10 +65,10 @@ local function ensureLidTextureCache()
     return UI_TEXTURES.lidByVariant
 end
 
-local function getDisplayTexture(window)
+local function getDisplayTexture(window, transport)
     local cacheKey = "displayOff"
     local texturePath = DISPLAY_TEXTURE_PATH
-    if window and window.isDisplayPoweredOn and window:isDisplayPoweredOn() == true then
+    if window and window.isDisplayPoweredOn and window:isDisplayPoweredOn(transport) == true then
         cacheKey = "displayOn"
         texturePath = DISPLAY_TEXTURE_ON_PATH
     end
@@ -180,25 +181,70 @@ function CDPlayerWindow:getButtonTexture(kind)
     return ensureTextureValue(cache, cacheKey, path)
 end
 
-local function getCDPlayerChromeTextures(window, model)
+local function getCDPlayerChromeTextures(window, model, liveState)
     UI_TEXTURES.base = UI_TEXTURES.base or nil
     UI_TEXTURES.close = UI_TEXTURES.close or nil
+    local transport = liveState and liveState.transport or nil
     return {
         base = ensureTextureValue(UI_TEXTURES, "base", BASE_TEXTURE_PATH),
         close = ensureTextureValue(UI_TEXTURES, "close", CLOSE_TEXTURE_PATH),
         front = getFrontTexture(model and model.frontVariant or nil),
         lid = getLidTexture(model and model.frontVariant or nil),
         auxIngress = getAuxIngressTexture(),
-        display = getDisplayTexture(window),
+        display = getDisplayTexture(window, transport),
         sideButtonBg = window:getSideButtonBgTexture(),
         sideButtonFg = window:getSideButtonTexture(),
-        indicator = window:getPowerIndicatorTexture(),
+        indicator = window:getPowerIndicatorTexture(transport),
         hold = window:getHoldButtonTexture(),
         open = window:getOpenButtonTexture(),
         modeLabel = window:getModeLabelTexture(),
         holdLabel = window:getHoldLabelTexture(),
         powerLabel = window:getPowerLabelTexture(),
     }
+end
+
+local function resolveCDLiveRenderState(window, resolved, model)
+    local epoch = tonumber(window and window._nmFrameEpoch) or 0
+    local cached = window and window._nmCDLiveRenderState or nil
+    if cached and cached.epoch == epoch then
+        return cached
+    end
+
+    local transport = NMDeviceUiHost.resolveTransportState(window, {
+        resolved = resolved,
+        renderModel = model,
+    })
+    local insertedCDTexture, insertedCDTexturePath = window:getInsertedCDWorldTexture()
+    local state = {
+        epoch = epoch,
+        transport = transport,
+        lidState = window:getLidRenderState(),
+        displayPoweredOn = window:isDisplayPoweredOn(transport),
+        powerIndicatorState = window:getPowerIndicatorState(transport),
+        displaySongLabelState = NMCDPlayerDisplayRenderState.buildSongLabelState(window, transport, resolved),
+        displayModeIconState = NMCDPlayerDisplayRenderState.buildModeIconState(window, transport),
+        displayBatteryState = NMCDPlayerDisplayRenderState.buildBatteryIndicatorState(window, transport, resolved),
+        displayClockState = NMCDPlayerDisplayRenderState.buildClockState(window, transport),
+        timedCDState = window:getTimedCDAnimationState(),
+        insertedCDState = {
+            fullType = window:getInsertedMediaFullType(),
+            texture = insertedCDTexture,
+            texturePath = insertedCDTexturePath,
+            scaleTier = NMFancyDeviceUiScale and NMFancyDeviceUiScale.getScaleTier and NMFancyDeviceUiScale.getScaleTier() or "100",
+            visible = insertedCDTexture ~= nil,
+            spin = window:shouldSpinInsertedCD(transport) == true,
+            angle = tonumber(window._nmWorldCDSpinAngle) or 0.0,
+            rect = window:getWorldCDRect(),
+        },
+    }
+    window._nmCDLiveRenderState = state
+    return state
+end
+
+function CDPlayerWindow:getCDLiveRenderState(resolved, model)
+    local renderModel = model or (self.getRenderModel and self:getRenderModel() or nil)
+    local renderContext = resolved or (self.resolveContextCached and self:resolveContextCached() or nil)
+    return resolveCDLiveRenderState(self, renderContext, renderModel)
 end
 
 function CDPlayerWindow:getSideButtonTexture()
@@ -213,8 +259,8 @@ function CDPlayerWindow:getSideButtonBgTexture()
     return getSideTexture("bg", SIDE_BUTTON_BG_TEXTURE_PATH)
 end
 
-function CDPlayerWindow:getPowerIndicatorTexture()
-    local state = self:getPowerIndicatorState()
+function CDPlayerWindow:getPowerIndicatorTexture(transport)
+    local state = self:getPowerIndicatorState(transport)
     if state == "on" then
         return getSideTexture("indicator_on", POWER_INDICATOR_TEXTURE_ON_PATH)
     end
@@ -269,6 +315,7 @@ function CDPlayerWindow:prerender()
     self:beginFrameEpoch("prerender")
     local model = self:getRenderModel()
     local resolved = self:resolveContextCached()
+    local liveState = resolveCDLiveRenderState(self, resolved, model)
     local nowMs = getNowMs()
     if NMHeadphoneSlot and NMHeadphoneSlot.tickWearSyncWindow then
         NMHeadphoneSlot.tickWearSyncWindow(self, {
@@ -283,8 +330,8 @@ function CDPlayerWindow:prerender()
     end
     NMSlotHostLifecycle.refreshSlotVisibility(self)
     ISPanel.prerender(self)
-    self:syncHoldButtonAnimation(false)
-    local chromeTextures = getCDPlayerChromeTextures(self, model)
+    self:syncHoldButtonAnimation(false, liveState and liveState.transport or nil)
+    local chromeTextures = getCDPlayerChromeTextures(self, model, liveState)
     if self.backgroundColor then
         self:drawRect(0, 0, self.width, self.height, self.backgroundColor.a, self.backgroundColor.r, self.backgroundColor.g, self.backgroundColor.b)
     end
@@ -358,7 +405,7 @@ function CDPlayerWindow:prerender()
         local rect = self:getPowerLabelRect()
         self:drawTextureScaled(chromeTextures.powerLabel, rect.x, rect.y, rect.w, rect.h, 1.0, 1.0, 1.0, 1.0)
     end
-    local timedCDState = model and model.timedCDState or nil
+    local timedCDState = liveState and liveState.timedCDState or nil
     if timedCDState and timedCDState.visible == true and timedCDState.texture then
         self:drawTextureScaled(
             timedCDState.texture,
@@ -372,7 +419,7 @@ function CDPlayerWindow:prerender()
             1.0
         )
     else
-        local insertedCDState = model and model.insertedCDState or nil
+        local insertedCDState = liveState and liveState.insertedCDState or nil
         local insertedCDTexture = insertedCDState and insertedCDState.texture or nil
         if insertedCDTexture then
             local cdRect = insertedCDState.rect
@@ -383,8 +430,8 @@ function CDPlayerWindow:prerender()
             end
         end
     end
-    if chromeTextures.lid and model and model.lidState then
-        local lidState = model.lidState
+    if chromeTextures.lid and liveState and liveState.lidState then
+        local lidState = liveState.lidState
         self:drawTextureScaled(chromeTextures.lid, lidState.x, lidState.y, lidState.w, lidState.h, 1.0, 1.0, 1.0, 1.0)
     end
     local renderOrder = { "vol_up", "prev", "next", "vol_down", "play_stop" }
@@ -413,9 +460,11 @@ function CDPlayerWindow:render()
     local perfFrame = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(self) or nil
     local perfRender = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(self) or nil
     local model = self:getRenderModel()
-    local chromeTextures = getCDPlayerChromeTextures(self, model)
+    local resolved = self:resolveContextCached()
+    local liveState = resolveCDLiveRenderState(self, resolved, model)
+    local chromeTextures = getCDPlayerChromeTextures(self, model, liveState)
     ISPanel.render(self)
-    local displayBattery = model and model.displayBatteryState or nil
+    local displayBattery = liveState and liveState.displayBatteryState or nil
     if displayBattery then
         self:drawTextureScaled(
             displayBattery.texture,
@@ -429,7 +478,7 @@ function CDPlayerWindow:render()
             1.0
         )
     end
-    local displayModeIcon = model and model.displayModeIconState or nil
+    local displayModeIcon = liveState and liveState.displayModeIconState or nil
     if displayModeIcon then
         self:drawTextureScaled(
             displayModeIcon.texture,

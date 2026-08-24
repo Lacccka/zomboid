@@ -64,8 +64,9 @@ function WalkmanWindow:setVolumePreviewFromMouseY(mouseY)
 end
 
 function WalkmanWindow:updateCassetteSpoolAngles(nowMs)
+    local resolved = self.resolveContextCached and self:resolveContextCached() or nil
     local transport = NMDeviceUiHost.resolveTransportState(self, {
-        renderModel = self._nmRenderModel,
+        resolved = resolved,
     })
     local now = tonumber(nowMs) or getNowMs()
     local last = tonumber(self._nmSpoolLastUpdateMs)

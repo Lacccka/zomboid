@@ -3,7 +3,7 @@ NMClientVanillaMusicSuppressor = NMClientVanillaMusicSuppressor or {}
 NMClientVanillaMusicSuppressor._tickAudible = false
 NMClientVanillaMusicSuppressor._suppressed = NMClientVanillaMusicSuppressor._suppressed or false
 NMClientVanillaMusicSuppressor._capturedVolume = NMClientVanillaMusicSuppressor._capturedVolume
-NMClientVanillaMusicSuppressor._lastKnownUserVolume = NMClientVanillaMusicSuppressor._lastKnownUserVolume
+NMClientVanillaMusicSuppressor._hasSessionCapture = NMClientVanillaMusicSuppressor._hasSessionCapture == true
 NMClientVanillaMusicSuppressor._lastRefreshTick = NMClientVanillaMusicSuppressor._lastRefreshTick or 0
 
 local function logRuntimeProbe(tag, detail)
@@ -46,6 +46,46 @@ local function setMusicVolume(sm, value)
     return ok == true
 end
 
+local function shouldMuteGameSoundtrackDuringPlayback()
+    if NMRuntimeConfig and NMRuntimeConfig.getMuteGameSoundtrackDuringPlayback then
+        return NMRuntimeConfig.getMuteGameSoundtrackDuringPlayback() ~= false
+    end
+    if NMClientModOptions and NMClientModOptions.getMuteGameSoundtrackDuringPlayback then
+        return NMClientModOptions.getMuteGameSoundtrackDuringPlayback() ~= false
+    end
+    return true
+end
+
+local function captureSessionVolume(currentVolume)
+    NMClientVanillaMusicSuppressor._capturedVolume = clampVolume(currentVolume or 0)
+    NMClientVanillaMusicSuppressor._hasSessionCapture = true
+end
+
+local function clearSessionCapture()
+    NMClientVanillaMusicSuppressor._capturedVolume = nil
+    NMClientVanillaMusicSuppressor._hasSessionCapture = false
+end
+
+local function restoreCapturedVolume(sm, currentVolume, tickCount, reason)
+    local restore = 0
+    if NMClientVanillaMusicSuppressor._hasSessionCapture == true then
+        restore = clampVolume(NMClientVanillaMusicSuppressor._capturedVolume or 0)
+    end
+    setMusicVolume(sm, restore)
+    NMClientVanillaMusicSuppressor._suppressed = false
+    clearSessionCapture()
+    NMClientVanillaMusicSuppressor._lastRefreshTick = tonumber(tickCount) or 0
+    logRuntimeProbe(
+        "vanilla_music_suppress_end",
+        string.format(
+            "restored=%.3f current=%s reason=%s",
+            tonumber(restore) or 0,
+            tostring(currentVolume ~= nil and string.format("%.3f", currentVolume) or "nil"),
+            tostring(reason or "not_audible")
+        )
+    )
+end
+
 function NMClientVanillaMusicSuppressor.beginTick()
     NMClientVanillaMusicSuppressor._tickAudible = false
 end
@@ -72,27 +112,20 @@ function NMClientVanillaMusicSuppressor.endTick(tickCount)
     local audible = NMClientVanillaMusicSuppressor._tickAudible == true
     local suppressed = NMClientVanillaMusicSuppressor._suppressed == true
     local currentVolume = getCurrentMusicVolume(sm)
+    local duckingEnabled = shouldMuteGameSoundtrackDuringPlayback()
 
-    if currentVolume and currentVolume > 0 then
-        NMClientVanillaMusicSuppressor._lastKnownUserVolume = currentVolume
-        if not suppressed then
-            NMClientVanillaMusicSuppressor._capturedVolume = currentVolume
+    if duckingEnabled ~= true then
+        if suppressed then
+            restoreCapturedVolume(sm, currentVolume, tickCount, "disabled")
+        else
+            clearSessionCapture()
         end
+        return
     end
 
     if audible then
         if not suppressed then
-            local capture = NMClientVanillaMusicSuppressor._capturedVolume
-            if capture == nil then
-                capture = currentVolume
-            end
-            if capture == nil then
-                capture = NMClientVanillaMusicSuppressor._lastKnownUserVolume
-            end
-            if capture == nil then
-                capture = 0
-            end
-            NMClientVanillaMusicSuppressor._capturedVolume = clampVolume(capture)
+            captureSessionVolume(currentVolume)
             setMusicVolume(sm, 0)
             NMClientVanillaMusicSuppressor._suppressed = true
             NMClientVanillaMusicSuppressor._lastRefreshTick = tonumber(tickCount) or 0
@@ -107,10 +140,7 @@ function NMClientVanillaMusicSuppressor.endTick(tickCount)
             return
         end
 
-        if currentVolume and currentVolume > 0 then
-            NMClientVanillaMusicSuppressor._capturedVolume = currentVolume
-            NMClientVanillaMusicSuppressor._lastKnownUserVolume = currentVolume
-        elseif currentVolume and currentVolume < 0 then
+        if currentVolume and currentVolume < 0 then
             currentVolume = 0
         end
 
@@ -123,27 +153,9 @@ function NMClientVanillaMusicSuppressor.endTick(tickCount)
     end
 
     if not suppressed then
+        clearSessionCapture()
         return
     end
 
-    local restore = NMClientVanillaMusicSuppressor._capturedVolume
-    if restore == nil then
-        restore = NMClientVanillaMusicSuppressor._lastKnownUserVolume
-    end
-    if restore == nil then
-        restore = currentVolume
-    end
-    restore = clampVolume(restore)
-    setMusicVolume(sm, restore)
-    NMClientVanillaMusicSuppressor._suppressed = false
-    NMClientVanillaMusicSuppressor._capturedVolume = nil
-    NMClientVanillaMusicSuppressor._lastRefreshTick = tonumber(tickCount) or 0
-    logRuntimeProbe(
-        "vanilla_music_suppress_end",
-        string.format(
-            "restored=%.3f current=%s",
-            tonumber(restore) or 0,
-            tostring(currentVolume ~= nil and string.format("%.3f", currentVolume) or "nil")
-        )
-    )
+    restoreCapturedVolume(sm, currentVolume, tickCount, "not_audible")
 end

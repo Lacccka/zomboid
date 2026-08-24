@@ -159,13 +159,35 @@ local function utcParts(epoch)
     }
 end
 
--- local server time if Kahlua supports os.date, otherwise UTC
-function AegisShared.dateParts(epoch)
-    local ok, t = pcall(function() return os.date("*t", epoch) end)
-    if ok and type(t) == "table" and type(t.year) == "number" and t.year > 2000 and t.year < 2200 then
-        return t
+-- os.date is nailed to UTC in the game's Kahlua build (the zone field is
+-- a private static final), but getHourMinute() runs through
+-- Calendar.getInstance() and carries the machine's local clock. The
+-- difference between that and the UTC clock is the zone offset, measured
+-- in quarter hours so second-level jitter between the two reads drops out
+local zoneOffset, zoneMeasured
+local function offsetMinutes()
+    local now = AegisShared.realTime()
+    if zoneOffset and zoneMeasured and now - zoneMeasured < 600 then
+        return zoneOffset
     end
-    return utcParts(epoch)
+    local off = 0
+    local ok, hm = pcall(getHourMinute)
+    if ok and type(hm) == "string" then
+        local h, m = hm:match("^(%d+):(%d+)$")
+        if h then
+            local u = utcParts(now)
+            local diff = (tonumber(h) * 60 + tonumber(m)) - (u.hour * 60 + u.min)
+            if diff > 720 then diff = diff - 1440 end
+            if diff <= -720 then diff = diff + 1440 end
+            off = math.floor(diff / 15 + 0.5) * 15
+        end
+    end
+    zoneOffset, zoneMeasured = off, now
+    return off
+end
+
+function AegisShared.dateParts(epoch)
+    return utcParts(epoch + offsetMinutes() * 60)
 end
 
 function AegisShared.timestamp(epoch)

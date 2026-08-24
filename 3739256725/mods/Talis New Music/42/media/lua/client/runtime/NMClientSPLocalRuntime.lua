@@ -24,6 +24,20 @@ local function nearestPlayerDistanceSq(player, x, y, z, floorsLimit)
     return (dx * dx) + (dy * dy)
 end
 
+local function notePulseDiag(state, name, delta)
+    local token = tostring(name or "")
+    if token == "" then
+        return
+    end
+    local amount = tonumber(delta) or 1
+    if state and state.countMemoryEvent then
+        state.countMemoryEvent(token, amount)
+    end
+    if state and state.noteDiagCounter then
+        state.noteDiagCounter(token, amount)
+    end
+end
+
 function NMClientSPLocalRuntime.emitZombiePulses(player, pulseCandidates, state)
     local core = NMCore
     if not player or not pulseCandidates or core.isMultiplayerMode() or not addSound then
@@ -38,6 +52,7 @@ function NMClientSPLocalRuntime.emitZombiePulses(player, pulseCandidates, state)
     local capturePulseEmitState = NMZombieAttraction.capturePulseEmitState
     local getWorldTrackingFloors = NMDeviceProfiles.getWorldTrackingFloors
     local debugEnabled = core.isSubsystemDebugEnabled and core.isSubsystemDebugEnabled("zombie_attraction")
+    local memoryDiagPrefix = state and state.memoryDiagPrefix and tostring(state.memoryDiagPrefix or "") or ""
     local pulseDecisionOptionsByWindowSupport = {
         [true] = { allowWindowStateRepulse = true },
         [false] = { allowWindowStateRepulse = false }
@@ -52,6 +67,9 @@ function NMClientSPLocalRuntime.emitZombiePulses(player, pulseCandidates, state)
             local sourceSnapshot = buildSourceSnapshot(source)
             local pulseContract = computePulseContract(profile, runtimeState, sourceContext, sourceSnapshot.windowsOpen)
             if pulseContract then
+                if memoryDiagPrefix ~= "" then
+                    notePulseDiag(state, memoryDiagPrefix .. "_contract", 1)
+                end
                 local key = type(uuid) == "string" and uuid or tostring(uuid or "")
                 local floors = getWorldTrackingFloors(profile)
                 local nearestD2 = nearestPlayerDistanceSq(player, sourceSnapshot.x, sourceSnapshot.y, sourceSnapshot.z, floors)
@@ -65,6 +83,10 @@ function NMClientSPLocalRuntime.emitZombiePulses(player, pulseCandidates, state)
                     pulseDecisionOptionsByWindowSupport[sourceSnapshot.windowsOpen ~= nil]
                 )
                 if emitPulse then
+                    if memoryDiagPrefix ~= "" then
+                        notePulseDiag(state, memoryDiagPrefix .. "_emit", 1)
+                        notePulseDiag(state, memoryDiagPrefix .. "_emit_" .. tostring(emitReason or "unknown"), 1)
+                    end
                     pulseState[key] = capturePulseEmitState(nowMs, sourceSnapshot)
                     addSound(nil, sourceSnapshot.x, sourceSnapshot.y, sourceSnapshot.z, pulseContract.emitRange or mathFloor(pulseContract.range), pulseContract.loudness)
                     if debugEnabled then
@@ -78,7 +100,12 @@ function NMClientSPLocalRuntime.emitZombiePulses(player, pulseCandidates, state)
                             )
                         )
                     end
+                elseif memoryDiagPrefix ~= "" then
+                    notePulseDiag(state, memoryDiagPrefix .. "_blocked", 1)
+                    notePulseDiag(state, memoryDiagPrefix .. "_blocked_" .. tostring(emitReason or "unknown"), 1)
                 end
+            elseif memoryDiagPrefix ~= "" then
+                notePulseDiag(state, memoryDiagPrefix .. "_no_contract", 1)
             end
         end
     end

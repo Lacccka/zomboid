@@ -24,12 +24,20 @@ local clientUiInvalidationDiag = NMClientMainRuntime._clientUiInvalidationDiag o
     lastLogMs = 0,
     counters = {}
 }
+local clientPlayerMoveDiag = NMClientMainRuntime._clientPlayerMoveDiag or {
+    lastLogMs = 0,
+    counters = {}
+}
 
 NMClientMainRuntime._tickWorkProbe = tickWorkProbe
 NMClientMainRuntime._clientSchedulerDiag = clientSchedulerDiag
 NMClientMainRuntime._clientWrapperDiag = clientWrapperDiag
 NMClientMainRuntime._clientUiInvalidationDiag = clientUiInvalidationDiag
+NMClientMainRuntime._clientPlayerMoveDiag = clientPlayerMoveDiag
 NMClientMainRuntime._tickHookInstalled = NMClientMainRuntime._tickHookInstalled == true
+NMClientMainRuntime._playerMoveHookInstalled = NMClientMainRuntime._playerMoveHookInstalled == true
+NMClientMainRuntime._playerMoveHookFn = NMClientMainRuntime._playerMoveHookFn
+NMClientMainRuntime._vehicleSeatHookInstalled = NMClientMainRuntime._vehicleSeatHookInstalled == true
 NMClientMainRuntime._radialHookRetryTick = tonumber(NMClientMainRuntime._radialHookRetryTick) or 0
 
 local function nowRealMs()
@@ -142,6 +150,10 @@ local function flushSchedulerDiag(enabled)
     flushNamedDiag(enabled, clientSchedulerDiag, "client_tick_scheduler", CLIENT_SCHEDULER_LOG_INTERVAL_MS)
 end
 
+local function flushPlayerMoveDiag(enabled)
+    flushNamedDiag(enabled, clientPlayerMoveDiag, "playback_player_move_diag", CLIENT_SCHEDULER_LOG_INTERVAL_MS)
+end
+
 local function isMPClientRuntime()
     return NMCore and NMCore.isMPClientRuntime and NMCore.isMPClientRuntime() == true
 end
@@ -204,6 +216,120 @@ function NMClientMainRuntime.requestTickGateWake(reason)
     end
 end
 
+function NMClientMainRuntime.onPlayerMove(player)
+    local probeEnabled = tickWorkProbeEnabled()
+    countNamedDiag(probeEnabled, clientPlayerMoveDiag, "playback_player_move_event")
+    local woke = false
+    local wakeReason = "no_world_follow"
+    if NMClientPlaybackTick and NMClientPlaybackTick.requestPlayerMoveWakeIfSettled then
+        woke, wakeReason = NMClientPlaybackTick.requestPlayerMoveWakeIfSettled()
+    end
+    if woke == true then
+        NMClientMainRuntime.requestTickGateWake("player_move")
+        countNamedDiag(probeEnabled, clientPlayerMoveDiag, "playback_player_move_wake")
+    elseif tostring(wakeReason or "") == "active" then
+        countNamedDiag(probeEnabled, clientPlayerMoveDiag, "playback_player_move_ignored_active")
+    else
+        countNamedDiag(probeEnabled, clientPlayerMoveDiag, "playback_player_move_no_world_follow")
+    end
+    flushPlayerMoveDiag(probeEnabled)
+end
+
+local function installPlayerMoveHook()
+    if NMClientMainRuntime._playerMoveHookInstalled == true
+        and NMClientMainRuntime._playerMoveHookFn == NMClientMainRuntime.onPlayerMove then
+        return
+    end
+    if Events and Events.OnPlayerMove and Events.OnPlayerMove.Remove and NMClientMainRuntime._playerMoveHookFn then
+        Events.OnPlayerMove.Remove(NMClientMainRuntime._playerMoveHookFn)
+    end
+    if Events and Events.OnPlayerMove and Events.OnPlayerMove.Add then
+        Events.OnPlayerMove.Add(NMClientMainRuntime.onPlayerMove)
+        NMClientMainRuntime._playerMoveHookInstalled = true
+        NMClientMainRuntime._playerMoveHookFn = NMClientMainRuntime.onPlayerMove
+    end
+end
+
+local function reinstallPlayerMoveHook()
+    if Events and Events.OnPlayerMove and Events.OnPlayerMove.Remove then
+        Events.OnPlayerMove.Remove(NMClientMainRuntime._playerMoveHookFn or NMClientMainRuntime.onPlayerMove)
+    end
+    NMClientMainRuntime._playerMoveHookInstalled = false
+    NMClientMainRuntime._playerMoveHookFn = nil
+    installPlayerMoveHook()
+end
+
+local function isLocalVehicleSeatCharacter(character)
+    local player = getPlayer and getPlayer() or nil
+    if not (player and character) then
+        return false
+    end
+    if player == character then
+        return true
+    end
+    local playerNum = player.getPlayerNum and tonumber(player:getPlayerNum()) or nil
+    local characterNum = character.getPlayerNum and tonumber(character:getPlayerNum()) or nil
+    return playerNum ~= nil and characterNum ~= nil and playerNum == characterNum
+end
+
+local function handleVehicleSeatEvent(eventName, character)
+    if isLocalVehicleSeatCharacter(character) ~= true then
+        return
+    end
+    if NMClientPlaybackTick and NMClientPlaybackTick.observeVehicleSeatEvent then
+        NMClientPlaybackTick.observeVehicleSeatEvent(eventName, character)
+    elseif NMClientPlaybackTick and NMClientPlaybackTick.requestFullPass then
+        NMClientPlaybackTick.requestFullPass("vehicle_seat_event_" .. tostring(eventName or "unknown"))
+    end
+    NMClientMainRuntime.requestTickGateWake("vehicle_seat_event")
+end
+
+function NMClientMainRuntime.onEnterVehicle(character)
+    handleVehicleSeatEvent("enter", character)
+end
+
+function NMClientMainRuntime.onExitVehicle(character)
+    handleVehicleSeatEvent("exit", character)
+end
+
+function NMClientMainRuntime.onSwitchVehicleSeat(character)
+    handleVehicleSeatEvent("switch", character)
+end
+
+local function installVehicleSeatHooks()
+    if NMClientMainRuntime._vehicleSeatHookInstalled == true then
+        return
+    end
+    if Events and Events.OnEnterVehicle and Events.OnEnterVehicle.Add then
+        Events.OnEnterVehicle.Add(NMClientMainRuntime.onEnterVehicle)
+    end
+    if Events and Events.OnExitVehicle and Events.OnExitVehicle.Add then
+        Events.OnExitVehicle.Add(NMClientMainRuntime.onExitVehicle)
+    end
+    if Events and Events.OnSwitchVehicleSeat and Events.OnSwitchVehicleSeat.Add then
+        Events.OnSwitchVehicleSeat.Add(NMClientMainRuntime.onSwitchVehicleSeat)
+    end
+    NMClientMainRuntime._vehicleSeatHookInstalled = true
+end
+
+local function reinstallVehicleSeatHooks()
+    if Events and Events.OnEnterVehicle and Events.OnEnterVehicle.Remove then
+        Events.OnEnterVehicle.Remove(NMClientMainRuntime.onEnterVehicle)
+    end
+    if Events and Events.OnExitVehicle and Events.OnExitVehicle.Remove then
+        Events.OnExitVehicle.Remove(NMClientMainRuntime.onExitVehicle)
+    end
+    if Events and Events.OnSwitchVehicleSeat and Events.OnSwitchVehicleSeat.Remove then
+        Events.OnSwitchVehicleSeat.Remove(NMClientMainRuntime.onSwitchVehicleSeat)
+    end
+    NMClientMainRuntime._vehicleSeatHookInstalled = false
+    installVehicleSeatHooks()
+end
+
+function NMClientMainRuntime.getCurrentSchedulerTick()
+    return tonumber(tickWorkProbe.tick) or 0
+end
+
 local function hasPendingWindowRestore()
     return (NMWalkmanWindow and NMWalkmanWindow.hasPendingPersistedRestore and NMWalkmanWindow.hasPendingPersistedRestore())
         or (NMCDPlayerWindow and NMCDPlayerWindow.hasPendingPersistedRestore and NMCDPlayerWindow.hasPendingPersistedRestore())
@@ -225,24 +351,101 @@ local function hasZombieCachePendingWork()
         and NMClientZombieVisualTargetCache.hasPendingWork() == true
 end
 
-function NMClientMainRuntime.advanceSchedulerTick()
-    tickWorkProbe.tick = (tonumber(tickWorkProbe.tick) or 0) + 1
+function NMClientMainRuntime.advanceSchedulerTick(tickStep)
+    local step = math.max(1, tonumber(tickStep) or 1)
+    tickWorkProbe.tick = (tonumber(tickWorkProbe.tick) or 0) + step
     if NMClientPlaybackTick and NMClientPlaybackTick.observeSchedulerTick then
-        NMClientPlaybackTick.observeSchedulerTick(1)
+        NMClientPlaybackTick.observeSchedulerTick(step)
     end
     if NMClientZombieVisualProbe and NMClientZombieVisualProbe.observeSchedulerTick then
-        NMClientZombieVisualProbe.observeSchedulerTick(1)
+        NMClientZombieVisualProbe.observeSchedulerTick(step)
     end
     if NMClientRegistrySync and NMClientRegistrySync.observeSchedulerTick then
-        NMClientRegistrySync.observeSchedulerTick(1)
+        NMClientRegistrySync.observeSchedulerTick(step)
     end
+end
+
+local function getNextCadenceTick(interval)
+    local currentTick = tonumber(tickWorkProbe.tick) or 0
+    local cadence = tonumber(interval) or 0
+    if cadence <= 0 then
+        return math.huge
+    end
+    local remainder = currentTick % cadence
+    if remainder == 0 then
+        return currentTick
+    end
+    return currentTick + (cadence - remainder)
+end
+
+local function getNextZombieMaintenanceRunnableTick()
+    if not (NMClientZombieVisualProbe and NMClientZombieVisualProbe.getNextMaintenanceCheckTick) then
+        return math.huge
+    end
+    local maintenanceTick = tonumber(NMClientZombieVisualProbe.getNextMaintenanceCheckTick()) or math.huge
+    if maintenanceTick == math.huge then
+        return math.huge
+    end
+    return math.max(maintenanceTick, getNextCadenceTick(SLOW_LANE_INTERVAL_TICKS))
+end
+
+function NMClientMainRuntime.getNextTickGateWakeTick()
+    local currentTick = tonumber(tickWorkProbe.tick) or 0
+    if NMClientMainRuntime.isTickHookInstalled and NMClientMainRuntime.isTickHookInstalled() == true then
+        return currentTick + 1
+    end
+    if hasPendingWindowRestore() == true
+        or (NMClientWorldItemVisualSanitizer and NMClientWorldItemVisualSanitizer.hasPendingWork and NMClientWorldItemVisualSanitizer.hasPendingWork() == true)
+        or (NMClientInventoryItemVisualSanitizer and NMClientInventoryItemVisualSanitizer.hasPendingWork and NMClientInventoryItemVisualSanitizer.hasPendingWork() == true)
+        or (NMClientPortableUiDragBlockProbe and NMClientPortableUiDragBlockProbe.hasPendingWork and NMClientPortableUiDragBlockProbe.hasPendingWork() == true) then
+        return currentTick + 1
+    end
+
+    local nextWakeTick = math.huge
+    if isMPClientRuntime() == true then
+        if NMClientRegistrySync and NMClientRegistrySync.shouldRunThisTick and NMClientRegistrySync.shouldRunThisTick() == true then
+            nextWakeTick = math.min(nextWakeTick, currentTick)
+        elseif NMClientRegistrySync and NMClientRegistrySync.getNextRunTick then
+            nextWakeTick = math.min(nextWakeTick, tonumber(NMClientRegistrySync.getNextRunTick()) or math.huge)
+        end
+    end
+    if NMClientPlaybackTick and NMClientPlaybackTick.getNextPlaybackWorkTick then
+        nextWakeTick = math.min(nextWakeTick, tonumber(NMClientPlaybackTick.getNextPlaybackWorkTick(getPlayer and getPlayer() or nil)) or math.huge)
+    elseif NMClientPlaybackTick and NMClientPlaybackTick.getNextManagedInventoryCheckTick then
+        nextWakeTick = math.min(nextWakeTick, tonumber(NMClientPlaybackTick.getNextManagedInventoryCheckTick()) or math.huge)
+    end
+    if NMClientZombieVisualProbe and NMClientZombieVisualProbe.getNextMaintenanceCheckTick then
+        nextWakeTick = math.min(nextWakeTick, getNextZombieMaintenanceRunnableTick())
+    else
+        nextWakeTick = math.min(nextWakeTick, currentTick + 1)
+    end
+    if hasZombieCachePendingWork() == true then
+        nextWakeTick = math.min(nextWakeTick, getNextCadenceTick(SLOW_LANE_INTERVAL_TICKS))
+    end
+    if nextWakeTick == math.huge then
+        return math.huge
+    end
+    return math.max(currentTick, nextWakeTick)
 end
 
 function NMClientMainRuntime.hasAnyTickWork()
     local player = getPlayer and getPlayer() or nil
-    local playbackInterested = NMClientPlaybackTick and NMClientPlaybackTick.hasInterest and NMClientPlaybackTick.hasInterest() == true
+    local playbackInterested = false
+    local playbackReason = "idle"
+    if NMClientPlaybackTick and NMClientPlaybackTick.isPlaybackWorkDue then
+        local due, reason = NMClientPlaybackTick.isPlaybackWorkDue(player, true)
+        playbackInterested = due == true
+        playbackReason = tostring(reason or "idle")
+    elseif NMClientPlaybackTick and NMClientPlaybackTick.hasInterest then
+        playbackInterested = NMClientPlaybackTick.hasInterest() == true
+        playbackReason = playbackInterested and "legacy_playback_interest" or "idle"
+    end
+    local slowLaneDue = shouldRunSlowLane()
     local zombieActiveInterested = NMClientZombieVisualProbe and NMClientZombieVisualProbe.hasPendingWork and NMClientZombieVisualProbe.hasPendingWork(player) == true
-    local zombieMaintenanceDue = NMClientZombieVisualProbe and NMClientZombieVisualProbe.shouldRunMaintenance and NMClientZombieVisualProbe.shouldRunMaintenance() == true
+    local zombieMaintenanceDue = slowLaneDue == true
+        and NMClientZombieVisualProbe
+        and NMClientZombieVisualProbe.shouldRunMaintenance
+        and NMClientZombieVisualProbe.shouldRunMaintenance() == true
     local uiDragInterested = NMClientPortableUiDragBlockProbe and NMClientPortableUiDragBlockProbe.hasPendingWork and NMClientPortableUiDragBlockProbe.hasPendingWork() == true
     local windowRestorePending = hasPendingWindowRestore() == true
     local registrySyncDue = isMPClientRuntime()
@@ -298,6 +501,18 @@ function NMClientMainRuntime.removeTickHook()
     end
 end
 
+local function shouldKeepClientTickGateRegistered()
+    if NMClientPlaybackTick
+        and NMClientPlaybackTick.hasColdManagedInventoryDeadline
+        and NMClientPlaybackTick.hasColdManagedInventoryDeadline() == true then
+        return true
+    end
+    local nextWakeTick = NMClientMainRuntime.getNextTickGateWakeTick
+        and tonumber(NMClientMainRuntime.getNextTickGateWakeTick())
+        or math.huge
+    return nextWakeTick < math.huge
+end
+
 local function runStage(enabled, name, fn)
     local stageStartedMs = beginTickStage(enabled)
     fn()
@@ -332,16 +547,38 @@ end
 
 local function buildTickContext(probeEnabled)
     local player = getPlayer and getPlayer() or nil
+    local playbackInterested = false
+    local playbackReason = "idle"
+    local playbackStatus = nil
+    if NMClientPlaybackTick and NMClientPlaybackTick.isPlaybackWorkDue then
+        local due, reason, status = NMClientPlaybackTick.isPlaybackWorkDue(player, true)
+        playbackInterested = due == true
+        playbackReason = tostring(reason or "idle")
+        playbackStatus = status
+    elseif NMClientPlaybackTick and NMClientPlaybackTick.hasInterest then
+        playbackInterested = NMClientPlaybackTick.hasInterest() == true
+        playbackReason = playbackInterested and "legacy_playback_interest" or "idle"
+    end
+    local slowLaneDue = shouldRunSlowLane()
+    local playbackFastLaneDue = shouldRunCadence(PLAYBACK_FAST_LANE_INTERVAL_TICKS)
+    if type(playbackStatus) == "table" then
+        playbackFastLaneDue = playbackStatus.fastLanePositionDue == true
+    end
     local context = {
         probeEnabled = probeEnabled,
         player = player,
         isMpRuntime = isMPClientRuntime(),
         activeLaneDue = shouldRunCadence(ACTIVE_LANE_INTERVAL_TICKS),
-        playbackFastLaneDue = shouldRunCadence(PLAYBACK_FAST_LANE_INTERVAL_TICKS),
-        slowLaneDue = shouldRunSlowLane(),
-        playbackInterested = NMClientPlaybackTick and NMClientPlaybackTick.hasInterest and NMClientPlaybackTick.hasInterest() == true,
+        playbackFastLaneDue = playbackFastLaneDue,
+        slowLaneDue = slowLaneDue,
+        playbackInterested = playbackInterested,
+        playbackReason = playbackReason,
+        playbackStatus = playbackStatus,
         zombieActiveInterested = NMClientZombieVisualProbe and NMClientZombieVisualProbe.hasPendingWork and NMClientZombieVisualProbe.hasPendingWork(player) == true,
-        zombieMaintenanceDue = NMClientZombieVisualProbe and NMClientZombieVisualProbe.shouldRunMaintenance and NMClientZombieVisualProbe.shouldRunMaintenance() == true,
+        zombieMaintenanceDue = slowLaneDue == true
+            and NMClientZombieVisualProbe
+            and NMClientZombieVisualProbe.shouldRunMaintenance
+            and NMClientZombieVisualProbe.shouldRunMaintenance() == true,
         uiDragInterested = NMClientPortableUiDragBlockProbe and NMClientPortableUiDragBlockProbe.hasPendingWork and NMClientPortableUiDragBlockProbe.hasPendingWork() == true
     }
     context.activeLaneInterested = context.zombieActiveInterested or context.uiDragInterested
@@ -354,6 +591,12 @@ local function recordWrapperPrepass(context)
     countNamedDiag(probeEnabled, clientWrapperDiag, context.activeLaneDue and "active_lane_due" or "active_lane_not_due")
     countNamedDiag(probeEnabled, clientWrapperDiag, context.slowLaneDue and "slow_lane_due" or "slow_lane_not_due")
     countNamedDiag(probeEnabled, clientWrapperDiag, context.playbackInterested and "playback_interest" or "playback_idle")
+    if context.playbackInterested == true then
+        countNamedDiag(probeEnabled, clientWrapperDiag, tostring(context.playbackReason or "playback_due"))
+    elseif tostring(context.playbackReason or "") == "playback_active_cold_until" then
+        countNamedDiag(probeEnabled, clientWrapperDiag, "playback_active_cold_until")
+        countNamedDiag(probeEnabled, clientWrapperDiag, "playback_active_deadline_skip")
+    end
     countNamedDiag(probeEnabled, clientWrapperDiag, context.zombieActiveInterested and "zombie_interest" or "zombie_idle")
     countNamedDiag(probeEnabled, clientWrapperDiag, context.zombieMaintenanceDue and "zombie_maintenance_due" or "zombie_maintenance_idle")
     countNamedDiag(probeEnabled, clientWrapperDiag, context.uiDragInterested and "ui_drag_interest" or "ui_drag_idle")
@@ -400,7 +643,7 @@ local function runPlaybackTickSlice(context)
         return
     end
 
-    local playbackDecision = NMClientPlaybackTick.getSchedulingDecision and NMClientPlaybackTick.getSchedulingDecision() or nil
+    local playbackDecision = NMClientPlaybackTick.getSchedulingDecision and NMClientPlaybackTick.getSchedulingDecision(context.player, context.playbackStatus) or nil
     local ranPlayback = false
     local ranPlaybackFull = false
     if playbackDecision and playbackDecision.forcedFull == true then
@@ -421,19 +664,12 @@ local function runPlaybackTickSlice(context)
         ranPlaybackFull = true
     end
 
-    if ranPlaybackFull ~= true and playbackDecision and playbackDecision.runEveryTickPosition == true then
-        countSchedulerDiag(probeEnabled, "playback_every_tick_moving")
-        if context.playbackFastLaneDue and playbackDecision.runFastLanePosition == true then
-            countSchedulerDiag(probeEnabled, "playback_fast_lane")
-        end
+    if ranPlaybackFull ~= true and playbackDecision and playbackDecision.runTrackMonitor == true then
+        countSchedulerDiag(probeEnabled, "playback_track_monitor")
         local playbackStartedMs = beginTickStage(probeEnabled)
-        NMClientPlaybackTick.onTick(
-            context.player,
-            1,
-            (context.playbackFastLaneDue and playbackDecision.runFastLanePosition == true) and "position_all" or "position_every_tick"
-        )
+        NMClientPlaybackTick.onTick(context.player, ACTIVE_LANE_INTERVAL_TICKS, "track_monitor")
         recordTickStage(probeEnabled, "playback", playbackStartedMs)
-        recordTickStage(probeEnabled, "playback_fast_position", playbackStartedMs)
+        recordTickStage(probeEnabled, "playback_track_monitor", playbackStartedMs)
         ranPlayback = true
     end
 
@@ -512,6 +748,12 @@ local function flushTickDiagnostics(probeEnabled)
     flushSchedulerDiag(probeEnabled)
     flushNamedDiag(probeEnabled, clientWrapperDiag, "client_tick_wrapper", CLIENT_WRAPPER_LOG_INTERVAL_MS)
     flushNamedDiag(probeEnabled, clientUiInvalidationDiag, "client_ui_invalidation_diag", CLIENT_UI_INVALIDATION_LOG_INTERVAL_MS)
+    countNamedDiag(
+        probeEnabled,
+        clientPlayerMoveDiag,
+        NMClientMainRuntime._playerMoveHookInstalled == true and "playback_player_move_hook_installed" or "playback_player_move_hook_unavailable"
+    )
+    flushPlayerMoveDiag(probeEnabled)
 end
 
 function NMClientMainRuntime.onTick()
@@ -604,6 +846,8 @@ end
 
 function NMClientMainRuntime.onGameStart()
     NMClientMainRuntime.requestTickGateWake("on_game_start")
+    reinstallPlayerMoveHook()
+    reinstallVehicleSeatHooks()
     if NMClientPortableUiDragBlockProbe and NMClientPortableUiDragBlockProbe.onGameStart then
         NMClientPortableUiDragBlockProbe.onGameStart()
     end
@@ -683,7 +927,9 @@ end
 function NMClientMainRuntime.onRefreshInventoryWindowContainers()
     local probeEnabled = tickWorkProbeEnabled()
     NMClientMainRuntime.requestTickGateWake("inventory_refresh")
-    if NMClientPlaybackTick and NMClientPlaybackTick.requestFullPass then
+    if NMClientPlaybackTick and NMClientPlaybackTick.requestInventoryRefreshPass then
+        NMClientPlaybackTick.requestInventoryRefreshPass("inventory_refresh")
+    elseif NMClientPlaybackTick and NMClientPlaybackTick.requestFullPass then
         NMClientPlaybackTick.requestFullPass("inventory_refresh")
     elseif NMClientPlaybackTick and NMClientPlaybackTick.markDirty then
         NMClientPlaybackTick.markDirty("inventory_refresh")
@@ -709,13 +955,17 @@ function NMClientMainRuntime.onClothingUpdated()
 end
 
 function NMClientMainRuntime.registerTickGate()
+    installPlayerMoveHook()
+    installVehicleSeatHooks()
     NMClientTickGate.register({
         advanceTick = NMClientMainRuntime.advanceSchedulerTick,
         hasAnyTickWork = NMClientMainRuntime.hasAnyTickWork,
+        getCurrentTick = NMClientMainRuntime.getCurrentSchedulerTick,
+        getNextWakeTick = NMClientMainRuntime.getNextTickGateWakeTick,
         isHookInstalled = NMClientMainRuntime.isTickHookInstalled,
         installHook = NMClientMainRuntime.installTickHook,
         removeHook = NMClientMainRuntime.removeTickHook,
-        shouldKeepGateRegistered = isMPClientRuntime
+        shouldKeepGateRegistered = shouldKeepClientTickGateRegistered
     })
 end
 

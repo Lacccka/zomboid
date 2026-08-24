@@ -5,8 +5,12 @@ NMClientModOptions = NMClientModOptions or {}
 local MOD_OPTIONS_ID = "newmusic"
 local OPTION_ID_MASTER_VOLUME = "masterVolume"
 local OPTION_DEFAULT_MASTER_VOLUME = 1.0
+local OPTION_ID_SPATIAL_AUDIO = "spatialAudio"
+local OPTION_DEFAULT_SPATIAL_AUDIO = true
 local OPTION_ID_SHOW_TRACK_NUMBER_PREFIX = "showTrackNumberPrefix"
 local OPTION_DEFAULT_SHOW_TRACK_NUMBER_PREFIX = true
+local OPTION_ID_MUTE_GAME_SOUNDTRACK_DURING_PLAYBACK = "muteGameSoundtrackDuringPlayback"
+local OPTION_DEFAULT_MUTE_GAME_SOUNDTRACK_DURING_PLAYBACK = true
 local OPTION_ID_FANCY_UI = "fancyUI"
 local OPTION_DEFAULT_FANCY_UI = true
 local OPTION_ID_LEGACY_FANCY_DEVICE_UI_SCALE = "fancyDeviceUiScale"
@@ -22,9 +26,20 @@ local UI_SCALE_LABEL_KEY_BY_VALUE = {
 
 local options = nil
 local masterVolumeOption = nil
+local spatialAudioOption = nil
 local showTrackNumberPrefixOption = nil
+local muteGameSoundtrackDuringPlaybackOption = nil
 local fancyUIOption = nil
 local fancyDeviceUiScaleOption = nil
+
+local UI_TEXT_FALLBACKS = {
+    WorldPlaybackMaxVolume = "UI_NM_WorldPlaybackMaxVolume",
+    NewMusicMasterVolumeTooltip = "UI_NM_NewMusicMasterVolumeTooltip",
+    SpatialAudio = "UI_NM_SpatialAudio",
+    SpatialAudioTooltip = "UI_NM_SpatialAudioTooltip",
+    MuteGameSoundtrackDuringPlayback = "UI_NM_MuteGameSoundtrackDuringPlayback",
+    MuteGameSoundtrackDuringPlaybackTooltip = "UI_NM_MuteGameSoundtrackDuringPlaybackTooltip",
+}
 
 local function invalidateWindow(win)
     if not win then
@@ -70,6 +85,13 @@ function NMClientModOptions.getShowTrackNumberPrefix()
         return showTrackNumberPrefixOption:getValue() ~= false
     end
     return OPTION_DEFAULT_SHOW_TRACK_NUMBER_PREFIX
+end
+
+function NMClientModOptions.getMuteGameSoundtrackDuringPlayback()
+    if muteGameSoundtrackDuringPlaybackOption and muteGameSoundtrackDuringPlaybackOption.getValue then
+        return muteGameSoundtrackDuringPlaybackOption:getValue() ~= false
+    end
+    return OPTION_DEFAULT_MUTE_GAME_SOUNDTRACK_DURING_PLAYBACK
 end
 
 function NMClientModOptions.getFancyUIEnabled()
@@ -219,9 +241,16 @@ end
 
 local function resolveUiText(key, fallback)
     if NMTranslations and NMTranslations.ui then
-        return NMTranslations.ui(key, fallback)
+        return NMTranslations.ui(key, fallback or UI_TEXT_FALLBACKS[tostring(key or "")])
     end
-    return fallback
+    return fallback or UI_TEXT_FALLBACKS[tostring(key or "")]
+end
+
+function NMClientModOptions.getSpatialAudioEnabled()
+    if spatialAudioOption and spatialAudioOption.getValue then
+        return spatialAudioOption:getValue() ~= false
+    end
+    return OPTION_DEFAULT_SPATIAL_AUDIO
 end
 
 local function applyMasterVolume(value)
@@ -231,12 +260,26 @@ local function applyMasterVolume(value)
     end
 end
 
+local function applySpatialAudioEnabled(value)
+    local enabled = value ~= false
+    if NMRuntimeConfig and NMRuntimeConfig.setSpatialAudioEnabled then
+        NMRuntimeConfig.setSpatialAudioEnabled(enabled)
+    end
+end
+
 local function applyShowTrackNumberPrefix(value)
     local enabled = value ~= false
     if NMRuntimeConfig and NMRuntimeConfig.setShowTrackNumberPrefix then
         NMRuntimeConfig.setShowTrackNumberPrefix(enabled)
     end
     NMClientModOptions.invalidateOpenWindows()
+end
+
+local function applyMuteGameSoundtrackDuringPlayback(value)
+    local enabled = value ~= false
+    if NMRuntimeConfig and NMRuntimeConfig.setMuteGameSoundtrackDuringPlayback then
+        NMRuntimeConfig.setMuteGameSoundtrackDuringPlayback(enabled)
+    end
 end
 
 local function closeLocalDeviceWindows(reason)
@@ -288,10 +331,24 @@ local function setOptionValue(optionId, value)
         end
         return resolved
     end
+    if optionId == OPTION_ID_SPATIAL_AUDIO then
+        local resolved = value ~= false
+        if spatialAudioOption and spatialAudioOption.setValue then
+            spatialAudioOption:setValue(resolved)
+        end
+        return resolved
+    end
     if optionId == OPTION_ID_SHOW_TRACK_NUMBER_PREFIX then
         local resolved = value ~= false
         if showTrackNumberPrefixOption and showTrackNumberPrefixOption.setValue then
             showTrackNumberPrefixOption:setValue(resolved)
+        end
+        return resolved
+    end
+    if optionId == OPTION_ID_MUTE_GAME_SOUNDTRACK_DURING_PLAYBACK then
+        local resolved = value ~= false
+        if muteGameSoundtrackDuringPlaybackOption and muteGameSoundtrackDuringPlaybackOption.setValue then
+            muteGameSoundtrackDuringPlaybackOption:setValue(resolved)
         end
         return resolved
     end
@@ -318,10 +375,72 @@ local function saveModOptions()
     end
 end
 
+local function bindMuteGameSoundtrackDuringPlaybackOption()
+    if not muteGameSoundtrackDuringPlaybackOption then
+        return
+    end
+    function muteGameSoundtrackDuringPlaybackOption:onChangeApply(value)
+        applyMuteGameSoundtrackDuringPlayback(value)
+    end
+end
+
+local function bindSpatialAudioOption()
+    if not spatialAudioOption then
+        return
+    end
+    function spatialAudioOption:onChangeApply(value)
+        applySpatialAudioEnabled(value)
+    end
+end
+
+local function addMuteGameSoundtrackDuringPlaybackOption()
+    if not (options and options.addTickBox) then
+        return nil
+    end
+    local option = options:addTickBox(
+        OPTION_ID_MUTE_GAME_SOUNDTRACK_DURING_PLAYBACK,
+        resolveUiText("MuteGameSoundtrackDuringPlayback"),
+        OPTION_DEFAULT_MUTE_GAME_SOUNDTRACK_DURING_PLAYBACK,
+        resolveUiText("MuteGameSoundtrackDuringPlaybackTooltip")
+    )
+    return option
+end
+
+local function moveOptionAfter(targetId, anchorId)
+    if not (options and type(options.data) == "table") then
+        return
+    end
+    local targetIndex = nil
+    local target = nil
+    for i = 1, #options.data do
+        local option = options.data[i]
+        if option and tostring(option.id or "") == tostring(targetId or "") then
+            targetIndex = i
+            target = option
+            break
+        end
+    end
+    if not targetIndex then
+        return
+    end
+    table.remove(options.data, targetIndex)
+    local anchorIndex = 0
+    for i = 1, #options.data do
+        local option = options.data[i]
+        if option and tostring(option.id or "") == tostring(anchorId or "") then
+            anchorIndex = i
+            break
+        end
+    end
+    table.insert(options.data, anchorIndex + 1, target)
+end
+
 function NMClientModOptions.getQuickAccessValues()
     return {
         masterVolume = NMClientModOptions.getMasterVolume(),
+        spatialAudio = NMClientModOptions.getSpatialAudioEnabled(),
         showTrackNumberPrefix = NMClientModOptions.getShowTrackNumberPrefix(),
+        muteGameSoundtrackDuringPlayback = NMClientModOptions.getMuteGameSoundtrackDuringPlayback(),
         fancyUI = NMClientModOptions.getFancyUIEnabled(),
         fancyDeviceUiScale = NMClientModOptions.getFancyDeviceUiScaleMultiplier(),
     }
@@ -334,13 +453,31 @@ function NMClientModOptions.getQuickAccessOptionSpecs(values)
             id = OPTION_ID_MASTER_VOLUME,
             key = "masterVolume",
             type = "slider",
-            label = resolveUiText("WorldPlaybackMaxVolume", "Playback Max Volume"),
-            tooltip = resolveUiText("NewMusicMasterVolumeTooltip", "Controls the local maximum volume for New Music world playback and in-car vehicle radio playback you hear."),
+            label = resolveUiText("WorldPlaybackMaxVolume"),
+            tooltip = resolveUiText("NewMusicMasterVolumeTooltip"),
             min = 0.0,
             max = 1.0,
             step = 0.05,
             default = OPTION_DEFAULT_MASTER_VOLUME,
             value = tonumber(current.masterVolume) or OPTION_DEFAULT_MASTER_VOLUME,
+        },
+        {
+            id = OPTION_ID_SPATIAL_AUDIO,
+            key = "spatialAudio",
+            type = "tickbox",
+            label = resolveUiText("SpatialAudio", "3D Audio"),
+            tooltip = resolveUiText("SpatialAudioTooltip", "When enabled, world audio uses Project Zomboid's 3D positioning."),
+            default = OPTION_DEFAULT_SPATIAL_AUDIO,
+            value = current.spatialAudio ~= false,
+        },
+        {
+            id = OPTION_ID_MUTE_GAME_SOUNDTRACK_DURING_PLAYBACK,
+            key = "muteGameSoundtrackDuringPlayback",
+            type = "tickbox",
+            label = resolveUiText("MuteGameSoundtrackDuringPlayback"),
+            tooltip = resolveUiText("MuteGameSoundtrackDuringPlaybackTooltip"),
+            default = OPTION_DEFAULT_MUTE_GAME_SOUNDTRACK_DURING_PLAYBACK,
+            value = current.muteGameSoundtrackDuringPlayback ~= false,
         },
         {
             id = OPTION_ID_SHOW_TRACK_NUMBER_PREFIX,
@@ -388,6 +525,14 @@ function NMClientModOptions.applyQuickAccessValues(values)
     if showTrackNumberPrefix == nil then
         showTrackNumberPrefix = current.showTrackNumberPrefix
     end
+    local spatialAudio = draft.spatialAudio
+    if spatialAudio == nil then
+        spatialAudio = current.spatialAudio
+    end
+    local muteGameSoundtrackDuringPlayback = draft.muteGameSoundtrackDuringPlayback
+    if muteGameSoundtrackDuringPlayback == nil then
+        muteGameSoundtrackDuringPlayback = current.muteGameSoundtrackDuringPlayback
+    end
     local fancyUI = draft.fancyUI
     if fancyUI == nil then
         fancyUI = current.fancyUI
@@ -397,7 +542,9 @@ function NMClientModOptions.applyQuickAccessValues(values)
         fancyDeviceUiScale = current.fancyDeviceUiScale
     end
     setOptionValue(OPTION_ID_MASTER_VOLUME, masterVolume)
+    setOptionValue(OPTION_ID_SPATIAL_AUDIO, spatialAudio)
     setOptionValue(OPTION_ID_SHOW_TRACK_NUMBER_PREFIX, showTrackNumberPrefix)
+    setOptionValue(OPTION_ID_MUTE_GAME_SOUNDTRACK_DURING_PLAYBACK, muteGameSoundtrackDuringPlayback)
     setOptionValue(OPTION_ID_FANCY_UI, fancyUI)
     setOptionValue(OPTION_ID_FANCY_DEVICE_UI_SCALE, fancyDeviceUiScale)
     saveModOptions()
@@ -405,7 +552,9 @@ function NMClientModOptions.applyQuickAccessValues(values)
         options:apply()
     else
         applyMasterVolume(NMClientModOptions.getMasterVolume())
+        applySpatialAudioEnabled(NMClientModOptions.getSpatialAudioEnabled())
         applyShowTrackNumberPrefix(NMClientModOptions.getShowTrackNumberPrefix())
+        applyMuteGameSoundtrackDuringPlayback(NMClientModOptions.getMuteGameSoundtrackDuringPlayback())
         applyFancyUIEnabled(NMClientModOptions.getFancyUIEnabled())
         applyFancyDeviceUiScale(fancyDeviceUiScaleOption and fancyDeviceUiScaleOption:getValue() or nil)
     end
@@ -419,12 +568,30 @@ local function registerOptions()
     options = PZAPI.ModOptions:getOptions(MOD_OPTIONS_ID)
     if options then
         masterVolumeOption = options:getOption(OPTION_ID_MASTER_VOLUME)
+        spatialAudioOption = options:getOption(OPTION_ID_SPATIAL_AUDIO)
         showTrackNumberPrefixOption = options:getOption(OPTION_ID_SHOW_TRACK_NUMBER_PREFIX)
+        muteGameSoundtrackDuringPlaybackOption = options:getOption(OPTION_ID_MUTE_GAME_SOUNDTRACK_DURING_PLAYBACK)
+        if not muteGameSoundtrackDuringPlaybackOption then
+            muteGameSoundtrackDuringPlaybackOption = addMuteGameSoundtrackDuringPlaybackOption()
+        end
+        if not spatialAudioOption then
+            spatialAudioOption = options:addTickBox(
+                OPTION_ID_SPATIAL_AUDIO,
+                resolveUiText("SpatialAudio", "3D Audio"),
+                OPTION_DEFAULT_SPATIAL_AUDIO,
+                resolveUiText("SpatialAudioTooltip", "When enabled, world audio uses Project Zomboid's 3D positioning.")
+            )
+        end
+        moveOptionAfter(OPTION_ID_SPATIAL_AUDIO, OPTION_ID_MASTER_VOLUME)
+        bindSpatialAudioOption()
+        bindMuteGameSoundtrackDuringPlaybackOption()
         fancyUIOption = options:getOption(OPTION_ID_FANCY_UI)
         fancyDeviceUiScaleOption = options:getOption(OPTION_ID_FANCY_DEVICE_UI_SCALE)
         applyLegacyFancyDeviceUiScaleSelectionIfNeeded()
         applyMasterVolume(NMClientModOptions.getMasterVolume())
+        applySpatialAudioEnabled(NMClientModOptions.getSpatialAudioEnabled())
         applyShowTrackNumberPrefix(NMClientModOptions.getShowTrackNumberPrefix())
+        applyMuteGameSoundtrackDuringPlayback(NMClientModOptions.getMuteGameSoundtrackDuringPlayback())
         applyFancyUIEnabled(NMClientModOptions.getFancyUIEnabled())
         applyFancyDeviceUiScale(fancyDeviceUiScaleOption and fancyDeviceUiScaleOption:getValue() or nil)
         return
@@ -433,19 +600,27 @@ local function registerOptions()
     options = PZAPI.ModOptions:create(MOD_OPTIONS_ID, "New Music")
     masterVolumeOption = options:addSlider(
         OPTION_ID_MASTER_VOLUME,
-        resolveUiText("WorldPlaybackMaxVolume", "Playback Max Volume"),
+        resolveUiText("WorldPlaybackMaxVolume"),
         0.0,
         1.0,
         0.05,
         OPTION_DEFAULT_MASTER_VOLUME,
-        resolveUiText("NewMusicMasterVolumeTooltip", "Controls the local maximum volume for New Music world playback and in-car vehicle radio playback you hear.")
+        resolveUiText("NewMusicMasterVolumeTooltip")
     )
+    spatialAudioOption = options:addTickBox(
+        OPTION_ID_SPATIAL_AUDIO,
+        resolveUiText("SpatialAudio", "3D Audio"),
+        OPTION_DEFAULT_SPATIAL_AUDIO,
+        resolveUiText("SpatialAudioTooltip", "When enabled, world audio uses Project Zomboid's 3D positioning.")
+    )
+    moveOptionAfter(OPTION_ID_SPATIAL_AUDIO, OPTION_ID_MASTER_VOLUME)
     showTrackNumberPrefixOption = options:addTickBox(
         OPTION_ID_SHOW_TRACK_NUMBER_PREFIX,
         resolveUiText("ShowTrackNumberPrefix", "Show Track Number Prefix"),
         OPTION_DEFAULT_SHOW_TRACK_NUMBER_PREFIX,
         resolveUiText("ShowTrackNumberPrefixTooltip", "When enabled, song labels in device UIs begin with their track number.")
     )
+    muteGameSoundtrackDuringPlaybackOption = addMuteGameSoundtrackDuringPlaybackOption()
     fancyUIOption = options:addTickBox(
         OPTION_ID_FANCY_UI,
         resolveUiText("FancyUI", "Fancy UI"),
@@ -472,9 +647,13 @@ local function registerOptions()
         applyMasterVolume(value)
     end
 
+    bindSpatialAudioOption()
+
     function showTrackNumberPrefixOption:onChangeApply(value)
         applyShowTrackNumberPrefix(value)
     end
+
+    bindMuteGameSoundtrackDuringPlaybackOption()
 
     function fancyUIOption:onChangeApply(value)
         applyFancyUIEnabled(value)
@@ -486,7 +665,9 @@ local function registerOptions()
 
     function options:apply()
         applyMasterVolume(NMClientModOptions.getMasterVolume())
+        applySpatialAudioEnabled(NMClientModOptions.getSpatialAudioEnabled())
         applyShowTrackNumberPrefix(NMClientModOptions.getShowTrackNumberPrefix())
+        applyMuteGameSoundtrackDuringPlayback(NMClientModOptions.getMuteGameSoundtrackDuringPlayback())
         applyFancyUIEnabled(NMClientModOptions.getFancyUIEnabled())
         applyFancyDeviceUiScale(fancyDeviceUiScaleOption and fancyDeviceUiScaleOption:getValue() or nil)
     end
@@ -496,7 +677,9 @@ local function registerOptions()
     end
     applyLegacyFancyDeviceUiScaleSelectionIfNeeded()
     applyMasterVolume(NMClientModOptions.getMasterVolume())
+    applySpatialAudioEnabled(NMClientModOptions.getSpatialAudioEnabled())
     applyShowTrackNumberPrefix(NMClientModOptions.getShowTrackNumberPrefix())
+    applyMuteGameSoundtrackDuringPlayback(NMClientModOptions.getMuteGameSoundtrackDuringPlayback())
     applyFancyUIEnabled(NMClientModOptions.getFancyUIEnabled())
     applyFancyDeviceUiScale(fancyDeviceUiScaleOption and fancyDeviceUiScaleOption:getValue() or nil)
 end

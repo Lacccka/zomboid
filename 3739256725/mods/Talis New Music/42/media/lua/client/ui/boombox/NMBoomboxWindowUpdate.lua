@@ -1,4 +1,5 @@
 local NMUiAutoClose = require "ui/shared/host/NMUiAutoClose"
+local RenderProbe = require "ui/shared/host/NMFancyUiRenderProbe"
 
 local env = _G.NMBoomboxWindowEnv
 setfenv(1, env)
@@ -20,6 +21,12 @@ local function animatePulse(window, kind, nowMs)
 end
 
 function BoomboxWindow:update()
+    local perfStart = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(self) or nil
+    local function finishUpdate()
+        if NMUIRenderProbe and NMUIRenderProbe.endWindow then
+            NMUIRenderProbe.endWindow(self, "device.update", perfStart)
+        end
+    end
     ISPanel.update(self)
     if math.abs((tonumber(self._nmAppliedFancyScale) or 0.0) - getFancyDeviceUiScale()) >= 0.0001 then
         self:applyCurrentScaleLayout()
@@ -31,6 +38,7 @@ function BoomboxWindow:update()
         reasonTag = "boombox",
     })
     if closed then
+        finishUpdate()
         return
     end
 
@@ -42,8 +50,13 @@ function BoomboxWindow:update()
     if self._nmKnobDragging ~= true then
         self:syncVolumeKnobFromState(false)
     end
-    self:syncPlayButtonFromTransport(nil, false)
-    self:syncPowerSwitchFromTransport(nil, false)
+    local resolved = self:resolveContextCached()
+    local passiveTransport, passiveTransportKey = self:resolvePassiveTransportState(resolved)
+    local phaseStart = RenderProbe.begin(self)
+    self:syncPlayButtonFromTransport(resolved, false, passiveTransport)
+    self:syncPowerSwitchFromTransport(resolved, false, passiveTransport)
+    RenderProbe.finish(self, "transport.passive_sync", phaseStart)
+    self:markPassiveTransportSyncedForNextPrerender(passiveTransportKey)
     self:syncLidFromMedia(false)
 
     if self.isLidAnimating == true then
@@ -115,6 +128,7 @@ function BoomboxWindow:update()
         else
             self:setY(self:getExpandedY())
         end
+        finishUpdate()
         return
     end
 
@@ -129,8 +143,10 @@ function BoomboxWindow:update()
             self.isAnimating = false
             self:setY(targetY)
         end
+        finishUpdate()
         return
     end
 
     self:setY(self:getStateY(self.isCollapsed))
+    finishUpdate()
 end

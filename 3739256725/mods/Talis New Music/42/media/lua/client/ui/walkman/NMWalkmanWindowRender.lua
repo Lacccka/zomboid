@@ -2,9 +2,18 @@ local env = _G.NMWalkmanWindowEnv
 setfenv(1, env)
 
 local FancySettingsWindow = require "ui/shared/host/NMFancySettingsWindow"
+local ReadoutLabelRenderer = require "ui/shared/NMReadoutLabelRenderer"
+local RenderProbe = require "ui/shared/host/NMFancyUiRenderProbe"
+
+local WALKMAN_CHROME_TEXTURE_BUNDLES = {}
+local WALKMAN_OVERLAY_TEXTURE_BUNDLES = {}
+
+local function getWalkmanTextureScaleKey()
+    return NMFancyDeviceUiScale and NMFancyDeviceUiScale.getTextureScaleKey and NMFancyDeviceUiScale.getTextureScaleKey() or "1x"
+end
 
 local function ensureTextureSlot(key, path)
-    local scaleKey = NMFancyDeviceUiScale and NMFancyDeviceUiScale.getTextureScaleKey and NMFancyDeviceUiScale.getTextureScaleKey() or "1x"
+    local scaleKey = getWalkmanTextureScaleKey()
     local cacheKey = tostring(key or "") .. "|" .. scaleKey
     UI_TEXTURES[cacheKey] = UI_TEXTURES[cacheKey] or nil
     if UI_TEXTURES[cacheKey] == nil and getTexture then
@@ -31,7 +40,7 @@ local function drawTextureScaledAngleSafe(window, texture, rect, angle, alpha, r
     return false
 end
 
-local function getWalkmanChromeTextures()
+local function buildWalkmanChromeTextures()
     return {
         backplateBase = ensureTextureSlot("backplateBase", BACKPLATE_BASE_TEXTURE_PATH),
         backplateSlotBg = ensureTextureSlot("backplateSlotBg", BACKPLATE_SLOT_BG_TEXTURE_PATH),
@@ -45,11 +54,37 @@ local function getWalkmanChromeTextures()
     }
 end
 
-local function getWalkmanOverlayTextures()
+local function getWalkmanChromeTextures(window)
+    local scaleKey = getWalkmanTextureScaleKey()
+    local cached = WALKMAN_CHROME_TEXTURE_BUNDLES[scaleKey]
+    if cached then
+        RenderProbe.count(window, "texture_bundle_cache_hit", 1)
+        return cached
+    end
+    local built = buildWalkmanChromeTextures()
+    WALKMAN_CHROME_TEXTURE_BUNDLES[scaleKey] = built
+    RenderProbe.count(window, "texture_bundle_cache_miss", 1)
+    return built
+end
+
+local function buildWalkmanOverlayTextures()
     return {
         close = ensureTextureSlot("close", CLOSE_TEXTURE_PATH),
         stopButton = ensureTextureSlot("stopButton", STOP_BUTTON_TEXTURE_PATH),
     }
+end
+
+local function getWalkmanOverlayTextures(window)
+    local scaleKey = getWalkmanTextureScaleKey()
+    local cached = WALKMAN_OVERLAY_TEXTURE_BUNDLES[scaleKey]
+    if cached then
+        RenderProbe.count(window, "texture_bundle_cache_hit", 1)
+        return cached
+    end
+    local built = buildWalkmanOverlayTextures()
+    WALKMAN_OVERLAY_TEXTURE_BUNDLES[scaleKey] = built
+    RenderProbe.count(window, "texture_bundle_cache_miss", 1)
+    return built
 end
 
 function WalkmanWindow:prerender()
@@ -74,10 +109,12 @@ function WalkmanWindow:prerender()
     if self.backgroundColor then
         self:drawRect(0, 0, self.width, self.height, self.backgroundColor.a, self.backgroundColor.r, self.backgroundColor.g, self.backgroundColor.b)
     end
-    local chromeTextures = getWalkmanChromeTextures()
+    local chromeTextures = getWalkmanChromeTextures(self)
     if chromeTextures.volumeWheel then
         local wheelRect = self:getVolumeWheelRect()
-        drawTextureScaledAngleSafe(self, chromeTextures.volumeWheel, wheelRect, tonumber(model and model.wheelAngle) or 0.0)
+        local effectiveVolume = self._nmWheelDragging == true and self._nmWheelPreviewVolume or self._nmWheelStableVolume
+        local wheelAngle = self:getVolumeWheelAngle(effectiveVolume or 1.0)
+        drawTextureScaledAngleSafe(self, chromeTextures.volumeWheel, wheelRect, wheelAngle)
     end
     if chromeTextures.loopButton then
         local loopRect = self:getLoopButtonRect()
@@ -111,7 +148,7 @@ function WalkmanWindow:prerender()
     if chromeTextures.backplateSlotBg then
         self:drawTextureScaled(chromeTextures.backplateSlotBg, 0, 0, self.width, self.height, 1.0, 1.0, 1.0, 1.0)
     end
-    local timedCassetteState = model and model.timedCassetteState or nil
+    local timedCassetteState = self:getTimedCassetteAnimationState()
     if timedCassetteState and timedCassetteState.visible == true and timedCassetteState.texture then
         self:drawTextureScaled(timedCassetteState.texture, timedCassetteState.x, timedCassetteState.y, timedCassetteState.w, timedCassetteState.h, timedCassetteState.alpha, 1.0, 1.0, 1.0)
     else
@@ -119,14 +156,15 @@ function WalkmanWindow:prerender()
         if cassetteMediaState and cassetteMediaState.visible == true and cassetteMediaState.texture then
             local cassetteRect = self:getCassetteDisplayRect()
             self:drawTextureScaled(cassetteMediaState.texture, cassetteRect.x, cassetteRect.y, cassetteRect.w, cassetteRect.h, 1.0, 1.0, 1.0, 1.0)
-            local labelState = model and model.cassetteLabelState or nil
+            local labelState = NMWalkmanRenderState.buildCassetteLabelState(self, resolved, model and model.variant or nil)
             if labelState then
-                local labelRect = labelState.rect
-                self:drawRect(labelRect.x, labelRect.y, labelRect.w, labelRect.h, CASSETTE_LABEL_BG.a, CASSETTE_LABEL_BG.r, CASSETTE_LABEL_BG.g, CASSETTE_LABEL_BG.b)
-                local tm = getTextManager and getTextManager() or nil
-                local textH = tm and tm.MeasureStringY and tm:MeasureStringY(UIFont.Small, "Ag") or 10
-                local textY = labelRect.y + math.floor(((labelRect.h - textH) * 0.5) + 0.5)
-                self:drawText(labelState.text, labelRect.x + CASSETTE_LABEL_TEXT_PAD_X, textY, CASSETTE_LABEL_TEXT_COLOR.r, CASSETTE_LABEL_TEXT_COLOR.g, CASSETTE_LABEL_TEXT_COLOR.b, CASSETTE_LABEL_TEXT_COLOR.a, UIFont.Small)
+                ReadoutLabelRenderer.draw(self, labelState, {
+                    background = CASSETTE_LABEL_BG,
+                    color = CASSETTE_LABEL_TEXT_COLOR,
+                    padX = CASSETTE_LABEL_TEXT_PAD_X,
+                    font = UIFont.Small,
+                    cacheName = "cassette",
+                })
             end
             if chromeTextures.spool then
                 local leftRect = self:getCassetteSpoolRect(1)
@@ -144,13 +182,13 @@ end
 function WalkmanWindow:render()
     local perfFrame = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(self) or nil
     local perfRender = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(self) or nil
-    local overlayTextures = getWalkmanOverlayTextures()
+    local overlayTextures = getWalkmanOverlayTextures(self)
     ISPanel.render(self)
     local model = self:getRenderModel()
     local walkmanTextures = model and model.textures or nil
-    local loopIconTexture = model and model.loopIconTexture or nil
-    if loopIconTexture and model and model.loopVisible == true then
-        local loopIconRect = model.loopIconRect
+    local loopIconTexture = self:getLoopIconTexture()
+    if loopIconTexture and self:shouldShowLoopIcon() == true then
+        local loopIconRect = self:getLoopIconRect(loopIconTexture)
         self:drawTextureScaled(loopIconTexture, loopIconRect.x, loopIconRect.y, loopIconRect.w, loopIconRect.h, LOOP_ICON_ALPHA, 1.0, 1.0, 1.0)
     end
     local stopButtonTexture = walkmanTextures and walkmanTextures.stop or overlayTextures.stopButton
@@ -173,19 +211,19 @@ function WalkmanWindow:render()
         local gearAlpha, gearR, gearG, gearB = FancySettingsWindow.resolveGearTint(self, model)
         self:drawTextureScaled(gearTexture, gearDrawRect.x, gearDrawRect.y, gearDrawRect.w, gearDrawRect.h, gearAlpha, gearR, gearG, gearB)
     end
-    if model and model.volumeLabelVisible == true then
-        local labelRect = model.volumeLabelRect
-        self:drawText(model.volumeLabelText, labelRect.x, labelRect.y, 1.0, 1.0, 1.0, 1.0, UIFont.Small)
+    if self:shouldShowVolumeLabel() == true then
+        local labelRect = self:getVolumeLabelRect()
+        self:drawText(self:getVolumeLabelText(), labelRect.x, labelRect.y, 1.0, 1.0, 1.0, 1.0, UIFont.Small)
     end
-    local lidEdgeState = model and model.lidEdgeState or nil
+    local lidState = self:getLidRenderState(walkmanTextures)
+    local lidEdgeState = self:getLidEdgeRenderState(lidState)
     if lidEdgeState and lidEdgeState.texture and lidEdgeState.visible == true then
         self:drawTextureScaled(lidEdgeState.texture, lidEdgeState.x, lidEdgeState.y, lidEdgeState.w, lidEdgeState.h, 1.0, 1.0, 1.0, 1.0)
     end
-    if model and model.lidIngressVisible == true then
+    if self:shouldShowLidIngressZone() == true then
         local ingressRect = self:getLidIngressZoneRect()
         self:drawRectBorder(ingressRect.x, ingressRect.y, ingressRect.w, ingressRect.h, LID_INGRESS_BORDER.a, LID_INGRESS_BORDER.r, LID_INGRESS_BORDER.g, LID_INGRESS_BORDER.b)
     end
-    local lidState = model and model.lidState or nil
     if lidState and lidState.texture then
         self:drawTextureScaled(lidState.texture, lidState.x, lidState.y, lidState.w, lidState.h, 1.0, 1.0, 1.0, 1.0)
     end

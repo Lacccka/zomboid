@@ -132,6 +132,25 @@ local function buildDossier(name, args, x, y, z)
             table.insert(t, "  " .. cap(args.wounds[i], 120))
         end
     end
+    if type(args.skills) == "table" and #args.skills > 0 then
+        table.insert(t, "Skills lost (" .. #args.skills .. "):")
+        for i = 1, math.min(#args.skills, 40) do
+            table.insert(t, "  " .. cap(args.skills[i], 64))
+        end
+    else
+        table.insert(t, "Skills lost: none above zero")
+    end
+    if type(args.recipes) == "table" and #args.recipes > 0 then
+        local total = tonumber(args.recipeTotal) or #args.recipes
+        local head = "Recipes lost (" .. total .. ")"
+        if total > #args.recipes then head = head .. ", first " .. #args.recipes .. " listed" end
+        table.insert(t, head .. ":")
+        for i = 1, #args.recipes do
+            table.insert(t, "  " .. cap(args.recipes[i], 64))
+        end
+    else
+        table.insert(t, "Recipes lost: none")
+    end
     local near = nearbyLines(x, y, name)
     if #near > 0 then
         table.insert(t, "Players nearby (" .. NEAR_DIST .. " tiles):")

@@ -144,3 +144,6 @@ function NMReadoutOverflowPager.resolvePagedText(panel, fullText, contentWidth, 
     return pages[idx] or text
 end
 
+function NMReadoutOverflowPager.getPageDwellMs()
+    return PAGE_DWELL_MS
+end

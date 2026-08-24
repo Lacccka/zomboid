@@ -25,6 +25,7 @@ ItemName_JP = {
     ItemName_NewMusic_BoomboxCyan = "ブームボックス（シアン）",
     ItemName_NewMusic_BoomboxMagenta = "ブームボックス（マゼンタ）",
     ItemName_NewMusic_BoomboxPurple = "ブームボックス（パープル）",
+    ItemName_NewMusic_BoomboxOddbolt = "ブームボックス（オッドボルト）",
     ItemName_NewMusic_CDPlayerBlue = "CDプレーヤー（ブルー）",
     ItemName_NewMusic_CDPlayerBlack = "CDプレーヤー（ブラック）",
     ItemName_NewMusic_CDPlayerCow = "CDプレーヤー（Moo）",

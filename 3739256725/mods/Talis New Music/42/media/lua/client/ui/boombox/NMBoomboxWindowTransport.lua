@@ -119,10 +119,36 @@ local function canPowerOnFromTransport(transport)
     return transport and transport.hasUsablePower == true
 end
 
+local function getModeTooltipByIndex(index)
+    local policy = MODE_BY_INDEX[tonumber(index) or 0]
+    if policy == "loop_song" then
+        return NMTranslations.modeTooltip("LoopSong")
+    end
+    if policy == "loop_album" then
+        return NMTranslations.modeTooltip("LoopAlbum")
+    end
+    if policy == "shuffle" then
+        return NMTranslations.modeTooltip("Shuffle")
+    end
+    return nil
+end
+
 local function resolveObservedPowerState(window, resolved)
     local ctx = resolved or (window and window.resolveContextCached and window:resolveContextCached()) or nil
     local state = ctx and ctx.state or nil
     return state and state.isOn == true
+end
+
+function BoomboxWindow:resolvePassiveTransportState(resolved)
+    return NMDeviceUiHost.resolvePassiveTransportState(self, resolved)
+end
+
+function BoomboxWindow:markPassiveTransportSyncedForNextPrerender(transportKey)
+    return NMDeviceUiHost.markPassiveTransportSyncedForNextPrerender(self, transportKey)
+end
+
+function BoomboxWindow:hasPassiveTransportSyncForCurrentFrame()
+    return NMDeviceUiHost.hasPassiveTransportSyncForCurrentFrame(self)
 end
 
 function BoomboxWindow:setPendingPowerSwitchState(targetOn)
@@ -132,8 +158,8 @@ function BoomboxWindow:setPendingPowerSwitchState(targetOn)
     self._nmPowerSwitchPendingUntilMs = getNowMs() + POWER_SWITCH_PENDING_MS
 end
 
-function BoomboxWindow:syncPowerSwitchFromTransport(resolved, snap)
-    local shouldBeOn = resolveObservedPowerState(self, resolved)
+function BoomboxWindow:syncPowerSwitchFromTransport(resolved, snap, transport)
+    local shouldBeOn = type(transport) == "table" and transport.isOn == true or resolveObservedPowerState(self, resolved)
     local previous = self._nmPowerSwitchOn == true
     local nowMs = getNowMs()
     local pendingUntil = tonumber(self._nmPowerSwitchPendingUntilMs) or 0
@@ -174,22 +200,36 @@ function BoomboxWindow:getTooltipUiOptions(text)
     return { maxLineWidth = 300, offsetY = 24, cacheText = true }
 end
 
+function BoomboxWindow:getPowerTooltip(transport)
+    local transportState = transport or self:buildTransportState()
+    if transportState and transportState.isOn == true and transportState.hasUsablePower == true then
+        return NMTranslations.ui("PowerOn")
+    end
+    if transportState and transportState.isOn == true then
+        return NMTranslations.ui("PowerOnNoPower")
+    end
+    return NMTranslations.ui("PowerOff")
+end
+
 function BoomboxWindow:getHoverTooltipAt(x, y)
     if pointInRect(x, y, self:getCloseRect()) then
-        return "Close"
+        return nil
     end
     if pointInRect(x, y, self:getSettingsRect()) then
         return FancySettingsWindow.getSettingsTooltipText()
+    end
+    if pointInRect(x, y, self:getPowerSwitchBgRect()) then
+        return self:getPowerTooltip()
     end
     if pointInRect(x, y, self:getVolumeBgRect()) then
         return self:getVolumeLabelText()
     end
     local buttons = {
-        { "play", "Play" },
-        { "stop", "Stop" },
-        { "prev", "Previous Track" },
-        { "next", "Next Track" },
-        { "eject", "Eject" },
+        { "play", NMTranslations.ui("PlaySong") },
+        { "stop", NMTranslations.ui("StopSong") },
+        { "prev", NMTranslations.ui("PreviousTrack") },
+        { "next", NMTranslations.ui("NextTrack") },
+        { "eject", NMTranslations.ui("EjectMedia") },
     }
     for i = 1, #buttons do
         local entry = buttons[i]
@@ -201,13 +241,18 @@ function BoomboxWindow:getHoverTooltipAt(x, y)
         for i = 1, 4 do
             local kind = ({ "play", "stop", "prev", "next" })[i]
             if pointInRect(x, y, self:getTopCollapsedButtonHitRect(kind)) then
-                return ({ play = "Play", stop = "Stop", prev = "Previous Track", next = "Next Track" })[kind]
+                return ({
+                    play = NMTranslations.ui("PlaySong"),
+                    stop = NMTranslations.ui("StopSong"),
+                    prev = NMTranslations.ui("PreviousTrack"),
+                    next = NMTranslations.ui("NextTrack"),
+                })[kind]
             end
         end
     end
     for i = 1, 3 do
         if pointInRect(x, y, self:getModeButtonRect(i)) then
-            return ({ "Mode: Loop Song", "Mode: Loop Album", "Mode: Shuffle" })[i]
+            return getModeTooltipByIndex(i)
         end
     end
     return nil
@@ -314,8 +359,8 @@ function BoomboxWindow:getSelectedModeIndex()
     return nil
 end
 
-function BoomboxWindow:syncPlayButtonFromTransport(resolved, snap)
-    local transportState = getControlTransportState(self, resolved)
+function BoomboxWindow:syncPlayButtonFromTransport(resolved, snap, transport)
+    local transportState = type(transport) == "table" and transport or getControlTransportState(self, resolved)
     local authoritativeDown = transportState and transportState.isPlaying == true
     if authoritativeDown == true then
         self:clearLocalPlayPresentation(false)

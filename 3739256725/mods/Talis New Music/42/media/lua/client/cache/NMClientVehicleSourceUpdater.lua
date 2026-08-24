@@ -110,7 +110,12 @@ local function logBindingLifecycle(entry, action, oldRuntimeId, newRuntimeId, sq
 end
 
 local function logAttachDecision(entry, status, reason, runtimeId, degraded)
-    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled) then
+        return
+    end
+    local vehicleDebugEnabled = NMCore.isSubsystemDebugEnabled("vehicle")
+    local vehicleTraceEnabled = NMCore.isSubsystemDebugEnabled("vehicle_trace")
+    if not (vehicleDebugEnabled or vehicleTraceEnabled) then
         return
     end
     local now = nowMs()
@@ -131,7 +136,7 @@ local function logAttachDecision(entry, status, reason, runtimeId, degraded)
     entry._vehicleAttachDecisionSig = sig
     entry._vehicleAttachDecisionMs = now
     NMCore.logChannel(
-        "runtime",
+        vehicleDebugEnabled and "vehicle" or "vehicle_trace",
         "vehicle_attach_decision",
         string.format(
             "uuid=%s status=%s reason=%s runtimeId=%s degraded=%s sourceGen=%s",

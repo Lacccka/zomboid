@@ -419,37 +419,66 @@ end
 Commands.statsReset = function(player, args)
     if not AegisRoles.canArea(player, "players") then return end
     if not args then return end
-    local field = tostring(args.field or "")
     local who = args.user and AegisShared.sanitizeName(args.user) or nil
     local FIELDS = { zkills = true, deaths = true, distM = true,
         bestHours = true, bestKills = true, bandits = true, pvp = true }
-    if not FIELDS[field] then return end
     load()
     local admin = player:getUsername() or "?"
     local touched = 0
-    for user, e in pairs(stats) do
-        if who == nil or user == who then
-            if (e[field] or 0) ~= 0 then
-                e[field] = 0
-                touched = touched + 1
-            end
-            -- the running baseline has to go with it, otherwise the next
-            -- sample credits the whole gap right back
-            if field == "zkills" then lastKills[user] = nil end
-        end
-    end
-    if touched > 0 then
+    local what
+
+    if args.wipe == true then
+        -- the whole ledger goes, including names that only appear there
+        -- and would otherwise survive a reset of every single field
+        for _ in pairs(stats) do touched = touched + 1 end
+        stats = {}
+        for k in pairs(lastKills) do lastKills[k] = nil end
+        who = nil
+        what = "everything"
         markDirty()
         save()
+    else
+        -- one field or a picked set, the old single field call still works
+        local wanted = {}
+        if type(args.fields) == "table" then
+            for _, f in ipairs(args.fields) do
+                if FIELDS[tostring(f)] then wanted[tostring(f)] = true end
+            end
+        elseif FIELDS[tostring(args.field or "")] then
+            wanted[tostring(args.field)] = true
+        end
+        local names = {}
+        for f in pairs(wanted) do table.insert(names, f) end
+        if #names == 0 then return end
+        table.sort(names)
+        what = table.concat(names, ",")
+        for user, e in pairs(stats) do
+            if who == nil or user == who then
+                for f in pairs(wanted) do
+                    if (e[f] or 0) ~= 0 then
+                        e[f] = 0
+                        touched = touched + 1
+                    end
+                end
+                -- the running baseline has to go with it, otherwise the next
+                -- sample credits the whole gap right back
+                if wanted.zkills then lastKills[user] = nil end
+            end
+        end
+        if touched > 0 then
+            markDirty()
+            save()
+        end
     end
-    print("[Aegis] stats reset by " .. tostring(admin) .. ": field " .. field
+
+    print("[Aegis] stats reset by " .. tostring(admin) .. ": " .. what
         .. ", " .. (who or "everyone") .. ", " .. touched .. " entr(y/ies) cleared")
     AegisLog.write("Actions", admin, who or "all",
-        string.format("Statistics reset: %s for %s (%d entries)", field, who or "all players", touched))
+        string.format("Statistics reset: %s for %s (%d entries)", what, who or "all players", touched))
     if isServer() then
-        sendServerCommand(player, MODULE, "statsReset", { ok = true, field = field, touched = touched })
+        sendServerCommand(player, MODULE, "statsReset", { ok = true, what = what, touched = touched })
     else
-        triggerEvent("OnServerCommand", MODULE, "statsReset", { ok = true, field = field, touched = touched })
+        triggerEvent("OnServerCommand", MODULE, "statsReset", { ok = true, what = what, touched = touched })
     end
 end
 

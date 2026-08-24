@@ -84,10 +84,11 @@ function WalkmanWindow:update()
     self:updateCassetteSpoolAngles(nowMs)
     self:setX(self:clampWindowX(self:getX()))
     self._nmExpandedY = self:getExpandedY()
+    local resolved = self:resolveContextCached()
     if self._nmWheelDragging ~= true then
         self:syncVolumeWheelFromState(false)
     end
-    self:syncPlayButtonFromTransport(nil, nil, false, false)
+    self:syncPlayButtonFromTransport(resolved, nil, false, false)
     self:syncLidFromMedia(false)
 
     if self.isLidAnimating == true then

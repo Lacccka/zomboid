@@ -3,11 +3,17 @@ return function(NMSlotHostLifecycle)
         if not window then
             return
         end
+        if NMUIRenderProbe and NMUIRenderProbe.count then
+            NMUIRenderProbe.count(window, "invalidate.render_model", 1)
+        end
         window._nmRenderModel = nil
         window._nmRenderModelEpoch = nil
         window._nmRenderModelRevisionKey = nil
         window._nmRenderCache = nil
         window._nmRenderRevision = (tonumber(window._nmRenderRevision) or 0) + 1
+        if NMUIRenderProbe and NMUIRenderProbe.count then
+            NMUIRenderProbe.count(window, "revision_bump.render", 1)
+        end
     end
 
     local function invalidateAfterIntent(window, options)

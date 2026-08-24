@@ -182,13 +182,13 @@ function NMTransportButtonRow.buildRenderState(window, frame)
         local tooltip = ""
         if role == "repeat" then
             if iconKey == "repeat_song" then
-                tooltip = NMTranslations.ui("ModeLoopSong", "Mode: Loop Song")
+                tooltip = NMTranslations.modeTooltip("LoopSong")
             elseif iconKey == "repeat_album" then
-                tooltip = NMTranslations.ui("ModeLoopAlbum", "Mode: Loop Album")
+                tooltip = NMTranslations.modeTooltip("LoopAlbum")
             elseif iconKey == "repeat_shuffle" then
-                tooltip = NMTranslations.ui("ModeShuffle", "Mode: Shuffle")
+                tooltip = NMTranslations.modeTooltip("Shuffle")
             else
-                tooltip = NMTranslations.ui("ModeAutoOff", "Mode: Auto-Off")
+                tooltip = NMTranslations.modeTooltip("AutoOff")
             end
         elseif role == "mute" then
             tooltip = muted and NMTranslations.ui("Unmute", "Unmute") or NMTranslations.ui("Mute", "Mute")
@@ -197,9 +197,9 @@ function NMTransportButtonRow.buildRenderState(window, frame)
         elseif role == "stop" then
             tooltip = NMTranslations.ui("StopSong", "Stop Song")
         elseif role == "prev" then
-            tooltip = NMTranslations.ui("PreviousTrack", "Previous Track")
+            tooltip = NMTranslations.ui("PreviousTrack")
         elseif role == "next" then
-            tooltip = NMTranslations.ui("NextTrack", "Next Track")
+            tooltip = NMTranslations.ui("NextTrack")
         end
         local btn = window and window.transportRow and window.transportRow.buttons and window.transportRow.buttons[i] or nil
         local flickActive = btn and tonumber(btn._nmFlickUntil or 0) > currentNowMs or false

@@ -1,5 +1,5 @@
 require "ui/shared/host/NMDeviceUiPresentationContract"
-require "ui/shared/NMReadoutLabelState"
+require "ui/shared/NMReadoutCachedLabelState"
 
 local env = _G.NMBoomboxWindowEnv
 setfenv(1, env)
@@ -18,19 +18,29 @@ local function buildCassetteLabelState(window, resolved)
     if not rect then
         return nil
     end
-    local labelState = NMReadoutLabelState.build(window, {
+
+    return NMReadoutCachedLabelState.build(window, {
         state = state,
         rect = rect,
         padX = CASSETTE_LABEL_TEXT_PAD_X,
         nowMs = tonumber(window._nmFrameNowMs) or getNowMs(),
         pagerHost = window,
         emptyAsNil = true,
+        cacheName = "boombox_cassette",
+        stateIdentityParts = {
+            state and state.mediaFullType,
+            state and state.trackIndex,
+            state and state.mediaDisplayName,
+        },
+        identityParts = {
+            mediaState.fullType,
+            mediaState.texturePath,
+        },
     })
-    if not labelState then
-        return nil
-    end
-    labelState.rect = rect
-    return labelState
+end
+
+function BoomboxWindow:buildCassetteLabelState(resolved)
+    return buildCassetteLabelState(self, resolved)
 end
 
 function BoomboxWindow:hasInsertedCassette()
@@ -229,35 +239,18 @@ function BoomboxWindow:getModePolicy()
 end
 
 function BoomboxWindow:buildRenderModel()
-    return NMDeviceUiHost.buildFamilyRenderModel(self, {
+    return NMDeviceUiHost.buildStableFamilyRenderModel(self, {
         decorateModel = function(window, model, build)
             local resolved = build.resolved
             local variant = window:getBoomboxVariant(resolved)
             local textures = window:resolveBoomboxUITextures(variant)
-            local effectiveVolume = window._nmKnobDragging == true and window._nmKnobPreviewVolume or window._nmKnobStableVolume
-            local lidState = window:getLidRenderState(textures)
             model.variant = variant
             model.textures = textures
-            model.wheelAngle = window:getVolumeKnobAngle(effectiveVolume or 1.0)
-            model.powerSwitchOn = window._nmPowerSwitchOn == true
-            model.volumeLabelVisible = window:shouldShowVolumeLabel()
-            model.volumeLabelText = model.volumeLabelVisible and window:getVolumeLabelText() or nil
-            model.volumeLabelRect = model.volumeLabelVisible and window:getVolumeLabelRect() or nil
-            model.lidState = lidState
-            model.lidEdgeState = window:getLidEdgeRenderState(lidState)
-            model.lidIngressVisible = window:shouldShowLidIngressZone()
-            model.cassetteMediaState = window:getCassetteDisplayMediaState()
-            model.timedCassetteState = window:getTimedCassetteAnimationState()
-            model.cassetteLabelState = nil
-            model.playbackPolicy = window:getModePolicy()
             NMDeviceUiPresentationContract.setBackground(model, "boombox_base", { variant = variant })
             NMDeviceUiPresentationContract.setShell(model, "boombox_shell", { variant = variant })
             NMDeviceUiPresentationContract.setWorldItem(model, "cassette", { variant = variant })
-            NMDeviceUiPresentationContract.setVolumeControl(model, "knob", { variant = variant, angle = model.wheelAngle })
-            NMDeviceUiPresentationContract.setLid(model, "hinged_lid", { variant = variant, state = lidState, edgeState = model.lidEdgeState, ingressVisible = model.lidIngressVisible })
-            if not (model.timedCassetteState and model.timedCassetteState.visible == true) then
-                model.cassetteLabelState = buildCassetteLabelState(window, resolved)
-            end
+            NMDeviceUiPresentationContract.setVolumeControl(model, "knob", { variant = variant })
+            NMDeviceUiPresentationContract.setLid(model, "hinged_lid", { variant = variant })
             return model
         end
     })

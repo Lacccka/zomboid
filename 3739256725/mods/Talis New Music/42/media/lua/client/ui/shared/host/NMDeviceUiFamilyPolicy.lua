@@ -25,6 +25,12 @@ local policies = {
         supportsHold = false,
         supportsLid = false,
         supportsShuffleMode = true,
+        mechanics = {
+            powerControl = "separate_power_button",
+            mediaVisual = "generic",
+            volumeControl = "generic",
+            transportLayout = "generic",
+        },
     },
     cdplayer = {
         familyId = "cdplayer",
@@ -50,6 +56,16 @@ local policies = {
         supportsHold = true,
         supportsLid = true,
         supportsShuffleMode = true,
+        mechanics = {
+            powerControl = "separate_power_button",
+            holdControl = "hold_switch",
+            mediaVisual = "cd_disc",
+            lidKind = "cd_lid",
+            displayKind = "cd_display",
+            volumeControl = "button_pair",
+            transportLayout = "cd_cluster",
+            hasSpinningMedia = true,
+        },
     },
     walkman = {
         familyId = "walkman",
@@ -73,6 +89,14 @@ local policies = {
         supportsHold = false,
         supportsLid = true,
         supportsShuffleMode = false,
+        mechanics = {
+            powerControl = "combined_play_power",
+            mediaVisual = "cassette",
+            lidKind = "cassette_lid",
+            volumeControl = "side_wheel",
+            transportLayout = "walkman_buttons",
+            hasCassetteSpools = true,
+        },
     },
     boombox = {
         familyId = "boombox",
@@ -97,6 +121,14 @@ local policies = {
         supportsHold = false,
         supportsLid = true,
         supportsShuffleMode = true,
+        mechanics = {
+            powerControl = "separate_power_switch",
+            mediaVisual = "cassette",
+            lidKind = "cassette_lid",
+            volumeControl = "knob",
+            transportLayout = "boombox_front_top_buttons",
+            hasCassetteSpools = true,
+        },
     }
 }
 
@@ -109,6 +141,16 @@ function NMDeviceUiFamilyPolicy.resolveForWindow(window)
         return window._nmUiFamilyPolicy
     end
     return NMDeviceUiFamilyPolicy.get(window and window._nmUiPerfKind or nil)
+end
+
+function NMDeviceUiFamilyPolicy.getMechanics(familyId)
+    local policy = NMDeviceUiFamilyPolicy.get(familyId)
+    return policy and policy.mechanics or nil
+end
+
+function NMDeviceUiFamilyPolicy.resolveMechanicsForWindow(window)
+    local policy = NMDeviceUiFamilyPolicy.resolveForWindow(window)
+    return policy and policy.mechanics or nil
 end
 
 return NMDeviceUiFamilyPolicy

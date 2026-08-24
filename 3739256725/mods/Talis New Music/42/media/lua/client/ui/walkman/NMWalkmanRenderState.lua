@@ -1,4 +1,4 @@
-require "ui/shared/NMReadoutLabelState"
+require "ui/shared/NMReadoutCachedLabelState"
 
 _G.NMWalkmanWindow = _G.NMWalkmanWindow or {}
 _G.NMWalkmanWindowEnv = _G.NMWalkmanWindowEnv or {}
@@ -29,20 +29,23 @@ function NMWalkmanRenderState.buildCassetteLabelState(window, resolved, variant)
     if not rect then
         return nil
     end
-
-    local labelState = NMReadoutLabelState.build(window, {
+    return NMReadoutCachedLabelState.build(window, {
         state = state,
         rect = rect,
         padX = CASSETTE_LABEL_TEXT_PAD_X,
         nowMs = tonumber(window._nmFrameNowMs) or getNowMs(),
         pagerHost = window,
         emptyAsNil = true,
+        cacheName = "walkman_cassette",
+        stateIdentityParts = {
+            state and state.mediaFullType,
+            state and state.trackIndex,
+            state and state.mediaDisplayName,
+        },
+        identityParts = {
+            resolvedVariant,
+        },
     })
-    if not labelState then
-        return nil
-    end
-    labelState.rect = rect
-    return labelState
 end
 
 return NMWalkmanRenderState

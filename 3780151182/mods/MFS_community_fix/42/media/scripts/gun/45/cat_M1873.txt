@@ -23,8 +23,8 @@ module Base
 		EjectAmmoSound = MagnumEjectAmmo,
 		EjectAmmoStartSound = MagnumEjectAmmoStart,
 		EjectAmmoStopSound = MagnumEjectAmmoStop,
-		FireMode = Auto,
-		FireModePossibilities = Auto/Single,
+		FireMode = Single, 
+		/*FireModePossibilities = Auto/Single,*/
 		haveChamber = FALSE,
 		HitChance = 80,
 		HitSound = BulletHitBody,

@@ -65,6 +65,10 @@ local function resolveHotMetricSummary(metrics)
     return hotKey, hotAvg
 end
 
+local function counterValue(counters, key)
+    return tonumber(counters and counters[key] or 0) or 0
+end
+
 local function ensureMetric(store, key)
     local metrics = store.metrics
     metrics[key] = metrics[key] or { count = 0, sumMs = 0.0, maxMs = 0.0 }
@@ -136,11 +140,13 @@ function NMUIRenderProbe.flush(window)
     local counters = store.counters or {}
     local uiKind = resolveWindowKind(window)
     local hotMetricKey, hotMetricAvg = resolveHotMetricSummary(store.metrics)
+    local slotContentRebuild = counterValue(counters, "slot_frame.content_rebuild")
+    local slotInteractionRebuild = counterValue(counters, "slot_frame.interaction_rebuild")
     NMCore.logChannel(
         "ui_render",
         "ui_perf_summary",
         string.format(
-            "run=%s ui=%s frame_avg_ms=%.2f frame_max_ms=%.2f frame_calls=%d render_avg_ms=%.2f update_avg_ms=%.2f resolve_avg_ms=%.2f resolve_calls=%d hostFrame_avg_ms=%.2f slotFrame_avg_ms=%.2f renderModel_avg_ms=%.2f renderModel_rebuild=%d slotFrame_rebuild=%d context_cache_hit=%d context_cache_miss=%d fallback=%d dragChecks=%d candidateScans=%d hot_metric=%s hot_metric_avg_ms=%.2f hp_avg_ms=%.2f hp_max_ms=%.2f hp_style_max=%.2f hp_state_max=%.2f hp_tex_resolve_max=%.2f hp_tex_draw_max=%.2f hp_placeholder_max=%.2f autoClose_calls=%d fastPath=%d slowPath=%d",
+            "run=%s ui=%s frame_avg_ms=%.2f frame_max_ms=%.2f frame_calls=%d render_avg_ms=%.2f update_avg_ms=%.2f resolve_avg_ms=%.2f resolve_calls=%d hostFrame_avg_ms=%.2f slotFrame_avg_ms=%.2f renderModel_avg_ms=%.2f renderModel_rebuild=%d slotContent_rebuild=%d slotInteraction_rebuild=%d context_cache_hit=%d context_cache_miss=%d fallback=%d dragChecks=%d candidateScans=%d hot_metric=%s hot_metric_avg_ms=%.2f hp_avg_ms=%.2f hp_max_ms=%.2f hp_style_max=%.2f hp_state_max=%.2f hp_tex_resolve_max=%.2f hp_tex_draw_max=%.2f hp_placeholder_max=%.2f autoClose_calls=%d fastPath=%d slowPath=%d",
             tostring(store.runId),
             tostring(uiKind),
             frameAvg,
@@ -154,7 +160,8 @@ function NMUIRenderProbe.flush(window)
             metricAverage(slotFrame),
             metricAverage(renderModel),
             tonumber(counters["render_model.rebuild"] or 0),
-            tonumber(counters["slot_frame.rebuild"] or 0),
+            slotContentRebuild,
+            slotInteractionRebuild,
             tonumber(counters["context.cache_hit"] or 0),
             tonumber(counters["context.cache_miss"] or 0),
             tonumber(counters["context.fallback"] or 0),
@@ -185,6 +192,43 @@ function NMUIRenderProbe.flush(window)
                 tostring(hotMetricKey),
                 tonumber(hotMetricAvg) or 0,
                 tonumber(store.metrics[hotMetricKey] and store.metrics[hotMetricKey].maxMs or 0) or 0
+            )
+        )
+    end
+    local rebuildDiagCount =
+        counterValue(counters, "invalidate.ui_change")
+        + counterValue(counters, "invalidate.context_cache")
+        + counterValue(counters, "invalidate.slot_frame_model")
+        + counterValue(counters, "invalidate.render_model")
+        + counterValue(counters, "slot_frame.content_rebuild")
+        + counterValue(counters, "slot_frame.interaction_rebuild")
+        + counterValue(counters, "render_model.miss_missing_cache")
+        + counterValue(counters, "render_model.miss_render_revision")
+        + counterValue(counters, "render_model.miss_animation_revision")
+        + counterValue(counters, "render_model.miss_frame_epoch")
+    if rebuildDiagCount > 0 and NMCore and NMCore.logChannel then
+        NMCore.logChannel(
+            "ui_render",
+            "ui_perf_rebuild_diag",
+            string.format(
+                "run=%s ui=%s invalidate_ui_change=%d invalidate_context=%d invalidate_slot_interaction=%d invalidate_render=%d revision_context=%d revision_slot_content=%d revision_slot_interaction=%d revision_render=%d revision_animation=%d slotContent_rebuild=%d slotInteraction_rebuild=%d render_miss_missing=%d render_miss_render=%d render_miss_animation=%d render_miss_frame=%d",
+                tostring(store.runId),
+                tostring(uiKind),
+                counterValue(counters, "invalidate.ui_change"),
+                counterValue(counters, "invalidate.context_cache"),
+                counterValue(counters, "invalidate.slot_frame_model"),
+                counterValue(counters, "invalidate.render_model"),
+                counterValue(counters, "revision_bump.context"),
+                counterValue(counters, "revision_bump.slot_content"),
+                counterValue(counters, "revision_bump.slot_interaction"),
+                counterValue(counters, "revision_bump.render"),
+                counterValue(counters, "revision_bump.animation"),
+                counterValue(counters, "slot_frame.content_rebuild"),
+                counterValue(counters, "slot_frame.interaction_rebuild"),
+                counterValue(counters, "render_model.miss_missing_cache"),
+                counterValue(counters, "render_model.miss_render_revision"),
+                counterValue(counters, "render_model.miss_animation_revision"),
+                counterValue(counters, "render_model.miss_frame_epoch")
             )
         )
     end

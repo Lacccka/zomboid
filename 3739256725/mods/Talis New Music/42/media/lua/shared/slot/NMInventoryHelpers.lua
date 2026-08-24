@@ -8,46 +8,6 @@ local function logVehicleSlotTrace(stage, detail)
     NMCore.logChannel("slot", tostring(stage or "vehicle_slot_trace"), tostring(detail or ""))
 end
 
-local function nowRealMs()
-    if getTimestampMs then
-        return tonumber(getTimestampMs()) or 0
-    end
-    return 0
-end
-
-local UI_INVALIDATION_DIAG_INTERVAL_MS = 5000
-local uiInvalidationDiag = {
-    lastLogMs = 0,
-    counters = {}
-}
-
-local function countUiInvalidation(name)
-    if not (NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("memory") == true) then
-        return
-    end
-    local key = tostring(name or "unknown")
-    uiInvalidationDiag.counters[key] = (tonumber(uiInvalidationDiag.counters[key]) or 0) + 1
-end
-
-local function flushUiInvalidationDiag()
-    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("memory") == true) then
-        return
-    end
-    local nowMs = nowRealMs()
-    if (nowMs - (tonumber(uiInvalidationDiag.lastLogMs) or 0)) < UI_INVALIDATION_DIAG_INTERVAL_MS then
-        return
-    end
-    uiInvalidationDiag.lastLogMs = nowMs
-    local parts = {}
-    for name, count in pairs(uiInvalidationDiag.counters) do
-        parts[#parts + 1] = string.format("%s=%d", tostring(name), tonumber(count) or 0)
-        uiInvalidationDiag.counters[name] = nil
-    end
-    if #parts > 0 then
-        NMCore.logChannel("memory", "client_ui_invalidation_diag", table.concat(parts, " | "))
-    end
-end
-
 local function shouldTraceVehicleSlot(context)
     return type(context) == "table" and tostring(context.host or "") == "vehicle"
 end
@@ -1086,32 +1046,25 @@ function NMInventoryHelpers.isItemInRootInventory(inventory, item)
 end
 
 function NMInventoryHelpers.refreshInventoryPagesForPlayer(player)
-    countUiInvalidation("refresh_inventory_pages")
     local playerNum = player and player.getPlayerNum and tonumber(player:getPlayerNum()) or nil
     if playerNum == nil then
-        countUiInvalidation("refresh_inventory_pages_missing_player_num")
-        flushUiInvalidationDiag()
         return
     end
     if getPlayerInventory then
         local invPage = getPlayerInventory(playerNum)
         if invPage and invPage.refreshBackpacks then
-            countUiInvalidation("player_inventory_refresh_backpacks")
             pcall(invPage.refreshBackpacks, invPage)
         end
     end
     if getPlayerLoot then
         local lootPage = getPlayerLoot(playerNum)
         if lootPage and lootPage.refreshBackpacks then
-            countUiInvalidation("player_loot_refresh_backpacks")
             pcall(lootPage.refreshBackpacks, lootPage)
         end
     end
     if ISInventoryPage then
-        countUiInvalidation("inventory_page_render_dirty")
         ISInventoryPage.renderDirty = true
     end
-    flushUiInvalidationDiag()
 end
 
 function NMInventoryHelpers.normalizeItemToMainInventory(player, itemId, uuid, liveItem)

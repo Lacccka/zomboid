@@ -16,9 +16,14 @@ local serverWrapperDiag = NMServerMainRuntime._serverWrapperDiag or {
     counters = {},
     stages = {}
 }
+local serverExecutorInterestState = NMServerMainRuntime._serverExecutorInterestState or {
+    executor = nil,
+    activeColdUntilTick = 0
+}
 
 NMServerMainRuntime._serverSchedulerState = serverSchedulerState
 NMServerMainRuntime._serverWrapperDiag = serverWrapperDiag
+NMServerMainRuntime._serverExecutorInterestState = serverExecutorInterestState
 NMServerMainRuntime._tickHookInstalled = NMServerMainRuntime._tickHookInstalled == true
 
 local function canRunAuthoritativeWorldMutation()
@@ -55,8 +60,16 @@ local function nowRealMs()
     return 0
 end
 
+local function getSchedulerTick()
+    return tonumber(serverSchedulerState.tick) or 0
+end
+
+function NMServerMainRuntime.getSchedulerTick()
+    return getSchedulerTick()
+end
+
 local function shouldRunCadence(interval)
-    local tick = tonumber(serverSchedulerState.tick) or 0
+    local tick = getSchedulerTick()
     return interval > 0 and (tick % interval) == 0
 end
 
@@ -68,6 +81,31 @@ local function shouldWakeForCadence(interval)
     end
     local remainder = tick % cadence
     return remainder == 0 or remainder == (cadence - 1)
+end
+
+local function nextWakeForCadenceTick(interval)
+    local tick = getSchedulerTick()
+    return NMServerMainRuntime.getNextWakeForCadenceTick(tick, interval)
+end
+
+function NMServerMainRuntime.getNextWakeForCadenceTick(tick, interval)
+    local currentTick = tonumber(tick) or 0
+    local cadence = tonumber(interval) or 0
+    if cadence <= 0 then
+        return currentTick
+    end
+    local remainder = currentTick % cadence
+    if remainder == 0 or remainder == (cadence - 1) then
+        return currentTick
+    end
+    if remainder < (cadence - 1) then
+        return currentTick + ((cadence - 1) - remainder)
+    end
+    return currentTick + 1
+end
+
+local function nextFutureWakeForCadenceTick(interval)
+    return NMServerMainRuntime.getNextWakeForCadenceTick(getSchedulerTick() + 1, interval)
 end
 
 local function countScheduler(name)
@@ -84,6 +122,89 @@ local function countWrapper(name)
     end
     local key = tostring(name or "unknown")
     serverWrapperDiag.counters[key] = (tonumber(serverWrapperDiag.counters[key]) or 0) + 1
+end
+
+local function supportsExecutorActiveDeadlines(executor)
+    return executor ~= nil and executor.getNextActiveWorkCheckTick ~= nil
+end
+
+local function getExecutorInterestState(executor)
+    if serverExecutorInterestState.executor ~= executor then
+        serverExecutorInterestState.executor = executor
+        serverExecutorInterestState.activeColdUntilTick = 0
+    end
+    return serverExecutorInterestState
+end
+
+local function shouldSkipExecutorActiveCheck(executor, currentTick)
+    if supportsExecutorActiveDeadlines(executor) ~= true then
+        return false
+    end
+    local state = getExecutorInterestState(executor)
+    local coldUntilTick = tonumber(state.activeColdUntilTick) or 0
+    if coldUntilTick > currentTick then
+        countWrapper("has_any_executor_active_skip_cold")
+        return true
+    end
+    if coldUntilTick > 0 then
+        countWrapper("executor_active_cold_expired")
+        state.activeColdUntilTick = 0
+    end
+    return false
+end
+
+local function recordExecutorActiveCheckResult(executor, currentTick, isActive, maintenanceWakeDue)
+    if supportsExecutorActiveDeadlines(executor) ~= true then
+        return
+    end
+    local state = getExecutorInterestState(executor)
+    if isActive == true then
+        state.activeColdUntilTick = 0
+        return
+    end
+    local nextCheckTick = tonumber(executor.getNextActiveWorkCheckTick())
+    if nextCheckTick and nextCheckTick <= currentTick and maintenanceWakeDue ~= true then
+        nextCheckTick = nextWakeForCadenceTick(SERVER_MAINTENANCE_LANE_INTERVAL_TICKS)
+    end
+    if nextCheckTick and nextCheckTick > currentTick and nextCheckTick < math.huge then
+        state.activeColdUntilTick = nextCheckTick
+        countWrapper("executor_active_cold_until_set")
+    else
+        state.activeColdUntilTick = 0
+    end
+end
+
+local function resolveExecutorActiveInterest(executor, currentTick, maintenanceWakeDue)
+    if not (executor and executor.hasActiveWork) then
+        return false
+    end
+    if shouldSkipExecutorActiveCheck(executor, currentTick) == true then
+        return false
+    end
+    countWrapper("has_any_executor_active_check")
+    local activeInterest = executor.hasActiveWork() == true
+    recordExecutorActiveCheckResult(executor, currentTick, activeInterest, maintenanceWakeDue)
+    return activeInterest
+end
+
+local function isExecutorActiveCheckDue(executor, currentTick)
+    if supportsExecutorActiveDeadlines(executor) ~= true then
+        return false
+    end
+    local nextCheckTick = tonumber(executor.getNextActiveWorkCheckTick())
+    return nextCheckTick ~= nil and nextCheckTick <= (tonumber(currentTick) or 0)
+end
+
+local function resolveExecutorMaintenanceInterest(executor, maintenanceWakeDue, executorWakeDue)
+    if not (executor and executor.hasMaintenanceWork) then
+        return false
+    end
+    if maintenanceWakeDue ~= true and executorWakeDue ~= true then
+        countWrapper("has_any_executor_maintenance_skip_not_due")
+        return false
+    end
+    countWrapper("has_any_executor_maintenance_check_due")
+    return executor.hasMaintenanceWork() == true
 end
 
 local function beginWrapperStage()
@@ -205,56 +326,147 @@ local function hasLegacyServerTickPending(mpAuthority)
         and NMDevicesServer.hasPendingWork() == true
 end
 
-function NMServerMainRuntime.advanceSchedulerTick()
-    serverSchedulerState.tick = (tonumber(serverSchedulerState.tick) or 0) + 1
+local function hasWorldSourceRefreshWork(mpAuthority)
+    return mpAuthority == true
+        and NMServerSourceRefreshTick
+        and NMServerSourceRefreshTick.hasWorldSources
+        and NMServerSourceRefreshTick.hasWorldSources() == true
+        and shouldWakeForCadence(SERVER_ACTIVE_LANE_INTERVAL_TICKS) == true
+end
+
+local function getNextWorldSourceRefreshWakeTick(mpAuthority)
+    if mpAuthority == true
+        and NMServerSourceRefreshTick
+        and NMServerSourceRefreshTick.hasWorldSources
+        and NMServerSourceRefreshTick.hasWorldSources() == true then
+        return nextFutureWakeForCadenceTick(SERVER_ACTIVE_LANE_INTERVAL_TICKS)
+    end
+    return math.huge
+end
+
+local function hasVehicleTrackWork(mpAuthority)
+    return mpAuthority == true
+        and NMServerVehicleTrackSchedulerTick
+        and NMServerVehicleTrackSchedulerTick.hasImmediateWork
+        and NMServerVehicleTrackSchedulerTick.hasImmediateWork(getSchedulerTick()) == true
+end
+
+local function getNextVehicleTrackWakeTick(mpAuthority, currentTick)
+    if mpAuthority ~= true
+        or not (NMServerVehicleTrackSchedulerTick and NMServerVehicleTrackSchedulerTick.getNextActiveWorkCheckTick) then
+        return math.huge
+    end
+    local nextTick = tonumber(NMServerVehicleTrackSchedulerTick.getNextActiveWorkCheckTick(currentTick))
+    if nextTick and nextTick > (tonumber(currentTick) or 0) and nextTick < math.huge then
+        return nextTick
+    end
+    return math.huge
+end
+
+function NMServerMainRuntime.advanceSchedulerTick(tickStep)
+    local step = math.max(1, tonumber(tickStep) or 1)
+    serverSchedulerState.tick = (tonumber(serverSchedulerState.tick) or 0) + step
     local activeZombieExecutor = NMServerMainRuntime.getActiveZombieExecutor()
     if activeZombieExecutor and activeZombieExecutor.observeSchedulerTick and canRunAuthoritativeWorldMutation() then
-        activeZombieExecutor.observeSchedulerTick(1)
+        activeZombieExecutor.observeSchedulerTick(step)
     end
+end
+
+function NMServerMainRuntime.getNextTickGateWakeTick()
+    local currentTick = getSchedulerTick()
+    if canRunAuthoritativeWorldMutation() ~= true then
+        return currentTick + 1
+    end
+    local mpAuthority = isMPServerAuthority() == true
+    if hasVehicleTrackWork(mpAuthority) == true or hasWorldSourceRefreshWork(mpAuthority) == true then
+        return currentTick + 1
+    end
+    if NMServerZombieCorpseCarry and NMServerZombieCorpseCarry.hasPendingWork and NMServerZombieCorpseCarry.hasPendingWork() == true then
+        return currentTick + 1
+    end
+    if hasLegacyServerTickHandler() == true then
+        if not (type(NMDevicesServer) == "table" and NMDevicesServer.hasPendingWork) then
+            return currentTick + 1
+        end
+        if NMDevicesServer.hasPendingWork() == true then
+            return currentTick + 1
+        end
+    end
+
+    local nextWakeTick = nextFutureWakeForCadenceTick(SERVER_MAINTENANCE_LANE_INTERVAL_TICKS)
+    if mpAuthority == true then
+        nextWakeTick = math.min(nextWakeTick, getNextVehicleTrackWakeTick(mpAuthority, currentTick))
+        nextWakeTick = math.min(nextWakeTick, getNextWorldSourceRefreshWakeTick(mpAuthority))
+        if NMServerModeReconcile and NMServerModeReconcile.onTick then
+            nextWakeTick = math.min(nextWakeTick, nextFutureWakeForCadenceTick(SERVER_SLOW_LANE_INTERVAL_TICKS))
+        end
+        if NMServerZombiePulseTick and NMServerZombiePulseTick.hasActiveWork and NMServerZombiePulseTick.hasActiveWork() == true then
+            nextWakeTick = math.min(nextWakeTick, nextFutureWakeForCadenceTick(SERVER_ACTIVE_LANE_INTERVAL_TICKS))
+        end
+        if shouldRunTargetPublisher() and NMServerZombieVisualTargetPublisher.hasPublishWork then
+            nextWakeTick = math.min(nextWakeTick, nextFutureWakeForCadenceTick(SERVER_ACTIVE_LANE_INTERVAL_TICKS))
+        end
+        if hasLegacyServerTickHandler() == true then
+            nextWakeTick = math.min(nextWakeTick, nextFutureWakeForCadenceTick(SERVER_SLOW_LANE_INTERVAL_TICKS))
+        end
+    end
+    local activeZombieExecutor = NMServerMainRuntime.getActiveZombieExecutor()
+    if supportsExecutorActiveDeadlines(activeZombieExecutor) == true then
+        local executorWakeTick = tonumber(activeZombieExecutor.getNextActiveWorkCheckTick())
+        if executorWakeTick and executorWakeTick > currentTick and executorWakeTick < math.huge then
+            nextWakeTick = math.min(nextWakeTick, executorWakeTick)
+        end
+    end
+    return nextWakeTick
 end
 
 function NMServerMainRuntime.hasAnyTickWork()
     local canMutate = canRunAuthoritativeWorldMutation()
     local mpAuthority = isMPServerAuthority()
+    local currentTick = getSchedulerTick()
+    local activeWakeDue = shouldWakeForCadence(SERVER_ACTIVE_LANE_INTERVAL_TICKS)
+    local slowWakeDue = shouldWakeForCadence(SERVER_SLOW_LANE_INTERVAL_TICKS)
+    local maintenanceWakeDue = shouldWakeForCadence(SERVER_MAINTENANCE_LANE_INTERVAL_TICKS)
     if canMutate and NMServerZombieCorpseCarry and NMServerZombieCorpseCarry.hasPendingWork and NMServerZombieCorpseCarry.hasPendingWork() == true then
         return true, "corpse_carry_pending"
     end
-    if mpAuthority and NMServerVehicleTrackSchedulerTick and NMServerVehicleTrackSchedulerTick.hasWorldSources and NMServerVehicleTrackSchedulerTick.hasWorldSources() == true then
+    if hasVehicleTrackWork(mpAuthority) == true then
         return true, "vehicle_track_world_sources"
     end
-    if mpAuthority and NMServerSourceRefreshTick and NMServerSourceRefreshTick.hasWorldSources and NMServerSourceRefreshTick.hasWorldSources() == true then
+    if hasWorldSourceRefreshWork(mpAuthority) == true then
         return true, "source_refresh_world_sources"
     end
-    if mpAuthority and shouldWakeForCadence(SERVER_SLOW_LANE_INTERVAL_TICKS) and NMServerModeReconcile and NMServerModeReconcile.onTick then
+    if mpAuthority and slowWakeDue and NMServerModeReconcile and NMServerModeReconcile.onTick then
         return true, "mode_reconcile_due"
     end
-    if mpAuthority and shouldWakeForCadence(SERVER_ACTIVE_LANE_INTERVAL_TICKS) and NMServerZombiePulseTick and NMServerZombiePulseTick.hasActiveWork and NMServerZombiePulseTick.hasActiveWork() == true then
+    if mpAuthority and activeWakeDue and NMServerZombiePulseTick and NMServerZombiePulseTick.hasActiveWork and NMServerZombiePulseTick.hasActiveWork() == true then
         return true, "zombie_pulse_active"
     end
     local activeZombieExecutor = NMServerMainRuntime.getActiveZombieExecutor()
     local hasZombieExecutor = activeZombieExecutor ~= nil and activeZombieExecutor.onTick ~= nil and canMutate
     if hasZombieExecutor then
-        local executorActiveInterest = activeZombieExecutor.hasActiveWork and activeZombieExecutor.hasActiveWork() == true or false
-        local executorMaintenanceInterest = activeZombieExecutor.hasMaintenanceWork and activeZombieExecutor.hasMaintenanceWork() == true or false
+        local executorWakeDue = isExecutorActiveCheckDue(activeZombieExecutor, currentTick)
+        local executorActiveInterest = resolveExecutorActiveInterest(activeZombieExecutor, currentTick, maintenanceWakeDue)
         if executorActiveInterest then
             return true, "executor_active_interest"
         end
-        if executorActiveInterest ~= true and executorMaintenanceInterest == true and shouldWakeForCadence(SERVER_MAINTENANCE_LANE_INTERVAL_TICKS) then
+        local executorMaintenanceInterest = resolveExecutorMaintenanceInterest(activeZombieExecutor, maintenanceWakeDue, executorWakeDue)
+        if executorMaintenanceInterest == true then
             return true, "executor_maintenance_interest"
         end
     end
     if mpAuthority
         and shouldRunTargetPublisher()
-        and shouldWakeForCadence(SERVER_ACTIVE_LANE_INTERVAL_TICKS)
+        and activeWakeDue
         and NMServerZombieVisualTargetPublisher.hasPublishWork
-        and (NMServerZombieVisualTargetPublisher.hasPublishWork(serverSchedulerState.tick) == true
-            or NMServerZombieVisualTargetPublisher.hasPublishWork((tonumber(serverSchedulerState.tick) or 0) + 1) == true) then
+        and (NMServerZombieVisualTargetPublisher.hasPublishWork(currentTick) == true
+            or NMServerZombieVisualTargetPublisher.hasPublishWork(currentTick + 1) == true) then
         return true, "target_publisher_due"
     end
-    if mpAuthority and shouldWakeForCadence(SERVER_MAINTENANCE_LANE_INTERVAL_TICKS) and NMServerRegistryTick and NMServerRegistryTick.hasWorldSources and NMServerRegistryTick.hasWorldSources() == true then
+    if mpAuthority and maintenanceWakeDue and NMServerRegistryTick and NMServerRegistryTick.hasWorldSources and NMServerRegistryTick.hasWorldSources() == true then
         return true, "registry_tick_due"
     end
-    if hasLegacyServerTickPending(mpAuthority) == true and shouldWakeForCadence(SERVER_SLOW_LANE_INTERVAL_TICKS) then
+    if slowWakeDue and hasLegacyServerTickPending(mpAuthority) == true then
         return true, "legacy_tick_pending"
     end
     return false, "idle"
@@ -284,12 +496,71 @@ function NMServerMainRuntime.removeTickHook()
     end
 end
 
+function NMServerMainRuntime.shouldKeepServerTickGateRegistered()
+    if NMServerMainRuntime.isTickHookInstalled and NMServerMainRuntime.isTickHookInstalled() == true then
+        return true
+    end
+    local mpAuthority = isMPServerAuthority() == true
+    if hasVehicleTrackWork(mpAuthority) == true or hasWorldSourceRefreshWork(mpAuthority) == true then
+        return true
+    end
+    local nextVehicleTrackWakeTick = getNextVehicleTrackWakeTick(mpAuthority, getSchedulerTick())
+    if nextVehicleTrackWakeTick < math.huge then
+        return true
+    end
+    local nextWorldSourceRefreshWakeTick = getNextWorldSourceRefreshWakeTick(mpAuthority)
+    if nextWorldSourceRefreshWakeTick < math.huge then
+        return true
+    end
+    if NMServerZombieCorpseCarry
+        and NMServerZombieCorpseCarry.hasPendingWork
+        and NMServerZombieCorpseCarry.hasPendingWork() == true then
+        return true
+    end
+    if hasLegacyServerTickHandler() == true
+        and type(NMDevicesServer) == "table"
+        and NMDevicesServer.hasPendingWork
+        and NMDevicesServer.hasPendingWork() == true then
+        return true
+    end
+    return false
+end
+
 function NMServerMainRuntime.onClientCommand(module, command, player, args)
+    if NMServerTickGate and NMServerTickGate.wake then
+        NMServerTickGate.wake("client_command")
+    end
     if NMServerIntentRouter and NMServerIntentRouter.onClientCommand then
         NMServerIntentRouter.onClientCommand(module, command, player, args)
     end
     if type(NMDevicesServer) == "table" and NMDevicesServer.onClientCommand then
         NMDevicesServer.onClientCommand(module, command, player, args)
+    end
+end
+
+function NMServerMainRuntime.onZombieDead(zombie)
+    if NMServerZombieCorpseCarry and NMServerZombieCorpseCarry.onZombieDead then
+        NMServerZombieCorpseCarry.onZombieDead(zombie)
+    end
+    if NMServerZombieCorpseCarry
+        and NMServerZombieCorpseCarry.hasPendingWork
+        and NMServerZombieCorpseCarry.hasPendingWork() == true
+        and NMServerTickGate
+        and NMServerTickGate.wake then
+        NMServerTickGate.wake("zombie_dead")
+    end
+end
+
+function NMServerMainRuntime.onDeadBodySpawn(body)
+    if NMServerZombieCorpseCarry and NMServerZombieCorpseCarry.onDeadBodySpawn then
+        NMServerZombieCorpseCarry.onDeadBodySpawn(body)
+    end
+    if NMServerZombieCorpseCarry
+        and NMServerZombieCorpseCarry.hasPendingWork
+        and NMServerZombieCorpseCarry.hasPendingWork() == true
+        and NMServerTickGate
+        and NMServerTickGate.wake then
+        NMServerTickGate.wake("dead_body_spawn")
     end
 end
 
@@ -338,13 +609,13 @@ function NMServerMainRuntime.onTick()
     recordWrapperStage("server_wrapper_pre", wrapperPreStartedMs)
 
     local mpBranchStartedMs = beginWrapperStage()
-    if mpAuthority and NMServerVehicleTrackSchedulerTick and NMServerVehicleTrackSchedulerTick.onTick and NMServerVehicleTrackSchedulerTick.hasWorldSources and NMServerVehicleTrackSchedulerTick.hasWorldSources() then
+    if mpAuthority and NMServerVehicleTrackSchedulerTick and NMServerVehicleTrackSchedulerTick.onTick and NMServerVehicleTrackSchedulerTick.hasImmediateWork and NMServerVehicleTrackSchedulerTick.hasImmediateWork(getSchedulerTick()) then
         countScheduler("vehicle_track_run")
         NMServerVehicleTrackSchedulerTick.onTick()
     else
         countScheduler("vehicle_track_skip")
     end
-    if mpAuthority and NMServerSourceRefreshTick and NMServerSourceRefreshTick.onTick and NMServerSourceRefreshTick.hasWorldSources and NMServerSourceRefreshTick.hasWorldSources() then
+    if mpAuthority and activeLaneDue and NMServerSourceRefreshTick and NMServerSourceRefreshTick.onTick and NMServerSourceRefreshTick.hasWorldSources and NMServerSourceRefreshTick.hasWorldSources() then
         countScheduler("source_refresh_run")
         NMServerSourceRefreshTick.onTick()
     else
@@ -373,19 +644,23 @@ function NMServerMainRuntime.onTick()
 
     local executorRoutingStartedMs = beginWrapperStage()
     if hasZombieExecutor then
+        local executorWakeDue = isExecutorActiveCheckDue(activeZombieExecutor, getSchedulerTick())
         local executorInterestStartedMs = beginWrapperStage()
-        executorActiveInterest = activeZombieExecutor.hasActiveWork and activeZombieExecutor.hasActiveWork() == true or false
-        executorMaintenanceInterest = activeZombieExecutor.hasMaintenanceWork and activeZombieExecutor.hasMaintenanceWork() == true or false
+        executorActiveInterest = resolveExecutorActiveInterest(activeZombieExecutor, getSchedulerTick(), maintenanceLaneDue)
+        executorMaintenanceInterest = resolveExecutorMaintenanceInterest(activeZombieExecutor, maintenanceLaneDue, executorWakeDue)
         recordWrapperStage("server_wrapper_executor_interest", executorInterestStartedMs)
         executorShouldRunActiveLane = executorActiveInterest and activeLaneDue
-        executorShouldRunMaintenanceLane = executorActiveInterest ~= true and executorMaintenanceInterest == true and maintenanceLaneDue
+        executorShouldRunMaintenanceLane = executorActiveInterest ~= true and executorMaintenanceInterest == true and (maintenanceLaneDue or executorWakeDue)
         countWrapper(executorActiveInterest and "executor_active_interest" or "executor_idle_interest")
         countWrapper(executorMaintenanceInterest and "executor_maintenance_interest" or "executor_maintenance_idle")
         countWrapper(executorShouldRunActiveLane and "executor_active_lane_due" or "executor_active_lane_not_due")
         countWrapper(executorShouldRunMaintenanceLane and "executor_maintenance_due" or "executor_maintenance_not_due")
         if executorShouldRunActiveLane or executorShouldRunMaintenanceLane then
             countScheduler("active_zombie_executor_run")
-            activeZombieExecutor.onTick(executorShouldRunActiveLane and SERVER_ACTIVE_LANE_INTERVAL_TICKS or SERVER_MAINTENANCE_LANE_INTERVAL_TICKS)
+            local executorTickStep = executorShouldRunActiveLane
+                and SERVER_ACTIVE_LANE_INTERVAL_TICKS
+                or (maintenanceLaneDue and SERVER_MAINTENANCE_LANE_INTERVAL_TICKS or SERVER_ACTIVE_LANE_INTERVAL_TICKS)
+            activeZombieExecutor.onTick(executorTickStep)
         else
             countScheduler("active_zombie_executor_skip")
             countWrapper("executor_noop_exit")
@@ -447,9 +722,12 @@ function NMServerMainRuntime.registerTickGate()
     NMServerTickGate.register({
         advanceTick = NMServerMainRuntime.advanceSchedulerTick,
         hasAnyTickWork = NMServerMainRuntime.hasAnyTickWork,
+        getCurrentTick = NMServerMainRuntime.getSchedulerTick,
+        getNextWakeTick = NMServerMainRuntime.getNextTickGateWakeTick,
         isHookInstalled = NMServerMainRuntime.isTickHookInstalled,
         installHook = NMServerMainRuntime.installTickHook,
-        removeHook = NMServerMainRuntime.removeTickHook
+        removeHook = NMServerMainRuntime.removeTickHook,
+        shouldKeepGateRegistered = NMServerMainRuntime.shouldKeepServerTickGateRegistered
     })
 end
 

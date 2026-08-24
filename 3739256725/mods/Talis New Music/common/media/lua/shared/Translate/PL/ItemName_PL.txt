@@ -25,6 +25,7 @@ ItemName_PL = {
     ItemName_NewMusic_BoomboxCyan = "Boombox (cyjan)",
     ItemName_NewMusic_BoomboxMagenta = "Boombox (magenta)",
     ItemName_NewMusic_BoomboxPurple = "Boombox (fioletowy)",
+    ItemName_NewMusic_BoomboxOddbolt = "Boombox (Oddbolt)",
     ItemName_NewMusic_CDPlayerBlue = "Odtwarzacz CD (niebieski)",
     ItemName_NewMusic_CDPlayerBlack = "Odtwarzacz CD (czarny)",
     ItemName_NewMusic_CDPlayerCow = "Odtwarzacz CD (Muczenie)",

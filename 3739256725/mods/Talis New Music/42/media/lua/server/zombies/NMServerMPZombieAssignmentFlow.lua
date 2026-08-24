@@ -120,6 +120,23 @@ local function getPendingQueueCount()
     return NMServerMPZombieIntakeQueue.count and NMServerMPZombieIntakeQueue.count(NMServerMPZombieAssignmentFlow) or 0
 end
 
+local function getNextCadenceTickAfter(anchorTick, interval)
+    local tick = tonumber(anchorTick) or 0
+    local cadence = tonumber(interval) or 0
+    if cadence <= 0 then
+        return math.huge
+    end
+    return tick + cadence
+end
+
+local function getRecentAssignmentFollowupTick(recentAssignmentTick)
+    local assignmentTick = tonumber(recentAssignmentTick) or 0
+    if assignmentTick <= 0 then
+        return math.huge
+    end
+    return assignmentTick + ACTIVE_RECENT_WINDOW_TICKS
+end
+
 local function resolveInterestSnapshot()
     local diag = NMServerMPZombieAssignmentFlow._diag
     local currentTick = tonumber(diag.schedulerTicks) or tonumber(diag.ticks) or 0
@@ -142,26 +159,31 @@ local function resolveInterestSnapshot()
         snapshot.playerCount = getOnlinePlayerCount()
         local recentAssignmentTick = tonumber(diag.recentSchedulerAssignmentTick) or tonumber(diag.recentAssignmentTick) or 0
         local recentTickRun = tonumber(diag.recentSchedulerTickRun) or tonumber(diag.recentTickRun) or 0
+        local recentFollowupTick = getRecentAssignmentFollowupTick(recentAssignmentTick)
+        local recentFollowupDue = recentFollowupTick <= currentTick and recentTickRun < recentFollowupTick
+        local naturalScanDue = currentTick >= getNextCadenceTickAfter(recentTickRun, NATURAL_INTAKE_SCAN_INTERVAL)
+        local fallbackScanDue = currentTick >= getNextCadenceTickAfter(recentTickRun, TICK_INTERVAL)
 
         if snapshot.pendingCount > 0 then
             snapshot.active = true
             snapshot.maintenance = true
             snapshot.activeReason = "pending_queue"
             snapshot.maintenanceReason = "pending_queue"
-        elseif snapshot.playerCount > 0 and recentAssignmentTick > 0 and (currentTick - recentAssignmentTick) <= ACTIVE_RECENT_WINDOW_TICKS then
-            snapshot.active = true
+        elseif snapshot.playerCount > 0 and recentFollowupDue == true then
             snapshot.maintenance = true
-            snapshot.activeReason = "recent_assignment"
-            snapshot.maintenanceReason = "scan_due"
+            snapshot.activeReason = "idle"
+            snapshot.maintenanceReason = "recent_assignment_followup_due"
         elseif snapshot.playerCount > 0 and recentTickRun <= 0 then
-            snapshot.active = true
             snapshot.maintenance = true
-            snapshot.activeReason = "bootstrap"
-            snapshot.maintenanceReason = "scan_due"
-        elseif snapshot.playerCount > 0 then
+            snapshot.activeReason = "idle"
+            snapshot.maintenanceReason = "bootstrap"
+        elseif snapshot.playerCount > 0 and (naturalScanDue == true or fallbackScanDue == true) then
             snapshot.activeReason = "idle"
             snapshot.maintenance = true
-            snapshot.maintenanceReason = "scan_due"
+            snapshot.maintenanceReason = fallbackScanDue == true and "fallback_scan_due" or "natural_scan_due"
+        elseif snapshot.playerCount > 0 then
+            snapshot.activeReason = "idle"
+            snapshot.maintenanceReason = "scan_wait"
         else
             snapshot.activeReason = "idle"
             snapshot.maintenanceReason = "no_players"
@@ -243,6 +265,35 @@ function NMServerMPZombieAssignmentFlow.hasMaintenanceWork()
     return snapshot.maintenance == true
 end
 
+function NMServerMPZombieAssignmentFlow.getNextActiveWorkCheckTick()
+    if shouldRun() ~= true then
+        return math.huge
+    end
+    local diag = NMServerMPZombieAssignmentFlow._diag
+    local currentTick = tonumber(diag.schedulerTicks) or tonumber(diag.ticks) or 0
+    if getPendingQueueCount() > 0 then
+        return currentTick
+    end
+    if getOnlinePlayerCount() <= 0 then
+        return math.huge
+    end
+
+    local recentTickRun = tonumber(diag.recentSchedulerTickRun) or tonumber(diag.recentTickRun) or 0
+    if recentTickRun <= 0 then
+        return currentTick
+    end
+
+    local nextTick = math.huge
+    local recentAssignmentTick = tonumber(diag.recentSchedulerAssignmentTick) or tonumber(diag.recentAssignmentTick) or 0
+    local recentFollowupTick = getRecentAssignmentFollowupTick(recentAssignmentTick)
+    if recentFollowupTick < math.huge and recentTickRun < recentFollowupTick then
+        nextTick = math.min(nextTick, math.max(currentTick, recentFollowupTick))
+    end
+    nextTick = math.min(nextTick, getNextCadenceTickAfter(recentTickRun, NATURAL_INTAKE_SCAN_INTERVAL))
+    nextTick = math.min(nextTick, getNextCadenceTickAfter(recentTickRun, TICK_INTERVAL))
+    return nextTick
+end
+
 function NMServerMPZombieAssignmentFlow.observeSchedulerTick(tickStep)
     local diag = NMServerMPZombieAssignmentFlow._diag
     diag.schedulerTicks = (tonumber(diag.schedulerTicks) or 0) + math.max(1, tonumber(tickStep) or 1)
@@ -255,7 +306,7 @@ function NMServerMPZombieAssignmentFlow.onZombieUpdate(zombie)
         return
     end
     local diag = NMServerMPZombieAssignmentFlow._diag
-    NMServerMPZombieIntakeQueue.enqueue(
+    local enqueued = NMServerMPZombieIntakeQueue.enqueue(
         NMServerMPZombieAssignmentFlow,
         zombie,
         "zombie_update",
@@ -265,6 +316,9 @@ function NMServerMPZombieAssignmentFlow.onZombieUpdate(zombie)
         NMServerMPZombieIntakeQueue.getZombieQueueKey,
         diag
     )
+    if enqueued == true and NMServerTickGate and NMServerTickGate.wake then
+        NMServerTickGate.wake("mp_zombie_update")
+    end
 end
 
 function NMServerMPZombieAssignmentFlow.onTick(tickStep)

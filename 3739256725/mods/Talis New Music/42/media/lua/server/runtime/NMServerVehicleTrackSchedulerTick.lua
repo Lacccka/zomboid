@@ -14,6 +14,9 @@ NMServerVehicleTrackSchedulerTick._timelineRepairSig = NMServerVehicleTrackSched
 NMServerVehicleTrackSchedulerTick._unknownOpenDueBlockedSig = NMServerVehicleTrackSchedulerTick._unknownOpenDueBlockedSig or {}
 NMServerVehicleTrackSchedulerTick._unknownOpenStallHeartbeatMs = NMServerVehicleTrackSchedulerTick._unknownOpenStallHeartbeatMs or {}
 
+local TRACK_DEADLINE_TICK_MS = 50
+local UNKNOWN_OPEN_CHECK_TICKS = 120
+
 local function logRuntimeProbe(tag, detail)
     if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("playback_progression")) then
         return
@@ -403,6 +406,71 @@ end
 function NMServerVehicleTrackSchedulerTick.hasWorldSources()
     return hasRegistryEntries()
 end
+
+local function msDeadlineToSchedulerTick(dueAtMs, nowMsValue, currentTick)
+    local dueMs = tonumber(dueAtMs) or 0
+    local nowMsNumber = tonumber(nowMsValue) or 0
+    local tick = tonumber(currentTick) or 0
+    if dueMs <= 0 then
+        return math.huge
+    end
+    if nowMsNumber <= 0 or dueMs <= nowMsNumber then
+        return tick
+    end
+    local msPerTick = math.max(1, tonumber(TRACK_DEADLINE_TICK_MS) or 50)
+    local deltaTicks = math.max(1, math.ceil((dueMs - nowMsNumber) / msPerTick))
+    return tick + deltaTicks
+end
+
+local function resolveEntryNextTrackCheckTick(entry, state, currentTick, nowMsValue)
+    local tick = tonumber(currentTick) or 0
+    if type(entry) ~= "table" or type(state) ~= "table" then
+        return math.huge
+    end
+    if isWorldAuthoritativeEntry(entry, state) ~= true then
+        return math.huge
+    end
+    local dueAtMs = tonumber(state.serverTrackDueAtMs)
+        or tonumber(entry.serverTrackDueAtMs)
+        or tonumber(entry._serverTrackNextTransitionAtMs)
+        or 0
+    if dueAtMs > 0 then
+        return msDeadlineToSchedulerTick(dueAtMs, nowMsValue, tick)
+    end
+    local startedAtMs = tonumber(state.serverTrackStartedAtMs)
+        or tonumber(entry.serverTrackStartedAtMs)
+        or tonumber(entry._serverTrackStartedAtMs)
+        or 0
+    local timingMode = tostring(state.serverTrackTimingMode or entry.serverTrackTimingMode or "")
+    if timingMode == "unknown_open" or startedAtMs > 0 then
+        return tick + UNKNOWN_OPEN_CHECK_TICKS
+    end
+    return tick
+end
+
+function NMServerVehicleTrackSchedulerTick.getNextActiveWorkCheckTick(currentTick)
+    local worldRegistry = NMServerRegistryState and NMServerRegistryState.worldRegistry or nil
+    if type(worldRegistry) ~= "table" then
+        return math.huge
+    end
+    local tick = tonumber(currentTick) or 0
+    local nowMsValue = nowRealMs()
+    local nextTick = math.huge
+    for _, entry in pairs(worldRegistry) do
+        local state = entry and entry.stateSnapshot or nil
+        local entryNextTick = resolveEntryNextTrackCheckTick(entry, state, tick, nowMsValue)
+        if entryNextTick < nextTick then
+            nextTick = entryNextTick
+        end
+    end
+    return nextTick
+end
+
+function NMServerVehicleTrackSchedulerTick.hasImmediateWork(currentTick)
+    local nextTick = tonumber(NMServerVehicleTrackSchedulerTick.getNextActiveWorkCheckTick(currentTick))
+    return nextTick ~= nil and nextTick <= (tonumber(currentTick) or 0)
+end
+
 local function publishEntryState(entry, state)
     entry.stateSnapshot = NMDeviceState.export(state)
     NMServerRegistryBroadcast.broadcastEntry(

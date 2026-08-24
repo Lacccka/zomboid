@@ -135,7 +135,7 @@ Events.OnGameBoot.Add(function()
             for _, g in ipairs(self.gridContainerUis) do
                 if g.inventoryContainer and g.gridCore then
                     local gc = GridContainer.instances[g.inventoryContainer]
-                    if gc and gc.grids and gc.grids[1] and g.gridCore ~= gc.grids[1] then
+                    if gc and gc.grids and g.gridIndex and gc.grids[g.gridIndex] and g.gridCore ~= gc.grids[g.gridIndex] then
                         self.lastBackpackHash = nil
                         break
                     end
@@ -174,9 +174,13 @@ Events.OnGameBoot.Add(function()
                 for idx, old in ipairs(oldGrids) do
                     local isSameInv = (old.inventoryContainer == inv) or (old.inventoryContainer and inv and old.inventoryContainer.getType and inv.getType and old.inventoryContainer:getType() == "floor" and inv:getType() == "floor")
                     if isSameInv and old.gridIndex == i and not old.isOverflow then
-                        gridUi = old
-                        table.remove(oldGrids, idx)
-                        break
+                        if old.gridCore and (old.gridCore.width ~= gridCoreInstance.width or old.gridCore.height ~= gridCoreInstance.height) then
+                            -- Modificou W/H no DevTools, força recriar interface para alinhar caixa preta
+                        else
+                            gridUi = old
+                            table.remove(oldGrids, idx)
+                            break
+                        end
                     end
                 end
 
@@ -191,11 +195,13 @@ Events.OnGameBoot.Add(function()
                     gridUi.gridCore = gridCoreInstance
                     gridUi.inventoryContainer = inv
                 end
-                -- Altura base (SEM o footer da controlsUI): usada pelo
-                -- gridInv_positionControlsUI pra ancorar a barra logo abaixo do
-                -- conteúdo. Capturada aqui (e não no update) pra nunca ficar nil
-                -- no primeiro frame após o rebuild.
-                gridUi.baseGridHeight = gridUi.height
+                -- Recalcula a altura base pura (sem footer) baseada no gridCore atualizado.
+                -- Evita o bug de expansão infinita onde o gridUi.height reciclado já continha
+                -- o footer da frame anterior e somava repetidamente.
+                gridUi.baseGridHeight = (gridUi.gridCore.height * gridUi.cellSize) + (gridUi.gridPadding * 2) + gridUi.headerH
+                if gridUi.height ~= gridUi.baseGridHeight then
+                    gridUi:setHeight(gridUi.baseGridHeight)
+                end
                 -- Marca o grid do CHÃO (assinatura "floor") pra ele ser SEMPRE o
                 -- último painel no FlexBox (ver prerender).
                 gridUi.isFloor = GridContainer.containerSignature(inv) == "floor"
@@ -242,8 +248,28 @@ Events.OnGameBoot.Add(function()
                     else
                         overflowUi.unpositionedItems = gridContainer.unpositioned
                         overflowUi.inventoryContainer = inv
+                        
+                        -- Reconstroi o grid falso do overflow se foi reciclado
+                        local columns = 6
+                        local rows = math.max(1, math.ceil(#overflowUi.unpositionedItems / columns))
+                        local GridCore = require("DataModel/GridCore")
+                        local fakeCore = GridCore.new(columns, rows)
+                        local index = 1
+                        for row = 1, rows do
+                            for col = 1, columns do
+                                if index <= #overflowUi.unpositionedItems then
+                                    local it = overflowUi.unpositionedItems[index]
+                                    fakeCore:insertItem(it:getID(), col, row, 1, 1, false, it)
+                                    index = index + 1
+                                end
+                            end
+                        end
+                        overflowUi.gridCore = fakeCore
                     end
-                    overflowUi.baseGridHeight = overflowUi.height
+                    overflowUi.baseGridHeight = (overflowUi.gridCore.height * overflowUi.cellSize) + (overflowUi.gridPadding * 2) + overflowUi.headerH
+                    if overflowUi.height ~= overflowUi.baseGridHeight then
+                        overflowUi:setHeight(overflowUi.baseGridHeight)
+                    end
                     overflowUi.isFloor = GridContainer.containerSignature(inv) == "floor"
                     
                     overflowUi.baseX = 15
@@ -285,8 +311,27 @@ Events.OnGameBoot.Add(function()
             else
                 overflowUi.unpositionedItems = allPlayerUnpositioned
                 overflowUi.inventoryContainer = self.inventory
+                
+                local columns = 6
+                local rows = math.max(1, math.ceil(#overflowUi.unpositionedItems / columns))
+                local GridCore = require("DataModel/GridCore")
+                local fakeCore = GridCore.new(columns, rows)
+                local index = 1
+                for row = 1, rows do
+                    for col = 1, columns do
+                        if index <= #overflowUi.unpositionedItems then
+                            local it = overflowUi.unpositionedItems[index]
+                            fakeCore:insertItem(it:getID(), col, row, 1, 1, false, it)
+                            index = index + 1
+                        end
+                    end
+                end
+                overflowUi.gridCore = fakeCore
             end
-            overflowUi.baseGridHeight = overflowUi.height
+            overflowUi.baseGridHeight = (overflowUi.gridCore.height * overflowUi.cellSize) + (overflowUi.gridPadding * 2) + overflowUi.headerH
+            if overflowUi.height ~= overflowUi.baseGridHeight then
+                overflowUi:setHeight(overflowUi.baseGridHeight)
+            end
             overflowUi.isFloor = GridContainer.containerSignature(self.inventory) == "floor"
             
             overflowUi.baseX = self.width - overflowUi.width - 15

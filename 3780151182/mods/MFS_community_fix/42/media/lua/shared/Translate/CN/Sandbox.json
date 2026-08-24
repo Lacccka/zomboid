@@ -150,5 +150,7 @@
     "Sandbox_ModernFirearmsSystemSandboxGun_L94_Rifle_Spawn": "L94 步枪（原版）",
     "Sandbox_ModernFirearmsSystemSandboxGun_TrapperCarbine_Spawn": "Trapper 卡宾枪（原版）",
     "Sandbox_ModernFirearmsSystemSandboxGun_MSR7T_Rifle_Spawn": "MSR7T 步枪（原版）",
-    "Sandbox_ModernFirearmsSystemSandboxGun_UTS15_cat_Spawn": "UTS15霰弹"
+    "Sandbox_ModernFirearmsSystemSandboxGun_UTS15_cat_Spawn": "UTS15霰弹",
+    "Sandbox_ModernFirearmsSystemSandboxGun_DoubleBarrelShotgunSawnoff_Spawn": "锯短双管霰弹枪（原版）",
+    "Sandbox_ModernFirearmsSystemSandboxGun_Revolver_Short_Spawn": "SN38 短管左轮手枪（原版）"
 }

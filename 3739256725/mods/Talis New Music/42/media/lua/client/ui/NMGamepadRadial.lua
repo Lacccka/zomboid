@@ -163,16 +163,28 @@ end
 
 local function getModeLabel(policy, allowShuffle)
     local current = tostring(policy or "autoplay")
+    if NMTranslations and NMTranslations.modeTooltip then
+        if current == "loop_song" then
+            return NMTranslations.modeTooltip("LoopSong")
+        end
+        if current == "loop_album" then
+            return NMTranslations.modeTooltip("LoopAlbum")
+        end
+        if allowShuffle == true and current == "shuffle" then
+            return NMTranslations.modeTooltip("Shuffle")
+        end
+        return NMTranslations.modeTooltip("AutoOff")
+    end
     if current == "loop_song" then
-        return radialLabel("ModeLoopSong", "Mode: Loop Song")
+        return radialLabel("ModeLoopSong")
     end
     if current == "loop_album" then
-        return radialLabel("ModeLoopAlbum", "Mode: Loop Album")
+        return radialLabel("ModeLoopAlbum")
     end
     if allowShuffle == true and current == "shuffle" then
-        return radialLabel("ModeShuffle", "Mode: Shuffle")
+        return radialLabel("ModeShuffle")
     end
-    return radialLabel("ModeAutoOff", "Mode: Auto-Off")
+    return radialLabel("ModeAutoOff")
 end
 
 local function getGenericControlState(window)

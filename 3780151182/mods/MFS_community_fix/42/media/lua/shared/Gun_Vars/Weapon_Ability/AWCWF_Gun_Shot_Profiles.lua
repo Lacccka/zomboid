@@ -285,6 +285,30 @@ AWCWF_GunShotProfiles.AKS74U_cat_Drum = {
     fallback = "GunShot"
 }
 
+AWCWF_GunShotProfiles.Revolver_Long = {
+    triggerLayers = {"AW_50GS_Fire_FCG"},
+    normalLayers = {"AW_50GS_Fire_Core", "AW_50GS_Fire_Mech", "AW_50GS_Fire_Dist",
+                    "AW_50GS_Fire_Far", "AW_50GS_Fire_FCG"},
+    suppressorLayers = {"AW_50GS_Fire_Sup", "AW_50GS_Fire_FCG"},
+    lowAmmo = {
+        lastRoundsPercent = 0.33,
+        sounds = {{
+            maxRemainingPercent = 0,
+            soundName = "AW_LowAmmo_Warn_Last"
+        }, {
+            maxRemainingPercent = 0.1,
+            soundName = "AW_LowAmmo_Warn_Critical"
+        }, {
+            maxRemainingPercent = 0.15,
+            soundName = "AW_LowAmmo_Warn_Mid"
+        }, {
+            maxRemainingPercent = 0.33,
+            soundName = "AW_LowAmmo_Warn_Low"
+        }}
+    },
+    fallback = "GunShot"
+}
+
 AWCWF_GunShotProfiles.M500_cat = {
     triggerLayers = {"AW_50GS_Fire_FCG"},
     normalLayers = {"AW_50GS_Fire_Core", "AW_50GS_Fire_Mech", "AW_50GS_Fire_Dist",

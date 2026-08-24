@@ -32,7 +32,9 @@ function NMClientDetachedPlaybackPass.run(player, options)
     local detachedRemoveLogMs = options.detachedRemoveLogMs
     local logTransitionProbe = options.logTransitionProbe
     local logRuntime = options.logRuntime
+    local logVehicleRuntime = options.logVehicleRuntime
     local rememberFastSource = options.rememberFastSource
+    local rememberTrackMonitorContext = options.rememberTrackMonitorContext
     local rememberPlaybackLossSource = options.rememberPlaybackLossSource
     local emitPlaybackLossProbe = options.emitPlaybackLossProbe
     local pendingPlayback = options.pendingPlaybackOut or {}
@@ -53,6 +55,9 @@ function NMClientDetachedPlaybackPass.run(player, options)
                 detachedSyncCount = detachedSyncCount + 1
                 if rememberFastSource then
                     rememberFastSource(p.uuid, p.profile, p.state, p.source, player)
+                end
+                if rememberTrackMonitorContext then
+                    rememberTrackMonitorContext(p.uuid, p.profile, p.state, p.source, "drop_pending", p.item, nil)
                 end
                 if rememberPlaybackLossSource then
                     rememberPlaybackLossSource(p.uuid, p.state, p.source, {
@@ -146,8 +151,10 @@ function NMClientDetachedPlaybackPass.run(player, options)
                     applySPLocalVehiclePowerGuard(profile, state, src, uuid)
                 end
 
-                if shouldLogDetachedSync(state.deviceUUID, state, src) and logRuntime then
-                    logRuntime(
+                if shouldLogDetachedSync(state.deviceUUID, state, src) and (logRuntime or logVehicleRuntime) then
+                    local emitSyncLog = detachedContext == "vehicle" and logVehicleRuntime or logRuntime
+                    if emitSyncLog then
+                        emitSyncLog(
                         "detached_sync",
                         detachedOrchestration and detachedOrchestration.buildDetachedSyncDetail
                             and detachedOrchestration.buildDetachedSyncDetail(player, entry, state, src)
@@ -163,7 +170,8 @@ function NMClientDetachedPlaybackPass.run(player, options)
                                 tostring(state.isPlaying == true),
                                 tostring(state.mediaFullType or "nil")
                             )
-                    )
+                        )
+                    end
                 end
 
                 syncAndObserve(player, profile, state, entry.source, tickCount, {
@@ -173,6 +181,10 @@ function NMClientDetachedPlaybackPass.run(player, options)
                 detachedSyncCount = detachedSyncCount + 1
                 if rememberFastSource then
                     rememberFastSource(uuid, profile, state, entry and entry.source, player)
+                end
+                local sourceKind = detachedContext == "vehicle" and "vehicle" or "detached_item"
+                if rememberTrackMonitorContext then
+                    rememberTrackMonitorContext(uuid, profile, state, entry and entry.source, sourceKind, nil, entry)
                 end
                 if rememberPlaybackLossSource then
                     rememberPlaybackLossSource(uuid, state, entry and entry.source, {
@@ -191,7 +203,6 @@ function NMClientDetachedPlaybackPass.run(player, options)
                         media = state and state.mediaFullType
                     })
                 end
-                local sourceKind = detachedContext == "vehicle" and "vehicle" or "detached_item"
                 consumeAndDispatchTrackFinished(player, profile, state, entry, nil, sourceKind, uuid)
                 valid[tostring(state.deviceUUID)] = true
                 if not spPulseCandidates[uuid] then

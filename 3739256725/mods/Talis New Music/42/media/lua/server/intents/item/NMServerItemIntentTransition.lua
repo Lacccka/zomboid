@@ -302,14 +302,76 @@ function NMServerItemIntentTransition.buildPayload(ctx)
     return NMIntentPayloadBuilder.buildItemPayload(ctx.player, ctx.item, ctx.profile, ctx.args)
 end
 
+local function resolveSyncPlaybackMode(ctx)
+    local action = tostring(ctx and ctx.action or "")
+    if action == "sync_attached_world" or action == "sync_placed_world" or action == "sync_inventory_stowed" then
+        return "world", "explicit_world"
+    end
+
+    local sourceMode = tostring(ctx and ctx.args and ctx.args.sourceMode or ctx and ctx.sourceModeHint or "")
+    if sourceMode == "" then
+        sourceMode = "off"
+    end
+    local resolvedOutput = "none"
+    if NMDeviceProfiles and NMDeviceProfiles.resolveOutputMode then
+        resolvedOutput = tostring(NMDeviceProfiles.resolveOutputMode(ctx.profile, ctx.state, sourceMode, true) or "none")
+    end
+    if action == "sync_portable_placed" and (resolvedOutput == "world" or resolvedOutput == "silent") then
+        return "world", resolvedOutput
+    end
+    if resolvedOutput == "world" then
+        return "world", resolvedOutput
+    end
+    if action == "sync_portable_attached" and resolvedOutput == "personal" then
+        return "personal", resolvedOutput
+    end
+    if action == "sync_portable_stowed"
+        and (resolvedOutput == "personal"
+            or (resolvedOutput == "silent"
+                and NMDeviceProfiles
+                and NMDeviceProfiles.isPortableSilentProfile
+                and NMDeviceProfiles.isPortableSilentProfile(ctx.profile) == true)) then
+        return "personal", resolvedOutput
+    end
+    return "inventory", resolvedOutput
+end
+
+local function logSyncPlaybackModeResolution(ctx, oldMode, desiredMode, resolvedOutput)
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("memory")) then
+        return
+    end
+    local state = ctx and ctx.state or nil
+    local profile = ctx and ctx.profile or nil
+    local keep = false
+    if NMRegistryPolicy and NMRegistryPolicy.shouldKeepWorldSourceState then
+        keep = NMRegistryPolicy.shouldKeepWorldSourceState(state) == true
+    end
+    NMCore.logChannel(
+        "memory",
+        "server_sync_playback_mode_diag",
+        string.format(
+            "action=%s sourceMode=%s deviceType=%s oldPlaybackMode=%s resolvedOutput=%s resolvedPlaybackMode=%s keepWorldSource=%s",
+            tostring(ctx and ctx.action or ""),
+            tostring(ctx and ctx.args and ctx.args.sourceMode or ctx and ctx.sourceModeHint or ""),
+            tostring(profile and profile.deviceType or "unknown"),
+            tostring(oldMode or ""),
+            tostring(resolvedOutput or ""),
+            tostring(desiredMode or ""),
+            tostring(keep)
+        )
+    )
+end
+
 function NMServerItemIntentTransition.applyIntentTransition(ctx, payload)
     if NMServerItemIntentTransition.isSyncAction(ctx.action) then
-        local desiredPlaybackMode = "world"
+        local previousPlaybackMode = tostring(ctx.state.playbackMode or "")
+        local desiredPlaybackMode, resolvedOutput = resolveSyncPlaybackMode(ctx)
         local changed = false
         if tostring(ctx.state.playbackMode or "") ~= desiredPlaybackMode then
             ctx.state.playbackMode = desiredPlaybackMode
             changed = true
         end
+        logSyncPlaybackModeResolution(ctx, previousPlaybackMode, desiredPlaybackMode, resolvedOutput)
         return changed, nil, nil
     end
     local reducerEvent = mapActionToReducerEvent(ctx.action)

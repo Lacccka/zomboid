@@ -180,8 +180,8 @@ function AegisPagePlayers:createChildren()
         -- against a name that is not online right now (the usual case
         -- for a banned player)
         { key = "unban", label = "UI_Aegis_Unban",      icon = "check", mpOnly = true, gold = true },
-        { key = "killreset", label = "UI_Aegis_KillReset", icon = "refresh", danger = true,
-            tooltip = "UI_Aegis_KillResetTooltip" },
+        { key = "statsreset", label = "UI_Aegis_StatsReset", icon = "refresh", danger = true,
+            tooltip = "UI_Aegis_StatsResetTooltip" },
     }
     local bx = dx + 160
     local bw = math.floor((dw - 160 - 30) / 2)
@@ -674,21 +674,16 @@ end
 Events.OnServerCommand.Add(function(module, command, args)
     if module ~= "AegisPlayer" or command ~= "statsReset" then return end
     if args and args.ok then
-        Aegis.showToast(getText("UI_Aegis_KillResetDone"))
+        Aegis.showToast(getText("UI_Aegis_StatsResetDone", tonumber(args.touched) or 0))
     end
 end)
 
--- clears the zombie kill tally of one player. The counting bugs before
--- 2.4 inflated numbers that cannot be recomputed afterwards, nothing
--- records which kills were real, so starting the count over is the only
--- honest repair
-function AegisPagePlayers.on_killreset(self)
+-- opens the picker for the recorded statistics. Counters that ran wrong
+-- cannot be recomputed afterwards, nothing records which kills or deaths
+-- were real, so clearing them is the only honest repair
+function AegisPagePlayers.on_statsreset(self)
     if not self.selected then return end
-    local name = self.selected.username
-    AegisConfirm.show(getText("UI_Aegis_KillReset"), getText("UI_Aegis_KillResetAsk", name),
-        getText("UI_Aegis_KillReset"), self, function()
-            sendClientCommand(getPlayer(), "AegisPlayer", "statsReset", { field = "zkills", user = name })
-        end)
+    AegisStatsReset.show(self.selected.username)
 end
 
 function AegisPagePlayers.on_unban(self)

@@ -61,43 +61,21 @@ function CDPlayerWindow:getSlotRenderState(slotKey)
 end
 
 function CDPlayerWindow:buildRenderModel()
-    return NMDeviceUiHost.buildFamilyRenderModel(self, {
+    return NMDeviceUiHost.buildStableFamilyRenderModel(self, {
         decorateModel = function(window, model, build)
-            local resolved = build.resolved
-            local transport = build.transport
             local frontVariant = window:getFrontVariant()
-            local insertedCDTexture, insertedCDTexturePath = window:getInsertedCDWorldTexture()
 
             model.frontVariant = frontVariant
-            model.lidState = window:getLidRenderState()
             NMDeviceUiPresentationContract.setBackground(model, "cdplayer_backplate", { variant = frontVariant })
             NMDeviceUiPresentationContract.setShell(model, "cdplayer_shell", { variant = frontVariant })
             NMDeviceUiPresentationContract.setWorldItem(model, "cd", { variant = frontVariant })
             NMDeviceUiPresentationContract.setLid(model, "hinged_lid", {
                 variant = frontVariant,
-                state = model.lidState,
             })
             NMDeviceUiPresentationContract.setVolumeControl(model, "button_step", {
                 variant = frontVariant,
                 stepPct = tonumber(BUTTON_VOLUME_STEP_PCT) or 0,
             })
-            model.displayPoweredOn = window:isDisplayPoweredOn(transport)
-            model.powerIndicatorState = window:getPowerIndicatorState(transport)
-            model.displaySongLabelState = NMCDPlayerDisplayRenderState.buildSongLabelState(window, transport, resolved)
-            model.displayModeIconState = NMCDPlayerDisplayRenderState.buildModeIconState(window, transport)
-            model.displayBatteryState = NMCDPlayerDisplayRenderState.buildBatteryIndicatorState(window, transport, resolved)
-            model.displayClockState = NMCDPlayerDisplayRenderState.buildClockState(window, transport)
-            model.timedCDState = window:getTimedCDAnimationState()
-            model.insertedCDState = {
-                fullType = window:getInsertedMediaFullType(),
-                texture = insertedCDTexture,
-                texturePath = insertedCDTexturePath,
-                scaleTier = NMFancyDeviceUiScale and NMFancyDeviceUiScale.getScaleTier and NMFancyDeviceUiScale.getScaleTier() or "100",
-                visible = insertedCDTexture ~= nil,
-                spin = window:shouldSpinInsertedCD(transport) == true,
-                angle = tonumber(window._nmWorldCDSpinAngle) or 0.0,
-                rect = window:getWorldCDRect(),
-            }
             return model
         end,
     })

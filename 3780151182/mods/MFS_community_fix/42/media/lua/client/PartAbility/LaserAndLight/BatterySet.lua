@@ -70,11 +70,17 @@ MFSBatterySet = MFSBatterySet or {}
 
 local Battery = MFSBatterySet
 
-Battery.VERSION = "1.1.0"
+Battery.VERSION = "1.2.0"
 Battery.FULL = 100
 
--- Keys and scale are upstream's. Do not rename: ISGunAddBatteryAction and
--- ISGunRemoveBatteryAction both read and write these directly.
+-- Which part types have a battery at all, and - for the LASER only - the item
+-- modData key that still holds its charge.
+--
+-- The LIGHT entry is now only a validity marker: readCharge and writeCharge
+-- route "Light" to MFSGunLightStore before ever consulting this table, because
+-- item modData is destroyed on every shot in multiplayer. The key string is
+-- kept because MFSGunLightStore reads it once when migrating an older save.
+-- Do not use it as a live location for the light charge.
 Battery.KEYS = {
     Laser = "LaserBatteryReamin",
     Light = "LightBatteryReamin"
@@ -137,15 +143,8 @@ local function patchAddAction()
     function ISGunAddBatteryAction:perform()
         ISBaseTimedAction.perform(self)
 
-        local key = MFSBatterySet.KEYS[self.PartType]
-        if key and self.Weapon and self.BatteryItem then
-            local modData = self.Weapon:getModData()
-
-            local current = modData[key]
-            if type(current) ~= "number" then
-                current = MFSBatterySet.FULL
-            end
-
+        if self.Weapon and self.BatteryItem and MFSBatterySet.KEYS[self.PartType] then
+            local current = MFSBatterySet.readCharge(self.Weapon, self.PartType)
             local added = (try(function() return self.BatteryItem:getCurrentUsesFloat() end, 0) or 0) * 100
 
             local combined = current + added
@@ -153,7 +152,7 @@ local function patchAddAction()
                 combined = MFSBatterySet.FULL
             end
             combined = math.floor((combined * 10) + 0.5) / 10
-            modData[key] = combined
+            MFSBatterySet.writeCharge(self.Weapon, self.PartType, combined)
 
             -- Logged because this is the exact value the RC7B bug got wrong,
             -- and it only fires when a battery is actually fitted.
@@ -164,22 +163,81 @@ local function patchAddAction()
         self.character:getInventory():Remove(self.BatteryItem)
     end
 
+    -- RC7E: the remove action also wrote item modData directly, so in MP it
+    -- returned a battery whose charge came from a table that had already been
+    -- wiped by the last shot - i.e. always full. Routed through the same store.
+    if ISGunRemoveBatteryAction and not ISGunRemoveBatteryAction.MFSStorePatched then
+        ISGunRemoveBatteryAction.MFSStorePatched = true
+
+        function ISGunRemoveBatteryAction:perform()
+            ISBaseTimedAction.perform(self)
+
+            local remaining = 0
+            if self.Weapon and MFSBatterySet.KEYS[self.PartType] then
+                remaining = MFSBatterySet.readCharge(self.Weapon, self.PartType)
+                MFSBatterySet.writeCharge(self.Weapon, self.PartType, 0)
+            end
+
+            local batteryItem = self.character:getInventory():AddItem("Base.Battery")
+            if batteryItem then
+                batteryItem:setCurrentUsesFloat(remaining / 100)
+            end
+
+            log(tostring(self.PartType) .. " battery removed at " ..
+                tostring(remaining) .. "%")
+        end
+    end
+
     return true
 end
 
 -- Charge helpers -----------------------------------------------------------------
 
-local function getCharge(weapon, partType)
+-- RC7E: the LIGHT charge no longer lives on the item. In multiplayer the
+-- weapon's entire modData table is replaced a few frames after every shot and
+-- again on reload, which reset the charge to full continuously - so battery
+-- drain could never accumulate in MP and nobody had noticed. It is now held on
+-- the player, in MFSGunLightStore. See that file's header for the evidence.
+--
+-- The LASER charge is deliberately left on item modData. The laser does not
+-- function at all (AWCWF_LaserAndGunLightSet is empty upstream, defect D1), so
+-- its menu is cosmetic and moving it would be churn for no behaviour.
+-- Public on the table, not local: the patched timed-action methods above call
+-- these at runtime through MFSBatterySet, so they must be reachable from
+-- outside this file's local scope.
+function Battery.readCharge(weapon, partType)
+    if partType == "Light" then
+        if not MFSGunLightStore then
+            return nil
+        end
+        return MFSGunLightStore.getBattery(getPlayer(), weapon)
+    end
+
     local key = Battery.KEYS[partType]
     if not key then
         return nil
     end
     local value = weapon:getModData()[key]
     if type(value) ~= "number" then
-        -- P2: agree with MFSWeaponLightControl, which initialises to 100.
+        -- P2: a nil charge reads as full, so a gun whose light has never been
+        -- switched on still offers the correct menu entries.
         return Battery.FULL
     end
     return value
+end
+
+function Battery.writeCharge(weapon, partType, value)
+    if partType == "Light" then
+        if MFSGunLightStore then
+            MFSGunLightStore.setBattery(getPlayer(), weapon, value)
+        end
+        return
+    end
+
+    local key = Battery.KEYS[partType]
+    if key then
+        weapon:getModData()[key] = math.floor((value * 10) + 0.5) / 10
+    end
 end
 
 -- P4: smallest battery that still fills the gap; largest if none can.
@@ -254,7 +312,7 @@ local function buildFor(context, weapon, partType, removeKey, addKey)
         return
     end
 
-    local charge = getCharge(weapon, partType)
+    local charge = Battery.readCharge(weapon, partType)
     if not charge then
         return
     end
@@ -320,7 +378,9 @@ local function install()
     Events.OnFillInventoryObjectContextMenu.Add(onFillMenu)
     log("version " .. Battery.VERSION .. " installed; top-up allowed below " ..
         tostring(Battery.FULL) .. "; combine-and-cap " ..
-        (patched and "ACTIVE" or "FAILED TO APPLY"))
+        (patched and "ACTIVE" or "FAILED TO APPLY") ..
+        "; light charge store " ..
+        (MFSGunLightStore and "ACTIVE" or "MISSING - light battery will not persist"))
 end
 
 Events.OnGameStart.Add(install)

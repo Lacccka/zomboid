@@ -655,7 +655,15 @@ function NMClientWorldSourceCache.refreshVehicleSource(uuid)
         )
     end
 
-    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+    local vehicleResolveDebugEnabled = NMCore
+        and NMCore.logChannel
+        and NMCore.isSubsystemDebugEnabled
+        and NMCore.isSubsystemDebugEnabled("vehicle")
+    local vehicleResolveTraceEnabled = NMCore
+        and NMCore.logChannel
+        and NMCore.isSubsystemDebugEnabled
+        and NMCore.isSubsystemDebugEnabled("vehicle_trace")
+    if vehicleResolveDebugEnabled or vehicleResolveTraceEnabled then
         local resolvedVehicleId = tostring(update and update.attachedRuntimeId or source.vehicleId or entry.vehicleId or "nil")
         local attemptSig = string.format(
             "%s|%s|%s|%s",
@@ -667,7 +675,7 @@ function NMClientWorldSourceCache.refreshVehicleSource(uuid)
         if tostring(entry._vehicleResolveAttemptSig or "") ~= attemptSig then
             entry._vehicleResolveAttemptSig = attemptSig
             NMCore.logChannel(
-                "runtime",
+                vehicleResolveDebugEnabled and "vehicle" or "vehicle_trace",
                 "vehicle_resolve_attempt",
                 string.format(
                     "uuid=%s resolved=%s mode=%s reason=%s vehicleId=%s vehicleSqlId=%s sourceGen=%s degraded=%s attachStatus=%s candidateSource=%s partMatch=%s partUuid=%s",
@@ -688,12 +696,18 @@ function NMClientWorldSourceCache.refreshVehicleSource(uuid)
         end
     end
 
-    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+    local vehicleDebugEnabled = NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle")
+    local vehicleTraceEnabled = NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle_trace")
+    if vehicleDebugEnabled or vehicleTraceEnabled then
         entry._vehicleSourceRefreshSig = entry._vehicleSourceRefreshSig or {}
         entry._vehicleSourceRefreshMs = entry._vehicleSourceRefreshMs or {}
-        local shouldLog = resolvedChanged
-            or degraded
-            or NMRuntimeProbeAdapter.shouldEmitBucketedTransitionOrHeartbeat(
+        local statusSig = table.concat({ tostring(resolved), tostring(resolutionMode), tostring(resolutionReason) }, "|")
+        local previousStatusSig = tostring(entry._vehicleSourceRefreshStatusSig or "")
+        local statusChanged = previousStatusSig ~= statusSig
+        local traceMovement = vehicleTraceEnabled == true
+            and NMRuntimeProbeAdapter
+            and NMRuntimeProbeAdapter.shouldEmitBucketedTransitionOrHeartbeat
+            and NMRuntimeProbeAdapter.shouldEmitBucketedTransitionOrHeartbeat(
                 entry._vehicleSourceRefreshSig,
                 entry._vehicleSourceRefreshMs,
                 tostring(key),
@@ -712,9 +726,14 @@ function NMClientWorldSourceCache.refreshVehicleSource(uuid)
                     intervalMs = NMRuntimeProbeAdapter.longHeartbeatMs()
                 }
             )
+        entry._vehicleSourceRefreshStatusSig = statusSig
+        local shouldLog = degraded
+            or resolved ~= true
+            or statusChanged
+            or traceMovement
         if shouldLog then
             NMCore.logChannel(
-                    "runtime",
+                    vehicleTraceEnabled and "vehicle_trace" or "vehicle",
                     "vehicle_source_refresh",
                     string.format(
                     "uuid=%s resolved=%s mode=%s old=%.2f,%.2f,%.2f new=%.2f,%.2f,%.2f vehicleId=%s degraded=%s",
@@ -728,12 +747,10 @@ function NMClientWorldSourceCache.refreshVehicleSource(uuid)
                 )
             )
         end
-        local nowStamp = nowMs()
-        local statusSig = table.concat({ tostring(resolved), tostring(resolutionMode), tostring(resolutionReason) }, "|")
         entry._probeSigStoreStatus = entry._probeSigStoreStatus or {}
         entry._probeMsStoreStatus = entry._probeMsStoreStatus or {}
         local statusKey = "vehicleSourceResolutionStatus." .. tostring(key)
-        if NMRuntimeProbeAdapter.shouldEmitTransitionOrHeartbeat(
+        if vehicleDebugEnabled and NMRuntimeProbeAdapter.shouldEmitTransitionOrHeartbeat(
             entry._probeSigStoreStatus,
             entry._probeMsStoreStatus,
             statusKey,
@@ -741,7 +758,7 @@ function NMClientWorldSourceCache.refreshVehicleSource(uuid)
             60000
         ) then
             NMCore.logChannel(
-                "runtime",
+                "vehicle",
                 "vehicle_source_resolution_status",
                 string.format(
                     "uuid=%s status=%s mode=%s used_for_routing=false reason=%s",
@@ -963,17 +980,20 @@ function NMClientWorldSourceCache.collectInRange(player, out)
                 end
             end
             if tostring(entry and entry.kind or "") == "vehicle"
-                and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")
+                and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled
                 and NMCore.shouldLogEvery then
+                local vehicleDebugEnabled = NMCore.isSubsystemDebugEnabled("vehicle")
+                local vehicleTraceEnabled = NMCore.isSubsystemDebugEnabled("vehicle_trace")
                 local now = nowMs()
-                local gateKey = "runtimeProbe.vehicleGate." .. tostring(uuid)
+                local gateKey = "vehicleProbe.vehicleGate." .. tostring(uuid)
                 local gateState = tostring(inRange) .. ":" .. tostring(inFloors)
                 local gateChanged = entry._lastVehicleGateState ~= gateState
                 entry._lastVehicleGateState = gateState
-                local shouldLogGate = gateChanged or NMCore.shouldLogEvery(gateKey, now, 60000)
-                if shouldLogGate then
+                local traceHeartbeat = vehicleTraceEnabled and NMCore.shouldLogEvery(gateKey, now, 60000)
+                local shouldLogGate = (gateChanged and vehicleDebugEnabled) or traceHeartbeat
+                if shouldLogGate and (vehicleDebugEnabled or vehicleTraceEnabled) then
                     NMCore.logChannel(
-                        "runtime",
+                        gateChanged and vehicleDebugEnabled and "vehicle" or "vehicle_trace",
                         "vehicle_tracking_gate",
                         string.format(
                             "uuid=%s inRange=%s inFloors=%s x=%.2f y=%.2f z=%.2f",

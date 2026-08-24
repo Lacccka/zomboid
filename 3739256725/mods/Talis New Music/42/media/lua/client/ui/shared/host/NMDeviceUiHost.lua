@@ -76,6 +76,100 @@ function NMDeviceUiHost.resolveControlTransportState(window, options)
     return resolveTransportState(window, resolved)
 end
 
+function NMDeviceUiHost.getPassiveTransportKey(window)
+    if NMDeviceUiHost.getContextRevisionKey then
+        return NMDeviceUiHost.getContextRevisionKey(window)
+    end
+    return string.format(
+        "%s|%s",
+        tostring(window and window._nmContextRevision or 0),
+        tostring(window and window._nmContextCacheTargetKey or "")
+    )
+end
+
+function NMDeviceUiHost.getFamilyMechanics(window)
+    if NMDeviceUiFamilyPolicy and NMDeviceUiFamilyPolicy.resolveMechanicsForWindow then
+        return NMDeviceUiFamilyPolicy.resolveMechanicsForWindow(window)
+    end
+    local policy = window and window.getUiFamilyPolicy and window:getUiFamilyPolicy() or nil
+    return policy and policy.mechanics or nil
+end
+
+function NMDeviceUiHost.getPowerControlKind(window)
+    local mechanics = NMDeviceUiHost.getFamilyMechanics(window)
+    return tostring(mechanics and mechanics.powerControl or "")
+end
+
+function NMDeviceUiHost.hasCombinedPlayPower(window)
+    return NMDeviceUiHost.getPowerControlKind(window) == "combined_play_power"
+end
+
+function NMDeviceUiHost.hasSeparatePowerControl(window)
+    local kind = NMDeviceUiHost.getPowerControlKind(window)
+    return kind == "separate_power_button" or kind == "separate_power_switch"
+end
+
+function NMDeviceUiHost.hasHoldControl(window)
+    local mechanics = NMDeviceUiHost.getFamilyMechanics(window)
+    if mechanics and tostring(mechanics.holdControl or "") ~= "" then
+        return true
+    end
+    local policy = window and window.getUiFamilyPolicy and window:getUiFamilyPolicy() or nil
+    return policy and policy.supportsHold == true or false
+end
+
+function NMDeviceUiHost.getMediaVisualKind(window)
+    local mechanics = NMDeviceUiHost.getFamilyMechanics(window)
+    return tostring(mechanics and mechanics.mediaVisual or "")
+end
+
+function NMDeviceUiHost.resolvePassiveTransportState(window, resolved, options)
+    if not window then
+        return nil, ""
+    end
+    local opts = type(options) == "table" and options or {}
+    local cacheField = tostring(opts.cacheField or "_nmPassiveTransportCache")
+    local key = NMDeviceUiHost.getPassiveTransportKey(window)
+    local cached = window[cacheField]
+    if type(cached) == "table" and cached.key == key then
+        return cached.transport, key
+    end
+    local transport = NMDeviceUiHost.resolveTransportState(window, {
+        resolved = resolved,
+        renderModel = window._nmRenderModel,
+    })
+    window[cacheField] = {
+        key = key,
+        transport = transport,
+    }
+    return transport, key
+end
+
+function NMDeviceUiHost.markPassiveTransportSyncedForNextPrerender(window, transportKey, options)
+    if not window then
+        return
+    end
+    local opts = type(options) == "table" and options or {}
+    local keyField = tostring(opts.keyField or "_nmPassiveTransportSyncedKey")
+    local epochField = tostring(opts.epochField or "_nmPassiveTransportSyncedPrerenderEpoch")
+    window[keyField] = tostring(transportKey or NMDeviceUiHost.getPassiveTransportKey(window))
+    window[epochField] = (tonumber(window._nmFrameEpoch) or 0) + 1
+end
+
+function NMDeviceUiHost.hasPassiveTransportSyncForCurrentFrame(window, options)
+    if not window then
+        return false
+    end
+    local opts = type(options) == "table" and options or {}
+    local keyField = tostring(opts.keyField or "_nmPassiveTransportSyncedKey")
+    local epochField = tostring(opts.epochField or "_nmPassiveTransportSyncedPrerenderEpoch")
+    local expectedEpoch = tonumber(window[epochField])
+    if expectedEpoch == nil or expectedEpoch ~= (tonumber(window._nmFrameEpoch) or 0) then
+        return false
+    end
+    return tostring(window[keyField] or "") == tostring(NMDeviceUiHost.getPassiveTransportKey(window))
+end
+
 local function buildChromeState(window, policy)
     local chromePolicy = window and window.getUiChromePolicy and window:getUiChromePolicy() or nil
     local capabilities = window and window.getUiCapabilities and window:getUiCapabilities() or nil
@@ -162,6 +256,9 @@ function NMDeviceUiHost.touchAnimation(window)
     end
     ensureRevisions(window)
     window._nmAnimationRevision = window._nmAnimationRevision + 1
+    if NMUIRenderProbe and NMUIRenderProbe.count then
+        NMUIRenderProbe.count(window, "revision_bump.animation", 1)
+    end
     return window._nmAnimationRevision
 end
 
@@ -205,6 +302,43 @@ function NMDeviceUiHost.getRenderRevisionKey(window, includeFrameEpoch)
     )
 end
 
+local function splitRevisionKey(key)
+    local values = {}
+    local index = 1
+    for part in string.gmatch(tostring(key or "") .. "|", "([^|]*)|") do
+        if part == "" and index > 1 and index > #values + 1 then
+            break
+        end
+        values[index] = part
+        index = index + 1
+        if index > 4 then
+            break
+        end
+    end
+    return values
+end
+
+local function countRenderModelMissReason(window, previousKey, nextKey, includeFrameEpoch)
+    if not (NMUIRenderProbe and NMUIRenderProbe.count) then
+        return
+    end
+    if not window._nmRenderModel or tostring(previousKey or "") == "" then
+        NMUIRenderProbe.count(window, "render_model.miss_missing_cache", 1)
+        return
+    end
+    local previous = splitRevisionKey(previousKey)
+    local nextParts = splitRevisionKey(nextKey)
+    if tostring(previous[1] or "") ~= tostring(nextParts[1] or "") then
+        NMUIRenderProbe.count(window, "render_model.miss_render_revision", 1)
+    end
+    if tostring(previous[2] or "") ~= tostring(nextParts[2] or "") then
+        NMUIRenderProbe.count(window, "render_model.miss_animation_revision", 1)
+    end
+    if includeFrameEpoch == true and tostring(previous[3] or "") ~= tostring(nextParts[3] or "") then
+        NMUIRenderProbe.count(window, "render_model.miss_frame_epoch", 1)
+    end
+end
+
 function NMDeviceUiHost.buildCommonRenderModel(window, frame, options)
     if not window then
         return nil
@@ -225,8 +359,9 @@ function NMDeviceUiHost.buildCommonRenderModel(window, frame, options)
     if type(frame) == "table" and type(frame.transport) ~= "table" and type(transport) == "table" then
         frame.transport = transport
     end
-    local slotModel = opts.slotModel
-    if slotModel == nil and window.buildSlotFrameModel then
+    local includeSlotFrameModel = opts.includeSlotFrameModel ~= false
+    local slotModel = includeSlotFrameModel and opts.slotModel or nil
+    if includeSlotFrameModel and slotModel == nil and window.buildSlotFrameModel then
         slotModel = window:buildSlotFrameModel()
     end
     return {
@@ -262,13 +397,15 @@ function NMDeviceUiHost.buildFamilyRenderModel(window, options)
     end
 
     local opts = options or {}
-    local revisionKey = NMDeviceUiHost.getRenderRevisionKey(window, opts.includeFrameEpoch ~= false)
+    local includeFrameEpoch = opts.includeFrameEpoch ~= false
+    local revisionKey = NMDeviceUiHost.getRenderRevisionKey(window, includeFrameEpoch)
     if window._nmRenderModel and window._nmRenderModelRevisionKey == revisionKey then
         return window._nmRenderModel
     end
     if NMUIRenderProbe and NMUIRenderProbe.count then
         NMUIRenderProbe.count(window, "render_model.rebuild", 1)
     end
+    countRenderModelMissReason(window, window._nmRenderModelRevisionKey, revisionKey, includeFrameEpoch)
 
     local perfStart = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(window) or nil
     local hostFrame = opts.hostFrame
@@ -283,8 +420,9 @@ function NMDeviceUiHost.buildFamilyRenderModel(window, options)
     if resolved == nil and type(frame) == "table" then
         resolved = frame.resolved
     end
-    local slotModel = opts.slotModel
-    if slotModel == nil and window.buildSlotFrameModel then
+    local includeSlotFrameModel = opts.includeSlotFrameModel ~= false
+    local slotModel = includeSlotFrameModel and opts.slotModel or nil
+    if includeSlotFrameModel and slotModel == nil and window.buildSlotFrameModel then
         slotModel = window:buildSlotFrameModel()
     end
     local transport = NMDeviceUiHost.resolveTransportState(window, {
@@ -297,6 +435,7 @@ function NMDeviceUiHost.buildFamilyRenderModel(window, options)
         model = NMDeviceUiHost.buildCommonRenderModel(window, frame, {
             resolved = resolved,
             slotModel = slotModel,
+            includeSlotFrameModel = includeSlotFrameModel,
             transport = transport,
             state = opts.state,
         })
@@ -324,6 +463,18 @@ function NMDeviceUiHost.buildFamilyRenderModel(window, options)
         NMUIRenderProbe.endWindow(window, "device.buildRenderModel", perfStart)
     end
     return model
+end
+
+function NMDeviceUiHost.buildStableFamilyRenderModel(window, options)
+    local opts = {}
+    if type(options) == "table" then
+        for key, value in pairs(options) do
+            opts[key] = value
+        end
+    end
+    opts.includeFrameEpoch = false
+    opts.includeSlotFrameModel = false
+    return NMDeviceUiHost.buildFamilyRenderModel(window, opts)
 end
 
 function NMDeviceUiHost.dispatch(window, action, args, executor)

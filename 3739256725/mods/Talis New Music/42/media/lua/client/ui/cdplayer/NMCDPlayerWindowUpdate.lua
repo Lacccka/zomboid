@@ -117,12 +117,12 @@ local function updateContextInsertCloseState(self)
     end
 end
 
-local function updateHoldButtonRotation(self, nowMs)
-    self:syncHoldButtonAnimation(false)
+local function updateHoldButtonRotation(self, nowMs, transport)
+    self:syncHoldButtonAnimation(false, transport)
 
     local targetAngle = tonumber(self._nmHoldButtonTargetAngle)
     if targetAngle == nil then
-        targetAngle = self:getHoldRotationTargetAngle()
+        targetAngle = self:getHoldRotationTargetAngle(transport)
         self._nmHoldButtonTargetAngle = targetAngle
     end
 
@@ -166,8 +166,13 @@ function CDPlayerWindow:update()
     end
 
     local nowMs = NMUiAutoClose.getNowMs()
+    local resolved = self:resolveContextCached()
+    local transport = NMDeviceUiHost.resolveTransportState(self, {
+        resolved = resolved,
+        renderModel = self._nmRenderModel,
+    })
     updateWorldCDSpin(self, nowMs)
-    updateHoldButtonRotation(self, nowMs)
+    updateHoldButtonRotation(self, nowMs, transport)
     updateLidAnimation(self, nowMs)
     updatePendingContextMediaInsert(self)
     updateContextInsertCloseState(self)

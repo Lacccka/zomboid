@@ -22,6 +22,75 @@ local function stat(player, name)
     return round2(grab(function() return player:getStats():get(CharacterStat[name]) end))
 end
 
+-- xp1 to xp10 are the steps of a level, not the running total, so the
+-- start of the current level is their sum up to it (same walk the vanilla
+-- progress bar does in ISSkillProgressBar.getPreviousXpLvl)
+local XP_STEP = { "getXp1", "getXp2", "getXp3", "getXp4", "getXp5",
+                  "getXp6", "getXp7", "getXp8", "getXp9", "getXp10" }
+
+local function levelStart(perk, level)
+    local sum = 0
+    for i = 1, level do
+        local fn = XP_STEP[i]
+        if not fn then break end
+        sum = sum + (grab(function() return perk[fn](perk) end) or 0)
+    end
+    return sum
+end
+
+-- one line per learned skill: level plus how far into the next one the
+-- character was, so a rollback can be checked against a hard number
+local function skillLines(player)
+    local out = {}
+    local list = grab(function() return PerkFactory.PerkList end)
+    if not list then return out end
+    local count = grab(function() return list:size() end) or 0
+    for i = 0, count - 1 do
+        local perk = grab(function() return list:get(i) end)
+        local parent = perk and grab(function() return perk:getParent() end)
+        if perk and parent and parent ~= Perks.None then
+            local level = grab(function() return player:getPerkLevel(perk) end) or 0
+            local xp = grab(function() return player:getXp():getXP(perk) end) or 0
+            if level > 0 or xp > 0 then
+                local name = grab(function() return perk:getName() end) or
+                             grab(function() return perk:getId() end) or "?"
+                local line = name .. " " .. level
+                local step = grab(function()
+                    local fn = XP_STEP[level + 1]
+                    if not fn then return nil end
+                    return perk[fn](perk)
+                end)
+                if step and step > 0 then
+                    local into = xp - levelStart(perk, level)
+                    local pct = math.floor(into / step * 100 + 0.5)
+                    if pct < 0 then pct = 0 elseif pct > 100 then pct = 100 end
+                    line = line .. " (" .. pct .. "%, " .. math.floor(xp + 0.5) .. " xp)"
+                else
+                    line = line .. " (max, " .. math.floor(xp + 0.5) .. " xp)"
+                end
+                table.insert(out, line)
+            end
+        end
+    end
+    return out
+end
+
+local MAX_RECIPES = 120
+
+local function recipeLines(player)
+    local out = {}
+    local known = grab(function() return player:getKnownRecipes() end)
+    if not known then return out end
+    local count = grab(function() return known:size() end) or 0
+    for i = 0, count - 1 do
+        if #out >= MAX_RECIPES then break end
+        local r = grab(function() return known:get(i) end)
+        if r ~= nil and r ~= "" then table.insert(out, tostring(r)) end
+    end
+    table.sort(out)
+    return out, count
+end
+
 local SPEED_NAMES = { [1] = "sprinter", [2] = "fast shambler", [3] = "shambler", [4] = "random" }
 
 -- IsoAnimal extends IsoPlayer in B42, so the order matters:
@@ -179,6 +248,10 @@ local function collect(player)
     d.zombieKills = grab(function() return player:getZombieKills() end)
     d.survivorKills = grab(function() return player:getSurvivorKills() end)
     d.zombiesNear = zombiesNear(player)
+    d.skills = skillLines(player)
+    local recipes, total = recipeLines(player)
+    d.recipes = recipes
+    d.recipeTotal = total
     return d
 end
 

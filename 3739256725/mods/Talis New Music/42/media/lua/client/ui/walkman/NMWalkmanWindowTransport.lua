@@ -78,19 +78,25 @@ function WalkmanWindow:getLoopModeTooltip()
     local resolved = self:resolveContextCached()
     local policy = getLoopPolicy(resolved and resolved.state or nil)
     if policy == "loop_song" then
-        return NMTranslations.ui("ModeLoopSong", "Mode: Loop Song")
+        return NMTranslations.modeTooltip("LoopSong")
     end
     if policy == "loop_album" then
-        return NMTranslations.ui("ModeLoopAlbum", "Mode: Loop Album")
+        return NMTranslations.modeTooltip("LoopAlbum")
     end
     if policy == "shuffle" then
-        return NMTranslations.ui("ModeShuffle", "Mode: Shuffle")
+        return NMTranslations.modeTooltip("Shuffle")
     end
-    return NMTranslations.ui("ModeAutoOff", "Mode: Auto-Off")
+    return NMTranslations.modeTooltip("AutoOff")
 end
 
 function WalkmanWindow:getPlayButtonTooltip(transport)
     local transportState = getTransportState(self, transport)
+    if NMDeviceUiHost and NMDeviceUiHost.hasCombinedPlayPower and NMDeviceUiHost.hasCombinedPlayPower(self) ~= true then
+        if transportState and transportState.isPlaying == true then
+            return NMTranslations.ui("StopSong", "Stop Song")
+        end
+        return NMTranslations.ui("PlaySong", "Play Song")
+    end
     if transportState and transportState.isPlaying == true then
         return NMTranslations.ui("WalkmanStopPowerOff", "Stop / Power Off")
     end
@@ -108,10 +114,10 @@ function WalkmanWindow:getHoverTooltipAt(x, y)
         return self:getPlayButtonTooltip()
     end
     if pointInRect(x, y, self:getPrevButtonHitRect()) then
-        return NMTranslations.ui("PreviousTrack", "Previous Track")
+        return NMTranslations.ui("PreviousTrack")
     end
     if pointInRect(x, y, self:getNextButtonHitRect()) then
-        return NMTranslations.ui("NextTrack", "Next Track")
+        return NMTranslations.ui("NextTrack")
     end
     return nil
 end

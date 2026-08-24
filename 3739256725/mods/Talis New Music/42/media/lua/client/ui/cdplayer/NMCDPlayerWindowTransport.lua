@@ -110,26 +110,29 @@ function CDPlayerWindow:buildTransportState(resolved)
 end
 
 function CDPlayerWindow:getHoldTooltip(transport)
+    if NMDeviceUiHost and NMDeviceUiHost.hasHoldControl and NMDeviceUiHost.hasHoldControl(self) ~= true then
+        return ""
+    end
     local transportState = getTransportState(self, transport)
     if transportState and transportState.isHold == true then
-        return NMTranslations.ui("HoldOn", "Hold: ON")
+        return NMTranslations.ui("HoldOn")
     end
-    return NMTranslations.ui("HoldOff", "Hold: OFF")
+    return NMTranslations.ui("HoldOff")
 end
 
 function CDPlayerWindow:getModeTooltip(transport)
     local transportState = getTransportState(self, transport)
     local policy = transportState and transportState.playbackPolicy or "autoplay"
     if policy == "loop_song" then
-        return NMTranslations.ui("ModeLoopSong", "Mode: Loop Song")
+        return NMTranslations.modeTooltip("LoopSong")
     end
     if policy == "loop_album" then
-        return NMTranslations.ui("ModeLoopAlbum", "Mode: Loop Album")
+        return NMTranslations.modeTooltip("LoopAlbum")
     end
     if policy == "shuffle" then
-        return NMTranslations.ui("ModeShuffle", "Mode: Shuffle")
+        return NMTranslations.modeTooltip("Shuffle")
     end
-    return NMTranslations.ui("ModeAutoOff", "Mode: Auto-Off")
+    return NMTranslations.modeTooltip("AutoOff")
 end
 
 function CDPlayerWindow:getPowerTooltip(transport)
@@ -346,10 +349,10 @@ function CDPlayerWindow:getHoverTooltipAt(x, y)
         return FancySettingsWindow.getSettingsTooltipText()
     end
     if pointInRect(x, y, self:getInteractiveButtonHitRect("prev")) then
-        return NMTranslations.ui("PreviousTrack", "Previous Track")
+        return NMTranslations.ui("PreviousTrack")
     end
     if pointInRect(x, y, self:getInteractiveButtonHitRect("next")) then
-        return NMTranslations.ui("NextTrack", "Next Track")
+        return NMTranslations.ui("NextTrack")
     end
     if pointInRect(x, y, self:getInteractiveButtonHitRect("vol_up")) then
         return NMTranslations.ui("VolumeUp", "Volume Up")
@@ -608,16 +611,16 @@ function CDPlayerWindow:handleClusterButtonActivate(kind)
     return true
 end
 
-function CDPlayerWindow:getHoldRotationTargetAngle()
-    local transport = getControlTransportState(self)
-    if transport and transport.isHold == true then
+function CDPlayerWindow:getHoldRotationTargetAngle(transport)
+    local transportState = transport or getControlTransportState(self)
+    if transportState and transportState.isHold == true then
         return HOLD_BUTTON_ANGLE_HELD
     end
     return HOLD_BUTTON_ANGLE_UPRIGHT
 end
 
-function CDPlayerWindow:syncHoldButtonAnimation(forceSnap)
-    local targetAngle = self:getHoldRotationTargetAngle()
+function CDPlayerWindow:syncHoldButtonAnimation(forceSnap, transport)
+    local targetAngle = self:getHoldRotationTargetAngle(transport)
     local currentAngle = tonumber(self._nmHoldButtonAngle)
     if currentAngle == nil then
         currentAngle = targetAngle

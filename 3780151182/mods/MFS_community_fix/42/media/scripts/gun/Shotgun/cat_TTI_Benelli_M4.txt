@@ -6,7 +6,7 @@ item TTI_Benelli_M4_cat
         WeaponSprite = TTI_Benelli_M4_cat,
         DisplayName = TTI贝纳利M4霰弹枪,      
         CyclicRateMultiplier = 1.9,
-       RackAfterShoot = TRUE,
+        /*RackAfterShoot = TRUE,*/
         Weight = 3,
         MaxAmmo = 7,
         MaxRange = 22,

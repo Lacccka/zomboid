@@ -25,6 +25,7 @@ ItemName_ES = {
     ItemName_NewMusic_BoomboxCyan = "Radiocasete (cian)",
     ItemName_NewMusic_BoomboxMagenta = "Radiocasete (magenta)",
     ItemName_NewMusic_BoomboxPurple = "Radiocasete (morado)",
+    ItemName_NewMusic_BoomboxOddbolt = "Radiocasete (Oddbolt)",
     ItemName_NewMusic_CDPlayerBlue = "Reproductor de CD (azul)",
     ItemName_NewMusic_CDPlayerBlack = "Reproductor de CD (negro)",
     ItemName_NewMusic_CDPlayerCow = "Reproductor de CD (Muu)",

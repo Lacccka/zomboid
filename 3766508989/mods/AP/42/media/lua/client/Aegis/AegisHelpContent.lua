@@ -254,6 +254,16 @@ AegisHelpContent.DE = {
         } },
     },
     changelog = {
+        { version = "2.5.1", date = "August 2026", sections = {
+            { title = "Neu hinzugef\195\188gt", points = {
+                "Ausgebrannte Fahrzeuge lassen sich jetzt spawnen. Sie stehen mit der Markierung \"Ausgebrannt\" in derselben Liste.",
+                "Der Todesbericht h\195\164lt jetzt fest, welche Fertigkeiten und Rezepte mit der Figur verloren gingen, mit Stufe und Fortschritt in Prozent.",
+                "Aus \"Kills zur\195\188cksetzen\" wurde \"Statistiken zur\195\188cksetzen\": ein Auswahlfenster bestimmt, welche Werte gel\195\182scht werden, f\195\188r einen Spieler oder alle, samt Rundumschlag f\195\188r die ganze Liste.",
+            } },
+            { title = "Behoben", points = {
+                "Die Zeitstempel in den Aufzeichnungen liefen in Weltzeit statt in der Uhrzeit des Servers und gingen je nach Zeitzone um Stunden daneben.",
+            } },
+        } },
         { version = "2.5", date = "August 2026", sections = {
             { title = "Neu hinzugef\195\188gt", points = {
                 "Ein gef\195\188hrter Rundgang beim ersten \195\150ffnen: acht Halte durch die wichtigsten Seiten. \195\156berspringen z\195\164hlt als gesehen, neu starten geht jederzeit \195\188ber die Hilfe.",
@@ -714,6 +724,16 @@ AegisHelpContent.EN = {
         } },
     },
     changelog = {
+        { version = "2.5.1", date = "August 2026", sections = {
+            { title = "New", points = {
+                "Burnt out vehicles can be spawned now. They sit in the same list, marked as \"Burnt\".",
+                "The death report now records which skills and recipes died with the character, including level and progress in percent.",
+                "\"Reset kills\" grew into \"Reset statistics\": a picker decides which values are cleared, for one player or for everyone, plus a full wipe of the whole ledger.",
+            } },
+            { title = "Fixed", points = {
+                "Timestamps in the records ran on universal time instead of the server clock and drifted hours off depending on the timezone.",
+            } },
+        } },
         { version = "2.5", date = "August 2026", sections = {
             { title = "New", points = {
                 "A guided tour on first open: eight stops through the pages that matter. Skipping counts as seen, restart it any time from the help window.",

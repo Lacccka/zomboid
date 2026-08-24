@@ -36,6 +36,25 @@ local function resolveDraggedItemsSnapshotNow()
     return {}, true
 end
 
+local function sanitizeCounterPart(value)
+    local text = tostring(value or "")
+    text = string.gsub(text, "[^%w_%-%.]", "_")
+    if text == "" then
+        return "unknown"
+    end
+    return text
+end
+
+local function countUiRender(window, key, delta)
+    if NMUIRenderProbe and NMUIRenderProbe.count then
+        NMUIRenderProbe.count(window, tostring(key or "unknown"), tonumber(delta) or 1)
+    end
+end
+
+local function countRevisionBump(window, revisionKey)
+    countUiRender(window, "revision_bump." .. sanitizeCounterPart(revisionKey), 1)
+end
+
 return function(NMSlotHostLifecycle)
     function NMSlotHostLifecycle.initHostState(window)
         if not window then
@@ -77,6 +96,7 @@ return function(NMSlotHostLifecycle)
         if not window then
             return
         end
+        countUiRender(window, "invalidate.context_cache", 1)
         window._nmContextCache = nil
         window._nmContextCacheEpoch = nil
         window._nmContextCacheTargetKey = nil
@@ -98,6 +118,10 @@ return function(NMSlotHostLifecycle)
         window._nmSlotRevision = (tonumber(window._nmSlotRevision) or 0) + 1
         window._nmSlotContentRevision = (tonumber(window._nmSlotContentRevision) or 0) + 1
         window._nmRenderRevision = (tonumber(window._nmRenderRevision) or 0) + 1
+        countRevisionBump(window, "context")
+        countRevisionBump(window, "slot_interaction")
+        countRevisionBump(window, "slot_content")
+        countRevisionBump(window, "render")
         if window.onInvalidateSlotHostContextCache then
             window:onInvalidateSlotHostContextCache()
         end
@@ -107,6 +131,7 @@ return function(NMSlotHostLifecycle)
         if not window then
             return
         end
+        countUiRender(window, "invalidate.slot_frame_model", 1)
         window._nmSlotHostFrame = nil
         window._nmSlotHostFrameEpoch = nil
         window._nmSlotHostFrameRevisionKey = nil
@@ -120,6 +145,9 @@ return function(NMSlotHostLifecycle)
         window._nmSlotRevision = (tonumber(window._nmSlotRevision) or 0) + 1
         window._nmSlotContentRevision = (tonumber(window._nmSlotContentRevision) or 0) + 1
         window._nmRenderRevision = (tonumber(window._nmRenderRevision) or 0) + 1
+        countRevisionBump(window, "slot_interaction")
+        countRevisionBump(window, "slot_content")
+        countRevisionBump(window, "render")
     end
 
     function NMSlotHostLifecycle.beginFrameEpoch(window, reason)
@@ -397,6 +425,9 @@ return function(NMSlotHostLifecycle)
             return
         end
         local opts = options or {}
+        local cause = sanitizeCounterPart(opts.cause or "ui_change")
+        countUiRender(window, "invalidate.ui_change", 1)
+        countUiRender(window, "invalidate.ui_change." .. cause, 1)
         NMSlotHostLifecycle.markUiRefreshPending(window, opts.cause or "ui_change", opts.pendingMs)
         if opts.context ~= false and window.invalidateContextCache then
             window:invalidateContextCache()

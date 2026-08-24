@@ -198,6 +198,7 @@ module Base
         ModelWeaponPart = Gunpart.XY_Beowulf Gunpart.XY_Beowulf Canon Canon,
         ModelWeaponPart = Gunpart.QT_F93 Gunpart.QT_F93 Stock Stock,
         ModelWeaponPart = Gunpart.QT_Gen3 Gunpart.QT_Gen3 Stock Stock,
+        ModelWeaponPart = Gunpart.QT_sr Gunpart.QT_sr Stock Stock,
        ModelWeaponPart    = Gunpart.QT_LDT416 Gunpart.QT_LDT416 Stock Stock,
         /*         ModelWeaponPart = Gunpart.HW_SH Gunpart.HW_SH Light Light, */
        ModelWeaponPart = Gunpart.558holo Gunpart.558holo Scope Scope,

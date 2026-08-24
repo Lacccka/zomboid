@@ -112,7 +112,7 @@ return function(NMSlotHostLifecycle)
             return window._nmSlotContentModel
         end
         if NMUIRenderProbe and NMUIRenderProbe.count then
-            NMUIRenderProbe.count(window, "slot_frame.rebuild", 1)
+            NMUIRenderProbe.count(window, "slot_frame.content_rebuild", 1)
         end
         local perfStart = NMUIRenderProbe and NMUIRenderProbe.beginWindow and NMUIRenderProbe.beginWindow(window) or nil
         local frame = NMSlotHostLifecycle.buildHostFrame(window)
@@ -163,6 +163,9 @@ return function(NMSlotHostLifecycle)
         end
         if window._nmSlotFrameModel and window._nmSlotFrameModelRevisionKey == revisionKey then
             return window._nmSlotFrameModel
+        end
+        if NMUIRenderProbe and NMUIRenderProbe.count then
+            NMUIRenderProbe.count(window, "slot_frame.interaction_rebuild", 1)
         end
         local contentModel = NMSlotHostLifecycle.buildSlotContentModel(window) or {}
         local hostFrame = NMSlotHostLifecycle.buildHostFrame(window)

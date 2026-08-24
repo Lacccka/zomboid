@@ -1,7 +1,69 @@
 local NMUiAutoClose = require "ui/shared/host/NMUiAutoClose"
+local FancySettingsWindow = require "ui/shared/host/NMFancySettingsWindow"
 
 local env = _G.NMDeviceWindowEnv
 setfenv(1, env)
+
+local GENERIC_GEAR_MAX_SIZE = 13
+local GENERIC_GEAR_GAP = 3
+local GENERIC_GEAR_TINT = 1.6
+local GENERIC_GEAR_TOOLTIP_FALLBACK = "Settings"
+
+local function pointInRect(x, y, rect)
+    return rect
+        and x >= rect.x
+        and y >= rect.y
+        and x < rect.x + rect.w
+        and y < rect.y + rect.h
+end
+
+local function getGenericGearRect(window)
+    if not window then
+        return nil
+    end
+    local titleHeight = window.titleBarHeight and window:titleBarHeight() or 16
+    local size = math.max(10, math.min(GENERIC_GEAR_MAX_SIZE, titleHeight - 2))
+    local closeButton = window.closeButton
+    local closeX = closeButton and closeButton.getX and closeButton:getX() or 1
+    local closeW = closeButton and closeButton.getWidth and closeButton:getWidth() or math.max(12, titleHeight - 2)
+    return {
+        x = closeX + closeW + GENERIC_GEAR_GAP,
+        y = math.max(1, math.floor((titleHeight - size) * 0.5)),
+        w = size,
+        h = size
+    }
+end
+
+local function renderGenericGear(window)
+    if not (window and window.drawTextureScaled) then
+        return
+    end
+    local tex = FancySettingsWindow.getGearTexture and FancySettingsWindow.getGearTexture() or nil
+    if not tex then
+        return
+    end
+    local rect = getGenericGearRect(window)
+    if not rect then
+        return
+    end
+    local alpha = window._nmGenericGearPressed == true and 0.95 or 0.8
+    window:drawTextureScaled(tex, rect.x, rect.y, rect.w, rect.h, alpha, GENERIC_GEAR_TINT, GENERIC_GEAR_TINT, GENERIC_GEAR_TINT)
+end
+
+local function updateGenericGearTooltip(window, x, y)
+    if not window then
+        return false
+    end
+    local settingsTooltip = FancySettingsWindow.getSettingsTooltipText and FancySettingsWindow.getSettingsTooltipText() or GENERIC_GEAR_TOOLTIP_FALLBACK
+    if pointInRect(x, y, getGenericGearRect(window)) then
+        window.tooltip = settingsTooltip
+        return true
+    end
+    if window.tooltip == settingsTooltip then
+        window.tooltip = nil
+    end
+    return false
+end
 
 local function autoCloseProbeEnabled()
     return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("ui_auto_close") == true
@@ -97,6 +159,7 @@ function DeviceWindow:prerender()
         NMHeadphoneSlot.ensureGhostOverlay()
     end
     ISCollapsableWindow.prerender(self)
+    renderGenericGear(self)
     if NMUIRenderProbe and NMUIRenderProbe.endWindow then
         NMUIRenderProbe.endWindow(self, "device.prerender", perfStart)
     end
@@ -127,6 +190,12 @@ function DeviceWindow:onMouseUp(x, y)
     if NMSlotHostLifecycle.finalizeOwnedSlotDrag and NMSlotHostLifecycle.finalizeOwnedSlotDrag(self) == true then
         return true
     end
+    local shouldOpenSettings = self._nmGenericGearPressed == true and pointInRect(x, y, getGenericGearRect(self))
+    self._nmGenericGearPressed = false
+    if shouldOpenSettings then
+        FancySettingsWindow.openForSourceWindow(self)
+        return true
+    end
     return ISCollapsableWindow.onMouseUp(self, x, y)
 end
 
@@ -136,6 +205,11 @@ function DeviceWindow:onMouseDown(x, y)
     end
     if NMPortableMediaDropArbiter and NMPortableMediaDropArbiter.markWindowInteraction then
         NMPortableMediaDropArbiter.markWindowInteraction(self, "generic")
+    end
+    if pointInRect(x, y, getGenericGearRect(self)) then
+        self._nmGenericGearPressed = true
+        self:bringToTop()
+        return true
     end
     return ISCollapsableWindow.onMouseDown(self, x, y)
 end
@@ -147,7 +221,22 @@ function DeviceWindow:onMouseUpOutside(x, y)
     if NMSlotHostLifecycle.finalizeOwnedSlotDrag and NMSlotHostLifecycle.finalizeOwnedSlotDrag(self) == true then
         return true
     end
+    self._nmGenericGearPressed = false
     return ISCollapsableWindow.onMouseUpOutside(self, x, y)
+end
+
+function DeviceWindow:onMouseMove(dx, dy)
+    updateGenericGearTooltip(self, self:getMouseX(), self:getMouseY())
+    return ISCollapsableWindow.onMouseMove(self, dx, dy)
+end
+
+function DeviceWindow:onMouseMoveOutside(dx, dy)
+    self._nmGenericGearPressed = false
+    local settingsTooltip = FancySettingsWindow.getSettingsTooltipText and FancySettingsWindow.getSettingsTooltipText() or GENERIC_GEAR_TOOLTIP_FALLBACK
+    if self.tooltip == settingsTooltip then
+        self.tooltip = nil
+    end
+    return ISCollapsableWindow.onMouseMoveOutside(self, dx, dy)
 end
 
 function DeviceWindow:close()

@@ -395,7 +395,7 @@ local function isVehicleDualEmitterEnabled(context)
         and NMRuntimeConfig.getVehicleDualEmittersEnabled() == true
 end
 
-local function makeSingleActive(emitter, soundId, selectedSound, state, source, context, trackCount, isWorldEmitter)
+local function makeSingleActive(emitter, soundId, selectedSound, state, source, context, trackCount, isWorldEmitter, centeredWorldOutput, rendererIntent, sound3D)
     return {
         mode = "single",
         emitter = emitter,
@@ -403,6 +403,9 @@ local function makeSingleActive(emitter, soundId, selectedSound, state, source, 
         sound = selectedSound,
         epoch = tonumber(state.playbackEpoch) or 0,
         isWorldEmitter = isWorldEmitter == true,
+        _centeredWorldOutput = centeredWorldOutput == true,
+        _sound3D = sound3D == nil and isWorldEmitter == true or sound3D == true,
+        _rendererIntent = tostring(rendererIntent or (centeredWorldOutput == true and "world_centered" or (isWorldEmitter == true and "world_3d" or "personal"))),
         context = context,
         sourceGeneration = tonumber(state.sourceGeneration) or 0,
         trackIndex = tonumber(state.trackIndex) or 1,
@@ -446,7 +449,7 @@ local function updateDualCompatFields(active)
     end
 end
 
-local function startPlaybackChannel(player, source, useWorldOutput, candidates, channelName)
+local function startPlaybackChannel(player, source, useWorldOutput, candidates, channelName, force3D)
     local emitter, isWorldEmitter = getPlaybackEmitter(player, source, useWorldOutput)
     if not emitter then
         return nil, "emitter_missing"
@@ -456,7 +459,11 @@ local function startPlaybackChannel(player, source, useWorldOutput, candidates, 
         return nil, "sound_start_failed"
     end
     if emitter.set3D then
-        emitter:set3D(soundId, isWorldEmitter)
+        local use3D = force3D
+        if use3D == nil then
+            use3D = isWorldEmitter == true
+        end
+        emitter:set3D(soundId, use3D == true)
     end
     if runtimeDiag and runtimeDiag.countEvent then
         runtimeDiag.countEvent(NMPlaybackRuntime, "emitter_starts", 1)
@@ -466,6 +473,7 @@ local function startPlaybackChannel(player, source, useWorldOutput, candidates, 
         soundId = soundId,
         sound = selectedSound,
         isWorldEmitter = isWorldEmitter == true,
+        _sound3D = force3D == nil and isWorldEmitter == true or force3D == true,
         channelName = channelName,
         alive = true
     }, nil
@@ -485,14 +493,21 @@ local function dist3d(ax, ay, az, bx, by, bz)
 end
 
 local function logChannelPosUpdate(channel, oldX, oldY, oldZ, newX, newY, newZ)
-    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
+    if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled then
+        local traceEnabled = NMCore.isSubsystemDebugEnabled("vehicle_trace")
+        local emitterDebugEnabled = NMCore.isSubsystemDebugEnabled("emitter")
+        if not (traceEnabled or emitterDebugEnabled) then
+            return
+        end
         local dist = dist3d(newX, newY, newZ, oldX or newX, oldY or newY, oldZ or newZ)
         local nowMs = NMPlaybackRuntimeCommon.getNowRealMs and NMPlaybackRuntimeCommon.getNowRealMs() or 0
         local lastMs = tonumber(channel._lastPosLogMs) or 0
-        if dist >= 1.0 or (nowMs - lastMs) >= 60000 then
+        local shouldTrace = traceEnabled and (dist >= 1.0 or (nowMs - lastMs) >= 60000)
+        local shouldLogEmitter = emitterDebugEnabled and (dist >= 6.0 or (nowMs - lastMs) >= 60000)
+        if shouldTrace or shouldLogEmitter then
             channel._lastPosLogMs = nowMs
             NMCore.logChannel(
-                "runtime",
+                shouldTrace and "vehicle_trace" or "emitter",
                 "emitter_pos_update",
                 string.format(
                     "channel=%s old=%.2f,%.2f,%.2f new=%.2f,%.2f,%.2f dist=%.2f",
@@ -625,7 +640,14 @@ local function isChannelPlaying(channel)
     return playing ~= false
 end
 
-local function tryRetargetEmitterClass(active, useWorldOutput, source, uuid)
+local function getSingleEmitterClass(useWorldOutput, centeredWorldOutput)
+    if centeredWorldOutput == true then
+        return "world_centered"
+    end
+    return useWorldOutput == true and "world" or "personal"
+end
+
+local function tryRetargetSingleRenderer(active, useWorldOutput, centeredWorldOutput, source, uuid)
     if not (active and active.emitter and active.soundId) then
         return false
     end
@@ -633,19 +655,50 @@ local function tryRetargetEmitterClass(active, useWorldOutput, source, uuid)
         return false
     end
     local targetWorld = useWorldOutput == true
+    local target3D = targetWorld == true and centeredWorldOutput ~= true
     local ok = pcall(function()
-        active.emitter:set3D(active.soundId, targetWorld)
+        active.emitter:set3D(active.soundId, target3D == true)
     end)
     if not ok then
         return false
     end
     active.isWorldEmitter = targetWorld
+    active._centeredWorldOutput = centeredWorldOutput == true
+    active._sound3D = target3D == true
+    active._rendererIntent = centeredWorldOutput == true and "world_centered" or (targetWorld == true and "world_3d" or "personal")
+    active._lastRenderMode = "single"
+    active._lastEmitterClass = getSingleEmitterClass(useWorldOutput, centeredWorldOutput)
     if targetWorld and source and source.x and source.y and source.z and active.emitter.setPos then
         active.emitter:setPos(source.x, source.y, source.z)
     end
     logTransitionProbe(
-        "emitter_class_flip_in_place",
-        string.format("uuid=%s world=%s", tostring(uuid), tostring(targetWorld))
+        "emitter_renderer_retarget_in_place",
+        string.format(
+            "uuid=%s world=%s centeredWorld=%s target3D=%s class=%s",
+            tostring(uuid),
+            tostring(targetWorld),
+            tostring(centeredWorldOutput == true),
+            tostring(target3D == true),
+            tostring(active._lastEmitterClass or "")
+        )
+    )
+    return true
+end
+
+local function tryRetargetChannel3D(channel, target3D, uuid, tag)
+    if not (channel and channel.emitter and channel.soundId and channel.emitter.set3D) then
+        return false
+    end
+    local ok = pcall(function()
+        channel.emitter:set3D(channel.soundId, target3D == true)
+    end)
+    if not ok then
+        return false
+    end
+    channel._sound3D = target3D == true
+    logTransitionProbe(
+        tostring(tag or "channel_renderer_retarget_in_place"),
+        string.format("uuid=%s channel=%s world=%s", tostring(uuid), tostring(channel.channelName or "unknown"), tostring(target3D == true))
     )
     return true
 end
@@ -708,6 +761,77 @@ local function getPlayerSeatDescriptor(player)
     local runtimeId = NMVehicleHelpers and NMVehicleHelpers.getVehicleIdString and tostring(NMVehicleHelpers.getVehicleIdString(vehicle) or "") or ""
     local sqlId = NMVehicleHelpers and NMVehicleHelpers.getVehicleSqlIdString and tostring(NMVehicleHelpers.getVehicleSqlIdString(vehicle) or "") or ""
     return tostring(seat or "unknown"), runtimeId, sqlId
+end
+
+local function isSpatialAudioEnabled()
+    if NMRuntimeConfig and NMRuntimeConfig.getSpatialAudioEnabled then
+        return NMRuntimeConfig.getSpatialAudioEnabled() ~= false
+    end
+    return true
+end
+
+local function resolveRendererIntent(audibility, routedOutputMode, useWorldOutput, useDualRender)
+    local context = tostring(audibility and audibility.context or "")
+    local route = tostring(routedOutputMode or audibility and audibility.audibility or "")
+    local spatialEnabled = isSpatialAudioEnabled()
+    local intent = {
+        class = "personal",
+        useWorldOutput = useWorldOutput == true,
+        useDualRender = useDualRender == true,
+        centeredWorldOutput = false,
+        vehicleWorldCentered = false,
+        worldChannel3D = useWorldOutput == true,
+        singleEmitter3D = useWorldOutput == true
+    }
+
+    if context == "vehicle" then
+        if audibility and audibility.localVehiclePersonalOverride == true then
+            intent.class = "personal"
+            intent.useWorldOutput = false
+            intent.useDualRender = false
+            intent.worldChannel3D = true
+            intent.singleEmitter3D = false
+            return intent
+        end
+        if useDualRender == true then
+            if spatialEnabled then
+                intent.class = "vehicle_dual"
+                intent.vehicleWorldCentered = false
+                intent.worldChannel3D = true
+            else
+                intent.class = "vehicle_dual_centered_world"
+                intent.vehicleWorldCentered = true
+                intent.worldChannel3D = false
+            end
+            intent.useWorldOutput = true
+            intent.useDualRender = true
+            intent.singleEmitter3D = true
+            return intent
+        end
+    end
+
+    if route == "world"
+        and useWorldOutput == true
+        and (tonumber(audibility and audibility.routeWorld) or 0) > 0.001 then
+        if spatialEnabled then
+            intent.class = "world_3d"
+            intent.useWorldOutput = true
+            intent.singleEmitter3D = true
+        else
+            intent.class = "world_centered"
+            intent.useWorldOutput = true
+            intent.centeredWorldOutput = true
+            intent.singleEmitter3D = false
+        end
+        intent.useDualRender = false
+        intent.worldChannel3D = intent.singleEmitter3D
+        return intent
+    end
+
+    intent.class = useWorldOutput == true and "world_3d" or "personal"
+    intent.singleEmitter3D = intent.useWorldOutput == true
+    intent.worldChannel3D = intent.singleEmitter3D
+    return intent
 end
 
 local function classifyVehicleListenerMatch(player, source)
@@ -851,7 +975,7 @@ local function classifyDualAudibleRoute(routeWorld, routePersonal)
 end
 
 local function logVehicleRouteProbe(player, state, source, sig, detailBuilder)
-    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")) then
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle_route")) then
         return
     end
     local uuid = tostring(state and state.deviceUUID or "")
@@ -874,7 +998,7 @@ local function logVehicleRouteProbe(player, state, source, sig, detailBuilder)
     else
         line = tostring(detailBuilder or stableSig)
     end
-    NMCore.logChannel("runtime", "vehicle_route_truth", line)
+    NMCore.logChannel("vehicle_route", "vehicle_route_truth", line)
 end
 
 local function updateActiveRouteSnapshot(active, state, source, context, playbackMode, resolvedOutput, localVehiclePersonalOverride)
@@ -887,6 +1011,7 @@ local function updateActiveRouteSnapshot(active, state, source, context, playbac
         mode = tostring(context or source and source.context or source and source.mode or "nil"),
         playbackMode = tostring(playbackMode or "nil"),
         resolvedOutput = tostring(resolvedOutput or "nil"),
+        rendererIntent = tostring(active._rendererIntent or ""),
         localVehiclePersonalOverride = localVehiclePersonalOverride == true,
         vehicleRouteDecision = tostring(active._lastVehicleRouteDecision or ""),
         vehicleDualRoutePreserved = active._vehicleDualRoutePreserved == true,
@@ -915,7 +1040,8 @@ local function updateActiveAudibleStateSnapshot(
     resolvedOutput,
     localVehiclePersonalOverride,
     useDualRender,
-    useWorldOutput
+    useWorldOutput,
+    rendererIntent
 )
     if type(active) ~= "table" then
         return
@@ -932,8 +1058,9 @@ local function updateActiveAudibleStateSnapshot(
     active._lastUseDualRender = useDualRender == true
     active._lastUseWorldOutput = useWorldOutput == true
     active._localVehiclePersonalOverride = localVehiclePersonalOverride == true
+    active._rendererIntent = tostring(rendererIntent or active._rendererIntent or "")
     active._lastRenderMode = useDualRender == true and "dual" or "single"
-    active._lastEmitterClass = useDualRender == true and "dual" or (useWorldOutput == true and "world" or "personal")
+    active._lastEmitterClass = useDualRender == true and tostring(rendererIntent or "dual") or getSingleEmitterClass(useWorldOutput, active._centeredWorldOutput == true)
     active._lastOccupantLocalFlag = localVehiclePersonalOverride == true
 end
 
@@ -1017,18 +1144,18 @@ local function logVehicleRouteTransitionDecision(uuid, state, active, decision, 
     )
 end
 
-local function resolveVehicleRenderShapeDecision(active, state, source, audibility, useDualRender, useWorldOutput)
+local function resolveVehicleRenderShapeDecision(active, state, source, audibility, useDualRender, useWorldOutput, rendererIntent)
     if not (state and source and audibility) then
         return nil
     end
-    if tostring(source.context or source.mode or active.context or "") ~= "vehicle" then
+    if tostring(source.context or source.mode or (active and active.context) or "") ~= "vehicle" then
         return nil
     end
     local decision = {
         occupantLocal = audibility.localVehiclePersonalOverride == true,
         targetOutputMode = tostring(audibility.audibility or audibility.outputMode or "personal"),
         targetRenderMode = useDualRender == true and "dual" or "single",
-        targetEmitterClass = useDualRender == true and "dual" or (useWorldOutput == true and "world" or "personal"),
+        targetEmitterClass = useDualRender == true and tostring(rendererIntent or "vehicle_dual") or (useWorldOutput == true and "world" or "personal"),
         applyDualRender = useDualRender == true,
         preserveDualRoute = false
     }
@@ -1037,7 +1164,7 @@ local function resolveVehicleRenderShapeDecision(active, state, source, audibili
         if audibility.localVehiclePersonalOverride == true and isVehicleDualEmitterEnabled("vehicle") == true then
             decision.reason = "vehicle_dual_bootstrap"
             decision.targetRenderMode = "dual"
-            decision.targetEmitterClass = "dual"
+            decision.targetEmitterClass = tostring(rendererIntent or "vehicle_dual")
             decision.applyDualRender = true
             decision.preserveDualRoute = true
         end
@@ -1071,7 +1198,7 @@ local function resolveVehicleRenderShapeDecision(active, state, source, audibili
         decision.restartRequired = true
         decision.reason = "vehicle_authoritative_restart_preserve_dual"
         decision.targetRenderMode = "dual"
-        decision.targetEmitterClass = "dual"
+        decision.targetEmitterClass = tostring(rendererIntent or "vehicle_dual")
         decision.applyDualRender = true
         decision.preserveDualRoute = true
         return decision
@@ -1109,8 +1236,8 @@ local function logRestartSuppressedSameRoute(uuid, state, context)
     )
 end
 
-local function logVehicleRouteShapeProbe(uuid, state, active, decision, restart, useDualRender, useWorldOutput, audibility)
-    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle_route")) then
+local function logVehicleRouteShapeProbe(uuid, state, active, decision, restart, useDualRender, useWorldOutput, audibility, rendererIntent)
+    if not (NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle_trace")) then
         return
     end
     local key = tostring(uuid or "")
@@ -1129,12 +1256,15 @@ local function logVehicleRouteShapeProbe(uuid, state, active, decision, restart,
         end
     end
     local routeSig = table.concat({
+        tostring(NMClientPlaybackTick and NMClientPlaybackTick.getPendingVehicleSeatTransition and (NMClientPlaybackTick.getPendingVehicleSeatTransition() or {}).reason or "none"),
         tostring(state and state.playbackEpoch or -1),
         tostring(state and state.trackIndex or -1),
         activeMode,
         activeEmitterClass,
         tostring(active and active._vehicleDualRoutePreserved == true),
         tostring(active and active._vehicleRestartRenderShape or "none"),
+        tostring(rendererIntent and rendererIntent.class or active and active._rendererIntent or "none"),
+        tostring(active and active.world and active.world._sound3D == true),
         tostring(useDualRender == true),
         tostring(useWorldOutput == true),
         tostring(audibility and audibility.localVehiclePersonalOverride == true),
@@ -1151,23 +1281,29 @@ local function logVehicleRouteShapeProbe(uuid, state, active, decision, restart,
     end
     vehicleRouteShapeSigByUuid[key] = routeSig
     vehicleRouteShapeMsByUuid[key] = nowMs
+    local pendingSeat = NMClientPlaybackTick and NMClientPlaybackTick.getPendingVehicleSeatTransition and NMClientPlaybackTick.getPendingVehicleSeatTransition() or nil
     NMCore.logChannel(
-        "vehicle_route",
+        "vehicle_trace",
         "vehicle_route_shape",
         string.format(
-            "uuid=%s epoch=%s track=%s activeMode=%s activeEmitter=%s useDual=%s useWorld=%s occupantLocal=%s restart=%s decision=%s preserved=%s renderShape=%s",
+            "uuid=%s epoch=%s track=%s intent=%s activeMode=%s activeEmitter=%s useDual=%s useWorld=%s world3D=%s occupantLocal=%s restart=%s decision=%s preserved=%s renderShape=%s pendingSeat=%s pendingEvent=%s pendingElapsedMs=%s",
             tostring(key),
             tostring(state and state.playbackEpoch or -1),
             tostring(state and state.trackIndex or -1),
+            tostring(rendererIntent and rendererIntent.class or active and active._rendererIntent or "none"),
             tostring(activeMode),
             tostring(activeEmitterClass),
             tostring(useDualRender == true),
             tostring(useWorldOutput == true),
+            tostring(active and active.world and active.world._sound3D == true),
             tostring(audibility and audibility.localVehiclePersonalOverride == true),
             tostring(restart == true),
             tostring(decision and decision.reason or "none"),
             tostring(active and active._vehicleDualRoutePreserved == true),
-            tostring(active and active._vehicleRestartRenderShape or "none")
+            tostring(active and active._vehicleRestartRenderShape or "none"),
+            tostring(pendingSeat and pendingSeat.reason or "none"),
+            tostring(pendingSeat and pendingSeat.event or ""),
+            tostring(pendingSeat and pendingSeat.elapsedMs or "nil")
         )
     )
 end
@@ -1452,7 +1588,12 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
         or ((outputMode == "world") or (outputMode == "silent" and context ~= "inventory"))
     local shouldPlay = audibility.shouldPlay == true
     local useDualVehicle = isVehicleDualEmitterEnabled(context) and (audibility.localVehiclePersonalOverride ~= true)
-    local useDualRender = useDualVehicle or (portablePolicy and portablePolicy.dualRender == true)
+    local requestedDualRender = useDualVehicle or (portablePolicy and portablePolicy.dualRender == true)
+    local rendererIntent = resolveRendererIntent(audibility, routedOutputMode, useWorldOutput, requestedDualRender)
+    useWorldOutput = rendererIntent.useWorldOutput == true
+    local useDualRender = rendererIntent.useDualRender == true
+    local useCenteredWorldOutput = rendererIntent.centeredWorldOutput == true
+    local vehicleWorldCentered = rendererIntent.vehicleWorldCentered == true
     local vehicleResolved = not (context == "vehicle" and source and source._vehicleResolved == false)
 
     if NMCore and NMCore.logChannel and NMCore.shouldLogEvery and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime") then
@@ -1462,11 +1603,14 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                 "runtime",
                 "route",
                 string.format(
-                    "uuid=%s context=%s output=%s worldOut=%s shouldPlay=%s isOn=%s isPlaying=%s muted=%s volume=%.2f effective=%.2f media=%s",
+                    "uuid=%s context=%s output=%s intent=%s worldOut=%s centeredWorld=%s vehicleWorldCentered=%s shouldPlay=%s isOn=%s isPlaying=%s muted=%s volume=%.2f effective=%.2f media=%s",
                     uuid,
                     tostring(context),
                     tostring(routedOutputMode),
+                    tostring(rendererIntent.class),
                     tostring(useWorldOutput == true),
+                    tostring(useCenteredWorldOutput == true),
+                    tostring(vehicleWorldCentered == true),
                     tostring(shouldPlay == true),
                     tostring(state.isOn == true),
                     tostring(state.isPlaying == true),
@@ -1515,7 +1659,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
     end
 
     local active = NMPlaybackRuntime.Active[uuid]
-    local vehicleRenderDecision = resolveVehicleRenderShapeDecision(active, state, source, audibility, useDualRender, useWorldOutput)
+    local vehicleRenderDecision = resolveVehicleRenderShapeDecision(active, state, source, audibility, useDualRender, useWorldOutput, rendererIntent.class)
     local effectiveUseDualRender = vehicleRenderDecision and vehicleRenderDecision.applyDualRender == true or useDualRender
     if not shouldPlay then
         if isCorpseRecoveredState(state) then
@@ -1604,8 +1748,11 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
             routedOutputMode,
             audibility.localVehiclePersonalOverride == true,
             effectiveUseDualRender,
-            useWorldOutput
+            useWorldOutput,
+            rendererIntent.class
         )
+        active._centeredWorldOutput = useCenteredWorldOutput == true
+        active._rendererIntent = tostring(rendererIntent.class or "")
         logRestartSuppressedSameRoute(uuid, state, context)
     end
     if active and active.mode == "dual" and (not effectiveUseDualRender)
@@ -1624,8 +1771,9 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
     local classFlipNeeded = false
     if active and active.mode ~= "dual" and (not effectiveUseDualRender) then
         classFlipNeeded = ((active.isWorldEmitter == true) ~= useWorldOutput)
+            or ((active._centeredWorldOutput == true) ~= (useCenteredWorldOutput == true))
         if classFlipNeeded then
-            if tryRetargetEmitterClass(active, useWorldOutput, source, uuid) then
+            if tryRetargetSingleRenderer(active, useWorldOutput, useCenteredWorldOutput, source, uuid) then
                 classFlipNeeded = false
                 if vehicleRenderDecision and vehicleRenderDecision.reason == "same_vehicle_world_single_to_personal_single" then
                     active._lastVehicleRouteDecision = tostring(vehicleRenderDecision.reason)
@@ -1635,7 +1783,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                 local reason = (active and active.emitter and active.emitter.set3D) and "retarget_failed" or "set3d_missing"
                 logTransitionProbe(
                     "emitter_class_flip_restart",
-                    string.format("uuid=%s reason=%s targetWorld=%s", tostring(uuid), tostring(reason), tostring(useWorldOutput == true))
+                    string.format("uuid=%s reason=%s targetWorld=%s target3D=%s", tostring(uuid), tostring(reason), tostring(useWorldOutput == true), tostring(useWorldOutput == true and useCenteredWorldOutput ~= true))
                 )
             end
         end
@@ -1651,10 +1799,39 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
         active._lastVehicleRouteDecision = nil
     end
 
+    if active and active.mode == "dual" and restart ~= true and tostring(context or "") == "vehicle" then
+        active._rendererIntent = tostring(rendererIntent.class or active._rendererIntent or "")
+        active._vehicleWorldCentered = vehicleWorldCentered == true
+        local targetWorld3D = rendererIntent.worldChannel3D == true
+        local currentWorld3D = active.world and active.world._sound3D == true
+        if currentWorld3D ~= targetWorld3D then
+            if tryRetargetChannel3D(active.world, targetWorld3D, uuid, "vehicle_world_renderer_retarget_in_place") ~= true then
+                restart = true
+                logTransitionProbe(
+                    "vehicle_world_renderer_retarget_restart",
+                    string.format("uuid=%s intent=%s targetWorld3D=%s", tostring(uuid), tostring(rendererIntent.class), tostring(targetWorld3D))
+                )
+                if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle_trace") then
+                    NMCore.logChannel(
+                        "vehicle_trace",
+                        "vehicle_world_renderer_retarget",
+                        string.format("uuid=%s result=restart intent=%s targetWorld3D=%s occupantLocal=%s", tostring(uuid), tostring(rendererIntent.class), tostring(targetWorld3D), tostring(audibility.localVehiclePersonalOverride == true))
+                    )
+                end
+            elseif NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle_trace") then
+                NMCore.logChannel(
+                    "vehicle_trace",
+                    "vehicle_world_renderer_retarget",
+                    string.format("uuid=%s result=in_place intent=%s targetWorld3D=%s occupantLocal=%s", tostring(uuid), tostring(rendererIntent.class), tostring(targetWorld3D), tostring(audibility.localVehiclePersonalOverride == true))
+                )
+            end
+        end
+    end
+
     if active and active.mode == "dual" then
         updateDualCompatFields(active)
     end
-    logVehicleRouteShapeProbe(uuid, state, active, vehicleRenderDecision, restart, restartUseDualRender, useWorldOutput, audibility)
+    logVehicleRouteShapeProbe(uuid, state, active, vehicleRenderDecision, restart, restartUseDualRender, useWorldOutput, audibility, rendererIntent)
 
     local trackEndActive = active
     local trackEndMonitorChannel = "single"
@@ -1873,7 +2050,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
         end
 
         if restartUseDualRender then
-            local worldChan, worldErr = startPlaybackChannel(player, source, true, candidates, "world")
+            local worldChan, worldErr = startPlaybackChannel(player, source, true, candidates, "world", rendererIntent.worldChannel3D == true)
             local personalChan, personalErr = startPlaybackChannel(player, source, false, candidates, "personal")
             local worldAlive = worldChan ~= nil
             local personalAlive = personalChan ~= nil
@@ -1927,6 +2104,8 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                 lastY = source and tonumber(source.y) or nil,
                 lastZ = source and tonumber(source.z) or nil,
                 lastGainRoute = nil,
+                _rendererIntent = tostring(rendererIntent.class or "vehicle_dual"),
+                _vehicleWorldCentered = vehicleWorldCentered == true,
                 _vehicleDualRoutePreserved = vehicleRenderDecision and vehicleRenderDecision.preserveDualRoute == true or false
             }
             if active.world then
@@ -2099,7 +2278,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                 )
             end
             if emitter.set3D then
-                emitter:set3D(soundId, isWorldEmitter)
+                emitter:set3D(soundId, rendererIntent.singleEmitter3D == true)
             end
             active = makeSingleActive(
                 emitter,
@@ -2109,7 +2288,10 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
                 source,
                 context,
                 (resolved and resolved.tracks and #resolved.tracks) or 1,
-                isWorldEmitter == true
+                isWorldEmitter == true,
+                useCenteredWorldOutput == true,
+                rendererIntent.class,
+                rendererIntent.singleEmitter3D == true
             )
             active._vehicleDualRoutePreserved = false
             active._vehicleRestartRenderShape = nil
@@ -2158,7 +2340,8 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
         routedOutputMode,
         audibility.localVehiclePersonalOverride == true,
         useDualRender,
-        useWorldOutput
+        useWorldOutput,
+        rendererIntent.class
     )
 
     local smoothAttachedWorld = shouldSmoothAttachedWorldEmitter(player, context, state, source)
@@ -2210,10 +2393,10 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
             active.lastDualGainLogMs = nowMsForDualGain
         end
         active.lastGainRoute = routeSig
-        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")
+        if NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("vehicle_trace")
             and NMCore.shouldLogEvery and NMCore.shouldLogEvery("runtimeProbe.vehicleChannelHealth." .. uuid, tonumber(tickCount) or 0, 300) then
             NMCore.logChannel(
-                "runtime",
+                "vehicle_trace",
                 "dual_channel_health",
                 string.format(
                     "uuid=%s output=%s resolved=%s worldPlaying=%s personalPlaying=%s routeWorld=%.3f routePersonal=%.3f",
@@ -2251,7 +2434,8 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
             )
         end
         if context == "vehicle" and routedOutputMode == "world" and routeWorld <= 0.001
-            and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("runtime")
+            and NMCore and NMCore.logChannel and NMCore.isSubsystemDebugEnabled
+            and (NMCore.isSubsystemDebugEnabled("vehicle") or NMCore.isSubsystemDebugEnabled("vehicle_trace"))
             and NMCore.shouldLogEvery and NMCore.shouldLogEvery("runtimeProbe.vehicleSilentWorld." .. uuid, tonumber(tickCount) or 0, 60) then
             local px = player and player.getX and tonumber(player:getX()) or 0
             local py = player and player.getY and tonumber(player:getY()) or 0
@@ -2261,7 +2445,7 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
             local dy = py - sy
             local dist = math.sqrt((dx * dx) + (dy * dy))
             NMCore.logChannel(
-                "runtime",
+                NMCore.isSubsystemDebugEnabled("vehicle") and "vehicle" or "vehicle_trace",
                 "vehicle_world_silent",
                 string.format(
                     "uuid=%s output=%s dist=%.2f px=%.2f py=%.2f sx=%.2f sy=%.2f sourceVehicleId=%s",
@@ -2328,8 +2512,9 @@ function NMPlaybackRuntime.syncDevice(player, profile, state, source, tickCount)
             runtimeDiag.updateVehicleEmitter(NMPlaybackRuntime, uuid, active, source, context)
         end
         if active.emitter.setVolume then
-            local routed = active.isWorldEmitter and (tonumber(audibility.routeWorld) or 0) or (tonumber(audibility.routePersonal) or 0)
-            local channelKind = active.isWorldEmitter and "world" or "personal"
+            local centeredWorld = active._centeredWorldOutput == true
+            local routed = (active.isWorldEmitter or centeredWorld) and (tonumber(audibility.routeWorld) or 0) or (tonumber(audibility.routePersonal) or 0)
+            local channelKind = (active.isWorldEmitter or centeredWorld) and "world" or "personal"
             local resolvedVolume = NMPlaybackAudibility.computeChannelVolume(profile, state, player, source, channelKind, routed)
             active.emitter:setVolume(active.soundId, resolvedVolume)
         end
@@ -2349,9 +2534,6 @@ function NMPlaybackRuntime.updateActiveEmitterPositionOnly(player, uuid, state, 
 
     local context = source.context or source.mode or active.context
     active.context = context
-    if active._localVehiclePersonalOverride == true then
-        return false
-    end
     local smoothAttachedWorld = shouldSmoothAttachedWorldEmitter(player, context, state, source)
 
     if active.mode == "dual" then
@@ -2363,6 +2545,10 @@ function NMPlaybackRuntime.updateActiveEmitterPositionOnly(player, uuid, state, 
             end
             return true
         end
+        return false
+    end
+
+    if active._localVehiclePersonalOverride == true then
         return false
     end
 

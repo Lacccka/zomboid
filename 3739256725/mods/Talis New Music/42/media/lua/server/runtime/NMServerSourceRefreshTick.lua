@@ -5,9 +5,14 @@ require "runtime/NMServerVehicleSqlIndexCache"
 NMServerSourceRefreshTick = NMServerSourceRefreshTick or {}
 local SourceRefreshDiagnostics = NMServerSourceRefreshDiagnostics
 local VEHICLE_UNRESOLVED_RETIRE_GRACE_MS = 750
+local SOURCE_REFRESH_MEMORY_LOG_INTERVAL_MS = 5000
 local VEHICLE_UNRESOLVED_RETIRE_REASONS = {
     vehicle_unresolved_sql_anchor_runtime_unavailable = true,
     vehicle_unresolved_sql_anchor_part_missing = true
+}
+NMServerSourceRefreshTick._memoryDiag = NMServerSourceRefreshTick._memoryDiag or {
+    lastLogMs = 0,
+    counters = {}
 }
 
 local function asNumber(value)
@@ -34,13 +39,74 @@ local function refreshVehicleSqlIndex()
     NMServerVehicleSqlIndexCache.refresh()
 end
 
+local function memoryDiagEnabled()
+    return NMCore and NMCore.isSubsystemDebugEnabled and NMCore.isSubsystemDebugEnabled("memory") == true
+end
+
+local function countSourceRefreshDiag(name, delta)
+    if memoryDiagEnabled() ~= true then
+        return
+    end
+    local key = tostring(name or "unknown")
+    local diag = NMServerSourceRefreshTick._memoryDiag
+    diag.counters[key] = (tonumber(diag.counters[key]) or 0) + (tonumber(delta) or 1)
+end
+
+local function flushSourceRefreshDiag()
+    if memoryDiagEnabled() ~= true or not (NMCore and NMCore.logChannel) then
+        return
+    end
+    local diag = NMServerSourceRefreshTick._memoryDiag
+    local nowMsValue = nowRealMs()
+    if nowMsValue - (tonumber(diag.lastLogMs) or 0) < SOURCE_REFRESH_MEMORY_LOG_INTERVAL_MS then
+        return
+    end
+    diag.lastLogMs = nowMsValue
+    local parts = {}
+    for name, count in pairs(diag.counters or {}) do
+        parts[#parts + 1] = tostring(name) .. "=" .. tostring(count)
+    end
+    diag.counters = {}
+    if #parts > 0 then
+        table.sort(parts)
+        NMCore.logChannel("memory", "server_source_refresh_diag", table.concat(parts, " | "))
+    end
+end
+
+local function countWorldSourceInterest(entry, state)
+    if memoryDiagEnabled() ~= true then
+        return
+    end
+    local authorityMode = tostring(state and state.authoritativeMode or "unknown")
+    local playbackMode = tostring(state and state.playbackMode or "unknown")
+    local profileType = tostring(entry and entry.profileType or "unknown")
+    countSourceRefreshDiag("world_source_interest")
+    countSourceRefreshDiag("world_source_interest_authority_" .. authorityMode)
+    countSourceRefreshDiag("world_source_interest_playback_" .. playbackMode)
+    countSourceRefreshDiag("world_source_interest_profile_" .. profileType)
+    if NMDeviceProfiles and NMDeviceProfiles.getForFullType then
+        local profile = NMDeviceProfiles.getForFullType(profileType)
+        local deviceType = tostring(profile and profile.deviceType or "unknown")
+        countSourceRefreshDiag("world_source_interest_device_" .. deviceType)
+        if NMDeviceProfiles.isPortableTrackedProfile and NMDeviceProfiles.isPortableTrackedProfile(profile) == true then
+            countSourceRefreshDiag("world_source_interest_portable")
+        end
+    end
+end
+
 local function hasRegistryEntries()
     local worldRegistry = NMServerRegistryState and NMServerRegistryState.worldRegistry or nil
     if type(worldRegistry) ~= "table" then
         return false
     end
-    for _ in pairs(worldRegistry) do
-        return true
+    for _, entry in pairs(worldRegistry) do
+        local state = entry and entry.stateSnapshot or nil
+        if NMRegistryPolicy
+            and NMRegistryPolicy.shouldKeepWorldSourceState
+            and NMRegistryPolicy.shouldKeepWorldSourceState(state) == true then
+            countWorldSourceInterest(entry, state)
+            return true
+        end
     end
     return false
 end
@@ -800,6 +866,7 @@ function NMServerSourceRefreshTick.onTick()
             local prevVehicleResolved = entry._vehicleResolved == true
 
             local sourceMode = normalizeSourceMode(entry, profile, state)
+            countSourceRefreshDiag("refresh_source_mode_" .. tostring(sourceMode or "unknown"))
             entry.sourceMode = sourceMode
             entry.sourceEpoch = math.max(tonumber(entry.sourceEpoch) or 0, tonumber(state.sourceGeneration) or 0)
             entry.sourceGeneration = entry.sourceEpoch
@@ -924,5 +991,6 @@ function NMServerSourceRefreshTick.onTick()
             end
         end
     end
+    flushSourceRefreshDiag()
 end
 

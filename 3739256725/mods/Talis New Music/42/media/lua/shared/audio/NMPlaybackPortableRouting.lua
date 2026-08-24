@@ -16,7 +16,6 @@ function NMPlaybackPortableRouting.resolvePolicy(profile, state, context, output
     local trackedPortable = NMDeviceProfiles
         and NMDeviceProfiles.isPortableTrackedContext
         and NMDeviceProfiles.isPortableTrackedContext(profile, context)
-    local dualRender = NMPlaybackPortableRouting.shouldUseDualRender(profile, context)
     local audibility = tostring(outputMode or "none")
 
     if trackedPortable and audibility == "none" and state and state.isPlaying == true and state.mediaFullType ~= nil then
@@ -31,6 +30,9 @@ function NMPlaybackPortableRouting.resolvePolicy(profile, state, context, output
         and NMDeviceProfiles.isPortableSilentProfile(profile) then
         audibility = "silent"
     end
+
+    local dualRender = NMPlaybackPortableRouting.shouldUseDualRender(profile, context)
+        and audibility ~= "personal"
 
     local keepSynced = trackedPortable
         and state

@@ -62,7 +62,7 @@ local function clampNumber(value, minValue, maxValue)
 end
 
 local values = {
-    buildContentToken = "2026.08.19.1",
+    buildContentToken = "2026.08.23.1",
     worldTrackingCap = 1500,
     registryStaleTicks = 7200,
     registryHeartbeatIntervalTicks = 120,
@@ -113,7 +113,8 @@ local values = {
         runtime_apply = false,
         runtime_route = false,
         vehicle_identity = false,
-        vehicle_route = false
+        vehicle_route = false,
+        vehicle_trace = false
     },
     enableVehicleEmitterDiagnostics = true,
     vehicleEmitterJumpWarnDistance = 12,
@@ -135,6 +136,8 @@ local values = {
     stickySqlBindingTtlMs = 45000,
     mpResetPlaybackOnServerStart = true,
     fancyUIEnabled = true,
+    spatialAudioEnabled = true,
+    muteGameSoundtrackDuringPlayback = true,
     memoryProbeSampleIntervalMs = 5000,
     memoryProbeHeapDeltaKb = 512,
     memoryProbeTickHotMs = 8,
@@ -165,8 +168,16 @@ function NMRuntimeConfig.setFancyUIEnabled(enabled)
     values.fancyUIEnabled = enabled ~= false
 end
 
+function NMRuntimeConfig.setSpatialAudioEnabled(enabled)
+    values.spatialAudioEnabled = enabled ~= false
+end
+
 function NMRuntimeConfig.setShowTrackNumberPrefix(enabled)
     values.showTrackNumberPrefix = enabled ~= false
+end
+
+function NMRuntimeConfig.setMuteGameSoundtrackDuringPlayback(enabled)
+    values.muteGameSoundtrackDuringPlayback = enabled ~= false
 end
 
 function NMRuntimeConfig.setFancyDeviceUiScaleMultiplier(multiplier)
@@ -204,6 +215,20 @@ function NMRuntimeConfig.getShowTrackNumberPrefix()
         return NMClientModOptions.getShowTrackNumberPrefix() ~= false
     end
     return values.showTrackNumberPrefix ~= false
+end
+
+function NMRuntimeConfig.getSpatialAudioEnabled()
+    if NMClientModOptions and NMClientModOptions.getSpatialAudioEnabled then
+        return NMClientModOptions.getSpatialAudioEnabled() ~= false
+    end
+    return values.spatialAudioEnabled ~= false
+end
+
+function NMRuntimeConfig.getMuteGameSoundtrackDuringPlayback()
+    if NMClientModOptions and NMClientModOptions.getMuteGameSoundtrackDuringPlayback then
+        return NMClientModOptions.getMuteGameSoundtrackDuringPlayback() ~= false
+    end
+    return values.muteGameSoundtrackDuringPlayback ~= false
 end
 
 function NMRuntimeConfig.getFancyDeviceUiScaleMultiplier()

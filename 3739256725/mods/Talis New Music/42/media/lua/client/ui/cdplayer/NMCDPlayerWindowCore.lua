@@ -56,8 +56,8 @@ local function ensureDisplaySongLabelPanel(window)
         if not owner then
             return
         end
-        local model = owner.getRenderModel and owner:getRenderModel() or nil
-        local renderState = model and model.displaySongLabelState or nil
+        local liveState = owner.getCDLiveRenderState and owner:getCDLiveRenderState() or nil
+        local renderState = liveState and liveState.displaySongLabelState or nil
         if not renderState then
             return
         end
@@ -108,8 +108,8 @@ local function ensureDisplayClockPanel(window)
         if not owner then
             return
         end
-        local model = owner.getRenderModel and owner:getRenderModel() or nil
-        local renderState = model and model.displayClockState or nil
+        local liveState = owner.getCDLiveRenderState and owner:getCDLiveRenderState() or nil
+        local renderState = liveState and liveState.displayClockState or nil
         if not renderState then
             return
         end

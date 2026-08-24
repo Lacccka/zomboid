@@ -60,17 +60,17 @@ if Events then
     end
     if Events.OnZombieDead and Events.OnZombieDead.Add and NMServerMainRuntime.canRunAuthoritativeWorldMutation() then
         if NMServerZombieCorpseCarry and NMServerZombieCorpseCarry.onZombieDead then
-            Events.OnZombieDead.Add(NMServerZombieCorpseCarry.onZombieDead)
+            Events.OnZombieDead.Add(NMServerMainRuntime.onZombieDead)
             if NMCore and NMCore.logChannel and NMServerMainRuntime.shouldLogCorpseVerbose() then
-                NMCore.logChannel("zombie_corpse", "hook_on_zombie_dead_registered", "handler=NMServerZombieCorpseCarry.onZombieDead")
+                NMCore.logChannel("zombie_corpse", "hook_on_zombie_dead_registered", "handler=NMServerMainRuntime.onZombieDead")
             end
         end
     end
     if Events.OnDeadBodySpawn and Events.OnDeadBodySpawn.Add and NMServerMainRuntime.canRunAuthoritativeWorldMutation() then
         if NMServerZombieCorpseCarry and NMServerZombieCorpseCarry.onDeadBodySpawn then
-            Events.OnDeadBodySpawn.Add(NMServerZombieCorpseCarry.onDeadBodySpawn)
+            Events.OnDeadBodySpawn.Add(NMServerMainRuntime.onDeadBodySpawn)
             if NMCore and NMCore.logChannel and NMServerMainRuntime.shouldLogCorpseVerbose() then
-                NMCore.logChannel("zombie_corpse", "hook_on_dead_body_spawn_registered", "handler=NMServerZombieCorpseCarry.onDeadBodySpawn")
+                NMCore.logChannel("zombie_corpse", "hook_on_dead_body_spawn_registered", "handler=NMServerMainRuntime.onDeadBodySpawn")
             end
         end
     end

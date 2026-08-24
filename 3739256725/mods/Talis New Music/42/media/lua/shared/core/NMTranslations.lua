@@ -277,6 +277,12 @@ function NMTranslations.uiStringFormat(suffix, fallback, ...)
     return NMTranslations.textStringFormat(NMTranslations.uiFormatTemplate(suffix, fallback), fallback, ...)
 end
 
+function NMTranslations.modeTooltip(valueSuffix)
+    local label = NMTranslations.ui("ModeLabel")
+    local value = NMTranslations.ui(valueSuffix)
+    return tostring(label or "") .. " " .. tostring(value or "")
+end
+
 function NMTranslations.igui(suffix, fallback)
     return NMTranslations.text("IGUI_NM_" .. tostring(suffix or ""), fallback)
 end

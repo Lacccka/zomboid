@@ -25,6 +25,7 @@ ItemName_KO = {
     ItemName_NewMusic_BoomboxCyan = "붐박스 (청록색)",
     ItemName_NewMusic_BoomboxMagenta = "붐박스 (마젠타)",
     ItemName_NewMusic_BoomboxPurple = "붐박스 (보라색)",
+    ItemName_NewMusic_BoomboxOddbolt = "붐박스 (오드볼트)",
     ItemName_NewMusic_CDPlayerBlue = "CD 플레이어 (파란색)",
     ItemName_NewMusic_CDPlayerBlack = "CD 플레이어 (블랙)",
     ItemName_NewMusic_CDPlayerCow = "CD 플레이어 (무)",

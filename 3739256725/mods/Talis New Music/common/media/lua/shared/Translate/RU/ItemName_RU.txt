@@ -25,6 +25,7 @@ ItemName_RU = {
     ItemName_NewMusic_BoomboxCyan = "Бумбокс (голубой)",
     ItemName_NewMusic_BoomboxMagenta = "Бумбокс (пурпурный)",
     ItemName_NewMusic_BoomboxPurple = "Бумбокс (фиолетовый)",
+    ItemName_NewMusic_BoomboxOddbolt = "Бумбокс (Oddbolt)",
     ItemName_NewMusic_CDPlayerBlue = "CD-проигрыватель (синий)",
     ItemName_NewMusic_CDPlayerBlack = "CD-проигрыватель (черный)",
     ItemName_NewMusic_CDPlayerCow = "CD-плеер (Moo)",

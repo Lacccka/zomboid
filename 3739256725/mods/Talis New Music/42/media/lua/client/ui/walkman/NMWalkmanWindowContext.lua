@@ -120,16 +120,19 @@ function WalkmanWindow:getSlotRenderState(slotKey)
 end
 
 function WalkmanWindow:buildRenderModel()
-    return NMDeviceUiHost.buildFamilyRenderModel(self, {
+    local revisionKey = NMDeviceUiHost and NMDeviceUiHost.getRenderRevisionKey and NMDeviceUiHost.getRenderRevisionKey(self, false) or nil
+    if revisionKey ~= nil and self._nmRenderModel and self._nmRenderModelRevisionKey == revisionKey then
+        if NMUIRenderProbe and NMUIRenderProbe.count then
+            NMUIRenderProbe.count(self, "walkman_render_model_stable_cache_hit", 1)
+        end
+    elseif NMUIRenderProbe and NMUIRenderProbe.count then
+        NMUIRenderProbe.count(self, "walkman_render_model_stable_cache_miss", 1)
+    end
+    return NMDeviceUiHost.buildStableFamilyRenderModel(self, {
         decorateModel = function(window, model, build)
             local resolved = build.resolved
             local variant = resolveWalkmanVariantFromItem(resolved and resolved.item or nil)
             local textures = getWalkmanUITexturesForVariant(variant)
-            local effectiveVolume = window._nmWheelDragging == true and window._nmWheelPreviewVolume or window._nmWheelStableVolume
-            local wheelAngle = window:getVolumeWheelAngle(effectiveVolume or 1.0)
-            local loopIconTexture = window:getLoopIconTexture(resolved)
-            local loopVisible = window:shouldShowLoopIcon()
-            local volumeLabelVisible = window:shouldShowVolumeLabel()
             local lidState = window:getLidRenderState(textures)
 
             model.variant = variant
@@ -139,32 +142,14 @@ function WalkmanWindow:buildRenderModel()
             NMDeviceUiPresentationContract.setWorldItem(model, "cassette", { variant = variant })
             NMDeviceUiPresentationContract.setVolumeControl(model, "wheel", {
                 variant = variant,
-                angle = wheelAngle,
             })
-            model.wheelAngle = wheelAngle
-            model.loopIconTexture = loopIconTexture
-            model.loopVisible = loopVisible
-            model.loopIconRect = loopVisible and loopIconTexture and window:getLoopIconRect(loopIconTexture) or nil
-            model.volumeLabelVisible = volumeLabelVisible
-            model.volumeLabelText = volumeLabelVisible and window:getVolumeLabelText() or nil
-            model.volumeLabelRect = volumeLabelVisible and window:getVolumeLabelRect() or nil
-            model.lidState = lidState
             model.lidEdgeState = window:getLidEdgeRenderState(lidState)
-            model.lidIngressVisible = window:shouldShowLidIngressZone()
             NMDeviceUiPresentationContract.setLid(model, "hinged_lid", {
                 variant = variant,
-                state = lidState,
                 edgeState = model.lidEdgeState,
-                ingressVisible = model.lidIngressVisible,
             })
             model.cassetteMediaState = window:getCassetteDisplayMediaState()
-            model.timedCassetteState = window:getTimedCassetteAnimationState()
-            model.cassetteLabelState = nil
             model.closeTint = { resolveWalkmanCloseTintForVariant(variant) }
-
-            if not (model.timedCassetteState and model.timedCassetteState.visible == true) then
-                model.cassetteLabelState = NMWalkmanRenderState.buildCassetteLabelState(window, resolved, variant)
-            end
             return model
         end,
     })
