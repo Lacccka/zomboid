@@ -46,6 +46,13 @@ local stats = {
     errors = 0,
 }
 
+-- Export counters for optional NPCCombatExperimental diagnostics. The stable
+-- patch itself stays quiet and never emits periodic SUMMARY heartbeat lines.
+LCC_BANDITS_SERVER_CLOTHING_DIAGNOSTICS = {
+    marker = MARKER,
+    stats = stats,
+}
+
 local function warnOnce(key, message)
     if warned[key] then return end
     warned[key] = true
@@ -391,26 +398,6 @@ local function onZombieDead(zombie)
 end
 
 Events.OnZombieDead.Add(onZombieDead)
-
-Events.EveryOneMinute.Add(function()
-    print(string.format(
-        "[LCC][BanditsServerClothing][SUMMARY] marker=%s deathsSeen=%d banditDeathsMatched=%d deathRepairs=%d expected=%d wearableExpected=%d restored=%d created=%d reusedInventory=%d inventoryAdds=%d alreadyWorn=%d noLocation=%d conflicts=%d errors=%d",
-        MARKER,
-        stats.deathsSeen,
-        stats.banditDeathsMatched,
-        stats.deathRepairs,
-        stats.expected,
-        stats.wearableExpected,
-        stats.restored,
-        stats.created,
-        stats.reusedInventory,
-        stats.inventoryAdds,
-        stats.alreadyWorn,
-        stats.noLocation,
-        stats.conflicts,
-        stats.errors
-    ))
-end)
 
 print(string.format(
     "[LCC][BanditsServerClothing][BOOT] marker=%s authority=dedicated-server boundary=OnZombieDead timing=after-DoZombieInventory-before-IsoDeadBody invariant=inventory+same-worn-object liveInventoryMutation=false",
