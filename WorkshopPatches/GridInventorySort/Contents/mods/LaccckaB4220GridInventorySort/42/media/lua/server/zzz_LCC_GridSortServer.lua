@@ -84,8 +84,18 @@ local function validPage(page)
     return page >= 1 and page <= GridSortState.MAX_PAGES
 end
 
-local function sendSnapshot(player, container, command, reason)
+local function resolveSortableTarget(player, ref)
+    local target = ref and GridProtocol.resolveContainerRef(ref, player) or nil
+    if not target then return nil end
+    if target.getType and target:getType() == "floor" then return nil end
+    local parent = target.getParent and target:getParent()
+    if parent and instanceof and instanceof(parent, "IsoDeadBody") then return nil end
+    return target
+end
+
+local function sendSnapshot(player, container, command, reason, requestId)
     sendServerCommand(player, GridSortState.MODULE, command, {
+        requestId = requestId,
         reason = reason,
         authoritativeHash = GridSortState.authorityHash(container),
         moves = GridSortState.snapshot(container),
@@ -135,9 +145,7 @@ local function processPageAssign(player, args)
         if item.isEquipped and item:isEquipped() then return "invalid" end
 
         -- A delayed automatic page-routing packet must never overwrite a sort
-        -- or manual placement that the server has already committed. This can
-        -- happen when two clients observe the same overflow and one sorts while
-        -- another still has an older PAGE_ASSIGN in flight.
+        -- or manual placement that the server has already committed.
         local md = item.getModData and item:getModData() or nil
         if not (md and md.gridManual) then
             movedSet[item:getID()] = true
@@ -173,9 +181,8 @@ local function processPageAssign(player, args)
         end
     end
 
-    -- Auto page assignment is authoritative only for page routing. Keep
-    -- gridManual=false so authorityHash deliberately remains unchanged and a
-    -- presentation rescue cannot manufacture a false CAS conflict.
+    -- Automatic page routing is server-known but not a manual layout revision,
+    -- so it deliberately leaves authorityHash unchanged.
     for _, entry in ipairs(resolved) do
         applyPosition(entry.item, entry.move, args.gridContainer, false, target)
         broadcastItem(entry.item, target, false)
@@ -290,22 +297,33 @@ local function sameItemSet(container, moves)
     return true
 end
 
-local function processSort(player, args)
-    if not args or not args.ref or not args.moves or #args.moves == 0 then return "invalid" end
-    local target = GridProtocol.resolveContainerRef(args.ref, player)
+local function processSortPrepare(player, args)
+    if not args or not args.ref or args.requestId == nil then return "invalid" end
+    local target = resolveSortableTarget(player, args.ref)
     if not target then return "invalid" end
 
-    if target.getType and target:getType() == "floor" then return "invalid" end
-    local parent = target.getParent and target:getParent()
-    if parent and instanceof and instanceof(parent, "IsoDeadBody") then return "invalid" end
+    -- This token is generated exclusively from the server's current state. The
+    -- client never guesses it from local ModData. Any real mutation between
+    -- prepare and commit changes the token and makes the later SortRequest stale.
+    sendServerCommand(player, GridSortState.MODULE, GridSortState.COMMANDS.SORT_TOKEN, {
+        requestId = tostring(args.requestId),
+        token = GridSortState.authorityHash(target),
+    })
+    return "ok"
+end
 
-    local currentHash = GridSortState.authorityHash(target)
-    if tostring(args.expectedHash or "") ~= tostring(currentHash) then
-        sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "stale")
+local function processSort(player, args)
+    if not args or not args.ref or not args.moves or #args.moves == 0 then return "invalid" end
+    local target = resolveSortableTarget(player, args.ref)
+    if not target then return "invalid" end
+
+    local currentToken = GridSortState.authorityHash(target)
+    if tostring(args.expectedToken or "") ~= tostring(currentToken) then
+        sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "stale", args.requestId)
         return "stale"
     end
     if not sameItemSet(target, args.moves) then
-        sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "membership")
+        sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "membership", args.requestId)
         return "invalid"
     end
 
@@ -315,12 +333,12 @@ local function processSort(player, args)
     local rootPlayer = GridSortState.isPlayerRootContainer(target)
     for _, move in ipairs(args.moves) do
         if move.x == nil or move.y == nil or not validPage(move.page) then
-            sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "bounds")
+            sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "bounds", args.requestId)
             return "invalid"
         end
         local item = findItem(player, args.ref, move.itemId, nil)
         if not item then
-            sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "missing-item")
+            sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "missing-item", args.requestId)
             return "invalid"
         end
         local page = rootPlayer and 1 or (tonumber(move.page) or 1)
@@ -331,7 +349,7 @@ local function processSort(player, args)
         local compatKey, stackInfo = GridContainer.getStackInfo(item)
         if not pages[page]:insertItem(item:getID(), tonumber(move.x), tonumber(move.y), ew, eh,
             rotated, item, compatKey, stackInfo) then
-            sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "collision")
+            sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "collision", args.requestId)
             return "invalid"
         end
         table.insert(resolved, { item = item, move = {
@@ -342,12 +360,11 @@ local function processSort(player, args)
         } })
     end
 
-    -- Compare-and-swap: automatic GridInventory coordinates are deliberately
-    -- excluded from authorityHash, while membership and manual positions are
-    -- included. The first concurrent writer makes every sorted item manual,
-    -- changing the hash; a later request based on the old state is rejected.
-    if GridSortState.authorityHash(target) ~= currentHash then
-        sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "stale-after-validate")
+    -- The server event loop is sequential. If another player sorted/moved an
+    -- item after SortPrepare but while this request was being validated, the
+    -- token changes and this batch is rejected before any ModData is written.
+    if GridSortState.authorityHash(target) ~= currentToken then
+        sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "stale-after-validate", args.requestId)
         return "stale"
     end
 
@@ -356,6 +373,7 @@ local function processSort(player, args)
     end
 
     sendServerCommand(GridSortState.MODULE, GridSortState.COMMANDS.SYNC_LAYOUT, {
+        requestId = args.requestId,
         authoritativeHash = GridSortState.authorityHash(target),
         moves = GridSortState.snapshot(target),
     })
@@ -372,6 +390,7 @@ local function queuePending(player, command, args)
 end
 
 local function dispatch(player, command, args)
+    if command == GridSortState.COMMANDS.SORT_PREPARE then return processSortPrepare(player, args) end
     if command == GridSortState.COMMANDS.SORT_REQUEST then return processSort(player, args) end
     if command == GridSortState.COMMANDS.PAGE_ASSIGN then return processPageAssign(player, args) end
     if command == GridSortState.COMMANDS.PAGE_MOVE then return processPageMove(player, args) end
@@ -390,7 +409,10 @@ local function OnClientCommand(module, command, player, args)
         queuePending(player, command, args)
     elseif status == "invalid" then
         local target = args and args.ref and GridProtocol.resolveContainerRef(args.ref, player) or nil
-        if target then sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT, "invalid") end
+        if target then
+            sendSnapshot(player, target, GridSortState.COMMANDS.REJECT_LAYOUT,
+                "invalid", args and args.requestId)
+        end
     end
 end
 Events.OnClientCommand.Add(OnClientCommand)
@@ -413,5 +435,5 @@ Events.OnTick.Add(function()
     end
 end)
 
-print("[LCC GridSort] server CAS/page authority installed")
+print("[LCC GridSort] server token/CAS page authority installed")
 return GridSortServer
