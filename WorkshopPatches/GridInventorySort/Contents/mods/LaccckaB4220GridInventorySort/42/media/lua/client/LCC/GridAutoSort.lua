@@ -7,6 +7,19 @@ local GridSortNetwork = require("LCC/GridSortNetwork")
 
 local GridAutoSort = {}
 
+-- Sorting is executed on the UI thread. The previous bounded beam search still
+-- cloned/re-scanned many complete grids and caused visible freezes on large
+-- inventories. v0.2.1 uses several cheap deterministic best-fit passes instead:
+-- all cells + both rotations are still considered, but only one live GridCore is
+-- maintained per pass. Extra passes stop once the small interactive-time budget
+-- is consumed and a valid layout is already available.
+local EXTRA_PASS_BUDGET_MS = 25
+local SLOW_SOLVE_WARN_MS = 75
+
+local function nowMs()
+    return getTimestampMs and getTimestampMs() or (getTimeInMillis and getTimeInMillis() or 0)
+end
+
 local function itemId(item)
     return item and item.getID and item:getID() or nil
 end
@@ -62,249 +75,315 @@ local function compareId(a, b)
     return tostring(a.id) < tostring(b.id)
 end
 
+local function compareIdReverse(a, b)
+    return compareId(b, a)
+end
+
 local SORTERS = {
+    -- Large rectangles first.
     function(a, b)
         if a.area ~= b.area then return a.area > b.area end
         if a.longSide ~= b.longSide then return a.longSide > b.longSide end
         if a.shortSide ~= b.shortSide then return a.shortSide > b.shortSide end
         return compareId(a, b)
     end,
+    -- Awkward long items first.
     function(a, b)
         if a.longSide ~= b.longSide then return a.longSide > b.longSide end
         if a.area ~= b.area then return a.area > b.area end
         if a.shortSide ~= b.shortSide then return a.shortSide > b.shortSide end
         return compareId(a, b)
     end,
+    -- Tall natural footprints first.
+    function(a, b)
+        if a.originalH ~= b.originalH then return a.originalH > b.originalH end
+        if a.area ~= b.area then return a.area > b.area end
+        if a.originalW ~= b.originalW then return a.originalW > b.originalW end
+        return compareId(a, b)
+    end,
+    -- Wide natural footprints first.
     function(a, b)
         if a.originalW ~= b.originalW then return a.originalW > b.originalW end
         if a.area ~= b.area then return a.area > b.area end
         if a.originalH ~= b.originalH then return a.originalH > b.originalH end
         return compareId(a, b)
     end,
+    -- High aspect-ratio items before square blocks.
+    function(a, b)
+        local aa = a.longSide / math.max(1, a.shortSide)
+        local ba = b.longSide / math.max(1, b.shortSide)
+        if aa ~= ba then return aa > ba end
+        if a.area ~= b.area then return a.area > b.area end
+        return compareId(a, b)
+    end,
+    -- Stable ID perturbations rescue layouts tied under geometric sort keys.
     compareId,
+    compareIdReverse,
 }
 
-local function cloneGrid(width, height, targets)
-    local grid = GridCore.new(width, height)
-    for _, t in ipairs(targets) do
-        local d = t.d
-        if not grid:insertItem(d.id, t.tx, t.ty, t.ew, t.eh, t.rotated,
-            d.itemObj, d.compatKey, d.stackInfo) then
-            return nil
-        end
-    end
-    return grid
+local function copyAndSort(descriptors, sorter)
+    local ordered = {}
+    for i = 1, #descriptors do ordered[i] = descriptors[i] end
+    table.sort(ordered, sorter)
+    return ordered
 end
 
-local function layoutMetrics(grid, targets)
-    local bottom, right, rotations = 0, 0, 0
-    for _, t in ipairs(targets) do
-        bottom = math.max(bottom, t.ty + t.eh - 1)
-        right = math.max(right, t.tx + t.ew - 1)
-        if t.rotated then rotations = rotations + 1 end
+local function perimeterContact(grid, x, y, w, h)
+    local contact = 0
+    for cx = x, x + w - 1 do
+        local up = y - 1
+        local down = y + h
+        if up < 1 or grid.cells[cx][up] ~= nil then contact = contact + 1 end
+        if down > grid.height or grid.cells[cx][down] ~= nil then contact = contact + 1 end
     end
-    local holes = 0
-    if bottom > 0 and right > 0 then
-        for y = 1, bottom do
-            for x = 1, right do
-                if grid.cells[x][y] == nil then holes = holes + 1 end
-            end
-        end
+    for cy = y, y + h - 1 do
+        local left = x - 1
+        local right = x + w
+        if left < 1 or grid.cells[left][cy] ~= nil then contact = contact + 1 end
+        if right > grid.width or grid.cells[right][cy] ~= nil then contact = contact + 1 end
     end
-    return bottom, holes, right, rotations
+    return contact
 end
 
-local function stateScore(state)
-    return state.bottom * 1000000 + state.holes * 10000 + state.right * 100 + state.rotations
-end
+local function findBestPlacement(grid, d, bottom, occupiedCells, profile)
+    local best = nil
 
-local function enumeratePlacements(grid, d)
-    local candidates = {}
-    local function scan(rotated)
+    local function considerOrientation(rotated)
         local ew = rotated and d.originalH or d.originalW
         local eh = rotated and d.originalW or d.originalH
         if ew > grid.width or eh > grid.height then return end
+
         for y = 1, grid.height - eh + 1 do
             for x = 1, grid.width - ew + 1 do
                 if grid:canPlaceItem(d.id, x, y, ew, eh, nil,
                     d.compatKey, rotated, d.stackInfo) then
-                    local bottom = y + eh - 1
-                    local right = x + ew - 1
-                    local keepRot = rotated == d.currentRotated and 0 or 1
-                    local score = bottom * 100000 + y * 1000 + right * 10 + x + keepRot
-                    table.insert(candidates, {
-                        tx = x, ty = y, ew = ew, eh = eh,
-                        rotated = rotated, localScore = score,
-                    })
+                    local occupant = grid.cells[x][y]
+                    local isStack = d.compatKey ~= nil and occupant ~= nil
+                    local added = isStack and 0 or (ew * eh)
+                    local newBottom = math.max(bottom, y + eh - 1)
+                    local holes = (newBottom * grid.width) - (occupiedCells + added)
+                    if holes < 0 then holes = 0 end
+                    local contact = isStack and 99 or perimeterContact(grid, x, y, ew, eh)
+                    local changedRotation = rotated == d.currentRotated and 0 or 1
+                    local wide = ew >= eh and 1 or 0
+
+                    -- Lexicographic intent encoded into integer ranges:
+                    -- 1) keep used height minimal;
+                    -- 2) avoid empty cells inside the used rows;
+                    -- 3) pack against existing/boundary edges;
+                    -- 4) deterministic top-left tie-break;
+                    -- 5) avoid gratuitous rotation.
+                    local score = newBottom * 100000000
+                        + holes * 100000
+                        - contact * (profile.contactWeight or 500)
+                        + y * 1000 + x * 10
+                        + changedRotation
+
+                    if profile.preferWide then score = score - wide * 25 end
+                    if profile.preferTall then score = score + wide * 25 end
+                    if isStack then score = score - 5000000 end
+
+                    if not best or score < best.score then
+                        best = {
+                            tx = x, ty = y, ew = ew, eh = eh,
+                            rotated = rotated, score = score,
+                            isStack = isStack, added = added,
+                            newBottom = newBottom,
+                        }
+                    end
                 end
             end
         end
     end
-    scan(false)
-    if d.originalW ~= d.originalH then scan(true) end
-    table.sort(candidates, function(a, b)
-        if a.localScore ~= b.localScore then return a.localScore < b.localScore end
-        if a.ty ~= b.ty then return a.ty < b.ty end
-        if a.tx ~= b.tx then return a.tx < b.tx end
-        return (a.rotated and 1 or 0) < (b.rotated and 1 or 0)
-    end)
-    return candidates
-end
 
-local function packBeam(descriptors, width, height, sorter)
-    local ordered = {}
-    for i = 1, #descriptors do ordered[i] = descriptors[i] end
-    table.sort(ordered, sorter)
-
-    local beamWidth = #ordered <= 24 and 28 or (#ordered <= 40 and 18 or 10)
-    local placementsPerState = #ordered <= 24 and 14 or 8
-    local states = {{
-        grid = GridCore.new(width, height), targets = {},
-        bottom = 0, holes = 0, right = 0, rotations = 0,
-    }}
-
-    for _, d in ipairs(ordered) do
-        local nextStates = {}
-        for _, state in ipairs(states) do
-            local candidates = enumeratePlacements(state.grid, d)
-            local limit = math.min(#candidates, placementsPerState)
-            for i = 1, limit do
-                local p = candidates[i]
-                local targets = {}
-                for j = 1, #state.targets do targets[j] = state.targets[j] end
-                table.insert(targets, {
-                    d = d, tx = p.tx, ty = p.ty, ew = p.ew, eh = p.eh,
-                    rotated = p.rotated,
-                })
-                local grid = cloneGrid(width, height, targets)
-                if grid then
-                    local bottom, holes, right, rotations = layoutMetrics(grid, targets)
-                    table.insert(nextStates, {
-                        grid = grid, targets = targets,
-                        bottom = bottom, holes = holes, right = right, rotations = rotations,
-                    })
-                end
-            end
-        end
-        if #nextStates == 0 then return nil end
-        table.sort(nextStates, function(a, b)
-            local sa, sb = stateScore(a), stateScore(b)
-            if sa ~= sb then return sa < sb end
-            return #a.targets < #b.targets
-        end)
-        states = {}
-        local keep = math.min(#nextStates, beamWidth)
-        for i = 1, keep do states[i] = nextStates[i] end
-    end
-
-    return states[1]
-end
-
-local function betterSingle(a, b)
-    if not a then return b end
-    if not b then return a end
-    return stateScore(a) <= stateScore(b) and a or b
-end
-
-local function bestSinglePage(descriptors, width, height)
-    local best = nil
-    for _, sorter in ipairs(SORTERS) do
-        best = betterSingle(best, packBeam(descriptors, width, height, sorter))
-    end
+    considerOrientation(false)
+    if d.originalW ~= d.originalH then considerOrientation(true) end
     return best
 end
 
-local function bestPlacementAcrossPages(pages, d, width, height)
-    local best = nil
-    local function considerPage(pageIndex, grid)
-        local candidates = enumeratePlacements(grid, d)
-        local p = candidates[1]
-        if not p then return end
-        local score = pageIndex * 100000000 + p.localScore
-        if not best or score < best.score then
-            best = { page = pageIndex, p = p, score = score }
-        end
-    end
-    for page, grid in ipairs(pages) do considerPage(page, grid) end
-    if not best and #pages < GridSortState.MAX_PAGES then
-        local newGrid = GridCore.new(width, height)
-        local candidates = enumeratePlacements(newGrid, d)
-        if candidates[1] then
-            table.insert(pages, newGrid)
-            best = {
-                page = #pages, p = candidates[1],
-                score = #pages * 100000000 + candidates[1].localScore,
-            }
-        end
-    end
-    return best
-end
+local PROFILES = {
+    { contactWeight = 500 },
+    { contactWeight = 1200, preferWide = true },
+    { contactWeight = 1200, preferTall = true },
+}
 
-local function packMultiGreedy(descriptors, width, height, sorter)
-    local ordered = {}
-    for i = 1, #descriptors do ordered[i] = descriptors[i] end
-    table.sort(ordered, sorter)
-    local pages = { GridCore.new(width, height) }
+local function packGreedySingle(descriptors, width, height, sorter, profile)
+    local ordered = copyAndSort(descriptors, sorter)
+    local grid = GridCore.new(width, height)
     local targets = {}
+    local bottom, occupiedCells, rotations = 0, 0, 0
+
     for _, d in ipairs(ordered) do
-        local choice = bestPlacementAcrossPages(pages, d, width, height)
-        if not choice then return nil end
-        local p = choice.p
-        if not pages[choice.page]:insertItem(d.id, p.tx, p.ty, p.ew, p.eh, p.rotated,
+        local p = findBestPlacement(grid, d, bottom, occupiedCells, profile)
+        if not p then return nil end
+        if not grid:insertItem(d.id, p.tx, p.ty, p.ew, p.eh, p.rotated,
             d.itemObj, d.compatKey, d.stackInfo) then
             return nil
         end
+        bottom = p.newBottom
+        occupiedCells = occupiedCells + p.added
+        if p.rotated then rotations = rotations + 1 end
         table.insert(targets, {
             d = d, tx = p.tx, ty = p.ty, ew = p.ew, eh = p.eh,
-            rotated = p.rotated, page = choice.page,
+            rotated = p.rotated, page = 1,
         })
     end
-    local holes, rotations = 0, 0
-    for _, grid in ipairs(pages) do
-        local bottom = 0
-        for _, data in pairs(grid.items or {}) do
-            if not data.stackMemberOf then bottom = math.max(bottom, data.y + data.h - 1) end
-        end
-        for y = 1, bottom do
-            for x = 1, width do
-                if grid.cells[x][y] == nil then holes = holes + 1 end
-            end
-        end
-    end
-    for _, t in ipairs(targets) do if t.rotated then rotations = rotations + 1 end end
-    return { pages = #pages, targets = targets, holes = holes, rotations = rotations }
+
+    local holes = math.max(0, bottom * width - occupiedCells)
+    return {
+        pages = 1,
+        targets = targets,
+        usedRows = bottom,
+        holes = holes,
+        rotations = rotations,
+    }
 end
 
-local function betterMulti(a, b)
+local function lowerBoundArea(descriptors)
+    local area = 0
+    local groups = {}
+    for _, d in ipairs(descriptors) do
+        local limit = d.stackInfo and tonumber(d.stackInfo.limit) or nil
+        local units = d.stackInfo and tonumber(d.stackInfo.units) or 1
+        if d.compatKey and limit and limit > 1 then
+            local key = tostring(d.compatKey) .. ":" .. tostring(d.area)
+            local g = groups[key]
+            if not g then
+                g = { units = 0, limit = limit, area = d.area }
+                groups[key] = g
+            end
+            g.units = g.units + (units or 1)
+        else
+            area = area + d.area
+        end
+    end
+    for _, g in pairs(groups) do
+        area = area + math.ceil(g.units / math.max(1, g.limit)) * g.area
+    end
+    return area
+end
+
+local function betterLayout(a, b)
     if not a then return b end
     if not b then return a end
     if a.pages ~= b.pages then return a.pages < b.pages and a or b end
+    if a.usedRows ~= b.usedRows then return a.usedRows < b.usedRows and a or b end
     if a.holes ~= b.holes then return a.holes < b.holes and a or b end
     if a.rotations ~= b.rotations then return a.rotations < b.rotations and a or b end
     return a
 end
 
-local function computePacked(descriptors, width, height)
-    local single = bestSinglePage(descriptors, width, height)
-    if single then
-        local targets = {}
-        for _, t in ipairs(single.targets) do
-            table.insert(targets, {
-                d = t.d, tx = t.tx, ty = t.ty, ew = t.ew, eh = t.eh,
-                rotated = t.rotated, page = 1,
-            })
-        end
-        return {
-            pages = 1, targets = targets,
-            holes = single.holes, rotations = single.rotations,
-        }
-    end
+local function maxSorterPasses(itemCount)
+    if itemCount > 70 then return 2 end
+    if itemCount > 45 then return 3 end
+    if itemCount > 28 then return 4 end
+    return #SORTERS
+end
+
+local function bestSinglePage(descriptors, width, height, startedAt)
+    if lowerBoundArea(descriptors) > width * height then return nil end
 
     local best = nil
-    for _, sorter in ipairs(SORTERS) do
-        best = betterMulti(best, packMultiGreedy(descriptors, width, height, sorter))
+    local passes = maxSorterPasses(#descriptors)
+    for i = 1, passes do
+        local sorter = SORTERS[i]
+        for p = 1, #PROFILES do
+            local candidate = packGreedySingle(descriptors, width, height, sorter, PROFILES[p])
+            best = betterLayout(best, candidate)
+            if best and nowMs() - startedAt >= EXTRA_PASS_BUDGET_MS then
+                return best
+            end
+        end
     end
     return best
+end
+
+local function newPageState(width, height)
+    return {
+        grid = GridCore.new(width, height),
+        bottom = 0,
+        occupiedCells = 0,
+    }
+end
+
+local function packGreedyMulti(descriptors, width, height, sorter, profile)
+    local ordered = copyAndSort(descriptors, sorter)
+    local pages = { newPageState(width, height) }
+    local targets = {}
+    local rotations = 0
+
+    for _, d in ipairs(ordered) do
+        local best = nil
+        for pageIndex, state in ipairs(pages) do
+            local p = findBestPlacement(state.grid, d, state.bottom, state.occupiedCells, profile)
+            if p then
+                -- Earlier pages dominate. Within a page use the same compact
+                -- candidate score as the single-page solver.
+                local score = pageIndex * 1000000000000 + p.score
+                if not best or score < best.score then
+                    best = { page = pageIndex, placement = p, score = score }
+                end
+            end
+        end
+
+        if not best and #pages < GridSortState.MAX_PAGES then
+            local state = newPageState(width, height)
+            local p = findBestPlacement(state.grid, d, 0, 0, profile)
+            if p then
+                table.insert(pages, state)
+                best = { page = #pages, placement = p, score = #pages * 1000000000000 + p.score }
+            end
+        end
+        if not best then return nil end
+
+        local state = pages[best.page]
+        local p = best.placement
+        if not state.grid:insertItem(d.id, p.tx, p.ty, p.ew, p.eh, p.rotated,
+            d.itemObj, d.compatKey, d.stackInfo) then
+            return nil
+        end
+        state.bottom = p.newBottom
+        state.occupiedCells = state.occupiedCells + p.added
+        if p.rotated then rotations = rotations + 1 end
+        table.insert(targets, {
+            d = d, tx = p.tx, ty = p.ty, ew = p.ew, eh = p.eh,
+            rotated = p.rotated, page = best.page,
+        })
+    end
+
+    local usedRows, holes = 0, 0
+    for _, state in ipairs(pages) do
+        usedRows = usedRows + state.bottom
+        holes = holes + math.max(0, state.bottom * width - state.occupiedCells)
+    end
+    return {
+        pages = #pages,
+        targets = targets,
+        usedRows = usedRows,
+        holes = holes,
+        rotations = rotations,
+    }
+end
+
+local function bestMultiPage(descriptors, width, height, startedAt)
+    local best = nil
+    local passes = maxSorterPasses(#descriptors)
+    for i = 1, passes do
+        local sorter = SORTERS[i]
+        -- Multi-page is normally invoked for larger sets; one profile per
+        -- ordering is enough and keeps the click comfortably interactive.
+        local profile = PROFILES[((i - 1) % #PROFILES) + 1]
+        best = betterLayout(best, packGreedyMulti(descriptors, width, height, sorter, profile))
+        if best and nowMs() - startedAt >= EXTRA_PASS_BUDGET_MS then break end
+    end
+    return best
+end
+
+local function computePacked(descriptors, width, height, allowMultiPage, startedAt)
+    local single = bestSinglePage(descriptors, width, height, startedAt)
+    if single then return single end
+    if not allowMultiPage then return nil end
+    return bestMultiPage(descriptors, width, height, startedAt)
 end
 
 local function hasPendingWork(container, model)
@@ -364,13 +443,24 @@ function GridAutoSort.computeTargets(gridUi)
     local can, reason = GridAutoSort.canSort(gridUi)
     if not can then return nil, reason end
 
+    local startedAt = nowMs()
     local container = gridUi.inventoryContainer
     local descriptors, model = collectDescriptors(container, gridUi.playerNum or 0)
     if #descriptors < 2 then return nil, "nothing" end
     if hasPendingWork(container, model) then return nil, "busy" end
 
     local width, height = GridContainer.getGridSize(container)
-    local packed = computePacked(descriptors, width, height)
+    -- Root player inventory deliberately stays one-page. Its unpositioned items
+    -- are GridInventory's staging signal for redistribution into worn bags; a
+    -- multi-page sort here would recreate the "character inventory eats all"
+    -- regression seen in the dedicated test.
+    local allowMultiPage = not GridSortState.isPlayerRootContainer(container)
+    local packed = computePacked(descriptors, width, height, allowMultiPage, startedAt)
+    local elapsed = nowMs() - startedAt
+    GridAutoSort.lastSolveMs = elapsed
+    if elapsed >= SLOW_SOLVE_WARN_MS then
+        print("[LCC GridSort] slow solve: " .. tostring(elapsed) .. "ms for " .. tostring(#descriptors) .. " items")
+    end
     if not packed then return nil, "no-space" end
 
     local targets = {}
@@ -392,11 +482,12 @@ function GridAutoSort.computeTargets(gridUi)
     return targets, nil
 end
 
-local function targetDiffers(t, signature)
+local function targetDiffers(t, signature, container)
     local item = t.item and t.item.itemObj
     local md = item and item.getModData and item:getModData() or nil
     if not md then return true end
-    local page = tonumber(md.gridPage) or 1
+    local page = GridSortState.isPlayerRootContainer(container)
+        and 1 or (tonumber(md.gridPage) or 1)
     return tonumber(md.gridX) ~= t.tx
         or tonumber(md.gridY) ~= t.ty
         or (md.gridRot and true or false) ~= (t.item.rotated and true or false)
@@ -413,16 +504,16 @@ function GridAutoSort.sort(gridUi)
     local signature = GridContainer.containerSignature(container)
     local changed = false
     for _, t in ipairs(targets) do
-        if targetDiffers(t, signature) then changed = true break end
+        if targetDiffers(t, signature, container) then changed = true break end
     end
     if not changed then return true, "already-sorted" end
 
     if isClient and isClient() then
-        -- Optimistic concurrency without optimistic local mutation: solve from
-        -- the current snapshot, send its hash, and let the server commit the
-        -- whole layout atomically. The first concurrent writer wins; later
-        -- stale requests receive the authoritative snapshot and are rolled back.
-        local expectedHash = GridSortState.layoutHash(container)
+        -- CAS uses only membership + manual/server-authoritative positions.
+        -- Client-only auto-fit coordinates are intentionally excluded, avoiding
+        -- false stale rejects while retaining first-writer-wins for concurrent
+        -- sorts of the same container.
+        local expectedHash = GridSortState.authorityHash(container)
         if not GridSortNetwork.sendSort(container, targets, expectedHash, signature) then
             return false, "unavailable"
         end
@@ -430,6 +521,7 @@ function GridAutoSort.sort(gridUi)
     end
 
     -- SP: no server round-trip; commit locally in one pass.
+    local rootPlayer = GridSortState.isPlayerRootContainer(container)
     for _, t in ipairs(targets) do
         local item = t.item.itemObj
         local md = item and item.getModData and item:getModData() or nil
@@ -437,7 +529,8 @@ function GridAutoSort.sort(gridUi)
             md.gridX = t.tx
             md.gridY = t.ty
             md.gridRot = t.item.rotated and true or false
-            md.gridPage = (t.page or 1) > 1 and (t.page or 1) or nil
+            local page = rootPlayer and 1 or (t.page or 1)
+            md.gridPage = page > 1 and page or nil
             md.gridContainer = signature
             md.gridManual = true
         end
