@@ -23,6 +23,7 @@ Every Workshop item must keep this warning:
 | `ActivityFixes` | `LaccckaB4220ActivityFixes` | `3786175725` | Lacccka B42 Activity Fixes | Lifestyle hygiene, Yoga/progression and perk compatibility fixes. |
 | `CompatibilityBridges` | `LaccckaB4220CompatBridges` | `3786175808` | Lacccka B42 Compatibility Bridges | Build 42 legacy module/API redirects used by weapon, vehicle and framework mods. |
 | `SafetyFixes` | `LaccckaB4220SafetyFixes` | `3786176221` | Lacccka B42 Safety Fixes | Defensive inventory/UI compatibility guards. |
+| `GridInventorySort` | `LaccckaB4220GridInventorySort` | staging `0` | Lacccka B42 Grid Inventory Sort | Optional deterministic one-click auto-sort addon for GridInventory. |
 | `RussianTextFixes` | `LaccckaB4220RussianText` | `3786176120` | Lacccka B42 Russian Text Fixes | Russian localization and skill/UI text corrections. |
 
 `NPCFixes` code is stable `1.0.1`. Its source-clean transformers passed an acceptance run against the normal Workshop `Bandits2` installation on 2026-08-21. The Workshop project remains private with staging `id=0` only until a real Workshop ID and final preview are assigned.
@@ -30,6 +31,8 @@ Every Workshop item must keep this warning:
 ## Dependency model
 
 `RuntimeFixes`, `NPCFixes`, `NPCCombatExperimental`, `ActivityFixes`, `CompatibilityBridges`, and `SafetyFixes` use `LaccckaB4220PatchCore` as a **recommended soft dependency**. `RussianTextFixes` remains standalone.
+
+`GridInventorySort` is a direct addon for `GridInventory`: it hard-requires the upstream `GridInventory` mod and loads after it. It does not depend on Patch Core. The addon reuses GridInventory's own `GridCore`, stack metadata and server-authoritative `REQUEST_REORDER` path rather than copying or replacing upstream implementation files.
 
 Functional patches do not use `mod.info require=` for Patch Core. They declare Core in `loadafter=` and ship the same `LCC/Guard.lua` bootstrap:
 
