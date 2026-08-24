@@ -106,6 +106,20 @@ Removed protocol/features:
 
 Ordinary item move/reorder again uses the original GridInventory network implementation.
 
+### 5. Dedicated nested-container occupancy guard
+
+The current GridInventory Workshop comments contain a dedicated-server report for moving a nested bag/container with contents: `GridContainer.lua:405` / `buildOccupancy` can hit `attempted index: getSize of non-table: null`, and the reporter notes that it can wedge the network command loop. The upstream author acknowledged the report.
+
+The attached 2026-08-25 pager-failure logs did **not** reproduce this exception, so v0.4 does not claim a runtime-confirmed fix yet. It does, however, install a narrow server-side replacement for `GridContainer.buildOccupancy` using the already-loaded `ItemFootprint`, `GridSortState.isGridItem()` and upstream `GridContainer.getStackInfo()` contracts. No upstream source file is copied or replaced wholesale.
+
+Expected server marker:
+
+```text
+[LCC GridSort] server safe occupancy installed
+```
+
+This path needs a dedicated nested-bag transfer test before it can be moved from preventive hardening to confirmed fix.
+
 ## Deleted files
 
 The following files must stay deleted:
@@ -130,6 +144,7 @@ Dedicated server:
 
 ```text
 [LCC GridSort] adaptive continuous grid installed
+[LCC GridSort] server safe occupancy installed
 [LCC GridSort] server simple token/CAS authority installed
 ```
 
@@ -161,12 +176,14 @@ There must be no startup marker containing `multi-page`, `single-panel multi-pag
 8. Ordinary same-grid drag/reorder and transfer in/out of the bag.
    - these now use upstream GridInventory networking again;
    - no `gridPage` state should reappear.
-9. Two-client same-container SORT.
+9. Nested-bag dedicated test.
+   - put several items inside bag B;
+   - put bag B inside bag A or another supported parent container;
+   - move bag B while it still contains items;
+   - there must be no `GridContainer.lua:405`, `buildOccupancy`, or `getSize of non-table: null` exception;
+   - server commands/restart/update control must remain responsive after the transfer.
+10. Two-client same-container SORT.
    - first writer wins;
    - a genuinely concurrent second request may get one `stale` and resync;
    - both clients converge to one identical continuous layout.
-10. If a freeze remains, collect `console.txt` + debug log + `gc.log` again. With page UI removed, remaining render or allocation pressure can then be isolated independently.
-
-## Separate known upstream issue
-
-Current GridInventory Workshop comments contain a dedicated-server report for moving nested bags/containers with contents, raising a Lua exception around `GridContainer.lua:405` / `buildOccupancy`. The author has acknowledged the report. This exception did **not** appear in the 2026-08-25 pager-failure logs, so it is tracked separately rather than being mixed into the v0.4 redesign without a reproduction.
+11. If a freeze remains, collect `console.txt` + debug log + `gc.log` again. With page UI removed, remaining render or allocation pressure can then be isolated independently.
