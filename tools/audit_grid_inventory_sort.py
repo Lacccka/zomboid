@@ -123,6 +123,10 @@ require_markers(
         "GridSortState.isPlayerRootContainer(container)",
         "GridSortState.MAX_PAGES",
         "GridCore.new(width, height)",
+        "md.gridPage = page",
+        "md.gridManual = nil",
+        "autoAssignments",
+        "GridSortNetwork.sendPageAssignments",
         "self.unpositioned = stillUnpositioned",
         "multi-page overflow rescue installed",
     ),
@@ -134,6 +138,7 @@ require_markers(
     (
         'MODULE = "LCCGridInventorySort"',
         'SORT_REQUEST = "SortRequest"',
+        'PAGE_ASSIGN = "PageAssign"',
         'REJECT_LAYOUT = "RejectLayout"',
         "function GridSortState.authorityHash(container)",
         "gridManual",
@@ -149,6 +154,8 @@ require_markers(
     (
         "containerHasExtraPages",
         'return "item:" .. tostring(containing:getID())',
+        "function GridSortNetwork.sendPageAssignments",
+        "GridSortState.COMMANDS.PAGE_ASSIGN",
         "GridSortState.COMMANDS.SORT_REQUEST",
         "GridSortState.COMMANDS.PAGE_MOVE",
         "GridSortState.COMMANDS.PAGE_REORDER",
@@ -164,6 +171,9 @@ require_markers(
     server,
     (
         "GridSortState.authorityHash(target)",
+        "local function processPageAssign",
+        "GridSortState.COMMANDS.PAGE_ASSIGN",
+        "applyPosition(entry.item, entry.move, args.gridContainer, false, target)",
         'REJECT_LAYOUT, "stale"',
         'REJECT_LAYOUT, "stale-after-validate"',
         "sameItemSet",
