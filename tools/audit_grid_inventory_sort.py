@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""Static contract audit for WorkshopPatches/GridInventorySort.
-
-This intentionally does not emulate Project Zomboid/Kahlua. It catches package
-regressions that are cheap to detect in CI/local development: missing files,
-metadata drift, invalid translation JSON and loss of the critical GridInventory
-integration seams used by the addon.
-"""
+"""Static contract audit for WorkshopPatches/GridInventorySort."""
 
 from __future__ import annotations
 
@@ -20,10 +14,9 @@ MOD = PKG / "Contents" / "mods" / "LaccckaB4220GridInventorySort" / "42"
 FILES = {
     "modinfo": MOD / "mod.info",
     "algorithm": MOD / "media" / "lua" / "client" / "LCC" / "GridAutoSort.lua",
-    "multipage": MOD / "media" / "lua" / "client" / "LCC" / "GridMultiPage.lua",
     "network": MOD / "media" / "lua" / "client" / "LCC" / "GridSortNetwork.lua",
     "paneux": MOD / "media" / "lua" / "client" / "LCC" / "GridPaneUX.lua",
-    "pageview": MOD / "media" / "lua" / "client" / "LCC" / "GridPageView.lua",
+    "continuous": MOD / "media" / "lua" / "shared" / "LCC" / "GridContinuousGrid.lua",
     "state": MOD / "media" / "lua" / "shared" / "LCC" / "GridSortState.lua",
     "server": MOD / "media" / "lua" / "server" / "zzz_LCC_GridSortServer.lua",
     "hook": MOD / "media" / "lua" / "client" / "zzz_LCC_GridInventorySort.lua",
@@ -54,10 +47,9 @@ def require_markers(label: str, text: str, markers: tuple[str, ...]) -> None:
 
 modinfo = require_file("modinfo")
 algorithm = require_file("algorithm")
-multipage = require_file("multipage")
 network = require_file("network")
 paneux = require_file("paneux")
-pageview = require_file("pageview")
+continuous = require_file("continuous")
 state = require_file("state")
 server = require_file("server")
 hook = require_file("hook")
@@ -68,10 +60,26 @@ require_markers(
     modinfo,
     (
         "id=LaccckaB4220GridInventorySort",
-        "modversion=0.3.0",
+        "modversion=0.4.0",
         "versionMin=42.20.0",
         "require=\\GridInventory",
         "loadafter=\\GridInventory",
+    ),
+)
+
+require_markers(
+    "GridContinuousGrid.lua",
+    continuous,
+    (
+        "GridContainer._lccContinuousGridInstalled",
+        "MAX_HEIGHT = 60",
+        "GridSortState.collectItems(container)",
+        "GridContainer.getStackInfo(item)",
+        "function GridContinuousGrid.getGridSize(container)",
+        "function GridContinuousGrid.normalizeLegacyPages(container)",
+        "md.gridPage = nil",
+        "self.grids = { GridCore.new(w, h) }",
+        "adaptive continuous grid installed",
     ),
 )
 
@@ -82,17 +90,14 @@ require_markers(
         'require("DataModel/GridCore")',
         'require("DataModel/GridContainer")',
         'require("Algorithm/ItemFootprint")',
-        'require("Network/GridClientNetwork")',
         'require("LCC/GridSortState")',
         'require("LCC/GridSortNetwork")',
+        "GridSortState.collectItems(container)",
         "GridContainer.getStackInfo",
         "grid:canPlaceItem",
-        "EXTRA_PASS_BUDGET_MS",
         "lowerBoundArea",
-        "packGreedySingle",
-        "packGreedyMulti",
-        "GridSortState.isPlayerRootContainer",
-        "GridSortNetwork.prepareSort",
+        "packGreedy",
+        "GridSortNetwork.sendSort",
         "GridClientNetwork.markGridChanged",
         "isNestedBagContainer",
         'return false, "nested"',
@@ -103,55 +108,18 @@ require_markers(
     ),
 )
 
-# MP sort must never compute its own CAS version from client-side ModData again.
-mp_sort_block = algorithm.split("if isClient and isClient() then", 1)
-if len(mp_sort_block) == 2 and "GridSortState.authorityHash(container)" in mp_sort_block[1].split("-- SP:", 1)[0]:
-    errors.append("GridAutoSort.lua: client still manufactures authorityHash for MP CAS")
-
-# The blocking v0.2 beam implementation cloned/rescanned full grids per
-# candidate and caused visible UI freezes. It must not silently return.
+# Never reintroduce synchronous search matrices/page packing into the click path.
 for forbidden_marker in (
     "packBeam",
     "cloneGrid",
     "beamWidth",
     "placementsPerState",
+    "packGreedyMulti",
+    "bestMultiPage",
+    "MAX_PAGES",
 ):
     if forbidden_marker in algorithm:
-        errors.append(
-            f"GridAutoSort.lua: blocking beam-search marker present: {forbidden_marker}"
-        )
-
-require_markers(
-    "GridMultiPage.lua",
-    multipage,
-    (
-        "GridContainer._lccMultiPageInstalled",
-        "GridSortState.isPlayerRootContainer(container)",
-        "GridSortState.MAX_PAGES",
-        "GridCore.new(width, height)",
-        "md.gridPage = page",
-        "md.gridManual = nil",
-        "autoAssignments",
-        "GridSortNetwork.sendPageAssignments",
-        "self.unpositioned = stillUnpositioned",
-        "multi-page overflow rescue installed",
-    ),
-)
-
-require_markers(
-    "GridPageView.lua",
-    pageview,
-    (
-        "_lccGridSortPageViewInstalled",
-        "_lccAllGridUis",
-        "_lccSelectedGridPages",
-        "GridPageView.selectRelative",
-        "originalRefreshContainer",
-        "self.gridIndex = 1",
-        'local label = tostring(pageNumber) .. "/" .. tostring(pageCount)',
-        "single-panel multi-page view installed",
-    ),
-)
+        errors.append(f"GridAutoSort.lua: obsolete/heavy marker present: {forbidden_marker}")
 
 require_markers(
     "GridSortState.lua",
@@ -161,7 +129,6 @@ require_markers(
         'SORT_PREPARE = "SortPrepare"',
         'SORT_TOKEN = "SortToken"',
         'SORT_REQUEST = "SortRequest"',
-        'PAGE_ASSIGN = "PageAssign"',
         'REJECT_LAYOUT = "RejectLayout"',
         "function GridSortState.authorityHash(container)",
         "gridManual",
@@ -170,49 +137,59 @@ require_markers(
         "function GridSortState.isPlayerRootContainer(container)",
     ),
 )
+for forbidden_marker in ("PAGE_ASSIGN", "PAGE_MOVE", "PAGE_REORDER", "PAGE_CLEAR", "MAX_PAGES"):
+    if forbidden_marker in state:
+        errors.append(f"GridSortState.lua: pagination protocol marker present: {forbidden_marker}")
 
 require_markers(
     "GridSortNetwork.lua",
     network,
     (
-        "containerHasExtraPages",
         'return "item:" .. tostring(containing:getID())',
-        "function GridSortNetwork.prepareSort",
+        "function GridSortNetwork.sendSort",
         "pendingByRequest",
+        "itemIds = itemIds",
         "GridSortState.COMMANDS.SORT_PREPARE",
         "GridSortState.COMMANDS.SORT_TOKEN",
         "expectedToken",
-        "function GridSortNetwork.sendPageAssignments",
-        "GridSortState.COMMANDS.PAGE_ASSIGN",
         "GridSortState.COMMANDS.SORT_REQUEST",
-        "GridSortState.COMMANDS.PAGE_MOVE",
-        "GridSortState.COMMANDS.PAGE_REORDER",
         "GridSortState.COMMANDS.REJECT_LAYOUT",
-        "authoritative snapshot restored",
-        "containerHasExtraPages(container) or oldPage > 1 or targetPage > 1",
-        "page-aware MP network installed",
+        "membership changed before commit",
+        "simple token/CAS network installed",
     ),
 )
+for forbidden_marker in (
+    "sendPageAssignments",
+    "sendPageMove",
+    "sendPageReorder",
+    "containerHasExtraPages",
+    "originalSendItemMove",
+    "PAGE_ASSIGN",
+    "PAGE_MOVE",
+    "PAGE_REORDER",
+):
+    if forbidden_marker in network:
+        errors.append(f"GridSortNetwork.lua: pagination/network wrapper marker present: {forbidden_marker}")
 
 require_markers(
     "zzz_LCC_GridSortServer.lua",
     server,
     (
+        'require("LCC/GridContinuousGrid")',
         "GridSortState.authorityHash(target)",
         "local function processSortPrepare",
-        "GridSortState.COMMANDS.SORT_PREPARE",
+        "sameIdSet(target, args.itemIds or {})",
+        '"membership-before-sort"',
         "GridSortState.COMMANDS.SORT_TOKEN",
         "expectedToken",
-        "local function processPageAssign",
-        "GridSortState.COMMANDS.PAGE_ASSIGN",
-        "applyPosition(entry.item, entry.move, args.gridContainer, false, target)",
-        'REJECT_LAYOUT, "stale"',
-        'REJECT_LAYOUT, "stale-after-validate"',
-        "sameItemSet",
         "GridCore.new(w, h)",
-        "server token/CAS page authority installed",
+        "md.gridPage = nil",
+        "server simple token/CAS authority installed",
     ),
 )
+for forbidden_marker in ("processPageAssign", "processPageMove", "processPageReorder", "PAGE_ASSIGN", "PAGE_MOVE"):
+    if forbidden_marker in server:
+        errors.append(f"zzz_LCC_GridSortServer.lua: pagination server marker present: {forbidden_marker}")
 
 require_markers(
     "GridPaneUX.lua",
@@ -229,9 +206,8 @@ require_markers(
     "zzz_LCC_GridInventorySort.lua",
     hook,
     (
-        'pcall(require, "LCC/GridMultiPage")',
+        'pcall(require, "LCC/GridContinuousGrid")',
         'pcall(require, "LCC/GridPaneUX")',
-        'pcall(require, "LCC/GridPageView")',
         'pcall(require, "LCC/GridAutoSort")',
         'require "ISUI/InventoryWindow/ISInventoryWindowContainerControls"',
         'require "ISUI/InventoryWindow/ISInventoryWindowControlHandler"',
@@ -239,45 +215,30 @@ require_markers(
         'require "ISUI/LootWindow/ISLootWindowObjectControlHandler"',
         'ISInventoryWindowContainerControls.AddHandler(LCC_InventorySortHandler)',
         'ISLootWindowContainerControls.AddHandler(LCC_LootSortHandler)',
-        'ISInventoryWindowControlHandler:derive("LCC_InventorySortHandler")',
-        'ISLootWindowObjectControlHandler:derive("LCC_LootSortHandler")',
         "GridAutoSort.canSort",
         "GridAutoSort.sort",
         "LCC_GRID_AUTO_SORT",
         "native footer handlers registered",
     ),
 )
-
-# The old implementation wrapped arrange()/ISInventoryPage.update and fought
-# vanilla footer rebuilds. It must never come back.
-obsolete_visibility = (
-    MOD / "media" / "lua" / "client" / "zzzz_LCC_GridInventorySortVisibility.lua"
-)
-if obsolete_visibility.exists():
-    errors.append(
-        "obsolete footer-repair hook must stay deleted: "
-        + str(obsolete_visibility.relative_to(ROOT))
-    )
-for forbidden_marker in (
-    "_lccGridSortArrangeWrapper",
-    "_lccGridSortArrangeWrapped",
-    "_lccGridSortVisibilityUpdateWrapper",
-    "footer membership repaired",
-):
+for forbidden_marker in ("GridMultiPage", "GridPageView", "_lccAllGridUis", "_lccSelectedGridPages"):
     if forbidden_marker in hook:
-        errors.append(
-            f"zzz_LCC_GridInventorySort.lua: obsolete injection marker present: "
-            f"{forbidden_marker}"
-        )
+        errors.append(f"zzz_LCC_GridInventorySort.lua: pager marker present: {forbidden_marker}")
+
+# Pager/multi-page files caused duplicate GridRender lifetime and renderer-ring
+# overruns in the 2026-08-25 dedicated test. They must stay physically deleted.
+for obsolete in (
+    MOD / "media" / "lua" / "client" / "LCC" / "GridMultiPage.lua",
+    MOD / "media" / "lua" / "client" / "LCC" / "GridPageView.lua",
+    MOD / "media" / "lua" / "client" / "zzzz_LCC_GridInventorySortVisibility.lua",
+):
+    if obsolete.exists():
+        errors.append("obsolete UI layer must stay deleted: " + str(obsolete.relative_to(ROOT)))
 
 require_markers(
     "workshop.txt",
     workshop,
-    (
-        "id=0",
-        "visibility=private",
-        "original GridInventory mod is not included",
-    ),
+    ("id=0", "visibility=private", "original GridInventory mod is not included"),
 )
 
 expected_keys = {
@@ -310,7 +271,7 @@ for lang in ("en", "ru"):
     if extra:
         errors.append(f"{lang}: unexpected translation keys: {sorted(extra)}")
 
-# Source-clean addon rule: never publish copies of upstream GridInventory files.
+# Source-clean addon rule: never publish replacement copies of upstream files.
 for forbidden in (
     "GridRender.lua",
     "GridContainer.lua",
