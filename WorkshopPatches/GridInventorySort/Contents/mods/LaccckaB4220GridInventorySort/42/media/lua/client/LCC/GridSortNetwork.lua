@@ -112,6 +112,33 @@ function GridSortNetwork.sendSort(container, targets, expectedHash, gridContaine
     return true
 end
 
+function GridSortNetwork.sendPageAssignments(container, assignments, gridContainer)
+    if not isClient() then return false end
+    if not container or not assignments or #assignments == 0 then return false end
+    if GridSortState.isPlayerRootContainer(container) then return false end
+    local ref = GridProtocol.buildContainerRef(container)
+    if not ref then return false end
+
+    local moves = {}
+    for _, a in ipairs(assignments) do
+        if a.itemId ~= nil and a.x ~= nil and a.y ~= nil then
+            table.insert(moves, {
+                itemId = a.itemId,
+                x = tonumber(a.x), y = tonumber(a.y),
+                page = tonumber(a.page) or 1,
+                rotated = a.rotated and true or false,
+            })
+        end
+    end
+    if #moves == 0 then return false end
+
+    return send(GridSortState.COMMANDS.PAGE_ASSIGN, {
+        ref = ref,
+        gridContainer = gridContainer,
+        moves = moves,
+    })
+end
+
 function GridSortNetwork.sendPageMove(container, itemId, x, y, rotated, gridContainer, manual, page)
     local ref = GridProtocol.buildContainerRef(container)
     if not ref then return false end
