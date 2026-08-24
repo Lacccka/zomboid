@@ -120,6 +120,11 @@ class ServerToolsApp(tk.Tk):
         self.server_pause_released = False
         self.server_java_exit_code = None
 
+        # Remember per-mod checkbox state while the application is open. New
+        # mods are selected by default, while manually disabled mods stay off
+        # when the selection window is opened again.
+        self.mod_update_selection = {}
+
         # Thread-safe buffer for all GUI log messages. Background workers never
         # touch Tk widgets directly; the main Tk loop renders queued lines in
         # batches to reduce CPU usage and redraw overhead during server log spam.
@@ -159,11 +164,16 @@ class ServerToolsApp(tk.Tk):
 
         self.update_button = ttk.Button(
             patch_frame,
-            text="Обновить mods",
+            text="Выбрать моды и обновить",
             command=self.start_update,
-            width=24,
+            width=28,
         )
         self.update_button.pack(side="left")
+
+        ttk.Label(
+            patch_frame,
+            text="Перед копированием можно отключить ненужные папки модов.",
+        ).pack(side="left", padx=(12, 0))
 
         server_frame = ttk.LabelFrame(main, text="Dedicated Server", padding=10)
         server_frame.pack(fill="x", pady=(0, 10))
@@ -376,18 +386,14 @@ class ServerToolsApp(tk.Tk):
 
         return jobs, skipped
 
+    @staticmethod
+    def get_job_key(job):
+        """Return a stable case-insensitive key for one destination mod folder."""
+        _source, destination = job
+        return str(destination).casefold()
+
     def start_update(self):
-        self.set_update_button_enabled(False)
-        self.progress_var.set(0)
-        self.status_var.set("Обновление mods...")
-        self.clear_log()
-
-        threading.Thread(
-            target=self.update_all,
-            daemon=True,
-        ).start()
-
-    def update_all(self):
+        """Scan available mods and open the per-mod selection window."""
         try:
             projects = self.get_projects()
             jobs, skipped = self.build_jobs(projects)
@@ -395,10 +401,230 @@ class ServerToolsApp(tk.Tk):
             if not jobs:
                 raise RuntimeError("Не найдено ни одной модификации для копирования.")
 
+            self.show_update_selection(projects, jobs, skipped)
+
+        except Exception as exc:
+            self.status_var.set("Ошибка обновления")
+            self.log("")
+            self.log(f"[ERROR] {exc}")
+            messagebox.showerror(
+                "Ошибка обновления",
+                str(exc),
+                parent=self,
+            )
+
+    def show_update_selection(self, projects, jobs, skipped):
+        """Show a scrollable checkbox list and start only selected copy jobs."""
+        dialog = tk.Toplevel(self)
+        dialog.title("Выбор модов для обновления")
+        dialog.geometry("720x540")
+        dialog.minsize(560, 420)
+        dialog.transient(self)
+        dialog.grab_set()
+
+        outer = ttk.Frame(dialog, padding=12)
+        outer.pack(fill="both", expand=True)
+
+        ttk.Label(
+            outer,
+            text="Выберите папки модов, которые нужно обновить",
+            font=("Segoe UI", 11, "bold"),
+        ).pack(anchor="w")
+
+        ttk.Label(
+            outer,
+            text=(
+                "Отмеченные папки будут полностью заменены версиями из "
+                "WorkshopPatches."
+            ),
+        ).pack(anchor="w", pady=(3, 10))
+
+        controls = ttk.Frame(outer)
+        controls.pack(fill="x", pady=(0, 8))
+
+        selection_vars = {}
+        selected_count_var = tk.StringVar()
+
+        def update_selected_count():
+            selected = sum(1 for var in selection_vars.values() if var.get())
+            selected_count_var.set(f"Выбрано: {selected} / {len(jobs)}")
+
+        def set_all(value):
+            for key, var in selection_vars.items():
+                var.set(value)
+                self.mod_update_selection[key] = value
+            update_selected_count()
+
+        ttk.Button(
+            controls,
+            text="Выбрать все",
+            command=lambda: set_all(True),
+            width=16,
+        ).pack(side="left")
+
+        ttk.Button(
+            controls,
+            text="Снять все",
+            command=lambda: set_all(False),
+            width=16,
+        ).pack(side="left", padx=(8, 0))
+
+        ttk.Label(
+            controls,
+            textvariable=selected_count_var,
+            font=("Segoe UI", 9, "bold"),
+        ).pack(side="right")
+
+        list_frame = ttk.Frame(outer)
+        list_frame.pack(fill="both", expand=True)
+
+        canvas = tk.Canvas(
+            list_frame,
+            highlightthickness=0,
+            borderwidth=0,
+        )
+        scrollbar = ttk.Scrollbar(
+            list_frame,
+            orient="vertical",
+            command=canvas.yview,
+        )
+        checkbox_frame = ttk.Frame(canvas)
+
+        checkbox_window = canvas.create_window(
+            (0, 0),
+            window=checkbox_frame,
+            anchor="nw",
+        )
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        def update_scroll_region(_event=None):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        def fit_checkbox_frame(event):
+            canvas.itemconfigure(checkbox_window, width=event.width)
+
+        checkbox_frame.bind("<Configure>", update_scroll_region)
+        canvas.bind("<Configure>", fit_checkbox_frame)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        def on_checkbox_changed(key, var):
+            self.mod_update_selection[key] = bool(var.get())
+            update_selected_count()
+
+        for row, job in enumerate(jobs):
+            source, destination = job
+            key = self.get_job_key(job)
+            selected = self.mod_update_selection.get(key, True)
+            var = tk.BooleanVar(value=selected)
+            selection_vars[key] = var
+
+            try:
+                source_display = source.relative_to(SOURCE_ROOT)
+            except ValueError:
+                source_display = source
+
+            checkbox = ttk.Checkbutton(
+                checkbox_frame,
+                text=destination.name,
+                variable=var,
+                command=lambda key=key, var=var: on_checkbox_changed(key, var),
+            )
+            checkbox.grid(
+                row=row,
+                column=0,
+                sticky="w",
+                padx=(6, 12),
+                pady=4,
+            )
+
+            ttk.Label(
+                checkbox_frame,
+                text=str(source_display),
+            ).grid(
+                row=row,
+                column=1,
+                sticky="w",
+                padx=(0, 6),
+                pady=4,
+            )
+
+        checkbox_frame.columnconfigure(1, weight=1)
+        update_selected_count()
+
+        actions = ttk.Frame(outer)
+        actions.pack(fill="x", pady=(10, 0))
+
+        def begin_selected_update():
+            selected_jobs = [
+                job
+                for job in jobs
+                if selection_vars[self.get_job_key(job)].get()
+            ]
+
+            if not selected_jobs:
+                messagebox.showwarning(
+                    "Ничего не выбрано",
+                    "Отметьте хотя бы одну папку мода для обновления.",
+                    parent=dialog,
+                )
+                return
+
+            for key, var in selection_vars.items():
+                self.mod_update_selection[key] = bool(var.get())
+
+            dialog.grab_release()
+            dialog.destroy()
+            self.start_selected_update(
+                projects,
+                selected_jobs,
+                skipped,
+                len(jobs),
+            )
+
+        ttk.Button(
+            actions,
+            text="Отмена",
+            command=dialog.destroy,
+            width=16,
+        ).pack(side="right")
+
+        ttk.Button(
+            actions,
+            text="Обновить выбранные",
+            command=begin_selected_update,
+            width=22,
+        ).pack(side="right", padx=(0, 8))
+
+        dialog.protocol("WM_DELETE_WINDOW", dialog.destroy)
+        dialog.bind("<Escape>", lambda _event: dialog.destroy())
+        dialog.focus_set()
+
+    def start_selected_update(self, projects, jobs, skipped, available_job_count):
+        """Start the background copy operation for the selected jobs only."""
+        self.set_update_button_enabled(False)
+        self.progress_var.set(0)
+        self.status_var.set("Обновление выбранных mods...")
+        self.clear_log()
+
+        threading.Thread(
+            target=self.update_selected,
+            args=(projects, jobs, skipped, available_job_count),
+            daemon=True,
+        ).start()
+
+    def update_selected(self, projects, jobs, skipped, available_job_count):
+        try:
             self.log(f"Источник: {SOURCE_ROOT}")
             self.log(f"Mods: {MODS_ROOT}")
             self.log(f"Найдено проектов: {len(projects)}")
-            self.log(f"Найдено модов: {len(jobs)}")
+            self.log(f"Найдено модов: {available_job_count}")
+            self.log(f"Выбрано для обновления: {len(jobs)}")
+
+            unselected_count = available_job_count - len(jobs)
+            if unselected_count:
+                self.log(f"Отключено пользователем: {unselected_count}")
 
             if skipped:
                 self.log(f"Пропущено каталогов: {len(skipped)}")
@@ -421,14 +647,17 @@ class ServerToolsApp(tk.Tk):
                 self.log("")
                 self.set_progress(index / len(jobs) * 100)
 
-            self.set_status("Mods обновлены")
-            self.log("Обновление локальных модов завершено успешно.")
+            self.set_status("Выбранные mods обновлены")
+            self.log("Обновление выбранных локальных модов завершено успешно.")
 
             self.after(
                 0,
                 lambda: messagebox.showinfo(
                     "Готово",
-                    f"Локальные моды обновлены: {len(jobs)}.",
+                    (
+                        f"Локальные моды обновлены: {len(jobs)} "
+                        f"из {available_job_count}."
+                    ),
                 ),
             )
 
