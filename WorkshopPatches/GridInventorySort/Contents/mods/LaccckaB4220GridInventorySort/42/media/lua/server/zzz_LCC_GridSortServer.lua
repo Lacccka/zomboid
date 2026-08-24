@@ -9,6 +9,41 @@ local GridContinuousGrid = require("LCC/GridContinuousGrid")
 
 local GridSortServer = {}
 
+-- Current GridInventory has a reported dedicated-server failure in
+-- GridContainer.buildOccupancy while moving a nested container with contents:
+-- its captured ItemFootprint can be nil in that path, producing
+-- "attempted index: getSize of non-table: null" and, in the worst case,
+-- wedging the command-processing loop. Keep the upstream algorithm, but bind it
+-- here to the known-good shared modules that have already loaded on this server.
+if not GridContainer._lccSafeBuildOccupancyInstalled then
+    GridContainer._lccSafeBuildOccupancyInstalled = true
+
+    function GridContainer.buildOccupancy(container, grid)
+        if not container or not grid or not container.getItems then return end
+        local items = container:getItems()
+        if not items then return end
+
+        for i = 0, items:size() - 1 do
+            local item = items:get(i)
+            if GridSortState.isGridItem(item) then
+                local md = item:getModData()
+                local sx = md and tonumber(md.gridX) or nil
+                local sy = md and tonumber(md.gridY) or nil
+                if sx and sy then
+                    local rotated = md.gridRot and true or false
+                    local fw, fh = ItemFootprint.getSize(item)
+                    local ew, eh = rotated and fh or fw, rotated and fw or fh
+                    local compatKey, stackInfo = GridContainer.getStackInfo(item)
+                    grid:insertItem(item:getID(), sx, sy, ew, eh, rotated,
+                        item, compatKey, stackInfo)
+                end
+            end
+        end
+    end
+
+    print("[LCC GridSort] server safe occupancy installed")
+end
+
 local function resolveSortableTarget(player, ref)
     local target = ref and GridProtocol.resolveContainerRef(ref, player) or nil
     if not target then return nil end
