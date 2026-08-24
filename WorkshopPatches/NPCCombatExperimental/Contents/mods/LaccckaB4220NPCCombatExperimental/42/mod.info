@@ -1,7 +1,7 @@
 name=Lacccka B42 NPC Combat Experimental
 id=LaccckaB4220NPCCombatExperimental
 author=Lacccka
-description=Optional Build 42.20 NPC combat/death diagnostics and admin stress-test tooling for validating the stable LCC NPC fixes. Lacccka B42 Patch Core is strongly recommended; without Core this patch runs through the guarded fallback used by the stable LCC patches. No original third-party Lua files or assets are bundled.
-modversion=0.2.0
+description=Optional Build 42.20 NPC combat/death diagnostics, stable-fix heartbeat summaries and admin stress-test tooling for validating the stable LCC NPC fixes. Lacccka B42 Patch Core is strongly recommended; without Core this patch runs through the guarded fallback used by the stable LCC patches. No original third-party Lua files or assets are bundled.
+modversion=0.2.1
 versionMin=42.20.0
 loadafter=\LaccckaB4220PatchCore,\Bandits2,\LaccckaB4220RuntimeFixes,\LaccckaB4220NPCFixes
