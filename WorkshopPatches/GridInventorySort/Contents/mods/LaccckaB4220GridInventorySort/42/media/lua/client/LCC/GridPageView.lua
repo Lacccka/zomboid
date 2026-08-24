@@ -1,6 +1,5 @@
 require "ISUI/ISInventoryPane"
 
-local GridContainer = require("DataModel/GridContainer")
 local okRender, GridRender = pcall(require, "UI/GridRender/GridRender")
 
 local GridPageView = {}
@@ -15,6 +14,14 @@ local function isFloorGrid(gridUi)
     if gridUi.isFloor then return true end
     local inv = gridUi.inventoryContainer
     return inv.getType and inv:getType() == "floor" or false
+end
+
+local function gridHasContent(gridUi)
+    if not gridUi or not gridUi.gridCore then return false end
+    local core = gridUi.gridCore
+    for _ in pairs(core.items or {}) do return true end
+    for _ in pairs(core.ghostItems or {}) do return true end
+    return false
 end
 
 local function getAllGridUis(pane)
@@ -32,13 +39,16 @@ local function collectPageGroups(all)
     local groups = {}
     for _, gridUi in ipairs(all or {}) do
         if gridUi and not gridUi.isOverflow and gridUi.inventoryContainer and not isFloorGrid(gridUi) then
-            local inv = gridUi.inventoryContainer
-            local list = groups[inv]
-            if not list then
-                list = {}
-                groups[inv] = list
+            local realPage = tonumber(gridUi.gridIndex) or 1
+            if realPage == 1 or gridHasContent(gridUi) then
+                local inv = gridUi.inventoryContainer
+                local list = groups[inv]
+                if not list then
+                    list = {}
+                    groups[inv] = list
+                end
+                table.insert(list, gridUi)
             end
-            table.insert(list, gridUi)
         end
     end
     for _, list in pairs(groups) do
@@ -58,6 +68,13 @@ local function setGridVisible(gridUi, visible)
     end
 end
 
+local function selectedExists(list, realPage)
+    for _, gridUi in ipairs(list or {}) do
+        if (tonumber(gridUi.gridIndex) or 1) == realPage then return true end
+    end
+    return false
+end
+
 local function applySelection(pane)
     if not pane then return end
     local all = getAllGridUis(pane)
@@ -68,16 +85,18 @@ local function applySelection(pane)
     for inv, list in pairs(groups) do
         local count = #list
         local selected = tonumber(pane._lccSelectedGridPages[inv]) or 1
-        if selected < 1 then selected = 1 end
-        if selected > count then selected = count end
+        if not selectedExists(list, selected) then
+            selected = tonumber(list[1] and list[1].gridIndex) or 1
+        end
         pane._lccSelectedGridPages[inv] = selected
 
         for ordinal, gridUi in ipairs(list) do
-            local page = tonumber(gridUi.gridIndex) or ordinal
-            local active = (page == selected)
+            local realPage = tonumber(gridUi.gridIndex) or 1
+            local active = realPage == selected
             gridUi._lccPagePane = pane
             gridUi._lccPageCount = count
-            gridUi._lccPageNumber = page
+            gridUi._lccPageNumber = ordinal
+            gridUi._lccRealPageNumber = realPage
             gridUi._lccPageActive = active
             setGridVisible(gridUi, active)
         end
@@ -88,8 +107,13 @@ local function applySelection(pane)
         local keep = true
         if gridUi and not gridUi.isOverflow and gridUi.inventoryContainer and not isFloorGrid(gridUi) then
             local list = groups[gridUi.inventoryContainer]
+            local realPage = tonumber(gridUi.gridIndex) or 1
             if list and #list > 1 then
                 keep = gridUi._lccPageActive == true
+            elseif realPage > 1 then
+                -- Empty/pre-warmed extra pages are internal routing helpers and
+                -- must never consume a FlexBox slot.
+                keep = false
             end
         end
         if keep then
@@ -115,23 +139,24 @@ function GridPageView.selectRelative(gridUi, delta)
     if count <= 1 then return false end
 
     pane._lccSelectedGridPages = pane._lccSelectedGridPages or {}
-    local current = tonumber(pane._lccSelectedGridPages[gridUi.inventoryContainer])
+    local currentReal = tonumber(pane._lccSelectedGridPages[gridUi.inventoryContainer])
         or tonumber(gridUi.gridIndex) or 1
-    local nextPage = ((current - 1 + (delta or 1)) % count) + 1
-    pane._lccSelectedGridPages[gridUi.inventoryContainer] = nextPage
+    local currentOrdinal = 1
+    for ordinal, candidate in ipairs(list) do
+        if (tonumber(candidate.gridIndex) or 1) == currentReal then
+            currentOrdinal = ordinal
+            break
+        end
+    end
+    local nextOrdinal = ((currentOrdinal - 1 + (delta or 1)) % count) + 1
+    pane._lccSelectedGridPages[gridUi.inventoryContainer] =
+        tonumber(list[nextOrdinal].gridIndex) or nextOrdinal
     applySelection(pane)
-
-    -- The upstream flex layout reads gridContainerUis every prerender, so the
-    -- newly selected page takes the exact physical slot of the old one without
-    -- recreating the container or changing scroll position.
     return true
 end
 
 local originalRefreshContainer = ISInventoryPane.refreshContainer
 function ISInventoryPane:refreshContainer(...)
-    -- Upstream reuses/destroys GridRender instances from gridContainerUis. Give
-    -- it the complete set while it rebuilds, then collapse each non-floor
-    -- multi-page container back to one visible page for layout/rendering.
     restoreAllGridUis(self)
     originalRefreshContainer(self, ...)
     self._lccAllGridUis = self.gridContainerUis or {}
@@ -144,20 +169,20 @@ if okRender and GridRender then
         GridRender._lccPageViewRenderWrapped = true
         function GridRender:render(...)
             local pageCount = tonumber(self._lccPageCount) or 1
-            local pageNumber = tonumber(self._lccPageNumber) or tonumber(self.gridIndex) or 1
+            local pageNumber = tonumber(self._lccPageNumber) or 1
             local paged = pageCount > 1 and self._lccPageActive and not isFloorGrid(self)
 
-            -- GridInventory labels every non-floor gridIndex>1 as "(Overflow)".
-            -- These are now normal pages, so render the normal container title.
+            -- Upstream GridRender uses gridIndex>1 in render only to append the
+            -- legacy "(Overflow)" title. Preserve the real index for every input
+            -- and network path; mask it only while the upstream render runs.
             local realIndex = nil
             if paged and tonumber(self.gridIndex) and tonumber(self.gridIndex) > 1 then
                 realIndex = self.gridIndex
                 self.gridIndex = 1
             end
-
             originalRender(self, ...)
-
             if realIndex then self.gridIndex = realIndex end
+
             if not paged then
                 self._lccPagerPrevRect = nil
                 self._lccPagerNextRect = nil
@@ -169,8 +194,7 @@ if okRender and GridRender then
             local tm = getTextManager()
             local labelW = tm:MeasureStringX(font, label)
             local labelH = tm:MeasureStringY(font, label)
-            local buttonW = 15
-            local gap = 3
+            local buttonW, gap = 15, 3
             local totalW = buttonW + gap + labelW + gap + buttonW
             local headerH = tonumber(self.headerH) or 28
             local pad = tonumber(self.gridPadding) or 10
@@ -178,10 +202,7 @@ if okRender and GridRender then
             local x = math.floor((self.width - totalW) / 2)
             local y = pad + math.max(1, math.floor((headerH - boxH) / 2) - 1)
 
-            -- Opaque backing prevents a long container title from visually
-            -- colliding with the pager without needing to fork GridRender.lua.
             self:drawRect(x - 3, y - 1, totalW + 6, boxH + 2, 0.88, 0.03, 0.03, 0.03)
-
             self:drawRectBorder(x, y, buttonW, boxH, 0.75, 0.65, 0.65, 0.65)
             self:drawText("<", x + 4, y + math.floor((boxH - labelH) / 2), 0.92, 0.92, 0.92, 1, font)
 
