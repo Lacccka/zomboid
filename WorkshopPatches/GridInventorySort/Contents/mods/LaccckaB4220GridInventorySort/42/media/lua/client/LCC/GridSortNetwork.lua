@@ -157,8 +157,11 @@ function GridSortNetwork.prepareSort(container, targets, gridContainer)
     return true
 end
 
--- Backward-compatible name for any local code that still calls sendSort.
-GridSortNetwork.sendSort = GridSortNetwork.prepareSort
+-- Compatibility with v0.2.1 GridAutoSort, which still passes a discarded
+-- client hash as the third argument and the real container signature fourth.
+function GridSortNetwork.sendSort(container, targets, _legacyExpectedHash, gridContainer)
+    return GridSortNetwork.prepareSort(container, targets, gridContainer or _legacyExpectedHash)
+end
 
 function GridSortNetwork.sendPageAssignments(container, assignments, gridContainer)
     if not isClient() then return false end
