@@ -3,11 +3,15 @@ local GridCore = require("DataModel/GridCore")
 local ItemFootprint = require("Algorithm/ItemFootprint")
 local GridSortState = require("LCC/GridSortState")
 
-local GridContinuousGrid = {}
-
-if GridContainer._lccContinuousGridInstalled then
-    return GridContinuousGrid
+-- Shared files may be executed by the PZ loader before another file explicitly
+-- requires them. Keep the actual module table on GridContainer so a second
+-- execution returns the installed implementation instead of an empty table.
+if GridContainer._lccContinuousGridModule then
+    return GridContainer._lccContinuousGridModule
 end
+
+local GridContinuousGrid = {}
+GridContainer._lccContinuousGridModule = GridContinuousGrid
 GridContainer._lccContinuousGridInstalled = true
 
 local originalGetGridSize = GridContainer.getGridSize
@@ -30,9 +34,7 @@ end
 local function bestHeightForWidth(itemW, itemH, gridW)
     local best = nil
     if itemW <= gridW then best = itemH end
-    if itemH <= gridW then
-        best = best and math.min(best, itemW) or itemW
-    end
+    if itemH <= gridW then best = best and math.min(best, itemW) or itemW end
     return best
 end
 
@@ -56,7 +58,12 @@ local function measureContents(container, gridW)
                 local key = tostring(compatKey) .. ":" .. tostring(w) .. "x" .. tostring(h)
                 local g = groups[key]
                 if not g then
-                    g = { units = 0, limit = limit, area = w * h, minH = minH or math.max(w, h) }
+                    g = {
+                        units = 0,
+                        limit = limit,
+                        area = w * h,
+                        minH = minH or math.max(w, h),
+                    }
                     groups[key] = g
                 end
                 g.units = g.units + (units or 1)
@@ -92,7 +99,7 @@ function GridContinuousGrid.getGridSize(container)
 
     -- Area rows are the lower bound. Adding the tallest possible item plus a
     -- tiny safety band absorbs normal first-fit fragmentation without a page
-    -- allocator, extra GridRender objects or any per-frame UI bookkeeping.
+    -- allocator, extra GridRender objects or per-frame UI bookkeeping.
     local areaRows = math.ceil(area / math.max(1, baseW))
     local desiredH = math.max(baseH, areaRows + maxItemH + SAFETY_ROWS, manualBottom + 1)
     desiredH = math.min(MAX_HEIGHT, desiredH)
@@ -112,7 +119,7 @@ function GridContinuousGrid.normalizeLegacyPages(container)
             if page > 1 then
                 -- v0.2/v0.3 coordinates were page-local and therefore overlap
                 -- page 1 in a continuous grid. Let the normal deterministic
-                -- refresh place them again instead of trying to translate them.
+                -- refresh place them again instead of translating them.
                 md.gridX = nil
                 md.gridY = nil
                 md.gridRot = false
