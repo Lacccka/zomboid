@@ -1,4 +1,7 @@
-require "ISUI/ISButton"
+require "ISUI/InventoryWindow/ISInventoryWindowContainerControls"
+require "ISUI/InventoryWindow/ISInventoryWindowControlHandler"
+require "ISUI/LootWindow/ISLootWindowContainerControls"
+require "ISUI/LootWindow/ISLootWindowObjectControlHandler"
 
 local okSort, GridAutoSort = pcall(require, "LCC/GridAutoSort")
 if not okSort or not GridAutoSort then
@@ -32,21 +35,15 @@ local function tooltipForReason(reason)
     return text("UI_LCC_GridSort_Tooltip", "Auto-sort this container.")
 end
 
-local function getPage(controls)
-    return controls and (controls.inventoryWindow or controls.lootWindow) or nil
+local function getPage(handler)
+    return handler and (handler.inventoryWindow or handler.lootWindow) or nil
 end
 
-local function getActiveGrid(controls)
-    local page = getPage(controls)
+local function getActiveGrid(handler)
+    local page = getPage(handler)
     local pane = page and page.inventoryPane
-    if not pane or not pane.gridContainerUis then return nil end
-
-    local container = nil
-    if controls.getDisplayedContainer then
-        container = controls:getDisplayedContainer()
-    end
-    if not container then container = pane.inventory end
-    if not container then return nil end
+    local container = handler and handler.container
+    if not pane or not container or not pane.gridContainerUis then return nil end
 
     for _, grid in ipairs(pane.gridContainerUis) do
         if not grid.isOverflow and grid.inventoryContainer == container then
@@ -56,207 +53,202 @@ local function getActiveGrid(controls)
     return nil
 end
 
-local function containsControl(controls, control)
-    if not controls or not control then return false end
-    for _, c in ipairs(controls) do
-        if c == control then return true end
-    end
-    return false
+local function isFloor(container)
+    return container and container.getType and container:getType() == "floor"
 end
 
-local function removeControl(controlsUI, control)
-    if not controlsUI or not control then return end
-    local controls = controlsUI.controls or {}
-    for i = #controls, 1, -1 do
-        if controls[i] == control then table.remove(controls, i) end
-    end
-    if control.parent == controlsUI and controlsUI.removeChild then
-        controlsUI:removeChild(control)
-    end
-    control:setVisible(false)
-end
-
--- The upstream footer compactor is local to ISInventoryPage_Hijack.lua, so an
--- addon cannot call it. Only compact the LEFT group here; right-anchored object
--- controls stay exactly where GridInventory/vanilla placed them.
-local function compactLeftControls(controlsUI, sortButton)
-    local controls = controlsUI and controlsUI.controls
-    local uiW = controlsUI and (controlsUI.width or 0) or 0
-    if not controls or #controls < 2 or uiW <= 0 then return end
-
-    local rightStart = #controls + 1
-    for i, c in ipairs(controls) do
-        if c ~= sortButton and c.getRight and c:getRight() >= uiW - 6 then
-            rightStart = i
-            break
-        end
-    end
-
-    local rows = {}
-    for i = 1, rightStart - 1 do
-        local c = controls[i]
-        local y = c:getY()
-        local row = rows[y]
-        if not row then row = {} rows[y] = row end
-        table.insert(row, c)
-    end
-
-    for _, row in pairs(rows) do
-        table.sort(row, function(a, b)
-            if a == sortButton then return true end
-            if b == sortButton then return false end
-            return a:getX() < b:getX()
-        end)
-        row[1]:setX(0)
-        local prevRight = row[1]:getRight()
-        for j = 2, #row do
-            row[j]:setX(prevRight + 1)
-            prevRight = row[j]:getRight()
-        end
-    end
-end
-
-local function onSortClicked(controlsUI)
-    local grid = getActiveGrid(controlsUI)
-    if not grid then return end
-
-    local ok, reason = GridAutoSort.sort(grid)
-    if ok then
-        controlsUI._lccGridSortStatusReason = nil
-        controlsUI._lccGridSortStatusUntil = nil
-        if reason == "sorted" then
-            print("[LCC GridSort] sorted " .. tostring(grid.inventoryContainer:getType()))
-        end
-        return
-    end
-
-    -- Keep a failure explanation visible for a short time. arrange() runs very
-    -- frequently and would otherwise replace the tooltip with the generic one
-    -- on the next frame, making no-space/nothing feedback impossible to read.
-    controlsUI._lccGridSortStatusReason = reason
-    controlsUI._lccGridSortStatusUntil = getTimeInMillis() + 2500
-
-    local button = controlsUI._lccGridSortButton
-    if button then button:setTooltip(tooltipForReason(reason)) end
-    print("[LCC GridSort] sort skipped: " .. tostring(reason))
-end
-
-local function ensureSortControl(controlsUI)
-    if not controlsUI then return end
-    controlsUI.controls = controlsUI.controls or {}
-
-    local grid = getActiveGrid(controlsUI)
-    local button = controlsUI._lccGridSortButton
-
-    if not grid then
-        if button then removeControl(controlsUI, button) end
-        return
-    end
-
-    local label = text("UI_LCC_GridSort_Button", "SORT")
-    local firstControl = controlsUI.controls[1]
-    local buttonH = firstControl and firstControl.getHeight and firstControl:getHeight()
-        or (getTextManager():getFontHeight(UIFont.Small) + 4)
-    local buttonW = math.max(34, getTextManager():MeasureStringX(UIFont.Small, label) + 10)
-
-    if not button then
-        button = ISButton:new(0, 0, buttonW, buttonH, label, controlsUI, onSortClicked)
-        button:initialise()
-        button:instantiate()
-        button.internal = "LCC_GRID_AUTO_SORT"
-        controlsUI._lccGridSortButton = button
-        print("[LCC GridSort] sort button created")
-    else
-        button:setWidth(buttonW)
-        button:setHeight(buttonH)
-        if button.setTitle then button:setTitle(label) end
-    end
-
-    if button.parent ~= controlsUI then controlsUI:addChild(button) end
-
-    if not containsControl(controlsUI.controls, button) then
-        -- Put SORT immediately before the first right-anchored control. This
-        -- keeps Take/Transfer controls in their existing order.
-        local insertAt = #controlsUI.controls + 1
-        local uiW = controlsUI.width or 0
-        for i, c in ipairs(controlsUI.controls) do
-            if c.getRight and c:getRight() >= uiW - 6 then
-                insertAt = i
-                break
-            end
-        end
-        table.insert(controlsUI.controls, insertAt, button)
-    end
-
-    local canSort, reason = GridAutoSort.canSort(grid)
+local function setButtonEnabled(button, enabled)
+    if not button then return end
     if button.setEnable then
-        button:setEnable(canSort)
+        button:setEnable(enabled)
     else
-        button.enable = canSort
+        button.enable = enabled
+    end
+end
+
+-- Draw the icon on the normal vanilla handler button. This keeps all ownership,
+-- add/remove, row wrapping and footer sizing in the game's control-handler
+-- system while avoiding a separate PNG asset.
+local function decorateSortButton(button)
+    if not button or button._lccGridSortIconInstalled then return end
+    button._lccGridSortIconInstalled = true
+    button.internal = "LCC_GRID_AUTO_SORT"
+
+    local originalPrerender = button.prerender
+    button.prerender = function(self)
+        if originalPrerender then originalPrerender(self) end
+
+        local w = self.getWidth and self:getWidth() or self.width or 0
+        local h = self.getHeight and self:getHeight() or self.height or 0
+        if w <= 0 or h <= 0 then return end
+
+        local size = math.min(w, h)
+        local ox = math.floor((w - size) / 2)
+        local oy = math.floor((h - size) / 2)
+        local enabled = self.enable ~= false
+        local alpha = enabled and 0.90 or 0.35
+        if enabled and self.mouseOver then alpha = 1.0 end
+
+        local r, g, b = 0.92, 0.92, 0.92
+        local arrowX = ox + math.floor(size * 0.27)
+        local topY = oy + math.floor(size * 0.18)
+        local bottomY = oy + math.floor(size * 0.82)
+        local shaftTop = topY + 4
+        local shaftBottom = bottomY - 4
+
+        self:drawRect(arrowX, shaftTop, 2, math.max(2, shaftBottom - shaftTop), alpha, r, g, b)
+        self:drawRect(arrowX - 3, topY + 4, 8, 2, alpha, r, g, b)
+        self:drawRect(arrowX - 2, topY + 2, 6, 2, alpha, r, g, b)
+        self:drawRect(arrowX - 1, topY, 4, 2, alpha, r, g, b)
+        self:drawRect(arrowX - 3, bottomY - 5, 8, 2, alpha, r, g, b)
+        self:drawRect(arrowX - 2, bottomY - 3, 6, 2, alpha, r, g, b)
+        self:drawRect(arrowX - 1, bottomY - 1, 4, 2, alpha, r, g, b)
+
+        local barsX = ox + math.floor(size * 0.52)
+        local barY = oy + math.floor(size * 0.27)
+        local maxLen = math.max(7, math.floor(size * 0.30))
+        self:drawRect(barsX, barY, maxLen, 2, alpha, r, g, b)
+        self:drawRect(barsX, barY + math.floor(size * 0.20), math.max(6, maxLen - 2), 2, alpha, r, g, b)
+        self:drawRect(barsX, barY + math.floor(size * 0.40), math.max(5, maxLen - 4), 2, alpha, r, g, b)
+    end
+end
+
+local function normalizeSortButton(button)
+    if not button then return end
+    if button.setTitle then button:setTitle("") end
+    local h = button.getHeight and button:getHeight() or button.height or 0
+    if h > 0 then button:setWidth(math.max(24, h)) end
+    decorateSortButton(button)
+end
+
+local function refreshHandlerState(handler)
+    local button = handler and handler.control
+    if not button then return end
+
+    local now = getTimeInMillis and getTimeInMillis() or 0
+    local stickyReason = handler._lccStatusReason
+    local stickyUntil = handler._lccStatusUntil
+
+    local grid = getActiveGrid(handler)
+    local canSort, reason = false, "unavailable"
+    if grid then
+        canSort, reason = GridAutoSort.canSort(grid)
     end
 
-    local stickyReason = controlsUI._lccGridSortStatusReason
-    local stickyUntil = controlsUI._lccGridSortStatusUntil
-    if stickyReason and stickyUntil and getTimeInMillis() < stickyUntil then
+    setButtonEnabled(button, canSort)
+
+    if stickyReason and stickyUntil and now < stickyUntil then
         button:setTooltip(tooltipForReason(stickyReason))
     else
-        controlsUI._lccGridSortStatusReason = nil
-        controlsUI._lccGridSortStatusUntil = nil
+        handler._lccStatusReason = nil
+        handler._lccStatusUntil = nil
         button:setTooltip(canSort
             and text("UI_LCC_GridSort_Tooltip", "Auto-sort this container.")
             or tooltipForReason(reason))
     end
-    button:setVisible(true)
-
-    compactLeftControls(controlsUI, button)
 end
 
-local function wrapArrange(classTable, slotName)
-    if not classTable then return false end
-    local original = classTable.arrange
-    if not original then return false end
-
-    -- Store the actual wrapper function, not a boolean. GridInventory replaces
-    -- arrange() during its own client bootstrap. If that happens after our
-    -- first pass, OnGameStart must be able to detect the replacement and wrap
-    -- the new final implementation instead of incorrectly treating it as done.
-    local installedWrapper = classTable[slotName]
-    if installedWrapper and original == installedWrapper then return false end
-
-    local wrapper
-    wrapper = function(self)
-        original(self)
-        ensureSortControl(self)
-    end
-
-    classTable.arrange = wrapper
-    classTable[slotName] = wrapper
+local function handlerShouldBeVisible(handler)
+    local container = handler and handler.container
+    -- Floor uses the separate vanilla FloorHandlerList. GridAutoSort intentionally
+    -- does not support floor grids, so never register a fake floor control.
+    if not container or isFloor(container) then return false end
+    refreshHandlerState(handler)
     return true
 end
 
-local function installHooks()
-    local installed = false
-    if ISInventoryWindowContainerControls then
-        installed = wrapArrange(
-            ISInventoryWindowContainerControls,
-            "_lccGridSortArrangeWrapper"
-        ) or installed
+local function handlerGetControl(handler)
+    local button = handler:getButtonControl("")
+    normalizeSortButton(button)
+    refreshHandlerState(handler)
+    return button
+end
+
+local function handlerPerform(handler)
+    local grid = getActiveGrid(handler)
+    if not grid then
+        handler._lccStatusReason = "unavailable"
+        handler._lccStatusUntil = (getTimeInMillis and getTimeInMillis() or 0) + 2500
+        refreshHandlerState(handler)
+        return
     end
-    if ISLootWindowContainerControls then
-        installed = wrapArrange(
-            ISLootWindowContainerControls,
-            "_lccGridSortArrangeWrapper"
-        ) or installed
+
+    local ok, reason = GridAutoSort.sort(grid)
+    if ok then
+        handler._lccStatusReason = nil
+        handler._lccStatusUntil = nil
+        if reason == "sorted" then
+            print("[LCC GridSort] sorted " .. tostring(grid.inventoryContainer:getType()))
+        end
+    else
+        handler._lccStatusReason = reason
+        handler._lccStatusUntil = (getTimeInMillis and getTimeInMillis() or 0) + 2500
+        print("[LCC GridSort] sort skipped: " .. tostring(reason))
     end
-    if installed then
-        print("[LCC GridSort] footer hooks installed")
+    refreshHandlerState(handler)
+end
+
+LCC_InventorySortHandler = ISInventoryWindowControlHandler:derive("LCC_InventorySortHandler")
+
+function LCC_InventorySortHandler:shouldBeVisible()
+    return handlerShouldBeVisible(self)
+end
+
+function LCC_InventorySortHandler:getControl()
+    return handlerGetControl(self)
+end
+
+function LCC_InventorySortHandler:perform()
+    handlerPerform(self)
+end
+
+function LCC_InventorySortHandler:new()
+    return ISInventoryWindowControlHandler.new(self)
+end
+
+LCC_LootSortHandler = ISLootWindowObjectControlHandler:derive("LCC_LootSortHandler")
+
+function LCC_LootSortHandler:shouldBeVisible()
+    return handlerShouldBeVisible(self)
+end
+
+function LCC_LootSortHandler:getControl()
+    return handlerGetControl(self)
+end
+
+function LCC_LootSortHandler:perform()
+    handlerPerform(self)
+end
+
+function LCC_LootSortHandler:new()
+    return ISLootWindowObjectControlHandler.new(self)
+end
+
+local function moveLootHandlerBeforeRightGroup(handlerClass)
+    local list = ISLootWindowContainerControls_HandlerList
+    if not list then return end
+
+    local currentIndex = nil
+    local firstRight = nil
+    for i, class in ipairs(list) do
+        if class == handlerClass then currentIndex = i end
+        if class ~= handlerClass and firstRight == nil and class.displayToRight then
+            firstRight = i
+        end
+    end
+
+    if currentIndex and firstRight and currentIndex > firstRight then
+        table.remove(list, currentIndex)
+        table.insert(list, firstRight, handlerClass)
     end
 end
 
-installHooks()
+-- This is the supported Build 42 extension point. GridInventory's optimized
+-- arrange() implementation also iterates these same handler lists, so the sort
+-- control now survives every footer rebuild naturally instead of being injected
+-- back into controls[] after the fact.
+ISInventoryWindowContainerControls.AddHandler(LCC_InventorySortHandler)
+ISLootWindowContainerControls.AddHandler(LCC_LootSortHandler)
+moveLootHandlerBeforeRightGroup(LCC_LootSortHandler)
 
--- Defensive retry after every mod has finished bootstrapping. This is required
--- because GridInventory itself replaces the vanilla controls arrange() method.
-if Events and Events.OnGameStart then
-    Events.OnGameStart.Add(installHooks)
-end
+print("[LCC GridSort] native footer handlers registered")
