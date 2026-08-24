@@ -73,10 +73,10 @@ local function removeControl(controlsUI, control)
     control:setVisible(false)
 end
 
--- Local copy of GridInventory's 1px footer flow, with one addition: our SORT
--- control is kept in the left group and ordered first. The upstream function is
--- local to ISInventoryPage_Hijack.lua, so an addon cannot call it directly.
-local function compactControls(controlsUI, sortButton)
+-- The upstream footer compactor is local to ISInventoryPage_Hijack.lua, so an
+-- addon cannot call it. Only compact the LEFT group here; right-anchored object
+-- controls stay exactly where GridInventory/vanilla placed them.
+local function compactLeftControls(controlsUI, sortButton)
     local controls = controlsUI and controlsUI.controls
     local uiW = controlsUI and (controlsUI.width or 0) or 0
     if not controls or #controls < 2 or uiW <= 0 then return end
@@ -109,31 +109,6 @@ local function compactControls(controlsUI, sortButton)
         for j = 2, #row do
             row[j]:setX(prevRight + 1)
             prevRight = row[j]:getRight()
-        end
-    end
-
-    if rightStart <= #controls then
-        local firstRight = controls[rightStart]
-        local rightEdge = uiW
-        -- Keep the right group right-anchored first, then pack it leftward.
-        for i = #controls, rightStart, -1 do
-            local c = controls[i]
-            c:setX(rightEdge - c:getWidth())
-            rightEdge = c:getX() - 1
-        end
-
-        local lastLeft = nil
-        for i = rightStart - 1, 1, -1 do
-            local c = controls[i]
-            if c:getY() == firstRight:getY() then
-                lastLeft = c
-                break
-            end
-        end
-        if lastLeft and lastLeft:getRight() + 1 < firstRight:getX() then
-            -- Preserve the upstream compact look without destroying right anchoring.
-            -- Only close the gap when the groups actually have room to meet.
-            firstRight:setX(lastLeft:getRight() + 1)
         end
     end
 end
@@ -182,7 +157,7 @@ local function ensureSortControl(controlsUI)
     else
         button:setWidth(buttonW)
         button:setHeight(buttonH)
-        button:setTitle(label)
+        if button.setTitle then button:setTitle(label) end
     end
 
     if button.parent ~= controlsUI then controlsUI:addChild(button) end
@@ -212,14 +187,14 @@ local function ensureSortControl(controlsUI)
         or tooltipForReason(reason))
     button:setVisible(true)
 
-    compactControls(controlsUI, button)
+    compactLeftControls(controlsUI, button)
 end
 
 local function wrapArrange(classTable, flagName)
     if not classTable or classTable[flagName] then return false end
-    classTable[flagName] = true
     local original = classTable.arrange
     if not original then return false end
+    classTable[flagName] = true
 
     function classTable:arrange()
         original(self)
