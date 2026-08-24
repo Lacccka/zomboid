@@ -1,8 +1,8 @@
 name=Lacccka B42 Grid Inventory Sort
 id=LaccckaB4220GridInventorySort
 author=Lacccka
-description=Adds deterministic one-click auto-sort to GridInventory on Build 42.20. Uses GridInventory's existing grid model and authoritative multiplayer reorder protocol; original GridInventory mod is required and is not included.
-modversion=0.1.0
+description=Adds compact rotation-aware auto-sort, multi-page overflow rescue and server-authoritative compare-and-swap sorting to GridInventory on Build 42.20. Original GridInventory mod is required and is not included.
+modversion=0.2.0
 versionMin=42.20.0
 require=\GridInventory
 loadafter=\GridInventory
