@@ -60,28 +60,41 @@ require_markers(
     modinfo,
     (
         "id=LaccckaB4220GridInventorySort",
-        "modversion=0.4.0",
+        "modversion=0.5.0",
         "versionMin=42.20.0",
         "require=\\GridInventory",
         "loadafter=\\GridInventory",
     ),
 )
+for forbidden_marker in (
+    "measureContents",
+    "SAFETY_ROWS",
+    "ROW_STEP",
+    "adaptive continuous grid installed",
+):
+    if forbidden_marker in continuous:
+        errors.append(
+            "GridContinuousGrid.lua: obsolete membership-driven sizing marker present: "
+            + forbidden_marker
+        )
 
 require_markers(
     "GridContinuousGrid.lua",
     continuous,
     (
         "GridContainer._lccContinuousGridInstalled",
-        "MAX_HEIGHT = 60",
-        "ROW_STEP = 4",
-        "GridSortState.collectItems(container)",
-        "GridContainer.getStackInfo(item)",
+        "CELLS_PER_CAPACITY = 2",
+        "PACKING_RESERVE = 1.25",
+        "ORGANIZED_CEILING = 1.30",
+        "MAX_WIDTH = 12",
+        "MAX_HEIGHT = 30",
+        "function GridContinuousGrid.getCapacityCeiling(container)",
         "function GridContinuousGrid.getGridSize(container)",
         "function GridContinuousGrid.normalizeLegacyPages(container)",
-        "math.ceil(desiredH / ROW_STEP) * ROW_STEP",
+        "function GridContinuousGrid.normalizeBounds(container, gridW, gridH)",
         "md.gridPage = nil",
         "self.grids = { GridCore.new(w, h) }",
-        "adaptive continuous grid installed",
+        "bounded capacity grid installed",
     ),
 )
 
@@ -235,6 +248,7 @@ for forbidden_marker in ("GridMultiPage", "GridPageView", "_lccAllGridUis", "_lc
 # Pager/multi-page files caused duplicate GridRender lifetime and renderer-ring
 # overruns in the 2026-08-25 dedicated test. They must stay physically deleted.
 for obsolete in (
+    MOD / "media" / "lua" / "client" / "zz_LCC_GridInventorySortV02.lua",
     MOD / "media" / "lua" / "client" / "LCC" / "GridMultiPage.lua",
     MOD / "media" / "lua" / "client" / "LCC" / "GridPageView.lua",
     MOD / "media" / "lua" / "client" / "zzzz_LCC_GridInventorySortVisibility.lua",

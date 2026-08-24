@@ -17,77 +17,87 @@ GridContainer._lccContinuousGridInstalled = true
 local originalGetGridSize = GridContainer.getGridSize
 local originalRefresh = GridContainer.refresh
 
--- One physical container must always remain one mathematical/UI grid.
--- We only extend rows when the current direct contents need more geometric room
--- than GridInventory's base dimensions provide. Vanilla ItemContainer capacity
--- remains authoritative for whether NEW items may be inserted.
-local MAX_HEIGHT = 60
-local SAFETY_ROWS = 3
-local ROW_STEP = 4
+-- GridInventory's upstream capacity formula budgets about two cells per unit
+-- of container capacity (6 columns * ceil(capacity / 3)). Keep that calibration
+-- and add a small packing reserve for non-rectangular first-fit layouts.
+--
+-- Dimensions are derived from capacity only, never from the current membership.
+-- Client and dedicated server therefore agree even while item replication is a
+-- frame behind, and adding/removing an item cannot resize the panel.
+local CELLS_PER_CAPACITY = 2
+local PACKING_RESERVE = 1.25
+local ORGANIZED_CEILING = 1.30
+local MAX_WIDTH = 12
+local MAX_HEIGHT = 30
+
+local function isPlayerRoot(container)
+    return GridSortState.isPlayerRootContainer(container)
+end
 
 local function isEligible(container)
     if not container then return false end
     if container.getType and container:getType() == "floor" then return false end
-    if GridSortState.isPlayerRootContainer(container) then return false end
+    if isPlayerRoot(container) then return false end
+
+    -- Keep every character root and corpse at GridInventory's upstream size.
+    -- The containing-item check distinguishes a real bag from a root inventory.
+    local containing = container.getContainingItem and container:getContainingItem() or nil
+    local parent = container.getParent and container:getParent() or nil
+    if not containing and parent and instanceof then
+        if instanceof(parent, "IsoGameCharacter") then return false end
+        if instanceof(parent, "IsoDeadBody") then return false end
+    end
     return true
 end
 
-local function bestHeightForWidth(itemW, itemH, gridW)
-    local best = nil
-    if itemW <= gridW then best = itemH end
-    if itemH <= gridW then best = best and math.min(best, itemW) or itemW end
-    return best
+-- ItemContainer.getEffectiveCapacity(character) applies Organized/Disorganized
+-- to normal bags, world containers and vehicle containers, but not to a root
+-- character inventory, corpse or floor. Grid geometry cannot be viewer-specific
+-- in MP, so use the largest vanilla trait result as a stable shared ceiling.
+-- This also covers wrappers such as MFSBackpackCapacity, whose Organized result
+-- rounds upward instead of using Java's truncation.
+local function supportsTraitCapacity(container)
+    if not container then return false end
+    if container.getType and container:getType() == "floor" then return false end
+
+    local parent = container.getParent and container:getParent() or nil
+    if parent and instanceof then
+        if instanceof(parent, "IsoGameCharacter") then return false end
+        if instanceof(parent, "IsoDeadBody") then return false end
+    end
+    return true
 end
 
-local function measureContents(container, gridW)
-    local area = 0
-    local maxItemH = 1
-    local manualBottom = 0
-    local groups = {}
+function GridContinuousGrid.getCapacityCeiling(container)
+    if not container or not container.getCapacity then return 0 end
+    local ok, value = pcall(function() return container:getCapacity() end)
+    local capacity = ok and tonumber(value) or 0
+    if not capacity or capacity <= 0 then return 0 end
 
-    for _, item in ipairs(GridSortState.collectItems(container)) do
-        local w, h = ItemFootprint.getSize(item)
-        w, h = tonumber(w), tonumber(h)
-        if w and h and w > 0 and h > 0 then
-            local minH = bestHeightForWidth(w, h, gridW)
-            if minH then maxItemH = math.max(maxItemH, minH) end
-
-            local compatKey, stackInfo = GridContainer.getStackInfo(item)
-            local limit = stackInfo and tonumber(stackInfo.limit) or nil
-            local units = stackInfo and tonumber(stackInfo.units) or 1
-            if compatKey and limit and limit > 1 then
-                local key = tostring(compatKey) .. ":" .. tostring(w) .. "x" .. tostring(h)
-                local g = groups[key]
-                if not g then
-                    g = {
-                        units = 0,
-                        limit = limit,
-                        area = w * h,
-                        minH = minH or math.max(w, h),
-                    }
-                    groups[key] = g
-                end
-                g.units = g.units + (units or 1)
-            else
-                area = area + (w * h)
-            end
-
-            local md = item.getModData and item:getModData() or nil
-            if md and md.gridManual and md.gridY then
-                local rotated = md.gridRot and true or false
-                local eh = rotated and w or h
-                manualBottom = math.max(manualBottom, tonumber(md.gridY) + eh - 1)
-            end
-        end
+    if supportsTraitCapacity(container) then
+        capacity = math.max(capacity, math.ceil(capacity * ORGANIZED_CEILING))
     end
+    return capacity
+end
 
-    for _, g in pairs(groups) do
-        local logicalPiles = math.ceil(g.units / math.max(1, g.limit))
-        area = area + logicalPiles * g.area
-        maxItemH = math.max(maxItemH, g.minH or 1)
-    end
+local function boundedDimensions(baseW, baseH, capacity)
+    baseW = math.max(1, tonumber(baseW) or 1)
+    baseH = math.max(1, tonumber(baseH) or 1)
+    capacity = math.max(0, tonumber(capacity) or 0)
 
-    return area, maxItemH, manualBottom
+    local baseArea = baseW * baseH
+    local capacityArea = math.ceil(
+        capacity * CELLS_PER_CAPACITY * PACKING_RESERVE)
+    local targetArea = math.max(baseArea, capacityArea)
+
+    -- Prefer a compact, near-square rectangle. Preserve any wider/taller firm
+    -- upstream/GridDevTool override as a minimum, and cap only our own growth.
+    local desiredW = math.ceil(math.sqrt(targetArea))
+    desiredW = math.max(baseW, math.min(MAX_WIDTH, desiredW))
+
+    local desiredH = math.max(baseH, math.ceil(targetArea / desiredW))
+    desiredH = math.min(math.max(baseH, MAX_HEIGHT), desiredH)
+    return desiredW, desiredH
 end
 
 function GridContinuousGrid.normalizeLegacyPages(container)
@@ -102,14 +112,46 @@ function GridContinuousGrid.normalizeLegacyPages(container)
             md.gridPage = nil
             if page > 1 then
                 -- v0.2/v0.3 coordinates were page-local and therefore overlap
-                -- page 1 in a continuous grid. Let the normal deterministic
-                -- refresh place them again instead of translating them.
+                -- page 1 in a single grid. Let refresh place them again.
                 md.gridX = nil
                 md.gridY = nil
                 md.gridRot = false
                 md.gridManual = nil
+                md.gridContainer = nil
             end
             changed = true
+        end
+    end
+    return changed
+end
+
+-- v0.4 could create a grid as tall as 60 rows. If an item was manually left
+-- below the new bounded rectangle, clear only that stale placement and let the
+-- ordinary deterministic refresh repack it. In-bounds manual layouts survive.
+function GridContinuousGrid.normalizeBounds(container, gridW, gridH)
+    if not container or not container.getItems then return false end
+    local changed = false
+    local items = container:getItems()
+    for i = 0, items:size() - 1 do
+        local item = items:get(i)
+        local md = item and item.getModData and item:getModData() or nil
+        local x = md and tonumber(md.gridX) or nil
+        local y = md and tonumber(md.gridY) or nil
+        if x and y then
+            local w, h = ItemFootprint.getSize(item)
+            w, h = tonumber(w) or 1, tonumber(h) or 1
+            if md.gridRot then w, h = h, w end
+            local inBounds = x >= 1 and y >= 1
+                and (x + w - 1) <= gridW
+                and (y + h - 1) <= gridH
+            if not inBounds then
+                md.gridX = nil
+                md.gridY = nil
+                md.gridRot = false
+                md.gridManual = nil
+                md.gridContainer = nil
+                changed = true
+            end
         end
     end
     return changed
@@ -119,28 +161,14 @@ function GridContinuousGrid.getGridSize(container)
     local baseW, baseH = originalGetGridSize(container)
 
     -- Migration must also run for the player root. Root inventory deliberately
-    -- stays at its upstream dimensions, but old page-local coordinates from the
-    -- abandoned prototype must not remain on the dedicated server.
+    -- stays upstream-sized so GridAutoDrop can still route items to worn bags.
     GridContinuousGrid.normalizeLegacyPages(container)
     if not isEligible(container) then return baseW, baseH end
 
-    local area, maxItemH, manualBottom = measureContents(container, baseW)
-    if area <= 0 then return baseW, baseH end
-
-    -- Area rows are the lower bound. Adding the tallest possible item plus a
-    -- small safety band absorbs normal first-fit fragmentation and leaves room
-    -- for the next vanilla-approved transfer without a page allocator.
-    local areaRows = math.ceil(area / math.max(1, baseW))
-    local desiredH = math.max(baseH, areaRows + maxItemH + SAFETY_ROWS, manualBottom + 1)
-
-    -- Do not resize the GridCore for every single added/removed row. Growing in
-    -- four-row buckets keeps the UI stable during batches of transfers while
-    -- still presenting one continuous Tarkov-style grid.
-    if desiredH > baseH then
-        desiredH = math.ceil(desiredH / ROW_STEP) * ROW_STEP
-    end
-    desiredH = math.min(MAX_HEIGHT, desiredH)
-    return baseW, desiredH
+    local capacity = GridContinuousGrid.getCapacityCeiling(container)
+    local w, h = boundedDimensions(baseW, baseH, capacity)
+    GridContinuousGrid.normalizeBounds(container, w, h)
+    return w, h
 end
 
 GridContainer.getGridSize = function(container)
@@ -161,5 +189,5 @@ if originalRefresh and not (isServer and isServer()) then
     end
 end
 
-print("[LCC GridSort] adaptive continuous grid installed")
+print("[LCC GridSort] bounded capacity grid installed")
 return GridContinuousGrid

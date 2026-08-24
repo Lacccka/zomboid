@@ -1,8 +1,8 @@
 name=Lacccka B42 Grid Inventory Sort
 id=LaccckaB4220GridInventorySort
 author=Lacccka
-description=Adds fast rotation-aware auto-sort, an adaptive single continuous grid for overfull bag/world containers, unified pane scrolling and server-issued token/CAS sorting to GridInventory on Build 42.20. Original GridInventory mod is required and is not included.
-modversion=0.4.0
+description=Adds fast rotation-aware auto-sort, a bounded capacity-aware single grid for bag/world containers, unified pane scrolling and server-issued token/CAS sorting to GridInventory on Build 42.20. Original GridInventory mod is required and is not included.
+modversion=0.5.0
 versionMin=42.20.0
 require=\GridInventory
 loadafter=\GridInventory
