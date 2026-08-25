@@ -4,6 +4,7 @@ set -euo pipefail
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 lua_root="$project_root/Contents/mods/LaccckaQuestFramework/42/media/lua"
 mod_info="$project_root/Contents/mods/LaccckaQuestFramework/42/mod.info"
+client_bandits="$lua_root/client/LCCQF/Runtime/LCCQFBanditsRuntime.lua"
 
 fail() {
     echo "QuestFramework audit: FAIL: $1" >&2
@@ -13,7 +14,7 @@ fail() {
 for required in \
     "$lua_root/shared/LCCQF/Core/LCCQFNPCRegistry.lua" \
     "$lua_root/shared/LCCQF/Core/LCCQFNPCRuntime.lua" \
-    "$lua_root/client/LCCQF/Runtime/LCCQFBanditsRuntime.lua" \
+    "$client_bandits" \
     "$lua_root/server/LCCQF/Runtime/LCCQFBanditsRuntime.lua" \
     "$lua_root/server/LCCQF/Dialogue/LCCQFDialogueSession.lua"
 do
@@ -40,12 +41,19 @@ if rg -n 'if\s+not\s+object:getVariableBoolean\("Bandit"\)' "$lua_root/client/LC
     fail "transient Bandit animation variable reintroduced as quest identity gate"
 fi
 
+rg -q 'BanditZombie\.Cache' "$client_bandits" \
+    || fail "provider-native BanditZombie cache lookup missing"
+rg -q 'Bandit\.ApplyVisuals' "$client_bandits" \
+    || fail "provider-native physical observation hook missing"
+rg -q 'findFromRuntimeBindings' "$client_bandits" \
+    || fail "server-binding-driven physical lookup missing"
+
 if rg -n 'choice\.next|showNode\(' "$lua_root/client"; then
     fail "client-owned dialogue transition reintroduced"
 fi
 
-rg -q '^modversion=0\.2\.5$' "$mod_info" || fail "mod.info version mismatch"
-rg -q 'Constants\.VERSION = "0\.2\.5"' "$lua_root/shared/LCCQF/LCCQFConstants.lua" \
+rg -q '^modversion=0\.2\.6$' "$mod_info" || fail "mod.info version mismatch"
+rg -q 'Constants\.VERSION = "0\.2\.6"' "$lua_root/shared/LCCQF/LCCQFConstants.lua" \
     || fail "Lua version mismatch"
 
 if rg -n 'brain\.key\s*=\s*definition\.npcId|key\s*=\s*definition\.npcId' \
