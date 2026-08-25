@@ -1,0 +1,72 @@
+[h1]QP Survivor Reputation[/h1]
+
+A persistent, server-authoritative Reputation and progression system for Project Zomboid multiplayer servers.
+
+[h2]Build Support[/h2]
+[list]
+[*]Build 41
+[*]Build 42
+[*]Dedicated servers and local-host multiplayer
+[/list]
+
+[h2]Reputation Paths[/h2]
+[list]
+[*]Community
+[*]Hunter
+[*]Explorer
+[*]Medic
+[*]Mechanic
+[*]Builder
+[/list]
+
+[h2]Features[/h2]
+[list]
+[*]Persistent survivor profiles
+[*]Current and lifetime Reputation tracking
+[*]Levels, titles, strongest path, and points remaining
+[*]Full Reputation History with path and source filters
+[*]Server-authoritative administrator tools
+[*]Online and offline player profile editing
+[*]Persistent duplicate-award protection
+[*]Optional QP Survivor Contracts Reputation integration
+[*]EN / FR / RU / CN / PTBR / ES localization
+[/list]
+
+[h2]Automatic Reputation[/h2]
+
+[h3]Hunter[/h3]
+Production milestones:
+[list]
+[*]100 tracked kills: +10 Hunter
+[*]250 tracked kills: +20 Hunter
+[*]500 tracked kills: +40 Hunter
+[*]1,000 tracked kills: +75 Hunter
+[/list]
+
+Hunter automation includes configurable presets, daily limits, scan intervals, reconnect persistence, and suspicious-jump protection.
+
+[h3]Community - QP Supply Requests[/h3]
+When QP Supply Requests is installed, administrators can enable Community Reputation for completed requests.
+
+[list]
+[*]Default reward: +5 Community per eligible completed request
+[*]Only survivors with a positive final contribution qualify
+[*]Self-created requests do not grant automatic Reputation
+[*]Shared Community daily cap is configurable
+[*]Stable event IDs prevent duplicate rewards after reconnects or restarts
+[*]Rewards are fixed per completion and do not scale per item
+[/list]
+
+Community automation is disabled by default until an administrator enables it.
+
+QP Survivor Tasks is not an automatic Reputation source. QP Survivor Contracts keeps its separate administrator-configured Primary and Secondary Reputation rewards.
+
+[h2]Administration[/h2]
+Open:
+
+View Reputation -> Admin Editor -> Automation Settings
+
+Administrators can configure Hunter and Community automation, reward values, daily caps, and safety controls.
+
+[h2]Compatibility[/h2]
+Existing profiles, points, lifetime points, history, Hunter progress, settings, and award ledgers remain compatible. No save reset is required.

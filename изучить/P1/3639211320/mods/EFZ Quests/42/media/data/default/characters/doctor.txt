@@ -1,0 +1,7 @@
+#name doctor|Doc
+#set_stat doctor|reputation|0
+
+#desc Doc
+#desc_append A doctor who used to run a medical clinic in Muldraugh. Now the medical officer of the bunker.
+#exit
+

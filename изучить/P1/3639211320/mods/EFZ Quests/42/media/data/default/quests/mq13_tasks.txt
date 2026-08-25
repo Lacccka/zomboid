@@ -1,0 +1,12 @@
+*mq13_chain_link_t1
+#name Search the Louisville Medical Facility
+*mq13_chain_link_t2
+#name Search the Louisville Research Facility
+*mq13_chain_link_t3
+#name Gather 6 Infection Suppressor Boxes
+*mq13_chain_link_t4
+#name Return to the Bunker
+*mq13_chain_link_t5
+#name Report to the Captain
+
+

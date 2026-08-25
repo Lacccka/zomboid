@@ -1,0 +1,29 @@
+VERSION = 1,
+
+option QPSCClaimableOutpostsBridgeEnabled
+{
+    type = boolean,
+    default = true,
+    page = QP Survivor Contracts,
+    translation = QPSCClaimableOutpostsBridgeEnabled,
+}
+
+option QPSCClaimableOutpostsCommunityReward
+{
+    type = integer,
+    min = 0,
+    max = 10000,
+    default = 35,
+    page = QP Survivor Contracts,
+    translation = QPSCClaimableOutpostsCommunityReward,
+}
+
+option QPSCClaimableOutpostsExplorerReward
+{
+    type = integer,
+    min = 0,
+    max = 10000,
+    default = 15,
+    page = QP Survivor Contracts,
+    translation = QPSCClaimableOutpostsExplorerReward,
+}

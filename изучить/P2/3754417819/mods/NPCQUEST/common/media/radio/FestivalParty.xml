@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RadioData>
+  <RootInfo>
+    <SourceFile>FestivalParty</SourceFile>
+    <FileGUID>a8f4c2e1-9b3d-4f6a-b1e0-7c9d2e4f5a6b</FileGUID>
+    <Version>10</Version>
+  </RootInfo>
+  <Voices>
+    <VoiceEntry ID="8f37a05c-764d-46bf-8da9-36818caf5bfc">
+      <FinalColor r="255" g="0" b="255" />
+    </VoiceEntry>
+  </Voices>
+  <Channels>
+    <ChannelEntry ID="49836f3a-ca16-4a85-9ec4-b85c31c07b81" name="Party Channel" cat="Radio" freq="98600" startscript="main">
+      <ScriptEntry ID="8b2ac3f1-1d04-4d51-9755-c3d57357ecd6" name="main" startdelay="0" timestampmode="Static" loopmin="1" loopmax="12">
+        <ExitOptions />
+        <BroadcastEntry ID="00e64d79-754d-42a3-9311-39607e7ef652" timestamp="0" endstamp="600" type="ActivateBroadcast" day="0" advertCat="none" isSegment="false">
+          <LineEntry ID="3fee99ec-c8b6-4ebc-9f2f-116043153195" r="255" g="0" b="255" codes="GUID:3fee99ec-c8b6-4ebc-9f2f-116043153195">${t:60.01}[img=music][img=music][img=music]</LineEntry>
+          <LineEntry ID="0bc71c8a-f954-4dbf-aa09-ff09b015d6e2" r="255" g="0" b="255" codes="GUID:0bc71c8a-f954-4dbf-aa09-ff09b015d6e2">${t:60.01}[img=music][img=music][img=music]</LineEntry>
+          <LineEntry ID="a08b44db-b3cb-46a1-b04c-633e8e5b2a37" r="255" g="0" b="255" codes="GUID:a08b44db-b3cb-46a1-b04c-633e8e5b2a37">${t:36.57}[img=music][img=music][img=music]</LineEntry>
+          <LineEntry ID="38fe9b5a-e932-477c-a6b5-96b9e7ea84da" r="255" g="0" b="255" codes="GUID:38fe9b5a-e932-477c-a6b5-96b9e7ea84da">${t:36.76}[img=music][img=music][img=music]</LineEntry>
+          <LineEntry ID="2a379a08-4428-42b0-ae3d-0fb41c34f74c" r="255" g="0" b="255" codes="GUID:2a379a08-4428-42b0-ae3d-0fb41c34f74c">${t:56.50}[img=music][img=music][img=music]</LineEntry>
+          <LineEntry ID="2cc1e0e2-75ab-4ac3-9238-635813babc18" r="255" g="0" b="255" codes="GUID:2cc1e0e2-75ab-4ac3-9238-635813babc18">${t:45.00}[img=music][img=music][img=music]</LineEntry>
+          <LineEntry ID="c688d4c8-dd7b-4d93-8e0f-c6cb5f488db2" r="255" g="0" b="255" codes="GUID:c688d4c8-dd7b-4d93-8e0f-c6cb5f488db2">${t:52.13}[img=music][img=music][img=music]</LineEntry>
+          <LineEntry ID="22b4a025-6455-4c8d-b341-fd4f0f18836a" r="255" g="0" b="255" codes="GUID:22b4a025-6455-4c8d-b341-fd4f0f18836a">${t:39.29}[img=music][img=music][img=music]</LineEntry>
+        </BroadcastEntry>
+      </ScriptEntry>
+    </ChannelEntry>
+  </Channels>
+</RadioData>

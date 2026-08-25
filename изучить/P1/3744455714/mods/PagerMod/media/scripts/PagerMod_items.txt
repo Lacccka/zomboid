@@ -1,0 +1,62 @@
+module Base
+{
+    /*
+     * B41 build. Unlike B42, Build 41 has no vanilla Base.Pager, so we define
+     * it here in the classic Type = Normal format. Holsterable in the walkie slot.
+     */
+    item Pager
+    {
+        Type             = Normal,
+        DisplayCategory  = Electronics,
+        Weight           = 0.1,
+        DisplayName      = Pager,
+        Icon             = Pager,
+        Tooltip          = Tooltip_PagerMod_Pager,
+        AttachmentType   = Walkie,
+        WorldStaticModel = RadioBlack_Ground,
+    }
+}
+
+module PagerMod
+{
+    imports
+    {
+        Base
+    }
+
+    /*
+     * Pager relay tower (Ultra Realistic tier). A heavy carried item the player
+     * "sets up" at a tile via its right-click menu. B41: deploying DROPS this
+     * item on the square (PagerMod_Client.deployTower -> AddWorldInventoryItem)
+     * so B41 renders its WorldStaticModel (the custom PagerTower .x mesh) in the
+     * world; the server tracks the tower by tile position. In tower signal mode
+     * the network only works while a set-up tower has electricity.
+     */
+    item PagerTower
+    {
+        Type             = Normal,
+        DisplayCategory  = Electronics,
+        Weight           = 6.0,
+        DisplayName      = Pager Tower,
+        Icon             = PagerTower,
+        Tooltip          = Tooltip_PagerMod_Tower,
+        WorldStaticModel = PagerTower,
+    }
+
+    /*
+     * Pager Tower Schematics — the only way to learn the Make Pager Tower
+     * recipe (which has no AutoLearn). The magazine is only distributed in loot
+     * while tower mode is enabled (see server/PagerMod_Distribution.lua), so it
+     * never spawns when it isn't needed.
+     */
+    item TowerSchematic
+    {
+        Type             = Literature,
+        DisplayCategory  = SkillBook,
+        Weight           = 0.4,
+        DisplayName      = Pager Tower Schematics,
+        Icon             = Book,
+        TeachedRecipes   = Make Pager Tower,
+        Tooltip          = Tooltip_PagerMod_Schematic,
+    }
+}

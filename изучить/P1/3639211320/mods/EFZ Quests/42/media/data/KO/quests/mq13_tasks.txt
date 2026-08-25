@@ -1,0 +1,12 @@
+*mq13_chain_link_t1
+#name 루이빌 의료시설 수색하기
+*mq13_chain_link_t2
+#name 루이빌 연구시설 수색하기
+*mq13_chain_link_t3
+#name 감염억제제 상자 6개 확보하기
+*mq13_chain_link_t4
+#name 벙커로 복귀하기
+*mq13_chain_link_t5
+#name 캡틴에게 보고하기
+
+

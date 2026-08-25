@@ -1,0 +1,12 @@
+{
+    "UI_QSystem_Trade": "거래하기",
+    "UI_QSystem_Trade_List_1": "상대에게 팔 것",
+    "UI_QSystem_Trade_List_2": "상대에게서 살 것",
+    "UI_QSystem_Trade_List_3": "상대가 파는 것",
+    "UI_QSystem_Trade_Single": "“이 품목의 가치는... %d 정도.”",
+    "UI_QSystem_Trade_Multiple": "“이 품목의 가치는... 하나에 %d 정도.”",
+    "UI_QSystem_Trade_Barter": "거래",
+    "UI_QSystem_Trade_Close": "닫기",
+    "UI_QSystem_Trade_Clear": "비우기",
+    "UI_QSystem_Trade_Confirm": " <CENTRE> 당신이 받는 물건의 가치가 내는 물건의 가치보다 낮습니다. <LINE> 남는 값은 사라집니다. <LINE> <LINE> 계속하시겠습니까?"
+}

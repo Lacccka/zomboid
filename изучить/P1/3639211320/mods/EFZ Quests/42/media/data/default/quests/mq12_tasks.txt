@@ -1,0 +1,11 @@
+*mq12_city_conquest_t1
+#name Reach the first correction coordinate in Louisville
+*mq12_city_conquest_t2
+#name Reach the second correction coordinate in Louisville
+*mq12_city_conquest_t3
+#name Wait for GPS signal guidance
+*mq12_city_conquest_t4
+#name Report to the Captain
+
+
+

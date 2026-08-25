@@ -1,0 +1,4 @@
+Items_CN = {
+    Item_MuggyHolotape_Name = "水槽项目：马格",
+    Item_MuggyHolotape_Desc = "",
+}

@@ -1,0 +1,13 @@
+UI_FR = {
+    UI_Trading_TradeWithNPC = "Échanger avec PNJ",
+    UI_Trading_DoNothing = "Ne Rien Faire",
+    UI_Trading_Trade = "Échanger",
+    UI_Trading_Value = "Valeur : ",
+    UI_Trading_YourItems = "Vos Objets",
+    UI_Trading_AvailableRewards = "Récompenses Disponibles",
+    UI_Info_DefaultHeader = "Information",
+    UI_Info_OK = "OK",
+    UI_Dialogue_PressToContinue = "Appuyez sur [E] pour continuer...",
+    UI_InfoNode_PartsProduction_Header = "Production de Pièces :",
+    UI_InfoNode_PartsProduction_Body = "Holotape de mise à niveau reçue... amélioration de la fonctionnalité 'Production de Pièces' (approvisionnement en Ferraille Électronique disponible une fois par jour).",
+}

@@ -1,0 +1,13 @@
+*landing
+#m Pilot|pilot.png|"Signal's coming in loud and clear. Closing in on West Point airspace."
+#m Pilot|pilot.png|"Hold your position. I'm coming to pick you up right now."
+#sfx EFZ_Helicopter
+#fade_out black|1
+#wait 1
+#lua EFZ.ImmediateExtractForCurrentPlayer()
+#wait 1
+#fade_in 1
+#set_flag mq05_returned_to_bunker,true
+#exit
+
+

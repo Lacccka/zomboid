@@ -1,0 +1,42 @@
+#quest mq14_access_code
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|mq14_active|true
+        #action SetFlag|mq14_started|true
+        #action SetFlag|mq14_lab_reached|false
+        #action SetFlag|mq14_document_found|false
+        #action SetFlag|mq14_returned_to_bunker|false
+        #action SetFlag|mq14_reported_to_captain|false
+        #action UnlockTask|mq14_access_code|t1,gate_t2,loot_doc
+    #task t1
+        #set GotoLocation|5516,12421,5667,12510,0|true
+        #action RunScript|marker_scripts.txt,add_marker_mq14_t1
+        #action SetFlag|mq14_lab_reached|true
+    #task gate_t2|unlocked|hidden
+        #set TaskCondition|mq14_access_code|t1
+        #action UnlockTask|mq14_access_code|t2
+    #task t2
+        #set FindItem|EFZ.DeltaFacilityDocument,1
+        #action SetFlag|mq14_document_found|true
+        #action RunScript|marker_scripts.txt,remove_marker_mq14_t1
+        #action RunScript|mq14_document.txt,monologue
+        #action UnlockTask|mq14_access_code|t3
+    #task t3
+        #set GotoLocation|20108,17,0|building
+        #action SetFlag|mq14_returned_to_bunker|true
+        #action UnlockTask|mq14_access_code|t4
+    #task t4
+        #set RaiseFlag|mq14_reported_to_captain
+    #task loot_doc|hidden
+        #set LootContainer|filingcabinet|5576,12491,-15|EFZ.DeltaFacilityDocument,true
+    #task complete|unlocked|hidden
+        #set TaskCondition|mq14_access_code|t1,t2,t3,t4
+        #action Reward|EFZ.SupplyTicket,50,rare|Base.M4,1,unique|Base.556Clip,5,special|Base.223Silencer,1,unique
+        #action SetFlag|mq14_active|false
+        #action SetFlag|mq14_completed|true
+        #action SetFlag|mq15_unlocked|true
+        #action CompleteQuest|mq14_access_code
+
+
+
+

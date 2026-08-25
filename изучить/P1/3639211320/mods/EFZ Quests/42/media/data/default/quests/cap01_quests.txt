@@ -1,0 +1,5 @@
+*cap01_inventory_check
+#name CAP-01. Inventory Check
+#desc The captain is worried about the lost inventory during the time the bunker was closed. The supply ledger is a mess. She asks me to gather canned food, pasta, and rice to replenish the supplies.
+
+

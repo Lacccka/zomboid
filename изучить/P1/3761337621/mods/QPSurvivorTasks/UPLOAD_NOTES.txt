@@ -1,0 +1,43 @@
+QP Survivor Tasks - Upload Notes
+================================
+
+Steam Workshop Title:
+QP Survivor Tasks - Multiplayer Base Board
+
+Visibility:
+Public when tested
+
+Tags:
+Build 42
+Multiplayer
+Quality of Life
+Roleplay
+Server
+Utilities
+
+WorkshopItems:
+PASTE WORKSHOP ID HERE
+
+Mods:
+QPSurvivorTasks
+
+Folder:
+C:\Users\youne\Zomboid\mods\QPSurvivorTasks
+
+Preview Image:
+Use poster.png inside:
+C:\Users\youne\Zomboid\mods\QPSurvivorTasks\42\poster.png
+
+Workshop Images:
+Use the wide slide/banner image as an additional Workshop screenshot.
+
+Important:
+Final local test before upload:
+- Create board
+- Add preset task
+- Add custom task
+- Mark task done
+- Remove individual task
+- Clear board
+- Remove board
+- Reload save and confirm persistence

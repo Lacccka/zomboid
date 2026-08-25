@@ -1,0 +1,6 @@
+*cap03_chain_break
+#name CAP-03. Broken Chain
+#desc The captain is worried about the lost communication with the headquarters. She suspects the radio equipment in the bunker is malfunctioning. She asks me to gather 2 Walkie-Talkies and 2 Ham Radios to replace the old ones.
+
+
+

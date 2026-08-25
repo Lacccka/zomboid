@@ -1,0 +1,10 @@
+Genome_FR = {
+    Genome_Swiftness_Name = "Rapidité",
+    Genome_Swiftness_Desc = "Détermine la vitesse de déplacement du muggy",
+    Genome_Endurance_Name = "Endurance",
+    Genome_Endurance_Desc = "Affecte la régénération d'endurance",
+    Genome_HaulingCapacity_Name = "Capacité de Transport",
+    Genome_HaulingCapacity_Desc = "Détermine le poids maximal transportable",
+    Genome_Vitality_Name = "Vitalité",
+    Genome_Vitality_Desc = "Détermine la réserve de santé et la survie du muggy.",
+}

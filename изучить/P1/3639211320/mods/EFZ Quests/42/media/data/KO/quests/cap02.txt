@@ -1,0 +1,22 @@
+#quest cap02_house_repair
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|cap02_active|true
+        #action SetFlag|cap02_started|true
+        #action SetFlag|cap02_materials_delivered|false
+        #action SetFlag|cap02_reported_to_captain|false
+        #action UnlockTask|cap02_house_repair|t1
+    #task t1
+        #set Deliver|Base.LightBulb,10|Base.ElectronicsScrap,10|Base.ConcretePowder,2|Base.PlasterPowder,2|Base.MetalPipe,4|Base.MetalBar,4
+        #action SetFlag|cap02_materials_delivered|true
+        #action UnlockTask|cap02_house_repair|t2
+    #task t2
+        #set RaiseFlag|cap02_reported_to_captain
+    #task t3|unlocked|hidden
+        #set TaskCondition|cap02_house_repair|t1,t2
+        #action Reward|EFZ.SupplyTicket,75,rare
+        #action SetFlag|cap02_active|false
+        #action SetFlag|cap02_completed|true
+        #action CompleteQuest|cap02_house_repair
+
+

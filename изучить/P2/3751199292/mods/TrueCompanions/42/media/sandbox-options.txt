@@ -1,0 +1,153 @@
+VERSION = 1,
+
+/*
+ * 0 = AUTO, and the default. Auto means 1.5 on a 4K screen (height 2000+) and 1.0 on
+ * everything else -- deliberately nothing between, so no 1080p or 1440p player sees any
+ * change at all. A 4K player who never opens this page had no reason to suspect the window
+ * could be made bigger; below 4K there was nothing wrong to fix.
+ *
+ * Any value above 0 is a deliberate choice and is honoured exactly, so a save that already
+ * stores 1.0 keeps 1.0. It is also the way out if Auto guesses wrong for you.
+ */
+option BanditsNPC.UIScale
+{
+	type = double, min = 0.0, max = 2.0, default = 0.0,
+	page = BanditsNPC,
+	translation = BanditsNPC_UIScale,
+}
+
+/*
+ * NPCPortrait3D is ON by default since v0.77.9. It was written as an experiment and left
+ * off, but the v0.77 rail has a dedicated portrait slot on EVERY tab -- so with this off
+ * the first thing anyone sees is an empty box reading "no portrait", which reads as a
+ * fault rather than as a setting nobody switched on. Most players never open this page.
+ *
+ * Safe to default on: the crash that made it experimental was FBO accumulation from one
+ * renderer per window, and there is exactly ONE shared ISUI3DModel now. Every call sits
+ * in a pcall and Show() returns false on any failure, so the worst case degrades to
+ * precisely the old behaviour -- the "no portrait" label -- rather than taking the panel
+ * down with it.
+ *
+ * (C-style comments, not "--": Bandits' own sandbox-options.txt uses these and ships, and
+ * an unparseable comment here would take the whole options page with it.)
+ */
+option BanditsNPC.NPCPortrait3D
+{
+	type = boolean, default = true,
+	page = BanditsNPC,
+	translation = BanditsNPC_NPCPortrait3D,
+}
+
+option BanditsNPC.NeedsRateMult
+{
+	type = double, min = 0.0, max = 5.0, default = 1.0,
+	page = BanditsNPC,
+	translation = BanditsNPC_NeedsRateMult,
+}
+
+option BanditsNPC.NeedsCritical
+{
+	type = integer, min = 10, max = 100, default = 70,
+	page = BanditsNPC,
+	translation = BanditsNPC_NeedsCritical,
+}
+
+option BanditsNPC.AffinityMult
+{
+	type = double, min = 0.0, max = 5.0, default = 1.0,
+	page = BanditsNPC,
+	translation = BanditsNPC_AffinityMult,
+}
+
+option BanditsNPC.ProtectCompanions
+{
+	type = boolean, default = true,
+	page = BanditsNPC,
+	translation = BanditsNPC_ProtectCompanions,
+}
+
+option BanditsNPC.PauseNearPlayer
+{
+	type = boolean, default = true,
+	page = BanditsNPC,
+	translation = BanditsNPC_PauseNearPlayer,
+}
+
+option BanditsNPC.CompanionsCloseDoors
+{
+	type = boolean, default = true,
+	page = BanditsNPC,
+	translation = BanditsNPC_CompanionsCloseDoors,
+}
+
+option BanditsNPC.ImmortalCompanions
+{
+	type = boolean, default = true,
+	page = BanditsNPC,
+	translation = BanditsNPC_ImmortalCompanions,
+}
+
+option BanditsNPC.RestoreLostCompanions
+{
+	type = boolean, default = true,
+	page = BanditsNPC,
+	translation = BanditsNPC_RestoreLostCompanions,
+}
+
+option BanditsNPC.AllowZombification
+{
+	type = boolean, default = false,
+	page = BanditsNPC,
+	translation = BanditsNPC_AllowZombification,
+}
+
+option BanditsNPC.CompanionsEnterVehicles
+{
+	type = boolean, default = true,
+	page = BanditsNPC,
+	translation = BanditsNPC_CompanionsEnterVehicles,
+}
+
+option BanditsNPC.InfiniteAmmo
+{
+	type = boolean, default = false,
+	page = BanditsNPC,
+	translation = BanditsNPC_InfiniteAmmo,
+}
+
+option BanditsNPC.WildSpawn
+{
+	type = enum, numValues = 4, default = 2,
+	page = BanditsNPC,
+	translation = BanditsNPC_WildSpawn,
+	valueTranslation = BanditsNPC_WildSpawn,
+}
+
+option BanditsNPC.WildSpawnCap
+{
+	type = integer, min = 0, max = 50, default = 3,
+	page = BanditsNPC,
+	translation = BanditsNPC_WildSpawnCap,
+}
+
+option BanditsNPC.WildSpawnClan
+{
+	type = string, default = ,
+	page = BanditsNPC,
+	translation = BanditsNPC_WildSpawnClan,
+}
+
+option BanditsNPC.DbgTrace
+{
+	type = boolean, default = false,
+	page = BanditsNPC,
+	translation = BanditsNPC_DbgTrace,
+}
+
+option BanditsNPC.DbgWatchdog
+{
+	type = boolean, default = true,
+	page = BanditsNPC,
+	translation = BanditsNPC_DbgWatchdog,
+}
+

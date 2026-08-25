@@ -1,0 +1,15 @@
+Sandbox_CN = {
+    Sandbox_QPSR = "QP 幸存者声望",
+    Sandbox_QPSR_AutomationEnabled = "启用自动声望",
+    Sandbox_QPSR_AutomationEnabled_tooltip = "所有自动规则的总开关。",
+    Sandbox_QPSR_HunterEnabled = "启用猎手里程碑",
+    Sandbox_QPSR_HunterEnabled_tooltip = "达到追踪击杀里程碑时奖励猎手声望。",
+    Sandbox_QPSR_HunterMilestonePreset = "猎手里程碑预设",
+    Sandbox_QPSR_HunterMilestonePreset_option1 = "正式：100 / 250 / 500 / 1000",
+    Sandbox_QPSR_HunterMilestonePreset_option2 = "快速测试：1 / 3 / 5 / 10",
+    Sandbox_QPSR_ScanIntervalMinutes = "自动扫描间隔（分钟）",
+    Sandbox_QPSR_HunterDailyPointCap = "猎手每日自动点数上限",
+    Sandbox_QPSR_HunterDailyPointCap_tooltip = "0 表示不限制。因上限而延迟的里程碑会保留。",
+    Sandbox_QPSR_HunterMaxKillsPerScan = "每次扫描最多计入击杀",
+    Sandbox_QPSR_HunterMaxKillsPerScan_tooltip = "防止异常统计跳变。",
+}

@@ -1,0 +1,14 @@
+module Base
+{
+	sound QuestUnlocked
+	{
+		category = UI,
+		loop = false,
+		clip
+		{
+			file = media/sound/QuestUnlocked.wav,
+			volume = 1.0,
+		}
+	}
+
+}

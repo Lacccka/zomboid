@@ -1,0 +1,3 @@
+EFZ_Maps_EN = {
+    IGUI_EFZ_NeedPlasterFirst = "Need to apply plaster first.",
+}

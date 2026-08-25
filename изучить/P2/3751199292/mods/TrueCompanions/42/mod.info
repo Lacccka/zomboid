@@ -1,0 +1,11 @@
+name=True Companions
+id=TrueCompanions
+poster=poster.png
+author=emkyfreak
+description=A companions overhaul built on top of the Bandits mod.
+description=
+description=Spawn survivors, talk to them, learn their backstory, recruit them,
+description=give orders and manage their gear.
+description=
+description=REQUIRES the Bandits mod (Bandits2) - it provides the underlying engine.
+require=Bandits2

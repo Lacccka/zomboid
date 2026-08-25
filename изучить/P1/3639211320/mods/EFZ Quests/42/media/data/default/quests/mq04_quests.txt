@@ -1,0 +1,3 @@
+*mq04_lost_map
+#name Main-04. Lost Road
+#desc The captain asked you to request the road control plan from the Muldraugh police station to review the ground search route to Westpoint. Gather the document and deliver it to the captain.

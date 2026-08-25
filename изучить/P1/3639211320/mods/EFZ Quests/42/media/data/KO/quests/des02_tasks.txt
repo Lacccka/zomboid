@@ -1,0 +1,8 @@
+*des02_functional_pattern_t1
+#name 소방복 상의·하의·모자 1벌씩과 보안관 재킷 1벌 전달하기
+*des02_functional_pattern_t2
+#name 디자이너에게 보고하기
+
+
+
+

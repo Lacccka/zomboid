@@ -1,0 +1,3 @@
+Tooltip_EN = {
+    Tooltip_CallHunter = "If you use the item, the Hunter will be summoned to your location.",
+}

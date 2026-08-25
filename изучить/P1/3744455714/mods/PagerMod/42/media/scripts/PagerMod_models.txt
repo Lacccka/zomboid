@@ -1,0 +1,28 @@
+module Base
+{
+    /*
+     * B42 pager-tower world model. The deployed tower is a dropped PagerTower
+     * item (item PagerTower has WorldStaticModel = PagerTower); B42 renders that
+     * item's WorldStaticModel as a 3D model in the world — the same proven path
+     * B41 uses. The item is dropped SERVER-SIDE in server/PagerMod_Server.lua
+     * (spawnTowerObject) so it syncs to every client (the old IsoThumpable +
+     * attached-anim / setSpriteModelName paths never rendered on network-synced
+     * objects — that was the invisible-in-MP bug).
+     *
+     * Same CLEAN procedural lattice mesh as the B41 .x (tools/build_tower_model
+     * .py now emits both the B41 PagerTower.x and this B42 PagerTower.glb from
+     * build_procedural_tower(); the old holey Meshy .glb was replaced).
+     *
+     * Format matches vanilla item WorldStaticModel models (mesh/texture/scale
+     * only — NOT the static/undoCoreScale fields, which are for IsoObject sprite
+     * models). `scale` is a VISUAL TUNE value: the B41 .x model uses 0.77 and B41
+     * renders ~1.4x larger than B42, so B42 starts ~1.1 — adjust in-game until
+     * the tower fills a tile. Mesh is authored ~2.3 tiles tall / ~0.74 wide.
+     */
+    model PagerTower
+    {
+        mesh    = PagerTower,
+        texture = PagerTower,
+        scale   = 1.1,
+    }
+}

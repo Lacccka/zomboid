@@ -1,0 +1,70 @@
+VERSION = 1,
+
+option ExtractionMode.HideoutX { type = integer, min = 0, max = 30000, default = 23163, page = ExtractionMode, translation = ExtractionMode_HideoutX, }
+option ExtractionMode.HideoutY { type = integer, min = 0, max = 30000, default = 19340, page = ExtractionMode, translation = ExtractionMode_HideoutY, }
+option ExtractionMode.HideoutZ { type = integer, min = 0, max = 32, default = 0, page = ExtractionMode, translation = ExtractionMode_HideoutZ, }
+option ExtractionMode.HideoutRadius { type = integer, min = 4, max = 50, default = 20, page = ExtractionMode, translation = ExtractionMode_HideoutRadius, }
+option ExtractionMode.HideoutInfectionCapPercent { type = integer, min = 0, max = 100, default = 50, page = ExtractionMode, translation = ExtractionMode_HideoutInfectionCapPercent, }
+option ExtractionMode.HideoutClutterCount { type = integer, min = 0, max = 100, default = 30, page = ExtractionMode, translation = ExtractionMode_HideoutClutterCount, }
+option ExtractionMode.SkillBooksGrantXP { type = boolean, default = true, page = ExtractionMode, translation = ExtractionMode_SkillBooksGrantXP, }
+option ExtractionMode.RequireUpgradeSkills { type = boolean, default = true, page = ExtractionMode, translation = ExtractionMode_RequireUpgradeSkills, }
+option ExtractionMode.GrantStarterM9Kit { type = boolean, default = true, page = ExtractionMode, translation = ExtractionMode_GrantStarterM9Kit, }
+option ExtractionMode.GrantStarterNightstick { type = boolean, default = true, page = ExtractionMode, translation = ExtractionMode_GrantStarterNightstick, }
+option ExtractionMode.GeneratorTankCapacityLiters { type = integer, min = 5, max = 200, default = 40, page = ExtractionMode, translation = ExtractionMode_GeneratorTankCapacityLiters, }
+option ExtractionMode.GeneratorFuelPerDay { type = integer, min = 1, max = 48, default = 4, page = ExtractionMode, translation = ExtractionMode_GeneratorFuelPerDay, }
+option ExtractionMode.GeneratorTransferLiters { type = integer, min = 1, max = 20, default = 5, page = ExtractionMode, translation = ExtractionMode_GeneratorTransferLiters, }
+
+option ExtractionMode.RaidSpawnX { type = integer, min = 0, max = 20000, default = 10620, page = ExtractionMode, translation = ExtractionMode_RaidSpawnX, }
+option ExtractionMode.RaidSpawnY { type = integer, min = 0, max = 20000, default = 9280, page = ExtractionMode, translation = ExtractionMode_RaidSpawnY, }
+option ExtractionMode.RaidSpawnZ { type = integer, min = 0, max = 32, default = 0, page = ExtractionMode, translation = ExtractionMode_RaidSpawnZ, }
+
+option ExtractionMode.Extraction1X { type = integer, min = 0, max = 20000, default = 10668, page = ExtractionMode, translation = ExtractionMode_Extraction1X, }
+option ExtractionMode.Extraction1Y { type = integer, min = 0, max = 20000, default = 9312, page = ExtractionMode, translation = ExtractionMode_Extraction1Y, }
+option ExtractionMode.Extraction2X { type = integer, min = 0, max = 20000, default = 10852, page = ExtractionMode, translation = ExtractionMode_Extraction2X, }
+option ExtractionMode.Extraction2Y { type = integer, min = 0, max = 20000, default = 9464, page = ExtractionMode, translation = ExtractionMode_Extraction2Y, }
+option ExtractionMode.Extraction3X { type = integer, min = 0, max = 20000, default = 10752, page = ExtractionMode, translation = ExtractionMode_Extraction3X, }
+option ExtractionMode.Extraction3Y { type = integer, min = 0, max = 20000, default = 9576, page = ExtractionMode, translation = ExtractionMode_Extraction3Y, }
+option ExtractionMode.ExtractionRadius { type = integer, min = 4, max = 40, default = 12, page = ExtractionMode, translation = ExtractionMode_ExtractionRadius, }
+
+option ExtractionMode.ReadyCountdownSeconds { type = integer, min = 3, max = 120, default = 10, page = ExtractionMode, translation = ExtractionMode_ReadyCountdownSeconds, }
+option ExtractionMode.VehicleRaidBaseFuelLiters { type = integer, min = 0, max = 20, default = 4, page = ExtractionMode, translation = ExtractionMode_VehicleRaidBaseFuelLiters, }
+option ExtractionMode.HideoutVehicleInactivityMinutes { type = integer, min = 1, max = 60, default = 5, page = ExtractionMode, translation = ExtractionMode_HideoutVehicleInactivityMinutes, }
+option ExtractionMode.HotwireExtractedVehicles { type = boolean, default = false, page = ExtractionMode, translation = ExtractionMode_HotwireExtractedVehicles, }
+option ExtractionMode.ExtractionHealing { type = enum, numValues = 3, default = 1, page = ExtractionMode, translation = ExtractionMode_ExtractionHealing, valueTranslation = ExtractionMode_ExtractionHealing, }
+option ExtractionMode.RaidDeathHandling { type = enum, numValues = 3, default = 1, page = ExtractionMode, translation = ExtractionMode_RaidDeathHandling, valueTranslation = ExtractionMode_RaidDeathHandling, }
+option ExtractionMode.HordeDelayMinimumHours { type = integer, min = 0, max = 72, default = 8, page = ExtractionMode, translation = ExtractionMode_HordeDelayMinimumHours, }
+option ExtractionMode.HordeDelayMaximumHours { type = integer, min = 0, max = 72, default = 11, page = ExtractionMode, translation = ExtractionMode_HordeDelayMaximumHours, }
+option ExtractionMode.HordeSize { type = integer, min = 1, max = 500, default = 90, page = ExtractionMode, translation = ExtractionMode_HordeSize, }
+option ExtractionMode.HordeSpawnRadius { type = integer, min = 15, max = 100, default = 38, page = ExtractionMode, translation = ExtractionMode_HordeSpawnRadius, }
+option ExtractionMode.AmbientSprinterPercentWeek2 { type = integer, min = 0, max = 100, default = 1, page = ExtractionMode, translation = ExtractionMode_AmbientSprinterPercentWeek2, }
+option ExtractionMode.HordeSprinterPercent { type = integer, min = 0, max = 100, default = 5, page = ExtractionMode, translation = ExtractionMode_HordeSprinterPercent, }
+option ExtractionMode.HelicopterArrivalSeconds { type = integer, min = 5, max = 300, default = 90, page = ExtractionMode, translation = ExtractionMode_HelicopterArrivalSeconds, }
+option ExtractionMode.CommArrayHelicopterArrivalSeconds { type = integer, min = 5, max = 300, default = 60, page = ExtractionMode, translation = ExtractionMode_CommArrayHelicopterArrivalSeconds, }
+option ExtractionMode.EasierExtractions { type = boolean, default = false, page = ExtractionMode, translation = ExtractionMode_EasierExtractions, }
+option ExtractionMode.ExtractionHordePerPlayer { type = integer, min = 0, max = 50, default = 5, page = ExtractionMode, translation = ExtractionMode_ExtractionHordePerPlayer, }
+option ExtractionMode.ExtractionHordeSpawnRadius { type = integer, min = 15, max = 100, default = 35, page = ExtractionMode, translation = ExtractionMode_ExtractionHordeSpawnRadius, }
+option ExtractionMode.EnableBanditsIntegration { type = boolean, default = true, page = ExtractionMode, translation = ExtractionMode_EnableBanditsIntegration, }
+option ExtractionMode.SuppressBanditsAutonomousRaids { type = boolean, default = true, page = ExtractionMode, translation = ExtractionMode_SuppressBanditsAutonomousRaids, }
+option ExtractionMode.BanditAttackWindowChancePercent { type = integer, min = 0, max = 100, default = 15, page = ExtractionMode, translation = ExtractionMode_BanditAttackWindowChancePercent, }
+option ExtractionMode.BanditAttackWindowMinimumHours { type = integer, min = 0, max = 24, default = 1, page = ExtractionMode, translation = ExtractionMode_BanditAttackWindowMinimumHours, }
+option ExtractionMode.BanditAttackWindowMaximumHours { type = integer, min = 0, max = 24, default = 2, page = ExtractionMode, translation = ExtractionMode_BanditAttackWindowMaximumHours, }
+option ExtractionMode.BanditGroupMinimum { type = integer, min = 1, max = 20, default = 2, page = ExtractionMode, translation = ExtractionMode_BanditGroupMinimum, }
+option ExtractionMode.BanditGroupMaximum { type = integer, min = 1, max = 20, default = 5, page = ExtractionMode, translation = ExtractionMode_BanditGroupMaximum, }
+option ExtractionMode.BanditSpawnRadius { type = integer, min = 25, max = 150, default = 55, page = ExtractionMode, translation = ExtractionMode_BanditSpawnRadius, }
+option ExtractionMode.BanditHordeReplacementChancePercent { type = integer, min = 0, max = 100, default = 20, page = ExtractionMode, translation = ExtractionMode_BanditHordeReplacementChancePercent, }
+option ExtractionMode.BanditHordeGroupMinimum { type = integer, min = 6, max = 20, default = 8, page = ExtractionMode, translation = ExtractionMode_BanditHordeGroupMinimum, }
+option ExtractionMode.BanditHordeGroupMaximum { type = integer, min = 6, max = 20, default = 12, page = ExtractionMode, translation = ExtractionMode_BanditHordeGroupMaximum, }
+option ExtractionMode.BoardingWindowSeconds { type = integer, min = 10, max = 120, default = 30, page = ExtractionMode, translation = ExtractionMode_BoardingWindowSeconds, }
+option ExtractionMode.InsertionClearRadius { type = integer, min = 10, max = 100, default = 35, page = ExtractionMode, translation = ExtractionMode_InsertionClearRadius, }
+option ExtractionMode.IntelInsertionClearBonus { type = integer, min = 0, max = 100, default = 20, page = ExtractionMode, translation = ExtractionMode_IntelInsertionClearBonus, }
+option ExtractionMode.IntelHordeDelayBonusHours { type = integer, min = 0, max = 24, default = 3, page = ExtractionMode, translation = ExtractionMode_IntelHordeDelayBonusHours, }
+option ExtractionMode.BaseDailyTownChoices { type = integer, min = 1, max = 9, default = 3, page = ExtractionMode, translation = ExtractionMode_BaseDailyTownChoices, }
+option ExtractionMode.CommArrayDailyTownChoices { type = integer, min = 1, max = 9, default = 5, page = ExtractionMode, translation = ExtractionMode_CommArrayDailyTownChoices, }
+option ExtractionMode.VentilationSleepBonusPercent { type = integer, min = 0, max = 100, default = 20, page = ExtractionMode, translation = ExtractionMode_VentilationSleepBonusPercent, }
+option ExtractionMode.MedicalHealingBonusPercent { type = integer, min = 0, max = 100, default = 20, page = ExtractionMode, translation = ExtractionMode_MedicalHealingBonusPercent, }
+option ExtractionMode.MedicalInfectionPreventionPercent { type = integer, min = 0, max = 100, default = 20, page = ExtractionMode, translation = ExtractionMode_MedicalInfectionPreventionPercent, }
+option ExtractionMode.HideoutHeatingRadius { type = integer, min = 5, max = 100, default = 30, page = ExtractionMode, translation = ExtractionMode_HideoutHeatingRadius, }
+option ExtractionMode.HideoutHeatingTemperature { type = integer, min = 20, max = 50, default = 35, page = ExtractionMode, translation = ExtractionMode_HideoutHeatingTemperature, }
+option ExtractionMode.RoutePointMinimumDistance { type = integer, min = 50, max = 500, default = 120, page = ExtractionMode, translation = ExtractionMode_RoutePointMinimumDistance, }
+option ExtractionMode.TransitFadeSeconds { type = integer, min = 1, max = 5, default = 1, page = ExtractionMode, translation = ExtractionMode_TransitFadeSeconds, }
+option ExtractionMode.DebugLogging { type = boolean, default = false, page = ExtractionMode, translation = ExtractionMode_DebugLogging, }

@@ -1,0 +1,151 @@
+VERSION = 1,
+
+option PagerMod.Preset
+{
+    type = enum, numValues = 4, default = 1,
+    page = PagerMod, translation = PagerMod_Preset,
+    valueTranslation = PagerMod_Preset,
+}
+
+option PagerMod.SignalMode
+{
+    type = enum, numValues = 4, default = 1,
+    page = PagerMod, translation = PagerMod_SignalMode,
+    valueTranslation = PagerMod_SignalMode,
+}
+
+option PagerMod.PagerMode
+{
+    type = enum, numValues = 2, default = 1,
+    page = PagerMod, translation = PagerMod_PagerMode,
+    valueTranslation = PagerMod_PagerMode,
+}
+
+option PagerMod.SignalRange
+{
+    type = integer, min = 50, max = 100000, default = 7000,
+    page = PagerMod, translation = PagerMod_SignalRange,
+}
+
+option PagerMod.AllowBroadcast
+{
+    type = boolean, default = true,
+    page = PagerMod, translation = PagerMod_AllowBroadcast,
+}
+
+option PagerMod.MaxMessages
+{
+    type = integer, min = 1, max = 500, default = 50,
+    page = PagerMod, translation = PagerMod_MaxMessages,
+}
+
+option PagerMod.MessageMaxLength
+{
+    type = integer, min = 1, max = 500, default = 140,
+    page = PagerMod, translation = PagerMod_MessageMaxLength,
+}
+
+option PagerMod.NotifySound
+{
+    type = boolean, default = true,
+    page = PagerMod, translation = PagerMod_NotifySound,
+}
+
+
+
+option PagerMod.BeepVolume
+{
+    type = enum, numValues = 4, default = 2,
+    page = PagerMod, translation = PagerMod_BeepVolume,
+    valueTranslation = PagerMod_BeepVolume,
+}
+
+option PagerMod.LocationSharing
+{
+    type = enum, numValues = 3, default = 2,
+    page = PagerMod, translation = PagerMod_LocationSharing,
+    valueTranslation = PagerMod_LocationSharing,
+}
+
+option PagerMod.SendCooldown
+{
+    type = integer, min = 0, max = 600, default = 0,
+    page = PagerMod, translation = PagerMod_SendCooldown,
+}
+
+option PagerMod.ReadReceipts
+{
+    type = boolean, default = true,
+    page = PagerMod, translation = PagerMod_ReadReceipts,
+}
+
+option PagerMod.FactionScope
+{
+    type = enum, numValues = 2, default = 1,
+    page = PagerMod, translation = PagerMod_FactionScope,
+    valueTranslation = PagerMod_FactionScope,
+}
+
+option PagerMod.AllowSOS
+{
+    type = boolean, default = true,
+    page = PagerMod, translation = PagerMod_AllowSOS,
+}
+
+option PagerMod.AllowBlocking
+{
+    type = boolean, default = true,
+    page = PagerMod, translation = PagerMod_AllowBlocking,
+}
+
+option PagerMod.BatteryLife
+{
+    type = enum, numValues = 5, default = 2,
+    page = PagerMod, translation = PagerMod_BatteryLife,
+    valueTranslation = PagerMod_BatteryLife,
+}
+
+option PagerMod.TowerComms
+{
+    type = enum, numValues = 2, default = 1,
+    page = PagerModTower, translation = PagerMod_TowerComms,
+    valueTranslation = PagerMod_TowerComms,
+}
+
+option PagerMod.TowerLimit
+{
+    type = integer, min = 0, max = 999, default = 0,
+    page = PagerModTower, translation = PagerMod_TowerLimit,
+}
+
+option PagerMod.GlobalChat
+{
+    type = boolean, default = false,
+    page = PagerMod, translation = PagerMod_GlobalChat,
+}
+
+option PagerMod.TowerPower
+{
+    type = enum, numValues = 3, default = 1,
+    page = PagerModTower, translation = PagerMod_TowerPower,
+    valueTranslation = PagerMod_TowerPower,
+}
+
+option PagerMod.NumericOnly
+{
+    type = boolean, default = false,
+    page = PagerMod, translation = PagerMod_NumericOnly,
+}
+
+option PagerMod.SpawnAbundance
+{
+    type = enum, numValues = 5, default = 2,
+    page = PagerMod, translation = PagerMod_SpawnAbundance,
+    valueTranslation = PagerMod_SpawnAbundance,
+}
+
+option PagerMod.LogPages
+{
+    type = boolean, default = false,
+    page = PagerMod, translation = PagerMod_LogPages,
+}

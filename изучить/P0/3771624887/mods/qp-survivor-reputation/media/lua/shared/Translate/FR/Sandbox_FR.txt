@@ -1,0 +1,15 @@
+Sandbox_FR = {
+    Sandbox_QPSR = "Réputation du survivant QP",
+    Sandbox_QPSR_AutomationEnabled = "Activer la réputation automatique",
+    Sandbox_QPSR_AutomationEnabled_tooltip = "Interrupteur principal de toutes les règles automatiques.",
+    Sandbox_QPSR_HunterEnabled = "Activer les paliers Chasseur",
+    Sandbox_QPSR_HunterEnabled_tooltip = "Attribue de la réputation Chasseur aux paliers d'éliminations suivies.",
+    Sandbox_QPSR_HunterMilestonePreset = "Préréglage des paliers Chasseur",
+    Sandbox_QPSR_HunterMilestonePreset_option1 = "Production : 100 / 250 / 500 / 1000",
+    Sandbox_QPSR_HunterMilestonePreset_option2 = "Test rapide : 1 / 3 / 5 / 10",
+    Sandbox_QPSR_ScanIntervalMinutes = "Intervalle d'analyse (minutes)",
+    Sandbox_QPSR_HunterDailyPointCap = "Plafond quotidien de points Chasseur",
+    Sandbox_QPSR_HunterDailyPointCap_tooltip = "0 désactive le plafond. Les paliers bloqués restent en attente.",
+    Sandbox_QPSR_HunterMaxKillsPerScan = "Éliminations maximales créditées par analyse",
+    Sandbox_QPSR_HunterMaxKillsPerScan_tooltip = "Protège contre les sauts anormaux de statistiques.",
+}

@@ -1,0 +1,6 @@
+name=EFZ Core 42.13.1+
+author=QCHAN
+poster=poster.png
+id=EFZ_Core
+require=ssr-core,ssr-quests,ssr-quests-e2,ssr-quests-e3
+description=EFZ - Loot, Shoot, Extract

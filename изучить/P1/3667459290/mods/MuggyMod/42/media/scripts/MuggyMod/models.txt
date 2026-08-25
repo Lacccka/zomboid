@@ -1,0 +1,34 @@
+module MuggyMod {
+    animationsMesh MuggyMug {
+        meshFile = MuggyMod/MuggyMug,
+        animationDirectory = Muggy,
+        animationPrefix = Muggy_,
+    }
+
+    model MuggyMug {
+        mesh = MuggyMod/MuggyMug,
+        animationsMesh = MuggyMod.MuggyMug,
+        shader = animalEffect,
+        static = false,
+        attachment head
+        {
+            offset = -0.0000 0.0000 0.0000,
+            rotate = -0.0 -0.0 0.0,
+            bone = Dummy01,
+        }
+        attachment bowtie
+        {
+            offset = -0.0000 0.0000 0.0000,
+            rotate = -0.0 -0.0 0.0,
+            scale = 1.14,
+            bone = Bip01_Spine1,
+        }
+        attachment head_hat
+        {
+            offset = -0.0000 0.0000 0.0000,
+            rotate = -0.0 -0.0 0.0,
+            scale = 0.1484,
+            bone = Bip01_Head,
+        }
+    }
+}

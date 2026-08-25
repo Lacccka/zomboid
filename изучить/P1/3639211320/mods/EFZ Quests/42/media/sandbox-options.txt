@@ -1,0 +1,7 @@
+VERSION = 1,
+
+option EFZQuests.ExtremeMode {
+    page = EFZQuests, translation = EFZQuests_ExtremeMode,
+    type = boolean,
+    default = false,
+}

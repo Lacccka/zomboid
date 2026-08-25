@@ -1,0 +1,4 @@
+Items_RU = {
+    Item_MuggyHolotape_Name = "Проект Раковина: Магги",
+    Item_MuggyHolotape_Desc = "",
+}

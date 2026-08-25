@@ -1,0 +1,8 @@
+name=Pager Network
+id=PagerMod
+description=A map-wide pager messaging network for Project Zomboid B42.\nBuilt for co-op multiplayer: pagers cover the long range, walkie-talkies the medium range, and proximity voice chat the close range.\n\n- Each pager has a unique number.\n- Send short text messages to any pager number, anywhere on the map.\n- Contacts, broadcast, unread badges, beep notifications.\n- Sandbox options to tune range, limits and loot.
+icon=poster.png
+poster=poster.png
+author=turnip
+modversion=1.0.0
+versionMin=42.0

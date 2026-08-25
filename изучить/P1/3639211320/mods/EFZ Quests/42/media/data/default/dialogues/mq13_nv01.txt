@@ -1,0 +1,5 @@
+*monologue
+#m I found a classified military document titled "Nv-01 Containment Plan" tucked between crates of infection suppressants.
+#m According to it, even before the pandemic they had a plan in place: if control of the Nv-01 virus failed, they'd mobilize the CDC and the military to distribute infection suppressants nationwide, and if containment became impossible, they'd destroy the Delta Facility by self-destruct.
+#m I need to show this to the captain.
+#exit

@@ -1,0 +1,7 @@
+name=[B41] Interactive NPCs
+poster=poster.png
+id=InteractiveNPCs
+description=Bind branching talk windows to map objects (no AI walkers). Players use right-click Talk in range. Admins use ElyonLib Dock to open the Manager: edit steps and reply buttons, portrait or sprite, outfit or avatar preset, JSON import/export, typewriter and sounds. Saves as JSON; needs ElyonLib above this mod in load order.
+require=ElyonLib
+tags=Build 41,Misc,Multiplayer,Interface
+versionMin=41.0

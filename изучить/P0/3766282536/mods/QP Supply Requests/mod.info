@@ -1,0 +1,7 @@
+name=QP Supply Requests
+id=QPSupplyRequests
+author=QUESTPAUSE
+description=Create administrator-managed protected multi-item supply requests with per-item progress, contribution tracking, and controlled release.
+poster=poster.png
+modversion=0.7.2
+pzversion=41.78.19

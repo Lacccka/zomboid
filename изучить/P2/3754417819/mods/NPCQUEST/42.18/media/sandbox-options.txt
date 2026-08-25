@@ -1,0 +1,11 @@
+VERSION = 1,
+
+option Bandits.General_SpawnMultiplier = {
+    type = double, min = 0.25, max = 4, default = 0.25,
+    page = Bandits_General, translation = Bandits.SpawnMultiplier,
+}
+
+option Bandits.General_OriginalBandits = {
+    type = boolean, default = false,
+    page = Bandits_General, translation = Bandits.OriginalBandits,
+}

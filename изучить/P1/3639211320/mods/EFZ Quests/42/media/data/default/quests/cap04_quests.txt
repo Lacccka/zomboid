@@ -1,0 +1,7 @@
+*cap04_last_report
+#name CAP-04. Last Report
+#desc The captain wants to send the report to the headquarters about the situation in the bunker via long-range radio transmitter. She asks me to find the communication facility at the entrance of Louisville and report the situation to her.
+
+
+
+

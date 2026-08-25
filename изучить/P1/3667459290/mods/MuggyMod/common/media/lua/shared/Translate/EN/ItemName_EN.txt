@@ -1,0 +1,3 @@
+ItemName_EN = {
+	ItemName_MuggyMod.MuggyHolotape = "Sink Project: Muggy",
+}

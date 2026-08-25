@@ -1,0 +1,5 @@
+{
+    "Tooltip_PagerMod_Pager": "Um pager de bolso.<br>Clique com o botão direito e ative-o para receber um número exclusivo, depois abra-o para ler e enviar mensagens curtas de texto em qualquer lugar do mapa.<br>Pagers são para comunicação de longo alcance: use o chat de voz para perto e rádios comunicadores para alcance médio.",
+    "Tooltip_PagerMod_Tower": "Uma torre de retransmissão para pagers.<br>Clique com o botão direito para montar a torre em seus pés, depois ligue-a a um gerador próximo.<br>No modo de sinal por torre, a rede de pager só funciona enquanto uma torre montada tiver energia.",
+    "Tooltip_PagerMod_Schematic": "Uma revista com esquemas para uma torre de retransmissão de pagers.<br>Leia-a para aprender a fabricar uma (requer Elétrica 5)."
+}

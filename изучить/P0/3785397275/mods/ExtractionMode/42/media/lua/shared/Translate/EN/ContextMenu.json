@@ -1,0 +1,15 @@
+{
+    "ContextMenu_ExtractionMode_AdministerCure": "Administer Experimental Infection Cure",
+    "ContextMenu_ExtractionMode_Board": "Board Extraction Helicopter",
+    "ContextMenu_ExtractionMode_Boarding": "Boarding Extraction Helicopter...",
+    "ContextMenu_ExtractionMode_CancelReady": "Cancel Raid Ready",
+    "ContextMenu_ExtractionMode_ChooseDestination": "Choose Raid Destination...",
+    "ContextMenu_ExtractionMode_Contacts": "Contacts...",
+    "ContextMenu_ExtractionMode_EquipFlare": "Equip Extraction Flare Gun (E%1)",
+    "ContextMenu_ExtractionMode_FlareReady": "Flare Ready: Aim and Fire (E%1)",
+    "ContextMenu_ExtractionMode_GarageControls": "Garage Controls...",
+    "ContextMenu_ExtractionMode_HideoutUpgrades": "Hideout Upgrades...",
+    "ContextMenu_ExtractionMode_Ready": "Ready for Raid",
+    "ContextMenu_ExtractionMode_SignalVaccineHelicopter": "Signal Vaccine Helicopter",
+    "ContextMenu_ExtractionMode_VaccineHelicopterInbound": "Vaccine Helicopter Inbound (%1s)"
+}

@@ -1,0 +1,38 @@
+#quest mq04_lost_map
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|mq04_active|true
+        #action SetFlag|mq04_started|true
+        #action SetFlag|mq04_police_reached|false
+        #action SetFlag|mq04_plan_secured|false
+        #action SetFlag|mq04_plan_delivered|false
+        #action SetFlag|mq04_reported_to_captain|false
+        #action UnlockTask|mq04_lost_map|t1,t4
+    #task t1
+        #set GotoLocation|10632,10410,0|building|true
+        #action RunScript|marker_scripts.txt,add_marker_mq04_t1
+        #action SetFlag|mq04_police_reached|true
+        #action UnlockTask|mq04_lost_map|t2
+    #task t2
+        #set LootContainer|filingcabinet|10639,10413,1|EFZ.RoadControlPlan,true
+        #action SetFlag|mq04_plan_secured|true
+        #action RunScript|marker_scripts.txt,remove_marker_mq04_t1
+        #action UnlockTask|mq04_lost_map|t3
+    #task t3
+        #set Deliver|EFZ.RoadControlPlan
+        #action SetFlag|mq04_plan_secured|false
+        #action SetFlag|mq04_plan_delivered|true
+    #task t4|hidden
+        #set TaskCondition|mq04_lost_map|t3
+        #action UnlockTask|mq04_lost_map|t5
+    #task t5
+        #set RaiseFlag|mq04_reported_to_captain
+    #task t6|unlocked|hidden
+        #set TaskCondition|mq04_lost_map|t1,t2,t3,t5
+        #action Reward|EFZ.SupplyTicket,15,rare
+        #action SetFlag|mq04_active|false
+        #action SetFlag|mq04_completed|true
+        #action SetFlag|mq05_unlocked|true
+        #action CompleteQuest|mq04_lost_map
+
+

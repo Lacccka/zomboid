@@ -1,0 +1,12 @@
+Idle_ES = {
+    Idle_Muggy_01 = "TEXTO_PROVISIONAL_IDLE_01",
+    Idle_Muggy_02 = "TEXTO_PROVISIONAL_IDLE_02",
+    Idle_Muggy_03 = "TEXTO_PROVISIONAL_IDLE_03",
+    Idle_Muggy_04 = "TEXTO_PROVISIONAL_IDLE_04",
+    Idle_Muggy_05 = "TEXTO_PROVISIONAL_IDLE_05",
+    Idle_Muggy_06 = "TEXTO_PROVISIONAL_IDLE_06",
+    Idle_Muggy_07 = "TEXTO_PROVISIONAL_IDLE_07",
+    Idle_Muggy_08 = "TEXTO_PROVISIONAL_IDLE_08",
+    Idle_Muggy_CustomBeep = "*BIP BOP* [Prueba de sonido idle personalizado]",
+    Idle_Muggy_Reunion = "¡Oh! ¡Eres tú! ¡Me preguntaba cuándo volverías!",
+}

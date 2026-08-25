@@ -1,0 +1,6 @@
+*bar01_comfort_food_t1
+#name 블루베리와 블랙베리 따오기
+*bar01_comfort_food_t2
+#name 바텐더에게 전달하기
+
+

@@ -1,0 +1,90 @@
+*add_marker_mq02_t2
+#lua EFZ.AddOverlayMarker("mq02_t2_persist", 10658, 10015, { texture="previoustarget.png" })
+#exit
+
+*remove_marker_mq02_t2
+#lua EFZ.RemoveOverlayMarker("mq02_t2_persist")
+#exit
+
+*add_marker_mq03_t1
+#lua EFZ.AddOverlayMarker("mq03_t1_persist", 10683, 9835, { texture="previoustarget.png" })
+#exit
+
+*remove_marker_mq03_t1
+#lua EFZ.RemoveOverlayMarker("mq03_t1_persist")
+#exit
+
+*add_marker_mq04_t1
+#lua EFZ.AddOverlayMarker("mq04_t1_persist", 10632, 10410, { texture="previoustarget.png" })
+#exit
+
+*remove_marker_mq04_t1
+#lua EFZ.RemoveOverlayMarker("mq04_t1_persist")
+#exit
+
+*add_marker_mq06_t1
+#lua EFZ.AddOverlayMarker("mq06_t1_persist", 12067, 6759, { texture="previoustarget.png" })
+#exit
+
+*remove_marker_mq06_t1
+#lua EFZ.RemoveOverlayMarker("mq06_t1_persist")
+#exit
+
+*add_marker_mq07_t2
+#lua EFZ.AddOverlayMarker("mq07_t2_persist", 8057, 10624, { texture="previoustarget.png" })
+#exit
+
+*remove_marker_mq07_t2
+#lua EFZ.RemoveOverlayMarker("mq07_t2_persist")
+#exit
+
+*add_marker_mq08_t2
+#lua EFZ.AddOverlayMarker("mq08_t2_persist", 7863, 10599, { texture="previoustarget.png" })
+#exit
+
+*remove_marker_mq08_t2
+#lua EFZ.RemoveOverlayMarker("mq08_t2_persist")
+#exit
+
+*add_marker_mq09_t3
+#lua EFZ.AddOverlayMarker("mq09_t3_persist", 7702, 11883, { texture="previoustarget.png" })
+#exit
+
+*remove_marker_mq09_t3
+#lua EFZ.RemoveOverlayMarker("mq09_t3_persist")
+#exit
+
+*add_marker_mq13_t1
+#lua EFZ.AddOverlayMarker("mq13_t1_persist_a", 12389, 3622, { texture="previoustarget.png" })
+#lua EFZ.AddOverlayMarker("mq13_t1_persist_b", 12397, 3986, { texture="previoustarget.png" })
+#exit
+
+*remove_marker_mq13_t1
+#lua EFZ.RemoveOverlayMarker("mq13_t1_persist_a")
+#lua EFZ.RemoveOverlayMarker("mq13_t1_persist_b")
+#lua EFZ.RemoveOverlayMarker("mq13_t1_persist")
+#exit
+
+*add_marker_mq13_t2
+#lua EFZ.AddOverlayMarker("mq13_t2_persist", 13596, 1708, { texture="previoustarget.png" })
+#exit
+
+*remove_marker_mq13_t2
+#lua EFZ.RemoveOverlayMarker("mq13_t2_persist")
+#exit
+
+*add_marker_mq14_t1
+#lua EFZ.AddOverlayMarker("mq14_t1_persist", 5571, 12485, { texture="previoustarget.png" })
+#exit
+
+*remove_marker_mq14_t1
+#lua EFZ.RemoveOverlayMarker("mq14_t1_persist")
+#exit
+
+*add_marker_gun03_marker
+#lua EFZ.AddOverlayMarker("gun03_marker_persist", 5532, 12460, { texture="previoustarget.png" })
+#exit
+
+*remove_marker_gun03_marker
+#lua EFZ.RemoveOverlayMarker("gun03_marker_persist")
+#exit

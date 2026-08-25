@@ -1,0 +1,3 @@
+#npc_create pilot|pilot_normal|idle|20107,17,0|E
+#exit
+

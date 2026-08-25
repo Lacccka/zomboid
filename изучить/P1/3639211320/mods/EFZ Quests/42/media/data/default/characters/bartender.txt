@@ -1,0 +1,6 @@
+#name bartender|Bartender
+#set_stat bartender|reputation|0
+
+#desc Bartender
+#desc_append A middle-aged man with a well-groomed beard. He is the bartender and also the cook of the bunker.
+#exit

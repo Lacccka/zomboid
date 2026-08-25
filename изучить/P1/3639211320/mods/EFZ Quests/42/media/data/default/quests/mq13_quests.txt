@@ -1,0 +1,5 @@
+*mq13_chain_link
+#name Main-13. Chain Link
+#desc The captain said that we need to gather more infection suppressor before the bunker's stock runs out. She asked me to search the medical facility and research facility in Louisville to gather the infection suppressor and deliver them to her.
+
+

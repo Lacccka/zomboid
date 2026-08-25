@@ -1,0 +1,372 @@
+QP Survivor Reputation v0.4.1
+
+Community Automation - QP Supply Requests
+
+- Added server-authoritative Community Reputation rewards for completed QP Supply Requests
+- Awards one fixed configurable reward to each survivor with a positive frozen final contribution
+- Default completed Supply Request reward: +5 Community
+- Default shared Community automation daily cap: 25 points
+- Existing and new worlds keep Community automation disabled until an administrator enables it
+- Self-created Supply Requests are always blocked from automatic Reputation
+- Removed the local-testing self-created reward override from the release build
+- Removed QP Survivor Tasks as an automatic Reputation source
+- Preserved QP Survivor Tasks as an independent manual task board
+- Preserved explicit Primary and Secondary QP Survivor Contracts Reputation rewards without adding duplicate automatic Contract rewards
+- Added stable event source IDs and persistent duplicate protection
+- Verified reconnect, reopen, and server-restart duplicate protection
+- Supports eligible offline usernames through persistent Reputation profiles
+- Hides internal Supply Request event IDs from player-facing Reputation history
+- Added complete Build 41 and Build 42 client/UI/settings parity
+- Added complete B41 classic translation parity for EN, FR, RU, CN, PTBR, and ES
+- Preserved profiles, current points, lifetime points, history, Hunter progress, settings, award ledger, external API, and DataKey
+- No save reset required
+
+QP Survivor Reputation v0.4.0 Test Candidate
+
+Generic Automation Foundation
+
+- Added a versioned automation registry covering all six Reputation paths
+- Added generic server-side handler registration and player scanning
+- Migrates automation settings from schema 1 to schema 2 without changing values
+- Migrates profile automation containers from schema 2 to schema 3 additively
+- Preserves all existing Hunter baselines, tracked kills, milestones and daily state
+- Preserves stable Hunter award source IDs and duplicate protection
+- Keeps legacy Hunter setting aliases synchronized for UI compatibility
+- Keeps Community, Explorer, Medic, Mechanic and Builder disabled and unimplemented
+- Added registry diagnostics to Automation Settings
+- Preserved the external award API, profiles, history, ledgers and save-data key
+- Build 41 and Build 42 backend support
+- No new automatic gameplay rewards
+
+QP Survivor Reputation v0.3.6 Test Candidate
+
+Profile and History Quality of Life
+
+- Added total lifetime reputation to the overall profile summary
+- Added the survivor's strongest current reputation path
+- Added per-path lifetime points
+- Added exact points remaining before each next reputation level
+- Added translated path filters to the full Reputation History window
+- Added source filters for Contract, Automation, Admin, and Other activity
+- Added source badges, source-aware context/actor details, and stored progress/target metadata
+- Added filtered-entry counts and reset scrolling when filters change
+- Improved translated path names in history entries
+- Preserved all profiles, current points, lifetime points, history, Hunter automation, award ledgers, networking, and integrations
+- Client presentation and translations only
+- No save-data migration required
+
+QP Survivor Reputation v0.3.5 Test Candidate
+
+B42 Profile UI Polish
+
+- Added a dedicated overall-reputation summary card
+- Separated total points and next-rank information to prevent overlap
+- Replaced fixed reputation-path text positions with measured columns
+- Added safer text fitting for path levels, automation values and recent history
+- Reorganized Hunter automation status into three responsive columns
+- Improved spacing, card padding, progress-bar alignment and footer buttons
+- Increased the default B42 profile size while preserving resizing
+- Preserved profiles, history, reputation calculations, automation, networking and admin tools
+- Server, shared logic, translations and saved data are unchanged
+- No save-data migration required
+
+QP Survivor Reputation v0.3.4 Revision 1 Test Candidate
+
+Admin Editor UI and Wording Hotfix
+
+- Fixed untranslated raw keys appearing in the server-player Admin Editor
+- Added safe fallback wording when a translation key is unavailable
+- Changed the player heading to Selected Player
+- Changed Online Player to Online Players
+- Changed Refresh Players to Refresh List
+- Changed Exact Username to Username (Online or Offline)
+- Changed Load Profile to Load Player
+- Increased vertical spacing between labels and controls
+- Increased the default and minimum Admin Editor height
+- Preserved server-player selection, offline username loading, permissions, reputation data and automation
+- Build 41 and Build 42 parity
+- No save-data migration required
+QP Survivor Reputation v0.3.4
+
+Server Player Reputation Administration
+
+- Added an online server-player dropdown to the Reputation Admin Editor
+- Added a Refresh Players action
+- Added an exact username field for existing offline player profiles
+- Added a Load Profile action
+- Added a separate server-authoritative admin target-profile channel
+- Admin edits no longer replace the administrator's own profile data
+- Edited online players receive their updated reputation profile immediately
+- Preserved server-side admin, moderator, and overseer authorization
+- Preserved all existing profiles, points, ranks, history, Hunter progress, settings, and award ledger
+- Added EN, FR, RU, CN, PTBR, and ES interface translations
+- Build 41 and Build 42 parity
+- No save-data migration required
+QP Survivor Reputation v0.3.2 — Build 41 Packaging Fix
+
+- Added a true Build 41 runtime layout at the mod root
+- Added classic UI_<LANG>.txt translation files for EN, FR, RU, CN, PTBR, and ES
+- Preserved the validated Build 42 payload
+- Preserved server-authoritative Hunter automation and QPSC integration
+- No save-data reset or migration required
+
+QP Survivor Reputation v0.3.2 Release Candidate
+
+Production Defaults and Final Release Hardening
+
+- Switched fresh-world Hunter automation defaults to Production milestones
+- Production milestones: 100 / 250 / 500 / 1000 tracked zombie kills
+- Preserved the Fast Testing preset for admin validation
+- Existing server settings remain unchanged during upgrade
+- Existing profiles, points, Hunter progress, milestones, history and award ledger are preserved
+- Removed Test Candidate wording from normal player-facing status text
+- Preserved server-authoritative Automation Settings
+- Preserved daily-cap deferral and suspicious-jump protection
+- Preserved QP Survivor Contracts optional integration API
+- Added final multiplayer, reconnect, dedicated-server and release validation checklists
+- Build 41 and Build 42 parity
+- Workshop-ready release-candidate metadata
+
+QP Survivor Reputation v0.3.1 Revision 7 Test Candidate
+
+Automation Settings UI Polish
+
+- Reworked numeric settings into three separate responsive rows
+- Added dedicated label space for Scan Interval
+- Added dedicated label space for Hunter Daily Point Cap
+- Added dedicated label space for Maximum Kills per Scan
+- Increased default and minimum window height
+- Prevented label collisions in English, French and Russian
+- Preserved Apply, Restore Defaults and server synchronization behavior
+- Existing settings and all Reputation data are unchanged
+- Build 41 and Build 42 parity
+- QP Survivor Contracts is not modified
+
+QP Survivor Reputation v0.3.1 Revision 6 Test Candidate
+
+Build 42 Text Entry Initialization Fix
+
+- Fixed Automation Settings crashing on every open
+- Removed early ISTextEntryBox:setOnlyNumbers calls
+- Build 42 created the Lua entry before its Java object was ready
+- Numeric values are still parsed and clamped when Apply reaches the server
+- Invalid or blank values safely fall back to accepted defaults/current values
+- Existing server settings and all Reputation data are preserved
+- Build 41 and Build 42 parity
+- QP Survivor Contracts is not modified
+
+QP Survivor Reputation v0.3.1 Revision 5 Test Candidate
+
+Automation Settings Window Compatibility Fix
+
+- Fixed the error triggered when opening Automation Settings
+- Replaced direct ISTickBox setEnable calls with a compatibility-safe helper
+- Added fallback enable/disable handling for UI controls
+- Added compatibility-safe text-entry editability handling
+- Automation Settings behavior and server configuration are unchanged
+- Existing profiles, points, Hunter progress, milestones and history are preserved
+- Build 41 and Build 42 parity
+- QP Survivor Contracts is not modified
+
+QP Survivor Reputation v0.3.1 Revision 4 Test Candidate
+
+Admin Automation Settings and Server Configuration
+
+- Removed the broken native Sandbox Options registration
+- Added a dedicated resizable Automation Settings window
+- Added an Automation Settings button to the Reputation Admin Editor
+- Added server-authoritative persistent automation configuration
+- Migrates existing QPSR Sandbox values once into QPSR ModData
+- Added master automation and Hunter enable controls
+- Added Production and Fast Testing milestone presets
+- Added scan interval, daily cap and maximum-kill-jump controls
+- Added Apply and Restore Defaults actions
+- Settings synchronize immediately to the admin and Profile window
+- Added EN / FR / RU / CN / PTBR / ES localization
+- Existing profiles, points, Hunter progress, milestone awards and history are preserved
+- Build 41 and Build 42 parity
+- QP Survivor Contracts is not modified
+
+QP Survivor Reputation v0.3.1 Revision 3 Test Candidate
+
+Build 42 Sandbox JSON Localization Fix
+
+- Added exact Sandbox_QPSR_* labels to the proven lowercase JSON translation set
+- Added category, option, tooltip and enum-value translations
+- Added EN / FR / RU / CN / PTBR / ES parity
+- Retained legacy Sandbox TXT translation files for Build 41 compatibility
+- Sandbox option registration and values are unchanged
+- Automation logic and exploit protection are unchanged
+- Existing Reputation, Hunter progress, milestones and history are preserved
+- QP Survivor Contracts is not modified
+
+QP Survivor Reputation v0.3.1 Revision 2 Test Candidate
+
+Sandbox Translation Loader Fix
+
+- Corrected Sandbox translation filenames to Sandbox_<LANG>.txt
+- Preserved the required Sandbox_<LANG> translation table format
+- Added complete EN / FR / RU / CN / PTBR / ES Sandbox labels and tooltips
+- Sandbox option values and automation logic are unchanged
+- Existing Reputation and automation data are preserved
+- Build 41 and Build 42 parity
+- QP Survivor Contracts is not modified
+
+QP Survivor Reputation v0.3.1 Test Candidate
+
+Sandbox Controls and Exploit Protection
+
+- Added Project Zomboid Sandbox controls for automatic Reputation
+- Added master Automation and Hunter enable switches
+- Added Production and Fast Testing Hunter milestone presets
+- Added configurable automation scan interval
+- Added configurable Hunter daily automatic-point cap
+- Milestones blocked by the daily cap remain pending for a later day
+- Added configurable maximum credited kills per scan
+- Abnormal kill-stat jumps are ignored, logged and safely rebased
+- Negative kill-stat changes are safely rebased without granting points
+- Preserved all validated tracked progress and milestone award records
+- Expanded Automation Status with effective server configuration
+- Added EN / FR / RU / CN / PTBR / ES Sandbox and UI localization
+- Build 41 and Build 42 parity
+- QP Survivor Contracts is not modified
+
+QP Survivor Reputation v0.3.0 Revision 3 Test Candidate
+
+Automation Translation Key Alignment Fix
+
+- Corrected Automation Status UI calls to use the proven UI_QPSR_* key family
+- Removed the mismatch between the automation card and the loaded translation set
+- Existing automation baseline, tracked kills, milestones and Reputation data are unchanged
+- Build 41 and Build 42 parity
+- QP Survivor Contracts is not modified
+
+QP Survivor Reputation v0.3.0 Revision 2 Test Candidate
+
+Automation Translation Loader Fix
+
+- Fixed raw automation translation keys appearing in the Profile window
+- Rebuilt EN / FR / RU / CN / PTBR / ES automation translation files
+- Normalized files to Project Zomboid UI_<LANG> translation table syntax
+- Automation logic, milestones and progress are unchanged
+- Existing Reputation and automation ModData are preserved
+- Build 41 and Build 42 parity
+- QP Survivor Contracts is not modified
+
+QP Survivor Reputation v0.3.0 Test Candidate
+
+Automation Foundation and Hunter Milestones
+
+- Added a server-authoritative automation engine
+- Added persistent per-survivor Hunter automation state
+- Tracks new zombie kills from the survivor's first observed baseline
+- Does not retroactively reward existing lifetime kills
+- Added unique source-key protection for every automated milestone
+- Added persistent milestone completion state
+- Added daily automatic-point cap framework
+- Added structured automation metadata to history and award ledger entries
+- Added automatic Profile synchronization
+- Added an Automation Status card to the Reputation Profile
+- Added localized automation UI in EN / FR / RU / CN / PTBR / ES
+- Added production Hunter milestones: 100 / 250 / 500 / 1000
+- TC fast milestones enabled: 1 / 3 / 5 / 10
+- Build 41 and Build 42 parity
+- QP Survivor Contracts is not modified
+
+QP Survivor Reputation v0.2.5 Test Candidate
+
+Resizable Windows and Responsive Admin Editor
+
+- Made Profile, History and Admin Editor windows resizable
+- Added minimum window sizes to prevent broken layouts
+- Repositioned footer controls dynamically during resizing
+- Rebuilt Admin Editor with a wider responsive layout
+- Prevented translated titles, labels and buttons from overlapping
+- Localized path dropdown display names
+- Preserved internal path IDs for server commands and saved data
+- Build 41 and Build 42 parity
+- No Reputation data, API or QPSC integration changes
+
+QP Survivor Reputation v0.2.4 Test Candidate
+
+Complete Localization and Release Hardening
+
+- Replaced remaining hardcoded profile UI strings with translation keys
+- Localized Profile, History and Admin Editor windows
+- Localized context menu, buttons, labels, path names and generic rank titles
+- Added complete EN / FR / RU / CN / PTBR / ES UI translation files
+- Preserved Build 41 and Build 42 parity
+- Preserved all profiles, points, timestamps, history and duplicate-award data
+- No QPSC files are modified
+- No API or completion behavior changes
+
+QP Survivor Reputation v0.2.3 Test Candidate
+
+Stable Local Timestamp Display
+
+- Cached the local clock correction once per client session
+- Rounded the correction to the nearest full minute
+- Removed one-second render drift that could flip entries across minute boundaries
+- Preserved support for half-hour and 45-minute time zones
+- Existing stored timestamps are not rewritten
+- Existing profiles, points, levels, history and award ledger are preserved
+- Build 41 and Build 42 parity
+- QP Survivor Contracts is not modified
+
+QP Survivor Reputation v0.2.2 Test Candidate
+
+Local Timestamp and History Spacing Fix
+
+- Corrected Reputation history to display the player's local system time
+- Uses the engine epoch clock to calculate the current local/DST correction
+- Does not hardcode France, UTC+2, or any specific time zone
+- Existing history entries are corrected at display time
+- Stored timestamps and Reputation data are not rewritten
+- Added additional bottom spacing to the full History window
+- Prevented the last visible history card from reaching the footer controls
+- Preserved all profiles, points, levels, history and award-ledger data
+- Build 41 and Build 42 parity
+- QP Survivor Contracts is not modified
+
+QP Survivor Reputation v0.2.1 Test Candidate
+
+UI Polish and Overall Progression
+
+- Overall Reputation now uses total points across enabled paths
+- Added total Reputation points and next Overall threshold
+- Added current/next threshold values to every path
+- Compacted and aligned path cards
+- Added contained Recent Activity cards
+- Long history reasons are safely truncated with ellipsis
+- Added a scrollable View All History window
+- Improved window sizing for common resolutions
+- Preserved all v0.2.0 profiles, history and duplicate-award data
+- No QP Survivor Contracts files are modified
+
+QP Survivor Reputation v0.2.0 TEST CANDIDATE
+
+- Adds a public server-side reputation award API for mod integrations.
+- Adds a persistent source-ID ledger preventing duplicate external rewards.
+- Supports offline recipients through account-based profiles.
+- Preserves all v0.1.x profile and history data.
+- No automatic gameplay rewards are enabled yet.
+
+API:
+QPReputation.Server.awardExternal(username, path, points, sourceId, reason, actor)
+QPReputation.Server.hasExternalAward(sourceId)
+QPReputation.Server.getExternalAward(sourceId)
+
+v0.4.1 RC2 - Glance UI Polish
+- Reorganized the main profile into a clear survivor overview, six compact reputation cards, separate Hunter and Community automation cards, and scannable recent activity rows.
+- Reorganized Automation Settings into Master, Hunter, Community, and Registry sections.
+- Increased the default profile width while reducing vertical clutter.
+- Client presentation only; reputation logic, profiles, history, automation, and save data are unchanged.
+
+v0.4.1 RC2.1 - UI Wording and Spacing Hotfix
+- Fixed the Community card incorrectly displaying Hunter automation wording.
+- Renamed the automation cards and settings sections for faster scanning.
+- Simplified repeated setting labels to Enabled.
+- Moved the server-authoritative help text to a dedicated full-width row.
+- Increased the Automation Settings default and minimum dimensions.
+- Updated EN, FR, RU, CN, PTBR, and ES translations for Build 41 and Build 42.
+- Client presentation only; no server, reward, profile, history, or save-data changes.

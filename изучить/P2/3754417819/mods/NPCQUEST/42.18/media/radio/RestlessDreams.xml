@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RadioData>
+  <RootInfo>
+    <SourceFile>RestlessDreams</SourceFile>
+    <FileGUID>c4d8e2f1-7a3b-4c9d-8e1f-2b6a9d0e4f7c</FileGUID>
+    <Version>10</Version>
+  </RootInfo>
+  <Voices>
+    <VoiceEntry ID="8f37a05c-764d-46bf-8da9-36818caf5bfc">
+      <FinalColor r="180" g="200" b="220" />
+    </VoiceEntry>
+  </Voices>
+  <Channels>
+    <!-- Channel only: no XML broadcasts — RestlessDreamsSeg## plays via Lua/BWORadio (no vanilla static lines). -->
+    <ChannelEntry ID="d1f5a8c3-2e94-4b7d-a6f0-9c3e7b2d4a81" name="Restless Dreams" cat="Radio" freq="88880" startscript="main">
+      <ScriptEntry ID="e9b2c4d6-1f03-4a52-b876-5d4e8f9a0c12" name="main" startdelay="0" timestampmode="Static" loopmin="0" loopmax="0">
+        <ExitOptions />
+      </ScriptEntry>
+    </ChannelEntry>
+  </Channels>
+</RadioData>

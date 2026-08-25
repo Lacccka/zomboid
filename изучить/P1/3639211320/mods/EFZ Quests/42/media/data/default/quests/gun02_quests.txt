@@ -1,0 +1,7 @@
+*gun02_field_test
+#name GUN-02. Field Test
+#desc The gunner is looking for real-world data collected by the people outside the bunker. Kill 100 zombies to get data, and report the results to the gunner.
+
+
+
+

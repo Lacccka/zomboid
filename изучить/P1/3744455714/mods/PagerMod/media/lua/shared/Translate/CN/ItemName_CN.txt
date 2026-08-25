@@ -1,0 +1,5 @@
+ItemName_CN = {
+    ItemName_Base.Pager = "寻呼机",
+    ItemName_PagerMod.PagerTower = "寻呼信号塔",
+    ItemName_PagerMod.TowerSchematic = "寻呼信号塔图纸",
+}

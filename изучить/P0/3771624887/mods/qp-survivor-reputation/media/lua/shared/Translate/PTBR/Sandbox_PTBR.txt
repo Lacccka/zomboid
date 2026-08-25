@@ -1,0 +1,15 @@
+Sandbox_PTBR = {
+    Sandbox_QPSR = "Reputação do Sobrevivente QP",
+    Sandbox_QPSR_AutomationEnabled = "Ativar reputação automática",
+    Sandbox_QPSR_AutomationEnabled_tooltip = "Controle principal de todas as regras automáticas.",
+    Sandbox_QPSR_HunterEnabled = "Ativar marcos de Caçador",
+    Sandbox_QPSR_HunterEnabled_tooltip = "Concede reputação de Caçador nos marcos de abates.",
+    Sandbox_QPSR_HunterMilestonePreset = "Predefinição de marcos de Caçador",
+    Sandbox_QPSR_HunterMilestonePreset_option1 = "Produção: 100 / 250 / 500 / 1000",
+    Sandbox_QPSR_HunterMilestonePreset_option2 = "Teste rápido: 1 / 3 / 5 / 10",
+    Sandbox_QPSR_ScanIntervalMinutes = "Intervalo de verificação (minutos)",
+    Sandbox_QPSR_HunterDailyPointCap = "Limite diário automático de Caçador",
+    Sandbox_QPSR_HunterDailyPointCap_tooltip = "0 desativa o limite. Marcos bloqueados permanecem pendentes.",
+    Sandbox_QPSR_HunterMaxKillsPerScan = "Máximo de abates creditados por verificação",
+    Sandbox_QPSR_HunterMaxKillsPerScan_tooltip = "Protege contra saltos anormais de estatística.",
+}

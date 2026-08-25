@@ -1,0 +1,87 @@
+VERSION = 1,
+
+option TradeHunter.tradeitems
+{
+	type = string,
+	default = ,
+	page = TradeHunter,
+	translation = TradeHunter_tradeitems,
+}
+
+option TradeHunter.tradeExcludeitems
+{
+	type = string,
+	default = ,
+	page = TradeHunter,
+	translation = TradeHunter_tradeExcludeitems,
+}
+
+option TradeHunter.SpawnHunterX
+{
+	type = integer, min = 0, max = 1000000, default = 0,
+	page = TradeHunter, translation = TradeHunter_SpawnHunterX,
+}
+
+option TradeHunter.SpawnHunterY
+{
+	type = integer, min = 0, max = 1000000, default = 0,
+	page = TradeHunter, translation = TradeHunter_SpawnHunterY,
+}
+
+option TradeHunter.SpawnHunterTime
+{
+	type = integer, min = 0, max = 23, default = 0,
+	page = TradeHunter, translation = TradeHunter_SpawnHunterTime,
+}
+
+option TradeHunter.SpawnHunterStayTime
+{
+	type = integer, min = 1, max = 100, default = 30,
+	page = TradeHunter, translation = TradeHunter_SpawnHunterStayTime,
+}
+
+option TradeHunter.SpawnHunterDay
+{
+	type = integer, min = 0, max = 100, default = 1,
+	page = TradeHunter, translation = TradeHunter_SpawnHunterDay,
+}
+
+option TradeHunter.SpawnHunterChance
+{
+	type = integer, min = 0, max = 100, default = 10,
+	page = TradeHunter, translation = TradeHunter_SpawnHunterChance,
+}
+
+option TradeHunter.setItemsList
+{
+	type = enum, numValues = 2, default = 2,
+	page = TradeHunter,
+	translation = TradeHunter_setItemsList,
+	valueTranslation = TradeHunter_setItemsList_values,
+}
+
+option TradeHunter.EnableReload {
+	type = boolean, default = false,
+	page = TradeHunter, translation = TradeHunter_EnableReload,
+}
+
+option TradeHunter.EnableSuicide {
+	type = boolean, default = true,
+	page = TradeHunter, translation = TradeHunter_EnableSuicide,
+}
+
+option TradeHunter.getHunterSurvive
+{
+	type = enum, numValues = 2, default = 2,
+	page = TradeHunter,
+	translation = TradeHunter_getHunterSurvive,
+	valueTranslation = TradeHunter_getHunterSurvive_values,
+}
+
+option TradeHunter.setTarget
+{
+	type = string,
+	default = ,
+	page = TradeHunter,
+	translation = TradeHunter_setTarget,
+}

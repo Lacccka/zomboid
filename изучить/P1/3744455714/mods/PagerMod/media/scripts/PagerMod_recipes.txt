@@ -1,0 +1,49 @@
+module Base
+{
+    imports
+    {
+        Base
+    }
+
+    /*
+     * B41 classic recipe format (the B42 build uses craftRecipe instead).
+     * A bonus for electricians; pagers are also common loot.
+     */
+    recipe Make Pager
+    {
+        ElectronicsScrap=3,
+        Radio.RadioReceiver,
+        Radio.ElectricWire=2,
+        Aluminum,
+        keep [Recipe.GetItemTypes.Screwdriver],
+
+        NoBrokenItems:true,
+        Result:Base.Pager,
+        SkillRequired:Electricity=4,
+        AutoLearnAll:Electricity=5,
+        Time:150.0,
+        Category:Electrical,
+        Tooltip:Tooltip_PagerMod_Recipe,
+    }
+
+    /*
+     * Pager relay tower (Ultra Realistic tier). Bigger build than a pager:
+     * in tower signal mode the network only works while one is set up and powered.
+     */
+    recipe Make Pager Tower
+    {
+        Base.Pager,
+        ElectronicsScrap=6,
+        Radio.RadioTransmitter,
+        Radio.ElectricWire=4,
+        SheetMetal=2,
+        keep [Recipe.GetItemTypes.Screwdriver],
+
+        NoBrokenItems:true,
+        Result:PagerMod.PagerTower,
+        SkillRequired:Electricity=5,
+        Time:300.0,
+        Category:Electrical,
+        Tooltip:Tooltip_PagerMod_TowerRecipe,
+    }
+}

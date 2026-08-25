@@ -1,0 +1,4 @@
+*mq01_cold_reboot
+#name Main-01. Cold Reboot
+#desc After waking up in the medical room, the doctor asked me to check the situation in the bunker and report to the captain. The outside is locked down and there seems to be a threat approaching.
+

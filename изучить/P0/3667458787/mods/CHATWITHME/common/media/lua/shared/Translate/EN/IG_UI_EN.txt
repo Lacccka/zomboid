@@ -1,0 +1,8 @@
+IGUI_EN = {
+    IGUI_AnimalType_tea = " ",
+    IGUI_AnimalType_coffee = " ",
+    IGUI_AnimalType_babycup = " ",
+    IGUI_Breed_muggy = "Muggy",
+    IGUI_Animal_Group_securitron = " "
+
+}

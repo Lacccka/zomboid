@@ -1,0 +1,23 @@
+#quest des01_bring_back_sign
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|des01_active|true
+        #action SetFlag|des01_started|true
+        #action SetFlag|des01_store_checked|false
+        #action SetFlag|des01_reported_to_designer|false
+        #action UnlockTask|des01_bring_back_sign|t1
+    #task t1
+        #set GotoLocation|13918,5883,13932,5907,0|true
+        #action SetFlag|des01_store_checked|true
+        #action UnlockTask|des01_bring_back_sign|t2
+    #task t2
+        #set RaiseFlag|des01_reported_to_designer
+    #task complete|unlocked|hidden
+        #set TaskCondition|des01_bring_back_sign|t1,t2
+        #action Reward|EFZ.SupplyTicket,150,special
+        #action SetFlag|des01_active|false
+        #action SetFlag|des01_completed|true
+        #action CompleteQuest|des01_bring_back_sign
+
+
+

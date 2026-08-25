@@ -1,0 +1,3 @@
+*mq15_countdown
+#name Main-15. Countdown
+#desc The captain asked me to check the situation inside the Delta Facility. The soldiers sent to the facility have lost all contact. I need to search the facility and stop the self-destruct procedure to escape.

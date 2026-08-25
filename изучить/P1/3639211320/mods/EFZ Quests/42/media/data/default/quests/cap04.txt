@@ -1,0 +1,39 @@
+#quest cap04_last_report
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|cap04_active|true
+        #action SetFlag|cap04_started|true
+        #action SetFlag|cap04_facility_found|false
+        #action SetFlag|cap04_report_attempted|false
+        #action SetFlag|cap04_reported_to_captain|false
+        #action UnlockTask|cap04_last_report|t1
+    #task t1
+        #set GotoLocation|12471,4298,0|room
+        #action SetFlag|cap04_facility_found|true
+        #action RunScript|cap04_last_report.txt,facility
+        #action UnlockTask|cap04_last_report|ctx1,ctx2,ctx3,t2
+    #task ctx1|locked|hidden
+        #set ContextAction|Report via Long Range Communication|12466,4301,0|5,Loot
+        #action RunScript|cap04_last_report.txt,static
+    #task ctx2|locked|hidden
+        #set ContextAction|Report via Long Range Communication|12469,4301,0|5,Loot
+        #action RunScript|cap04_last_report.txt,static
+    #task ctx3|locked|hidden
+        #set ContextAction|Report via Long Range Communication|12472,4301,0|5,Loot
+        #action RunScript|cap04_last_report.txt,static
+    #task t2
+        #set TaskCondition|cap04_last_report|ctx1/ctx2/ctx3
+        #action SetFlag|cap04_report_attempted|true
+        #action UnlockTask|cap04_last_report|t3
+    #task t3
+        #set RaiseFlag|cap04_reported_to_captain
+    #task complete|unlocked|hidden
+        #set TaskCondition|cap04_last_report|t1,t2,t3
+        #action Reward|base:desensitized|EFZ.MassSupplyTicket,3,special
+        #action SetFlag|cap04_active|false
+        #action SetFlag|cap04_completed|true
+        #action CompleteQuest|cap04_last_report
+
+
+
+

@@ -1,0 +1,9 @@
+*mq01_cold_reboot_t1
+#name Listen to the Situation
+*mq01_cold_reboot_t2
+#name Report to the Captain
+*mq01_cold_reboot_t3
+#name Receive Instructions about the Bunker Facility
+*mq01_cold_reboot_t4
+#name Wait for Additional Instructions
+

@@ -1,0 +1,110 @@
+*bad_ending
+#lua EFZ.GodmodePlayer()
+#stop bgm
+#cutscene true
+#fade_out black|1
+#wait 1
+#teleport 20113,19,0
+#m As my consciousness fades, I hear a voice speaking like a machine.
+#m "Initiating containment procedure. Initiating containment procedure..."
+#m From all around, I hear things locking into place, and blast doors start dropping, sealing off the corridors one by one.
+#m When the noise stops, the whole place goes dark... and then...
+#m GAME OVER - Captivity Ending
+#wait 1
+#lua EFZ.UnGodmodePlayer()
+#cutscene false
+#fade_in 2
+#exit
+
+*good_ending
+#lua EFZ.GodmodePlayer()
+#cutscene true
+#fade_out black|1
+#wait 1
+#teleport 20113,19,0
+#m I managed to escape before the Delta Facility went into lockdown.
+#m Down below, the zombies' wails echoing up from beyond the elevator shaft made it feel like I got out by the skin of my teeth.
+#stop bgm
+#m When I returned to the upper levels, the people in the bunker were waiting for me. I brought them good news, and we shared the joy of having survived.
+#m But it was not the end of everything. We stopped the nuke, but we still had days ahead of us to keep living.
+#bgm EFZ_AshesandDawn|true|true
+#wait 2
+#set_bg captainEnding.png
+#wait 1
+#fade_in 2
+#m Captain admitted that the military and the government had either completely collapsed, or at the very least, abandoned Knox County.
+#m She began making plans for survival with a longer-term view.
+#m The bunker became more than a shelter. It became a base preparing for the future, and everyone inside began living not as refugees, but as survivors.
+#fade_out black|2
+#wait 2
+#set_bg doctorEnding.png
+#wait 1
+#fade_in 2
+#m Doc kept the medical system running, managing people's health just like he always had.
+#m But now that more people were going in and out, the number of patients he had to treat multiplied several times over.
+#m He began training people to assist him, and as the staff grew, the medical system gradually became more organized, letting more wounded people survive.
+#fade_out black|2
+#wait 2
+#set_bg gunnerEnding.png
+#wait 1
+#fade_in 2
+#m Gunner started running a training program for the survivors, on top of managing the armory.
+#m His training was brutal and strict, but anyone who wanted to go outside had to complete it.
+#m Most survivors thought his training was horrible, like time in hell. But nobody could deny that it helped them stay alive.
+#fade_out black|2
+#wait 2
+#set_bg designerEnding.png
+#wait 1
+#fade_in 2
+#m Designer developed protective suits for people going in and out of the bunker. Her suits were not just gear. Just wearing them gave people a sense of safety and comfort.
+#m Unfortunately, she still could not return to her shop at Crossroads Mall. The outside was still dangerous, so she continued living in the bunker.
+#m But with countless survivors wearing her suits as they searched for safe routes, she believed her wish would come true someday.
+#fade_out black|2
+#wait 2
+#set_bg pilotEnding.png
+#wait 1
+#fade_in 2
+#m Pilot started learning to drive, preparing for a future where he might not be able to fly a helicopter anymore.
+#m It sounded ridiculous that a helicopter pilot could not drive a car. But he said that before the pandemic, he had never driven even once.
+#m Not long after he started learning, the helicopter stopped working. In the end, he traded the skies for the road.
+#m Luckily, the pilot turned out to have a real knack for driving, too.
+#fade_out black|2
+#wait 2
+#set_bg bartenderEnding.png
+#wait 1
+#fade_in 2
+#m Bartender still runs the bunker bar.
+#m His bar became the heart of the bunker, where survivors talked, shared information, and found the strength to keep going.
+#m Sometimes he looked like he missed the old world. But at the same time, he also seemed pretty satisfied with a life where a single drink of his helped people find the will to make it to tomorrow.
+#fade_out black|2
+#wait 2
+#set_bg playerEnding.png
+#wait 1
+#fade_in 2
+#m And as for me...
+#fade_out black|5
+#wait 6
+#clear_bg
+#stop bgm
+#fade_in 3
+#m Thank you for playing EFZ all the way to the end.
+#m I hope you had a fun experience.
+#m Over the month or so I spent developing this mod, there were a lot of twists and turns, but I am truly happy I could give this mod to all of you as a gift.
+#m Especially when Build 42 multiplayer was announced, my mental just crumbled into dust. Because EFZ had been built as a Build 41-only project in order to support multiplayer.
+#m Still, somehow, I managed to finish development to the very end, and I believe it is all thanks to you. The memories of so many people enjoying the Skyhill Challenge gave me a lot of strength.
+#m Lastly, I would like to pass along the comments from the people who helped a lot with making the mod, with my deepest gratitude. If someone left a comment, I will include it as well.
+#m 이비 EB (A Pink-haired girl) : "Qchan and I are besties."
+#m 이도나 : "Thank you for making the mod!! I had so much fun and enjoyed it the whole time! Applause and hearts to Qchan for working so hard to bring us this fun!!! Clap clap clap"
+#m 이 비 (A purple-haired hamster) : "I may be a weak little hamster, but in the game I'm Chzzk's Bear Grylls, beating up bears and building fortress walls! I'm definitely playing a survival game, but it feels like I'm mostly researching 'how can I die in the most creative way' as an accidental death artist. I hit the 'Respawn' button way faster than I crack sunflower seeds! But behind this cute exterior is a survival instinct packed with madness, the tiny ruler of Chzzk! Even in the face of viewers' razor-sharp backseating, I stubbornly go my own way (usually straight off a cliff), with my cheek pouches filled not with snacks but with nothing but futile hope and survival strategies. Chzzk's officially recommended, 'must-pet' survival-specialist hamster [이비]"
+#m Project Zomboid specialist streamer 서논
+#m 임시아님
+#m 왈라비 walrabi
+#m 묘태후 : "Zombie meat is insanely delicious."
+#m 율리콩
+#m Playsquad
+#m Those were the people who helped with making the mod. I will keep making lots of fun things. Thank you.
+#m This has been Qchan's EFZ. Please come visit my Chzzk channel, too!
+#m The end!
+#lua EFZ.UnGodmodePlayer()
+#cutscene false
+#exit

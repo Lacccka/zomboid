@@ -1,0 +1,7 @@
+*gun01_armory_cleanup_t1
+#name 9mm 탄약 상자 2개, .45 ACP 탄약 상자 2개, 5.56mm 탄약 상자 3개 전달하기
+*gun01_armory_cleanup_t2
+#name 거너에게 보고하기
+
+
+

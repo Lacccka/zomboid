@@ -1,0 +1,10 @@
+name=BONE > Bclan
+author=ReapBone
+id=Bclan
+description=Persistent multiplayer clans with native faction tags, invitations, alliances, friendly-fire control, progression, tag colors and lifetime XP rankings. Copyright (c) 2026 ReapBone. All rights reserved.
+modversion=1.1.1
+poster=poster.png
+icon=icon.png
+tags=Build 42;Multiplayer;Interface;Gameplay
+versionMin=42.20.0
+versionMax=

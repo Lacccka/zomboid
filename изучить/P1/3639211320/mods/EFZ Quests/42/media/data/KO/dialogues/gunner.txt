@@ -1,0 +1,253 @@
+#is_flag mq01_completed,false
+    #jump mq01_gate
+#is_flag gunner_intro,false
+    #jump gunner_intro
+#is_flag gunner_intro,true
+    #jump loop_regular
+
+*mq01_gate
+#m 거너|gunner.png|"방금 깨어났다고 들었다. 무기 진열대를 기웃거리기 전에 대위님에게 먼저 보고해."
+#m 거너|gunner.png|"보고를 마치고 승인을 받고 와라."
+#exit
+
+*gunner_intro
+#m 거너|gunner.png|"나는 무기고 관리 담당인 제임스 거너라고 한다."
+#m 거너|gunner.png|"필요한 무기가 있다면 말해라. 물론 그냥 줄 수는 없지만."
+#reveal gunner
+#set_flag gunner_intro,true
+#jump loop_regular
+
+*loop_regular
+#m 거너|gunner.png|"거래가 목적이면 필요한 걸 말해라. 아니라면 진열대 막지 말고."
+#choice
+    loop_ask|질문한다.
+    loop_quest|중요 임무에 관하여...
+    loop_subquest|도울 일에 관해 얘기한다.
+    loop_weapons|무기를 구매한다.
+    dialogue_exit|떠난다.
+
+*loop_quest
+#is_quest mq03_first_raid|unlocked,uncompleted,unfailed
+    #is_flag mq03_crate_delivered,false
+        #jump mq03_delivery
+#m 거너|gunner.png|"부탁할 만한 일은 없군."
+#jump loop_regular
+
+*mq03_delivery
+#is_flag mq03_crate_delivered,true
+    #m 거너|gunner.png|"고맙다. 마침 탄약이 부족해지려고 했거든."
+    #jump loop_regular
+#is_flag mq03_crate_secured,false
+    #m 거너|gunner.png|"보급품 상자를 아직 확보하지 못한 것 같군. 확인하고 다시 와라."
+    #jump loop_regular
+#deliver mq03_first_raid|t3
+    #m 거너|gunner.png|"좋아, 상자 내용물은 멀쩡하다. 대위님께 전달해 두지."
+    #jump loop_regular
+#m 거너|gunner.png|"물건을 건네지 못하겠다면 다음에 다시 와라."
+#jump loop_regular
+
+*loop_subquest
+#is_quest gun03_prototype_weapon|unlocked,uncompleted,unfailed
+    #jump gun03_remind
+#is_quest gun03_prototype_weapon|completed
+    #jump gun03_after
+#is_quest gun01_armory_cleanup|unlocked,uncompleted,unfailed
+    #jump gun01_remind
+#is_quest gun01_armory_cleanup|completed
+    #is_quest gun02_field_test|unlocked,uncompleted,unfailed
+        #jump gun02_remind
+    #is_quest gun02_field_test|completed
+        #is_flag mq14_completed,true
+            #is_quest gun03_prototype_weapon|locked
+                #jump gun03_offer
+        #jump gun02_after
+    #is_quest gun02_field_test|locked
+        #jump gun02_offer
+    #jump gun01_after
+#is_quest gun01_armory_cleanup|locked
+    #is_flag mq02_completed,true
+        #jump gun01_offer
+#is_quest gun02_field_test|unlocked,uncompleted,unfailed
+    #jump gun02_remind
+#is_quest gun02_field_test|completed
+    #is_flag mq14_completed,true
+        #is_quest gun03_prototype_weapon|locked
+            #jump gun03_offer
+    #jump gun02_after
+#is_quest gun02_field_test|locked
+    #is_quest gun01_armory_cleanup|completed
+        #jump gun02_offer
+#m 거너|gunner.png|"지금은 따로 부탁할 건 없다."
+#jump loop_regular
+
+*gun01_offer
+#m 거너|gunner.png|"이 무기고는 규격이 제각각인 탄약이 한데 섞여 있어서 골치를 썩이고 있다."
+#m 거너|gunner.png|"덕분에 당장 써야 하는 탄약도 찾지 못하고 있지. 이래서야 곤란해. 정리가 완료될 때까지 당장 사용할 탄약이 필요하다."
+#m 거너|gunner.png|"혹시 9mm 탄약 상자 2개, .45 탄약 상자 2개, 5.56mm 탄약 상자 3개를 모아줄 수 있겠나?"
+#choice
+    gun01_accept|수락한다.
+    gun01_decline|나중에 이야기한다.
+#jump loop_regular
+
+*gun01_accept
+#m 거너|gunner.png|"도움이 되겠군. 고맙다."
+#quest_unlock gun01_armory_cleanup
+#jump loop_regular
+
+*gun01_decline
+#m 거너|gunner.png|"알겠다. 시간이 나면 다시 물어보지."
+#jump loop_regular
+
+*gun01_remind
+#is_task gun01_armory_cleanup|t1|uncompleted
+    #m 거너|gunner.png|"말했던 탄약 상자를 가져왔나? 9mm 2개, .45 2개, 5.56mm 3개다."
+    #deliver gun01_armory_cleanup|t1
+        #m 거너|gunner.png|"좋아, 이제 좀 숨이 트이겠군."
+        #jump gun01_report
+    #m 거너|gunner.png|"숫자를 맞춰서 챙겨와. 정리가 완료될 때까지 사용할 탄약이 필요하다."
+    #jump loop_regular
+#is_task gun01_armory_cleanup|t2|uncompleted
+    #jump gun01_report
+#jump gun01_after
+
+*gun01_report
+#is_flag gun01_reported_to_gunner,true
+    #jump gun01_after
+#m 거너|gunner.png|"잘 했다. 그리고 눈치채고 있었을지는 모르겠지만... 사실 이건 널 테스트해본 거였다. 겨우 탄약 몇백 발로 부족분을 채우다니, 애초에 말도 안 되는 얘기지."
+#m 거너|gunner.png|"어쨌든 속여서 미안하다. 대위님이야 네가 잘 할 수 있으리라 믿으신다지만, 난 아니었거든. 스스로를 증명하지 못하는 자는 바깥에서 개죽음을 당할 뿐이다."
+#m 거너|gunner.png|"그리고 넌 훌륭하게 증명해냈지. 너라면 믿을 수 있겠어. 잘 부탁한다."
+#stat_inc gunner|reputation|10
+#set_flag gun01_reported_to_gunner,true
+#exit
+
+*gun01_after
+#m 거너|gunner.png|"저 망할 무기고를 사람답게 정리하니 숨통이 좀 트이는군. 이제 필요한 걸 바로 꺼내 쓸 수 있게 되었어."
+#jump loop_regular
+
+*gun02_offer
+#m 거너|gunner.png|"외부에서 싸우는 인원들을 통해 실전 데이터를 좀 수집하고 싶다. 탄약 소비나 대응 속도에 대한 통계가 필요해."
+#m 거너|gunner.png|"시간이 된다면, 좀비 100마리 정도를 상대한 후 경험을 말해줄 수 있겠나? 꼭 총기로 상대할 필요는 없어. 탄약을 사용하지 않는 전투의 데이터도 필요하니까."
+#m 거너|gunner.png|"충분히 상대했다면 나를 찾아와라. 네 데이터가 있으면 보급 계획을 세우는 데 큰 도움이 될 거다."
+#choice
+    gun02_accept|수락한다.
+    gun02_decline|나중에 이야기한다.
+#jump loop_regular
+
+*gun02_accept
+#m 거너|gunner.png|"좋아, 실전 데이터가 많을수록 정확도가 올라가지."
+#quest_unlock gun02_field_test
+#jump loop_regular
+
+*gun02_decline
+#m 거너|gunner.png|"알겠다. 준비가 되면 다시 이야기하지."
+#jump loop_regular
+
+*gun02_remind
+#is_task gun02_field_test|t1|uncompleted
+    #m 거너|gunner.png|"밖에서 좀비들을 사살해 데이터를 모아야 한다. 계속 움직이면서 기록을 쌓아."
+    #jump loop_regular
+#is_task gun02_field_test|t2|uncompleted
+    #jump gun02_report
+#jump gun02_after
+
+*gun02_report
+#is_flag gun02_reported_to_gunner,true
+    #jump gun02_after
+#m 당신은 좀비를 상대하며 쌓은 경험을 거너에게 말해줬다. 그는 그걸 들으며 연신 고개를 끄덕이고 감탄사를 내뱉었다.
+#m 거너|gunner.png|"그래... 그렇게 된 거군. 생각했던 것보다 더 소중한 교훈이 되겠어. 고맙다."
+#stat_inc gunner|reputation|10
+#set_flag gun02_reported_to_gunner,true
+#jump gun02_after
+
+*gun02_after
+#m 거너|gunner.png|"현장 자료 덕분에 보급 계획을 세우기 쉬워졌어. 수고했다."
+#jump loop_regular
+
+*gun03_offer
+#m 거너|gunner.png|"연구시설에서 델타 시설 관련 문서를 찾았다고 들었다. 어쩌면 거기에 더 많은 기밀 자료가 남아 있을지도 몰라."
+#m 거너|gunner.png|"내가 아는 게 맞다면, 군에서 실험 중이던 프로토타입 무기 설계도가 그쪽 어딘가에 보관돼 있었을 거다."
+#m 거너|gunner.png|"혹시라도 그곳에 설계도가 남아 있다면 회수해 줄 수 있겠나?"
+#choice
+    gun03_accept|수락한다.
+    gun03_decline|나중에 이야기한다.
+#jump loop_regular
+
+*gun03_accept
+#m 거너|gunner.png|"좋아. 가능하면 원본을 훼손하지 말고 가져와라."
+#quest_unlock gun03_prototype_weapon
+#jump loop_regular
+
+*gun03_decline
+#m 거너|gunner.png|"알겠다. 준비가 되면 다시 이야기하지."
+#jump loop_regular
+
+*gun03_remind
+#is_task gun03_prototype_weapon|t1|uncompleted
+    #m 거너|gunner.png|"연구단지에 설계도가 있는지 확인해 줘. 분명 어딘가에는 남아 있을 거다."
+    #jump loop_regular
+#is_task gun03_prototype_weapon|t2|uncompleted
+    #jump gun03_report
+#jump gun03_after
+
+*gun03_report
+#is_flag gun03_delivered_to_gunner,true
+    #jump gun03_after
+#m 거너|gunner.png|"설계도를 가져왔나? 상태는 어떤가?"
+#deliver gun03_prototype_weapon|t2
+    #m 거너|gunner.png|"좋아, 보존 상태도 괜찮군. 이 정도면 참고가 되겠어."
+    #stat_inc gunner|reputation|20
+    #exit
+#m 거너|gunner.png|"설계도가 확인되면 건네줘. 다른 데 흘러가면 곤란하다."
+#jump loop_regular
+
+*gun03_after
+#m 거너|gunner.png|"XM-19 설계도라... 실험 단계라더니 생각보다 구체적이군. 틈날 때 분석해 보겠다."
+#jump loop_regular
+
+*loop_ask
+#m 거너|gunner.png|"뭐지?"
+#choice
+    loop_ask_about_bunker|벙커에 관하여...
+    loop_ask_about_weapons|무기에 관하여...
+    loop_ask_about_you|당신에 관하여...
+    loop_regular|다른 주제를 꺼낸다.
+
+*loop_ask2
+#m 거너|gunner.png|"그리고?"
+#choice
+    loop_ask_about_bunker|벙커에 관하여...
+    loop_ask_about_weapons|무기에 관하여...
+    loop_ask_about_you|당신에 관하여...
+    loop_regular|다른 주제를 꺼낸다.
+
+*loop_ask_about_bunker
+#m 거너|gunner.png|"이 기지에서 5년을 복무했지만, 이런 곳이 있다는 건 전혀 모르고 있었다."
+#m 거너|gunner.png|"대위님이 여길 발견하지 못했으면 아마 이곳으로 피신하겠다는 생각 자체를 아무도 못 떠올렸겠지."
+#m 거너|gunner.png|"모두들 이 난리통 속에서도 대위님 덕에 살아있는 거다. 감사해야 마땅할 일이야."
+#jump loop_ask2
+
+*loop_ask_about_weapons
+#m 거너|gunner.png|"이 벙커에 보관되어 있던 탄약과 장비의 숫자가 어마어마하더군."
+#m 거너|gunner.png|"민수용 총기에, 군용 중화기까지... 정말 뒤죽박죽으로 섞여 있었다."
+#m 거너|gunner.png|"마치 누군가 지구 최후의 날이라도 대비한 것처럼 말이지."
+#jump loop_ask2
+
+*loop_ask_about_you
+#m 거너|gunner.png|"제임스 거너 하사다. 원래는 화기중대 화력지원조의 중기관총 사수였지."
+#m 거너|gunner.png|"지금은 대위님과 함께 벙커 관리에 전념하고 있다."
+#m 거너|gunner.png|"민간인과 군인이 뒤섞여서 대피한 시설이니 만큼, 관리와 규율이 엄격하지 않으면 사고가 생길 수 있거든."
+#jump loop_ask2
+
+*loop_weapons
+#m 거너|gunner.png|"소총, 권총, 탄약, 그리고 몇 가지 깜짝 선물도 있다."
+#m 거너|gunner.png|"그냥 줄 수는 없지만, 적당한 물자와 교환해 주도록 하지."
+#trade gunner
+    #buyback_clear
+    #m 거너|gunner.png|"필요한 게 있으면 또 찾아와라."
+    #exit
+#m 거너|gunner.png|"필요한 게 있으면 또 찾아와라."
+#jump loop_regular
+
+*dialogue_exit
+#exit
+

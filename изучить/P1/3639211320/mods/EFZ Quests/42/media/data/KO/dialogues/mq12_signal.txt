@@ -1,0 +1,14 @@
+*landing
+#m 파일럿|pilot.png|"신호 수신 완료. 루이빌 도심 쪽 좌표가 선명하게 잡혔어."
+#m 파일럿|pilot.png|"도심이라 착륙이 어려울 수 있어. 지금 있는 곳에서 움직이지 말고 대기해."
+#fade_out black|1
+#wait 1
+#sfx EFZ_Helicopter
+#lua EFZ.ImmediateExtractForCurrentPlayer()
+#wait 1
+#fade_in 1
+#set_flag mq12_returned_to_bunker,true
+#exit
+
+
+

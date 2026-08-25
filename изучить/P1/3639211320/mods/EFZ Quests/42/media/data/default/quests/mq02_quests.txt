@@ -1,0 +1,5 @@
+*mq02_first_step
+#name Main-02. First Step
+#desc The captain asked me to go to the surface and activate the equipment at a specific point in Muldraugh to correct the GPS guidance signal. Once I arrive at the coordinates, I need to wait until the GPS correction equipment automatically corrects the signal. When the mission is complete, return to the bunker and report to the captain.
+
+

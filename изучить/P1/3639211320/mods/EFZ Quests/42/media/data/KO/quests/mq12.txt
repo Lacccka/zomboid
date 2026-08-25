@@ -1,0 +1,39 @@
+#quest mq12_city_conquest
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|mq12_active|true
+        #action SetFlag|mq12_started|true
+        #action SetFlag|mq12_outskirts_reached|false
+        #action SetFlag|mq12_downtown_reached|false
+        #action SetFlag|mq12_signal_stabilized|false
+        #action SetFlag|mq12_returned_to_bunker|false
+        #action SetFlag|mq12_reported_to_captain|false
+        #action UnlockTask|mq12_city_conquest|t1,t2,gate_wait
+    #task t1
+        #set GotoLocation|13223,2680,13256,2681,0|true
+        #action SetFlag|mq12_outskirts_reached|true
+    #task t2
+        #set GotoLocation|11988,1661,11995,1679,0|true
+        #action SetFlag|mq12_downtown_reached|true
+    #task gate_wait|unlocked|hidden
+        #set TaskCondition|mq12_city_conquest|t1,t2
+        #action UnlockTask|mq12_city_conquest|t3
+    #task t3
+        #set WaitUntil|time|true|1
+        #action SetFlag|mq12_signal_stabilized|true
+        #action RunScript|mq12_signal.txt,landing
+        #action SetFlag|mq12_returned_to_bunker|true
+        #action UnlockTask|mq12_city_conquest|t4
+    #task t4
+        #set RaiseFlag|mq12_reported_to_captain
+    #task complete|unlocked|hidden
+        #set TaskCondition|mq12_city_conquest|t1,t2,t3,t4
+        #action Reward|EFZ.SupplyTicket,30,rare
+        #action SetFlag|mq12_active|false
+        #action SetFlag|mq12_completed|true
+        #action SetFlag|louisville_raid_unlocked|true
+        #action SetFlag|mq13_unlocked|true
+        #action CompleteQuest|mq12_city_conquest
+
+
+

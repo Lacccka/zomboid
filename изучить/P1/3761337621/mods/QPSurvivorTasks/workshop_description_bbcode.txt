@@ -1,0 +1,82 @@
+[h1]QP Survivor Tasks - Multiplayer Base Board[/h1]
+
+[b]A lightweight co-op task board system for Project Zomboid Build 42.[/b]
+
+QP Survivor Tasks lets players create in-game task boards on valid base objects such as shelves, tables, desks, counters, crates, cabinets, dressers, lockers, and similar objects.
+
+It is built for long-term multiplayer servers where survivors log in at different times and need a clean way to coordinate base work without relying only on Discord messages.
+
+[h2]Features[/h2]
+
+[list]
+[*]Create task boards on valid base objects
+[*]Add custom tasks
+[*]Add quick preset tasks
+[*]Open a proper task board UI window
+[*]Mark tasks as done
+[*]Remove individual tasks
+[*]Clear task boards
+[*]Remove task boards
+[*]Shows who added the task
+[*]Shows how long ago it was added
+[*]Persistent object-based storage
+[*]Clean right-click submenu
+[*]Build 42 ready
+[*]Multiplayer/server friendly design
+[/list]
+
+[h2]Quick Presets[/h2]
+
+[list]
+[*]Need fuel
+[*]Need food
+[*]Need medicine
+[*]Repair generator
+[*]Clear zombies nearby
+[*]Area not safe
+[/list]
+
+[h2]Custom Tasks[/h2]
+
+Players can also write their own custom task directly in-game.
+
+Examples:
+
+[list]
+[*]Bring 2 car batteries to base
+[*]Move medical supplies to the safehouse
+[*]Repair south gate
+[*]Do not use the blue van
+[*]Restock kitchen crates
+[/list]
+
+[h2]How it works[/h2]
+
+Right-click a valid object and choose:
+
+[code]QP Survivor Tasks > Create Task Board[/code]
+
+After the board is created, survivors can add quick presets, write custom tasks, open the board window, mark tasks as done, remove individual tasks, clear the board, or remove the board.
+
+[h2]Server setup[/h2]
+
+Add the Workshop ID and Mod ID to your server config:
+
+[code]WorkshopItems=PASTE WORKSHOP ID HERE
+Mods=QPSurvivorTasks[/code]
+
+[h2]Gameplay note[/h2]
+
+This mod does not change loot, zombie behavior, vehicles, crafting, combat, or balance.
+
+It is a lightweight multiplayer coordination tool for co-op bases and long-term worlds.
+
+[h2]Compatibility[/h2]
+
+Designed for Project Zomboid Build 42.
+
+Should be compatible with most mods because it only adds a right-click task board system using object modData.
+
+[h2]Credits[/h2]
+
+Made by QUESTPAUSE / QP Mods.

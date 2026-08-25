@@ -1,0 +1,34 @@
+{
+  "Sandbox_MissionsEvents": "Missions/Events",
+
+  "Sandbox_MissionsEvents_EnableMod": "Enable missions and events",
+  "Sandbox_MissionsEvents_EnableMod_tooltip": "Enables or disables the entire Missions and Events system on the server (Pager item menu)",
+
+  "Sandbox_MissionsEventsDivider0": "===ZOMBIE EVENT===",
+
+  "Sandbox_MissionsEvents_M1_Enable": "Enable zombie event",
+  "Sandbox_MissionsEvents_M1_Enable_tooltip": "Enables or disables the zombie horde event (Event 1)",
+  "Sandbox_MissionsEvents_M1_Zombies": "Zombie amount",
+  "Sandbox_MissionsEvents_M1_Zombies_tooltip": "Minimum and maximum number of zombies spawned during the event (recommended over 30 and under 80, some may not spawn)",
+  "Sandbox_MissionsEvents_M1_Cooldown": "Event duration limit",
+  "Sandbox_MissionsEvents_M1_Cooldown_tooltip": "Time before the zombie event can be activated again",
+  "Sandbox_MissionsEvents_M1_Rewards": "Reward item list",
+  "Sandbox_MissionsEvents_M1_Rewards_tooltip": "Items given as reward for completing the zombie event (comma separated). A backpack spawns with the horde",
+
+  "Sandbox_MissionsEventsDivider1": "===ITEM EVENT===",
+
+  "Sandbox_MissionsEvents_M2_Enable": "Enable item event",
+  "Sandbox_MissionsEvents_M2_Enable_tooltip": "Enables or disables the item collection event (Event 2). Items are always the same per category",
+  "Sandbox_MissionsEvents_M2_Carpentry": "Enable carpentry mission",
+  "Sandbox_MissionsEvents_M2_Carpentry_tooltip": "Allows the carpentry mission to appear in Event 2 (if both are enabled, selection becomes random)",
+  "Sandbox_MissionsEvents_M2_Electrician": "Enable electrician mission",
+  "Sandbox_MissionsEvents_M2_Electrician_tooltip": "Allows the electrician mission to appear in Event 2 (if both are enabled, selection becomes random)",
+  "Sandbox_MissionsEvents_M2_Duration": "Mission completion time",
+  "Sandbox_MissionsEvents_M2_Duration_tooltip": "Time in minutes the player has to complete the mission before failing (once started, it must be completed before starting another mission). Recommended: 550+ minutes (≈ 1 real hour)",
+  "Sandbox_MissionsEvents_M2_Cooldown": "Reuse cooldown",
+  "Sandbox_MissionsEvents_M2_Cooldown_tooltip": "Waiting time in hours before Event 2 can be started again (e.g. 30 in sandbox = 1 real hour)",
+  "Sandbox_MissionsEvents_M2_RewardsCarpentry": "Carpentry reward item list",
+  "Sandbox_MissionsEvents_M2_RewardsCarpentry_tooltip": "Items given as reward in the carpentry mission (max backpack capacity: 18; items must not exceed this limit). The bag is dropped on the ground",
+  "Sandbox_MissionsEvents_M2_RewardsElectrician": "Electrician reward item list",
+  "Sandbox_MissionsEvents_M2_RewardsElectrician_tooltip": "Items given as reward in the electrician mission (max backpack capacity: 18; items must not exceed this limit). The bag is dropped on the ground"
+}

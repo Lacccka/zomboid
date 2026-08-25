@@ -1,0 +1,2 @@
+#npc_create doctor|doctor_normal|idle|20114,18,0|S
+#exit

@@ -1,0 +1,7 @@
+#name gunner|Gunner
+#set_stat gunner|reputation|0
+
+#desc Gunner
+#desc_append The subordinate of the captain and the manager of the weapons depot. He provides weapons to the survivors in the bunker.
+#exit
+

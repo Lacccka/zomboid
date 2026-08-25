@@ -1,0 +1,9 @@
+*mq06_gunshop_search_t1
+#name 웨스트포인트 총포상에 도착하기
+*mq06_gunshop_search_t2
+#name 벙커로 복귀하기
+*mq06_gunshop_search_t3
+#name 캡틴에게 무전 내용을 보고하기
+
+
+

@@ -1,0 +1,19 @@
+*landing
+#m 파일럿|pilot.png|"신호 수신 완료. 현재 좌표로 접근 중이다."
+#m 파일럿|pilot.png|"마치릿지 주둔부대 지휘관과는 이야기해 봤어?"
+#choice
+    landing_report|지금 당장 복귀해야 한다고 전한다.
+
+*landing_report
+#m 파일럿|pilot.png|"뭔진 몰라도 상황이 심상치 않은 모양이네."
+#m 파일럿|pilot.png|"잠깐만 기다려. 바로 데리러 갈게."
+#fade_out black|1
+#wait 1
+#sfx EFZ_Helicopter
+#lua EFZ.ImmediateExtractForCurrentPlayer()
+#wait 1
+#fade_in 1
+#set_flag mq07_returned_to_bunker,true
+#exit
+
+

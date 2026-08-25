@@ -1,0 +1,15 @@
+*landing
+#m 파일럿|pilot.png|"신호 수신 완료. 루이빌 국제공항 외곽 좌표로 접근 중이다."
+#m 파일럿|pilot.png|"제대로 출발한 항공기가 얼마 없나 보군. 위에서 보니 활주로를 최근에 사용한 흔적이 거의 없네."
+#m 파일럿|pilot.png|"그 자리에서 움직이지 마. 바로 데리러 갈게."
+#fade_out black|1
+#wait 1
+#sfx EFZ_Helicopter
+#lua EFZ.ImmediateExtractForCurrentPlayer()
+#wait 1
+#fade_in 1
+#set_flag mq10_returned_to_bunker,true
+#exit
+
+
+

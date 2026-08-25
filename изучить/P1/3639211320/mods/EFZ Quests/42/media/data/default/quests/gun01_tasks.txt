@@ -1,0 +1,7 @@
+*gun01_armory_cleanup_t1
+#name Deliver 2 9mm Ammunition Boxes, 2 .45 Ammunition Boxes, and 3 5.56mm Ammunition Boxes
+*gun01_armory_cleanup_t2
+#name Report to the Gunner
+
+
+

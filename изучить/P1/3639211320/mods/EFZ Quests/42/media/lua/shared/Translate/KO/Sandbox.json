@@ -1,0 +1,23 @@
+{
+    "Sandbox_EFZQuests": "EFZ Quests",
+
+    "Sandbox_EFZQuests_ExtremeMode": "극한 모드",
+    "Sandbox_EFZQuests_ExtremeMode_tooltip": "활성화하면 플레이어 사망 시 시체 또는 플레이어 좀비가 제거됩니다. 따라서 일반 아이템 회수는 불가능하며, 바닥에 별도로 드랍된 퀘스트 아이템만 회수할 수 있습니다.",
+
+	"Sandbox_InventoryTetris": "인벤토리 테트리스",
+	"Sandbox_InventoryTetrisSearch": "인벤토리 테트리스: 수색",
+	"Sandbox_InventoryTetris_EnforceCarryWeight": "바닐라 보관함 적재량 강제 적용",
+    "Sandbox_InventoryTetris_EncumbranceSlow": "무게 초과할 시 속도 저하",
+	"Sandbox_InventoryTetris_PreventTardisStacking": "보관함 무한 중첩(가가방) 방지",
+	"Sandbox_InventoryTetris_UseItemTransferTime": "아이템 이동 시간",
+	"Sandbox_InventoryTetris_ItemTransferSpeedMultiplier": "이동 속도 배수",
+	"Sandbox_InventoryTetris_BonusGridSize": "보너스 칸 크기",
+	"Sandbox_InventoryTetris_EnableGravity": "중력 모드",
+	"Sandbox_InventoryTetris_DevMode": "개발자 도구 활성화",
+	"Sandbox_InventoryTetris_EnableSearch": "수색 모드 활성화",
+	"Sandbox_InventoryTetris_SearchTime": "수색 시간",
+	"Sandbox_InventoryTetris_SearchBodies": "시체 수색",
+	"Sandbox_InventoryTetris_SearchBodies_option1": "비활성화",
+	"Sandbox_InventoryTetris_SearchBodies_option2": "일부 아이템만",
+	"Sandbox_InventoryTetris_SearchBodies_option3": "활성화"
+}

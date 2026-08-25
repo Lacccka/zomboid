@@ -1,0 +1,12 @@
+Idle_FR = {
+    Idle_Muggy_01 = "TEXTE_PROVISOIRE_INACTIF_01",
+    Idle_Muggy_02 = "TEXTE_PROVISOIRE_INACTIF_02",
+    Idle_Muggy_03 = "TEXTE_PROVISOIRE_INACTIF_03",
+    Idle_Muggy_04 = "TEXTE_PROVISOIRE_INACTIF_04",
+    Idle_Muggy_05 = "TEXTE_PROVISOIRE_INACTIF_05",
+    Idle_Muggy_06 = "TEXTE_PROVISOIRE_INACTIF_06",
+    Idle_Muggy_07 = "TEXTE_PROVISOIRE_INACTIF_07",
+    Idle_Muggy_08 = "TEXTE_PROVISOIRE_INACTIF_08",
+    Idle_Muggy_CustomBeep = "*BIP BOUP* [Test son inactif personnalisé]",
+    Idle_Muggy_Reunion = "Oh ! C'est toi ! Je me demandais quand tu reviendrais !",
+}

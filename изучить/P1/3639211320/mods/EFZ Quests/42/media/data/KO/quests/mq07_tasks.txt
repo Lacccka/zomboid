@@ -1,0 +1,12 @@
+*mq07_maze_t1
+#name 마치릿지 외곽에 도달하기
+*mq07_maze_t2
+#name 마치릿지 주둔부대 벙커에 진입하기
+*mq07_maze_t3
+#name 버려진 벙커에서 단서 수색하기
+*mq07_maze_t4
+#name GPS 신호 안정화를 기다리기
+*mq07_maze_t5
+#name 캡틴에게 보고하기
+
+

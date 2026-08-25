@@ -1,0 +1,13 @@
+{
+    "IGUI_PZShareMapNotes_DrawingsDisplay": "Drawings: Display",
+    "IGUI_PZShareMapNotes_DrawingsOff": "Drawings: Off",
+    "IGUI_PZShareMapNotes_DrawModeOn": "Draw: ON",
+    "IGUI_PZShareMapNotes_DrawModeOff": "Draw: OFF",
+    "IGUI_PZShareMapNotes_Undo": "Undo",
+    "IGUI_PZShareMapNotes_NoPen": "No Pen",
+    "IGUI_PZShareMapNotes_NoPenAlert": "No Pen!",
+    "IGUI_PZShareMapNotes_Erase": "Erase",
+    "IGUI_PZShareMapNotes_EraseOn": "Erase: ON",
+    "IGUI_PZShareMapNotes_NoEraser": "No Eraser",
+    "IGUI_PZShareMapNotes_NoEraserAlert": "No Eraser!"
+}

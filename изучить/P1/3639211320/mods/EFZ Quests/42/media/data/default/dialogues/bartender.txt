@@ -1,0 +1,166 @@
+#is_flag mq01_completed,false
+    #jump mq01_gate
+#is_flag bartender_intro,false
+    #jump bartender_intro
+#is_flag bartender_intro,true
+    #jump loop_regular
+
+*mq01_gate
+#m Bartender|bartender.png|"Glad to see you're awake. You should meet with the captain first— she's been asking about how you're doing."
+#m Bartender|bartender.png|"Drinks can come after that—I'll be happy to take care of you then."
+#exit
+
+*bartender_intro
+#m Bartender|bartender.png|"Welcome to the bar. We don't have much of a name, and the kitchen's a bit of a mess—but this may be the only place in all of Knox Country that's still pouring."
+#reveal bartender
+#set_flag bartender_intro,true
+#jump loop_regular
+
+*loop_regular
+#m Bartender|bartender.png|"What brings you in today?"
+#choice
+    loop_ask|Ask a question
+    loop_subquest|Talk about helping out
+    loop_trade|Trade
+    dialogue_exit|Leave
+
+*loop_ask
+#m Bartender|bartender.png|"What would you like to talk about?"
+#choice
+    loop_ask_about_bunker|About the bunker...
+    loop_ask_about_bar|About the bar...
+    loop_ask_about_you|About him...
+    loop_regular|Talk about something else
+
+*loop_ask2
+#m Bartender|bartender.png|"Is there anything else you'd like to talk about?"
+#choice
+    loop_ask_about_bunker|About the bunker...
+    loop_ask_about_bar|About the bar...
+    loop_ask_about_you|About him...
+    loop_regular|Talk about something else
+
+*loop_ask_about_bunker
+#m Bartender|bartender.png|"As you can see, it's an old, run-down bunker. Probably built back when people were worried about Soviet nukes coming in."
+#m Bartender|bartender.png|"Well... chances are we'll all starve before any nukes ever show up."
+#m Bartender|bartender.png|"Still, I'm hoping we can find a way through this before it comes to that."
+#jump loop_ask2
+
+*loop_ask_about_bar
+#m Bartender|bartender.png|"This bar was already here from the start. Kind of surprising, isn't it?"
+#m Bartender|bartender.png|"Whoever built this place must have figured that even if the world ends, people will still want a drink—so a bunker ought to have a bar."
+#m Bartender|bartender.png|"Or maybe it was originally meant to be just a kitchen. Either way, thanks to it, the people down here seem pretty satisfied."
+#jump loop_ask2
+
+*loop_ask_about_you
+#m Bartender|bartender.png|"Me? I just happened to survive, and I ended up drifting my way here."
+#m Bartender|bartender.png|"I cook for the people in the bunker, mix drinks, and sometimes just listen... I'm just an ordinary person who wants to be of some help to the folks around me."
+#m Bartender|bartender.png|"So I hope you'll feel comfortable. If you ever need a meal or a drink, come by anytime."
+#jump loop_ask2
+
+*loop_subquest
+#is_quest bar02_black_label|unlocked,uncompleted,unfailed
+    #jump bar02_remind
+#is_quest bar01_comfort_food|unlocked,uncompleted,unfailed
+    #jump bar01_remind
+#is_quest bar02_black_label|locked
+    #is_quest bar01_comfort_food|completed
+        #jump bar02_offer
+#is_quest bar01_comfort_food|locked
+    #is_flag mq02_completed,true
+        #jump bar01_offer
+#is_quest bar02_black_label|completed
+    #jump bar02_after
+#is_quest bar01_comfort_food|completed
+    #jump bar01_after
+#m Bartender|bartender.png|"Nothing I need right now. If there's anything you need, just let me know."
+#jump loop_regular
+
+*bar01_offer
+#m Bartender|bartender.png|"Lately, the folks in the bunker haven't looked too good. Times like these, a decent meal can go a long way."
+#m Bartender|bartender.png|"It's hard to make anything truly comforting out of just cans and dried goods—so if you're heading outside anyway, could you pick some blueberries and blackberries for me?"
+#choice
+    bar01_accept|Accept
+    bar01_decline|Maybe later
+#jump loop_regular
+
+*bar01_accept
+#m Bartender|bartender.png|"Thank you. Five blueberries and five blackberries will be plenty."
+#m Bartender|bartender.png|"If you're not sure which is which, take a close look. If it grows in little clusters like tiny grapes, that's blackberry. If it looks like a single grape-like berry, that's blueberry."
+#m Bartender|bartender.png|"They're both a similar shade of purple, and they come off the branches pretty easily—so keep that in mind."
+#quest_unlock bar01_comfort_food
+#jump loop_regular
+
+*bar01_decline
+#m Bartender|bartender.png|"All right. If you change your mind, just let me know."
+#jump loop_regular
+
+*bar01_remind
+#is_task bar01_comfort_food|t1|uncompleted
+    #m Bartender|bartender.png|"Were you able to find those blueberries and blackberries? The fresher, the better."
+    #deliver bar01_comfort_food|t1
+        #m Bartender|bartender.png|"That's exactly what I needed. This should help bring people's appetites back."
+        #stat_inc bartender|reputation|10
+        #set_flag bar01_reported_to_bartender,true
+        #exit
+    #m Bartender|bartender.png|"Be careful out there when you're foraging. Five blueberries and five blackberries is all I need."
+    #jump loop_regular
+#is_task bar01_comfort_food|t2|uncompleted
+    #m Bartender|bartender.png|"Just a moment. I'll put together a proper menu with those berries right away."
+    #set_flag bar01_reported_to_bartender,true
+    #jump bar01_after
+#jump bar01_after
+
+*bar01_after
+#m Bartender|bartender.png|"Everyone's enjoying the food. It's nice to be able to offer a bit of comfort again. I'm grateful."
+#jump loop_regular
+
+*bar02_offer
+#m Bartender|bartender.png|"There was a brewery I used to do business with. Somewhere out there, a very rare bottle they made should still be sitting in a tavern."
+#m Bartender|bartender.png|"That drink isn't just alcohol. It's something special—something that gives people the strength to make it through one more day in a world like this."
+#m Bartender|bartender.png|"If you happen to come across it out there, could you bring it back to me? I'd appreciate it."
+#choice
+    bar02_accept|Accept
+    bar02_decline|Maybe later
+#jump loop_regular
+
+*bar02_accept
+#m Bartender|bartender.png|"Thank you. I can't say exactly where it'll be, but check the shelves and the bar counter—it's the kind of thing that gets left behind there."
+#m Bartender|bartender.png|"The label should be black. If you find it, bring it straight back."
+#quest_unlock bar02_black_label
+#jump loop_regular
+
+*bar02_decline
+#m Bartender|bartender.png|"All right. If you change your mind, just let me know."
+#jump loop_regular
+
+*bar02_remind
+#is_task bar02_black_label|t1|uncompleted
+    #m Bartender|bartender.png|"If you spot it, just take it as-is. Check the shelves and the counter carefully."
+    #jump loop_regular
+#is_task bar02_black_label|t2|uncompleted
+    #m Bartender|bartender.png|"Did you manage to find that bottle? If you did, I'd be grateful if you'd hand it over."
+    #deliver bar02_black_label|t2
+        #m Bartender|bartender.png|"Yes—this is the one. It's not an easy bottle to come by. Thank you for finding it."
+        #stat_inc bartender|reputation|10
+        #set_flag bar02_reported_to_bartender,true
+        #exit
+    #m Bartender|bartender.png|"If you find it, bring it right back. It'll do a lot to lift people's spirits."
+    #jump loop_regular
+#jump bar02_after
+
+*bar02_after
+#m Bartender|bartender.png|"Sharing that drink with everyone... you can see it in their faces—things look a little brighter. You've brought the room back to life."
+#jump loop_regular
+
+*loop_trade
+#m Bartender|bartender.png|"You know I don't take cash, right? Barter works just fine, though. Either way—if you need anything, take your time and have a look."
+#trade bartender
+    #buyback_clear
+    #m Bartender|bartender.png|"If you need anything else, just let me know. You're always welcome."
+    #exit
+#m Bartender|bartender.png|"All right. If you need something later, feel free to drop by anytime."
+#jump loop_regular
+
+*dialogue_exit
+#exit

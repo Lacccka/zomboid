@@ -1,0 +1,7 @@
+#name pilot|파일럿
+#set_stat pilot|reputation|0
+
+#desc 파일럿
+#desc_append 벙커의 유일한 헬리콥터 파일럿. 외부로 탐사를 나가는 인원의 안전한 수송을 담당한다.
+#exit
+

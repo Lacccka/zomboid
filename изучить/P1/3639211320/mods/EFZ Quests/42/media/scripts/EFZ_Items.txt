@@ -1,0 +1,273 @@
+module EFZ
+{
+    item SupplyTicket
+    {
+        DisplayCategory = Normal,
+        Weight    =    0,
+        ItemType    =    base:normal,
+        Icon    =    SupplyTicket,
+        Tooltip = Tooltip_SupplyTicket,
+    }
+
+    item MassSupplyTicket
+    {
+        DisplayCategory = Normal,
+        Weight    =    0,
+        ItemType    =    base:normal,
+        Icon    =    MassSupplyTicket,
+        Tooltip = Tooltip_MassSupplyTicket,
+    }
+
+    item LittleSupplyTicket
+    {
+        DisplayCategory = Normal,
+        Weight    =    0,
+        ItemType    =    base:normal,
+        Icon    =    LittleSupplyTicket,
+        Tooltip = Tooltip_LittleSupplyTicket,
+    }
+
+    item ArmyCrateMQ03
+    {
+        DisplayCategory = Normal,
+        Weight    =    10,
+        ItemType    =    base:normal,
+        Icon    =    ArmyCrateMQ03,
+        Tooltip = Tooltip_ArmyCrateMQ03,
+    }
+
+    item RoadControlPlan
+    {
+        DisplayCategory = Normal,
+        Weight    =    0,
+        ItemType    =    base:normal,
+        Icon    =    RoadControlPlan,
+        Tooltip = Tooltip_RoadControlPlan,
+    }
+
+    item OperationCleanSlatePlan
+    {
+        DisplayCategory = Normal,
+        Weight    =    0,
+        ItemType    =    base:normal,
+        Icon    =    OperationCleanSlatePlan,
+        Tooltip = Tooltip_OperationCleanSlatePlan,
+    }
+
+    item NBCEquipmentCrate
+    {
+        DisplayCategory = Normal,
+        Weight    =    12,
+        ItemType    =    base:normal,
+        Icon    =    ArmyCrateMQ03,
+        Tooltip = Tooltip_NBCEquipmentCrate,
+    }
+
+    item DetaineeVisitationVoiceLog
+    {
+        DisplayCategory = Normal,
+        Weight    =    0,
+        ItemType    =    base:normal,
+        Icon    =    DetaineeVisitationVoiceLog,
+        Tooltip = Tooltip_DetaineeVisitationVoiceLog,
+    }
+
+    item PatientFile
+    {
+        DisplayCategory = Normal,
+        Weight    =    0,
+        ItemType    =    base:normal,
+        Icon    =    RoadControlPlan,
+        Tooltip = Tooltip_PatientFile,
+    }
+
+    item DeltaFacilityDocument
+    {
+        DisplayCategory = Normal,
+        Weight    =    0,
+        ItemType    =    base:normal,
+        Icon    =    OperationCleanSlatePlan,
+        Tooltip = Tooltip_DeltaFacilityDocument,
+    }
+
+    item InfectionSuppressorBox
+    {
+        DisplayCategory = Normal,
+        Weight    =    2,
+        ItemType    =    base:normal,
+        Icon    =   GenericMedicalParcel2,
+        Medical    =    true,
+        WorldStaticModel    =    MedicalParcel_Green,
+        Tooltip = Tooltip_InfectionSuppressorBox,
+    }
+
+    item LastLetterToDoctor
+    {
+        DisplayCategory = Normal,
+        Weight    =    0,
+        ItemType    =    base:normal,
+        Icon    =    RoadControlPlan,
+        Tooltip = Tooltip_LastLetterToDoctor,
+    }
+
+    item RareAlcohol
+    {
+        DisplayCategory = Normal,
+        Weight    =    1,
+        ItemType    =    base:normal,
+        Icon    =    WhiskeyFull,
+        Tooltip = Tooltip_RareAlcohol,
+    }
+
+    item PrototypeWeaponBlueprint
+    {
+        DisplayCategory = Normal,
+        Weight    =    0,
+        ItemType    =    base:normal,
+        Icon    =    LivingSpaceFloorPlan,
+        Tooltip = Tooltip_PrototypeWeaponBlueprint,
+    }
+
+    item LivingSpaceFloorPlanUpper
+    {
+        DisplayCategory = Normal,
+        Weight    =    0,
+        ItemType    =    base:normal,
+        Icon    =    LivingSpaceFloorPlan,
+        Tooltip = Tooltip_LivingSpaceFloorPlanUpper,
+    }
+
+    item LivingSpaceFloorPlanLower
+    {
+        DisplayCategory = Normal,
+        Weight    =    0,
+        ItemType    =    base:normal,
+        Icon    =    LivingSpaceFloorPlan,
+        Tooltip = Tooltip_LivingSpaceFloorPlanLower,
+    }
+
+    item OverrideCommand
+    {
+        DisplayCategory = Normal,
+        Weight    =    0,
+        ItemType    =    base:normal,
+        Icon    =    RoadControlPlan,
+        Tooltip = Tooltip_OverrideCommand,
+    }
+
+    item FitnessBooster
+    {
+        DisplayCategory = Normal,
+        Weight    =    0.1,
+        ItemType    =    base:food,
+        Icon    =    Pills,
+        Tooltip = Tooltip_FitnessBooster,
+		CustomContextMenu   = Use_FitnessBooster,
+		OnEat 				= Use_FitnessBooster,
+    }
+
+    item StrengthBooster
+    {
+        DisplayCategory = Normal,
+        Weight    =    0.1,
+        ItemType    =    base:food,
+        Icon    =    Pills,
+        Tooltip = Tooltip_StrengthBooster,
+		CustomContextMenu   = Use_StrengthBooster,
+		OnEat 				= Use_StrengthBooster,
+    }
+
+    item ReloadingBook
+    {
+        DisplayCategory = Normal,
+        Weight    =    0.1,
+        ItemType    =    base:normal,
+        Icon    =    Book4,
+        Tooltip = Tooltip_ReloadingBook,
+    }
+
+    item AimingBook
+    {
+        DisplayCategory = Normal,
+        Weight    =    0.1,
+        ItemType    =    base:normal,
+        Icon    =    Book4,
+        Tooltip = Tooltip_AimingBook,
+    }
+
+    item NimbleBook
+    {
+        DisplayCategory = Normal,
+        Weight    =    0.1,
+        ItemType    =    base:normal,
+        Icon    =    Book3,
+        Tooltip = Tooltip_NimbleBook,
+    }
+
+    item FirstAidBook
+    {
+        DisplayCategory = Normal,
+        Weight    =    0.1,
+        ItemType    =    base:normal,
+        Icon    =    Book2,
+        Tooltip = Tooltip_FirstAidBook,
+    }
+
+    item WoundTimeReducer
+    {
+        DisplayCategory = Medical,
+        Weight    =    2,
+        ItemType    =    base:normal,
+        Icon    =    WoundTimeReducer,
+        Tooltip = Tooltip_WoundTimeReducer,
+    }
+
+    item InsulinSyringe
+    {
+        DisplayCategory = Medical,
+        Weight    =    0.1,
+        ItemType    =    base:normal,
+        Icon    =    InsulinSyringe,
+        Tooltip = Tooltip_InsulinSyringe,
+    }
+
+    item WaterFilter
+    {
+        DisplayCategory = Normal,
+        Weight    =    6,
+        ItemType    =    base:normal,
+        Icon    =    WaterFilter,
+        Tooltip = Tooltip_WaterFilter,
+    }
+
+    item StrongNarcotics
+    {
+        DisplayCategory = Normal,
+        Weight    =    0.2,
+        ItemType    =    base:normal,
+        Icon    =    Narcotics,
+        Tooltip = Tooltip_StrongNarcotics,
+    }
+
+    item CommunicationDevice
+    {
+        DisplayCategory = Normal,
+        Weight    =    0.2,
+        ItemType    =    base:normal,
+        Icon    =    CommunicationDevice,
+        Tooltip = Tooltip_CommunicationDevice,
+    }
+
+    item DawnOfDeadVideo
+    {
+        DisplayCategory = Normal,
+        Weight    =    0.5,
+        ItemType    =    base:normal,
+        Icon    =    Cassette3,
+        MediaCategory    =    Home-VHS,
+        WorldStaticModel    =    VHSBox3,
+        Tags = base:ignorezombiedensity;base:isfirefuel,
+        FireFuelRatio = 0.25,
+        Tooltip = Tooltip_DawnOfDeadVideo,
+    }
+}

@@ -1,0 +1,6 @@
+*mq10_departure_t1
+#name Go to the Louisville International Airport Outskirts
+*mq10_departure_t2
+#name Guide the GPS Signal
+*mq10_departure_t3
+#name Report to the Captain

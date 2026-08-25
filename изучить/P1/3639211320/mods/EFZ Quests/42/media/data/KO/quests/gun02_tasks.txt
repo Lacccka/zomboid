@@ -1,0 +1,8 @@
+*gun02_field_test_t1
+#name 좀비 100마리 사살하기
+*gun02_field_test_t2
+#name 거너에게 보고하기
+
+
+
+

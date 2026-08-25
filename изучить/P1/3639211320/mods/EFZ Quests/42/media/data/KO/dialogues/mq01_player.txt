@@ -1,0 +1,17 @@
+*intro
+#fade_out black|1
+#lua EFZ.GodmodePlayer()
+#teleport 20102,294,0
+#remove_zombies 10|20102,294,0|1
+#sfx EFZ_OpeningFireAlarm
+#fade_in 1
+#wait 25
+#fade_out black|1
+#wait 10
+#teleport 20113,19,0
+#fade_in 1
+#m 차가운 공기, 콘크리트 천장... 낯선 곳이다.
+#m 마지막 기억은... 언제지? 모르겠다. 내 이름 말고는 기억나는 게 아무 것도 없다.
+#m 어쩌면 옆의 이 의사처럼 보이는 사람이 뭔가 알고 있을지도.
+#lua EFZ.UnGodmodePlayer()
+#exit

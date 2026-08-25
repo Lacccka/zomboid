@@ -1,0 +1,112 @@
+{
+    "Sandbox_DynamicTrading": "Dynamic Trading V2",
+    "Sandbox_DynamicTradingNPC": "Dynamic Trading: NPC Events",
+
+    "Sandbox_DynamicTrading.RestockInterval": "Restock Interval (Days)",
+    "Sandbox_DynamicTrading.RestockInterval_tooltip": "How many days must pass before a trader refreshes their inventory.",
+
+    "Sandbox_DynamicTrading.ScanCooldown": "Scan Cooldown (Minutes)",
+    "Sandbox_DynamicTrading.ScanCooldown_tooltip": "Real-time minutes a player must wait between scanning attempts.",
+
+    "Sandbox_DynamicTrading.SeasonImpact": "Seasonal Impact",
+    "Sandbox_DynamicTrading.SeasonImpact_tooltip": "How strongly seasons affect prices (e.g. Winter making food expensive).",
+
+    "Sandbox_DynamicTrading.TraderStayHoursMin": "Trader Duration (Min Hours)",
+    "Sandbox_DynamicTrading.TraderStayHoursMin_tooltip": "Minimum in-game hours a trader stays connected before leaving.",
+
+    "Sandbox_DynamicTrading.TraderStayHoursMax": "Trader Duration (Max Hours)",
+    "Sandbox_DynamicTrading.TraderStayHoursMax_tooltip": "Maximum in-game hours a trader stays connected before leaving.",
+
+    "Sandbox_DynamicTrading.PublicNetwork": "Public Network Broadcast",
+    "Sandbox_DynamicTrading.PublicNetwork_tooltip": "If enabled, radio scan results (Success/Failure) are shown to ALL players on the server. If disabled, only the scanning player sees the result.",
+
+    "Sandbox_DynamicTrading.WalletMinCash": "Wallet: Min Cash",
+    "Sandbox_DynamicTrading.WalletMinCash_tooltip": "The minimum amount of money found in a wallet (if not empty).",
+
+    "Sandbox_DynamicTrading.WalletMaxCash": "Wallet: Max Cash",
+    "Sandbox_DynamicTrading.WalletMaxCash_tooltip": "The maximum amount of money found in a normal wallet. Jackpots can exceed this.",
+
+    "Sandbox_DynamicTrading.WalletEmptyChance": "Wallet: Empty Chance (%)",
+    "Sandbox_DynamicTrading.WalletEmptyChance_tooltip": "Percentage chance a wallet contains nothing but junk.",
+
+    "Sandbox_DynamicTrading.WalletJackpotChance": "Wallet: Jackpot Chance (%)",
+    "Sandbox_DynamicTrading.WalletJackpotChance_tooltip": "Chance to hit the 'Tax Return' tier, granting max cash + bonus.",
+
+    "Sandbox_DynamicTrading.IndependentSpawnRadiusMin": "Independent Spawn Radius (Min)",
+    "Sandbox_DynamicTrading.IndependentSpawnRadiusMin_tooltip": "The minimum tile distance from an active player that an Independent (Nomadic) or wandering trader can spawn.",
+
+    "Sandbox_DynamicTrading.IndependentSpawnRadiusMax": "Independent Spawn Radius (Max)",
+    "Sandbox_DynamicTrading.IndependentSpawnRadiusMax_tooltip": "The maximum tile distance from an active player that an Independent (Nomadic) or wandering trader can spawn.",
+
+    "Sandbox_DynamicTrading.TownTraderWanderChance": "Town Trader Wander Chance (%)",
+    "Sandbox_DynamicTrading.TownTraderWanderChance_tooltip": "The percentage chance that a town-based trader will decide to wander out of their home town and spawn near an active player instead.",
+
+    "Sandbox_DynamicTrading.NPCBaseHealthMultiplier": "NPC Base Health Multiplier",
+    "Sandbox_DynamicTrading.NPCBaseHealthMultiplier_tooltip": "Scales the archetype base HP used by DT NPC custom health. 1.0 = default values, 2.0 = double base HP before skill bonuses.",
+
+    "Sandbox_DynamicTrading.NPCDamageTakenMultiplier": "NPC Damage Taken Multiplier",
+    "Sandbox_DynamicTrading.NPCDamageTakenMultiplier_tooltip": "Scales real damage applied to DT NPC virtual HP. Lower than 1.0 makes them tankier, higher than 1.0 makes them easier to kill.",
+
+    "Sandbox_DynamicTrading.NPCDamageDealtMultiplier": "NPC Damage Dealt Multiplier",
+    "Sandbox_DynamicTrading.NPCDamageDealtMultiplier_tooltip": "Scales damage dealt by DT NPC melee and ranged attacks without changing their max HP.",
+
+    "Sandbox_DynamicTrading.NPCPlayerWounds": "NPC Player Wounds",
+    "Sandbox_DynamicTrading.NPCPlayerWounds_tooltip": "If enabled, DT NPC attacks can cause bleeding, cuts, scratches, and pain on players in addition to reducing overall health.",
+
+    "Sandbox_DynamicTrading.EnableBanditAmbushes": "Enable Bandit Ambushes",
+    "Sandbox_DynamicTrading.EnableBanditAmbushes_tooltip": "Allows no-base hostile bandit groups to ambush players and demand money or items. Debug/admin spawning still works when disabled.",
+
+    "Sandbox_DynamicTrading.BanditAmbushDifficulty": "Bandit Ambush Difficulty",
+    "Sandbox_DynamicTrading.BanditAmbushDifficulty_tooltip": "Controls random ambush group size. 1 = one bandit, 5 = five bandits.",
+
+    "Sandbox_DynamicTrading.BanditAmbushChance": "Bandit Ambush Chance (%)",
+    "Sandbox_DynamicTrading.BanditAmbushChance_tooltip": "Chance for each eligible ambush check to spawn a bandit group near an active player.",
+
+    "Sandbox_DynamicTrading.BanditRaidPartyPercent": "Bandit Raid Party Size (%)",
+    "Sandbox_DynamicTrading.BanditRaidPartyPercent_tooltip": "Percentage of resting hostile faction members that can join a raid, capped by Bandit Ambush Difficulty.",
+
+    "Sandbox_DynamicTrading.BanditAmbushCooldownHours": "Bandit Ambush Cooldown (Hours)",
+    "Sandbox_DynamicTrading.BanditAmbushCooldownHours_tooltip": "Minimum in-game hours between random bandit ambushes on the server.",
+
+    "Sandbox_DynamicTrading.EnableBanditHouseRoamers": "Enable Bandit House Roamers",
+    "Sandbox_DynamicTrading.EnableBanditHouseRoamers_tooltip": "Allows true Bandits faction members to run dedicated house-roaming danger encounters instead of using normal trader trade runs.",
+
+    "Sandbox_DynamicTrading.BanditHouseRoamerChance": "Bandit House Roamer Chance (%)",
+    "Sandbox_DynamicTrading.BanditHouseRoamerChance_tooltip": "Chance for each bandit roamer dispatch check to start a new occupied-house encounter when the faction is below its active roamer cap.",
+
+    "Sandbox_DynamicTrading.BanditHouseRoamerPopPercent": "Bandit House Roamer Active Cap (%)",
+    "Sandbox_DynamicTrading.BanditHouseRoamerPopPercent_tooltip": "Maximum percentage of alive Bandits faction members that can be active as house roamers at the same time.",
+
+    "Sandbox_DynamicTrading.BanditHouseRoamerEligiblePercent": "Bandit House Roamer Eligible Pool (%)",
+    "Sandbox_DynamicTrading.BanditHouseRoamerEligiblePercent_tooltip": "Percentage of alive Bandits faction members that are eligible to be selected for house-roamer runs.",
+
+    "Sandbox_DynamicTrading.BanditHouseRoamerTravelHours": "Bandit House Roamer Travel Time (Hours)",
+    "Sandbox_DynamicTrading.BanditHouseRoamerTravelHours_tooltip": "How many in-game hours Bandit roamers spend traveling to and from their occupied-house encounter site.",
+
+    "Sandbox_DynamicTrading.BanditHouseRoamerStayHours": "Bandit House Roamer Stay Time (Hours)",
+    "Sandbox_DynamicTrading.BanditHouseRoamerStayHours_tooltip": "How many in-game hours Bandit roamers hold a chosen house/building before abandoning the site and leaving the run.",
+
+    "Sandbox_DynamicTrading.BanditHouseRoamerRadiusMin": "Bandit House Roamer Radius (Min)",
+    "Sandbox_DynamicTrading.BanditHouseRoamerRadiusMin_tooltip": "Minimum tile distance from an active player when choosing a house/building for a Bandit roamer site.",
+
+    "Sandbox_DynamicTrading.BanditHouseRoamerRadiusMax": "Bandit House Roamer Radius (Max)",
+    "Sandbox_DynamicTrading.BanditHouseRoamerRadiusMax_tooltip": "Maximum tile distance from an active player when choosing a house/building for a Bandit roamer site.",
+
+    "Sandbox_DynamicTrading.NPCStaminaRegenMultiplier": "NPC Stamina Regen Multiplier",
+    "Sandbox_DynamicTrading.NPCStaminaRegenMultiplier_tooltip": "Scales how quickly NPCs recover stamina when resting or active. 1.0 is default, higher values recover faster.",
+
+    "Sandbox_DynamicTrading.NPCStaminaThreshold": "NPC Stamina Exhaustion Threshold",
+    "Sandbox_DynamicTrading.NPCStaminaThreshold_tooltip": "The stamina percentage (0.05 to 0.95) at which an exhausted NPC can resume normal activity. Default is 0.40 (40%).",
+
+    "Sandbox_DynamicTrading.NPCMeleeStaminaCost": "NPC Melee Stamina Cost",
+    "Sandbox_DynamicTrading.NPCMeleeStaminaCost_tooltip": "Base stamina cost for each melee swing at skill level 0. Higher melee skill lowers this cost, down to about 10% at level 20.",
+
+    "Sandbox_DynamicTrading.NPCRangedStaminaCost": "NPC Ranged Stamina Cost",
+    "Sandbox_DynamicTrading.NPCRangedStaminaCost_tooltip": "Base stamina cost for each shot at skill level 0. Higher shooting skill lowers this cost, down to about 10% at level 20.",
+
+    "Sandbox_DynamicTrading.ReviveCostMin": "Revive Supply Cost (Min)",
+    "Sandbox_DynamicTrading.ReviveCostMin_tooltip": "Minimum number of bandages or ripped sheets required to revive a non-hostile incapacitated NPC.",
+
+    "Sandbox_DynamicTrading.ReviveCostMax": "Revive Supply Cost (Max)",
+    "Sandbox_DynamicTrading.ReviveCostMax_tooltip": "Maximum number of bandages or ripped sheets required to revive a non-hostile incapacitated NPC."
+}

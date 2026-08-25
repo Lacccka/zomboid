@@ -1,0 +1,25 @@
+#quest des03_runway_of_the_living
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|des03_active|true
+        #action SetFlag|des03_started|true
+        #action SetFlag|des03_outfits_delivered|false
+        #action SetFlag|des03_reported_to_designer|false
+        #action UnlockTask|des03_runway_of_the_living|t1
+    #task t1
+        #set Deliver|Base.Shirt_Baseball_Z,1|Base.Jacket_LeatherBarrelDogs,1|Base.Jacket_LeatherIronRodent,1|Base.Jacket_LeatherWildRacoons,1|Base.Shirt_Baseball_KY,1|Base.BunnySuitBlack,1
+        #action SetFlag|des03_outfits_delivered|true
+        #action UnlockTask|des03_runway_of_the_living|t2
+    #task t2
+        #set RaiseFlag|des03_reported_to_designer
+    #task complete|unlocked|hidden
+        #set TaskCondition|des03_runway_of_the_living|t1,t2
+        #action Reward|EFZ.SupplyTicket,90,rare|EFZ.NimbleBook,3,unique
+        #action SetFlag|des03_active|false
+        #action SetFlag|des03_completed|true
+        #action CompleteQuest|des03_runway_of_the_living
+
+
+
+
+

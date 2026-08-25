@@ -1,0 +1,8 @@
+*doc03_med_shortage_t1
+#name Deliver 10 Bandages, 5 Painkillers, 3 Antidepressants, 3 Beta-Blockers, 3 Antibiotics, 3 Splints, and 3 Disinfectants
+*doc03_med_shortage_t2
+#name Report to the Doctor
+
+
+
+

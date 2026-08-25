@@ -1,0 +1,10 @@
+Genome_RU = {
+    Genome_Swiftness_Name = "Скорость",
+    Genome_Swiftness_Desc = "Определяет как быстро магги может двигаться",
+    Genome_Endurance_Name = "Выносливость",
+    Genome_Endurance_Desc = "Влияет на восстановление выносливости",
+    Genome_HaulingCapacity_Name = "Грузоподъёмность",
+    Genome_HaulingCapacity_Desc = "Определяет максимальный вес переноски",
+    Genome_Vitality_Name = "Живучесть",
+    Genome_Vitality_Desc = "Определяет запас здоровья и выживаемость магги.",
+}

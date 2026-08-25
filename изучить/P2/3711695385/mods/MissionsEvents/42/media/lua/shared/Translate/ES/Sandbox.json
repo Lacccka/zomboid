@@ -1,0 +1,34 @@
+{
+  "Sandbox_MissionsEvents": "Misiones/Eventos",
+
+  "Sandbox_MissionsEvents_EnableMod": "Activar misiones y eventos",
+  "Sandbox_MissionsEvents_EnableMod_tooltip": "Activa o desactiva todo el sistema de Misiones y Eventos en el servidor items Pager",
+
+  "Sandbox_MissionsEventsDivider0": "===EVENTO DE ZOMBIS===",
+
+  "Sandbox_MissionsEvents_M1_Enable": "Activar evento de zombis",
+  "Sandbox_MissionsEvents_M1_Enable_tooltip": "Habilita o deshabilita el evento de hordas de zombis (Evento 1)",
+  "Sandbox_MissionsEvents_M1_Zombies": "Cantidad de zombis",
+  "Sandbox_MissionsEvents_M1_Zombies_tooltip": "Cantidad minima y maxima de zombis que se spawnean en el evento (recomendado usar mas de 30 y no mas de 80, algunos podrian no aparecer)",
+  "Sandbox_MissionsEvents_M1_Cooldown": "Tiempo maximo del evento",
+  "Sandbox_MissionsEvents_M1_Cooldown_tooltip": "Tiempo de espera antes de poder volver a activar el evento de zombis",
+  "Sandbox_MissionsEvents_M1_Rewards": "Lista de items a pagar",
+  "Sandbox_MissionsEvents_M1_Rewards_tooltip": "Items que se entregan como recompensa al completar el evento de zombis (separados por coma) junto con la horda aparece una mochila",
+
+  "Sandbox_MissionsEventsDivider1": "===EVENTO DE ITEMS===",
+
+  "Sandbox_MissionsEvents_M2_Enable": "Activar evento de Items",
+  "Sandbox_MissionsEvents_M2_Enable_tooltip": "Habilita o deshabilita el evento de recoleccion de items (Evento 2) los items son siempre los mismos en cada categoria",
+  "Sandbox_MissionsEvents_M2_Carpentry": "Activar mision de carpinteria",
+  "Sandbox_MissionsEvents_M2_Carpentry_tooltip": "Permite que aparezca la mision de carpinteria dentro del Evento 2 (si activas las 2, esto se vuelve random)",
+  "Sandbox_MissionsEvents_M2_Electrician": "Activar mision de electricista",
+  "Sandbox_MissionsEvents_M2_Electrician_tooltip": "Permite que aparezca la mision de electricista dentro del Evento 2 (si activas las 2, esto se vuelve random)",
+  "Sandbox_MissionsEvents_M2_Duration": "Tiempo para completar la mision",
+  "Sandbox_MissionsEvents_M2_Duration_tooltip": "Tiempo en minutos que tiene el jugador para completar la mision antes de fallar,(una ves activada la mision si o si debes terminarla, no te dejara activar otra mision) recomendado mas de 550 minutos = a 1 hora en la vida real",
+  "Sandbox_MissionsEvents_M2_Cooldown": "Cooldown para volver a usar",
+  "Sandbox_MissionsEvents_M2_Cooldown_tooltip": "Tiempo de espera en horas antes de poder volver a iniciar el Evento 2 (si colocas 30 horas en sandbox = a 1 hora en la vida real )",
+  "Sandbox_MissionsEvents_M2_RewardsCarpentry": "Lista de items a pagar en carpinteria",
+  "Sandbox_MissionsEvents_M2_RewardsCarpentry_tooltip": "Items que se entregan como recompensa en la mision de carpinteria ( capasidad maxima del bolso 18, los item no deben pasar este limite) el bolso suelta en el piso",
+  "Sandbox_MissionsEvents_M2_RewardsElectrician": "Lista de items a pagar en electricista",
+  "Sandbox_MissionsEvents_M2_RewardsElectrician_tooltip": "Items que se entregan como recompensa en la mision de electricista ( capasidad maxima del bolso 18, los item no deben pasar este limite) el bolso suelta en el piso"
+}

@@ -1,0 +1,5 @@
+*mq06_gunshop_search
+#name Main-06. Gunshop Search
+#desc The captain is worried that the communication with the command center has been cut off. She wants to gather supplies to prepare for a long-term operation. Search the gunshop in Westpoint to find any remaining supplies and report the situation to the captain.
+
+

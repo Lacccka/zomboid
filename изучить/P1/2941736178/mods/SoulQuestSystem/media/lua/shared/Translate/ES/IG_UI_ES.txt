@@ -1,0 +1,36 @@
+IGUI_ES = {
+    IGUI_ItemCat_Quest = "Misión",
+
+    IGUI_XP_Quests = "Misiones",
+    IGUI_XP_Quests_QuestLog = "Registro de Misiones",
+    IGUI_XP_Quests_ActiveQuests = "Misiones Activas",
+    IGUI_XP_TaskStatus_Completed = "[COMPLETADA] ",
+    IGUI_XP_TaskStatus_Delivered = "[ENTREGADA] ",
+    IGUI_XP_TaskStatus_Done = "[HECHA] "
+    IGUI_XP_TaskStatus_Failed = "[FALLIDA] ",
+    IGUI_XP_TaskStatus_Obtained = "[OBTENIDA] ",
+    IGUI_XP_TaskStatus_Updated = "[ACTUALIZADA] ",
+
+    IGUI_Decline = "Rechazar",
+    IGUI_Dismiss = "Descartar",
+
+    IGUI_XP_Factions = "Facciones",
+
+    IGUI_Factions_Template_Tier1 = "Desconocido",
+    IGUI_Factions_Template_Tier2 = "Neutral",
+    IGUI_Factions_Template_Tier3 = "Regular",
+    IGUI_Factions_Template_Tier4 = "Amistoso",
+    IGUI_Factions_Template_Tier5 = "Confiable",
+
+    IGUI_Quest_ThankYouTester = "Completaste esta prueba. Hazme saber tus pensamientos al respecto.",
+
+    IGUI_Rewards = "Recompensas:"
+
+    IGUI_WorldEventName_TEST = "Mapache Hablador",
+    IGUI_WorldEventName_TEST1 = "Mapache Hablador",
+    IGUI_WorldEventName_TEST2 = "Spiffo",
+    IGUI_WorldEventName_TEST3 = "Spiffo Regular",
+    IGUI_WorldEventName_TEST4 = "Spiffo Amistoso",
+    IGUI_WorldEventName_TEST5 = "Spiffo Confiable"
+    IGUI_WorldEventName_TEST5 = "Trusted Spiffo",
+}

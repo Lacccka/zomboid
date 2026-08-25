@@ -1,0 +1,5 @@
+ItemName_PTBR = {
+    ItemName_Base.Pager = "Pager",
+    ItemName_PagerMod.PagerTower = "Torre de Pager",
+    ItemName_PagerMod.TowerSchematic = "Esquemas da Torre de Pager",
+}

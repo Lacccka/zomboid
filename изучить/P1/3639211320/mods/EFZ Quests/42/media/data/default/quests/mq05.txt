@@ -1,0 +1,36 @@
+#quest mq05_to_the_river
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|mq05_active|true
+        #action SetFlag|mq05_started|true
+        #action SetFlag|mq05_muldraugh_corridor|false
+        #action SetFlag|mq05_westpoint_route|false
+        #action SetFlag|mq05_signal_planted|false
+        #action SetFlag|mq05_returned_to_bunker|false
+        #action SetFlag|mq05_reported_to_captain|false
+        #action UnlockTask|mq05_to_the_river|t1
+    #task t1
+        #set GotoLocation|10582,9137,10599,9155,0|true
+        #action SetFlag|mq05_muldraugh_corridor|true
+        #action UnlockTask|mq05_to_the_river|t2
+    #task t2
+        #set GotoLocation|11648,7029,11694,7098,0|true
+        #action SetFlag|mq05_westpoint_route|true
+        #action UnlockTask|mq05_to_the_river|t3
+    #task t3
+        #set WaitUntil|time|true|1
+        #action SetFlag|mq05_signal_planted|true
+        #action RunScript|mq05_signal.txt,landing
+        #action SetFlag|mq05_returned_to_bunker|true
+        #action UnlockTask|mq05_to_the_river|t4
+    #task t4
+        #set RaiseFlag|mq05_reported_to_captain
+    #task t5|unlocked|hidden
+        #set TaskCondition|mq05_to_the_river|t1,t2,t3,t4
+        #action Reward|EFZ.SupplyTicket,15,rare|EFZ.WoundTimeReducer,1,special
+        #action SetFlag|mq05_active|false
+        #action SetFlag|mq05_completed|true
+        #action SetFlag|mq06_unlocked|true
+        #action CompleteQuest|mq05_to_the_river
+
+

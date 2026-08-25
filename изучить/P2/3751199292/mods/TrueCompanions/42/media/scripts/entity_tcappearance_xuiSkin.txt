@@ -1,0 +1,32 @@
+module Base
+{
+    /*
+     * Display name + crafting-menu icon for the Appearance Workstation.
+     * Format taken from media/scripts/entities/animals/workstations/
+     * entity_feedingtrough_xuiSkin.txt.
+     *
+     * LuaWindowClass = ISEntityWindow is the vanilla entity window. This station's own
+     * UI is opened from our context-menu hook instead (UiConfig.uiEnabled is false),
+     * but the field is required, so it points at the vanilla default.
+     *
+     * ICON. This takes a BUILD-menu texture name, not an item name, and an unknown one
+     * is not an error you can see in game -- you get a blank tile in the Build menu and
+     * one WARN line at boot. Build_Sidetable is used by vanilla's own xuiSkin scripts,
+     * so it is certain to resolve, and a small item of bedroom furniture is the closest
+     * stock picture to a vanity.
+     *
+     * NOTE ON TRANSLATION: DisplayName here is raw English, like every vanilla xuiSkin
+     * entry. Script-side display names do not flow through BanditsNPC.T, so this one
+     * string stays English regardless of language pack. Everything the station's own UI
+     * shows IS keyed and translatable.
+     */
+    xuiSkin default
+    {
+        entity ES_TCAppearanceStation
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Appearance Workstation,
+            Icon = Build_Sidetable,
+        }
+    }
+}

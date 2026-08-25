@@ -1,0 +1,58 @@
+-- Replace vanilla radio hiss/tune FMOD with a near-silent clip (B42 often ignores volume=0 on events).
+-- Restless Dreams music uses RestlessDreamsSeg## via BWORadio only.
+module Base
+{
+    sound VehicleRadioButton
+    {
+        category = Vehicle,
+        clip { file = media/sound/radio_silent.ogg, volume = 0.01, }
+    }
+
+    sound VehicleRadioStatic
+    {
+        category = Vehicle,
+        clip { file = media/sound/radio_silent.ogg, volume = 0.01, }
+    }
+
+    sound VehicleRadioProgram
+    {
+        category = Vehicle,
+        clip { file = media/sound/radio_silent.ogg, volume = 0.01, }
+    }
+
+    sound VehicleRadioTuneIn
+    {
+        category = Vehicle,
+        clip { file = media/sound/radio_silent.ogg, volume = 0.01, }
+    }
+
+    sound VehicleRadioZap
+    {
+        category = Vehicle,
+        clip { file = media/sound/radio_silent.ogg, volume = 0.01, }
+    }
+
+    sound RadioStatic
+    {
+        category = Object,
+        clip { file = media/sound/radio_silent.ogg, volume = 0.01, distanceMax = 100, }
+    }
+
+    sound RadioTalk
+    {
+        category = Object,
+        clip { file = media/sound/radio_silent.ogg, volume = 0.01, distanceMax = 100, }
+    }
+
+    sound RadioZap
+    {
+        category = Object,
+        clip { file = media/sound/radio_silent.ogg, volume = 0.01, distanceMax = 100, }
+    }
+
+    sound TuneIn
+    {
+        category = Object,
+        clip { file = media/sound/radio_silent.ogg, volume = 0.01, }
+    }
+}

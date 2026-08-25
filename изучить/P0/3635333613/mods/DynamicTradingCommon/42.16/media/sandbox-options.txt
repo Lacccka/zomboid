@@ -1,0 +1,408 @@
+VERSION = 1,
+
+option DynamicTrading.InflationDecay
+{
+    type = double,
+    default = 0.01,
+    min = 0.0,
+    max = 1.0,
+    page = DynamicTradingEconomy,
+    translation = DynamicTrading.InflationDecay,
+}
+
+option DynamicTrading.PriceBuyMult
+{
+    type = double,
+    default = 1.0,
+    min = 0.1,
+    max = 10.0,
+    page = DynamicTradingEconomy,
+    translation = DynamicTrading.PriceBuyMult,
+}
+
+option DynamicTrading.PriceSellMult
+{
+    type = double,
+    default = 0.5,
+    min = 0.0,
+    max = 5.0,
+    page = DynamicTradingEconomy,
+    translation = DynamicTrading.PriceSellMult,
+}
+
+option DynamicTrading.StockMult
+{
+    type = double,
+    default = 1.0,
+    min = 0.1,
+    max = 5.0,
+    page = DynamicTradingEconomy,
+    translation = DynamicTrading.StockMult,
+}
+
+option DynamicTrading.RarityBonus
+{
+    type = integer,
+    default = 0,
+    min = -50,
+    max = 100,
+    page = DynamicTradingEconomy,
+    translation = DynamicTrading.RarityBonus,
+}
+
+option DynamicTrading.CategoryInflation
+{
+    type = double,
+    default = 0.05,
+    min = 0.0,
+    max = 1.0,
+    page = DynamicTradingEconomy,
+    translation = DynamicTrading.CategoryInflation,
+}
+
+option DynamicTrading.MaxLogs
+{
+    type = integer,
+    default = 12,
+    min = 5,
+    max = 50,
+    page = DynamicTradingRadio,
+    translation = DynamicTrading.MaxLogs,
+}
+
+option DynamicTrading.MaxGameplayLogs
+{
+    type = integer,
+    default = 30,
+    min = 10,
+    max = 100,
+    page = DynamicTradingRadio,
+    translation = DynamicTrading.MaxGameplayLogs,
+}
+
+option DynamicTrading.DisableNightScanGate
+{
+    type = boolean,
+    default = false,
+    page = DynamicTradingRadio,
+    translation = DynamicTrading.DisableNightScanGate,
+}
+
+option DynamicTrading.RadarScanElectricityXP
+{
+    type = double,
+    default = 0.05,
+    min = 0.0,
+    max = 5.0,
+    page = DynamicTradingRadio,
+    translation = DynamicTrading.RadarScanElectricityXP,
+}
+
+option DynamicTrading.WalkieDropChance
+{
+    type = double,
+    default = 2.0,
+    min = 0.0,
+    max = 100.0,
+    page = DynamicTradingRadio,
+    translation = DynamicTrading.WalkieDropChance,
+}
+
+
+option DynamicTrading.EventChance
+{
+    type = integer,
+    default = 80,
+    min = 1,
+    max = 100,
+    page = DynamicTradingEvents,
+    translation = DynamicTrading.EventChance,
+}
+
+option DynamicTrading.AllowSeasonalEvents
+{
+    type = boolean,
+    default = true,
+    page = DynamicTradingEvents,
+    translation = DynamicTrading.AllowSeasonalEvents,
+}
+
+option DynamicTrading.AllowMetaEvents
+{
+    type = boolean,
+    default = true,
+    page = DynamicTradingEvents,
+    translation = DynamicTrading.AllowMetaEvents,
+}
+
+option DynamicTrading.AllowHardcoreEvents
+{
+    type = boolean,
+    default = true,
+    page = DynamicTradingEvents,
+    translation = DynamicTrading.AllowHardcoreEvents,
+}
+
+
+
+
+
+option DynamicTrading.V2_FlashEventMinDuration
+{
+    type = integer,
+    default = 24,
+    min = 1,
+    max = 168,
+    page = DynamicTradingEvents,
+    translation = DynamicTrading.V2_FlashEventMinDuration,
+}
+
+option DynamicTrading.V2_FlashEventMaxDuration
+{
+    type = integer,
+    default = 72,
+    min = 1,
+    max = 336,
+    page = DynamicTradingEvents,
+    translation = DynamicTrading.V2_FlashEventMaxDuration,
+}
+
+option DynamicTrading.FactionFlashMinActive
+{
+    type = integer,
+    default = 1,
+    min = 0,
+    max = 10,
+    page = DynamicTradingEvents,
+    translation = DynamicTrading.FactionFlashMinActive,
+}
+
+option DynamicTrading.FactionFlashMaxActive
+{
+    type = integer,
+    default = 1,
+    min = 0,
+    max = 10,
+    page = DynamicTradingEvents,
+    translation = DynamicTrading.FactionFlashMaxActive,
+}
+
+option DynamicTrading.NPCTradePopPercent
+{
+    type = integer,
+    default = 40,
+    min = 0,
+    max = 100,
+    page = DynamicTradingNPC,
+    translation = DynamicTrading.NPCTradePopPercent,
+}
+
+option DynamicTrading.NPCTradeEligiblePercent
+{
+    type = integer,
+    default = 100,
+    min = 0,
+    max = 100,
+    page = DynamicTradingNPC,
+    translation = DynamicTrading.NPCTradeEligiblePercent,
+}
+
+option DynamicTrading.NPCTradingWalkHours
+{
+    type = double,
+    default = 1.0,
+    min = 0.1,
+    max = 24.0,
+    page = DynamicTradingNPC,
+    translation = DynamicTrading.NPCTradingWalkHours,
+}
+
+option DynamicTrading.NPCTradingStayHours
+{
+    type = double,
+    default = 24.0,
+    min = 0.5,
+    max = 72.0,
+    page = DynamicTradingNPC,
+    translation = DynamicTrading.NPCTradingStayHours,
+}
+
+option DynamicTrading.NPCDepartureVisibleHours
+{
+    type = double,
+    default = 6.0,
+    min = 1.0,
+    max = 48.0,
+    page = DynamicTradingNPC,
+    translation = DynamicTrading.NPCDepartureVisibleHours,
+}
+
+option DynamicTrading.TraderBudgetPercent
+{
+    type = double,
+    default = 10.0,
+    min = 0.5,
+    max = 100.0,
+    page = DynamicTradingEconomy,
+    translation = DynamicTrading.TraderBudgetPercent,
+}
+
+option DynamicTrading.ColonyWealth
+{
+    type = integer,
+    default = 10000,
+    min = 0,
+    max = 1000000,
+    page = DynamicTradingEconomy,
+    translation = DynamicTrading.ColonyWealth,
+}
+
+option DynamicTrading.FactionStartPop
+{
+    type = integer,
+    default = 3,
+    min = 1,
+    max = 100,
+    page = DynamicTradingSimulation,
+    translation = DynamicTrading.FactionStartPop,
+}
+
+option DynamicTrading.FactionDailyConsumption
+{
+    type = double,
+    default = 1.0,
+    min = 0.1,
+    max = 5.0,
+    page = DynamicTradingSimulation,
+    translation = DynamicTrading.FactionDailyConsumption,
+}
+
+option DynamicTrading.FactionGrowthChance
+{
+    type = integer,
+    default = 50,
+    min = 0,
+    max = 100,
+    page = DynamicTradingSimulation,
+    translation = DynamicTrading.FactionGrowthChance,
+}
+
+option DynamicTrading.GlobalRecruitCount
+{
+    type = integer,
+    default = 5,
+    min = 0,
+    max = 50,
+    page = DynamicTradingSimulation,
+    translation = DynamicTrading.GlobalRecruitCount,
+}
+
+option DynamicTrading.FactionDeathThreshold
+{
+    type = integer,
+    default = 3,
+    min = 1,
+    max = 30,
+    page = DynamicTradingSimulation,
+    translation = DynamicTrading.FactionDeathThreshold,
+}
+
+option DynamicTrading.MaxFactionsPerTown
+{
+    type = integer,
+    default = 2,
+    min = 1,
+    max = 5,
+    page = DynamicTradingSimulation,
+    translation = DynamicTrading.MaxFactionsPerTown,
+}
+
+option DynamicTrading.MaxFactionsPerCounty
+{
+    type = integer,
+    default = 6,
+    min = 1,
+    max = 30,
+    page = DynamicTradingSimulation,
+    translation = DynamicTrading.MaxFactionsPerCounty,
+}
+
+option DynamicTrading.FactionRespawnChance
+{
+    type = integer,
+    default = 10,
+    min = 0,
+    max = 100,
+    page = DynamicTradingSimulation,
+    translation = DynamicTrading.FactionRespawnChance,
+}
+
+option DynamicTrading.FactionRespawnDelayDays
+{
+    type = integer,
+    default = 30,
+    min = 0,
+    max = 365,
+    page = DynamicTradingSimulation,
+    translation = DynamicTrading.FactionRespawnDelayDays,
+}
+
+option DynamicTrading.FactionRespawnBaseAvoidDays
+{
+    type = integer,
+    default = 45,
+    min = 0,
+    max = 365,
+    page = DynamicTradingSimulation,
+    translation = DynamicTrading.FactionRespawnBaseAvoidDays,
+}
+
+option DynamicTrading.FactionRespawnBaseReuseChance
+{
+    type = integer,
+    default = 5,
+    min = 0,
+    max = 100,
+    page = DynamicTradingSimulation,
+    translation = DynamicTrading.FactionRespawnBaseReuseChance,
+}
+
+option DynamicTrading.FactionConsumptionMult
+{
+    type = double,
+    default = 1.0,
+    min = 0.1,
+    max = 10.0,
+    page = DynamicTradingSimulation,
+    translation = DynamicTrading.FactionConsumptionMult,
+}
+
+option DynamicTrading.BuildingMaterialMult
+{
+    type = double,
+    default = 1.0,
+    min = 0.1,
+    max = 10.0,
+    page = DynamicTradingSimulation,
+    translation = DynamicTrading.BuildingMaterialMult,
+}
+
+option DynamicTrading.ProductionMult
+{
+    type = double,
+    default = 1.0,
+    min = 0.1,
+    max = 10.0,
+    page = DynamicTradingSimulation,
+    translation = DynamicTrading.ProductionMult,
+}
+
+option DynamicTrading.ZombieThreatMult
+{
+    type = double,
+    default = 1.0,
+    min = 0.1,
+    max = 50.0,
+    page = DynamicTradingSimulation,
+    translation = DynamicTrading.ZombieThreatMult,
+}

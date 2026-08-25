@@ -1,0 +1,11 @@
+*mq14_access_code_t1
+#name Go to the Military Research Facility
+*mq14_access_code_t2
+#name Gather the related materials about the Delta Facility
+*mq14_access_code_t3
+#name Return to the Bunker
+*mq14_access_code_t4
+#name Report to the Captain
+
+
+

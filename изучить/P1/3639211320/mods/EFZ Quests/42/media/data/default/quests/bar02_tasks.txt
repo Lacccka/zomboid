@@ -1,0 +1,6 @@
+*bar02_black_label_t1
+#name Find the Rare Alcohol
+*bar02_black_label_t2
+#name Deliver to the Bartender
+
+

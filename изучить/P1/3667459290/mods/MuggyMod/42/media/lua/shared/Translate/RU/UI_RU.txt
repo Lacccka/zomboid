@@ -1,0 +1,13 @@
+UI_RU = {
+    UI_Trading_TradeWithNPC = "Торговля с NPC",
+    UI_Trading_DoNothing = "Ничего не делать",
+    UI_Trading_Trade = "Торговать",
+    UI_Trading_Value = "Ценность: ",
+    UI_Trading_YourItems = "Ваши предметы",
+    UI_Trading_AvailableRewards = "Доступные награды",
+    UI_Info_DefaultHeader = "Информация",
+    UI_Info_OK = "ОК",
+    UI_Dialogue_PressToContinue = "Нажмите [E] чтобы продолжить...",
+    UI_InfoNode_PartsProduction_Header = "Производство деталей:",
+    UI_InfoNode_PartsProduction_Body = "Гололента обновления получена... обновление функции 'Производство деталей' (запас электронного лома доступен раз в день).",
+}

@@ -1,0 +1,17 @@
+module Base
+{
+
+/************************Electronics************************/
+	
+	item MuggyHolotape
+	{
+		DisplayName = Sink Project: Muggy,
+		DisplayCategory = Electronics,
+		ItemType = base:normal,
+		Weight = 0.05,
+		Icon = MuggyHolotape,
+		StaticModel = ElectronicsScrap,
+		WorldStaticModel = ElectronicsScrap,
+		Tags = base:miscelectronic;base;hasmetal,
+	}
+}

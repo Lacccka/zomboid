@@ -1,0 +1,8 @@
+*doc02_infection_profile_t1
+#name 감염자 100마리 처치하기
+*doc02_infection_profile_t2
+#name 닥터에게 결과 보고하기
+
+
+
+

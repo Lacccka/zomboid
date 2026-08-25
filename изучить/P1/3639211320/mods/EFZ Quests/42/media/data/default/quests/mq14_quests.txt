@@ -1,0 +1,6 @@
+*mq14_access_code
+#name Main-14. Access Code
+#desc The captain reviewed the 'Nv-01 Control Plan' and decided to search the military research facility near Rosewood to find additional clues about the Delta Facility. You need to search the facility and deliver the related materials to the captain.
+
+
+

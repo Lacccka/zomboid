@@ -1,0 +1,9 @@
+*mq15_countdown_t1
+#name Enter the Delta Facility
+*mq15_countdown_t2
+#name Search the facility
+*mq15_countdown_t3
+#name Stop the self-destruct procedure
+*mq15_countdown_t4
+#name Escape through the entrance in 10 minutes
+

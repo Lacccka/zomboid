@@ -1,0 +1,6 @@
+*gun01_armory_cleanup
+#name GUN-01. Armory Cleanup
+#desc The gunner is having a hard time finding the ammunition he needs. The ammunition in the armory is a mess. He asks me to gather 2 9mm Ammunition Boxes, 2 .45 Ammunition Boxes, and 3 5.56mm Ammunition Boxes to deliver.
+
+
+

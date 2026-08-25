@@ -1,0 +1,13 @@
+*facility
+#m There's equipment here that can send a transmission over long range. Looks like there's still some power left.
+#m Let's turn it on and try to contact headquarters.
+#exit
+
+*static
+#m I tried to send a report over long-range comms, but all I got back was crackling static.
+#m No response. All I can do is hope someone out there heard it.
+#exit
+
+
+
+

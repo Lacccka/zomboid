@@ -1,0 +1,12 @@
+*mq02_first_step_t1
+#name Go to the Surface
+*mq02_first_step_t2
+#name Arrive at the Coordinates
+*mq02_first_step_t3
+#name Wait for the Signal Correction to Complete
+*mq02_first_step_t4
+#name Return to the Bunker
+*mq02_first_step_t5
+#name Report to the Captain
+
+

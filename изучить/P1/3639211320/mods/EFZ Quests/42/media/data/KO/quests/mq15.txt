@@ -1,0 +1,55 @@
+#quest mq15_countdown
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|mq15_active|true
+        #action SetFlag|mq15_started|true
+        #action SetFlag|mq15_facility_entered|false
+        #action SetFlag|mq15_override_success|false
+        #action SetFlag|mq15_override_commands_found|false
+        #action SetFlag|mq15_escape_success|false
+        #action SetFlag|mq15_escape_failed|false
+        #action UnlockTask|mq15_countdown|t1,fail_death
+    #task t1
+        #set GotoLocation|20133,553,0|building|true
+        #action SetFlag|mq15_facility_entered|true
+        #action RunScript|mq15_facility.txt,entry_broadcast
+        #action UnlockTask|mq15_countdown|loot_a,loot_b,loot_c,t2,ctx_stop,t3
+    #task loot_a|hidden
+        #set LootContainer|filingcabinet|20150,538,0|EFZ.OverrideCommand,false,오버라이드 명령 A
+    #task loot_b|hidden
+        #set LootContainer|desk|20162,499,1|EFZ.OverrideCommand,false,오버라이드 명령 B
+    #task loot_c|hidden
+        #set LootContainer|locker|20179,485,0|EFZ.OverrideCommand,false,오버라이드 명령 C
+    #task t2
+        #set FindItem|EFZ.OverrideCommand,3
+        #action SetFlag|mq15_override_commands_found|true
+    #task ctx_stop|hidden
+        #set ContextAction|자폭 멈추기|20166,462,0|5,Loot|mq15_facility.txt,try_stop|mq15_override_success
+    #task t3
+        #set RaiseFlag|mq15_override_success
+        #action CreateHorde|20168,479,0|40|true
+        #action CreateHorde|20180,509,0|40|true
+        #action CreateHorde|20184,491,0|40|true
+        #action CreateHorde|20164,520,0|40|true
+        #action CreateHorde|20143,530,0|40|true
+        #action CreateHorde|20141,533,0|40|true
+        #action CreateHorde|20133,543,0|40|true
+        #action UnlockTask|mq15_countdown|t4,fail_timer
+    #task t4
+        #set GotoLocation|20132,551,20134,554,0|true
+        #action SetFlag|mq15_escape_success|true
+        #action RunScript|mq15_endings.txt,good_ending
+        #action SetFlag|mq15_active|false
+        #action SetFlag|mq15_completed|true
+        #action CompleteQuest|mq15_countdown
+    #task fail_timer|hidden
+        #set WaitUntil|time|true|10
+        #action SetFlag|mq15_escape_failed|true
+        #action RunScript|mq15_endings.txt,bad_ending
+        #action SetFlag|mq15_active|false
+        #action FailQuest|mq15_countdown
+    #task fail_death|hidden
+        #set PlayerDeath
+        #action SetFlag|mq15_escape_failed|true
+        #action SetFlag|mq15_active|false
+        #action FailQuest|mq15_countdown

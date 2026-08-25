@@ -1,0 +1,1223 @@
+#is_flag captain_intro,true
+    #jump loop
+
+*captain_intro
+#m 캡틴|captain.png|"왔군요. 닥터가 곧 깨어날 거라더니."
+#m 캡틴|captain.png|"저는 테일러 대위에요. 포트 녹스의 군수장교이고, 지금은 이 벙커의 시설 관리를 맡고 있죠."
+#reveal captain
+#set_flag captain_intro,true
+#jump loop
+
+*loop
+#is_flag mq01_active,true
+    #is_flag mq01_captain_debriefed,false
+        #jump mq01_intro
+#jump loop_regular
+
+*loop_regular
+#m 캡틴|captain.png|"정신만 차리면 우리 모두 살아남을 수 있을 거예요."
+#choice
+    loop_ask|질문한다.
+    loop_quest|중요 임무에 관하여 이야기한다.
+    loop_subquest|도울 일에 관해 얘기한다.
+    loop_trade|거래한다.
+    dialogue_exit|자리를 떠난다.
+
+*loop_ask
+#m 캡틴|captain.png|"뭔가 물어볼 게 있나요?"
+#choice
+    loop_ask_about_bunker|벙커에 관하여...
+    loop_ask_about_supplies|물자에 관하여...
+    loop_ask_about_you|당신에 관하여...
+    loop_regular|다른 주제를 꺼낸다.
+
+*loop_ask2
+#m 캡틴|captain.png|"더 이야기하고 싶은 게 있나요?"
+#choice
+    loop_ask_about_bunker|벙커에 관하여...
+    loop_ask_about_supplies|물자에 관하여...
+    loop_ask_about_you|당신에 관하여...
+    loop_regular|다른 주제를 꺼낸다.
+
+*loop_ask_about_bunker
+#m 캡틴|captain.png|"여긴 포트 녹스 외곽의 지하 벙커예요. 미국 정부 소유의 금괴를 보관하는 장소 중 하나죠."
+#m 캡틴|captain.png|"천재지변으로부터 미국 정부의 자산을 안전하게 보호하는 게 운영 목적이긴 한데... 실제로 들어와 보니 금괴는 없었고, 아마 다른 목적으로 지어진 것 같아요."
+#m 캡틴|captain.png|"지금은 시설이 원활하게 작동하지만, 수도랑 전기가 끊긴 다음이 문제네요."
+#m 캡틴|captain.png|"혹시라도 외부에서 발전기를 구할 수 있다면 제 뒤에 있는 다목적실에 설치해 주세요. 그쪽에 설치하면 발전기에서 나오는 유독가스를 환기할 수 있을 거예요."
+#m 캡틴|captain.png|"그리고 지하 거주동 다목적실은 계단을 올라가면 있다고 하는데... 그 계단을 어디서 찾아야 할지 모르겠네요. 어쩌면 당신이 설계도를 참조해서 직접 찾아낼 수도 있을 거예요."
+#jump loop_ask2
+
+*loop_ask_about_supplies
+#m 캡틴|captain.png|"식량과 생필품은 바텐더에게. 약품은 닥터에게 가면 돼요."
+#m 캡틴|captain.png|"무기는 거너가 담당하고, 기타 장구류는 디자이너와 상의하세요."
+#m 캡틴|captain.png|"대부분은 벙커에도 꼭 필요한 물자라 무턱대고 내줄 수는 없어요. 뭔가 교환할 만한 물건을 가져오면 내주도록 할게요."
+#m 캡틴|captain.png|"미안해요. 비상 상황이기도 하고, 벙커 운영이 녹록치 않은지라 어쩔 수 없네요."
+#m 캡틴|captain.png|"혹시 본인이 직접 관리하고 싶은 물자가 있으면 거주동에 보관해 주세요. 거주동은 엘리베이터를 타고 갈 수 있어요(엘리베이터 앞에서 E키 누르기)."
+#jump loop_ask2
+
+*loop_ask_about_you
+#m 캡틴|captain.png|"다시 소개하죠. 저는 테일러 대위입니다. 포트 녹스의 군수장교이고, 이 벙커의 시설 관리를 맡고 있죠."
+#m 캡틴|captain.png|"물론 이곳에 저보다 상급자가 없어서 사실상 여기 책임자처럼 되긴 했는데... 여하튼."
+#m 캡틴|captain.png|"용무가 있으면 언제든 찾아오세요. 바쁘지 않다면 최대한 들어줄게요."
+#jump loop_ask2
+
+*loop_trade
+#m 캡틴|captain.png|"벙커 재고에서 필요한 걸 최대한 내드릴게요."
+#trade captain
+    #buyback_clear
+    #m 캡틴|captain.png|"필요한 게 더 생기면 말하세요."
+    #exit
+#m 캡틴|captain.png|"다음에 필요한 게 생기면 다시 들르세요."
+#jump loop_regular
+
+*loop_subquest
+#is_quest cap04_last_report|unlocked,uncompleted,unfailed
+    #jump cap04_remind
+#is_quest cap04_last_report|completed
+    #jump cap04_after
+#is_quest cap03_chain_break|unlocked,uncompleted,unfailed
+    #jump cap03_remind
+#is_quest cap03_chain_break|completed
+    #is_quest cap04_last_report|locked
+        #is_quest mq12_city_conquest|completed
+            #jump cap04_offer
+    #jump cap03_after
+#is_quest cap02_house_repair|unlocked,uncompleted,unfailed
+    #jump cap02_remind
+#is_quest cap02_house_repair|completed
+    #is_quest cap03_chain_break|locked
+        #jump cap03_offer
+    #jump cap02_after
+#is_quest cap01_inventory_check|unlocked,uncompleted,unfailed
+    #jump cap01_remind
+#is_quest cap01_inventory_check|completed
+    #is_quest cap02_house_repair|locked
+        #jump cap02_offer
+    #jump cap01_after
+#is_quest cap01_inventory_check|locked
+    #jump cap01_offer
+#m 캡틴|captain.png|"당장은 따로 부탁할 게 없어요. 다른 주제를 이야기해 볼까요?"
+#jump loop_regular
+
+*cap01_offer
+#m 캡틴|captain.png|"이 벙커는 꽤 오랫동안 관리가 안 된 거 같네요. 군수품 출입대장이 엉망이에요. 여기에 더해서 물자도 꽤 누락됐네요."
+#m 캡틴|captain.png|"서류상으로는 식량이 더 많아야 하는데, 벙커의 창고에서는 발견할 수가 없네요."
+#m 캡틴|captain.png|"혹시 괜찮다면 식량을 좀 구해다 줄 수 있을까요?"
+#choice
+    cap01_accept|수락한다.
+    cap01_decline|나중에 이야기한다.
+#jump loop_regular
+
+*cap01_accept
+#m 캡틴|captain.png|"고마워요. 잘 부탁해요."
+#quest_unlock cap01_inventory_check
+#jump loop_regular
+
+*cap01_decline
+#m 캡틴|captain.png|"알겠어요. 물자 상황이 급하지만, 바쁘면 어쩔 수 없죠. 나중에 다시 이야기해요."
+#jump loop_regular
+
+*cap01_remind
+#is_task cap01_inventory_check|t1|uncompleted
+    #m 캡틴|captain.png|"부탁한 식량은 챙겨 왔나요?"
+    #deliver cap01_inventory_check|t1
+        #m 캡틴|captain.png|"확인했어요. 덕분에 재고를 다시 맞출 수 있겠네요."
+        #exit
+    #m 캡틴|captain.png|"준비가 되면 언제든 가져다 주세요."
+    #jump loop_regular
+#is_task cap01_inventory_check|t2|uncompleted
+    #jump cap01_report
+#m 캡틴|captain.png|"지금은 다른 건 없어요. 잠시 뒤에 다시 이야기하죠."
+#jump loop_regular
+
+*cap01_report
+#is_flag cap01_reported_to_captain,true
+    #jump cap01_after
+#is_task cap01_inventory_check|t1|uncompleted
+    #m 캡틴|captain.png|"먼저 필요한 물자를 전달해 주세요."
+    #exit
+#m 캡틴|captain.png|"도움이 됐어요. 덕분에 엉망이던 재고가 조금 숨통이 트였네요. 적어도 쌀이 없어서 밥을 굶는 일은 없을 거 같아요."
+#stat_inc captain|reputation|10
+#set_flag cap01_reported_to_captain,true
+#jump loop_regular
+
+*cap01_after
+#m 캡틴|captain.png|"재고가 정리돼서 한결 낫네요. 덕분에 앞으로 물자 관리가 수월해질 거예요."
+#jump loop_regular
+
+*cap02_offer
+#m 캡틴|captain.png|"벙커 시설이 여기저기 손상돼서 전기랑 배관을 보수하려고 해요. 그런데 자재가 많이 모자라네요."
+#m 캡틴|captain.png|"부족한 자재를 적어드릴 테니 구해다 주실 수 있을까요?"
+#choice
+    cap02_accept|수락한다.
+    cap02_decline|나중에 이야기한다.
+#jump loop_regular
+
+*cap02_accept
+#m 캡틴|captain.png|"도와줘서 고마워요. 자재만 모이면 바로 수리를 시작할게요."
+#quest_unlock cap02_house_repair
+#jump loop_regular
+
+*cap02_decline
+#m 캡틴|captain.png|"알겠어요. 여유가 생기면 다시 이야기해요."
+#jump loop_regular
+
+*cap02_remind
+#is_task cap02_house_repair|t1|uncompleted
+    #m 캡틴|captain.png|"부탁드린 자재를 가져오셨나요?"
+    #deliver cap02_house_repair|t1
+        #m 캡틴|captain.png|"확인했어요. 이 정도면 벙커 정비를 시작할 수 있겠네요."
+        #exit
+    #m 캡틴|captain.png|"준비가 되면 언제든 가져다 주세요."
+    #jump loop_regular
+#is_task cap02_house_repair|t2|uncompleted
+    #jump cap02_report
+#m 캡틴|captain.png|"지금은 다른 건 없어요. 잠시 뒤에 다시 이야기하죠."
+#jump loop_regular
+
+*cap02_report
+#is_flag cap02_reported_to_captain,true
+    #jump cap02_after
+#is_task cap02_house_repair|t1|uncompleted
+    #m 캡틴|captain.png|"먼저 필요한 자재를 전달해 주세요."
+    #jump loop_regular
+#is_task cap02_house_repair|t2|uncompleted
+    #m 캡틴|captain.png|"자재 덕분에 생명 유지 장치랑 배관을 손볼 수 있을 거예요. 정말 고마워요."
+    #stat_inc captain|reputation|10
+    #set_flag cap02_reported_to_captain,true
+    #exit
+#m 캡틴|captain.png|"수리 준비는 끝났어요. 곧 진행할게요."
+#jump loop_regular
+
+*cap02_after
+#m 캡틴|captain.png|"수리 자재 덕분에 벙커 시설 보수가 가능해졌어요. 조만간 예비 동력과 조명이 한결 안정될 거예요."
+#jump loop_regular
+
+*cap03_offer
+#m 캡틴|captain.png|"지휘소랑 연락이 끊긴 게 여기 무전 설비 때문일 수도 있어요. 송수신 장비를 더 강한 걸로 교체해 보고 싶어요."
+#m 캡틴|captain.png|"휴대용이든 차량용이든, 성능이 강력한 무전기를 구해오면 지휘소와 다시 연결될 수도 있을 것 같아요. 도와주실 수 있나요?"
+#choice
+    cap03_accept|수락한다.
+    cap03_decline|나중에 이야기한다.
+#jump loop_regular
+
+*cap03_accept
+#m 캡틴|captain.png|"고마워요. 장비만 확보되면 바로 교체 작업에 들어갈게요."
+#quest_unlock cap03_chain_break
+#jump loop_regular
+
+*cap03_decline
+#m 캡틴|captain.png|"알겠어요. 여유가 생기면 다시 이야기해요."
+#jump loop_regular
+
+*cap03_remind
+#is_task cap03_chain_break|t1|uncompleted
+    #m 캡틴|captain.png|"무전기들은 준비됐나요? 가능한 한 상태가 좋은 걸로 부탁드릴게요."
+    #deliver cap03_chain_break|t1
+        #m 캡틴|captain.png|"확인했어요. 송신기부터 교체해 볼게요. 기대해도 될 것 같네요."
+        #exit
+    #m 캡틴|captain.png|"준비가 되면 언제든 가져다 주세요."
+    #jump loop_regular
+#is_task cap03_chain_break|t2|uncompleted
+    #jump cap03_report
+#m 캡틴|captain.png|"지금은 다른 건 없어요. 잠시 뒤에 다시 이야기하죠."
+#jump loop_regular
+
+*cap03_report
+#is_flag cap03_reported_to_captain,true
+    #jump cap03_after
+#is_task cap03_chain_break|t1|uncompleted
+    #m 캡틴|captain.png|"먼저 부탁드린 무전기를 전달해 주세요."
+    #jump loop_regular
+#is_task cap03_chain_break|t2|uncompleted
+    #m 캡틴|captain.png|"이 무전기면 지휘소 주파수를 다시 잡아볼 수 있겠어요. 희망을 주셔서 정말 고마워요."
+    #stat_inc captain|reputation|10
+    #set_flag cap03_reported_to_captain,true
+    #jump loop_regular
+#m 캡틴|captain.png|"새 무전기를 세팅하는 대로 연락을 시도해 볼게요."
+#jump loop_regular
+
+*cap03_after
+#m 캡틴|captain.png|"무전기를 교체하니 잡음이 한결 줄었어요. 지휘소와도 곧 연결이 될 거예요. 큰 도움이 됐어요."
+#jump loop_regular
+
+*cap04_offer
+#m 캡틴|captain.png|"아직도 사령부와 상급 부대가 계속 묵묵부답이에요."
+#m 캡틴|captain.png|"어쩌면 이 벙커에 있는 무전기로 전파가 안 닿는 거일 수도 있으니, 외부의 장거리 송신기를 이용해 봐야 할 거 같아요."
+#m 캡틴|captain.png|"제가 알기로는 루이빌 진입 검문소 쪽에 장거리 송신기가 있는데, 그쪽으로 가서 시도해 주실 수 있을까요?"
+#choice
+    cap04_accept|수락한다.
+    cap04_decline|나중에 이야기한다.
+#jump loop_regular
+
+*cap04_accept
+#m 캡틴|captain.png|"고마워요. 보고를 시도해 보고 결과를 알려 주세요."
+#quest_unlock cap04_last_report
+#jump loop_regular
+
+*cap04_decline
+#m 캡틴|captain.png|"알겠어요. 시간이 날 때 다시 이야기해요."
+#jump loop_regular
+
+*cap04_remind
+#is_task cap04_last_report|t1|uncompleted
+    #m 캡틴|captain.png|"루이빌 입구 검문소에 장거리 통신 설비가 준비돼 있을 거예요."
+    #jump loop_regular
+#is_task cap04_last_report|t2|uncompleted
+    #m 캡틴|captain.png|"루이빌 입구 검문소에 설치된 장거리 송신기를 이용해 보고를 올려 주세요."
+    #m 캡틴|captain.png|"보고를 시도해 보고 결과를 알려 주세요."
+    #jump loop_regular
+#is_task cap04_last_report|t3|uncompleted
+    #jump cap04_report
+#m 캡틴|captain.png|"지금은 다른 건 없어요. 잠시 뒤에 다시 이야기하죠."
+#jump loop_regular
+
+*cap04_report
+#is_flag cap04_reported_to_captain,true
+    #jump cap04_after
+#is_task cap04_last_report|t2|uncompleted
+    #m 캡틴|captain.png|"보고 시도가 끝나면 알려 주세요."
+    #jump loop_regular
+#is_task cap04_last_report|t3|uncompleted
+    #m 캡틴|captain.png|"응답이 없었다고요...? 예상은 했지만 막상 들으니 마음이 무겁네요."
+    #m 캡틴|captain.png|"앞으로는 우리 힘으로 버텨야 하는군요... 그래도 도와줘서 고마워요."
+    #stat_inc captain|reputation|15
+    #set_flag cap04_reported_to_captain,true
+    #jump loop_regular
+#jump loop_regular
+
+*cap04_after
+#m 캡틴|captain.png|"사령부 쪽은 끝내 응답이 없네요. 마음은 쓰리지만, 이미 각오하고 있었어요."
+#m 캡틴|captain.png|"이제 우리가 할 수 있는 건 여기 사람들을 지키는 것뿐이에요."
+#jump loop_regular
+
+*loop_quest
+#is_quest mq15_countdown|unlocked,uncompleted,unfailed
+    #jump mq15_remind
+#is_quest mq15_countdown|completed
+    #jump mq15_after
+#is_quest mq15_countdown|failed
+    #jump mq15_failed
+#is_flag mq15_unlocked,true
+    #jump mq15_offer
+#is_quest mq14_access_code|unlocked,uncompleted,unfailed
+    #jump mq14_remind
+#is_quest mq14_access_code|completed
+    #jump mq14_after
+#is_flag mq14_unlocked,true
+    #jump mq14_offer
+#is_quest mq13_chain_link|unlocked,uncompleted,unfailed
+    #jump mq13_remind
+#is_quest mq13_chain_link|completed
+    #jump mq13_after
+#is_flag mq13_unlocked,true
+    #jump mq13_offer
+#is_quest mq12_city_conquest|unlocked,uncompleted,unfailed
+    #jump mq12_remind
+#is_quest mq12_city_conquest|completed
+    #jump mq12_after
+#is_flag mq12_unlocked,true
+    #jump mq12_offer
+#is_quest mq11_last_ticketing|unlocked,uncompleted,unfailed
+    #jump mq11_remind
+#is_quest mq11_last_ticketing|completed
+    #jump mq11_after
+#is_flag mq11_unlocked,true
+    #jump mq11_offer
+#is_quest mq10_departure|unlocked,uncompleted,unfailed
+    #jump mq10_remind
+#is_quest mq10_departure|completed
+    #jump mq10_after
+#is_flag mq10_unlocked,true
+    #jump mq10_offer
+#is_quest mq09_lunatic|unlocked,uncompleted,unfailed
+    #jump mq09_remind
+#is_quest mq09_lunatic|completed
+    #jump mq09_after
+#is_flag mq09_unlocked,true
+    #jump mq09_offer
+#is_quest mq08_dirty_slate|unlocked,uncompleted,unfailed
+    #jump mq08_remind
+#is_quest mq08_dirty_slate|completed
+    #jump mq08_after
+#is_flag mq08_unlocked,true
+    #jump mq08_offer
+#is_quest mq07_maze|unlocked,uncompleted,unfailed
+    #jump mq07_remind
+#is_quest mq07_maze|completed
+    #jump mq07_after
+#is_flag mq07_unlocked,true
+    #jump mq07_offer
+#is_quest mq06_gunshop_search|unlocked,uncompleted,unfailed
+    #jump mq06_remind
+#is_quest mq06_gunshop_search|completed
+    #jump mq06_after
+#is_flag mq06_unlocked,true
+    #jump mq06_offer
+#is_quest mq05_to_the_river|unlocked,uncompleted,unfailed
+    #jump mq05_remind
+#is_quest mq05_to_the_river|completed
+    #jump mq05_after
+#is_flag mq05_unlocked,true
+    #jump mq05_offer
+#is_quest mq04_lost_map|unlocked,uncompleted,unfailed
+    #jump mq04_remind
+#is_quest mq04_lost_map|completed
+    #jump mq04_after
+#is_flag mq04_unlocked,true
+    #jump mq04_offer
+#is_quest mq03_first_raid|unlocked,uncompleted,unfailed
+    #jump mq03_remind
+#is_quest mq03_first_raid|completed
+    #jump mq03_after
+#is_flag mq03_unlocked,true
+    #jump mq03_offer
+#is_flag mq02_unlocked,false
+    #m 캡틴|captain.png|"지금은 추가로 맡길 임무가 없어요. 몸을 추스르거나 다른 일을 하는 게 좋겠어요."
+    #jump loop_regular
+#is_quest mq02_first_step|completed
+    #jump mq02_after
+#is_quest mq02_first_step|unlocked,uncompleted,unfailed
+    #jump mq02_remind
+#jump mq02_offer
+
+*mq09_offer
+#is_quest mq09_lunatic|locked
+    #m 캡틴|captain.png|"지난 며칠동안 클린 슬레이트 작전과 연관이 있을 법한 기밀자료를 계속 살펴봤어요. 그런데 이상한 기록이 있더라고요.
+    #m 캡틴|captain.png|"팬데믹 직전에 '델타 시설'이라는 곳의 인원들을 대상으로 '최종 점검'이란 절차를 진행하기 위해 로즈우드 교정시설에 수감했다는 내용이었어요."
+    #m 캡틴|captain.png|"여기는 헌병대가 사용하던 곳일까요? 왜 이런 기록이 여기에 남아 있는지 이해가 되지 않네요. 직접 확인해 봐야 할 것 같아요."
+    #m 캡틴|captain.png|"파일럿에게 로즈우드 투입이 가능한지 문의해 주세요. 교정시설로 가서 단서를 확인해 봐야 할 거 같아요."
+    #choice
+        mq09_accept|수락한다.
+        mq09_decline|나중에 이야기한다.
+    #jump loop_regular
+#m 캡틴|captain.png|"파일럿에게 로즈우드 투입이 가능한지 먼저 확인해 봐 주세요."
+#jump loop_regular
+
+*mq09_accept
+#m 캡틴|captain.png|"고맙습니다. 교정시설을 수색해 '델타 시설'과 관련된 단서를 찾으면 곧장 알려 주세요."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq09_lunatic
+#jump loop_regular
+
+*mq09_decline
+#m 캡틴|captain.png|"알겠습니다. 준비가 되면 다시 이야기하죠."
+#jump loop_regular
+
+*mq09_remind
+#is_task mq09_lunatic|t1|uncompleted
+    #m 캡틴|captain.png|"파일럿에게 로즈우드 상공으로 투입할 수 있는지 확인해 주세요. 그것부터 확실하게 해야 합니다."
+    #jump loop_regular
+#is_task mq09_lunatic|t2|uncompleted
+    #m 캡틴|captain.png|"마치릿지에 하차했다면 로즈우드 교정시설까지 도보로 이동해 주세요."
+    #jump loop_regular
+#is_task mq09_lunatic|t3|uncompleted
+    #m 캡틴|captain.png|"교정시설 내부의 서류 캐비닛을 확인해 주세요. '델타 시설'과 관련된 단서를 찾을 수 있을지도 몰라요."
+    #jump loop_regular
+#is_task mq09_lunatic|t4|uncompleted
+    #m 캡틴|captain.png|"단서를 확보했다면 바로 벙커로 복귀해 주세요."
+    #jump loop_regular
+#is_task mq09_lunatic|t5|uncompleted
+    #jump mq09_report
+#m 캡틴|captain.png|"로즈우드에서 어떤 단서를 찾았는지 알려 주세요."
+#jump loop_regular
+
+*mq09_report
+#is_flag mq09_voice_log_found,false
+    #m 캡틴|captain.png|"교정시설에서 단서를 먼저 확보해 주세요."
+    #jump loop_regular
+#m 캡틴|captain.png|"로즈우드에서 무슨 기록을 찾았나요?"
+#choice
+    mq09_report_voice|녹음 기록을 들려준다.
+
+*mq09_report_voice
+#m 캡틴|captain.png|"'델타 시설을 멈추기엔 늦었다'라... 그리고 탈출 수단이 준비되어 있다고요?"
+#m 캡틴|captain.png|"이것도 봐요. 여기, 테이프에 써져 있는 녹음 날짜를 보니 팬데믹 사태가 일어난 당일이에요."
+#m 캡틴|captain.png|"어쩌면... 시설 인원들이 탈출하기 전에 팬데믹 사태가 일어났으니, 탈출선이 아예 출발하지 못했을 수도 있겠어요."
+#m 캡틴|captain.png|"육로는 봉쇄되어 있지만, 만약 비행기로 탈출할 수 있다면... 이럴 시간이 없네요. 어서 계획을 세워 봐야겠어요!"
+#stat_inc captain|reputation|15
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|10
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|10
+#set_flag mq09_reported_to_captain,true
+#exit
+
+*mq09_after
+#m 캡틴|captain.png|"로즈우드에서 찾은 단서를 바탕으로 계획을 세우는 중이에요. 곧 자세히 말씀드릴게요."
+#jump loop_regular
+
+*mq10_offer
+#is_quest mq10_departure|locked
+    #m 캡틴|captain.png|"마침 왔군요. 루이빌 공항을 정찰할 계획을 세우고 있어요."
+    #m 캡틴|captain.png|"다만 그 전에, 언제나처럼 GPS 보정이 필요해요. 아마 공항 근처에서 보정이 가능할 거예요."
+    #m 캡틴|captain.png|"좌표에 도착하면 GPS 신호를 유도해 주세요. 파일럿이 신호를 받으면 바로 갈 거예요."
+    #choice
+        mq10_accept|수락한다.
+        mq10_decline|나중에 이야기한다.
+    #jump loop_regular
+#m 캡틴|captain.png|"루이빌 국제공항 외곽 좌표까지 이동해 GPS 신호를 유도해 주세요."
+#jump loop_regular
+
+*mq10_accept
+#m 캡틴|captain.png|"정말 고마워요. 신호만 잡히면 파일럿이 바로 갈 거예요."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq10_departure
+#jump loop_regular
+
+*mq10_decline
+#m 캡틴|captain.png|"알겠어요. 준비가 되면 다시 이야기하죠."
+#jump loop_regular
+
+*mq10_remind
+#is_task mq10_departure|t1|uncompleted
+    #m 캡틴|captain.png|"웨스트포인트를 지나 루이빌 항구/공항 외곽 좌표까지 육로로 이동해 주세요. 지도에 표시해 두었어요."
+    #jump loop_regular
+#is_task mq10_departure|t2|uncompleted
+    #m 캡틴|captain.png|"좌표에 도착했다면 1분만 대기해 주세요. 신호가 잡히면 파일럿이 회수하러 갈 거예요."
+    #jump loop_regular
+#is_task mq10_departure|t3|uncompleted
+    #jump mq10_report
+#m 캡틴|captain.png|"공항 외곽에서 본 상황을 알려 주세요."
+#jump loop_regular
+
+*mq10_report
+#is_flag mq10_signal_guided,false
+    #m 캡틴|captain.png|"먼저 현장에서 GPS 신호 유도를 완료해 주세요."
+    #jump loop_regular
+#m 캡틴|captain.png|"신호 유도는 문제 없었나요? 공항 쪽 상황은 어땠죠?"
+#choice
+    mq10_report_brief|파일럿의 보고를 전한다.
+
+*mq10_report_brief
+#m 캡틴|captain.png|"비행기 대부분이 출항하지 못한 것 같다고요? 어쩌면 델타 시설 인원들을 위한 탈출 수단도 아직 남아있을지 모르겠네요."
+#m 캡틴|captain.png|"어쩌면 생각보다 일이 수월하게 흘러갈 수도 있어요. 이제 어떤 게 탈출선이었는지 알아내기만 하면 돼요."
+#m 캡틴|captain.png|"고마워요. 곧 계획을 세워서 알려 드릴게요."
+#stat_inc captain|reputation|15
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|10
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|10
+#set_flag mq10_reported_to_captain,true
+#exit
+
+*mq11_offer
+#is_quest mq11_last_ticketing|locked
+    #m 캡틴|captain.png|"탈출 계획을 짜고 있는데, 그 전에 공항에 비행기가 남아 있는지 확인해야 해요."
+    #m 캡틴|captain.png|"델타 시설 인원들이 준비했던 탈출선이 그중에 있다면, 지금이라도 우리가 쓸 수 있는지부터 알아야 하니까요."
+    #m 캡틴|captain.png|"비행기와 공항 유류고 상태를 확인해 줄 수 있나요?"
+    #choice
+        mq11_accept|수락한다.
+        mq11_decline|나중에 이야기한다.
+    #jump loop_regular
+#m 캡틴|captain.png|"공항 격납고로 가면 확인할 수 있을 거예요."
+#jump loop_regular
+
+*mq11_accept
+#m 캡틴|captain.png|"고마워요. 아마 공항 격납고로 가면 확인할 수 있을 거예요."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq11_last_ticketing
+#jump loop_regular
+
+*mq11_decline
+#m 캡틴|captain.png|"알겠어요. 준비가 되면 다시 이야기하죠."
+#jump loop_regular
+
+*mq11_remind
+#is_task mq11_last_ticketing|t8|locked
+    #m 캡틴|captain.png|"비행기 격납고를 확인해 주세요. 좌표는 노트에 적어 두었어요."
+    #jump loop_regular
+#is_task mq11_last_ticketing|t8|uncompleted
+    #m 캡틴|captain.png|"확인할 곳을 모두 둘러봤다면 바로 벙커로 돌아와 주세요."
+    #jump loop_regular
+#is_task mq11_last_ticketing|t9|uncompleted
+    #jump mq11_report
+#m 캡틴|captain.png|"상황을 정리하고 있어요. 돌아오면 바로 알려 주세요."
+#jump loop_regular
+
+*mq11_report
+#is_flag mq11_all_checked,false
+    #m 캡틴|captain.png|"비행기의 상태를 모두 확인해 주세요. 하나도 빠짐없이요."
+    #jump loop_regular
+#is_flag mq11_returned_to_bunker,false
+    #m 캡틴|captain.png|"보고하기 전에 벙커로 복귀해 주세요."
+    #jump loop_regular
+#m 캡틴|captain.png|"결과가 어땠나요? 사용할 수 있는 탈출선이 있었나요?"
+#choice
+    mq11_report_summary|하나도 없었다.
+
+*mq11_report_summary
+#m 캡틴|captain.png|"네? 연료도 없었고, 남은 비행기도 없다고요...?"
+#m 캡틴|captain.png|"...그렇군요."
+#m 캡틴|captain.png|"안타깝게도 탈출선은 이미 떠났나 보네요... 계획을 처음부터 다시 세워봐야겠어요."
+#set_flag mq11_reported_to_captain,true
+#exit
+
+*mq11_after
+#m 캡틴|captain.png|"......"
+#jump loop_regular
+
+*mq15_offer
+#is_quest mq15_countdown|locked
+    #m 캡틴|captain.png|"안 좋은 소식이 있어요. 델타 시설로 보낸 병력들이... 전부 연락두절됐습니다. 복귀한 인원이 아무도 없어요."
+    #m 캡틴|captain.png|"추가 인원을 투입해 탐색을 더 진행하고 싶지만... 솔직히 말해서, 아무리 많은 병력을 투입해도 다시 돌아오지 못할 것 같다는 예감이 들어요."
+    #m 캡틴|captain.png|"하지만, 당신이라면... 가능하지 않을까요?"
+    #m 캡틴|captain.png|"당신은 우리 중 유일하게 그 지옥 같은 바깥을 개척하는 데에 성공했잖아요. 그러니 이번에도 성공하지 않을까, 그런 생각이 들어요."
+    #m 캡틴|captain.png|"혹시라도 도와줄 생각이 있다면 말해 주세요. 델타 시설까지 진입할 수 있게 해드릴게요."
+    #choice
+        mq15_accept|델타 시설로 진입한다.
+        mq15_decline|준비하고 다시 이야기한다.
+    #jump loop_regular
+#jump loop_regular
+
+*mq15_accept
+#m 캡틴|captain.png|"좋아요. 지금부터는 당신 판단에 맡길게요. 무사히 돌아와 주세요."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq15_countdown
+#fade_out black|1
+#wait 1
+#npc_remove
+#lua EFZ.TriggerDeployDialogueDeltaFacility()
+#restock
+#wait 1
+#fade_in 2
+#exit
+
+*mq15_decline
+#m 캡틴|captain.png|"알겠어요. 준비가 되면 다시 이야기해요."
+#jump dialogue_exit
+
+*mq15_remind
+#is_flag mq15_facility_entered,false
+    #m 캡틴|captain.png|"델타 시설 진입 준비가 되면 말해 주세요. 지금이라도 포기해도 괜찮아요."
+    #choice
+        mq15_retry|델타 시설로 진입한다.
+        loop_regular|지금은 아니다.
+    #jump loop_regular
+#is_flag mq15_override_success,false
+    #m 캡틴|captain.png|"시설 가동을 멈출 방법을 찾아야 해요. 단서가 될 만한 걸 뭐든 확보해 주세요."
+    #m 캡틴|captain.png|"다시 진입해야 한다면 준비가 되는 대로 말해 주세요."
+    #choice
+        mq15_retry|델타 시설로 다시 진입한다.
+        loop_regular|지금은 아니다.
+    #jump loop_regular
+#is_task mq15_countdown|t4|uncompleted
+    #m 캡틴|captain.png|"봉쇄 재개까지 시간이 없어요. 출입구로 탈출하세요!"
+    #jump loop_regular
+#m 캡틴|captain.png|"무사히 돌아와 주세요."
+#jump loop_regular
+
+*mq15_failed
+#m 캡틴|captain.png|"괜찮아요? 안색이 좋지 않은데요. 마치 악몽이라도 꾼 사람처럼..."
+#m 캡틴|captain.png|"델타 시설로 진입할 준비는 되셨나요? 준비가 되면 말해 주세요. 인원도 미리 점검하시고요."
+#choice
+    mq15_retry|진입한다.
+    loop_regular|지금은 아니다.
+
+*mq15_retry
+#m 캡틴|captain.png|"좋아요. 꼭 돌아와야 해요."
+#quest_reset mq15_countdown
+#set_flag mq15_facility_entered,false|mq15_override_success,false|mq15_override_commands_found,false|mq15_escape_success,false|mq15_escape_failed,false|mq15_active,false|mq15_completed,false
+#quest_unlock mq15_countdown
+#lua EFZ.AssignDeployActive()
+#fade_out black|1
+#wait 1
+#npc_remove
+#lua EFZ.TriggerDeployDialogueDeltaFacility()
+#restock
+#wait 1
+#fade_in 2
+#exit
+
+*mq15_after
+#m 캡틴|captain.png|"한시름 놓고 나니 오히려 어떻게 해야 할지 막막해지네요."
+#m 캡틴|captain.png|"그래도 모두들 살아남았다는 게 더 중요하겠죠. 모두 당신 덕분이에요."
+#m 캡틴|captain.png|"앞으로도 잘 부탁해요."
+#jump loop_regular
+
+*mq14_offer
+#is_quest mq14_access_code|locked
+    #m 캡틴|captain.png|"지난번에 확보한 'Nv-01 통제계획'만으로는 델타 시설의 정체를 전부 알 수 없었어요. 추가 단서를 찾으려면 군 연구단지를 직접 살펴봐야 할 것 같아요."
+    #m 캡틴|captain.png|"확인해 보니 이 문서는 로즈우드 근처의 군 연구기지에서 작성된 것으로 나와요."
+    #m 캡틴|captain.png|"해당 기지의 위치는 지도에 표시해 줄 테니 가서 확인해 주실 수 있을까요?"
+    #choice
+        mq14_accept|수락한다.
+        mq14_decline|나중에 이야기한다.
+    #jump loop_regular
+#m 캡틴|captain.png|"로즈우드 인근 군 연구단지에서 델타 시설 관련 자료를 찾아 주세요. 좌표는 노트에 적어 뒀어요."
+#jump loop_regular
+
+*mq14_accept
+#m 캡틴|captain.png|"고마워요. 시간이 많지 않으니 곧바로 이동해 주세요."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq14_access_code
+#jump loop_regular
+
+*mq14_decline
+#m 캡틴|captain.png|"알겠어요. 준비가 되면 다시 이야기하죠."
+#jump loop_regular
+
+*mq14_remind
+#is_flag mq14_lab_reached,false
+    #m 캡틴|captain.png|"로즈우드 근처의 군 연구단지로 이동해 주세요. 위치는 노트에 표시해 줄게요."
+    #jump loop_regular
+#is_flag mq14_document_found,false
+    #m 캡틴|captain.png|"연구단지 안을 수색해 델타 시설 관련 자료를 확보해 주세요. 뭐라도 좋으니까 확보하는 대로 가져다 주세요."
+    #jump loop_regular
+#is_task mq14_access_code|t3|uncompleted
+    #m 캡틴|captain.png|"자료를 확보했다면 바로 벙커로 돌아와 주세요."
+    #jump loop_regular
+#is_task mq14_access_code|t4|uncompleted
+    #jump mq14_report
+#m 캡틴|captain.png|"보고할 내용이 있나요?"
+#jump loop_regular
+
+*mq14_report
+#is_flag mq14_document_found,false
+    #m 캡틴|captain.png|"먼저 연구단지에서 자료를 확보해 주세요."
+    #jump loop_regular
+#m 캡틴|captain.png|"암호문이라... 그러고 보니 기억나나요? 당신을 발견한 곳에서 여러 가지 문서도 함께 발견했다고 했잖아요."
+#m 캡틴|captain.png|"그것들 말고도 이런저런 문서가 벙커 여기저기서 많이 발견됐는데... 어쩌면 그중 하나가 이 암호문을 해석할 수 있는 난수표일지도 모르겠네요."
+#choice
+    mq14_report_results|암호문 문서를 전달한다.
+
+*mq14_report_results
+#m 캡틴|captain.png|"...으음, 역시 벙커에서 발견했던 문서 중 하나와 대응 키가 일치하네요. 잠깐만요..."
+#m 캡틴|captain.png|"해독됐어요. 델타 시설은 생화학 무기 연구소였고, 위치는..."
+#m 캡틴|captain.png|"...여기? 이 벙커가 델타 시설이었다고요?"
+#m 캡틴|captain.png|"아무래도... 당신이 발견된 병동이 연구시설의 일부였던 것 같아요. 여기 보면 병동을 통해 연구소로 진입할 수 있다고 되어 있네요."
+#m 캡틴|captain.png|"이건 조사해볼 만한 가치가 있어요. 준비되는 대로 가용 인원을 모아 시설을 탐사할게요."
+#stat_inc captain|reputation|15
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|15
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|10
+#set_flag mq14_reported_to_captain,true
+#exit
+
+*mq14_after
+#m 캡틴|captain.png|"암호문 덕분에 이 벙커 아래에 결정적인 단서가 있다는 게 확인됐어요. 최하층 연구 구역 진입 준비를 서두르고 있어요."
+#jump loop_regular
+
+*mq13_offer
+#is_quest mq13_chain_link|locked
+    #m 캡틴|captain.png|"감염억제제 재고가 바닥나기 직전이에요. 핵폭발이 일어날 때까지 최대한 수색을 많이 하려면 감염억제제를 더 확보해야 해요."
+    #m 캡틴|captain.png|"루이빌의 성 페레그린 병원과 피네건 연구소를 수색해 감염억제제를 모아 주세요. 좌표는 노트에 표시해 둘게요."
+    #m 캡틴|captain.png|"한 여섯 상자 정도만 확보하면 한동안 숨통이 트일 거예요."
+    #choice
+        mq13_accept|수락한다.
+        mq13_decline|나중에 이야기한다.
+    #jump loop_regular
+#m 캡틴|captain.png|"병원과 연구소 두 곳에서 감염억제제 상자 여섯 개를 확보해 주세요. 좌표는 지도에 표시했어요."
+#jump loop_regular
+
+*mq13_accept
+#m 캡틴|captain.png|"고마워요. 시간이 없으니 바로 움직여 주세요."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq13_chain_link
+#jump loop_regular
+
+*mq13_decline
+#m 캡틴|captain.png|"알겠어요. 준비가 되면 다시 이야기하죠."
+#jump loop_regular
+
+*mq13_remind
+#is_flag mq13_boxes_collected,false
+    #m 캡틴|captain.png|"성 페레그린 병원과 피네건 연구소 건물을 수색해 감염억제제 상자 여섯 개를 확보해 주세요."
+    #jump loop_regular
+#is_task mq13_chain_link|t4|uncompleted
+    #m 캡틴|captain.png|"감염억제제를 확보했다면 바로 벙커로 돌아와 주세요."
+    #jump loop_regular
+#is_task mq13_chain_link|t5|uncompleted
+    #jump mq13_report
+#m 캡틴|captain.png|"보고할 내용이 있나요?"
+#jump loop_regular
+
+*mq13_report
+#is_flag mq13_boxes_collected,false
+    #m 캡틴|captain.png|"먼저 감염억제제 상자 여섯 개를 확보해 주세요."
+    #jump loop_regular
+#m 캡틴|captain.png|"감염억제제는 잘 확보했나요? 현장에서 특이한 건 없었나요?"
+#choice
+    mq13_report_results|감염억제제 사이에서 발견된 문서를 전달한다.
+
+*mq13_report_results
+#m 캡틴|captain.png|"덕분에 벙커가 당분간 버틸 수 있겠어요. 감염억제제는 다른 보급품으로 교환해 주라고 미리 말해놨으니 필요한 보급품을 준비하는 데에 쓰세요."
+#m 캡틴|captain.png|"그런데 이 문서... 'Nv-01 통제계획'이라고요?"
+#m 캡틴|captain.png|"바이러스의 통제에 실패하면 CDC와 군을 동원해 감염억제제를 전국에 배포하고, 그것조차 실패하면 델타 시설을 자폭시킨다는 계획이었다니... 팬데믹 이전부터 준비된 시나리오였네요."
+#m 캡틴|captain.png|"델타 시설의 자폭... 대체 델타 시설이 뭘까요? 어쩌면 클린 슬레이트 작전과 연관이 있을지도 모르겠어요. 닥터와 함께 문서를 분석해 볼게요. 이게 결정적인 연결 고리일지도 몰라요."
+#stat_inc captain|reputation|15
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|15
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|10
+#set_flag mq13_reported_to_captain,true
+#exit
+
+*mq13_after
+#m 캡틴|captain.png|"감염억제제 재고가 확보됐어요. 문서는 닥터와 함께 검토 중이에요."
+#jump loop_regular
+
+*mq12_offer
+#is_quest mq12_city_conquest|locked
+    #m 캡틴|captain.png|"...탈출할 벙법이 없는 게 확실해졌으니, 이제는 가능한 한 오래 버텨서 구조되는 데에 가능성을 걸 수밖에 없네요."
+    #m 캡틴|captain.png|"수색 범위를 루이빌 시내까지 넓혀서 GPS 신호를 보정해 두면 물자를 더 많이 구할 수 있을 거예요."
+    #m 캡틴|captain.png|"루이빌 시내는 이전의 투입 지점보다 훨씬 넓은 만큼, 두 군데의 좌표를 보정해야 해요. 두 좌표를 방문해서 신호 보정을 진행해 주세요."
+    #choice
+        mq12_accept|수락한다.
+        mq12_decline|나중에 이야기한다.
+    #jump loop_regular
+#m 캡틴|captain.png|"루이빌 시내 좌표 두 곳을 찍은 뒤 1분 대기하며 GPS 신호를 안정화해 주세요."
+#jump loop_regular
+
+*mq12_accept
+#m 캡틴|captain.png|"고마워요. 신호가 잡히는 대로 파일럿이 바로 회수하러 갈 거예요."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq12_city_conquest
+#jump loop_regular
+
+*mq12_decline
+#m 캡틴|captain.png|"알겠어요. 준비가 되면 다시 이야기하죠."
+#jump loop_regular
+
+*mq12_remind
+#is_flag mq12_outskirts_reached,false
+    #is_flag mq12_downtown_reached,false
+        #m 캡틴|captain.png|"루이빌 시내 좌표 두 곳 모두 도달해 GPS 신호를 잡아 주세요. 순서는 상관없어요."
+        #jump loop_regular
+#is_flag mq12_outskirts_reached,false
+    #m 캡틴|captain.png|"좌표가 하나 남았어요. 거기서도 신호를 맞춰야 해요."
+    #jump loop_regular
+#is_flag mq12_downtown_reached,false
+    #m 캡틴|captain.png|"좌표가 하나 남았어요. 거기서도 신호를 맞춰야 해요."
+    #jump loop_regular
+#is_task mq12_city_conquest|t3|uncompleted
+    #m 캡틴|captain.png|"두 좌표를 모두 찍었다면 그 자리에서 1분만 대기해 주세요. 신호가 안정화될 거예요."
+    #jump loop_regular
+#is_task mq12_city_conquest|t4|uncompleted
+    #jump mq12_report
+#m 캡틴|captain.png|"신호 보정은 잘 됐나요?"
+#jump loop_regular
+
+*mq12_report
+#is_flag mq12_signal_stabilized,false
+    #m 캡틴|captain.png|"현장에서 GPS 신호를 보정하는 게 우선이에요."
+    #jump loop_regular
+#m 캡틴|captain.png|"도심까지 신호를 늘려 뒀다니 잘했어요. 이제 루이빌 탐사를 본격적으로 시작하죠."
+#stat_inc captain|reputation|15
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|10
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|10
+#set_flag mq12_reported_to_captain,true
+#exit
+
+*mq12_after
+#m 캡틴|captain.png|"루이빌 수색 준비가 진행중이에요. 다음 단계를 곧 알려 드릴게요."
+#jump loop_regular
+
+*mq10_after
+#m 캡틴|captain.png|"공항 외곽 신호 덕분에 작전 구역을 정리했어요. 곧 세부 계획을 알려 드릴게요."
+#jump loop_regular
+
+*mq08_offer
+#is_flag mq08_captain_briefed,false
+    #m 캡틴|captain.png|"클린 슬레이트 작전 계획서... 아직도 믿기지가 않아요."
+    #m 캡틴|captain.png|"저는... 잘 모르겠네요. 어떻게 해야 할지..."
+    #m 캡틴|captain.png|"...그러고 보니, 닥터가 당신을 찾고 있었어요. 한번 가서 무슨 일인지 들어 주세요."
+    #set_flag mq08_captain_briefed,true
+    #jump loop_regular
+#m 캡틴|captain.png|"닥터가 기다리고 있어요. 의무실로 가서 이야기를 들어 주세요."
+#jump loop_regular
+
+*mq08_remind
+#is_task mq08_dirty_slate|t1|uncompleted
+    #m 캡틴|captain.png|"마치릿지의 의료시설 좌표를 지도에 표시했어요. 먼저 그 지점으로 이동해 주세요."
+    #jump loop_regular
+#is_task mq08_dirty_slate|t2|uncompleted
+    #m 캡틴|captain.png|"의료시설 안에 남아 있는 화생방 장비가 있는지 찾아봐 주세요."
+    #jump loop_regular
+#is_task mq08_dirty_slate|t3|uncompleted
+    #m 캡틴|captain.png|"장비를 찾았다면 닥터에게 바로 전달해 주세요."
+    #jump loop_regular
+#is_task mq08_dirty_slate|t4|uncompleted
+    #m 캡틴|captain.png|"닥터에게 상황을 공유하고 필요한 조치를 결정해 주세요."
+    #jump loop_regular
+#m 캡틴|captain.png|"닥터가 장비를 기다리고 있어요. 도움이 필요하면 언제든 알려 주세요."
+#jump loop_regular
+
+*mq08_after
+#m 캡틴|captain.png|"..."
+#jump loop_regular
+
+*mq07_offer
+#is_quest mq07_maze|locked
+    #m 캡틴|captain.png|"지휘통제소와 교신이 두절된 게 확실하니, 마치릿지의 부대와 접촉해서 상황을 확인해 봐야 할 것 같아요."
+    #m 캡틴|captain.png|"마치릿지에는 관광용으로 운영되는 냉전 시절 벙커가 있는데, 지금은 마치릿지의 부대가 주둔지로 사용하고 있을 가능성이 커요."
+    #m 캡틴|captain.png|"문제는 웨스트포인트 때처럼 GPS 유도가 먹히지 않아서 헬리콥터로는 접근할 수 없다는 거예요."
+    #m 캡틴|captain.png|"멀드로에서 육로를 따라 마치릿지 외곽까지 돌파한 뒤, 주둔부대의 지휘관을 만나 통신을 연결해 주세요."
+    #choice
+        mq07_accept|수락한다.
+        mq07_decline|나중에 이야기한다.
+#jump loop_regular
+
+*mq07_accept
+#m 캡틴|captain.png|"정말 고마워요. 지휘관과 만난 뒤에는 GPS 신호기를 작동시키세요. 파일럿이 데리러 갈 거예요."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq07_maze
+#jump loop_regular
+
+*mq07_decline
+#m 캡틴|captain.png|"알겠어요. 준비가 되면 다시 이야기하죠."
+#jump loop_regular
+
+*mq07_remind
+#is_task mq07_maze|t1|uncompleted
+    #m 캡틴|captain.png|"멀드로에서 출발해 마치릿지 외곽 좌표까지 먼저 도달해 주세요. 지도에 표시해 두었어요."
+    #jump loop_regular
+#is_task mq07_maze|t2|uncompleted
+    #m 캡틴|captain.png|"멀드로에서 출발해 마치릿지 외곽 좌표까지 먼저 도달해 주세요. 지도에 표시해 두었어요."
+    #jump loop_regular
+#is_task mq07_maze|t3|uncompleted
+    #m 캡틴|captain.png|"멀드로에서 출발해 마치릿지 외곽 좌표까지 먼저 도달해 주세요. 지도에 표시해 두었어요."
+    #jump loop_regular
+#is_task mq07_maze|t4|uncompleted
+    #m 캡틴|captain.png|"멀드로에서 출발해 마치릿지 외곽 좌표까지 먼저 도달해 주세요. 지도에 표시해 두었어요."
+    #jump loop_regular
+#is_task mq07_maze|t5|uncompleted
+    #jump mq07_report
+#m 캡틴|captain.png|"마치릿지에서 어떤 일이 있었는지 알려 주세요."
+#jump loop_regular
+
+*mq07_report
+#m 캡틴|captain.png|"왜 그렇게 황급하게 복귀를 요청한 거예요? 마치릿지 지휘소에서는 무언가 발견했나요?"
+#choice
+    mq07_report_plan|주둔부대는 없었고, 작전 계획을 발견했다고 전한다.
+
+*mq07_report_plan
+#m 캡틴|captain.png|"작전 계획이요?"
+#m 캡틴|captain.png|"클린 슬레이트 작전...? 녹스 컨트리를 전략핵으로 '청소'한다고요?"
+#m 캡틴|captain.png|"이런 계획을 추진하고 있었다니... 아직 대피하지 못한 사람들은 어쩌고요?"
+#m 캡틴|captain.png|"...생각을 좀 정리해 봐야겠네요."
+#stat_inc captain|reputation|10
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|10
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|10
+#set_flag mq07_reported_to_captain,true
+#exit
+
+*mq07_after
+#m 캡틴|captain.png|"..."
+#jump loop_regular
+
+*mq06_offer
+#is_quest mq06_gunshop_search|locked
+    #m 캡틴|captain.png|"이상하군요. 며칠 전부터 지휘통제소와 연락이 닿지 않아요. 지휘통제소 뿐만 아니라, 응답하는 부대가 아예 없어요."
+    #m 캡틴|captain.png|"혹시, 어쩌면, 정말 상상하기도 싫은 가정이지만... 우리가 마지막으로 살아남은 인원일지도 모르겠네요."
+    #m 캡틴|captain.png|"...이건 나중에 생각하죠. 당장 제일 큰 문제는 보급이에요. 언제까지 우리끼리 버텨야 할지 모르는 이상, 보급품을 최대한 많이 확보해 둬야 해요."
+    #m 캡틴|captain.png|"시작은 총기와 탄약을 확보하는 것부터 하는 게 좋겠네요. 거너가 무기고에 남은 물건이 슬슬 부족해지고 있다고 했거든요."
+    #m 캡틴|captain.png|"마침 웨스트포인트에 총포상이 있으니 한번 수색해 주시겠어요? 출입이 가능한 상태인지만 확인해도 충분해요."
+    #choice
+        mq06_accept|수락한다.
+        mq06_decline|나중에 이야기한다.
+#jump loop_regular
+
+*mq06_accept
+#m 캡틴|captain.png|"고마워요. 수색이 끝나면 돌아와서 보고해 주세요."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq06_gunshop_search
+#jump loop_regular
+
+*mq06_decline
+#m 캡틴|captain.png|"알겠어요. 준비가 되면 다시 이야기하죠."
+#jump loop_regular
+
+*mq06_remind
+#is_task mq06_gunshop_search|t1|uncompleted
+    #m 캡틴|captain.png|"웨스트포인트 총포상으로 이동해 주세요. 좌표는 지도에 표시해 뒀어요."
+    #jump loop_regular
+#is_task mq06_gunshop_search|t2|uncompleted
+    #m 캡틴|captain.png|"수색이 끝났다면 벙커로 복귀해 주세요."
+    #jump loop_regular
+#is_task mq06_gunshop_search|t3|uncompleted
+    #jump mq06_report
+#m 캡틴|captain.png|"수색이 어떻게 됐는지 알려 주세요."
+#jump loop_regular
+
+*mq06_report
+#m 캡틴|captain.png|"돌아왔군요. 총포상에서 성과가 좀 있었나요?"
+#choice
+    mq06_report_s2|무전 통신을 우연히 듣게 되었다.
+
+*mq06_report_s2
+#m 캡틴|captain.png|"네? 마치릿지에 주둔하고 있는 병력이 있다는 무전을 들었다고요?"
+#m 캡틴|captain.png|"호송대가 오고갈 정도라면... 어쩌면 마치릿지는 감염자들로부터 도시를 지키는 데에 성공했을지도 모르겠네요."
+#m 캡틴|captain.png|"고마워요. 만약 이대로 계속 상부와 통신이 안 되면 마치릿지에 주둔하고 있는 부대와 접촉하는 것도 생각해 봐야겠어요."
+#stat_inc captain|reputation|10
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|10
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|10
+#set_flag mq06_reported_to_captain,true
+#exit
+
+*mq06_after
+#m 캡틴|captain.png|"웨스트포인트에서 들은 무전 덕분에 마치릿지 수색이 최우선 과제가 됐어요. 준비가 끝나면 바로 알려 드릴게요."
+#jump loop_regular
+
+*mq05_offer
+#is_quest mq05_to_the_river|locked
+    #m 캡틴|captain.png|"도로통제 계획을 분석해 봤어요. 멀드로 북쪽 도로를 따라가면 웨스트포인트 외곽까지 육로로 진입할 수 있겠더군요."
+    #m 캡틴|captain.png|"그리고 웨스트포인트 인근 지점에서 GPS 신호를 보정할 수 있다면 헬리콥터도 상공으로 접근할 수 있어요."
+    #m 캡틴|captain.png|"문제는 이게 시간이 얼마나 들지 모르는 위험한 임무라는 거예요. 제한된 시간 안에 긴 도로를 따라 이동해야 하는 임무니까요."
+    #m 캡틴|captain.png|"지금 투입할 수 있는 인원 중 믿을 만한 사람은 당신뿐이에요. 도와줄 수 있나요?"
+    #choice
+        mq05_accept|수락한다.
+        mq05_decline|나중에 이야기한다.
+#jump loop_regular
+
+*mq05_accept
+#m 캡틴|captain.png|"정말 고마워요. 멀드로로 나간 뒤 북쪽 도로를 따라 웨스트포인트 외곽 좌표까지 이동해 주세요."
+#m 캡틴|captain.png|"도달하면 신호기가 자동으로 설치될 거예요. 그곳에서 1분 정도만 버티면 됩니다. 파일럿이 신호를 받으면 바로 퇴출을 도와주러 갈 거예요."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq05_to_the_river
+#jump loop_regular
+
+*mq05_decline
+#m 캡틴|captain.png|"알겠어요. 준비되면 다시 이야기하죠."
+#jump loop_regular
+
+*mq05_remind
+#is_task mq05_to_the_river|t1|uncompleted
+    #m 캡틴|captain.png|"먼저 멀드로 북쪽 진입지로 이동하세요. 거기가 웨스트포인트로 향하는 길목이에요."
+    #jump loop_regular
+#is_task mq05_to_the_river|t2|uncompleted
+    #m 캡틴|captain.png|"도로를 따라 웨스트포인트 외곽 좌표까지 진입해 주세요. 지도에 표시해 두었어요."
+    #jump loop_regular
+#is_task mq05_to_the_river|t3|uncompleted
+    #m 캡틴|captain.png|"목표 지점에 도착하면 GPS 신호기가 안정화될 때까지 1분만 버텨 주세요. 파일럿이 신호를 기다리고 있어요."
+    #jump loop_regular
+#is_task mq05_to_the_river|t4|uncompleted
+    #jump mq05_report
+#m 캡틴|captain.png|"현장에서 무슨 일이 있었는지 바로 알려 주세요."
+#jump loop_regular
+
+*mq05_report
+#m 캡틴|captain.png|"돌아와 줘서 다행이에요. 덕분에 웨스트포인트까지의 공중 투입 루트를 확보했어요."
+#m 캡틴|captain.png|"이제 웨스트포인트에서의 작전도 준비할 수 있겠네요. 모두에게 큰 도움이 될 거예요."
+#stat_inc captain|reputation|15
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|10
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|15
+#set_flag mq05_reported_to_captain,true
+#exit
+
+*mq05_after
+#m 캡틴|captain.png|"웨스트포인트 투입 루트가 열렸어요. 작전 준비가 끝나면 언제든 출동할 수 있게끔 정비하고 있어요."
+#jump loop_regular
+
+*mq04_offer
+#is_quest mq04_lost_map|locked
+    #m 캡틴|captain.png|"보급품은 점점 떨어져 가는데, 수색 가능한 지역에 남은 물자가 점점 줄어들어서 걱정이에요."
+    #m 캡틴|captain.png|"웨스트포인트 같이 조금 더 번화한 지역에서 수색을 펼칠 수 있으면 좋을 텐데 말이죠."
+    #m 캡틴|captain.png|"문제는 웨스트포인트 쪽으로 접근할수록 GPS 유도 신호가 정상적이지 않아 헬리콥터로는 이동하기 곤란하단 거예요."
+    #m 캡틴|captain.png|"육로로 이동하자니 정보가 확실하지 않고... 혹시라도 도로가 이미 봉쇄되어 있다면 이동 자체가 불가능할 수 있으니까요."
+    #m 캡틴|captain.png|"어쩌면 멀드로 경찰서에 팬데믹 직후 작성된 도로통제 계획 같은 게 아직 남아있을지도 몰라요. 그 문서를 확보하면 지상 루트를 검토할 수 있을 거예요."
+    #m 캡틴|captain.png|"이번에도 직접 다녀와 줄 수 있나요?"
+    #choice
+        mq04_accept|수락한다.
+        mq04_decline|나중에 이야기한다.
+#jump loop_regular
+
+*mq04_accept
+#m 캡틴|captain.png|"고마워요. 문서를 확보하면 저한테 전달해주세요. 계획을 세워 볼 테니까 말이죠."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq04_lost_map
+#jump loop_regular
+
+*mq04_decline
+#m 캡틴|captain.png|"알겠어요. 준비가 되면 다시 이야기하죠."
+#jump loop_regular
+
+*mq04_remind
+#is_task mq04_lost_map|t1|uncompleted
+    #m 캡틴|captain.png|"먼저 멀드로 경찰서로 이동해 주세요. 서류는 그 안에 있을 거예요."
+    #jump loop_regular
+#is_task mq04_lost_map|t2|uncompleted
+    #m 캡틴|captain.png|"경찰서 내부의 서류 캐비닛을 살펴보세요. 행정 서류는 그런 곳에 보관되어 있을 확률이 높아요."
+    #jump loop_regular
+#is_task mq04_lost_map|t3|uncompleted
+    #jump mq04_delivery
+#is_task mq04_lost_map|t5|uncompleted
+    #jump mq04_report
+#m 캡틴|captain.png|"상황이 어떻게 돌아가는지 바로 알려 주세요."
+#jump loop_regular
+
+*mq04_delivery
+#is_flag mq04_plan_secured,false
+    #m 캡틴|captain.png|"문서를 아직 찾지 못했다면 경찰서의 파일 캐비넷 같은 곳을 확인해 보세요. 행정 서류는 그런 곳에 보관되어 있을 확률이 높아요."
+    #jump loop_regular
+#deliver mq04_lost_map|t3
+    #m 캡틴|captain.png|"잘하셨어요. 문서 상태가 양호하네요. 내용을 분석해 볼게요."
+    #m 캡틴|captain.png|"잠시만 시간을 주세요. 정리되면 곧장 결과를 말씀드릴게요."
+    #jump mq04_report
+#m 캡틴|captain.png|"필요하다면 문서를 확보한 뒤 다시 가져다 주세요."
+#jump loop_regular
+
+*mq04_report
+#m 캡틴|captain.png|"저도 그렇고, 모두가 점점 당신을 더 믿고 의지하게 되네요. 너무 고마워요."
+#stat_inc captain|reputation|10
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|10
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|10
+#m 캡틴|captain.png|"그리고 보급품 지급 신청서도 몇 장 드릴게요. 곧 웨스트포인트 쪽으로 진출할 계획을 세워보죠."
+#set_flag mq04_reported_to_captain,true
+#exit
+
+*mq04_after
+#m 캡틴|captain.png|"도로통제 계획 덕분에 웨스트포인트로 향하는 지상 루트를 찾아볼 수 있게 됐어요. 이제 다음 작전을 준비해 볼게요."
+#jump loop_regular
+
+*mq03_offer
+#is_quest mq03_first_raid|locked
+    #m 캡틴|captain.png|"벙커의 보급품이 점점 부족해지고 있어요. 이대로 가다간 탄약과 의약품이 며칠 가지 않아 바닥날 거예요."
+    #m 캡틴|captain.png|"다행히 멀드로 중심가 창고에 군 보급품 상자가 하나 보관되어 있다는 정보가 들어왔어요."
+    #m 캡틴|captain.png|"다만 현재 투입할 수 있는 인력이 없는데, 이번에도 부탁해도 될까요?"
+    #choice
+        mq03_accept|수락한다.
+        mq03_decline|나중에 이야기한다.
+#jump loop_regular
+
+*mq03_accept
+#m 캡틴|captain.png|"고마워요. 보급품 상자를 회수해서 거너에게 전달해 주세요."
+#m 캡틴|captain.png|"자세한 건 노트에 적어줄게요."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq03_first_raid
+#m 캡틴|captain.png|"임무를 마치면 곧장 돌아와 보고해 주세요. 바깥은 여전히 위험하니까요."
+#jump loop_regular
+
+*mq03_decline
+#m 캡틴|captain.png|"알겠어요. 제가 최대한 알아서 해볼게요."
+#jump loop_regular
+
+*mq03_remind
+#is_task mq03_first_raid|t5|locked
+    #m 캡틴|captain.png|"계속 어려운 부탁을 해서 정말 미안해요. 행운을 빌게요."
+    #jump loop_regular
+#is_task mq03_first_raid|t5|unlocked
+    #jump mq03_report
+
+*mq03_report
+#m 캡틴|captain.png|"정말로 고마워요. 모두가 당신 덕분에 숨통이 트였어요."
+#m 캡틴|captain.png|"이건 최소한의 보상이지만, 도움이 될 거예요. 다음에도 잘 부탁해요."
+#set_flag mq03_reported_to_captain,true
+#exit
+
+*mq03_after
+#m 캡틴|captain.png|"보급품 덕분에 벙커가 조금은 숨을 돌릴 수 있게 됐어요. 정말 수고했어요."
+#jump loop_regular
+
+*mq02_offer
+#m 캡틴|captain.png|"사실 부탁하고 싶은 일이 있어요. GPS 유도 신호가 약해져서, 지상에서 장비를 다시 조율해야 하거든요."
+#m 캡틴|captain.png|"지금 남은 인원은 부상자거나 꼭 벙커에 남아야 하는 사람뿐이라 직접 나갈 수가 없어요."
+#m 캡틴|captain.png|"바깥 상황이 위험하다는 건 알지만... 당신이라면 맡길 수 있을 것 같아요. 도와줄 수 있나요?"
+#choice
+    mq02_accept|돕겠다고 한다.
+    mq02_decline|다음에 이야기한다.
+
+*mq02_accept
+#m 캡틴|captain.png|"고맙습니다. 파일럿의 헬리콥터를 타고 지상으로 나간 뒤, 지도에 찍힌 좌표까지 이동해 주세요."
+#m 캡틴|captain.png|"현장에 도착하면 잠시 대기하세요. 신호를 보정하는 데 시간이 좀 걸릴 거예요."
+#m 캡틴|captain.png|"신호 보정은 한 번 시작되면 해당 위치에서 떠나도 중단되지 않아요. 그러니까 위험하면 꼭 몸을 피하세요."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq02_first_step
+#m 캡틴|captain.png|"신호가 안정화되면 곧장 보고 부탁합니다. 행운을 빌게요."
+#m 캡틴|captain.png|"그리고 꼭 기억해둬야 할 게 있어요. 벙커 밖으로 나간 후에는 목표 완료 여부와 상관 없이 반드시 며칠 안에 복귀해야 해요."
+#m 캡틴|captain.png|"공기 감염에 면역이 있지 않은 이상, 며칠 후에는 무조건 증상이 나타날 거니까요."
+#m 캡틴|captain.png|"물론 증상이 나타난 후에도 복귀만 할 수 있다면 감염억제제를 투여할 수 있어요. 그러니까 끝까지 포기하지 말아주세요."
+#m 캡틴|captain.png|"마지막으로 이것도 챙겨가세요. 크게 도움이 되진 않겠지만, 최소한의 방어는 가능할 거예요."
+#m 캡틴은 나에게 군용 대검을 한 자루 건네줬다.
+#add_item Base.HuntingKnife
+#m 캡틴|captain.png|"꼭 살아서 돌아오세요. 행운을 빌어요."
+#jump loop_regular
+
+*mq02_decline
+#m 캡틴|captain.png|"알겠어요. 준비가 되면 다시 이야기하죠."
+#jump loop_regular
+
+*mq02_remind
+#is_task mq02_first_step|t1|uncompleted
+    #m 캡틴|captain.png|"우선 상부 출입구로 올라가 지상으로 나가 주세요. 밖에 나가야 신호를 손볼 수 있어요."
+    #jump loop_regular
+#is_task mq02_first_step|t2|uncompleted
+    #m 캡틴|captain.png|"지도에 표시된 지점으로 이동해 주세요. 해당 지점 인근에 도착해야 보정 장비가 작동합니다."
+    #jump loop_regular
+#is_task mq02_first_step|t3|uncompleted
+    #m 캡틴|captain.png|"현장에 도착했으면 조금만 더 버텨 주세요. 신호를 안정화하는 데 시간이 필요해요."
+    #jump loop_regular
+#is_task mq02_first_step|t4|uncompleted
+    #m 캡틴|captain.png|"신호를 맞췄다면 지체하지 말고 벙커로 복귀해 주세요. 밖은 아직 안전하지 않아요."
+    #jump loop_regular
+#is_task mq02_first_step|t5|uncompleted
+    #jump mq02_report
+#m 캡틴|captain.png|"복귀하면 곧장 보고해 주세요. 지원이 필요한 일이 많거든요."
+#jump loop_regular
+
+*mq02_report
+#m 캡틴|captain.png|"돌아온 걸 보니 임무를 마친 것 같군요. 무사히 돌아와줘서 고마워요."
+#m 캡틴|captain.png|"자기 몸은 충분히 지킬 수 있는 거 같으니, 벙커 출입허가를 내줄게요. 이제부터 파일럿을 통해 보급품 수색을 나갈 수 있을 거예요."
+#m 캡틴|captain.png|"그리고 여기, 수색에 쓸 만한 물건도 드릴게요. 도움이 되길 바라요."
+#set_flag mq02_reported_to_captain,true
+#exit
+
+*mq02_after
+#m 캡틴|captain.png|"GPS 유도 신호가 안정적으로 돌아왔어요. 이제 외부에 출입하기 더 안전해졌어요."
+#m 캡틴|captain.png|"정말 고마워요. 덕분에 물자를 구해오기 수월해졌어요."
+#jump loop_regular
+
+*mq01_intro
+#m 캡틴|captain.png|"몸 상태는 어떤가요? 무슨 일이 있었는지 기억하고 있나요?"
+#choice
+    mq01_s1|전혀 기억이 없다.
+
+*mq01_s1
+#m 캡틴|captain.png|"그렇군요... 당신은 며칠 전에 이 벙커의 최하층 병동에서 발견되었어요. 설계도에 없는 장소였죠."
+#m 캡틴|captain.png|"입원 환자 같았는데 며칠 동안 방치된 것 같았어요. 우리가 발견했을 때에 이미 의식을 잃은 채 반쯤 얼어붙은 상태였으니까요."
+#m 캡틴|captain.png|"같이 발견된 기록에는 이름 외의 신원이 전부 말소되어 있었고요. 이런저런 군 문서가 함께 발견된 걸로 봐서는 당신도 군 관련 인물이 맞긴 한 거 같은데..."
+#m 캡틴|captain.png|"상부에 보고하고 싶어도 통신이 두절되어 있으니, 참 곤란하네요."
+#m 캡틴|captain.png|"...으음, 행정적인 절차는 일단 나중에 생각하죠. 어쨌든, 당분간은 이곳에 머물러야 할 거예요."
+#m 캡틴|captain.png|"그리고 이곳에 머무는 동안 외부 출입은 제한될 거예요. 바깥이 지옥이 되었으니..."
+#choice
+    mq01_s2|무슨 일이 벌어지고 있는지 묻는다.
+
+*mq01_s2
+#m 캡틴|captain.png|"3일 전, 녹스 컨트리 일대에 대규모 전염병 사태가 발생했어요."
+#m 캡틴|captain.png|"문제는 이게 평범한 전염병이 아니라는 거였죠. 이 전염병은 감염자를 극도로 공격적으로 만들어요."
+#m 캡틴|captain.png|"더불어서 죽은 사람도 다시 일으키는 것처럼 보였죠. 마치 영화 속 좀비처럼 말이에요."
+#m 캡틴|captain.png|"전염병은 혈액과 타액, 식품 섭취, 공기 감염 등 모든 경로로 전파되고, 바이러스성이라 방독면도 소용이 없는 걸로 추정돼요."
+#m 캡틴|captain.png|"그러니 당신도 조심하는 게 좋을 거예요. 밖으로 나갈 생각은 하지 말고요. 출입 허가도 안 내줄 거지만요.
+#m 캡틴|captain.png|"혹시라도 필요한 게 있으면 벙커의 물자를 담당하는 다른 사람들을 만나보세요."
+#m 캡틴|captain.png|"그리고 거주동은 지하 3층에 있어요. 엘리베이터로 내려갈 수 있으니까 참고하세요(엘리베이터 앞에서 E키를 누르기)."
+#m 캡틴|captain.png|"다만 가구 같은 게 거의 없는 곳이라 생활이 조금 불편할 수 있어요. 외부에 출입하는 병력에게 조달해 보라고 요청은 해보겠지만... 너무 큰 기대는 하지 말아주세요."
+#m 캡틴|captain.png|"설명은 이 정도입니다. 필요한 게 있으면 찾아오세요."
+#set_flag living_quarter_key,true
+#set_flag mq01_captain_debriefed,true
+#task_unlock mq01_cold_reboot|t3
+#set_flag mq01_facility_briefed,true
+#exit
+
+*dialogue_exit
+#exit
+

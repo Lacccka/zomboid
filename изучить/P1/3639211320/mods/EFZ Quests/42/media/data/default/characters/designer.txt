@@ -1,0 +1,7 @@
+#name designer|Designer
+#set_stat designer|reputation|0
+
+#desc Designer
+#desc_append A woman who used to run a clothing store in Crossroads Mall. Due to the pandemic, the store is abandoned, but she still provides clothes to the survivors in the bunker.
+#exit
+

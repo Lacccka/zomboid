@@ -1,0 +1,6 @@
+name=Pager Network
+id=PagerMod
+description=A map-wide pager messaging network for Project Zomboid B41. Built for co-op multiplayer: pagers cover the long range, walkie-talkies the medium range, and proximity voice chat the close range.
+poster=poster.png
+author=turnip
+modversion=1.0.0

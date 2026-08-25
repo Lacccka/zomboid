@@ -1,0 +1,6 @@
+*mq08_dirty_slate
+#name Main-08. Dirty Slate
+#desc The captain is shocked by the Clean Slate operation and says the doctor is looking for me. The doctor wants me to investigate the medical facility in March Ridge to find the equipment needed to protect against radiation exposure.
+
+
+

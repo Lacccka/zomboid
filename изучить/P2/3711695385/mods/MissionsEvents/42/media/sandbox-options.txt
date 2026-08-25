@@ -1,0 +1,114 @@
+VERSION = 1,
+
+option MissionsEvents.EnableMod = {
+    type = boolean,
+    default = true,
+    page = MissionsEvents,
+    translation = MissionsEvents_EnableMod,
+}
+
+option MissionsEventsDivider0 = {
+    type = boolean,
+    default = false,
+    page = MissionsEvents,
+    translation = MissionsEventsDivider0,
+}
+
+option MissionsEvents.M1_Enable = {
+    type = boolean,
+    default = true,
+    page = MissionsEvents,
+    translation = MissionsEvents_M1_Enable,
+}
+
+option MissionsEvents.M1_Zombies = {
+    type = integer,
+    default = 20,
+    min = 5,
+    max = 100,
+    page = MissionsEvents,
+    translation = MissionsEvents_M1_Zombies,
+}
+
+option MissionsEvents.M1_CooldownHours = {
+    type = integer,
+    default = 2,
+    min = 0,
+    max = 72,
+    page = MissionsEvents,
+    translation = MissionsEvents_M1_Cooldown,
+}
+
+option MissionsEvents.M1_Rewards = {
+    type = string,
+    default = Base.Axe,Base.BaseballBat,
+    page = MissionsEvents,
+    translation = MissionsEvents_M1_Rewards,
+}
+
+
+
+
+
+
+
+
+option MissionsEventsDivider1 = {
+    type = boolean,
+    default = false,
+    page = MissionsEvents,
+    translation = MissionsEventsDivider1,
+}
+
+option MissionsEvents.M2_Enable = {
+    type = boolean,
+    default = true,
+    page = MissionsEvents,
+    translation = MissionsEvents_M2_Enable,
+}
+
+option MissionsEvents.M2_Carpentry = {
+    type = boolean,
+    default = true,
+    page = MissionsEvents,
+    translation = MissionsEvents_M2_Carpentry,
+}
+
+option MissionsEvents.M2_Electrician = {
+    type = boolean,
+    default = true,
+    page = MissionsEvents,
+    translation = MissionsEvents_M2_Electrician,
+}
+
+option MissionsEvents.M2_DurationMinutes = {
+    type = integer,
+    default = 30,
+    min = 1,
+    max = 1100,
+    page = MissionsEvents,
+    translation = MissionsEvents_M2_Duration,
+}
+
+option MissionsEvents.M2_CooldownHours = {
+    type = integer,
+    default = 2,
+    min = 0,
+    max = 72,
+    page = MissionsEvents,
+    translation = MissionsEvents_M2_Cooldown,
+}
+
+option MissionsEvents.M2_RewardsCarpentry = {
+    type = string,
+    default = Base.Hammer,
+    page = MissionsEvents,
+    translation = MissionsEvents_M2_RewardsCarpentry,
+}
+
+option MissionsEvents.M2_RewardsElectrician = {
+    type = string,
+    default = Base.ElectronicsScrap,
+    page = MissionsEvents,
+    translation = MissionsEvents_M2_RewardsElectrician,
+}

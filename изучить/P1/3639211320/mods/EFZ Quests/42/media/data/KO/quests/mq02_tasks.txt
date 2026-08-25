@@ -1,0 +1,12 @@
+*mq02_first_step_t1
+#name 지상으로 이동하기
+*mq02_first_step_t2
+#name 표시된 좌표에 도착하기
+*mq02_first_step_t3
+#name 신호 보정이 완료될 때까지 기다리기
+*mq02_first_step_t4
+#name 벙커로 복귀하기
+*mq02_first_step_t5
+#name 캡틴에게 보고하기
+
+

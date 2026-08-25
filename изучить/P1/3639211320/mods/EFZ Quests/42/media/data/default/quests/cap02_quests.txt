@@ -1,0 +1,5 @@
+*cap02_house_repair
+#name CAP-02. House Repair
+#desc The captain is worried about the damaged facilities in the bunker. She needs materials to repair the place. She asks me to gather 10 Light Bulbs, 10 Electronics Scrap, 2 Bags of Concrete Powder, 2 Bags of Plaster Powder, 4 Iron Pipes, and 4 Steel Rods to deliver.
+
+

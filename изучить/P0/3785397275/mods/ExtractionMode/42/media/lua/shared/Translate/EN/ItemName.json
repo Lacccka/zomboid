@@ -1,0 +1,17 @@
+{
+    "ExtractionMode.ExtractionFlareGun": "Extraction Flare Gun",
+    "ExtractionMode.FlareRound": "Extraction Flare Round",
+    "ExtractionMode.InfectionCure": "Experimental Knox Infection Cure",
+    "ExtractionMode.SpecialDocuments": "Special Documents",
+    "ExtractionMode.CouriersLedger": "Courier's Ledger",
+    "ExtractionMode.MedicalTransportCooler": "Medical Transport Cooler",
+    "ExtractionMode.TransferManifest": "Transfer Manifest",
+    "ExtractionMode.ResearchersNotes": "Researcher's Notes",
+    "ExtractionMode.QuarantineMedicalRecords": "Quarantine Medical Records",
+    "ExtractionMode.EvacuationRecords": "Evacuation Records",
+    "ExtractionMode.MedicalTransferRecords": "Medical Transfer Records",
+    "ExtractionMode.PatientZeroSample": "Patient Zero Sample",
+    "ExtractionMode.CommercialPropertyRecords": "Commercial Property Records",
+    "ExtractionMode.GrandOhioMallPlans": "Grand Ohio Mall Building Plans",
+    "ExtractionMode.VaccineSample": "Vaccine Sample"
+}

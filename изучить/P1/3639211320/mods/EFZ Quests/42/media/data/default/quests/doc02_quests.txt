@@ -1,0 +1,7 @@
+*doc02_infection_profile
+#name DOC-02. Infection Profile
+#desc To analyze the progression of the infection, we need to gather data from various infected individuals. Kill 100 zombies to get a sample, and report the results to the doctor.
+
+
+
+

@@ -1,0 +1,7 @@
+Tooltip_PL = {
+    Tooltip_PagerMod_Pager = "Przenoœny pager.<br>Po klikniêciu prawym przyciskiem myszy wybierz „Aktywuj”, aby nadaæ mu unikalny numer. Nastêpnie u¿yj opcji „Otwórz pager”, aby wysy³aæ i odbieraæ krótkie wiadomoœci z dowolnego miejsca na mapie.<br>Pager jest œrodkiem komunikacji o najwiêkszym zasiêgu. Do komunikacji na krótkim dystansie u¿ywaj czatu g³osowego, a na œrednim – krótkofalówek.",
+    Tooltip_PagerMod_Recipe = "Zbuduj dzia³aj¹cy pager ze z³omu elektronicznego, odbiornika radiowego i przewodów. Wymaga Elektryki 4.",
+    Tooltip_PagerMod_Tower = "Wie¿a przekaŸnikowa pagerów. <br> Kliknij prawym przyciskiem myszy, aby postawiæ wie¿ê u swoich stóp, a nastêpnie zasil j¹ z pobliskiego generatora. <br> W trybie sygna³u przez wie¿ê sieæ pagerów dzia³a tylko wtedy, gdy postawiona wie¿a ma zasilanie.",
+    Tooltip_PagerMod_TowerRecipe = "Zbuduj wie¿ê przekaŸnikow¹ pagerów z pagera, z³omu elektronicznego, nadajnika radiowego, przewodów i blachy. Wymaga Elektryki 5 oraz Schematów wie¿y pagerów.",
+    Tooltip_PagerMod_Schematic = "Czasopismo elektroniczne ze schematami wie¿y przekaŸnikowej pagerów. <br> Przeczytaj je, aby nauczyæ siê j¹ budowaæ (wymaga Elektryki 5).",
+}

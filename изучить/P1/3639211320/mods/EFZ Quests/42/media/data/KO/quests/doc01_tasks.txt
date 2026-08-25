@@ -1,0 +1,11 @@
+*doc01_cortman_files_t1
+#name 코트맨 메디컬로 이동하기
+*doc01_cortman_files_t2
+#name 환자 기록을 확보하기
+*doc01_cortman_files_t3
+#name 환자 기록을 닥터에게 전달하기
+*doc01_cortman_files_t4
+#name 기록을 건네고 이야기 나누기
+
+
+

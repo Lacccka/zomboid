@@ -1,0 +1,8 @@
+*doc02_infection_profile_t1
+#name Kill 100 Infected Individuals
+*doc02_infection_profile_t2
+#name Report the Results to the Doctor
+
+
+
+

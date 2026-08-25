@@ -1,0 +1,213 @@
+#is_flag mq01_completed,false
+    #jump mq01_gate
+#is_flag pilot_intro,false
+    #jump pilot_intro
+#is_flag pilot_intro,true
+    #jump loop_regular
+
+*mq01_gate
+#m 파일럿|pilot.png|"나랑 얘기하기 전에 테일러 대위한테 브리핑부터 하러 가는 게 좋을 거야, 형씨."
+#m 파일럿|pilot.png|"늦게 가면 잔소리가 어마어마할 걸? 그 양반이 워낙에 깐깐해서 말이지."
+#exit
+
+*pilot_intro
+#m 파일럿|pilot.png|"내 이름은 모건. 파일럿이라고 불러."
+#m 파일럿|pilot.png|"이 벙커의 유일한 헬리콥터 조종사이지. 나중에 태워줄 기회가 있으면 좋겠네!"
+#reveal pilot
+#set_flag pilot_intro,true
+#jump loop_regular
+
+*loop_regular
+#m 파일럿|pilot.png|"그래, 오늘은 뭘 찾고 있어?"
+#choice
+    loop_ask|질문한다.
+    loop_routes_page1|투입을 요청한다.|mq02_started|true
+    loop_extract|투입과 철수에 관하여 묻는다.|mq02_started|true
+    dialogue_exit|떠난다.
+
+*loop_ask
+#m 파일럿|pilot.png|"뭔가 궁금한 거라도?"
+#choice
+    loop_ask_about_bunker|벙커에 관하여...
+    loop_ask_about_pathfinding|길찾기에 관하여...
+    loop_ask_about_you|당신에 관하여...
+    loop_regular|다른 주제를 꺼낸다.
+
+*loop_ask2
+#m 파일럿|pilot.png|"또 질문 있는 사람?"
+#choice
+    loop_ask_about_bunker|벙커에 관하여...
+    loop_ask_about_pathfinding|길찾기에 관하여...
+    loop_ask_about_you|당신에 관하여...
+    loop_regular|다른 주제를 꺼낸다.
+
+*loop_ask_about_bunker
+#m 파일럿|pilot.png|"이 벙커, 탐험할 곳이 진짜 많은 거 알아? 캡틴 몰래 돌아다니는데, 장난 없더라고."
+#m 파일럿|pilot.png|"숨겨진 통로에, 비밀 구획에... 대체 이런 걸 다 왜 만들어둔 걸까?"
+#m 파일럿|pilot.png|"캡틴이 설계도를 공유하지 않는 게 참 아쉬워."
+#jump loop_ask2
+
+*loop_ask_about_pathfinding
+#m 파일럿|pilot.png|"대부분의 위험 요소는 군 정찰 정보랑 연동해서 갱신되고 있어."
+#m 파일럿|pilot.png|"바깥에선 그 난리가 났는데 GPS는 멀쩡해서 그나마 다행이야."
+#m 파일럿|pilot.png|"저 괴물 놈들도 우주에 있는 위성은 떨어트리지 못하나 봐, 하하!"
+#jump loop_ask2
+
+*loop_ask_about_you
+#m 파일럿|pilot.png|"내 이름은 모건이야. 이곳 사람들은 날 파일럿이라고 불러."
+#m 파일럿|pilot.png|"내가 이곳의 유일한 헬리콥터 파일럿이거든."
+#m 파일럿|pilot.png|"헬기랑 파일럿이 더 있었으면 공중으로 피난 작전을 펼칠 수도 있을 텐데 말이야. 참 아쉬워."
+#jump loop_ask2
+
+*loop_routes
+#m 파일럿|pilot.png|"투입 요청이야? 좋아, 경로를 확인해 둘게."
+#jump loop_routes_page1
+
+*loop_routes_page1
+#m 파일럿|pilot.png|"경고해두지만, 거주동에 내려가 있는 인원을 제외하고 전원이 이동하게 될 거야. 참고하라고."
+#choice
+    route_muldraugh|멀드로 투입을 요청한다.
+    route_westpoint|웨스트포인트 투입을 요청한다.|mq05_completed|true
+    route_blackwood|마치릿지 투입을 요청한다.|mq07_completed|true
+    route_rosewood|로즈우드 투입을 요청한다.|mq09_active|true
+    loop_routes_page2|다음 페이지|mq10_completed|true
+
+*loop_routes_page2
+#m 파일럿|pilot.png|"경고해두지만, 거주동에 내려가 있는 인원을 제외하고 전원이 이동하게 될 거야. 참조하라고."
+#choice
+    route_LVharbor|루이빌 외곽 투입을 요청한다.|mq10_completed|true
+    route_louisvilleW|루이빌 서쪽 투입을 요청한다.|mq12_completed|true
+    route_louisvilleE|루이빌 동쪽 투입을 요청한다.|mq12_completed|true
+    loop_regular|아직 결정하지 못했다.
+
+*route_muldraugh
+#m 파일럿|pilot.png|"멀드로로 가는 거지? 마지막으로 인원도 다 확인해 봐."
+#choice
+    route_muldraugh_confirm|모든 준비가 완료되었다.
+    loop_regular|더 준비하고 돌아온다.
+
+*route_muldraugh_confirm
+#m 파일럿|pilot.png|"좋아, 행운을 빌어! 임무 후 철수 지점은 지도에 초록색으로 표시해줄게."
+#fade_out black|1
+#sfx EFZ_Helicopter
+#wait 1
+#npc_remove
+#lua EFZ.TriggerDeployDialogueMuldraugh()
+#restock
+#wait 1
+#fade_in 2
+#exit
+
+*route_westpoint
+#m 파일럿|pilot.png|"웨스트포인트로 향하는 거지? 그쪽은 도시 규모에 비해 인구 밀도가 높았던 곳이니까 좀비도 꽤 몰려 있을 거야. 준비 단단히 해."
+#choice
+    route_westpoint_confirm|모든 준비가 완료되었다.
+    loop_regular|더 준비하고 돌아온다.
+
+*route_westpoint_confirm
+#m 파일럿|pilot.png|"좋아, 좌표를 확인했어. 복귀 방식은 기존과 동일하니 헤매지 마."
+#fade_out black|1
+#sfx EFZ_Helicopter
+#wait 1
+#npc_remove
+#lua EFZ.TriggerDeployDialogueWestpoint()
+#restock
+#wait 1
+#fade_in 2
+#exit
+
+*route_blackwood
+#m 파일럿|pilot.png|"마치릿지로 가는 거지? 비슷하게 생긴 건물이 많아서 길을 헷갈리기 쉬우니 조심해."
+#choice
+    route_blackwood_confirm|모든 준비가 완료되었다.
+    loop_regular|더 준비하고 돌아온다.
+
+*route_blackwood_confirm
+#m 파일럿|pilot.png|"좋아, 경로를 확인했어. 철수 좌표도 기록해줄 테니 무사히 복귀해."
+#fade_out black|1
+#sfx EFZ_Helicopter
+#wait 1
+#npc_remove
+#lua EFZ.TriggerDeployDialogueBlackwood()
+#restock
+#wait 1
+#fade_in 2
+#exit
+
+*route_rosewood
+#is_flag mq09_pilot_contacted,true
+    #m 파일럿|pilot.png|"이미 말했잖아. 로즈우드 상공에 들어가면 GPS가 신호가 바로 끊겨."
+    #m 파일럿|pilot.png|"일단 마치릿지에 내린 뒤 도보로 움직여야 해."
+    #jump loop_regular
+#m 파일럿|pilot.png|"그건 좀 어려울 거 같은데."
+#m 파일럿|pilot.png|"안 그래도 저번에 널 내려주고 정찰도 할 겸 공중에서 로즈우드를 살펴보려고 했는데, 로즈우드 상공으로 들어가는 순간 GPS가 먹통이 돼 버려."
+#m 파일럿|pilot.png|"아마 근처 어딘가에서 교란 장비가 작동 중인 것 같아. 헬기로는 진입이 불가능해."
+#m 파일럿|pilot.png|"마치릿지까지는 내려줄 수 있어. 거기서부터는 직접 걸어서 이동하거나, 차량을 구해야 할 거야."
+#m 파일럿|pilot.png|"도움이 안 돼서 미안하군."
+#set_flag mq09_pilot_contacted,true
+#jump loop_regular
+
+*route_LVharbor
+#m 파일럿|pilot.png|"루이빌 공항 근처로 데려가 달란 말이지. 준비되면 말해."
+#choice
+    route_LVharbor_confirm|모든 준비가 완료되었다.
+    loop_regular|더 준비하고 돌아온다.
+
+*route_LVharbor_confirm
+#m 파일럿|pilot.png|"좋아, 행운을 빌어! 철수 지점은 지도에 초록색으로 표시해줄게."
+#fade_out black|1
+#sfx EFZ_Helicopter
+#wait 1
+#npc_remove
+#lua EFZ.TriggerDeployDialogueLVHarbor()
+#restock
+#wait 1
+#fade_in 2
+#exit
+
+*route_louisvilleW
+#m 파일럿|pilot.png|"루이빌 서쪽으로 가는 거지? 루이빌은 넓으니까 길을 잃지 않도록 조심해."
+#choice
+    route_louisvilleW_confirm|모든 준비가 완료되었다.
+    loop_regular|더 준비하고 돌아온다.
+
+*route_louisvilleW_confirm
+#m 파일럿|pilot.png|"좋아, 행운을 빌어! 철수 지점은 지도에 초록색으로 표시해줄게."
+#fade_out black|1
+#sfx EFZ_Helicopter
+#wait 1
+#npc_remove
+#lua EFZ.TriggerDeployDialogueLouisvilleW()
+#restock
+#wait 1
+#fade_in 2
+#exit
+
+*route_louisvilleE
+#m 파일럿|pilot.png|"루이빌 동쪽으로 가는 거지? 루이빌은 넓으니까 길을 잃지 않도록 조심해."
+#choice
+    route_louisvilleE_confirm|모든 준비가 완료되었다.
+    loop_regular|더 준비하고 돌아온다.
+
+*route_louisvilleE_confirm
+#m 파일럿|pilot.png|"좋아, 행운을 빌어! 철수 지점은 지도에 초록색으로 표시해줄게."
+#fade_out black|1
+#sfx EFZ_Helicopter
+#wait 1
+#npc_remove
+#lua EFZ.TriggerDeployDialogueLouisvilleE()
+#restock
+#wait 1
+#fade_in 2
+#exit
+
+*loop_extract
+#m 파일럿|pilot.png|"왜 헬리콥터가 GPS 신호기의 유도를 따라가야 하냐고? 그거야 당연히 좀비가 소리를 듣고 몰려들기 때문이지."
+#m 파일럿|pilot.png|"또, 약탈자들이 몰려들어 격추시킬 수도 있고. 그래서 최대한 안전한 경로를 찾아 비행해야 해."
+#m 파일럿|pilot.png|"벙커로 복귀하고 싶으면 미리 설정한 좌표로 이동해서 단파로 연락해. 그럼 최대한 빨리 이동해서 빼내줄게."
+#m 파일럿|pilot.png|"다만 차량은 가지고 오지 못하니까 참고하라고. 베트남전 때 쓰던 휴이 한 대로 사람에 차량까지 실어 나를 수는 없거든."
+#jump loop_regular
+
+*dialogue_exit
+#exit
+

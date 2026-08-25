@@ -1,0 +1,8 @@
+*mq04_lost_map_t1
+#name Go to the Muldraugh Police Station
+*mq04_lost_map_t2
+#name Secure the Road Control Plan
+*mq04_lost_map_t3
+#name Deliver the Plan to the Captain
+*mq04_lost_map_t5
+#name Report to the Captain

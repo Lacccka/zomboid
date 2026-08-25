@@ -1,0 +1,3 @@
+*mq03_first_raid
+#name Main-03. First Raid
+#desc The captain asked me to gather military supplies left in Muldraugh. Secure the military supply box at the target point and deliver them to the gunner.

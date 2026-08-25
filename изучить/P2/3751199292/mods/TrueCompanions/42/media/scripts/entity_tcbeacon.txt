@@ -1,0 +1,144 @@
+module Base
+{
+    /*
+     * True Companions - Survivors Beacon Station
+     *
+     * A 3-STAGE workstation. You BUILD stage 1 from the right-click Build menu
+     * with scrap and any old radio -- no skill requirement at all -- and then
+     * UPGRADE it in place by right-clicking the finished object. Stages 2 and 3
+     * are not separate build entries; see BanditsNPCBeacon.lua.
+     *
+     *   Stage 1  Makeshift Beacon   a counter with a scavenged aerial
+     *   Stage 2  Field Beacon       a real transceiver on a steel counter
+     *   Stage 3  Relay Station      a full console
+     *
+     * WHY ONE ENTITY AND NOT THREE. Vanilla's tiered furniture (Wood_TableLvl1/2/3)
+     * ships one entity per tier and picks between them with an OnAddToMenu test on
+     * the player's skill -- but those are alternative things to BUILD, never an
+     * upgrade of an object already standing. There is no stage/upgrade component in
+     * the entity format (checked: the only components in use across all vanilla
+     * entity scripts are UiConfig, SpriteConfig, CraftRecipe, CraftBench,
+     * ContextMenuConfig, FluidContainer, CraftBenchSounds, WallCoveringConfig,
+     * SpriteOverlayConfig, Resources, DryingCraftLogic). So the stage lives in the
+     * object's own ModData -- which also means an upgrade keeps the beacon's
+     * settings, its zones and its registry entry, rather than destroying and
+     * recreating the object under them.
+     *
+     * FORMAT NOTES (checked against the vanilla scripts, not from memory):
+     *  - Shape follows entity_carpentry_tablesmall_lvl1.txt.
+     *  - `Tags` is what places a recipe in the right-click Build menu. Carpentry
+     *    and Furniture are both in vanilla's verified tag list.
+     *  - `category` must be one of vanilla's values or the recipe silently never
+     *    appears. Furniture is on that list; there is no "Electrical".
+     *  - NO SkillRequired line: stage 1 is meant to be reachable on day one.
+     *  - Every input id below was verified present in media/scripts/generated/items
+     *    before use -- the Base.Stew lesson (a recipe that ate its inputs and paid
+     *    out nothing, silently, because the id did not exist).
+     *
+     *  - SPRITES: the beacon is ONE TILE, a standing console. Stage 1 is built from
+     *    these; stages 2 and 3 swap the sprite in Lua (B.STAGES in
+     *    BanditsNPCBeacon.lua):
+     *
+     *      1  Security wall monitors  security_01     - /  5 /  4 / -   (N/E/S/W)
+     *      2  Security terminal       security_01     2 /  1 /  0 /  3
+     *      3  CeroSec terminal   appliances_com_01   54 / 53 / 52 / 55
+     *
+     *    STAGE 1 IS A WALL OBJECT AND HAS ONLY TWO FACINGS. Base.Mov_SecurityWallMonitors
+     *    (security_01_4/5) is MoveType = WallObject: S hangs on a north wall, E on a west
+     *    one, and no N or W sprite exists because a wall object never faces those ways.
+     *    needToBeAgainstWall is therefore set above -- it is a real vanilla SpriteConfig
+     *    property (vanilla's shelves use it, ISBuildIsoEntity enforces it at line 344),
+     *    and it stops the beacon being placed somewhere the sprite would not render
+     *    correctly. The rotate key cycles S and E rather than all four; ISBuildIsoEntity
+     *    :getFace skips missing faces, so that is handled rather than broken.
+     *    Stages 2 and 3 have all four facings, so upgrading from either is fine.
+     *
+     *    TWO EARLIER STAGE-1 SPRITES WERE WRONG, and both are worth remembering because
+     *    neither was detectable from the tile definition:
+     *      v0.71-v0.74.2  Imekagi HK533p -- named like a transceiver, actually a SECURITY
+     *                     CAMERA. No property distinguishes a camera from a radio.
+     *      v0.74.3        Standing Microphone -- correct but not what the author wanted.
+     *    Both stay recognised in LEGACY_SPRITES so beacons already built on them keep
+     *    working and convert on the next upgrade.
+     *
+     *    IT USED TO BE TWO TILES -- a kitchen counter with a radio set on the tile
+     *    beside it -- and it looked like exactly that: two unrelated objects, and at
+     *    stage 1 a handset lying on the floor next to a cupboard. The counter only
+     *    existed to carry a radio that could not be drawn on top of it, because no
+     *    vanilla entity face uses more than one `layer` block (scanned all of
+     *    generated/entities -- zero hits), so a radio-on-a-desk sprite was never
+     *    expressible. A console IS the desk and the radio, in one tile.
+     *
+     *    THREE PROPERTIES DISQUALIFY A SPRITE HERE, and each one has already caused a
+     *    shipped bug:
+     *      IsSurfaceOffset  draws it raised 34px because it belongs on a table, so it
+     *                       floats on a floor. (The original ham radio: v0.63.)
+     *      SpriteGridPos    it is one cell of a multi-tile sprite, so placing it alone
+     *                       draws part of an object. (The Old TV antenna: v0.66-0.67.)
+     *      IsoType          the engine treats it as a working appliance -- and the
+     *                       Tactical Walkie Talkie is ALSO IsTableTop, i.e. a small
+     *                       desk gadget, which is why stage 1 read as a dropped
+     *                       handset. (v0.68-0.69.)
+     *    Every sprite of every stage here is clear of all three and weighs 200-350 with
+     *    Electrician pick-up tools -- they are fixtures, not handsets.
+     *
+     *    ALL FOUR FACES ARE DEFINED. The build cursor's rotate key steps nSprite
+     *    1..4 = W,N,E,S and ISBuildIsoEntity:getFace SKIPS a face that is missing, so
+     *    a partial set silently gives fewer orientations than the player expects.
+     */
+    entity TCSurvivorBeacon
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_TCSurvivorBeacon,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            isThumpable = false,
+            needToBeAgainstWall = true,
+            face S { layer { row = security_01_4, } }
+            face E { layer { row = security_01_5, } }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWoodenStructureSmall,
+            time = 120,
+            category = Furniture,
+            Tags = Carpentry;Furniture,
+            xpAward = Electricity:10,
+            Tooltip = Tooltip_craft_TCSurvivorBeaconDesc,
+            /*
+             * The cost dropped from 5 planks and 6 nails to 3 and 4 when the beacon
+             * stopped being a two-TILE build. It is one console now, not a counter
+             * with a set standing beside it, and the bill of materials should say so:
+             * a frame, some wiring, and a radio to gut for parts.
+             *
+             * Still no SkillRequired -- stage 1 is meant to be reachable on day one.
+             * Every id verified present in media/scripts/generated/items.
+             */
+            inputs
+            {
+                item 1 tags[base:hammer] mode:keep flags[Prop1;MayDegradeVeryLight],
+                item 3 [Base.Plank],
+                item 4 [Base.Nails],
+                item 1 [Base.ElectricWire],
+                /*
+                 * ELECTRONICS SCRAP RATHER THAN A WHOLE RADIO (author ask, 9 Aug).
+                 * The old line wanted one of eight specific radios -- the ValuTech sets,
+                 * the ham rigs, a walkie-talkie -- which meant the beacon was gated on
+                 * finding one intact appliance, and on a fresh map that is a scavenging
+                 * trip rather than a build. Electronics scrap comes out of every
+                 * dismantled radio, TV and games console, so the requirement is the same
+                 * idea (you need radio parts) without the hunt for a working set.
+                 *
+                 * TWO, not one: a single piece of scrap is close to free, and the beacon
+                 * is the thing the whole mod hangs off. Say the word if it should be one.
+                 * Base.ElectronicsScrap verified in scripts/generated/items/normal.txt:4529.
+                 */
+                item 2 [Base.ElectronicsScrap],
+            }
+        }
+    }
+}

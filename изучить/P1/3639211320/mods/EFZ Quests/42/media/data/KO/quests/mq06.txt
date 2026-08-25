@@ -1,0 +1,34 @@
+#quest mq06_gunshop_search
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|mq06_active|true
+        #action SetFlag|mq06_started|true
+        #action SetFlag|mq06_gunshop_reached|false
+        #action SetFlag|mq06_radio_heard|false
+        #action SetFlag|mq06_returned_to_bunker|false
+        #action SetFlag|mq06_reported_to_captain|false
+        #action UnlockTask|mq06_gunshop_search|t1
+    #task t1
+        #set GotoLocation|12093,6786,0|building|true
+        #action RunScript|marker_scripts.txt,add_marker_mq06_t1
+        #action SetFlag|mq06_gunshop_reached|true
+        #action RunScript|mq06_radio.txt,signal
+        #action SetFlag|mq06_radio_heard|true
+        #action UnlockTask|mq06_gunshop_search|t2
+    #task t2
+        #set GotoLocation|20108,17,0|building
+        #action RunScript|marker_scripts.txt,remove_marker_mq06_t1
+        #action SetFlag|mq06_returned_to_bunker|true
+        #action UnlockTask|mq06_gunshop_search|t3
+    #task t3
+        #set RaiseFlag|mq06_reported_to_captain
+    #task t4|unlocked|hidden
+        #set TaskCondition|mq06_gunshop_search|t1,t2,t3
+        #action Reward|EFZ.SupplyTicket,15,rare|Base.Mac10,1,rare|Base.MAC10Mag,2,rare
+        #action SetFlag|mq06_active|false
+        #action SetFlag|mq06_completed|true
+        #action SetFlag|mq07_unlocked|true
+        #action CompleteQuest|mq06_gunshop_search
+
+
+

@@ -1,0 +1,44 @@
+#quest mq07_maze
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|mq07_active|true
+        #action SetFlag|mq07_started|true
+        #action SetFlag|mq07_blackwood_outskirts|false
+        #action SetFlag|mq07_command_post|false
+        #action SetFlag|mq07_plan_found|false
+        #action SetFlag|mq07_wait_finished|false
+        #action SetFlag|mq07_returned_to_bunker|false
+        #action SetFlag|mq07_reported_to_captain|false
+        #action UnlockTask|mq07_maze|t1
+    #task t1
+        #set GotoLocation|10332,12356,10386,12409,0|true
+        #action SetFlag|mq07_blackwood_outskirts|true
+        #action UnlockTask|mq07_maze|t2
+    #task t2
+        #set GotoLocation|9923,12624,0|building|true
+        #action RunScript|marker_scripts.txt,add_marker_mq07_t2
+        #action SetFlag|mq07_command_post|true
+        #action UnlockTask|mq07_maze|t3
+    #task t3
+        #set LootContainer|desk|9963,12626,-4|EFZ.OperationCleanSlatePlan,true
+        #action RunScript|marker_scripts.txt,remove_marker_mq07_t2
+        #action SetFlag|mq07_plan_found|true
+        #action RunScript|mq07_monologue.txt,monologue
+        #action UnlockTask|mq07_maze|t4
+    #task t4
+        #set WaitUntil|time|true|1
+        #action SetFlag|mq07_wait_finished|true
+        #action RunScript|mq07_signal.txt,landing
+        #action UnlockTask|mq07_maze|t5
+    #task t5
+        #set RaiseFlag|mq07_reported_to_captain
+    #task t6|unlocked|hidden
+        #set TaskCondition|mq07_maze|t1,t2,t3,t4,t5
+        #action Reward|EFZ.SupplyTicket,20,rare
+        #action SetFlag|mq07_active|false
+        #action SetFlag|mq07_completed|true
+        #action SetFlag|blackwood_raid_unlocked|true
+        #action SetFlag|mq08_unlocked|true
+        #action CompleteQuest|mq07_maze
+
+

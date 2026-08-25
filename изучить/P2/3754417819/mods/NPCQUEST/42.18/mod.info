@@ -1,0 +1,8 @@
+name=NPC&QUEST
+id=NPCQUEST
+poster=poster.png
+description=Begin at a music festival. Fight your way to your sister, customize her loadout and appearance, and follow a quest line from the chaos of day one all the way home.
+description=<BR>
+description=Requires Bandits2.
+require=Bandits2
+author=Modpack

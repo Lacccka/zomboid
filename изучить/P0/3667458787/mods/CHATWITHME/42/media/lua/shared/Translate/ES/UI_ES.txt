@@ -1,0 +1,13 @@
+UI_ES = {
+    UI_Trading_TradeWithNPC = "Comerciar con NPC",
+    UI_Trading_DoNothing = "No Hacer Nada",
+    UI_Trading_Trade = "Comerciar",
+    UI_Trading_Value = "Valor: ",
+    UI_Trading_YourItems = "Tus Objetos",
+    UI_Trading_AvailableRewards = "Recompensas Disponibles",
+    UI_Info_DefaultHeader = "Información",
+    UI_Info_OK = "OK",
+    UI_Dialogue_PressToContinue = "Presiona [E] para continuar...",
+    UI_InfoNode_PartsProduction_Header = "Producción de Piezas:",
+    UI_InfoNode_PartsProduction_Body = "Holocinta de actualización recibida... actualizando funcionalidad 'Producción de Piezas' (suministro de Chatarra Electrónica disponible una vez al día).",
+}

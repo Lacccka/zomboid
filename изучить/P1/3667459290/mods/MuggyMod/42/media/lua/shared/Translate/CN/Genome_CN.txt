@@ -1,0 +1,10 @@
+Genome_CN = {
+    Genome_Swiftness_Name = "敏捷",
+    Genome_Swiftness_Desc = "决定马格移动的速度",
+    Genome_Endurance_Name = "耐力",
+    Genome_Endurance_Desc = "影响耐力再生",
+    Genome_HaulingCapacity_Name = "负重能力",
+    Genome_HaulingCapacity_Desc = "决定最大负重",
+    Genome_Vitality_Name = "生命力",
+    Genome_Vitality_Desc = "决定马格的生命值和生存能力。",
+}

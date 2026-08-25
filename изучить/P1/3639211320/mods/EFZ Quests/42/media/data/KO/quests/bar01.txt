@@ -1,0 +1,22 @@
+#quest bar01_comfort_food
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|bar01_active|true
+        #action SetFlag|bar01_started|true
+        #action SetFlag|bar01_berries_delivered|false
+        #action SetFlag|bar01_reported_to_bartender|false
+        #action UnlockTask|bar01_comfort_food|t1
+    #task t1
+        #set Deliver|Base.BerryBlue,5|Base.BerryBlack,5
+        #action SetFlag|bar01_berries_delivered|true
+        #action UnlockTask|bar01_comfort_food|t2
+    #task t2
+        #set RaiseFlag|bar01_reported_to_bartender
+    #task complete|unlocked|hidden
+        #set TaskCondition|bar01_comfort_food|t1,t2
+        #action Reward|EFZ.SupplyTicket,45,rare|Base.PieBlueberry,10,rare
+        #action SetFlag|bar01_active|false
+        #action SetFlag|bar01_completed|true
+        #action CompleteQuest|bar01_comfort_food
+
+

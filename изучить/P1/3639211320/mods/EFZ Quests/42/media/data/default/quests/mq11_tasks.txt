@@ -1,0 +1,19 @@
+*mq11_last_ticketing_p1
+#name Check the First Aircraft Hangar
+*mq11_last_ticketing_p2
+#name Check the Second Aircraft Hangar
+*mq11_last_ticketing_p3
+#name Check the Third Aircraft Hangar
+*mq11_last_ticketing_p4
+#name Check the Fourth Aircraft Hangar
+*mq11_last_ticketing_p5
+#name Check the Fifth Aircraft Hangar
+*mq11_last_ticketing_s1
+#name Check the Fuel Depot
+*mq11_last_ticketing_t8
+#name Return to the Bunker
+*mq11_last_ticketing_t9
+#name Report to the Captain
+
+
+

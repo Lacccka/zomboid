@@ -1,0 +1,5 @@
+{
+    "Tooltip_PagerMod_Pager": "Przenośny pager.<br>Po kliknięciu prawym przyciskiem myszy wybierz „Aktywuj”, aby nadać mu unikalny numer. Następnie użyj opcji „Otwórz pager”, aby wysyłać i odbierać krótkie wiadomości z dowolnego miejsca na mapie.<br>Pager jest środkiem komunikacji o największym zasięgu. Do komunikacji na krótkim dystansie używaj czatu głosowego, a na średnim – krótkofalówek.",
+    "Tooltip_PagerMod_Tower": "Wieża przekaźnikowa pagerów. <br> Kliknij prawym przyciskiem myszy, aby postawić wieżę u swoich stóp, a następnie zasil ją z pobliskiego generatora. <br> W trybie sygnału przez wieżę sieć pagerów działa tylko wtedy, gdy postawiona wieża ma zasilanie.",
+    "Tooltip_PagerMod_Schematic": "Czasopismo elektroniczne ze schematami wieży przekaźnikowej pagerów. <br> Przeczytaj je, aby nauczyć się ją budować (wymaga Elektryki 5)."
+}

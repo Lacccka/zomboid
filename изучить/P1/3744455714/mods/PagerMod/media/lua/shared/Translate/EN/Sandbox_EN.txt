@@ -1,0 +1,106 @@
+Sandbox_EN = {
+    Sandbox_PagerMod = "Pager Network",
+    Sandbox_PagerModTower = "Pager Tower (Only Applies to Ultra Realistic)",
+
+    Sandbox_PagerMod_Preset = "Difficulty preset",
+    Sandbox_PagerMod_Preset_tooltip = "Quick bundles of the options below.<br>Custom: nothing is overridden - every option on this page applies as you set it (the default).<br>Convenient: the relaxed defaults - map-wide signal, full two-way paging and every feature on.<br>Almost Realistic: a barely-functional pocket pager - 1 saved page, 16 characters, no location, no read receipts, no SOS, no blocking, no broadcast (still map-wide).<br>Ultra Realistic: everything in Almost Realistic, plus pagers can only receive (not send), and the network is map-wide only until the power dies, then needs a built, powered pager tower.<br>A preset overrides the matching options below.",
+    Sandbox_PagerMod_Preset_option1 = "Custom (use options below)",
+    Sandbox_PagerMod_Preset_option2 = "Convenient",
+    Sandbox_PagerMod_Preset_option3 = "Almost Realistic",
+    Sandbox_PagerMod_Preset_option4 = "Ultra Realistic",
+
+    Sandbox_PagerMod_SignalMode = "Pager signal range",
+    Sandbox_PagerMod_SignalMode_tooltip = "How far pages travel.<br>Map-wide: pagers reach anywhere on the map (the default - pagers are your long-range tier, with walkie-talkies for medium range and voice chat up close).<br>Limited range: a page only arrives if the recipient is within the distance set below.<br>Powered tower only (after power dies): pages reach map-wide while the electricity grid is still on, but once the power goes out the network only works through a built, powered pager tower's coverage - so the pager network dies with the grid unless someone keeps a tower running on a generator.<br>Powered tower only: the network ALWAYS needs a built, powered pager tower in range, even while the grid is up.",
+    Sandbox_PagerMod_SignalMode_option1 = "Map-wide (anywhere)",
+    Sandbox_PagerMod_SignalMode_option2 = "Limited range",
+    Sandbox_PagerMod_SignalMode_option3 = "Powered tower only (after power dies)",
+    Sandbox_PagerMod_SignalMode_option4 = "Powered tower only",
+
+    Sandbox_PagerMod_PagerMode = "Pager capability",
+    Sandbox_PagerMod_PagerMode_tooltip = "What pagers can do.<br>Send and receive: normal two-way paging (the default).<br>Receive only: pagers can only receive pages - the compose, reply and group features are hidden.",
+    Sandbox_PagerMod_PagerMode_option1 = "Send and receive",
+    Sandbox_PagerMod_PagerMode_option2 = "Receive only",
+
+    Sandbox_PagerMod_SignalRange = "Limited / Tower range distance (tiles)",
+    Sandbox_PagerMod_SignalRange_tooltip = "The reach distance in tiles (1 tile is about 1 metre), used by two signal modes: in Limited range it's the furthest a page can travel between sender and recipient; in Powered tower mode it's each tower's coverage radius (both ends of a page must be within it).",
+
+    Sandbox_PagerMod_AllowBroadcast = "Allow paging everyone at once",
+    Sandbox_PagerMod_AllowBroadcast_tooltip = "Lets a player send one page to every pager on the network with the Broadcast button. Turn this off on busy servers to cut down on spam.",
+
+    Sandbox_PagerMod_MaxMessages = "Saved pages per pager",
+    Sandbox_PagerMod_MaxMessages_tooltip = "How many pages a single pager keeps. Once it is full, the oldest page is dropped to make room for a new one.",
+
+    Sandbox_PagerMod_MessageMaxLength = "Maximum characters per page",
+    Sandbox_PagerMod_MessageMaxLength_tooltip = "The longest message a player can put in one page, counted in characters.",
+
+    Sandbox_PagerMod_NotifySound = "Beep when a page arrives",
+    Sandbox_PagerMod_NotifySound_tooltip = "Play a beep and show an on-screen alert (with a preview of the message) whenever a new page comes in.",
+    Sandbox_PagerMod_BeepVolume = "Beep volume",
+    Sandbox_PagerMod_BeepVolume_tooltip = "How loud the pager's notification beep plays. Applies to every beep the pager makes.",
+    Sandbox_PagerMod_BeepVolume_option1 = "25% (quiet)",
+    Sandbox_PagerMod_BeepVolume_option2 = "50% (default)",
+    Sandbox_PagerMod_BeepVolume_option3 = "75%",
+    Sandbox_PagerMod_BeepVolume_option4 = "100% (loud)",
+
+    Sandbox_PagerMod_LocationSharing = "Share your location on a page",
+    Sandbox_PagerMod_LocationSharing_tooltip = "Whether a page can include where the sender is standing. The recipient then sees the coordinates plus distance and a compass bearing.<br>Off: location is never shared.<br>Ask each time: the sender ticks a box per page (the default).<br>Always on: every page carries the sender's location.<br>An SOS still shares location unless this is set to Off.",
+    Sandbox_PagerMod_LocationSharing_option1 = "Off",
+    Sandbox_PagerMod_LocationSharing_option2 = "Ask each time",
+    Sandbox_PagerMod_LocationSharing_option3 = "Always on",
+
+    Sandbox_PagerMod_SendCooldown = "Wait between pages (seconds)",
+    Sandbox_PagerMod_SendCooldown_tooltip = "Minimum number of seconds a player must wait between sending pages. Helps stop spam and griefing on PvP servers. Set to 0 for no limit (the default).",
+
+    Sandbox_PagerMod_ReadReceipts = "Show 'read' confirmations",
+    Sandbox_PagerMod_ReadReceipts_tooltip = "Notifies the sender once the person they paged has opened and read the message.",
+
+    Sandbox_PagerMod_FactionScope = "Faction privacy (PvPvE)",
+    Sandbox_PagerMod_FactionScope_tooltip = "Controls who can reach who.<br>Anyone: any pager can page any other (the default).<br>Same faction only: members of different factions cannot page each other, so rival groups can't eavesdrop or spam. Players who are not in a faction can always be reached.",
+    Sandbox_PagerMod_FactionScope_option1 = "Anyone can page anyone",
+    Sandbox_PagerMod_FactionScope_option2 = "Same faction only",
+
+    Sandbox_PagerMod_AllowSOS = "Allow the SOS beacon",
+    Sandbox_PagerMod_AllowSOS_tooltip = "Enables the emergency SOS button, which pages everyone on the network at once and attaches the sender's location (unless location sharing is Off).",
+
+    Sandbox_PagerMod_AllowBlocking = "Allow blocking numbers",
+    Sandbox_PagerMod_AllowBlocking_tooltip = "Lets players block a pager number so its pages never reach them. Useful against griefers in PvP.",
+
+    Sandbox_PagerMod_BatteryLife = "Battery life",
+    Sandbox_PagerMod_BatteryLife_tooltip = "How long a fresh battery powers a pager before it dies and must be replaced. Measured in in-game time. Replace batteries from the pager's right-click menu using a Battery item.",
+    Sandbox_PagerMod_BatteryLife_option1 = "1 month",
+    Sandbox_PagerMod_BatteryLife_option2 = "3 months",
+    Sandbox_PagerMod_BatteryLife_option3 = "6 months",
+    Sandbox_PagerMod_BatteryLife_option4 = "1 year",
+    Sandbox_PagerMod_BatteryLife_option5 = "Never dies",
+
+    Sandbox_PagerMod_TowerComms = "Pager tower comms",
+    Sandbox_PagerMod_TowerComms_tooltip = "What the tower base station (000-0001) itself can do.<br>Send and receive: the tower can send pages and be paged - its console has an inbox.<br>Send only: the tower can only send pages; it cannot be paged.",
+    Sandbox_PagerMod_TowerComms_option1 = "Send and receive",
+    Sandbox_PagerMod_TowerComms_option2 = "Send only",
+
+    Sandbox_PagerMod_TowerLimit = "Towers per player (0 = unlimited)",
+    Sandbox_PagerMod_TowerLimit_tooltip = "The most pager towers a single player may have set up at once. Each tower is its own node with its own number and coverage circle. Set to 0 for no limit. Admins are exempt.",
+
+    Sandbox_PagerMod_GlobalChat = "Global pager chat channel",
+    Sandbox_PagerMod_GlobalChat_tooltip = "Adds a town-wide GLOBAL tab to every pager: a shared channel anyone with a pager can read and post to, reaching everyone regardless of saved contacts or faction. It still obeys the signal mode, receive-only mode, send cooldown and per-person blocking.",
+
+    Sandbox_PagerMod_TowerPower = "Pager tower power source",
+    Sandbox_PagerMod_TowerPower_tooltip = "What a deployed pager tower needs to run (Powered tower mode).<br>Grid or generator: mains electricity OR a running generator nearby (the default).<br>Generator only: only a running, fuelled generator beside it (ignores the power grid).<br>None: towers always work, no power needed.",
+    Sandbox_PagerMod_TowerPower_option1 = "Grid or generator",
+    Sandbox_PagerMod_TowerPower_option2 = "Generator only",
+    Sandbox_PagerMod_TowerPower_option3 = "None (always on)",
+
+    Sandbox_PagerMod_NumericOnly = "Numbers-only messages",
+    Sandbox_PagerMod_NumericOnly_tooltip = "Pages may contain digits, spaces and dashes only - all letters are stripped out. Turns pagers into a numeric-code device.",
+
+    Sandbox_PagerMod_LogPages = "Log pages to a server file",
+    Sandbox_PagerMod_LogPages_tooltip = "Appends every routed page (sender, recipient, text, delivered/queued/blocked) to PagerMod_PageLog.txt in the server's Zomboid folder. For admins/moderation.",
+
+    Sandbox_PagerMod_SpawnAbundance = "Pager spawn abundance",
+    Sandbox_PagerMod_SpawnAbundance_tooltip = "How much pager loot the world has, as a multiplier on the weights pagers already carry in electronics, police, comms and vehicle containers - so they still turn up where they make sense, there are just more or fewer of them.<br>Vanilla (unchanged) is the default and touches no loot table at all. In Build 41, where the pager is not a vanilla item, the higher settings are also what puts it into electronics loot in the first place.<br>Only affects containers the world has not generated yet.",
+    Sandbox_PagerMod_SpawnAbundance_option1 = "Rare (half as common)",
+    Sandbox_PagerMod_SpawnAbundance_option2 = "Vanilla (unchanged)",
+    Sandbox_PagerMod_SpawnAbundance_option3 = "More common (x2)",
+    Sandbox_PagerMod_SpawnAbundance_option4 = "Common (x4)",
+    Sandbox_PagerMod_SpawnAbundance_option5 = "Everywhere (x8)",
+}

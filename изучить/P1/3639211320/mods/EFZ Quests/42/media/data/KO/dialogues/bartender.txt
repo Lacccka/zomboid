@@ -1,0 +1,166 @@
+#is_flag mq01_completed,false
+    #jump mq01_gate
+#is_flag bartender_intro,false
+    #jump bartender_intro
+#is_flag bartender_intro,true
+    #jump loop_regular
+
+*mq01_gate
+#m 바텐더|bartender.png|"이제 깨어났군요. 먼저 캡틴을 만나보세요. 당신 상태를 많이 궁금해 하더라고요."
+#m 바텐더|bartender.png|"술은 그 다음에 대접해 드리죠."
+#exit
+
+*bartender_intro
+#m 바텐더|bartender.png|"바에 오신 걸 환영합니다. 이름도 없고 주방도 엉망이지만, 여기가 녹스 컨트리에서 유일하게 운영 중인 바일 겁니다."
+#reveal bartender
+#set_flag bartender_intro,true
+#jump loop_regular
+
+*loop_regular
+#m 바텐더|bartender.png|"오늘은 무슨 일로 찾아오셨나요?"
+#choice
+    loop_ask|질문한다.
+    loop_subquest|도울 일에 관해 얘기한다.
+    loop_trade|거래한다.
+    dialogue_exit|자리를 떠난다.
+
+*loop_ask
+#m 바텐더|bartender.png|"무슨 이야기를 하고 싶으신가요?"
+#choice
+    loop_ask_about_bunker|벙커에 관하여...
+    loop_ask_about_bar|바에 관하여...
+    loop_ask_about_you|당신에 관하여...
+    loop_regular|다른 주제를 꺼낸다.
+
+*loop_ask2
+#m 바텐더|bartender.png|"더 이야기하고 싶은 게 있나요?"
+#choice
+    loop_ask_about_bunker|벙커에 관하여...
+    loop_ask_about_bar|바에 관하여...
+    loop_ask_about_you|당신에 관하여...
+    loop_regular|다른 주제를 꺼낸다.
+
+*loop_ask_about_bunker
+#m 바텐더|bartender.png|"보시다시피 낡고 오래된 벙커입니다. 아마 소련의 핵미사일 따위가 날아올 때를 대비한 장소였겠죠."
+#m 바텐더|bartender.png|"뭐, 핵미사일이 날아오기 전에 모두 굶어 죽을지도 모르지만 말이죠."
+#m 바텐더|bartender.png|"그 전에 어떻게든 방법을 찾으면 좋겠는데 말이죠."
+#jump loop_ask2
+
+*loop_ask_about_bar
+#m 바텐더|bartender.png|"이 바는 처음부터 준비되어 있던 설비입니다. 신기하죠?"
+#m 바텐더|bartender.png|"누군지는 몰라도, 세상이 망해도 술은 마셔야 하니 벙커에 바가 있어야 한다고 주장했나 봐요."
+#m 바텐더|bartender.png|"아니면 원래는 그냥 주방으로 설계된 것일지도 모르고요. 어쨌든, 덕분에 벙커에 있는 사람들은 만족하고 있습니다."
+#jump loop_ask2
+
+*loop_ask_about_you
+#m 바텐더|bartender.png|"저는 그저 우연찮게 살아남았다가 여기까지 흘러들어왔을 뿐입니다."
+#m 바텐더|bartender.png|"벙커의 사람들에게 밥도 해주고, 술도 말아주고, 가끔은 이야기도 들어주고... 그냥 주변에 있는 사람들에게 도움이 되고 싶은 평범한 사람일 뿐이에요."
+#m 바텐더|bartender.png|"그러니 편하게 생각해 주시면 좋겠습니다. 식사나 술이 필요하면 언제든 찾아오시고요."
+#jump loop_ask2
+
+*loop_subquest
+#is_quest bar02_black_label|unlocked,uncompleted,unfailed
+    #jump bar02_remind
+#is_quest bar01_comfort_food|unlocked,uncompleted,unfailed
+    #jump bar01_remind
+#is_quest bar02_black_label|locked
+    #is_quest bar01_comfort_food|completed
+        #jump bar02_offer
+#is_quest bar01_comfort_food|locked
+    #is_flag mq02_completed,true
+        #jump bar01_offer
+#is_quest bar02_black_label|completed
+    #jump bar02_after
+#is_quest bar01_comfort_food|completed
+    #jump bar01_after
+#m 바텐더|bartender.png|"지금은 따로 부탁드릴 게 없습니다. 필요하신 게 있으면 말씀하세요."
+#jump loop_regular
+
+*bar01_offer
+#m 바텐더|bartender.png|"요즘 벙커 사람들 표정이 영 좋지 않네요. 이럴 때일수록 먹는 게 큰 위로가 되거든요."
+#m 바텐더|bartender.png|"캔이나 건조식품만으로는 그럴싸한 맛을 내기 힘드니, 밖에 나가실 일 있으면 블루베리랑 블랙베리를 조금 따와 주실 수 있을까요?"
+#choice
+    bar01_accept|수락한다.
+    bar01_decline|나중에 이야기한다.
+#jump loop_regular
+
+*bar01_accept
+#m 바텐더|bartender.png|"고맙습니다. 블루베리 5개, 블랙베리 5개만 있어도 충분할 거예요."
+#m 바텐더|bartender.png|"어떤 베리인지 모르겠다면, 모양을 한번 보세요. 작은 포도처럼 생겼으면 블랙베리, 포도알 낱알처럼 생겼으면 블루베리랍니다.
+#m 바텐더|bartender.png|"색은 둘 다 보라색 비슷하죠. 나뭇가지에서 쉽게 떨어지는 것도 특징이니 참고하세요."
+#quest_unlock bar01_comfort_food
+#jump loop_regular
+
+*bar01_decline
+#m 바텐더|bartender.png|"알겠습니다. 나중에 생각나면 다시 말씀해 주세요."
+#jump loop_regular
+
+*bar01_remind
+#is_task bar01_comfort_food|t1|uncompleted
+    #m 바텐더|bartender.png|"블루베리랑 블랙베리를 좀 가져오셨습니까? 신선할수록 좋겠죠."
+    #deliver bar01_comfort_food|t1
+        #m 바텐더|bartender.png|"딱 원하던 양이네요. 덕분에 사람들 입맛을 되살릴 수 있겠습니다."
+        #stat_inc bartender|reputation|10
+        #set_flag bar01_reported_to_bartender,true
+        #exit
+    #m 바텐더|bartender.png|"야외에서 식량 찾으실 때 조심하세요. 블루베리 5개, 블랙베리 5개면 됩니다."
+    #jump loop_regular
+#is_task bar01_comfort_food|t2|uncompleted
+    #m 바텐더|bartender.png|"잠깐만요. 베리들로 바로 메뉴를 만들어 보겠습니다."
+    #set_flag bar01_reported_to_bartender,true
+    #jump bar01_after
+#jump bar01_after
+
+*bar01_after
+#m 바텐더|bartender.png|"다들 맛있게 먹고 있습니다. 잊고 지낸 위로를 전할 수 있었네요. 덕분입니다."
+#jump loop_regular
+
+*bar02_offer
+#m 바텐더|bartender.png|"제가 예전에 거래하던 양조장이 있었어요. 그쪽에서 만든 아주 귀한 술이 어딘가의 주점에 남아 있을 겁니다."
+#m 바텐더|bartender.png|"그 술은 그냥 술이 아니에요. 사람들에게 이 거친 세상을 하루 더 버틸 힘을 주는 특별한 술이죠."
+#m 바텐더|bartender.png|"혹시라도 밖에서 발견하면 가져다 주실 수 있을까요? 부탁할게요."
+#choice
+    bar02_accept|수락한다.
+    bar02_decline|나중에 이야기한다.
+#jump loop_regular
+
+*bar02_accept
+#m 바텐더|bartender.png|"고맙습니다. 어디에 있을지는 확실하지 않지만, 주점의 선반이나 바 카운터를 잘 살펴보면 있을 겁니다."
+#m 바텐더|bartender.png|"병에 붙은 라벨은 검은색일 거예요. 찾으시면 바로 가져와 주세요."
+#quest_unlock bar02_black_label
+#jump loop_regular
+
+*bar02_decline
+#m 바텐더|bartender.png|"알겠습니다. 혹시 생각나면 다시 말씀해 주세요."
+#jump loop_regular
+
+*bar02_remind
+#is_task bar02_black_label|t1|uncompleted
+    #m 바텐더|bartender.png|"술을 찾으시면 그대로 챙겨 주세요. 선반이나 카운터를 유심히 보시면 좋을 겁니다."
+    #jump loop_regular
+#is_task bar02_black_label|t2|uncompleted
+    #m 바텐더|bartender.png|"혹시 술을 찾으셨나요? 있다면 바로 건네주시면 좋겠습니다."
+    #deliver bar02_black_label|t2
+        #m 바텐더|bartender.png|"맞아요, 이 병이에요. 정말 구하기 어려운 술인데 찾아주셔서 감사합니다."
+        #stat_inc bartender|reputation|10
+        #set_flag bar02_reported_to_bartender,true
+        #exit
+    #m 바텐더|bartender.png|"찾으시면 바로 가져와 주세요. 사람들 사기를 살리는 데 큰 도움이 될 겁니다."
+    #jump loop_regular
+#jump bar02_after
+
+*bar02_after
+#m 바텐더|bartender.png|"이 술을 사람들에게 나눠주니 표정이 조금 밝아졌습니다. 덕분에 분위기도 살아났네요."
+#jump loop_regular
+
+*loop_trade
+#m 바텐더|bartender.png|"현금은 받지 않는 거 아시죠? 아니면 물물교환도 가능합니다. 여하튼 필요한 게 있으면 천천히 살펴보세요."
+#trade bartender
+    #buyback_clear
+    #m 바텐더|bartender.png|"또 필요한 게 있으면 말씀하세요. 언제든 환영입니다."
+    #exit
+#m 바텐더|bartender.png|"괜찮습니다. 다른 게 필요하면 언제든 들르세요."
+#jump loop_regular
+
+*dialogue_exit
+#exit

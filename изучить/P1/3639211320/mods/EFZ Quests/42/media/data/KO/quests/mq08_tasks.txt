@@ -1,0 +1,11 @@
+*mq08_dirty_slate_t1
+#name 마치릿지 의료시설에 도달하기
+*mq08_dirty_slate_t2
+#name 화생방 물자를 수색하기
+*mq08_dirty_slate_t3
+#name 화생방 장비를 닥터에게 전달하기
+*mq08_dirty_slate_t4
+#name 닥터와 상황을 정리하기
+
+
+

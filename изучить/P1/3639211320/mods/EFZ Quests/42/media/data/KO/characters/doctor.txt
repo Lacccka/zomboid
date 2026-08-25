@@ -1,0 +1,7 @@
+#name doctor|닥터
+#set_stat doctor|reputation|0
+
+#desc 닥터
+#desc_append 멀드로의 코트맨 메디컬을 운영하던 가정의학과 의사. 지금은 벙커의 의료 담당이다.
+#exit
+

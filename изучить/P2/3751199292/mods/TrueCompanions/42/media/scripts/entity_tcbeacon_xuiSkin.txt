@@ -1,0 +1,36 @@
+module Base
+{
+    /*
+     * Display name + crafting-menu icon for the Survivors Beacon Station.
+     * Format taken from media/scripts/entities/animals/workstations/
+     * entity_feedingtrough_xuiSkin.txt.
+     *
+     * LuaWindowClass = ISEntityWindow is the vanilla entity window. The beacon's
+     * own UI is opened from our context-menu hook instead (UiConfig.uiEnabled is
+     * false), but the field is required, so it points at the vanilla default.
+     *
+     * ICON. This field takes a BUILD-menu texture name, not an item name, and an
+     * unknown one is not an error you can see in game -- you get a blank tile in the
+     * Build menu and one line in the console:
+     *     WARN: Could not find icon: HamRadioCivilian, script = Makeshift Survivors Beacon
+     * which is exactly what v0.66 shipped. Build_CabinetMetal is used by vanilla's own
+     * xuiSkin scripts, so it is certain to resolve, and a metal cabinet is the closest
+     * stock picture to a standing console. (It was Build_WoodCounter while the beacon
+     * was built out of a kitchen counter; it is not one any more.) A stock asset
+     * referenced by name; nothing third-party shipped.
+     *
+     * NOTE ON TRANSLATION: DisplayName here is raw English, like every vanilla
+     * xuiSkin entry. Script-side display names do not flow through BanditsNPC.T,
+     * so this one string stays English regardless of language pack. Everything the
+     * beacon's own UI shows IS keyed and translatable.
+     */
+    xuiSkin default
+    {
+        entity ES_TCSurvivorBeacon
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Makeshift Survivors Beacon,
+            Icon = Build_CabinetMetal,
+        }
+    }
+}

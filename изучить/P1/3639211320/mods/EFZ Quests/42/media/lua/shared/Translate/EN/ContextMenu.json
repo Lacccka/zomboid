@@ -1,0 +1,17 @@
+{
+    "ContextMenu_Open_LivingSpaceFloorPlanUpper": "Open Living Space Floor Plan Upper",
+    "ContextMenu_Open_LivingSpaceFloorPlanLower": "Open Living Space Floor Plan Lower",
+    "ContextMenu_Use_FitnessBooster": "Use Fitness Booster",
+    "ContextMenu_Use_StrengthBooster": "Use Strength Booster",
+    "ContextMenu_Use_ReloadingBook": "Use Reloading Book",
+    "ContextMenu_Use_AimingBook": "Use Aiming Book",
+    "ContextMenu_Use_NimbleBook": "Use Nimble Book",
+    "ContextMenu_Use_FirstAidBook": "Use First Aid Book",
+    "ContextMenu_Use_WoundTimeReducer": "Use Trauma Kit",
+    "ContextMenu_EFZ_Tetris_Organize": "Tetris Organize",
+    "ContextMenu_EFZ_Tetris_Organize_Auto": "Auto",
+    "ContextMenu_EFZ_Tetris_Organize_Category": "By Category",
+    "ContextMenu_EFZ_Tetris_Organize_Size": "By Item Size",
+    "ContextMenu_EFZ_Tetris_Organize_SearchFirst": "Search First",
+    "ContextMenu_EFZ_Tetris_Organize_NoItems": "No Sortable Items"
+}

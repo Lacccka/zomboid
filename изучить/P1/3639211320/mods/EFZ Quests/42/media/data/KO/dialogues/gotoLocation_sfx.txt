@@ -1,0 +1,4 @@
+*sfx
+#sfx EFZ_GotoLocationSfx
+#wait 1
+#exit

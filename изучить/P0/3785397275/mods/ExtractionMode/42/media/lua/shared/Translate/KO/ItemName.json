@@ -1,0 +1,17 @@
+{
+    "ExtractionMode.ExtractionFlareGun": "탈출용 신호총",
+    "ExtractionMode.FlareRound": "신호탄",
+    "ExtractionMode.InfectionCure": "실험단계 녹스 감염 치료제",
+    "ExtractionMode.SpecialDocuments": "특수 문서",
+    "ExtractionMode.CouriersLedger": "운송인의 장부",
+    "ExtractionMode.MedicalTransportCooler": "의료 수송용 아이스박스",
+    "ExtractionMode.TransferManifest": "이송 화물 목록",
+    "ExtractionMode.ResearchersNotes": "연구원의 노트",
+    "ExtractionMode.QuarantineMedicalRecords": "격리 구역 의료 기록",
+    "ExtractionMode.EvacuationRecords": "대피 기록",
+    "ExtractionMode.MedicalTransferRecords": "의료 이송 기록",
+    "ExtractionMode.PatientZeroSample": "최초 감염자(0번 환자) 샘플",
+    "ExtractionMode.CommercialPropertyRecords": "상업용 부동산 기록",
+    "ExtractionMode.GrandOhioMallPlans": "그랜드 오하이오 몰 건축 도면",
+    "ExtractionMode.VaccineSample": "백신 샘플"
+}

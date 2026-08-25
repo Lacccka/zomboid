@@ -1,0 +1,30 @@
+*entry_broadcast
+#sfx EFZ_Radiosfx
+#m "Alert. Facility containment procedures are now in progress."
+#m "The elevator shaft and emergency stairwells leading outside will be sealed."
+#m A moment later, I heard the elevator power cut out. Looks like I'm not getting back up.
+#exit
+
+*try_stop
+#m There's an option on the terminal that says "Abort Self-Destruct."
+#is_flag mq15_override_commands_found,true
+    #jump override_success
+#has_item EFZ.OverrideCommand,3
+    #set_flag mq15_override_commands_found,true
+    #jump override_success
+#m "To halt facility operations, enter Override Commands A, B, and C."
+#m What... is this? I need to search deeper inside the facility.
+#exit
+
+*override_success
+#remove_item EFZ.OverrideCommand,3
+#m [SYSTEM] Override Commands A, B, C confirmed. Aborting self-destruct and lifting facility lockdown.
+#m Yes. Now I just have to get out of here...
+#sfx EFZ_Radiosfx
+#m "Unauthorized external command input detected."
+#m "Facility lockdown will resume in 10 minutes. All personnel must evacuate immediately."
+#m Right after that, I heard something collapse in the corridor, followed by screams. What the hell is happening?
+#m I've got a bad feeling about this. I need to retrace my steps and move, fast.
+#set_flag mq15_override_success,true
+#exit
+

@@ -1,0 +1,7 @@
+*cap03_chain_break_t1
+#name 군용 무전기 2개, 군용 아마추어 무선장비 2개 전달하기
+*cap03_chain_break_t2
+#name 캡틴에게 보고하기
+
+
+

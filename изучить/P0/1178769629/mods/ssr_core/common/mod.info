@@ -1,0 +1,9 @@
+name=SSR: Core
+id=ssr-core
+description=This mod ensures compatibility between other modules of SSR modpack
+poster=poster.png
+icon=icon.png
+author=Oneline
+pzversion=42
+modversion=2025_12_15
+versionMin=42.13

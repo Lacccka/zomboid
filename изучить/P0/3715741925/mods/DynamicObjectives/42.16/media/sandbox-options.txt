@@ -1,0 +1,103 @@
+VERSION = 1,
+
+option DynamicObjectives.QuestDifficulty
+{
+    type = double,
+    default = 1.0,
+    min = 0.5,
+    max = 3.0,
+    page = DynamicObjectives,
+    translation = DynamicObjectives.QuestDifficulty,
+}
+
+option DynamicObjectives.QuestExpirationMultiplier
+{
+    type = double,
+    default = 1.0,
+    min = 0.0,
+    max = 5.0,
+    page = DynamicObjectives,
+    translation = DynamicObjectives.QuestExpirationMultiplier,
+}
+
+option DynamicObjectives.RestingContractChancePercent
+{
+    type = integer,
+    default = 70,
+    min = 0,
+    max = 100,
+    page = DynamicObjectives,
+    translation = DynamicObjectives.RestingContractChancePercent,
+}
+
+option DynamicObjectives.MinimumRestingFamiliesAvailable
+{
+    type = integer,
+    default = 3,
+    min = 0,
+    max = 3,
+    page = DynamicObjectives,
+    translation = DynamicObjectives.MinimumRestingFamiliesAvailable,
+}
+
+option DynamicObjectives.EscortIncidentChancePercent
+{
+    type = integer,
+    default = 60,
+    min = 0,
+    max = 100,
+    page = DynamicObjectives,
+    translation = DynamicObjectives.EscortIncidentChancePercent,
+}
+
+option DynamicObjectives.MinimumEscortIncidents
+{
+    type = integer,
+    default = 1,
+    min = 0,
+    max = 3,
+    page = DynamicObjectives,
+    translation = DynamicObjectives.MinimumEscortIncidents,
+}
+
+option DynamicObjectives.QuestRewardPoolWeapons
+{
+    type = boolean,
+    default = true,
+    page = DynamicObjectives,
+    translation = DynamicObjectives.QuestRewardPoolWeapons,
+}
+
+option DynamicObjectives.QuestRewardPoolMedicine
+{
+    type = boolean,
+    default = true,
+    page = DynamicObjectives,
+    translation = DynamicObjectives.QuestRewardPoolMedicine,
+}
+
+option DynamicObjectives.QuestRewardPoolFoods
+{
+    type = boolean,
+    default = true,
+    page = DynamicObjectives,
+    translation = DynamicObjectives.QuestRewardPoolFoods,
+}
+
+option DynamicObjectives.QuestRewardPoolBags
+{
+    type = boolean,
+    default = true,
+    page = DynamicObjectives,
+    translation = DynamicObjectives.QuestRewardPoolBags,
+}
+
+option DynamicObjectives.QuestRewardMinimumMoney
+{
+    type = integer,
+    default = 75,
+    min = 0,
+    max = 10000,
+    page = DynamicObjectives,
+    translation = DynamicObjectives.QuestRewardMinimumMoney,
+}

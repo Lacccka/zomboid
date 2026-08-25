@@ -1,0 +1,19 @@
+*landing
+#m Pilot|pilot.png|"Signal received. Moving in on your current coords."
+#m Pilot|pilot.png|"You talk to the March Ridge garrison commander yet?"
+#choice
+    landing_report|Tell him we need to head back right now.
+
+*landing_report
+#m Pilot|pilot.png|"Whatever's going on, it doesn't sound good."
+#m Pilot|pilot.png|"Hang tight. I'll be there to scoop you up."
+#fade_out black|1
+#wait 1
+#sfx EFZ_Helicopter
+#lua EFZ.ImmediateExtractForCurrentPlayer()
+#wait 1
+#fade_in 1
+#set_flag mq07_returned_to_bunker,true
+#exit
+
+

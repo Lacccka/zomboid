@@ -1,0 +1,8 @@
+*des03_runway_of_the_living_t1
+#name Gather 6 Clothing Samples for the Fashion Show (Z Hurricanes Baseball Shirt, Barrel Dogs Leather Jacket, Iron Rodent Leather Jacket, Wild Raccoons Leather Jacket, Kentucky Baseball Shirt, Bunny Suit (Black))
+*des03_runway_of_the_living_t2
+#name Report to the Designer
+
+
+
+

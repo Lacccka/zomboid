@@ -1,0 +1,223 @@
+#is_flag mq01_completed,false
+    #jump mq01_gate
+#is_flag designer_intro,false
+    #jump designer_intro
+#is_flag designer_intro,true
+    #jump loop_regular
+
+*mq01_gate
+#m 디자이너|designer.png|"의무실에서 일어났다더니 맞나 보네. 먼저 캡틴을 보고 와."
+#m 디자이너|designer.png|"허가를 받고 돌아오면 제대로 차려입게 해줄게."
+#exit
+
+*designer_intro
+#m 디자이너|designer.png|"이 벙커에서 가장 문명화된 공간에 온 걸 환영해. 내 이름은 알렉스야."
+#m 디자이너|designer.png|"세상이 이 지경이 되기 전에는 패션 디자이너였지. 필요한 옷가지가 있으면 언제든 말해."
+#m 디자이너|designer.png|"좀 이상하게 들리겠지만, 군용 장구류도 있어. 캡틴이 부탁해서 내가 관리하고 있거든."
+#reveal designer
+#set_flag designer_intro,true
+#jump loop_regular
+
+*loop_regular
+#m 디자이너|designer.png|"기능성과 스타일, 둘 모두 챙겨주지. 무엇을 찾고 있어?"
+#choice
+    loop_ask|질문한다.
+    loop_subquest|도울 일에 관해 얘기한다.
+    loop_outfits|장구류를 구매한다.
+    dialogue_exit|떠난다.
+
+*loop_ask
+#m 디자이너|designer.png|"궁금한 게 있나봐?"
+#choice
+    loop_ask_about_bunker|벙커에 관하여...
+    loop_ask_about_outfits|의상에 관하여...
+    loop_ask_about_you|당신에 관하여...
+    loop_regular|다른 주제를 꺼낸다.
+
+*loop_ask2
+#m 디자이너|designer.png|"또 뭐가 궁금해?"
+#choice
+    loop_ask_about_bunker|벙커에 관하여...
+    loop_ask_about_outfits|의상에 관하여...
+    loop_ask_about_you|당신에 관하여...
+    loop_regular|다른 주제를 꺼낸다.
+
+*loop_ask_about_bunker
+#m 디자이너|designer.png|"낡고 후줄근한 곳이지. 마치 유행이 몇 번이나 지나서 90% 세일하는 이월상품 같이 말이야."
+#m 디자이너|designer.png|"여기 있다 보면 크로스로드 몰에 있는 내 가게가 그리워."
+#m 디자이너|designer.png|"곧 상황이 진정돼서 돌아갈 수 있으면 좋을 텐데..."
+#jump loop_ask2
+
+*loop_ask_about_outfits
+#m 디자이너|designer.png|"늘 말하지만, 제대로 된 패션이면 기능성과 스타일을 동시에 챙겨야 해."
+#m 디자이너|designer.png|"그냥 겉멋만 든 옷은 나쁜 옷이야. 옷은 단순히 몸에 걸치는 것 이상의 의미가 있어."
+#m 디자이너|designer.png|"그리고 스타일 없이 기능성에만 치중한 옷도 나쁜 옷이지. 그건 옷이 아니라 장비일 뿐이야."
+#m 디자이너|designer.png|"그래서 패션 디자인이 사업인 동시에 예술인 거야. 어느 한쪽도 놓치지 않아야 옷의 진짜 의미가 살아나니까."
+#jump loop_ask2
+
+*loop_ask_about_you
+#m 디자이너|designer.png|"난 알렉스야. 패션 디자이너지."
+#m 디자이너|designer.png|"내 이름을 딴 브랜드도 런칭할...뻔 했어. 결국 무산됐지만."
+#m 디자이너|designer.png|"언젠가 여기서 나가면 꼭 제대로 된 패션 브랜드에 다시 도전해 볼 거야."
+#jump loop_ask2
+
+*loop_subquest
+#is_quest des03_runway_of_the_living|unlocked,uncompleted,unfailed
+    #jump des03_remind
+#is_quest des03_runway_of_the_living|completed
+    #jump des03_after
+#is_quest des02_functional_pattern|unlocked,uncompleted,unfailed
+    #jump des02_remind
+#is_quest des02_functional_pattern|completed
+    #is_quest des03_runway_of_the_living|locked
+        #jump des03_offer
+    #jump des02_after
+#is_quest des01_bring_back_sign|unlocked,uncompleted,unfailed
+    #jump des01_remind
+#is_quest des01_bring_back_sign|completed
+    #is_quest des02_functional_pattern|locked
+        #jump des02_offer
+    #jump des01_after
+#is_quest des01_bring_back_sign|locked
+    #is_flag mq02_completed,true
+        #jump des01_offer
+#is_quest des02_functional_pattern|locked
+    #is_flag des01_completed,true
+        #jump des02_offer
+#m 디자이너|designer.png|"지금은 부탁할 건 없어. 필요한 장구류를 챙겨 갈래?"
+#jump loop_regular
+
+*des02_offer
+#m 디자이너|designer.png|"생존에 도움이 되는 의상을 제대로 만들려면 소재가 다양해야 해. 특히 소방복이나 경찰복 같은 특수복은 기능성 소재를 잘 활용한 형태거든. 한번 참고해 보고 싶어."
+#m 디자이너|designer.png|"소방복 상의, 소방복 하의, 소방모, 보안관 재킷을 구해줄 수 있을까? 패턴을 분석해 보면 도움이 될 거야."
+#choice
+    des02_accept|수락한다.
+    des02_decline|나중에 이야기한다.
+#jump loop_regular
+
+*des02_accept
+#m 디자이너|designer.png|"고마워. 샘플을 확보하면 바로 가져와 줘. 상태가 조금 낡았어도 괜찮아."
+#quest_unlock des02_functional_pattern
+#jump loop_regular
+
+*des02_decline
+#m 디자이너|designer.png|"알겠어. 여유가 되면 다시 이야기하자."
+#jump loop_regular
+
+*des02_remind
+#is_task des02_functional_pattern|t1|uncompleted
+    #m 디자이너|designer.png|"소방복 상의, 소방복 하의, 소방모, 경찰복 상의를 각각 한 벌씩 부탁할게. 샘플용이니까 상태는 상관없어."
+    #deliver des02_functional_pattern|t1
+        #m 디자이너|designer.png|"좋아, 샘플을 다 모아왔네. 나중에 확인해 볼게."
+        #exit
+    #m 디자이너|designer.png|"아직 샘플이 다 모이지 않았어. 목록에 맞춰 챙겨와 줘."
+    #jump loop_regular
+#is_task des02_functional_pattern|t2|uncompleted
+    #jump des02_report
+#jump des02_after
+
+*des02_report
+#is_flag des02_reported_to_designer,true
+    #jump des02_after
+#m 디자이너|designer.png|"완벽해. 패턴을 추출해서 벙커용 작업복이나 방염 장비를 만들어 볼게."
+#stat_inc designer|reputation|10
+#set_flag des02_reported_to_designer,true
+#jump des02_after
+
+*des02_after
+#m 디자이너|designer.png|"샘플 덕분에 여러 가지 기능성 패턴을 조합해 볼 수 있겠어. 결과물이 나오면 꼭 보여줄게."
+#jump loop_regular
+
+*des03_offer
+#m 디자이너|designer.png|"요즘 벙커 사람들이 눈빛이 많이 흐려졌어. 뭔가... 인간답게 산다는 게 뭔지 점점 잊어가고 있는 느낌이야."
+#m 디자이너|designer.png|"나도 이해는 해. 여기 있으면 숨은 쉬고 있어도 죽어가는 느낌이니까. 그러니까, 우리가 살아있다는 걸 잊지 않으려면 뭔가 필요해."
+#m 디자이너|designer.png|"작게라도 패션 쇼를 열어보면 어떨까? 감각을 살릴 만한 옷 몇 벌만 구해오면 바로 준비해 볼게."
+#choice
+    des03_accept|수락한다.
+    des03_decline|나중에 이야기한다.
+#jump loop_regular
+
+*des03_accept
+#m 디자이너|designer.png|"멋져! 여기 적어준 옷을 전부 구해오면 바로 연출해 볼게."
+#quest_unlock des03_runway_of_the_living
+#jump loop_regular
+
+*des03_decline
+#m 디자이너|designer.png|"괜찮아. 마음이 맞을 때 다시 얘기하자."
+#jump loop_regular
+
+*des03_remind
+#is_task des03_runway_of_the_living|t1|uncompleted
+    #m 디자이너|designer.png|"패션 쇼용 의상 기억하지? 부탁할게."
+    #deliver des03_runway_of_the_living|t1
+        #m 디자이너|designer.png|"와, 전부 구해왔네. 색감과 질감이 다양해서 좋다."
+        #jump des03_report
+    #m 디자이너|designer.png|"아직 다 모이지 않았어. 목록 맞춰서 챙겨와 줘."
+    #jump loop_regular
+#is_task des03_runway_of_the_living|t2|uncompleted
+    #jump des03_report
+#jump des03_after
+
+*des03_report
+#is_flag des03_reported_to_designer,true
+    #jump des03_after
+#m 디자이너|designer.png|"덕분에 제대로 된 런웨이를 꾸밀 수 있겠어. 잠깐이라도 모두가 사람다운 기분을 느낄 거야."
+#stat_inc designer|reputation|20
+#set_flag des03_reported_to_designer,true
+#exit
+
+*des03_after
+#m 디자이너|designer.png|"이번 쇼가 작은 위로가 되길 바라. 괜찮았다는 말이 들리면 또 다른 걸 준비해 볼게."
+#jump loop_regular
+
+*des01_offer
+#m 디자이너|designer.png|"크로스로드 몰에 내 가게가 있었어. 그런데, 뭐랄까..."
+#m 디자이너|designer.png|"그 가게는 내 마지막 자존심 같은 거라서 말이지. 멀쩡하게 잘 있나 계속 신경쓰이더라고."
+#m 디자이너|designer.png|"혹시 밖에 나갈 일 있으면, 크로스로드 몰을 들러서 아직 그대로인지 확인해 줄 수 있을까?"
+#choice
+    des01_accept|수락한다.
+    des01_decline|나중에 이야기한다.
+#jump loop_regular
+
+*des01_accept
+#m 디자이너|designer.png|"고마워. 내 가게는 크로스로드 몰 입구 바로 옆에 있어. 무너졌는지, 간판이 남았는지만 봐줘."
+#quest_unlock des01_bring_back_sign
+#jump loop_regular
+
+*des01_decline
+#m 디자이너|designer.png|"알겠어. 여유가 되면 다시 얘기해 줘."
+#jump loop_regular
+
+*des01_remind
+#is_task des01_bring_back_sign|t1|uncompleted
+    #m 디자이너|designer.png|"크로스로드 몰 쪽에 들르면 내 가게가 멀쩡한지 한번 확인해 줘. 가게는 입구 바로 옆에 있어."
+    #jump loop_regular
+#is_task des01_bring_back_sign|t2|uncompleted
+    #jump des01_report
+#jump des01_after
+
+*des01_report
+#is_flag des01_reported_to_designer,true
+    #jump des01_after
+#m 디자이너|designer.png|"가게는 어땠어? 약탈자들이 전부 다 털어간 건 아니겠지?"
+#stat_inc designer|reputation|10
+#set_flag des01_reported_to_designer,true
+#m 디자이너|designer.png|"다행이네. 언젠가 직접 가서 다시 열고 말 거야. 확인해 줘서 정말 고마워."
+#jump des01_after
+
+*des01_after
+#m 디자이너|designer.png|"가게가 아직 버티고 있다니 마음이 놓여. 언젠가는 꼭 다시 찾아갈 거야."
+#jump loop_regular
+
+*loop_outfits
+#m 디자이너|designer.png|"뭐 필요한 게 있나 살펴봐."
+#trade designer
+    #buyback_clear
+    #m 디자이너|designer.png|"잘 어울렸으면 좋겠네. 또 필요하면 들러."
+    #exit
+#m 디자이너|designer.png|"괜찮아. 다음에 마음에 드는 게 보이면 이야기해."
+#jump loop_regular
+
+*dialogue_exit
+#exit
+

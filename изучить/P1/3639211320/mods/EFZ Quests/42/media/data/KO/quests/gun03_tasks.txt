@@ -1,0 +1,7 @@
+*gun03_prototype_weapon_marker
+#name 연구소로 이동하기
+*gun03_prototype_weapon_t1
+#name 설계도 확보하기
+*gun03_prototype_weapon_t2
+#name 거너에게 전달하기
+

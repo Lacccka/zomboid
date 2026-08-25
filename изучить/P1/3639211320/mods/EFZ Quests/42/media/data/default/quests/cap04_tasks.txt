@@ -1,0 +1,10 @@
+*cap04_last_report_t1
+#name Find the Long-Range Radio Transmitter at the Entrance of Louisville
+*cap04_last_report_t2
+#name Report via Long-Range Radio
+*cap04_last_report_t3
+#name Report to the Captain
+
+
+
+

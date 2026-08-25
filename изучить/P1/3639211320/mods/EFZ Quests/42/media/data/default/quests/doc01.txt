@@ -1,0 +1,34 @@
+#quest doc01_cortman_files
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|doc01_active|true
+        #action SetFlag|doc01_started|true
+        #action SetFlag|doc01_location_reached|false
+        #action SetFlag|doc01_patient_file_secured|false
+        #action SetFlag|doc01_patient_file_delivered|false
+        #action SetFlag|doc01_reported_to_doctor|false
+        #action UnlockTask|doc01_cortman_files|t1
+    #task t1
+        #set GotoLocation|10880,10025,0|building|true
+        #action SetFlag|doc01_location_reached|true
+        #action UnlockTask|doc01_cortman_files|t2
+    #task t2
+        #set LootContainer|shelves|10880,10025,1|EFZ.PatientFile,false
+        #action SetFlag|doc01_patient_file_secured|true
+        #action UnlockTask|doc01_cortman_files|t3
+    #task t3
+        #set Deliver|EFZ.PatientFile
+        #action SetFlag|doc01_patient_file_secured|false
+        #action SetFlag|doc01_patient_file_delivered|true
+        #action UnlockTask|doc01_cortman_files|t4
+    #task t4
+        #set RaiseFlag|doc01_reported_to_doctor
+    #task complete|unlocked|hidden
+        #set TaskCondition|doc01_cortman_files|t1,t2,t3,t4
+        #action Reward|EFZ.SupplyTicket,30,rare
+        #action SetFlag|doc01_active|false
+        #action SetFlag|doc01_completed|true
+        #action CompleteQuest|doc01_cortman_files
+
+
+

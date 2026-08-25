@@ -1,0 +1,74 @@
+v0.6.1
+- Added an admin-controlled Public Task Creation mode for administrator-created boards
+- Any player can add standard preset or custom tasks while Public Task Creation is enabled
+- Public contributors can complete tasks but cannot remove tasks, clear the board, remove the board, or change public mode
+- Public contributors cannot create Reputation reward tasks
+- Existing safehouse boards remain unchanged
+- Existing administrator boards remain locked by default
+- Existing tasks and board data remain compatible
+- Added English, French, Russian, Simplified Chinese, Brazilian Portuguese, and Spanish translations
+- Applied to Build 41 and Build 42
+v0.5.2
+- Made the task board window resizable
+- Added scrollable Open Tasks and Done Tasks lists
+- Removed the old five-open-task and four-done-task display limits
+- Added side-by-side task columns for large boards
+- Added selected-task action buttons below each list
+- Preserved v0.5.1 synchronization, permissions and completion attribution fixes
+- Applied the UI update to Build 41 and Build 42
+v0.5.1
+- Added explicit server-to-client board-state synchronization
+- Added nearby-board synchronization as players move between map chunks
+- Moved add, complete, remove, clear, and board deletion actions to the server
+- Protected administrator-created boards from non-admin editing and deletion
+- Kept administrator boards readable and completable by normal players
+- Added stable task IDs
+- Preserved the first player's completion attribution
+- Preserved existing boards and tasks through automatic schema migration
+- Added the hotfix to both Build 41 and Build 42
+v0.5.0
+- Added Project Zomboid Build 41 support
+- Added a dual-build package while preserving the existing Build 42 runtime
+- Added Build 41 translations for English, French, Russian, Simplified Chinese, Brazilian Portuguese, and Spanish
+- Preserved safehouse restrictions for normal players
+- Preserved administrator placement anywhere
+- Preserved existing boards, tasks, attribution, permissions, and persistence
+v0.4.1
+- Allowed administrators to create task boards anywhere on the map
+- Kept normal players restricted to safehouses they own or belong to
+- Added matching client and server authorization checks
+- Preserved all existing boards, tasks, translations, and editing behavior
+v0.4.0
+- Restricted new Safehouse Board placement to claimed safehouses
+- Required the creator to own or belong to the safehouse
+- Added server-authoritative multiplayer placement validation
+- Stored SafehouseMembers permission mode on new boards
+- Stored safehouse owner and title in board metadata
+- Preserved all existing boards, tasks, and current editing behavior
+QP Survivor Tasks - Changelog
+=============================
+
+v0.2.0
+- Added multilingual UI support
+- Added English, French, Russian, Simplified Chinese, Brazilian Portuguese, and Spanish
+- Localized context menus, windows, buttons, task counters, age text, and quick presets
+- Added per-client localization for built-in preset tasks
+- Preserved existing boards, custom tasks, and object modData
+
+v0.1.0
+- Initial public-ready release
+- Added Create Task Board system
+- Added proper Task Board UI window
+- Added Custom Task input window
+- Added 6 Quick Preset tasks
+- Added task storage on world objects
+- Added Open Task Board summary
+- Added Mark Task Done option
+- Added Remove Individual Task option
+- Added Clear Board option
+- Added Remove Task Board option
+- Added player name tracking
+- Added task age display
+- Added object target filtering
+- Reduced preset menu for server-friendly release
+- Build 42 ready

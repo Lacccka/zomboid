@@ -1,0 +1,18 @@
+module tradeHunter
+{
+	imports
+	{
+		Base
+	}
+
+	item SpawnHunter
+    {
+        DisplayCategory 	= FirstAid,
+	Weight				= 0.3,
+        Type				= Radio,
+        DisplayName			= Hunter Spawner,
+        Tooltip 			= Tooltip_CallHunter,
+        Icon				= callHunter,
+        WorldStaticModel	= WalkieTalkieToy, 
+    }	
+}

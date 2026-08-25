@@ -1,0 +1,36 @@
+#quest mq02_first_step
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|mq02_active|true
+        #action SetFlag|mq02_started|true
+        #action SetFlag|mq02_returned_to_bunker|false
+        #action SetFlag|mq02_reported_to_captain|false
+        #action UnlockTask|mq02_first_step|t1
+    #task t1
+        #set GotoLocation|0,0,19800,15900,0
+        #action SetFlag|mq02_surface_reached|true
+        #action UnlockTask|mq02_first_step|t2
+    #task t2
+        #set GotoLocation|10644,10007,10673,10023,0|true
+        #action RunScript|gotoLocation_sfx.txt,sfx
+        #action SetFlag|mq02_signal_site|true
+        #action UnlockTask|mq02_first_step|t3
+    #task t3
+        #set WaitUntil|time|true|1
+        #action RunScript|gotoLocation_sfx.txt,sfx
+        #action SetFlag|mq02_signal_stabilized|true
+        #action UnlockTask|mq02_first_step|t4
+    #task t4
+        #set GotoLocation|20108,17,0|building
+        #action SetFlag|mq02_returned_to_bunker|true
+        #action UnlockTask|mq02_first_step|t5
+    #task t5
+        #set RaiseFlag|mq02_reported_to_captain
+    #task t6|unlocked|hidden
+        #set TaskCondition|mq02_first_step|t1,t2,t3,t4,t5
+        #action Reward|Base.BaseballBat,1,common|Base.HandAxe,1,common|Base.Bag_NormalHikingBag,1,common
+        #action SetFlag|mq02_active|false
+        #action SetFlag|mq02_completed|true
+        #action SetFlag|mq03_unlocked|true
+        #action CompleteQuest|mq02_first_step
+

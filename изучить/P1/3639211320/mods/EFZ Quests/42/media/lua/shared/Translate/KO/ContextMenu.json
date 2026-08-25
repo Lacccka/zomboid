@@ -1,0 +1,17 @@
+{
+    "ContextMenu_Open_LivingSpaceFloorPlanUpper": "거주동 위층 열기",
+    "ContextMenu_Open_LivingSpaceFloorPlanLower": "거주동 아래층 열기",
+    "ContextMenu_Use_FitnessBooster": "체력 강화제 사용",
+    "ContextMenu_Use_StrengthBooster": "근력 강화제 사용",
+    "ContextMenu_Use_ReloadingBook": "재장전 기술서 사용",
+    "ContextMenu_Use_AimingBook": "조준 기술서 사용",
+    "ContextMenu_Use_NimbleBook": "의상 디자인북 사용",
+    "ContextMenu_Use_FirstAidBook": "응급처치 지침서 사용",
+    "ContextMenu_Use_WoundTimeReducer": "응급수술키트 사용",
+    "ContextMenu_EFZ_Tetris_Organize": "보관함 정렬",
+    "ContextMenu_EFZ_Tetris_Organize_Auto": "자동 정렬",
+    "ContextMenu_EFZ_Tetris_Organize_Category": "카테고리별 정렬",
+    "ContextMenu_EFZ_Tetris_Organize_Size": "크기별 정렬",
+    "ContextMenu_EFZ_Tetris_Organize_SearchFirst": "수색 후 정렬",
+    "ContextMenu_EFZ_Tetris_Organize_NoItems": "정렬 가능한 물품 없음"
+}

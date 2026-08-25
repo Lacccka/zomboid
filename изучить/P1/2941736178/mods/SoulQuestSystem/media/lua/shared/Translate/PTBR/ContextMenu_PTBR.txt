@@ -1,0 +1,6 @@
+ContextMenu_PTBR = {
+	ContextMenu_HideItem = "Esconder",
+
+
+	ContextMenu_WorldEvent_TalkTo = "Falar com %1",
+}

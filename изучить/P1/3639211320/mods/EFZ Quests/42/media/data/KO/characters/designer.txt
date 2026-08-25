@@ -1,0 +1,7 @@
+#name designer|디자이너
+#set_stat designer|reputation|0
+
+#desc 디자이너
+#desc_append 크로스로드 몰에서 의류점을 운영하던 상인. 감염 사태로 인해 의류점은 폐업했지만, 여전히 벙커에 주둔하는 생존자들에게 의상을 맞춰준다.
+#exit
+

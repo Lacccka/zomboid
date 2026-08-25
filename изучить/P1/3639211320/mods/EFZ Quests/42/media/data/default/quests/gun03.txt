@@ -1,0 +1,29 @@
+#quest gun03_prototype_weapon
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|gun03_active|true
+        #action SetFlag|gun03_started|true
+        #action SetFlag|gun03_blueprint_obtained|false
+        #action SetFlag|gun03_delivered_to_gunner|false
+        #action UnlockTask|gun03_prototype_weapon|marker
+    #task marker
+        #set GotoLocation|5516,12421,5667,12510,0|true
+        #action RunScript|marker_scripts.txt,add_marker_gun03_marker
+        #action UnlockTask|gun03_prototype_weapon|t1,loot_blueprint
+    #task t1
+        #set FindItem|EFZ.PrototypeWeaponBlueprint,1
+        #action SetFlag|gun03_blueprint_obtained|true
+        #action RunScript|marker_scripts.txt,remove_marker_gun03_marker
+        #action UnlockTask|gun03_prototype_weapon|t2
+    #task t2
+        #set Deliver|EFZ.PrototypeWeaponBlueprint
+        #action SetFlag|gun03_delivered_to_gunner|true
+    #task loot_blueprint|hidden
+        #set LootContainer|filingcabinet|5538,12441,1|EFZ.PrototypeWeaponBlueprint,false
+    #task complete|unlocked|hidden
+        #set TaskCondition|gun03_prototype_weapon|t1,t2
+        #action Reward|Base.G3,1,special|Base.G3_Mag,6,special|Base.308Silencer,1,unique|Base.308Box,15,special|EFZ.AimingBook,2,unique
+        #action SetFlag|gun03_active|false
+        #action SetFlag|gun03_completed|true
+        #action CompleteQuest|gun03_prototype_weapon
+

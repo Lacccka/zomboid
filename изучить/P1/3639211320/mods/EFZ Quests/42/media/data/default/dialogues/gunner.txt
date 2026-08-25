@@ -1,0 +1,254 @@
+#is_flag mq01_completed,false
+    #jump mq01_gate
+#is_flag gunner_intro,false
+    #jump gunner_intro
+#is_flag gunner_intro,true
+    #jump loop_regular
+
+*mq01_gate
+#m Gunner|gunner.png|"Heard you just came to. Report to the Captain before you start eyeing my weapons rack."
+#m Gunner|gunner.png|"Do your report, get approval, then come back."
+#exit
+
+*gunner_intro
+#m Gunner|gunner.png|"Name's James Gunner. An M2 gunner of Heavy Weapons Squad. Also responsible for the armory."
+#m Gunner|gunner.png|"If you need a weapon, say it. Don't expect a handout."
+#reveal gunner
+#set_flag gunner_intro,true
+#jump loop_regular
+
+*loop_regular
+#m Gunner|gunner.png|"If you're here to trade, say what you need. If you're not, don't block the rack."
+#choice
+    loop_ask|Ask a question
+    loop_quest|Talk about important missions
+    loop_subquest|Talk about helping out
+    loop_weapons|Trade
+    dialogue_exit|Leave
+
+*loop_quest
+#is_quest mq03_first_raid|unlocked,uncompleted,unfailed
+    #is_flag mq03_crate_delivered,false
+        #jump mq03_delivery
+#m Gunner|gunner.png|"Nothing I need from you right now."
+#jump loop_regular
+
+*mq03_delivery
+#is_flag mq03_crate_delivered,true
+    #m Gunner|gunner.png|"Appreciate it. We were about to run short on ammo."
+    #jump loop_regular
+#is_flag mq03_crate_secured,false
+    #m Gunner|gunner.png|"Looks like you still haven't secured that supply crate. Check again and come back."
+    #jump loop_regular
+#deliver mq03_first_raid|t3
+    #m Gunner|gunner.png|"Good. Contents are intact. I'll get this to the Captain."
+    #jump loop_regular
+#m Gunner|gunner.png|"If you can't hand it over, come back when you can."
+#jump loop_regular
+
+*loop_subquest
+#is_quest gun03_prototype_weapon|unlocked,uncompleted,unfailed
+    #jump gun03_remind
+#is_quest gun03_prototype_weapon|completed
+    #jump gun03_after
+#is_quest gun01_armory_cleanup|unlocked,uncompleted,unfailed
+    #jump gun01_remind
+#is_quest gun01_armory_cleanup|completed
+    #is_quest gun02_field_test|unlocked,uncompleted,unfailed
+        #jump gun02_remind
+    #is_quest gun02_field_test|completed
+        #is_flag mq14_completed,true
+            #is_quest gun03_prototype_weapon|locked
+                #jump gun03_offer
+        #jump gun02_after
+    #is_quest gun02_field_test|locked
+        #jump gun02_offer
+    #jump gun01_after
+#is_quest gun01_armory_cleanup|locked
+    #is_flag mq02_completed,true
+        #jump gun01_offer
+#is_quest gun02_field_test|unlocked,uncompleted,unfailed
+    #jump gun02_remind
+#is_quest gun02_field_test|completed
+    #is_flag mq14_completed,true
+        #is_quest gun03_prototype_weapon|locked
+            #jump gun03_offer
+    #jump gun02_after
+#is_quest gun02_field_test|locked
+    #is_quest gun01_armory_cleanup|completed
+        #jump gun02_offer
+#m Gunner|gunner.png|"Nothing else I need right now."
+#jump loop_regular
+
+*gun01_offer
+#m Gunner|gunner.png|"This armory's a mess. Mixed calibers all dumped together. It's a problem."
+#m Gunner|gunner.png|"To the point I can't put my hands on what we need, when we need it. That's unacceptable. Until it's sorted, I need ready ammo on hand."
+#m Gunner|gunner.png|"Can you bring me two boxes of 9mm, two boxes of .45, and three boxes of 5.56mm?"
+#choice
+    gun01_accept|Accept
+    gun01_decline|Talk about it later
+#jump loop_regular
+
+*gun01_accept
+#m Gunner|gunner.png|"That'll help. Appreciate it."
+#quest_unlock gun01_armory_cleanup
+#jump loop_regular
+
+*gun01_decline
+#m Gunner|gunner.png|"Copy. When you have time, I'll ask again."
+#jump loop_regular
+
+*gun01_remind
+#is_task gun01_armory_cleanup|t1|uncompleted
+    #m Gunner|gunner.png|"You got the ammo boxes I asked for? Two 9mm, two .45, three 5.56."
+    #deliver gun01_armory_cleanup|t1
+        #m Gunner|gunner.png|"Good. That takes some pressure off."
+        #jump gun01_report
+    #m Gunner|gunner.png|"Bring the right count. I need usable ammo until this place is squared away."
+    #jump loop_regular
+#is_task gun01_armory_cleanup|t2|uncompleted
+    #jump gun01_report
+#jump gun01_after
+
+*gun01_report
+#is_flag gun01_reported_to_gunner,true
+    #jump gun01_after
+#m Gunner|gunner.png|"Good work. And in case you didn't pick up on it... this was a test."
+#m Gunner|gunner.png|"A few hundred rounds doesn't fix a real shortage. Never did. So yeah, I misled you. My mistake."
+#m Gunner|gunner.png|"The Captain says you're reliable. I wasn't convinced. Out there, anyone who can't prove themselves ends up dead in the dirt."
+#m Gunner|gunner.png|"You proved it. I can work with that. I'm counting on you."
+#stat_inc gunner|reputation|10
+#set_flag gun01_reported_to_gunner,true
+#exit
+
+*gun01_after
+#m Gunner|gunner.png|"Getting that damn armory organized finally let us breathe. Now I can pull what we need without tearing the place apart."
+#jump loop_regular
+
+*gun02_offer
+#m Gunner|gunner.png|"I want real field data from the people fighting outside. Resource consumption, response time. The numbers matter."
+#m Gunner|gunner.png|"If you've got time, take on about a hundred zombies, then tell me what you learned. Doesn't have to be with a gun. I need data on non-ammo fights too."
+#m Gunner|gunner.png|"Once you've got enough, come find me. Your report helps me plan resupply."
+#choice
+    gun02_accept|Accept
+    gun02_decline|Talk about it later
+#jump loop_regular
+
+*gun02_accept
+#m Gunner|gunner.png|"Good. More real data means better accuracy."
+#quest_unlock gun02_field_test
+#jump loop_regular
+
+*gun02_decline
+#m Gunner|gunner.png|"Copy. When you're ready, we'll talk."
+#jump loop_regular
+
+*gun02_remind
+#is_task gun02_field_test|t1|uncompleted
+    #m Gunner|gunner.png|"Get outside, drop zombies, and keep collecting data. Stay mobile and keep building the record."
+    #jump loop_regular
+#is_task gun02_field_test|t2|uncompleted
+    #jump gun02_report
+#jump gun02_after
+
+*gun02_report
+#is_flag gun02_reported_to_gunner,true
+    #jump gun02_after
+#m I told Gunner what I learned fighting the zombies. He listened, nodding again and again, letting out low whistles of surprise.
+#m Gunner|gunner.png|"Yeah... so that's how it went. That's a better lesson than I expected. Appreciate it."
+#stat_inc gunner|reputation|10
+#set_flag gun02_reported_to_gunner,true
+#jump gun02_after
+
+*gun02_after
+#m Gunner|gunner.png|"That field data makes supply planning a hell of a lot easier. Good work."
+#jump loop_regular
+
+*gun03_offer
+#m Gunner|gunner.png|"I heard you found documents about the Delta Facility at that research facility. There might be more classified material left behind."
+#m Gunner|gunner.png|"If my memory's right, prototype weapon blueprints were stored somewhere in that complex."
+#m Gunner|gunner.png|"If the schematics are still there, can you recover them?"
+#choice
+    gun03_accept|Accept
+    gun03_decline|Talk about it later
+#jump loop_regular
+
+*gun03_accept
+#m Gunner|gunner.png|"Good. If you can, bring them back without damaging the original."
+#quest_unlock gun03_prototype_weapon
+#jump loop_regular
+
+*gun03_decline
+#m Gunner|gunner.png|"Copy. When you're ready, we'll talk."
+#jump loop_regular
+
+*gun03_remind
+#is_task gun03_prototype_weapon|t1|uncompleted
+    #m Gunner|gunner.png|"Check the research complex for that blueprint. It's gotta be in there somewhere."
+    #jump loop_regular
+#is_task gun03_prototype_weapon|t2|uncompleted
+    #jump gun03_report
+#jump gun03_after
+
+*gun03_report
+#is_flag gun03_delivered_to_gunner,true
+    #jump gun03_after
+#m Gunner|gunner.png|"You get the blueprints? What's the condition?"
+#deliver gun03_prototype_weapon|t2
+    #m Gunner|gunner.png|"Good. Condition's solid. This'll do."
+    #stat_inc gunner|reputation|20
+    #exit
+#m Gunner|gunner.png|"If you confirm the schematics, hand them over. We can't have them walking off."
+#jump loop_regular
+
+*gun03_after
+#m Gunner|gunner.png|"XM-19... They said it was experimental, but this is more detailed than I expected. I'll analyze it when I get a minute."
+#jump loop_regular
+
+*loop_ask
+#m Gunner|gunner.png|"What is it?"
+#choice
+    loop_ask_about_bunker|About the bunker...
+    loop_ask_about_weapons|About the weapons...
+    loop_ask_about_you|About you...
+    loop_regular|Talk about something else
+
+*loop_ask2
+#m Gunner|gunner.png|"And?"
+#choice
+    loop_ask_about_bunker|About the bunker...
+    loop_ask_about_weapons|About the weapons...
+    loop_ask_about_you|About you...
+    loop_regular|Talk about something else
+
+*loop_ask_about_bunker
+#m Gunner|gunner.png|"I served on the Fort Knox for five years, and I never even knew this place existed."
+#m Gunner|gunner.png|"If the Captain hadn't found it, nobody would've even thought to run here."
+#m Gunner|gunner.png|"In this chaos, we're alive because of the Captain. People ought to remember that."
+#jump loop_ask2
+
+*loop_ask_about_weapons
+#m Gunner|gunner.png|"The amount of ammo and gear stored in this bunker is unreal."
+#m Gunner|gunner.png|"Civilian firearms, military heavy weapons... all mixed together, no order to it."
+#m Gunner|gunner.png|"Like somebody was getting ready for the end of the world."
+#jump loop_ask2
+
+*loop_ask_about_you
+#m Gunner|gunner.png|"Sergeant James Gunner. Used to be an M2 gunner for Heavy Weapons Squad of Weapons Company."
+#m Gunner|gunner.png|"Now I focus on keeping this bunker running with the Captain."
+#m Gunner|gunner.png|"When civilians and soldiers are packed together, if discipline isn't tight, accidents happen."
+#jump loop_ask2
+
+*loop_weapons
+#m Gunner|gunner.png|"Rifles, pistols, ammo... and a couple of surprise items."
+#m Gunner|gunner.png|"I don't hand anything out, but I'll trade for the right supplies."
+#trade gunner
+    #buyback_clear
+    #m Gunner|gunner.png|"If you need something, come back."
+    #exit
+#m Gunner|gunner.png|"If you need something, come back."
+#jump loop_regular
+
+*dialogue_exit
+#exit
+

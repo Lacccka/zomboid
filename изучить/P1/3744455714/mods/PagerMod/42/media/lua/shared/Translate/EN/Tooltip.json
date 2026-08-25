@@ -1,0 +1,5 @@
+{
+    "Tooltip_PagerMod_Pager": "A pocket pager. <br> Right-click and Activate it to receive a unique number, then Open it to read and send short text pages anywhere on the map. <br> Pagers are the long-range tier: use voice chat up close and walkie-talkies at medium range.",
+    "Tooltip_PagerMod_Tower": "A pager relay tower. <br> Right-click it to set up the tower at your feet, then power it from a nearby generator. <br> In tower signal mode the pager network only works while a set-up tower has electricity.",
+    "Tooltip_PagerMod_Schematic": "An electronics magazine with schematics for a pager relay tower. <br> Read it to learn how to craft one (needs Electricity 5)."
+}

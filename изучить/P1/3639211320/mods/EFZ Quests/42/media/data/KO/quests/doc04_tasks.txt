@@ -1,0 +1,12 @@
+*doc04_last_patient_t1
+#name 닥터의 전처의 집으로 이동하기
+*doc04_last_patient_t2
+#name 집을 수색하기
+*doc04_last_patient_t3
+#name 편지를 닥터에게 전달하기
+*doc04_last_patient_t4
+#name 닥터와 이야기 나누기
+
+
+
+

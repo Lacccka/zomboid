@@ -1,0 +1,5 @@
+ItemName_EN = {
+    ItemName_Base.Pager = "Pager",
+    ItemName_PagerMod.PagerTower = "Pager Tower",
+    ItemName_PagerMod.TowerSchematic = "Pager Tower Schematics",
+}

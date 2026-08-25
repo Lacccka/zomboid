@@ -1,0 +1,23 @@
+#quest cap03_chain_break
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|cap03_active|true
+        #action SetFlag|cap03_started|true
+        #action SetFlag|cap03_radios_delivered|false
+        #action SetFlag|cap03_reported_to_captain|false
+        #action UnlockTask|cap03_chain_break|t1
+    #task t1
+        #set Deliver|Base.WalkieTalkie5,2|Base.HamRadio2,2
+        #action SetFlag|cap03_radios_delivered|true
+        #action UnlockTask|cap03_chain_break|t2
+    #task t2
+        #set RaiseFlag|cap03_reported_to_captain
+    #task t3|unlocked|hidden
+        #set TaskCondition|cap03_chain_break|t1,t2
+        #action Reward|EFZ.MassSupplyTicket,1,special
+        #action SetFlag|cap03_active|false
+        #action SetFlag|cap03_completed|true
+        #action CompleteQuest|cap03_chain_break
+
+
+

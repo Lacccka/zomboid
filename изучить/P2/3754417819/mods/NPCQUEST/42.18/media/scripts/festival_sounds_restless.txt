@@ -1,0 +1,38 @@
+module Bandits
+{
+    sound RestlessDreamsSeg01
+    {
+        category = Object,
+        loop = false,
+        is3D = true,
+        clip { file = media/sound/RestlessDreams/restless-seg01.ogg, volume = 0.85, distanceMax = 55, }
+    }
+    sound RestlessDreamsSeg02
+    {
+        category = Object,
+        loop = false,
+        is3D = true,
+        clip { file = media/sound/RestlessDreams/restless-seg02.ogg, volume = 0.85, distanceMax = 55, }
+    }
+    sound RestlessDreamsSeg03
+    {
+        category = Object,
+        loop = false,
+        is3D = true,
+        clip { file = media/sound/RestlessDreams/restless-seg03.ogg, volume = 0.85, distanceMax = 55, }
+    }
+    sound RestlessDreamsSeg04
+    {
+        category = Object,
+        loop = false,
+        is3D = true,
+        clip { file = media/sound/RestlessDreams/restless-seg04.ogg, volume = 0.85, distanceMax = 55, }
+    }
+    sound RestlessDreamsSeg05
+    {
+        category = Object,
+        loop = false,
+        is3D = true,
+        clip { file = media/sound/RestlessDreams/restless-seg05.ogg, volume = 0.85, distanceMax = 55, }
+    }
+}

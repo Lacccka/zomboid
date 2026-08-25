@@ -1,0 +1,7 @@
+#name captain|Captain
+#set_stat captain|reputation|0
+
+#desc Captain
+#desc_append The former Lieutenant of the Fort Knox. Now the overall responsible person for the bunker operation. Everything related to the bunker, including logistics and schedules, goes through her hands.
+#exit
+

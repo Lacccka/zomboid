@@ -1,0 +1,17 @@
+*intro
+#fade_out black|1
+#lua EFZ.GodmodePlayer()
+#teleport 20102,294,0
+#remove_zombies 10|20102,294,0|1
+#sfx EFZ_OpeningFireAlarm
+#fade_in 1
+#wait 25
+#fade_out black|1
+#wait 10
+#teleport 20113,19,0
+#fade_in 1
+#m Cold air, a concrete ceiling... This place is unfamiliar.
+#m My last memory... when was that? I don't know. I can't remember anything except my name.
+#m Maybe the person next to me who looks like a doctor knows something.
+#lua EFZ.UnGodmodePlayer()
+#exit

@@ -1,0 +1,6 @@
+*des01_bring_back_sign
+#name DES-01. Bring Back the Sign
+#desc The designer is worried about her store that was left in the Crossroads Mall. She asks me to check the store and report the condition to her.
+
+
+

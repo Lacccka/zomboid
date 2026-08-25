@@ -1,0 +1,32 @@
+#quest doc04_last_patient
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|doc04_active|true
+        #action SetFlag|doc04_started|true
+        #action SetFlag|doc04_location_reached|false
+        #action SetFlag|doc04_letter_found|false
+        #action SetFlag|doc04_letter_delivered|false
+        #action SetFlag|doc04_reported_to_doctor|false
+        #action UnlockTask|doc04_last_patient|t1
+    #task t1
+        #set GotoLocation|13065,3205,0|building|true
+        #action SetFlag|doc04_location_reached|true
+        #action UnlockTask|doc04_last_patient|t2
+    #task t2
+        #set LootContainer|dresser|13065,3205,0|EFZ.LastLetterToDoctor,false
+        #action SetFlag|doc04_letter_found|true
+        #action UnlockTask|doc04_last_patient|t3
+    #task t3
+        #set Deliver|EFZ.LastLetterToDoctor
+        #action SetFlag|doc04_letter_found|false
+        #action SetFlag|doc04_letter_delivered|true
+        #action UnlockTask|doc04_last_patient|t4
+    #task t4
+        #set RaiseFlag|doc04_reported_to_doctor
+    #task complete|unlocked|hidden
+        #set TaskCondition|doc04_last_patient|t1,t2,t3,t4
+        #action Reward|EFZ.StrengthBooster,2,unique|EFZ.FitnessBooster,2,unique
+        #action SetFlag|doc04_active|false
+        #action SetFlag|doc04_completed|true
+        #action CompleteQuest|doc04_last_patient
+

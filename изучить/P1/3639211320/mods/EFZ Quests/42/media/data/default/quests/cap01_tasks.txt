@@ -1,0 +1,6 @@
+*cap01_inventory_check_t1
+#name Deliver 2 Canned Corned Beef, 2 Pasta, and 2 Rice
+*cap01_inventory_check_t2
+#name Report to the Captain
+
+

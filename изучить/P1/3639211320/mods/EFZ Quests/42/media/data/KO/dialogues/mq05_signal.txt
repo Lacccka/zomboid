@@ -1,0 +1,13 @@
+*landing
+#m 파일럿|pilot.png|"신호 수신 양호, 웨스트포인트 상공으로 접근 중."
+#m 파일럿|pilot.png|"그 자리에서 움직이지 마. 지금 바로 데리러 갈게."
+#sfx EFZ_Helicopter
+#fade_out black|1
+#wait 1
+#lua EFZ.ImmediateExtractForCurrentPlayer()
+#wait 1
+#fade_in 1
+#set_flag mq05_returned_to_bunker,true
+#exit
+
+

@@ -1,0 +1,10 @@
+*mq05_to_the_river_t1
+#name 멀드로 북쪽 진입지 확보하기
+*mq05_to_the_river_t2
+#name 웨스트포인트 진입 루트 개척하기
+*mq05_to_the_river_t3
+#name GPS 신호기가 안정화될 때까지 대기하기
+*mq05_to_the_river_t4
+#name 캡틴에게 보고하기
+
+

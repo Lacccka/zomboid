@@ -1,0 +1,8 @@
+name=MissionsEvents
+id=MissionsEvents
+description=This is an example mod containing two maps.
+poster=poster.png
+description=ggs
+icon=icon.png
+versionMin=42.16.+
+author=GENERAL

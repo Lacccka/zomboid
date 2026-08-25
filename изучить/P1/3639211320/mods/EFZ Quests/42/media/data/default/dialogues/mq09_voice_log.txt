@@ -1,0 +1,6 @@
+*monologue
+#m When I play the recording, I hear the frantic voice of an officer who came from the "Delta Facility."
+#m "It's too late to stop Delta... We have to trigger Plan B, even now..." he whispers, desperate.
+#m He shouts that there's an escape option prepared near Louisville, with enough room for all of us, and that we have to move right now. The visitor tries to calm him down, saying he has no idea what he's talking about.
+#m Then, suddenly, the officer's speech turns thick and slurred. He starts growling, smashes the visitation room glass, and lunges at the visitor. A guard tackles him, and the recording cuts off.
+#exit

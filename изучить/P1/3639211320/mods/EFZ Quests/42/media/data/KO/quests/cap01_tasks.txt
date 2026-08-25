@@ -1,0 +1,6 @@
+*cap01_inventory_check_t1
+#name 소고기 통조림 2개, 스파게티 2개, 쌀 2개를 전달하기
+*cap01_inventory_check_t2
+#name 캡틴에게 보고하기
+
+

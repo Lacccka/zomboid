@@ -1,0 +1,6 @@
+*mq12_city_conquest
+#name Main-12. City Conquest
+#desc The captain confirmed that all exit methods have disappeared. She decided to expand the search range to the city center to survive. After correcting the GPS signal at two locations inside Louisville, the pilot will come to pick me up.
+
+
+

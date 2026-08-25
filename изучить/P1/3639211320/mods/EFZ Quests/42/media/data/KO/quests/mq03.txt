@@ -1,0 +1,38 @@
+#quest mq03_first_raid
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|mq03_active|true
+        #action SetFlag|mq03_started|true
+        #action SetFlag|mq03_location_reached|false
+        #action SetFlag|mq03_crate_secured|false
+        #action SetFlag|mq03_crate_delivered|false
+        #action SetFlag|mq03_meds_delivered|false
+        #action SetFlag|mq03_reported_to_captain|false
+        #action UnlockTask|mq03_first_raid|t1
+    #task t1
+        #set GotoLocation|10660,9815,10705,9855,0|true
+        #action SetFlag|mq03_location_reached|true
+        #action RunScript|marker_scripts.txt,add_marker_mq03_t1
+        #action RunScript|gotoLocation_sfx.txt,sfx
+        #action UnlockTask|mq03_first_raid|t2
+    #task t2
+        #set LootContainer|cardboardbox|10687,9836,0|EFZ.ArmyCrateMQ03,false
+        #action SetFlag|mq03_crate_secured|true
+        #action RunScript|marker_scripts.txt,remove_marker_mq03_t1
+        #action UnlockTask|mq03_first_raid|t3
+    #task t3
+        #set Deliver|EFZ.ArmyCrateMQ03
+        #action SetFlag|mq03_crate_secured|false
+        #action SetFlag|mq03_crate_delivered|true
+        #action UnlockTask|mq03_first_raid|t5
+    #task t5
+        #set RaiseFlag|mq03_reported_to_captain
+    #task t6|unlocked|hidden
+        #set TaskCondition|mq03_first_raid|t1,t2,t3,t5
+        #action Reward|Base.Vest_BulletArmy,1,common|EFZ.SupplyTicket,15,rare
+        #action SetFlag|mq03_active|false
+        #action SetFlag|mq03_completed|true
+        #action SetFlag|mq04_unlocked|true
+        #action CompleteQuest|mq03_first_raid
+
+

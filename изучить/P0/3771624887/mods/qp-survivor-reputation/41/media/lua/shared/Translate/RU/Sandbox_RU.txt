@@ -1,0 +1,15 @@
+Sandbox_RU = {
+    Sandbox_QPSR = "Репутация выжившего QP",
+    Sandbox_QPSR_AutomationEnabled = "Включить автоматическую репутацию",
+    Sandbox_QPSR_AutomationEnabled_tooltip = "Главный переключатель автоматических правил.",
+    Sandbox_QPSR_HunterEnabled = "Включить этапы Охотника",
+    Sandbox_QPSR_HunterEnabled_tooltip = "Начисляет репутацию Охотника за этапы убийств.",
+    Sandbox_QPSR_HunterMilestonePreset = "Набор этапов Охотника",
+    Sandbox_QPSR_HunterMilestonePreset_option1 = "Продакшен: 100 / 250 / 500 / 1000",
+    Sandbox_QPSR_HunterMilestonePreset_option2 = "Быстрый тест: 1 / 3 / 5 / 10",
+    Sandbox_QPSR_ScanIntervalMinutes = "Интервал проверки (минуты)",
+    Sandbox_QPSR_HunterDailyPointCap = "Дневной лимит очков Охотника",
+    Sandbox_QPSR_HunterDailyPointCap_tooltip = "0 отключает лимит. Заблокированные этапы остаются в ожидании.",
+    Sandbox_QPSR_HunterMaxKillsPerScan = "Максимум убийств за проверку",
+    Sandbox_QPSR_HunterMaxKillsPerScan_tooltip = "Защита от аномальных скачков статистики.",
+}

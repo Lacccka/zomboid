@@ -1,0 +1,12 @@
+*mq07_maze_t1
+#name Reach the March Ridge Outskirts
+*mq07_maze_t2
+#name Enter the March Ridge Command Post
+*mq07_maze_t3
+#name Search the Abandoned Bunker
+*mq07_maze_t4
+#name Wait for the GPS Signal to Stabilize
+*mq07_maze_t5
+#name Report to the Captain
+
+

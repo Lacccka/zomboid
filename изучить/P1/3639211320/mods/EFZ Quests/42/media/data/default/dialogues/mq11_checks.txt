@@ -1,0 +1,27 @@
+*plane1
+#m The hangar is empty.
+#exit
+
+*plane2
+#m The hangar is empty.
+#exit
+
+*plane3
+#m The hangar is empty.
+#exit
+
+*plane4
+#m The hangar is empty.
+#exit
+
+*plane5
+#m The hangar is empty.
+#exit
+
+*ship1
+#m According to the control monitors, the fuel tanks are bone dry. Even if there was a plane here, there's no way we could refuel it.
+#exit
+
+*ship2
+#m The main engine is malfunctioning. I tried to preheat it, but it won't turn over.
+#exit

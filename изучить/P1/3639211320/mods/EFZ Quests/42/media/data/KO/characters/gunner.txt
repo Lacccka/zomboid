@@ -1,0 +1,7 @@
+#name gunner|거너
+#set_stat gunner|reputation|0
+
+#desc 거너
+#desc_append 캡틴의 부하이자 무기고 관리인. 벙커의 생존자들에게 무기를 불출한다.
+#exit
+

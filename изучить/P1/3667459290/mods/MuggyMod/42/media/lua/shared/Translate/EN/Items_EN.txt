@@ -1,0 +1,4 @@
+Items_EN = {
+    Item_MuggyHolotape_Name = "Sink Project: Muggy",
+    Item_MuggyHolotape_Desc = "",
+}

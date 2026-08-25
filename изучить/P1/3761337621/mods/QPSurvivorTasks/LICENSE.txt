@@ -1,0 +1,20 @@
+QP Survivor Tasks - License
+===========================
+
+Copyright (c) QUESTPAUSE / QP Mods.
+
+All rights reserved.
+
+You may:
+- Use this mod on personal saves
+- Use this mod on multiplayer servers
+- Include this mod in server modlists with proper Workshop dependency/link
+
+You may not:
+- Reupload this mod
+- Redistribute edited versions
+- Claim this mod as your own
+- Sell this mod or modified versions of it
+- Copy the code into another public mod without permission
+
+For permissions, contact the original author.

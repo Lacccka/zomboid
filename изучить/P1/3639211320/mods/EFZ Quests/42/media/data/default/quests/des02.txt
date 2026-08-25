@@ -1,0 +1,24 @@
+#quest des02_functional_pattern
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|des02_active|true
+        #action SetFlag|des02_started|true
+        #action SetFlag|des02_samples_delivered|false
+        #action SetFlag|des02_reported_to_designer|false
+        #action UnlockTask|des02_functional_pattern|t1
+    #task t1
+        #set Deliver|Base.Jacket_Fireman,1|Base.Trousers_Fireman,1|Base.Hat_Fireman,1|Base.Jacket_Police,1
+        #action SetFlag|des02_samples_delivered|true
+        #action UnlockTask|des02_functional_pattern|t2
+    #task t2
+        #set RaiseFlag|des02_reported_to_designer
+    #task complete|unlocked|hidden
+        #set TaskCondition|des02_functional_pattern|t1,t2
+        #action Reward|EFZ.SupplyTicket,45,rare|Base.Hoodie_Hide_DOWN,1,special|Base.Jacket_HuntingCamo,1,special
+        #action SetFlag|des02_active|false
+        #action SetFlag|des02_completed|true
+        #action CompleteQuest|des02_functional_pattern
+
+
+
+

@@ -1,0 +1,5 @@
+*monologue
+#m The folder is labeled "Operation Clean Slate."
+#m Skimming through it, it says they're pulling ground forces out under the pretense of ending the pandemic, then "cleaning" all of Knox County with strategic nukes.
+#m I should get back to the bunker and talk this over with the captain.
+#exit

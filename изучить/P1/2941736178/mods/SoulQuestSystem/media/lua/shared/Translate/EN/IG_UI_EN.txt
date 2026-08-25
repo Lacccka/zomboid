@@ -1,0 +1,35 @@
+IGUI_EN = {
+   	IGUI_ItemCat_Quest = "Quest",
+
+	IGUI_XP_Quests = "Quests",
+	IGUI_XP_Quests_QuestLog = "Quest Log",
+	IGUI_XP_Quests_ActiveQuests = "Active Quests",
+	IGUI_XP_TaskStatus_Completed = "[COMPLETED] ",
+	IGUI_XP_TaskStatus_Delivered = "[DELIVERED] ",
+	IGUI_XP_TaskStatus_Done = "[DONE] "
+	IGUI_XP_TaskStatus_Failed = "[FAILED] ",
+	IGUI_XP_TaskStatus_Obtained = "[OBTAINED] ",
+	IGUI_XP_TaskStatus_Updated = "[UPDATED] ",
+
+	IGUI_Decline = "Decline",
+	IGUI_Dismiss = "Dismiss",
+
+	IGUI_XP_Factions = "Factions",
+
+	IGUI_Factions_Template_Tier1 = "Stranger",
+	IGUI_Factions_Template_Tier2 = "Neutral",
+	IGUI_Factions_Template_Tier3 = "Regular",
+	IGUI_Factions_Template_Tier4 = "Friendly",
+	IGUI_Factions_Template_Tier5 = "Trusted",
+
+	IGUI_Quest_ThankYouTester = "You completed this test. Let me know your thoughts about it.",
+
+	IGUI_Rewards = "Rewards:"
+
+	IGUI_WorldEventName_TEST = "Talking Raccoon",
+	IGUI_WorldEventName_TEST1 = "Talking Raccoon",
+	IGUI_WorldEventName_TEST2 = "Spiffo",
+	IGUI_WorldEventName_TEST3 = "Regular Spiffo",
+	IGUI_WorldEventName_TEST4 = "Friendly Spiffo",
+	IGUI_WorldEventName_TEST5 = "Trusted Spiffo",
+}

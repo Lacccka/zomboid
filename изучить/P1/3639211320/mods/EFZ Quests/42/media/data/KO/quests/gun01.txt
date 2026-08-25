@@ -1,0 +1,23 @@
+#quest gun01_armory_cleanup
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|gun01_active|true
+        #action SetFlag|gun01_started|true
+        #action SetFlag|gun01_ammo_delivered|false
+        #action SetFlag|gun01_reported_to_gunner|false
+        #action UnlockTask|gun01_armory_cleanup|t1
+    #task t1
+        #set Deliver|Base.Bullets9mmBox,2|Base.Bullets45Box,2|Base.556Box,3
+        #action SetFlag|gun01_ammo_delivered|true
+        #action UnlockTask|gun01_armory_cleanup|t2
+    #task t2
+        #set RaiseFlag|gun01_reported_to_gunner
+    #task complete|unlocked|hidden
+        #set TaskCondition|gun01_armory_cleanup|t1,t2
+        #action Reward|EFZ.SupplyTicket,30,rare|Base.556Box,6,rare|Base.Bullets45Box,6,rare|Base.Bullets9mmBox,5,rare
+        #action SetFlag|gun01_active|false
+        #action SetFlag|gun01_completed|true
+        #action CompleteQuest|gun01_armory_cleanup
+
+
+

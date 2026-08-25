@@ -1,0 +1,7 @@
+*des02_functional_pattern
+#name DES-02. Functional Pattern
+#desc The designer is looking for special clothing samples to study the functional patterns. If I can gather 1 Firefighter Jacket, 1 Firefighter Pants, 1 Firefighter Helmet, and 1 Police Jacket, she can study the new functional patterns.
+
+
+
+

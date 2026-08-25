@@ -1,0 +1,6 @@
+*mq09_lunatic
+#name Main-09. Lunatic's Record
+#desc The captain found a record of isolating 'Delta Facility' inmates at the correctional facility in Rosewood before the pandemic. I need to investigate the facility to find any remaining clues.
+
+
+

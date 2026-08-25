@@ -1,0 +1,5 @@
+*mq05_to_the_river
+#name Main-05. Westpoint
+#desc The captain confirmed that the road north of Muldraugh can be used to reach Westpoint by land. Install the GPS signaler at the location near Westpoint to secure the helicopter insertion route.
+
+

@@ -1,0 +1,7 @@
+*gun03_prototype_weapon_marker
+#name Go to the Research Facility
+*gun03_prototype_weapon_t1
+#name Secure the Prototype Weapon Design
+*gun03_prototype_weapon_t2
+#name Report to the Gunner
+

@@ -1,0 +1,15 @@
+Sandbox_ES = {
+    Sandbox_QPSR = "Reputación del Superviviente QP",
+    Sandbox_QPSR_AutomationEnabled = "Activar reputación automática",
+    Sandbox_QPSR_AutomationEnabled_tooltip = "Interruptor principal de todas las reglas automáticas.",
+    Sandbox_QPSR_HunterEnabled = "Activar hitos de Cazador",
+    Sandbox_QPSR_HunterEnabled_tooltip = "Otorga reputación de Cazador en los hitos de bajas.",
+    Sandbox_QPSR_HunterMilestonePreset = "Preajuste de hitos de Cazador",
+    Sandbox_QPSR_HunterMilestonePreset_option1 = "Producción: 100 / 250 / 500 / 1000",
+    Sandbox_QPSR_HunterMilestonePreset_option2 = "Prueba rápida: 1 / 3 / 5 / 10",
+    Sandbox_QPSR_ScanIntervalMinutes = "Intervalo de escaneo (minutos)",
+    Sandbox_QPSR_HunterDailyPointCap = "Límite diario automático de Cazador",
+    Sandbox_QPSR_HunterDailyPointCap_tooltip = "0 desactiva el límite. Los hitos bloqueados permanecen pendientes.",
+    Sandbox_QPSR_HunterMaxKillsPerScan = "Máximo de bajas acreditadas por escaneo",
+    Sandbox_QPSR_HunterMaxKillsPerScan_tooltip = "Protege contra saltos anormales de estadísticas.",
+}

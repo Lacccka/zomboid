@@ -1,0 +1,11 @@
+*mq03_first_raid_t1
+#name Go to the Target Point
+*mq03_first_raid_t2
+#name Find the Hidden Military Supply Box
+*mq03_first_raid_t3
+#name Deliver the Box to the Gunner
+*mq03_first_raid_t5
+#name Report to the Captain
+
+
+

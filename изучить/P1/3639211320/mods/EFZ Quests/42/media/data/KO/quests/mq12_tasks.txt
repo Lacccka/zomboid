@@ -1,0 +1,11 @@
+*mq12_city_conquest_t1
+#name 루이빌 시내 보정 좌표 1에 도달하기
+*mq12_city_conquest_t2
+#name 루이빌 시내 보정 좌표 2에 도달하기
+*mq12_city_conquest_t3
+#name 대기하며 GPS 신호 유도하기
+*mq12_city_conquest_t4
+#name 캡틴에게 보고하기
+
+
+

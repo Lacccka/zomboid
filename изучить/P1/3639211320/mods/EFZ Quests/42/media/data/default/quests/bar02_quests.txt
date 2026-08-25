@@ -1,0 +1,5 @@
+*bar02_black_label
+#name BAR-02. Black Label
+#desc The bartender is looking for a rare alcoholic beverage that was made by a brewery he used to trade with. He asks me to find it and deliver it to him.
+
+

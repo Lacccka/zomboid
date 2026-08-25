@@ -1,0 +1,22 @@
+#quest doc03_med_shortage
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|doc03_active|true
+        #action SetFlag|doc03_started|true
+        #action SetFlag|doc03_meds_delivered|false
+        #action SetFlag|doc03_reported_to_doctor|false
+        #action UnlockTask|doc03_med_shortage|t1
+    #task t1
+        #set Deliver|Base.Bandage,10|Base.Pills,5|Base.PillsAntiDep,3|Base.PillsBeta,3|Base.Antibiotics,3|Base.Splint,3|Base.Disinfectant,3
+        #action SetFlag|doc03_meds_delivered|true
+        #action UnlockTask|doc03_med_shortage|t2
+    #task t2
+        #set RaiseFlag|doc03_reported_to_doctor
+    #task complete|unlocked|hidden
+        #set TaskCondition|doc03_med_shortage|t1,t2
+        #action Reward|EFZ.SupplyTicket,75,rare|EFZ.WoundTimeReducer,10,special
+        #action SetFlag|doc03_active|false
+        #action SetFlag|doc03_completed|true
+        #action CompleteQuest|doc03_med_shortage
+
+

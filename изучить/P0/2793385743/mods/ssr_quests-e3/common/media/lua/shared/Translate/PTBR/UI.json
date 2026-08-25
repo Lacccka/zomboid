@@ -1,0 +1,12 @@
+{
+    "UI_QSystem_Trade": "Negociar",
+    "UI_QSystem_Trade_List_1": "Ofertas",
+    "UI_QSystem_Trade_List_2": "Demandas",
+    "UI_QSystem_Trade_List_3": "Estoque",
+    "UI_QSystem_Trade_Single": "\"Este vale %d.\"",
+    "UI_QSystem_Trade_Multiple": "\"Cada um destes vale %d.\"",
+    "UI_QSystem_Trade_Barter": "Trocar",
+    "UI_QSystem_Trade_Close": "Fechar",
+    "UI_QSystem_Trade_Clear": "Limpar",
+    "UI_QSystem_Trade_Confirm": " <CENTRE> O valor das demandas é menor que o valor das ofertas. <LINE> O restante será perdido. <LINE> <LINE> Prosseguir?"
+}

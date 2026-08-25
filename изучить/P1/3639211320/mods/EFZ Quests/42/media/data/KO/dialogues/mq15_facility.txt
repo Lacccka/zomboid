@@ -1,0 +1,30 @@
+*entry_broadcast
+#sfx EFZ_Radiosfx
+#m "경보. 시설 봉쇄 절차가 진행 중입니다."
+#m "외부로 향하는 엘리베이터 통로 및 비상계단을 봉쇄합니다."
+#m 이어서 엘리베이터 전원이 꺼지는 소리가 났다. 아무래도 다시 올라가지는 못할 것 같다.
+#exit
+
+*try_stop
+#m 단말기에 '자폭 중지' 항목이 표시되어 있다.
+#is_flag mq15_override_commands_found,true
+    #jump override_success
+#has_item EFZ.OverrideCommand,3
+    #set_flag mq15_override_commands_found,true
+    #jump override_success
+#m "시설 가동을 중단하려면 오버라이드 명령 A, B, C를 입력하시오."
+#m 이게... 뭐지? 시설 내부를 더 수색해야 한다.
+#exit
+
+*override_success
+#remove_item EFZ.OverrideCommand,3
+#m [시스템] 오버라이드 명령 A, B, C 입력 확인. 자폭 절차를 중단하고 시설 봉쇄를 해제합니다.
+#m 됐다. 이제 여기서 빠져나가기만 하면...
+#sfx EFZ_Radiosfx
+#m "비정상적인 외부 명령 입력을 감지했습니다."
+#m "10분 후 시설 봉쇄가 재개됩니다. 모든 인원은 즉시 이동하십시오."
+#m 곧이어 통로에서 무언가 무너지는 소리와 함께 괴성이 들리기 시작했다. 무슨 일이 일어나고 있는 거지?
+#m 느낌이 좋지 않다. 최대한 빨리 왔던 길로 돌아가야 한다.
+#set_flag mq15_override_success,true
+#exit
+

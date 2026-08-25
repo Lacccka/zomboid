@@ -1,0 +1,15 @@
+*landing
+#m Pilot|pilot.png|"Signal received. Moving in on coordinates just outside Louisville International Airport."
+#m Pilot|pilot.png|"Looks like hardly anyone's getting airborne anymore. From up here, the runway barely shows any recent use."
+#m Pilot|pilot.png|"Hold your position. I'll come scoop you up."
+#fade_out black|1
+#wait 1
+#sfx EFZ_Helicopter
+#lua EFZ.ImmediateExtractForCurrentPlayer()
+#wait 1
+#fade_in 1
+#set_flag mq10_returned_to_bunker,true
+#exit
+
+
+

@@ -1,0 +1,5 @@
+*mq07_maze
+#name Main-07. Maze
+#desc The captain asked me to contact the March Ridge Command Post and check the situation directly. I need to reach March Ridge by land to meet the commander.
+
+

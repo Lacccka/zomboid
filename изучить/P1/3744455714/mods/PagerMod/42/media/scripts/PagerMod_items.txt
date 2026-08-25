@@ -1,0 +1,72 @@
+module Base
+{
+    /*
+     * B42 already ships Base.Pager and spawns it in loot. We re-declare it to
+     * (a) make it holsterable in the walkie-talkie belt slot and (b) point its
+     * tooltip at our usage text. All vanilla fields are repeated so the item is
+     * complete whether the engine merges or replaces the definition.
+     */
+    item Pager
+    {
+        DisplayCategory  = Electronics,
+        ItemType         = base:normal,
+        Weight           = 0.1,
+        Icon             = Pager,
+        WorldStaticModel = Pager,
+        Tags             = base:hasmetal;base:miscelectronic,
+        AttachmentType   = Walkie,
+        Tooltip          = Tooltip_PagerMod_Pager,
+    }
+}
+
+module PagerMod
+{
+    imports
+    {
+        Base
+    }
+
+    /*
+     * Pager relay tower (Ultra Realistic tier). A heavy carried item the player
+     * "sets up" at a tile via its right-click menu; deploying places a solid
+     * world object (an IsoThumpable using a vanilla sprite, see PagerMod_Client
+     * .deployTower) so it has real collision instead of the old walk-through
+     * custom model. The network only works in TOWER signal mode while a set-up
+     * tower has electricity (run a generator near it).
+     *
+     * No WorldStaticModel: the item only ever lives in inventory (deploying
+     * spawns the world object, not this item), so the inventory icon is enough.
+     */
+    item PagerTower
+    {
+        DisplayCategory  = Electronics,
+        ItemType         = base:normal,
+        Weight           = 6.0,
+        Icon             = PagerTower,
+        WorldStaticModel = PagerTower,
+        Tags             = base:hasmetal;base:miscelectronic,
+        Tooltip          = Tooltip_PagerMod_Tower,
+    }
+
+    /*
+     * Pager Tower Schematics — the only way to learn MakePagerTower. The recipe
+     * is NeedToBeLearn with no auto-learn, so without this magazine the tower
+     * cannot be crafted. The magazine is only distributed in loot while tower
+     * mode is enabled (see server/PagerMod_Distribution.lua), so it never spawns
+     * when it isn't needed.
+     */
+    item TowerSchematic
+    {
+        DisplayCategory  = SkillBook,
+        ItemType         = base:literature,
+        Weight           = 0.4,
+        Icon             = Book6,
+        BoredomChange    = -10,
+        StressChange     = -8,
+        LearnedRecipes   = MakePagerTower,
+        StaticModel      = Magazine,
+        WorldStaticModel = MagazineGround,
+        Tags             = base:magazine,
+        Tooltip          = Tooltip_PagerMod_Schematic,
+    }
+}

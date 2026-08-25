@@ -1,0 +1,39 @@
+#quest mq08_dirty_slate
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|mq08_active|true
+        #action SetFlag|mq08_started|true
+        #action SetFlag|mq08_medical_facility_reached|false
+        #action SetFlag|mq08_crate_secured|false
+        #action SetFlag|mq08_crate_delivered|false
+        #action SetFlag|mq08_reported_to_doctor|false
+        #action SetFlag|mq08_fallout_map_found|false
+        #action UnlockTask|mq08_dirty_slate|t1
+    #task t1
+        #set GotoLocation|10139,12748,10149,12760,0|true
+        #action SetFlag|mq08_medical_facility_reached|true
+        #action RunScript|marker_scripts.txt,add_marker_mq08_t2
+        #action UnlockTask|mq08_dirty_slate|t2
+    #task t2
+        #set LootContainer|metal_shelves|10140,12750,0|EFZ.NBCEquipmentCrate,true
+        #action SetFlag|mq08_crate_secured|true
+        #action RunScript|marker_scripts.txt,remove_marker_mq08_t2
+        #action UnlockTask|mq08_dirty_slate|t3
+    #task t3
+        #set Deliver|EFZ.NBCEquipmentCrate
+        #action SetFlag|mq08_crate_secured|false
+        #action SetFlag|mq08_crate_delivered|true
+        #action UnlockTask|mq08_dirty_slate|t4
+    #task t4
+        #set RaiseFlag|mq08_reported_to_doctor
+    #task t5|unlocked|hidden
+        #set TaskCondition|mq08_dirty_slate|t1,t2,t3,t4
+        #action Reward|EFZ.SupplyTicket,20,rare|EFZ.WoundTimeReducer,2,special
+        #action SetFlag|mq08_active|false
+        #action SetFlag|mq08_completed|true
+        #action SetFlag|mq08_fallout_map_found|true
+        #action SetFlag|mq09_unlocked|true
+        #action CompleteQuest|mq08_dirty_slate
+
+
+

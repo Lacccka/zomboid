@@ -1,0 +1,9 @@
+*mq15_countdown_t1
+#name 델타 시설로 진입하기
+*mq15_countdown_t2
+#name 시설 내부를 탐색하기
+*mq15_countdown_t3
+#name 자폭을 멈추기
+*mq15_countdown_t4
+#name 10분 안에 출입구로 탈출하기
+

@@ -1,0 +1,12 @@
+UI_CS = {
+	UI_QSystem_Trade = "Obchodovat"
+	UI_QSystem_Trade_List_1 = "Nabídky"
+	UI_QSystem_Trade_List_2 = "Poptávky"
+	UI_QSystem_Trade_List_3 = "Zásoba"
+	UI_QSystem_Trade_Single = ""Tohle stojí %i.""
+	UI_QSystem_Trade_Multiple = ""Každá z tìchto %i.""
+	UI_QSystem_Trade_Barter = "Vymìnit"
+	UI_QSystem_Trade_Close = "Zavøít"
+	UI_QSystem_Trade_Clear = "Vyprázdnit"
+	UI_QSystem_Trade_Confirm = " <CENTRE> Hodnota poptávky je nižší než hodnota nabídky. <LINE> Zbytek bude ztracen. <LINE> <LINE> Pokraèovat?"
+}

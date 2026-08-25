@@ -1,0 +1,12 @@
+Idle_CN = {
+    Idle_Muggy_01 = "占位符文本_闲置_01",
+    Idle_Muggy_02 = "占位符文本_闲置_02",
+    Idle_Muggy_03 = "占位符文本_闲置_03",
+    Idle_Muggy_04 = "占位符文本_闲置_04",
+    Idle_Muggy_05 = "占位符文本_闲置_05",
+    Idle_Muggy_06 = "占位符文本_闲置_06",
+    Idle_Muggy_07 = "占位符文本_闲置_07",
+    Idle_Muggy_08 = "占位符文本_闲置_08",
+    Idle_Muggy_CustomBeep = "*哔哔啵啵* [自定义闲置声音测试]",
+    Idle_Muggy_Reunion = "哦！是你！我一直在想你什么时候会回来！",
+}

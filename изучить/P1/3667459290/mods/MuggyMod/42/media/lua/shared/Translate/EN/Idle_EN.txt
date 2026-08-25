@@ -1,0 +1,12 @@
+Idle_EN = {
+    Idle_Muggy_01 = "PLACEHOLDER_TEXT_IDLE_01",
+    Idle_Muggy_02 = "PLACEHOLDER_TEXT_IDLE_02",
+    Idle_Muggy_03 = "PLACEHOLDER_TEXT_IDLE_03",
+    Idle_Muggy_04 = "PLACEHOLDER_TEXT_IDLE_04",
+    Idle_Muggy_05 = "PLACEHOLDER_TEXT_IDLE_05",
+    Idle_Muggy_06 = "PLACEHOLDER_TEXT_IDLE_06",
+    Idle_Muggy_07 = "PLACEHOLDER_TEXT_IDLE_07",
+    Idle_Muggy_08 = "PLACEHOLDER_TEXT_IDLE_08",
+    Idle_Muggy_CustomBeep = "*BEEP BOOP* [Custom idle sound test]",
+    Idle_Muggy_Reunion = "Oh! It's you! I was wondering when you'd come back!",
+}

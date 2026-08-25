@@ -1,0 +1,13 @@
+UI_EN = {
+    UI_Trading_TradeWithNPC = "Trade with NPC",
+    UI_Trading_DoNothing = "Do Nothing",
+    UI_Trading_Trade = "Trade",
+    UI_Trading_Value = "Value: ",
+    UI_Trading_YourItems = "Your Items",
+    UI_Trading_AvailableRewards = "Available Rewards",
+    UI_Info_DefaultHeader = "Information",
+    UI_Info_OK = "OK",
+    UI_Dialogue_PressToContinue = "Press [E] to continue...",
+    UI_InfoNode_PartsProduction_Header = "Parts Production:",
+    UI_InfoNode_PartsProduction_Body = "Upgrade holotape received... upgrading 'Parts Production' functionality (supply of Scrap Electronics available once per day).",
+}

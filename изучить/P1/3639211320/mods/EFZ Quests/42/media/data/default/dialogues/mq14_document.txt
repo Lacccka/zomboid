@@ -1,0 +1,4 @@
+*monologue
+#m I found documents related to the Delta Facility in a file cabinet. There's a code on the cover that looks like a cipher.
+#m Everything inside is encrypted, so I can't decode it out here. All I can do is take it back to the bunker and show the captain.
+#exit

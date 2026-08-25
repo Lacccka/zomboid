@@ -1,0 +1,6 @@
+Sandbox_EN = {
+    Sandbox_EFZQuests = "EFZ Quests",
+
+    Sandbox_EFZQuests_ExtremeMode = "Extreme Mode",
+    Sandbox_EFZQuests_ExtremeMode_tooltip = "When enabled, player corpses or reanimated player zombies are removed on death. This prevents recovering regular inventory items, leaving only separately dropped quest items recoverable.",
+}

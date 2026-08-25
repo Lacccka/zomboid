@@ -1,0 +1,32 @@
+function SpawnPoints()
+    local function mallSpawn()
+        return { { posX = 13565, posY = 1292, posZ = 0 } }
+    end
+    return {
+        unemployed = mallSpawn(),
+        fireofficer = mallSpawn(),
+        policeofficer = mallSpawn(),
+        parkranger = mallSpawn(),
+        constructionworker = mallSpawn(),
+        securityguard = mallSpawn(),
+        carpenter = mallSpawn(),
+        burglar = mallSpawn(),
+        chef = mallSpawn(),
+        burgerflipper = mallSpawn(),
+        repairman = mallSpawn(),
+        farmer = mallSpawn(),
+        fisherman = mallSpawn(),
+        doctor = mallSpawn(),
+        nurse = mallSpawn(),
+        veteran = mallSpawn(),
+        lumberjack = mallSpawn(),
+        fitnessinstructor = mallSpawn(),
+        electrician = mallSpawn(),
+        engineer = mallSpawn(),
+        metalworker = mallSpawn(),
+        mechanics = mallSpawn(),
+        rancher = mallSpawn(),
+        smither = mallSpawn(),
+        tailor = mallSpawn(),
+    }
+end

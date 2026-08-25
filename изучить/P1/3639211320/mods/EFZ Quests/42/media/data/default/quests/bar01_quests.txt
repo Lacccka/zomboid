@@ -1,0 +1,5 @@
+*bar01_comfort_food
+#name BAR-01. Comfort Food
+#desc The bartender is worried about the morale of the people in the bunker, and wants to make something that will cheer them up. Since fresh fruits are scarce, he asks me to gather 5 blueberries and 5 blackberries from the wild.
+
+

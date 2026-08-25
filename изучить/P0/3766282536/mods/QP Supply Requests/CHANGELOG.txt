@@ -1,0 +1,156 @@
+QP Supply Requests v0.6.6
+- Added optional server-only integration with QP Survivor Reputation v0.4.1 Community automation.
+- Awards one fixed Community completion reward to each survivor with a positive frozen final contribution.
+- Self-created requests are rejected by QP Survivor Reputation exploit protection.
+- Added a persistent deterministic request ID for stable duplicate protection.
+- Existing requests receive a deterministic fallback ID when next written.
+- No reward is attempted until the request is permanently completed.
+- No retroactive award is generated when Community automation is disabled at completion.
+- QP Survivor Reputation remains optional; Supply Requests behavior is unchanged when it is absent or disabled.
+
+QP Supply Requests v0.6.5
+- Fixed active contribution totals increasing when the same item was repeatedly removed and deposited again.
+- Fixed protected multiplayer containers showing the warning too late, after the vanilla item transaction had already moved the item.
+- Protected withdrawals are now rejected in ISInventoryTransferAction:isValid() before createItemTransaction() starts, while retaining the transfer-stage fallback and server-side intent rejection.
+- Contribution rows now represent net credited supplies currently retained in an incomplete request, not gross transfer actions.
+- Registers exact item-ID intents for both deposits and withdrawals before multiplayer transactions start.
+- Persists active item ID to contributor ownership so removing a credited item removes the correct contributor credit.
+- If an older request has no item ownership data, withdrawal reconciliation falls back safely without allowing total credit to exceed active progress.
+- Removing excess items that do not reduce request progress does not erase valid contribution credit.
+- Contribution history freezes permanently when the request completes, so collection after Release Supplies does not alter the completed record.
+- Preserved multi-item requests, current-admin permissions, protected collection, item-ID deposit verification, migration, persistence, Build 41/42 parity, and all six languages.
+
+QP Supply Requests v0.6.4
+- Replaced late transferItem-only attribution with pre-transaction InventoryItem ID intents.
+- Registers every selected donation before the vanilla multiplayer item transaction starts, including items later merged into one transfer action.
+- The server credits a contributor only after the exact registered item ID appears in the attached request container.
+- Canceled or failed transfers receive no credit.
+- Holds final completion briefly in memory so late network intent packets are credited before the request closes.
+- Keeps v0.6.3 transfer protection as a fallback and preserves multi-item requests, current-admin permissions, protected collection, migration, persistence, Build 41/42 parity, and all six languages.
+
+QP Supply Requests v0.6.3
+- Fixed mixed-item transfers being attributed to the wrong requested item.
+- Uses the actual item passed to each transferItem call instead of ISInventoryTransferAction.self.item, which can remain pinned to another item in a multi-item transfer action.
+- Restores complete contributor rows for every requested item delivered through the same inventory transfer batch.
+- Preserved v0.6.2 request-level batching, current-admin permissions, protected collection flow, migration, persistence, Build 41/42 parity, and all six languages.
+
+QP Supply Requests v0.6.2
+- Fixed multiplayer contribution history showing only the item processed when a multi-item request completed.
+- Changed progress processing to one shared debounce queue per supply request instead of one queue per requested item.
+- Credits every queued player-and-item contribution before evaluating overall completion.
+- Preserves separate contributor totals for every requested item and supports multiple contributors to the same item.
+- Keeps Completed by separate from the full contribution history.
+- Preserved v0.6.1 current-admin permissions, protected collection flow, migration, persistence, Build 41/42 parity, and all six languages.
+
+QP Supply Requests v0.6.1
+- Changed multiplayer request creation to current administrators only.
+- Changed request removal to current administrators only.
+- Changed Release Supplies to current administrators only.
+- Request creator metadata is now informational and no longer grants management permissions.
+- Removing administrator access immediately removes create, remove, and release permissions.
+- Added matching client-side availability checks and server-authoritative permission enforcement.
+- Preserved normal-player viewing, donating, protected withdrawal blocking, multi-item progress, persistence, migration, and all six languages.
+
+QP Supply Requests v0.6.0
+- Added multi-item supply requests with up to 20 distinct item lines.
+- Added a separate target and progress value for every requested item.
+- Added per-player, per-item contribution tracking.
+- Added an optional request title.
+- Added Add Item and Remove Selected Item controls to the creation window.
+- Added an item-progress list and item-specific contribution rows to the request window.
+- Requests complete only after every item line reaches its target.
+- Preserved protected awaiting-collection and Release Supplies behavior.
+- Added automatic migration for existing v0.5.x single-item requests.
+- Added all new UI strings in EN, FR, RU, CN, PTBR, and ES.
+
+v0.5.2
+- Added a two-stage completion flow for protected supply requests.
+- Completed protected requests now remain locked in Completed - Awaiting Collection.
+- Added Release Supplies for the request creator or an administrator.
+- Normal players cannot withdraw supplied items until the supplies are explicitly released.
+- Supply release is server-authoritative and persists across reconnects and server restarts.
+- Existing unlocked v0.5.1 protected requests migrate as already released and are not unexpectedly relocked.
+- Removed the old automatic unlock-on-completion behavior for newly completed protected requests.
+- Updated Completed by wording and all new UI/error text in English, French, Russian, Simplified Chinese, Brazilian Portuguese, and Spanish.
+
+v0.5.1
+- Added a persistent Completed state when a supply request first reaches its target.
+- Completed requests no longer reopen if requested items are later removed from the linked container.
+- Further item transfers after completion no longer increase contribution totals.
+- Contribution credit is capped at the remaining quantity needed to complete the request.
+- Completed requests are clearly marked in the context menu and request window.
+- Protected donation containers still unlock automatically on completion and remain available for normal storage.
+- Existing fulfilled v0.5.0 requests migrate automatically from their saved progress.
+- Added the new completion text in English, French, Russian, Simplified Chinese, Brazilian Portuguese, and Spanish.
+
+v0.5.0
+- Added optional administrator-controlled protected donation containers.
+- While protection is locked, normal players can donate but cannot remove any item from the linked request compartment.
+- Administrators bypass the withdrawal lock and can manually unlock the donation container.
+- Donation protection unlocks automatically when the request target is fulfilled.
+- Added persistent per-player contribution totals for the requested item.
+- Added a scrollable contribution list to the supply-request window.
+- Added full dual-build support for Project Zomboid Build 41.78.19 and Build 42.
+- Added all new strings in English, French, Russian, Simplified Chinese, Brazilian Portuguese, and Spanish.
+- Preserved existing v0.4.4 requests, safehouse permissions, exact compartment targeting, item matching, progress, and fulfillment attribution.
+
+v0.4.4
+- Fixed the Lua error that stopped the context menu while formatting non-fridge container labels.
+- Replaced callback-based string.gsub title casing with Kahlua-safe string operations.
+- Restored QP Supply Requests on dressers, bedside tables, cupboards, shelves, crates, lockers, and other valid non-fridge containers.
+- Preserved fridge/freezer compartment targeting, safehouse and faction permissions, fulfilled-by attribution, multiplayer persistence, and all six languages.
+
+v0.4.3
+- Fixed standard furniture containers whose storage is exposed through IsoObject:getItemContainer() instead of getContainer().
+- Restored the QP Supply Requests menu on valid dressers, bedside tables, cupboards, shelves, crates, lockers, and similar single-compartment furniture.
+- Added a primary-container descriptor fallback so inconsistent getContainerCount()/getContainerByIndex() values cannot hide a valid container.
+- Applied the same container API compatibility on the dedicated server for authoritative creation, progress, and persistence.
+- Preserved separate fridge/freezer targeting, safehouse and faction permissions, fulfilled-by attribution, existing requests, and all six languages.
+
+v0.4.2
+- Replaced the single fallback-square detector with robust scanning of every square represented by the context-menu event.
+- Added support for containers exposed through IsoGridSquare specialObjects, including player-built and movable storage.
+- Detects indexed containers even when getContainer() is unavailable but getContainerCount()/getContainerByIndex() work.
+- Added matching server-side special-object resolution so requests created on those containers remain authoritative in multiplayer.
+- Preserved fridge/freezer targeting, safehouse/faction permissions, fulfilled-by attribution, persistence, and all six languages.
+
+QP Supply Requests Changelog
+
+v0.4.1
+- Fixed a regression where the creation menu appeared only on containers that reported a positive getContainerCount(), most visibly fridges and freezers.
+- Restored support for normal single-compartment world containers including crates, cupboards, shelves, lockers, dressers, cabinets, and player-built storage.
+- Preserved exact fridge/freezer compartment targeting.
+- Preserved safehouse/faction permissions, fulfillment attribution, multiplayer synchronization, and all six languages.
+
+v0.4.0
+- Added fulfillment attribution for direct inventory transfers.
+- Displays the player who delivered the item that reached the target.
+- Clears fulfillment credit if the linked container later drops below the target.
+- Restricted normal-player request creation to claimed safehouses.
+- Allowed creation for the safehouse owner, explicitly allowed members, and members of the safehouse owner's faction.
+- Preserved an administrator bypass for server management.
+- Added matching server-side permission validation to prevent client bypasses.
+- Added all new UI and error messages in EN, FR, RU, CN, PTBR, and ES.
+- Preserved existing requests; already-fulfilled legacy requests show fulfillment as not recorded until completed again.
+
+v0.3.2
+- Fixed multi-compartment objects such as refrigerators with separate fridge and freezer containers.
+- Added explicit compartment selection before creating a request.
+- Stored and synchronized the exact container index and type.
+- Counted requested items only inside the selected compartment.
+- Added the attached container name to creation and request-view windows.
+- Preserved v0.3.1 requests with default-container fallback compatibility.
+
+v0.3.1
+- Corrected and reviewed all six included language tables.
+- Fixed mixed-language French error messages.
+- Added duplicate multiplayer action protection.
+- Added safer client/server command delivery handling.
+- Added defensive network payload validation.
+- Added Workshop-ready author and release metadata.
+- Preserved all v0.3.0 request data and multiplayer compatibility.
+
+v0.3.0
+- Added server-authoritative multiplayer creation and removal.
+- Added creator/admin removal permissions.
+- Added persistent request synchronization across reconnects and server restarts.

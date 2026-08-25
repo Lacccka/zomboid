@@ -1,0 +1,14 @@
+*landing
+#m Pilot|pilot.png|"Signal received. I've got your coords loud and clear."
+#m Pilot|pilot.png|"It's gonna be a rough landing. Stay put where you are and stand by."
+#fade_out black|1
+#wait 1
+#sfx EFZ_Helicopter
+#lua EFZ.ImmediateExtractForCurrentPlayer()
+#wait 1
+#fade_in 1
+#set_flag mq12_returned_to_bunker,true
+#exit
+
+
+

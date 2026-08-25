@@ -1,0 +1,5 @@
+ContextMenu_EN = {
+	ContextMenu_HideItem = "Hide",
+
+	ContextMenu_WorldEvent_TalkTo = "Talk to %1",
+}

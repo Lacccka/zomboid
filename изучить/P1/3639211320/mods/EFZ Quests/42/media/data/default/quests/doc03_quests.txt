@@ -1,0 +1,7 @@
+*doc03_med_shortage
+#name DOC-03. Medication Shortage
+#desc The doctor is worried about the medical supplies in the bunker that is about to run out. He asks me to gather 10 Bandages, 5 Painkillers, 3 Antidepressants, 3 Beta-Blockers, 3 Antibiotics, 3 Splints, and 3 Disinfectants to replenish the supplies.
+
+
+
+

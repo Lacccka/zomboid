@@ -1,0 +1,35 @@
+IGUI_IT = {
+   	IGUI_ItemCat_Quest = "Quest",
+
+	IGUI_XP_Quests = "Quest",
+	IGUI_XP_Quests_QuestLog = "Quest Log",
+	IGUI_XP_Quests_ActiveQuests = "Quest Attive",
+	IGUI_XP_TaskStatus_Completed = "[COMPLETATO] ",
+	IGUI_XP_TaskStatus_Delivered = "[CONSEGNATA] ",
+	IGUI_XP_TaskStatus_Done = "[FATTO] "
+	IGUI_XP_TaskStatus_Failed = "[FALLITA] ",
+	IGUI_XP_TaskStatus_Obtained = "[OTTENUTO] ",
+	IGUI_XP_TaskStatus_Updated = "[AGGIORNATO] ",
+
+	IGUI_Decline = "Rifiuta",
+	IGUI_Dismiss = "Congedati",
+
+	IGUI_XP_Factions = "Fazioni",
+
+	IGUI_Factions_Template_Tier1 = "Straniero",
+	IGUI_Factions_Template_Tier2 = "Indifferente",
+	IGUI_Factions_Template_Tier3 = "Conosciuto",
+	IGUI_Factions_Template_Tier4 = "Amichevole",
+	IGUI_Factions_Template_Tier5 = "Fidato",
+
+	IGUI_Quest_ThankYouTester = "Hai completato questo test. Fammi sapere cosa ne pensi.",
+
+	IGUI_Rewards = "Ricompense:"
+
+	IGUI_WorldEventName_TEST = "Procione Parlante",
+	IGUI_WorldEventName_TEST1 = "Procione Parlante",
+	IGUI_WorldEventName_TEST2 = "Spiffo",
+	IGUI_WorldEventName_TEST3 = "Spiffo Normale",
+	IGUI_WorldEventName_TEST4 = "Spiffo Amichevole",
+	IGUI_WorldEventName_TEST5 = "Spiffo Fidato",
+}

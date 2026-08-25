@@ -1,0 +1,7 @@
+*des03_runway_of_the_living
+#name DES-03. Runway of the Living
+#desc The designer is worried about the people in the bunker who are getting tired. She wants to open a small fashion show to remind us that we are still human. She asks me to gather clothing samples for the fashion show.
+
+
+
+

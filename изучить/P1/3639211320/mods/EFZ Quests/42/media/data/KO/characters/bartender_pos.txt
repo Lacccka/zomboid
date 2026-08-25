@@ -1,0 +1,2 @@
+#npc_create bartender|bartender_normal|idle|20109,5,0|S
+#exit

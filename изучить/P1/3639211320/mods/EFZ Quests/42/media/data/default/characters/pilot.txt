@@ -1,0 +1,7 @@
+#name pilot|Pilot
+#set_stat pilot|reputation|0
+
+#desc Pilot
+#desc_append The only helicopter pilot in the bunker. He is responsible for the safe transportation of the people going on expeditions outside the bunker.
+#exit
+

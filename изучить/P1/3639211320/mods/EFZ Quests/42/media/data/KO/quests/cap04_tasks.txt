@@ -1,0 +1,10 @@
+*cap04_last_report_t1
+#name 루이빌 입구 검문소에서 장거리 통신 시설 찾기
+*cap04_last_report_t2
+#name 장거리 통신으로 보고하기
+*cap04_last_report_t3
+#name 캡틴에게 보고하기
+
+
+
+

@@ -1,0 +1,21 @@
+#quest mq01_cold_reboot|unlocked
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action RunScript|mq01_player.txt,intro
+        #action UnlockTask|mq01_cold_reboot|t1
+    #task t1
+        #set RaiseFlag|mq01_doctor_briefed
+        #action UnlockTask|mq01_cold_reboot|t2
+    #task t2
+        #set RaiseFlag|mq01_captain_debriefed
+        #action UnlockTask|mq01_cold_reboot|t3
+    #task t3
+        #set RaiseFlag|mq01_facility_briefed
+    #task t4|unlocked|hidden
+        #set TaskCondition|mq01_cold_reboot|t1,t2,t3
+        #action SetFlag|mq01_active|false
+        #action SetFlag|mq01_completed|true
+        #action SetFlag|main_story_started|true
+        #action SetFlag|mq02_unlocked|true
+        #action CompleteQuest|mq01_cold_reboot
+

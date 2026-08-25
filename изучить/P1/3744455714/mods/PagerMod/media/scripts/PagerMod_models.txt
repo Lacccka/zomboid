@@ -1,0 +1,22 @@
+module Base
+{
+    /*
+     * B41 pager-tower world model. The deployed tower is a dropped world
+     * inventory item (see PagerMod_Client.deployTower) and B41 renders an item's
+     * WorldStaticModel as a real 3D model in the world — the only reliable way to
+     * show a model on B41 (runtime sprites/attached-anims render invisible here).
+     * The mesh is a CLEAN PROCEDURAL lattice tower (the Meshy AI mesh is
+     * non-manifold and renders full of holes no matter how it's repaired), built
+     * by tools/build_tower_model.py:
+     *   mesh    = media/models_X/PagerTower.x   (DirectX text, watertight boxes)
+     *   texture = media/textures/PagerTower.png  (small solid metal-grey image)
+     * scale is a visual TUNE value (B41 renders the mesh larger than B42); nudge
+     * until the tower fills a tile.
+     */
+    model PagerTower
+    {
+        mesh    = PagerTower,
+        texture = PagerTower,
+        scale   = 0.77,
+    }
+}

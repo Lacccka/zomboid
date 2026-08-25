@@ -1,0 +1,46 @@
+VERSION = 1,
+
+option PZShareMapNotes.AutoShareSymbols
+{
+    type = enum,
+    numValues = 4,
+    default = 1,
+    page = PZShareMapNotes,
+    translation = PZShareMapNotes_AutoShareSymbols,
+}
+
+option PZShareMapNotes.MaxStrokesPerPlayer
+{
+    type = integer,
+    min = 5,
+    max = 100,
+    default = 30,
+    page = PZShareMapNotes,
+    translation = PZShareMapNotes_MaxStrokesPerPlayer,
+}
+
+option PZShareMapNotes.MaxStrokesTotal
+{
+    type = integer,
+    min = 50,
+    max = 1000,
+    default = 200,
+    page = PZShareMapNotes,
+    translation = PZShareMapNotes_MaxStrokesTotal,
+}
+
+option PZShareMapNotes.RequirePenToDraw
+{
+    type = boolean,
+    default = true,
+    page = PZShareMapNotes,
+    translation = PZShareMapNotes_RequirePenToDraw,
+}
+
+option PZShareMapNotes.RequireEraserToErase
+{
+    type = boolean,
+    default = true,
+    page = PZShareMapNotes,
+    translation = PZShareMapNotes_RequireEraserToErase,
+}

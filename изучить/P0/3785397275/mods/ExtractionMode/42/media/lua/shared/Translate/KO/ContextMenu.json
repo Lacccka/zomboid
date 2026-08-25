@@ -1,0 +1,15 @@
+{
+    "ContextMenu_ExtractionMode_AdministerCure": "실험 단계의 감염 치료제 투여",
+    "ContextMenu_ExtractionMode_Board": "탈출 헬리콥터 탑승",
+    "ContextMenu_ExtractionMode_Boarding": "탈출 헬리콥터 탑승 중...",
+    "ContextMenu_ExtractionMode_CancelReady": "습격 준비 취소",
+    "ContextMenu_ExtractionMode_ChooseDestination": "습격 목적지 선택...",
+    "ContextMenu_ExtractionMode_Contacts": "연락처...",
+    "ContextMenu_ExtractionMode_EquipFlare": "탈출용 신호총 장착 (내구도 %1%)",
+    "ContextMenu_ExtractionMode_FlareReady": "신호탄 준비 완료: 조준 후 발사 (내구도 %1%)",
+    "ContextMenu_ExtractionMode_GarageControls": "차고 제어...",
+    "ContextMenu_ExtractionMode_HideoutUpgrades": "은신처 업그레이드...",
+    "ContextMenu_ExtractionMode_Ready": "습격 준비 완료",
+    "ContextMenu_ExtractionMode_SignalVaccineHelicopter": "백신 헬리콥터에 신호 보내기",
+    "ContextMenu_ExtractionMode_VaccineHelicopterInbound": "백신 헬리콥터 접근 중 (%1초)"
+}

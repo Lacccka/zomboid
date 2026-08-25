@@ -1,0 +1,102 @@
+module Base
+{
+    item FemaleSkin01
+    {
+	DisplayName = Trader Skin,
+        Type = Clothing,
+        ClothingItem = Special_FemaleSkin01,
+        BodyLocation = BeltExtra,
+        BloodLocation = Trousers;Jumper,
+        CanHaveHoles = false,
+    }
+
+    item FemaleSkin02
+    {
+	DisplayName = Trader Skin,
+        Type = Clothing,
+        ClothingItem = Special_FemaleSkin02,
+        BodyLocation = BeltExtra,
+        BloodLocation = Trousers;Jumper,
+        CanHaveHoles = false,
+    }
+
+    item FemaleSkin03
+    {
+	DisplayName = Trader Skin,
+        Type = Clothing,
+        ClothingItem = Special_FemaleSkin03,
+        BodyLocation = BeltExtra,
+        BloodLocation = Trousers;Jumper,
+        CanHaveHoles = false,
+    }
+
+    item FemaleSkin04
+    {
+	DisplayName = Trader Skin,
+        Type = Clothing,
+        ClothingItem = Special_FemaleSkin04,
+        BodyLocation = BeltExtra,
+        BloodLocation = Trousers;Jumper,
+        CanHaveHoles = false,
+    }
+
+    item FemaleSkin05
+    {
+	DisplayName = Trader Skin,
+        Type = Clothing,
+        ClothingItem = Special_FemaleSkin05,
+        BodyLocation = BeltExtra,
+        BloodLocation = Trousers;Jumper,
+        CanHaveHoles = false,
+    }
+
+    item MaleSkin01
+    {
+	DisplayName = Trader Skin,
+        Type = Clothing,
+        ClothingItem = Special_MaleSkin01,
+        BodyLocation = BeltExtra,
+        BloodLocation = Trousers;Jumper,
+        CanHaveHoles = false,
+    }
+
+    item MaleSkin02
+    {
+	DisplayName = Trader Skin,
+        Type = Clothing,
+        ClothingItem = Special_MaleSkin02,
+        BodyLocation = BeltExtra,
+        BloodLocation = Trousers;Jumper,
+        CanHaveHoles = false,
+    }
+
+    item MaleSkin03
+    {
+	DisplayName = Trader Skin,
+        Type = Clothing,
+        ClothingItem = Special_MaleSkin03,
+        BodyLocation = BeltExtra,
+        BloodLocation = Trousers;Jumper,
+        CanHaveHoles = false,
+    }
+
+    item MaleSkin04
+    {
+	DisplayName = Trader Skin,
+        Type = Clothing,
+        ClothingItem = Special_MaleSkin04,
+        BodyLocation = BeltExtra,
+        BloodLocation = Trousers;Jumper,
+        CanHaveHoles = false,
+    }
+
+    item MaleSkin05
+    {
+	DisplayName = Trader Skin,
+        Type = Clothing,
+        ClothingItem = Special_MaleSkin05,
+        BodyLocation = BeltExtra,
+        BloodLocation = Trousers;Jumper,
+        CanHaveHoles = false,
+    }
+}

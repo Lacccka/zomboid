@@ -1,0 +1,71 @@
+module PagerMod
+{
+    imports
+    {
+        Base
+    }
+
+    /*
+     * B42 crafting definition. Kept in its own file so that, if the
+     * crafting schema shifts between B42 builds, a parse issue here
+     * cannot stop the Pager item itself (PagerMod_items.txt) from loading.
+     * The reliable acquisition path is loot distribution; this recipe is
+     * a bonus for electricians.
+     */
+    craftRecipe MakePager
+    {
+        timedAction     = Making,
+        time            = 150,
+        category        = Electrical,
+        SkillRequired   = Electricity:4,
+        xpAward         = Electricity:15,
+        AutoLearnAll    = Electricity:5,
+        NeedToBeLearn   = false,
+
+        inputs
+        {
+            item 3 [Base.ElectronicsScrap] mode:destroy,
+            item 1 [Base.RadioReceiver] mode:destroy,
+            item 2 [Base.ElectricWire] mode:destroy,
+            item 1 [Base.Aluminum] mode:destroy,
+            item 1 tags[Screwdriver] mode:keep,
+        }
+
+        outputs
+        {
+            item 1 Base.Pager,
+        }
+    }
+
+    /*
+     * Pager relay tower (Ultra Realistic tier). Bigger build than a pager:
+     * the network only works while one of these is set up and powered.
+     * Requires Electrical 5 AND must be learnt from the Pager Tower Schematics
+     * magazine (no AutoLearn) — so it is only craftable when tower mode is on
+     * and the player has found the schematic.
+     */
+    craftRecipe MakePagerTower
+    {
+        timedAction     = Making,
+        time            = 300,
+        category        = Electrical,
+        SkillRequired   = Electricity:5,
+        xpAward         = Electricity:40,
+        NeedToBeLearn   = true,
+
+        inputs
+        {
+            item 1 [Base.Pager] mode:destroy,
+            item 6 [Base.ElectronicsScrap] mode:destroy,
+            item 1 [Base.RadioTransmitter] mode:destroy,
+            item 4 [Base.ElectricWire] mode:destroy,
+            item 2 [Base.SheetMetal] mode:destroy,
+            item 1 tags[Screwdriver] mode:keep,
+        }
+
+        outputs
+        {
+            item 1 PagerMod.PagerTower,
+        }
+    }
+}

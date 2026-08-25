@@ -1,0 +1,6 @@
+name=EFZ Quests 42.13.1+
+author=QCHAN
+poster=poster.png
+id=EFZ_Quests
+require=firearmmod,ssr-quests,ssr-quests-e2,ssr-quests-e3,EFZ_Core,42EFZ_Maps
+description=EFZ - Loot, Shoot, Extract

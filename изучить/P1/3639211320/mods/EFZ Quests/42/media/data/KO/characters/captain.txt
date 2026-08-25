@@ -1,0 +1,7 @@
+#name captain|캡틴
+#set_stat captain|reputation|0
+
+#desc 캡틴
+#desc_append 포트 녹스 주둔부대의 군수 장교였던 대위. 현재는 벙커 운영의 총책임자이다. 벙커 전체의 물류와 일정 모두 그녀의 손을 거친다.
+#exit
+

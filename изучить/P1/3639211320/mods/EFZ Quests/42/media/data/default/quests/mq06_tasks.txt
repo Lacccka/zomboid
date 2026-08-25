@@ -1,0 +1,9 @@
+*mq06_gunshop_search_t1
+#name Arrive at the Westpoint Gunshop
+*mq06_gunshop_search_t2
+#name Return to the Bunker
+*mq06_gunshop_search_t3
+#name Report to the Captain
+
+
+

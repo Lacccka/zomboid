@@ -1,0 +1,13 @@
+UI_CN = {
+    UI_Trading_TradeWithNPC = "与NPC交易",
+    UI_Trading_DoNothing = "什么都不做",
+    UI_Trading_Trade = "交易",
+    UI_Trading_Value = "价值：",
+    UI_Trading_YourItems = "你的物品",
+    UI_Trading_AvailableRewards = "可用奖励",
+    UI_Info_DefaultHeader = "信息",
+    UI_Info_OK = "确定",
+    UI_Dialogue_PressToContinue = "按 [E] 继续...",
+    UI_InfoNode_PartsProduction_Header = "零件生产：",
+    UI_InfoNode_PartsProduction_Body = "已收到升级全息磁带...正在升级"零件生产"功能（每天可获得废弃电子零件）。",
+}

@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<world version="1.0" width="1" height="1" cellFormat="native-256">
+ <BMPToTMX>
+  <tmxexportdir path="tmxexport"/>
+  <rulesfile path=""/>
+  <blendsfile path=""/>
+  <mapbasefile path=""/>
+  <assign-maps-to-world checked="true"/>
+  <warn-unknown-colors checked="true"/>
+  <repair-unknown-colors checked="false" ground="ff000000" vegetation="ff000000"/>
+  <compress checked="true"/>
+  <copy-pixels checked="true"/>
+  <update-existing checked="false"/>
+  <metadata-only checked="false"/>
+ </BMPToTMX>
+ <TMXToBMP>
+  <mainImage generate="true"/>
+  <vegetationImage generate="true"/>
+  <buildingsImage path="" generate="false"/>
+ </TMXToBMP>
+ <GenerateLots>
+  <exportdir path="."/>
+  <ZombieSpawnMap path="0,0_veg.png"/>
+  <BiomeMap path=""/>
+  <TileDefFolder path="../../../../../../Program Files (x86)/Steam/steamapps/common/ProjectZomboid/media"/>
+  <worldOrigin origin="90,75"/>
+  <numberOfThreads count="15"/>
+ </GenerateLots>
+ <LuaSettings>
+  <spawnPointsFile path="spawnpoints.lua"/>
+  <worldObjectsFile path="objects.lua"/>
+  <roomTonesFile path=""/>
+ </LuaSettings>
+ <bmp path="0,0.png" x="0" y="0" width="1" height="1"/>
+ <bmp path="0,0.png" x="0" y="0" width="1" height="1"/>
+ <propertyenum name="Direction" choices="N,S,W,E" multi="false"/>
+ <propertyenum name="Professions" choices="all,burglar,burgerflipper,carpenter,chef,constructionworker,doctor,electrician,engineer,farmer,fireofficer,fisherman,fitnessInstructor,lumberjack,mechanics,metalworker,nurse,parkranger,policeofficer,rancher,repairman,securityguard,smither,tailor,unemployed,veteran" multi="true"/>
+ <propertyenum name="Pose" choices="pose01,pose02,pose03" multi="false"/>
+ <propertyenum name="Skin" choices="White,Black" multi="false"/>
+ <propertyenum name="RoomTone" choices="Generic,AbandonedGrainmill,Airport,AirstripOffice,AnimalsanctuaryKennels,AnimalsanctuaryMain,AnimalShelter,ApartmentBuilding,Arena01Derby,Arena02Stables,Arena04Publicbathroom,Arena07Offices,Arena08Changerooms,Arena10Broadcasting,Arena12Baseball,Arena13Indoors,Bakery,Bank,BarWood,BarStone,Bargnclothes,Barn,BasementApartmnetBuilding,BasementBank,BasementBar,BasementDestroyedBuilding,BasementChurch,BasementColdwarBunker,BasementConstruction01Factory,BasementDetentionCentre,BasementFactoryAbandoned,BasementFirestation,BasementGas,BasementGeneralstore,BasementGovernmentSecret,BasementGunclub,BasementHouse,BasementHouseEastereggSpiffo,BasementIndustrialMedium,BasementOffices,BasementPaddlewheeler,BasementPlaza,BasementPolice,BasementRestaurant,BasementSchool,BasementStorefront,Bedandbreakfast,Boatclub,Boathouse,Bookstore,Bowlingalley,Brewery,BrownbrickTownhouse,BuildingDestroyed,Busshelter,Cabin,CabinAbandoned,Cardealership,Carsupplystore,Cattleauction,Cattlelot,Changerooms,Church,ChurchAbandoned,ChurchBurnt,CivilianMedia,CivilianTent,Cleaningservices,Clothesstore,Coffeeshop,CaldwarBunker,CommunityCentre,ConvenienceStoreBurnt,ConventionHall,Cornerstore,Countryclub,CountryclubGolfcarts,CountryclubMaintenance,CountryclubMechanic,CountryclubClubhouse,CountryclubChangerooms,CountryclubSauna,CountryclubSnackbar,CountryclubGuardbooth,Departmentstore,Depository,Detentioncenter,Diner,Distillery,Dock,Emptystore,Factory,FarmStorage,Farmhouse,Farmhousing,Farmstore,Firestation,Fishbait,Fitnesscenter,Freight,Funeralhome,Furniturestore,Gallery,GarageBurnt,Garage,Garagestorage,Gardenstore,Gas,GasBurnt,Gatehouse,Generalstore,Government,Greenhouse,Grocery,Groundskeeper,Guardbooth,Gunclub,Gym,Hairdresser,Hanger,Hayshipping,HighriseMgCenter,HorseridingCentre,Hospital,Hotel,HouseAbandoned,HouseBurnt,HouseCountry,HouseDestroyed,HouseGarage,HouseGarageDamaged,HouseLake,HouseLarge,HouseMedium,HouseMediumDamaged,HouseSmall,HouseSmallDamaged,HouseSuburb,HouseSuburbGarage,HouseTrapper,IndustrialWarehouse,IndustryDorm,Kicthenshowroom,Lakehouse,Lasertag,Laundromat,LaundromatBurnt,Library,LibraryBurnt,Liquorstore,Lofts,Mall,Mansion,Mausoleum,Mechanic,Medical,MilitaryApartments,MilitaryBorder,MilitaryCommunications,MilitaryHouse,MilitaryTent,MilitaryTower,MilitaryTownhouse,MilitaryTrailer,Motel,MotelDestroyed,Movierental,MusicfestivalTower,MusicfestivalTrailer,Musicstore,Nursinghome,Office,Offices,Officesupplies,Optometrist,Outhouse,Paddlewheeler,Paintshop,ParkTreehouse,ParkRestrooms,ParkPlayhouse,Pawnshop,Paybooth,Pharmacy,Photobooth,Pizzawhirled,PizaawhirledBurnt,Plaza,PlazaBurnt,Police,PoliceBurnt,Portacabin,Post,Prison,PrisonGuardbooth,PrisonGuardtower,Publicwashroom,RadioTowerHouse,RadioTowerStation,Radiostation,Rangerstation,Reccenter,Recordingstudio,RedbrickTownhouse,Refinery,Resort,ResortCabin,RestareaBathrooms,Restaurant,Rollerrink,Sanatorium,School,SchoolColege,SchoolDorms,ScrapyardGarage,Security,Shack,Shed,Shelter,Shootingrange,ShopCamping,ShopHunting,Singleapartment,Slaughterhouse,Spa,Speedway,Sportstore,Stables,StoreAbandoned,Storefront,Summercamp,Taxi,TaxiGarage,Theatre,Thermalpowerstation,Tobaccostore,Tollbooth,Toolstore,Tornadoshelter,Townhouse,Trailer,TrailerBurnt,TrailerNice,TrailerOffice,Traincar,Trainstation,TrainstationAbadoned,Trainyard,TrainyardOffice,Transportcompany,Treehouse,Truck,Tvstudio,Vetrenarian,WadsworthBasemenet,Warehousestorage,WaterpurificationCheckpoint,WaterpurificationMainBuilding,WaterpurificationOffice,Weddingstore,Weldingshop,Westpointcaboose,Wildwestoffice,WoodCabin,WreckingyardOffice,Zippee,Victorian" multi="false"/>
+ <propertyenum name="AnimalAction" choices="Eat,Sleep,Follow" multi="false"/>
+ <propertyenum name="Animal" choices="small,medium,large,predator,deer,rabbit" multi="false"/>
+ <propertydef name="Direction" default="N" enum="Direction"/>
+ <propertydef name="Professions" default="all" enum="Professions">
+  <description>Professions allowed to use this spawn point. Choose one or more values; all allows every profession.</description>
+ </propertydef>
+ <propertydef name="FaceDirection" default="true"/>
+ <propertydef name="WaterDirection" default="0.0"/>
+ <propertydef name="WaterSpeed" default="0.0"/>
+ <propertydef name="WaterGround" default="false"/>
+ <propertydef name="WaterShore" default="true"/>
+ <propertydef name="Female" default="true"/>
+ <propertydef name="Outfit" default=""/>
+ <propertydef name="Pose" default="pose01" enum="Pose"/>
+ <propertydef name="Script" default=""/>
+ <propertydef name="Skin" default="White" enum="Skin"/>
+ <propertydef name="RoomTone" default="Generic" enum="RoomTone"/>
+ <propertydef name="EntireBuilding" default="false"/>
+ <propertydef name="Action" default="" enum="AnimalAction"/>
+ <propertydef name="AnimalType" default="" enum="Animal"/>
+ <propertydef name="SpawnAnimals" default="true"/>
+ <propertydef name="Access" default="">
+  <description>Name of basement access file.</description>
+ </propertydef>
+ <propertydef name="StairDirection" default="N" enum="Direction"/>
+ <propertydef name="StairX" default="0"/>
+ <propertydef name="StairY" default="0"/>
+ <propertydef name="Rocks" default="false"/>
+ <template name="SpawnPoint">
+  <description>Default properties for a player spawn point.</description>
+  <property name="Professions" value="all"/>
+ </template>
+ <template name="ParkingStallN">
+  <property name="Direction" value="N"/>
+ </template>
+ <template name="ParkingStallS">
+  <property name="Direction" value="S"/>
+ </template>
+ <template name="ParkingStallW">
+  <property name="Direction" value="W"/>
+ </template>
+ <template name="ParkingStallE">
+  <property name="Direction" value="E"/>
+ </template>
+ <template name="WaterFlowN">
+  <property name="WaterDirection" value="0"/>
+  <property name="WaterSpeed" value="1.0"/>
+ </template>
+ <template name="WaterFlowS">
+  <property name="WaterDirection" value="180"/>
+  <property name="WaterSpeed" value="1.0"/>
+ </template>
+ <template name="WaterFlowE">
+  <property name="WaterDirection" value="90"/>
+  <property name="WaterSpeed" value="1.0"/>
+ </template>
+ <template name="WaterFlowW">
+  <property name="WaterDirection" value="270"/>
+  <property name="WaterSpeed" value="1.0"/>
+ </template>
+ <template name="WaterZone">
+  <property name="WaterGround" value="false"/>
+  <property name="WaterShore" value="true"/>
+ </template>
+ <template name="RoomTone">
+  <property name="RoomTone" value="Generic"/>
+  <property name="EntireBuilding" value="false"/>
+ </template>
+ <template name="Basement">
+  <property name="StairDirection" value="N"/>
+  <property name="StairX" value="0"/>
+  <property name="StairY" value="0"/>
+ </template>
+ <template name="WorldGen">
+  <property name="Rocks" value="false"/>
+ </template>
+ <objecttype name="SpawnPoint"/>
+ <objecttype name="TownZone"/>
+ <objecttype name="Forest"/>
+ <objecttype name="DeepForest"/>
+ <objecttype name="Nav"/>
+ <objecttype name="Vegitation"/>
+ <objecttype name="TrailerPark"/>
+ <objecttype name="Farm"/>
+ <objecttype name="ParkingStall"/>
+ <objecttype name="FarmLand"/>
+ <objecttype name="LootZone"/>
+ <objecttype name="NoPowerOrWater"/>
+ <objecttype name="Ranch"/>
+ <objecttype name="ZombiesType"/>
+ <objecttype name="ZoneStory"/>
+ <objecttype name="WaterFlow"/>
+ <objecttype name="WaterZone"/>
+ <objecttype name="Mannequin"/>
+ <objecttype name="RoomTone"/>
+ <objecttype name="Animal"/>
+ <objecttype name="Basement"/>
+ <objecttype name="WorldGen"/>
+ <objecttype name="BuildingName"/>
+ <objecttype name="NoGas"/>
+ <objecttype name="Region"/>
+ <objectgroup name="SpawnPoint" color="#00b7ff" defaulttype="SpawnPoint"/>
+ <objectgroup name="ParkingStall" color="#ff007f" defaulttype="ParkingStall"/>
+ <objectgroup name="TownZone" color="#aa0000" defaulttype="TownZone"/>
+ <objectgroup name="Forest" color="#00aa00" defaulttype="Forest"/>
+ <objectgroup name="Nav" color="#55aaff" defaulttype="Nav"/>
+ <objectgroup name="DeepForest" color="#003500" defaulttype="DeepForest"/>
+ <objectgroup name="Vegitation" color="#b3b300" defaulttype="Vegitation"/>
+ <objectgroup name="TrailerPark" color="#f50000" defaulttype="TrailerPark"/>
+ <objectgroup name="Farm" color="#55ff7f" defaulttype="Farm"/>
+ <objectgroup name="FarmLand" color="#bcff7d" defaulttype="FarmLand"/>
+ <objectgroup name="LootZone" color="#c060ff" defaulttype="LootZone"/>
+ <objectgroup name="NoPowerOrWater" color="#7f7f7f" defaulttype="NoPowerOrWater"/>
+ <objectgroup name="Ranch" color="#ff8000" defaulttype="Ranch"/>
+ <objectgroup name="ZombiesType" color="#ff4040" defaulttype="ZombiesType"/>
+ <objectgroup name="ZoneStory" color="#b05080" defaulttype="ZoneStory"/>
+ <objectgroup name="WaterFlow" color="#0000ff" defaulttype="WaterFlow"/>
+ <objectgroup name="WaterZone" color="#0000ff" defaulttype="WaterZone"/>
+ <objectgroup name="Mannequin" color="#0000ff" defaulttype="Mannequin"/>
+ <objectgroup name="RoomTone" color="#0000ff" defaulttype="RoomTone"/>
+ <objectgroup name="Animal" defaulttype="Animal"/>
+ <objectgroup name="Basement" defaulttype="Basement"/>
+ <objectgroup name="WorldGen" color="#ffaa00" defaulttype="WorldGen"/>
+ <objectgroup name="BuildingName" color="#ea3680" defaulttype="BuildingName"/>
+ <objectgroup name="NoGas" color="#f08650" defaulttype="NoGas"/>
+ <objectgroup name="Region" color="#75163f" defaulttype="Region"/>
+ <cell x="0" y="0" map="tmxexport/0,0_90_75.tmx">
+  <lot x="100" y="115" level="0" width="34" height="33" map="../../TileZed/hideout_building.tbx"/>
+  <object type="SpawnPoint" x="119" y="140" level="0" width="1" height="1">
+   <template name="SpawnPoint"/>
+  </object>
+  <object type="SpawnPoint" x="121" y="140" level="0" width="1" height="1">
+   <template name="SpawnPoint"/>
+  </object>
+  <object type="SpawnPoint" x="123" y="140" level="0" width="1" height="1">
+   <template name="SpawnPoint"/>
+  </object>
+  <object type="SpawnPoint" x="125" y="140" level="0" width="1" height="1">
+   <template name="SpawnPoint"/>
+  </object>
+  <object type="SpawnPoint" x="127" y="140" level="0" width="1" height="1">
+   <template name="SpawnPoint"/>
+  </object>
+ </cell>
+</world>

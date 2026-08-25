@@ -1,0 +1,7 @@
+*des01_bring_back_sign_t1
+#name 크로스로드 몰의 가게 확인하기
+*des01_bring_back_sign_t2
+#name 디자이너에게 보고하기
+
+
+

@@ -1,0 +1,1227 @@
+#is_flag captain_intro,true
+    #jump loop
+
+*captain_intro
+#m Captain|captain.png|"You're here. The Doc said you'd be waking up any minute."
+#m Captain|captain.png|"I'm Captain Taylor. I was the logistics officer at Fort Knox, and right now I'm responsible for keeping this bunker running."
+#reveal captain
+#set_flag captain_intro,true
+#jump loop
+
+*loop
+#is_flag mq01_active,true
+    #is_flag mq01_captain_debriefed,false
+        #jump mq01_intro
+#jump loop_regular
+
+*loop_regular
+#m Captain|captain.png|"If we keep our heads on straight, we can all make it through this."
+#choice
+    loop_ask|Ask a question
+    loop_quest|Talk about important missions
+    loop_subquest|Talk about helping out
+    loop_trade|Trade
+    dialogue_exit|Leave
+
+*loop_ask
+#m Captain|captain.png|"What do you need to know?"
+#choice
+    loop_ask_about_bunker|About the bunker...
+    loop_ask_about_supplies|About supplies...
+    loop_ask_about_you|About you...
+    loop_regular|Talk about something else
+
+*loop_ask2
+#m Captain|captain.png|"Anything else you want to talk about?"
+#choice
+    loop_ask_about_bunker|About the bunker...
+    loop_ask_about_supplies|About supplies...
+    loop_ask_about_you|About you...
+    loop_regular|Talk about something else
+
+*loop_ask_about_bunker
+#m Captain|captain.png|"This is an underground bunker on the outskirts of Fort Knox. It's one of the sites used to store U.S. government gold reserves."
+#m Captain|captain.png|"Officially, the mission is to protect federal assets from disasters... but when we got inside, there was no gold. It feels like it was built for something else."
+#m Captain|captain.png|"The facility is still running for now, but once the water and power go out, that's when things get ugly."
+#m Captain|captain.png|"If you can find a generator outside, install it in the multipurpose room behind me. That room can vent the exhaust safely."
+#m Captain|captain.png|"And the residential quarter's multipurpose room is supposed to be up a stairwell... but we haven't found where that stairwell is. You might be able to track it down using the blueprints."
+#jump loop_ask2
+
+*loop_ask_about_supplies
+#m Captain|captain.png|"For food and daily necessities, talk to the Bartender. For medical supplies, talk to the Doc."
+#m Captain|captain.png|"Weapons go through the Gunner. Other gear, check with the Designer."
+#m Captain|captain.png|"Most of what we have is essential to keeping this bunker alive, so I can't just hand it out. If you bring something worth trading, I'll issue what I can."
+#m Captain|captain.png|"I'm sorry. It's an emergency, and keeping this place running isn't easy."
+#m Captain|captain.png|"If there's anything you want to manage personally, store it in the residential wing. You can reach it by elevator (press E at the elevator)."
+#jump loop_ask2
+
+*loop_ask_about_you
+#m Captain|captain.png|"Let me introduce myself properly. I'm Captain Taylor. I was the logistics officer at Fort Knox, and I'm running facility operations down here."
+#m Captain|captain.png|"There's nobody senior to me in the bunker, so I've ended up acting like the person in charge... for better or worse."
+#m Captain|captain.png|"If you need something, come find me anytime. If I'm not buried in work, I'll do what I can."
+#jump loop_ask2
+
+*loop_trade
+#m Captain|captain.png|"I'll issue whatever I can spare from bunker inventory."
+#trade captain
+    #buyback_clear
+    #m Captain|captain.png|"If you need anything else, say the word."
+    #exit
+#m Captain|captain.png|"Come back if you need more."
+#jump loop_regular
+
+*loop_subquest
+#is_quest cap04_last_report|unlocked,uncompleted,unfailed
+    #jump cap04_remind
+#is_quest cap04_last_report|completed
+    #jump cap04_after
+#is_quest cap03_chain_break|unlocked,uncompleted,unfailed
+    #jump cap03_remind
+#is_quest cap03_chain_break|completed
+    #is_quest cap04_last_report|locked
+        #is_quest mq12_city_conquest|completed
+            #jump cap04_offer
+    #jump cap03_after
+#is_quest cap02_house_repair|unlocked,uncompleted,unfailed
+    #jump cap02_remind
+#is_quest cap02_house_repair|completed
+    #is_quest cap03_chain_break|locked
+        #jump cap03_offer
+    #jump cap02_after
+#is_quest cap01_inventory_check|unlocked,uncompleted,unfailed
+    #jump cap01_remind
+#is_quest cap01_inventory_check|completed
+    #is_quest cap02_house_repair|locked
+        #jump cap02_offer
+    #jump cap01_after
+#is_quest cap01_inventory_check|locked
+    #jump cap01_offer
+#m Captain|captain.png|"I don't have anything to ask right now. Want to talk about something else?"
+#jump loop_regular
+
+*cap01_offer
+#m Captain|captain.png|"This bunker hasn't been maintained in a long time. The supply ledger is a mess, and on top of that... we're missing a lot of stock."
+#m Captain|captain.png|"On paper, we should have more food, but it's not in the storage rooms."
+#m Captain|captain.png|"If you can, could you bring back some food supplies?"
+#choice
+    cap01_accept|Accept
+    cap01_decline|Talk about it later
+#jump loop_regular
+
+*cap01_accept
+#m Captain|captain.png|"Thank you. I really appreciate it."
+#quest_unlock cap01_inventory_check
+#jump loop_regular
+
+*cap01_decline
+#m Captain|captain.png|"Understood. We're tight on supplies, but if you're occupied, I get it. We'll talk again later."
+#jump loop_regular
+
+*cap01_remind
+#is_task cap01_inventory_check|t1|uncompleted
+    #m Captain|captain.png|"Did you manage to bring the food I asked for?"
+    #deliver cap01_inventory_check|t1
+        #m Captain|captain.png|"Confirmed. This should let me balance the inventory again."
+        #exit
+    #m Captain|captain.png|"Bring it by whenever you're ready."
+    #jump loop_regular
+#is_task cap01_inventory_check|t2|uncompleted
+    #jump cap01_report
+#m Captain|captain.png|"Nothing else right now. Check back in a bit."
+#jump loop_regular
+
+*cap01_report
+#is_flag cap01_reported_to_captain,true
+    #jump cap01_after
+#is_task cap01_inventory_check|t1|uncompleted
+    #m Captain|captain.png|"Please deliver the requested supplies first."
+    #exit
+#m Captain|captain.png|"That helped. The inventory was suffocatingly bad, but this gives us some breathing room. At least we won't be skipping meals because we ran out of staple food."
+#stat_inc captain|reputation|10
+#set_flag cap01_reported_to_captain,true
+#jump loop_regular
+
+*cap01_after
+#m Captain|captain.png|"With the inventory straightened out, things are already better. Supply control will be a lot easier from here on."
+#jump loop_regular
+
+*cap02_offer
+#m Captain|captain.png|"The bunker systems are damaged in a lot of places. I'm trying to patch up the electrical and plumbing, but we're short on materials."
+#m Captain|captain.png|"I'll write down what we need. Can you track those materials down?"
+#choice
+    cap02_accept|Accept
+    cap02_decline|Talk about it later
+#jump loop_regular
+
+*cap02_accept
+#m Captain|captain.png|"Thanks for helping. Once we have the materials, I'll start repairs immediately."
+#quest_unlock cap02_house_repair
+#jump loop_regular
+
+*cap02_decline
+#m Captain|captain.png|"Understood. We'll talk again when you have time."
+#jump loop_regular
+
+*cap02_remind
+#is_task cap02_house_repair|t1|uncompleted
+    #m Captain|captain.png|"Did you bring the materials I requested?"
+    #deliver cap02_house_repair|t1
+        #m Captain|captain.png|"Confirmed. This is enough to start maintenance on the bunker."
+        #exit
+    #m Captain|captain.png|"Bring them by whenever you're ready."
+    #jump loop_regular
+#is_task cap02_house_repair|t2|uncompleted
+    #jump cap02_report
+#m Captain|captain.png|"Nothing else right now. Check back in a bit."
+#jump loop_regular
+
+*cap02_report
+#is_flag cap02_reported_to_captain,true
+    #jump cap02_after
+#is_task cap02_house_repair|t1|uncompleted
+    #m Captain|captain.png|"Please deliver the requested materials first."
+    #jump loop_regular
+#is_task cap02_house_repair|t2|uncompleted
+    #m Captain|captain.png|"With these materials, I can service the life-support systems and the plumbing. Thank you. Seriously."
+    #stat_inc captain|reputation|10
+    #set_flag cap02_reported_to_captain,true
+    #exit
+#m Captain|captain.png|"Prep is complete. I'll begin repairs soon."
+#jump loop_regular
+
+*cap02_after
+#m Captain|captain.png|"Those materials made it possible to restore the bunker systems. Backup power and lighting should be a lot more stable before long."
+#jump loop_regular
+
+*cap03_offer
+#m Captain|captain.png|"Losing contact with command might be our comms gear. I want to swap the transmitter and receiver for something with more punch."
+#m Captain|captain.png|"If you can find a high-performance radio, handheld or vehicle-mounted, we might be able to reconnect. Can you help?"
+#choice
+    cap03_accept|Accept
+    cap03_decline|Talk about it later
+#jump loop_regular
+
+*cap03_accept
+#m Captain|captain.png|"Thank you. Once we have the equipment, I'll start the swap."
+#quest_unlock cap03_chain_break
+#jump loop_regular
+
+*cap03_decline
+#m Captain|captain.png|"Understood. We'll talk again when you have time."
+#jump loop_regular
+
+*cap03_remind
+#is_task cap03_chain_break|t1|uncompleted
+    #m Captain|captain.png|"Do you have the radios? Please bring the best condition units you can find."
+    #deliver cap03_chain_break|t1
+        #m Captain|captain.png|"Confirmed. I'll replace the transmitter first. This might actually work."
+        #exit
+    #m Captain|captain.png|"Bring them by whenever you're ready."
+    #jump loop_regular
+#is_task cap03_chain_break|t2|uncompleted
+    #jump cap03_report
+#m Captain|captain.png|"Nothing else right now. Check back in a bit."
+#jump loop_regular
+
+*cap03_report
+#is_flag cap03_reported_to_captain,true
+    #jump cap03_after
+#is_task cap03_chain_break|t1|uncompleted
+    #m Captain|captain.png|"Please deliver the radios first."
+    #jump loop_regular
+#is_task cap03_chain_break|t2|uncompleted
+    #m Captain|captain.png|"With these, I can try to reacquire command frequencies. Thank you for giving us a reason to hope."
+    #stat_inc captain|reputation|10
+    #set_flag cap03_reported_to_captain,true
+    #jump loop_regular
+#m Captain|captain.png|"Once the new radio's set, I'll try to make contact."
+#jump loop_regular
+
+*cap03_after
+#m Captain|captain.png|"The new radios cut the interference way down. We should be able to reconnect soon. You made a real difference."
+#jump loop_regular
+
+*cap04_offer
+#m Captain|captain.png|"Command and the higher units are still completely silent."
+#m Captain|captain.png|"It might be that this bunker radio just can't reach out that far. We may need an external long-range transmitter."
+#m Captain|captain.png|"As far as I know, there's a long-range set at the Louisville entry checkpoint. Can you go there and try it?"
+#choice
+    cap04_accept|Accept
+    cap04_decline|Talk about it later
+#jump loop_regular
+
+*cap04_accept
+#m Captain|captain.png|"Thank you. Try to report in, and tell me what happens."
+#quest_unlock cap04_last_report
+#jump loop_regular
+
+*cap04_decline
+#m Captain|captain.png|"Understood. We'll talk again when you have time."
+#jump loop_regular
+
+*cap04_remind
+#is_task cap04_last_report|t1|uncompleted
+    #m Captain|captain.png|"There should be long-range comms equipment at the checkpoint outside Louisville."
+    #jump loop_regular
+#is_task cap04_last_report|t2|uncompleted
+    #m Captain|captain.png|"Use the long-range transmitter at the Louisville checkpoint and try to send a report."
+    #m Captain|captain.png|"Try it, then tell me the outcome."
+    #jump loop_regular
+#is_task cap04_last_report|t3|uncompleted
+    #jump cap04_report
+#m Captain|captain.png|"Nothing else right now. Check back in a bit."
+#jump loop_regular
+
+*cap04_report
+#is_flag cap04_reported_to_captain,true
+    #jump cap04_after
+#is_task cap04_last_report|t2|uncompleted
+    #m Captain|captain.png|"Let me know when the report attempt is complete."
+    #jump loop_regular
+#is_task cap04_last_report|t3|uncompleted
+    #m Captain|captain.png|"No response...?"
+    #m Captain|captain.png|"I expected it, but hearing it out loud still sits heavy."
+    #m Captain|captain.png|"From here on, we're on our own... Still, thank you for seeing it through."
+    #stat_inc captain|reputation|15
+    #set_flag cap04_reported_to_captain,true
+    #jump loop_regular
+#jump loop_regular
+
+*cap04_after
+#m Captain|captain.png|"Command never answered. It hurts, but I was already preparing for that."
+#m Captain|captain.png|"All we can do now is protect the people in this bunker."
+#jump loop_regular
+
+*loop_quest
+#is_quest mq15_countdown|unlocked,uncompleted,unfailed
+    #jump mq15_remind
+#is_quest mq15_countdown|completed
+    #jump mq15_after
+#is_quest mq15_countdown|failed
+    #jump mq15_failed
+#is_flag mq15_unlocked,true
+    #jump mq15_offer
+#is_quest mq14_access_code|unlocked,uncompleted,unfailed
+    #jump mq14_remind
+#is_quest mq14_access_code|completed
+    #jump mq14_after
+#is_flag mq14_unlocked,true
+    #jump mq14_offer
+#is_quest mq13_chain_link|unlocked,uncompleted,unfailed
+    #jump mq13_remind
+#is_quest mq13_chain_link|completed
+    #jump mq13_after
+#is_flag mq13_unlocked,true
+    #jump mq13_offer
+#is_quest mq12_city_conquest|unlocked,uncompleted,unfailed
+    #jump mq12_remind
+#is_quest mq12_city_conquest|completed
+    #jump mq12_after
+#is_flag mq12_unlocked,true
+    #jump mq12_offer
+#is_quest mq11_last_ticketing|unlocked,uncompleted,unfailed
+    #jump mq11_remind
+#is_quest mq11_last_ticketing|completed
+    #jump mq11_after
+#is_flag mq11_unlocked,true
+    #jump mq11_offer
+#is_quest mq10_departure|unlocked,uncompleted,unfailed
+    #jump mq10_remind
+#is_quest mq10_departure|completed
+    #jump mq10_after
+#is_flag mq10_unlocked,true
+    #jump mq10_offer
+#is_quest mq09_lunatic|unlocked,uncompleted,unfailed
+    #jump mq09_remind
+#is_quest mq09_lunatic|completed
+    #jump mq09_after
+#is_flag mq09_unlocked,true
+    #jump mq09_offer
+#is_quest mq08_dirty_slate|unlocked,uncompleted,unfailed
+    #jump mq08_remind
+#is_quest mq08_dirty_slate|completed
+    #jump mq08_after
+#is_flag mq08_unlocked,true
+    #jump mq08_offer
+#is_quest mq07_maze|unlocked,uncompleted,unfailed
+    #jump mq07_remind
+#is_quest mq07_maze|completed
+    #jump mq07_after
+#is_flag mq07_unlocked,true
+    #jump mq07_offer
+#is_quest mq06_gunshop_search|unlocked,uncompleted,unfailed
+    #jump mq06_remind
+#is_quest mq06_gunshop_search|completed
+    #jump mq06_after
+#is_flag mq06_unlocked,true
+    #jump mq06_offer
+#is_quest mq05_to_the_river|unlocked,uncompleted,unfailed
+    #jump mq05_remind
+#is_quest mq05_to_the_river|completed
+    #jump mq05_after
+#is_flag mq05_unlocked,true
+    #jump mq05_offer
+#is_quest mq04_lost_map|unlocked,uncompleted,unfailed
+    #jump mq04_remind
+#is_quest mq04_lost_map|completed
+    #jump mq04_after
+#is_flag mq04_unlocked,true
+    #jump mq04_offer
+#is_quest mq03_first_raid|unlocked,uncompleted,unfailed
+    #jump mq03_remind
+#is_quest mq03_first_raid|completed
+    #jump mq03_after
+#is_flag mq03_unlocked,true
+    #jump mq03_offer
+#is_flag mq02_unlocked,false
+    #m Captain|captain.png|"I don't have any new assignments right now. Focus on recovering, or handle other tasks."
+    #jump loop_regular
+#is_quest mq02_first_step|completed
+    #jump mq02_after
+#is_quest mq02_first_step|unlocked,uncompleted,unfailed
+    #jump mq02_remind
+#jump mq02_offer
+
+*mq09_offer
+#is_quest mq09_lunatic|locked
+    #m Captain|captain.png|"For the past few days, I've been going over classified material that might be tied to Operation Clean Slate. I found something that doesn't sit right."
+    #m Captain|captain.png|"It says that right before the pandemic, personnel from a place called the 'Delta Facility' were confined at Rosewood Correctional Facility for a 'final inspection.'"
+    #m Captain|captain.png|"Was here a Military Police site? I don't understand why a record like that would be stored here. We need eyes on it."
+    #m Captain|captain.png|"Ask the Pilot if a drop into Rosewood is possible. We need to check the prison and see what we can find."
+    #choice
+        mq09_accept|Accept
+        mq09_decline|Talk about it later
+    #jump loop_regular
+#m Captain|captain.png|"First, check with the Pilot about a Rosewood insertion."
+#jump loop_regular
+
+*mq09_accept
+#m Captain|captain.png|"Thank you. Search the prison and bring back anything tied to the 'Delta Facility' as soon as you find it."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq09_lunatic
+#jump loop_regular
+
+*mq09_decline
+#m Captain|captain.png|"Understood. We'll talk again when you're ready."
+#jump loop_regular
+
+*mq09_remind
+#is_task mq09_lunatic|t1|uncompleted
+    #m Captain|captain.png|"Confirm with the Pilot that an insertion over Rosewood is possible. We need that locked down first."
+    #jump loop_regular
+#is_task mq09_lunatic|t2|uncompleted
+    #m Captain|captain.png|"If you were dropped at March Ridge, proceed on foot to Rosewood Correctional Facility."
+    #jump loop_regular
+#is_task mq09_lunatic|t3|uncompleted
+    #m Captain|captain.png|"Check the filing cabinets inside the prison. There may be a lead tied to the 'Delta Facility.'"
+    #jump loop_regular
+#is_task mq09_lunatic|t4|uncompleted
+    #m Captain|captain.png|"Once you secure a lead, return to the bunker immediately."
+    #jump loop_regular
+#is_task mq09_lunatic|t5|uncompleted
+    #jump mq09_report
+#m Captain|captain.png|"Tell me what you found in Rosewood."
+#jump loop_regular
+
+*mq09_report
+#is_flag mq09_voice_log_found,false
+    #m Captain|captain.png|"Secure a lead at the prison first."
+    #jump loop_regular
+#m Captain|captain.png|"What did you find in Rosewood?"
+#choice
+    mq09_report_voice|Play the recorded log.
+
+*mq09_report_voice
+#m Captain|captain.png|"'It's too late to stop Delta'... and there was an extraction option ready?"
+#m Captain|captain.png|"Look at this. The date written on the tape is the same day the pandemic started."
+#m Captain|captain.png|"If the outbreak hit before facility personnel could evacuate... that extraction might never have launched."
+#m Captain|captain.png|"The roads are locked down, but if there's any way out by air... We don't have time to waste. I need to start planning. Now."
+#stat_inc captain|reputation|15
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|10
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|10
+#set_flag mq09_reported_to_captain,true
+#exit
+
+*mq09_after
+#m Captain|captain.png|"I'm drafting a plan based on what you brought back from Rosewood. I'll brief you soon."
+#jump loop_regular
+
+*mq10_offer
+#is_quest mq10_departure|locked
+    #m Captain|captain.png|"Good timing. I'm putting together a reconnaissance plan for Louisville International Airport."
+    #m Captain|captain.png|"But first, like always, we need GPS calibration. We should be able to do it near the airport."
+    #m Captain|captain.png|"When you reach the coordinates, start guiding the GPS signal. Once the Pilot picks it up, retrieval should be immediate."
+    #choice
+        mq10_accept|Accept
+        mq10_decline|Talk about it later
+    #jump loop_regular
+#m Captain|captain.png|"Move to the coordinates outside Louisville International Airport and guide the GPS signal."
+#jump loop_regular
+
+*mq10_accept
+#m Captain|captain.png|"Thank you. Once we have the signal, the Pilot will move right away."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq10_departure
+#jump loop_regular
+
+*mq10_decline
+#m Captain|captain.png|"Understood. We'll talk again when you're ready."
+#jump loop_regular
+
+*mq10_remind
+#is_task mq10_departure|t1|uncompleted
+    #m Captain|captain.png|"Travel by road past West Point to the port/airport perimeter coordinates near Louisville. I've marked them on your map."
+    #jump loop_regular
+#is_task mq10_departure|t2|uncompleted
+    #m Captain|captain.png|"Once you reach the coordinates, hold position for one minute. When the signal locks, the Pilot will come to extract you."
+    #jump loop_regular
+#is_task mq10_departure|t3|uncompleted
+    #jump mq10_report
+#m Captain|captain.png|"Report what you saw outside the airport."
+#jump loop_regular
+
+*mq10_report
+#is_flag mq10_signal_guided,false
+    #m Captain|captain.png|"Complete GPS signal guidance on site first."
+    #jump loop_regular
+#m Captain|captain.png|"Any issues guiding the signal? What did the airport area look like?"
+#choice
+    mq10_report_brief|Pass along the Pilot's report
+
+*mq10_report_brief
+#m Captain|captain.png|"Most of the aircraft never got out... That means the Delta Facility's extraction plane might still be out there."
+#m Captain|captain.png|"This might go smoother than we expected. Now we just have to identify which one was the extraction asset."
+#m Captain|captain.png|"Thank you. I'll put a plan together and brief you soon."
+#stat_inc captain|reputation|15
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|10
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|10
+#set_flag mq10_reported_to_captain,true
+#exit
+
+*mq11_offer
+#is_quest mq11_last_ticketing|locked
+    #m Captain|captain.png|"I'm working the escape plan, but first we have to confirm whether any aircraft are still at the airport."
+    #m Captain|captain.png|"If the Delta Facility had an extraction aircraft staged there, we need to know whether it's usable."
+    #m Captain|captain.png|"Can you check the aircraft and the fuel depot status?"
+    #choice
+        mq11_accept|Accept
+        mq11_decline|Talk about it later
+    #jump loop_regular
+#m Captain|captain.png|"You should be able to verify it at the airport hangars."
+#jump loop_regular
+
+*mq11_accept
+#m Captain|captain.png|"Thank you. You should be able to verify it at the airport hangars."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq11_last_ticketing
+#jump loop_regular
+
+*mq11_decline
+#m Captain|captain.png|"Understood. We'll talk again when you're ready."
+#jump loop_regular
+
+*mq11_remind
+#is_task mq11_last_ticketing|t8|locked
+    #m Captain|captain.png|"Check the aircraft hangars. The coordinates are in your notes."
+    #jump loop_regular
+#is_task mq11_last_ticketing|t8|uncompleted
+    #m Captain|captain.png|"Once you've checked everything, return to the bunker immediately."
+    #jump loop_regular
+#is_task mq11_last_ticketing|t9|uncompleted
+    #jump mq11_report
+#m Captain|captain.png|"I'm organizing the situation. Let me know the moment you're back."
+#jump loop_regular
+
+*mq11_report
+#is_flag mq11_all_checked,false
+    #m Captain|captain.png|"Check every aircraft condition report. All of them. Don't miss a single one."
+    #jump loop_regular
+#is_flag mq11_returned_to_bunker,false
+    #m Captain|captain.png|"Return to the bunker before you report."
+    #jump loop_regular
+#m Captain|captain.png|"How did it look? Was there an extraction aircraft we could use?"
+#choice
+    mq11_report_summary|There was nothing
+
+*mq11_report_summary
+#m Captain|captain.png|"What? No fuel, and no aircraft left...?"
+#m Captain|captain.png|"...Understood."
+#m Captain|captain.png|"Then the extraction bird is already gone... I'll have to rebuild the plan from the ground up."
+#set_flag mq11_reported_to_captain,true
+#exit
+
+*mq11_after
+#m Captain|captain.png|"......"
+#jump loop_regular
+
+*mq15_offer
+#is_quest mq15_countdown|locked
+    #m Captain|captain.png|"I've got bad news. The troops sent into the Delta Facility... we've lost contact with all of them. Nobody came back."
+    #m Captain|captain.png|"I want to send more people in to keep searching, but honestly... I have a feeling no matter how many go in, none of them will return."
+    #m Captain|captain.png|"But you..."
+    #m Captain|captain.png|"You're the only one who's managed to push through that hell outside. So I can't help thinking you might pull it off again."
+    #m Captain|captain.png|"If you're willing to help, say so. I'll get you access to the Delta Facility."
+    #choice
+        mq15_accept|Enter the Delta Facility
+        mq15_decline|Prepare and talk again
+    #jump loop_regular
+#jump loop_regular
+
+*mq15_accept
+#m Captain|captain.png|"Alright. From here on, it's your call. Please come back safe."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq15_countdown
+#fade_out black|1
+#wait 1
+#npc_remove
+#lua EFZ.TriggerDeployDialogueDeltaFacility()
+#restock
+#wait 1
+#fade_in 2
+#exit
+
+*mq15_decline
+#m Captain|captain.png|"Understood. Talk to me again when you're ready."
+#jump dialogue_exit
+
+*mq15_remind
+#is_flag mq15_facility_entered,false
+    #m Captain|captain.png|"When you're ready to enter the Delta Facility, tell me. And if you decide to walk away, that's allowed."
+    #choice
+        mq15_retry|Enter the Delta Facility
+        loop_regular|Not right now
+    #jump loop_regular
+#is_flag mq15_override_success,false
+    #m Captain|captain.png|"We need a way to stop the facility. Bring back anything that looks like a lead."
+    #m Captain|captain.png|"If you need to enter again, say the word when you're ready."
+    #choice
+        mq15_retry|Re-enter the Delta Facility
+        loop_regular|Not right now
+    #jump loop_regular
+#is_task mq15_countdown|t4|uncompleted
+    #m Captain|captain.png|"No time. Get out through the exit!"
+    #jump loop_regular
+#m Captain|captain.png|"Please come back safe."
+#jump loop_regular
+
+*mq15_failed
+#m Captain|captain.png|"Are you okay? You look like you just crawled out of a nightmare..."
+#m Captain|captain.png|"Are you ready to go back into the Delta Facility? If you are, say the word. And check your team first."
+#choice
+    mq15_retry|Enter the Delta Facility
+    loop_regular|Not right now
+
+*mq15_retry
+#m Captain|captain.png|"Alright. You have to come back."
+#quest_reset mq15_countdown
+#set_flag mq15_facility_entered,false|mq15_override_success,false|mq15_override_commands_found,false|mq15_escape_success,false|mq15_escape_failed,false|mq15_active,false|mq15_completed,false
+#quest_unlock mq15_countdown
+#lua EFZ.AssignDeployActive()
+#fade_out black|1
+#wait 1
+#npc_remove
+#lua EFZ.TriggerDeployDialogueDeltaFacility()
+#restock
+#wait 1
+#fade_in 2
+#exit
+
+*mq15_after
+#m Captain|captain.png|"Now that we can breathe again, I'm not sure what to do next."
+#m Captain|captain.png|"But the important thing is that everyone survived. That happened because of you."
+#m Captain|captain.png|"We'll be counting on you from here on out."
+#jump loop_regular
+
+*mq14_offer
+#is_quest mq14_access_code|locked
+    #m Captain|captain.png|"The 'Nv-01 Control Plan' we recovered still doesn't explain the full picture of what the Delta Facility is. If we want more answers, we need to inspect the military research complex ourselves."
+    #m Captain|captain.png|"I checked the metadata. That document was written at a military research base near Rosewood."
+    #m Captain|captain.png|"I'll mark the location. Can you go verify it?"
+    #choice
+        mq14_accept|Accept
+        mq14_decline|Talk about it later
+    #jump loop_regular
+#m Captain|captain.png|"Find Delta Facility-related material at the military research complex near Rosewood. The coordinates are in your notes."
+#jump loop_regular
+
+*mq14_accept
+#m Captain|captain.png|"Thank you. We don't have much time, so move out as soon as you can."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq14_access_code
+#jump loop_regular
+
+*mq14_decline
+#m Captain|captain.png|"Understood. We'll talk again when you're ready."
+#jump loop_regular
+
+*mq14_remind
+#is_flag mq14_lab_reached,false
+    #m Captain|captain.png|"Move to the military research complex near Rosewood. I'll mark it in your notes."
+    #jump loop_regular
+#is_flag mq14_document_found,false
+    #m Captain|captain.png|"Search the complex and secure any Delta Facility-related documents. Anything helps. Bring it back the moment you find it."
+    #jump loop_regular
+#is_task mq14_access_code|t3|uncompleted
+    #m Captain|captain.png|"Once you have the documents, return to the bunker immediately."
+    #jump loop_regular
+#is_task mq14_access_code|t4|uncompleted
+    #jump mq14_report
+#m Captain|captain.png|"Do you have something to report?"
+#jump loop_regular
+
+*mq14_report
+#is_flag mq14_document_found,false
+    #m Captain|captain.png|"Secure the documents at the complex first."
+    #jump loop_regular
+#m Captain|captain.png|"A cipher... That reminds me. We said you were found with several documents back where we found you."
+#m Captain|captain.png|"We've also turned up a lot of scattered paperwork around the bunker... One of them might be the key table needed to decode this."
+#choice
+    mq14_report_results|Pass along the cipher document
+
+*mq14_report_results
+#m Captain|captain.png|"...Yeah. One of the bunker documents matches the key."
+#m Captain|captain.png|"Give me a second..."
+#m Captain|captain.png|"It's decoded. The Delta Facility was a biochem weapons lab, and the location is..."
+#m Captain|captain.png|"...Here? Is it saying this bunker is the Delta Facility?"
+#m Captain|captain.png|"Then the ward where you were found was probably part of the research complex. It says there's a route into the lab through the ward."
+#m Captain|captain.png|"That's worth investigating. Once I can gather enough capable personnel, I'll organize a search into the facility."
+#stat_inc captain|reputation|15
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|15
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|10
+#set_flag mq14_reported_to_captain,true
+#exit
+
+*mq14_after
+#m Captain|captain.png|"Your cipher confirmed there's a critical lead beneath this bunker. I'm rushing prep to enter the lowest research level."
+#jump loop_regular
+
+*mq13_offer
+#is_quest mq13_chain_link|locked
+    #m Captain|captain.png|"We're almost out of infection suppressant. If we're going to keep searching until the blast, we need more of it."
+    #m Captain|captain.png|"Search St. Peregrin Hospital and the Finnegan Institute in Louisville and collect infection suppressant. I'll mark the coordinates."
+    #m Captain|captain.png|"If you can secure about six boxes, it'll buy us time."
+    #choice
+        mq13_accept|Accept
+        mq13_decline|Talk about it later
+    #jump loop_regular
+#m Captain|captain.png|"Secure six boxes of infection suppressant from the hospital and the institute. I've marked the coordinates."
+#jump loop_regular
+
+*mq13_accept
+#m Captain|captain.png|"Thank you. Time is tight, so move now."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq13_chain_link
+#jump loop_regular
+
+*mq13_decline
+#m Captain|captain.png|"Understood. We'll talk again when you're ready."
+#jump loop_regular
+
+*mq13_remind
+#is_flag mq13_boxes_collected,false
+    #m Captain|captain.png|"Search St. Peregrin Hospital and the Finnegan Institute and secure six boxes of infection suppressant."
+    #jump loop_regular
+#is_task mq13_chain_link|t4|uncompleted
+    #m Captain|captain.png|"Once you have the suppressant, return to the bunker immediately."
+    #jump loop_regular
+#is_task mq13_chain_link|t5|uncompleted
+    #jump mq13_report
+#m Captain|captain.png|"Do you have something to report?"
+#jump loop_regular
+
+*mq13_report
+#is_flag mq13_boxes_collected,false
+    #m Captain|captain.png|"Secure six boxes of infection suppressant first."
+    #jump loop_regular
+#m Captain|captain.png|"Did you secure the suppressant? Anything unusual on site?"
+#choice
+    mq13_report_results|Pass along the documents found among the suppressant
+
+*mq13_report_results
+#m Captain|captain.png|"This will keep the bunker going for a while. I've already told the team to barter the suppressant for other essentials, so use it to stock what you need."
+#m Captain|captain.png|"But this document... it's titled 'Nv-01 Control Plan'?"
+#m Captain|captain.png|"If viral containment fails, it says the CDC and the military distribute infection suppressant nationwide... and if that fails too, the Delta Facility is to self-destruct."
+#m Captain|captain.png|"That means this scenario was prepared before the pandemic even started."
+#m Captain|captain.png|"The Delta Facility self-destruct... What is the Delta Facility, really? It might tie directly to Operation Clean Slate. I'll analyze this with the Doc. This could be the link we've been missing."
+#stat_inc captain|reputation|15
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|15
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|10
+#set_flag mq13_reported_to_captain,true
+#exit
+
+*mq13_after
+#m Captain|captain.png|"We've stabilized the infection suppressant stock. The Doc and I are reviewing the document."
+#jump loop_regular
+
+*mq12_offer
+#is_quest mq12_city_conquest|locked
+    #m Captain|captain.png|"...If there's truly no way out, then the only option is to hold on as long as we can and hope for rescue."
+    #m Captain|captain.png|"If we push our search range into Louisville and expand GPS calibration coverage, we can bring back a lot more supplies."
+    #m Captain|captain.png|"Louisville is much larger than the previous drop zones, so we need to calibrate two separate coordinates. Visit both and stabilize the signal."
+    #choice
+        mq12_accept|Accept
+        mq12_decline|Talk about it later
+    #jump loop_regular
+#m Captain|captain.png|"Visit both Louisville coordinates and hold position for one minute at each to stabilize the GPS signal."
+#jump loop_regular
+
+*mq12_accept
+#m Captain|captain.png|"Thank you. Once the signal locks, the Pilot will come to extract you right away."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq12_city_conquest
+#jump loop_regular
+
+*mq12_decline
+#m Captain|captain.png|"Understood. We'll talk again when you're ready."
+#jump loop_regular
+
+*mq12_remind
+#is_flag mq12_outskirts_reached,false
+    #is_flag mq12_downtown_reached,false
+        #m Captain|captain.png|"Reach both Louisville coordinates and lock the GPS signal. Order doesn't matter."
+        #jump loop_regular
+#is_flag mq12_outskirts_reached,false
+    #m Captain|captain.png|"One coordinate left. You still need to calibrate there."
+    #jump loop_regular
+#is_flag mq12_downtown_reached,false
+    #m Captain|captain.png|"One coordinate left. You still need to calibrate there."
+    #jump loop_regular
+#is_task mq12_city_conquest|t3|uncompleted
+    #m Captain|captain.png|"Once you've visited both points, hold position for one minute. The signal needs time to stabilize."
+    #jump loop_regular
+#is_task mq12_city_conquest|t4|uncompleted
+    #jump mq12_report
+#m Captain|captain.png|"Did calibration go smoothly?"
+#jump loop_regular
+
+*mq12_report
+#is_flag mq12_signal_stabilized,false
+    #m Captain|captain.png|"On-site GPS calibration comes first."
+    #jump loop_regular
+#m Captain|captain.png|"Good work extending the signal into the city. Now we can start the Louisville search in earnest."
+#stat_inc captain|reputation|15
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|10
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|10
+#set_flag mq12_reported_to_captain,true
+#exit
+
+*mq12_after
+#m Captain|captain.png|"Louisville search prep is underway. I'll brief you on the next step soon."
+#jump loop_regular
+
+*mq10_after
+#m Captain|captain.png|"That perimeter signal helped me organize the operating area. I'll brief you on the detailed plan soon."
+#jump loop_regular
+
+*mq08_offer
+#is_flag mq08_captain_briefed,false
+    #m Captain|captain.png|"Operation Clean Slate... I still can't believe it."
+    #m Captain|captain.png|"I... I don't know what to do with this."
+    #m Captain|captain.png|"...Right. The Doc was looking for you. Go see what's going on."
+    #set_flag mq08_captain_briefed,true
+    #jump loop_regular
+#m Captain|captain.png|"The Doc is waiting. Go to the infirmary and hear them out."
+#jump loop_regular
+
+*mq08_remind
+#is_task mq08_dirty_slate|t1|uncompleted
+    #m Captain|captain.png|"I've marked the coordinates for the medical facility in March Ridge. Head there first."
+    #jump loop_regular
+#is_task mq08_dirty_slate|t2|uncompleted
+    #m Captain|captain.png|"Search for any remaining CBRN equipment inside the facility."
+    #jump loop_regular
+#is_task mq08_dirty_slate|t3|uncompleted
+    #m Captain|captain.png|"If you find the equipment, deliver it to the Doc immediately."
+    #jump loop_regular
+#is_task mq08_dirty_slate|t4|uncompleted
+    #m Captain|captain.png|"Share what happened with the Doc and decide on next steps."
+    #jump loop_regular
+#m Captain|captain.png|"The Doc is waiting on that equipment. If you need support, tell me."
+#jump loop_regular
+
+*mq08_after
+#m Captain|captain.png|"..."
+#jump loop_regular
+
+*mq07_offer
+#is_quest mq07_maze|locked
+    #m Captain|captain.png|"If comms with the control center are truly down, we need to make contact with the unit stationed at March Ridge and confirm what's happening."
+    #m Captain|captain.png|"March Ridge has a Cold War-era tourist bunker. There's a good chance the local unit is using it as a garrison now."
+    #m Captain|captain.png|"The problem is, unlike West Point, GPS guidance isn't taking, so the helicopter can't approach."
+    #m Captain|captain.png|"Push through by road from Muldraugh to the outskirts of March Ridge, meet the garrison commander, and re-establish communications."
+    #choice
+        mq07_accept|Accept
+        mq07_decline|Talk about it later
+#jump loop_regular
+
+*mq07_accept
+#m Captain|captain.png|"Thank you. After you meet the commander, activate the GPS beacon. The Pilot will come pick you up."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq07_maze
+#jump loop_regular
+
+*mq07_decline
+#m Captain|captain.png|"Understood. We'll talk again when you're ready."
+#jump loop_regular
+
+*mq07_remind
+#is_task mq07_maze|t1|uncompleted
+    #m Captain|captain.png|"Start from Muldraugh and reach the perimeter coordinates outside March Ridge. I've marked them on your map."
+    #jump loop_regular
+#is_task mq07_maze|t2|uncompleted
+    #m Captain|captain.png|"Start from Muldraugh and reach the perimeter coordinates outside March Ridge. I've marked them on your map."
+    #jump loop_regular
+#is_task mq07_maze|t3|uncompleted
+    #m Captain|captain.png|"Start from Muldraugh and reach the perimeter coordinates outside March Ridge. I've marked them on your map."
+    #jump loop_regular
+#is_task mq07_maze|t4|uncompleted
+    #m Captain|captain.png|"Start from Muldraugh and reach the perimeter coordinates outside March Ridge. I've marked them on your map."
+    #jump loop_regular
+#is_task mq07_maze|t5|uncompleted
+    #jump mq07_report
+#m Captain|captain.png|"Tell me what happened in March Ridge."
+#jump loop_regular
+
+*mq07_report
+#m Captain|captain.png|"Why did you request an emergency extraction? Did you find something at the March Ridge command post?"
+#choice
+    mq07_report_plan|Report that there was no garrison unit and you found an operations plan
+
+*mq07_report_plan
+#m Captain|captain.png|"An operations plan?"
+#m Captain|captain.png|"Operation Clean Slate... they're 'cleaning' Knox Country with a strategic nuke?"
+#m Captain|captain.png|"They were pushing something like this... What about everyone who couldn't evacuate?"
+#m Captain|captain.png|"...I need a minute to put my thoughts in order."
+#stat_inc captain|reputation|10
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|10
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|10
+#set_flag mq07_reported_to_captain,true
+#exit
+
+*mq07_after
+#m Captain|captain.png|"..."
+#jump loop_regular
+
+*mq06_offer
+#is_quest mq06_gunshop_search|locked
+    #m Captain|captain.png|"Something's off. We've had no contact with the control center for days. Not just them... no units are responding. Anywhere."
+    #m Captain|captain.png|"Maybe... I hate even saying it, but we might be the last ones left."
+    #m Captain|captain.png|"...We'll deal with that later. Right now, the biggest problem is supply. If we don't know how long we'll be holding out, we need to secure as much as we can."
+    #m Captain|captain.png|"We should start by locking down firearms and ammo. The Gunner says the armory stock is running thin."
+    #m Captain|captain.png|"There's a gun shop in West Point. Can you scout it? Even confirming it's accessible would help."
+    #choice
+        mq06_accept|Accept
+        mq06_decline|Talk about it later
+#jump loop_regular
+
+*mq06_accept
+#m Captain|captain.png|"Thank you. When you're done, come back and report. It's still dangerous out there."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq06_gunshop_search
+#jump loop_regular
+
+*mq06_decline
+#m Captain|captain.png|"Understood. We'll talk again when you're ready."
+#jump loop_regular
+
+*mq06_remind
+#is_task mq06_gunshop_search|t1|uncompleted
+    #m Captain|captain.png|"Proceed to the gun shop in West Point. I've marked the coordinates on your map."
+    #jump loop_regular
+#is_task mq06_gunshop_search|t2|uncompleted
+    #m Captain|captain.png|"Once scouting is complete, return to the bunker."
+    #jump loop_regular
+#is_task mq06_gunshop_search|t3|uncompleted
+    #jump mq06_report
+#m Captain|captain.png|"Tell me how the search went."
+#jump loop_regular
+
+*mq06_report
+#m Captain|captain.png|"You're back. Any luck at the gun shop?"
+#choice
+    mq06_report_s2|Report that you overheard radio traffic
+
+*mq06_report_s2
+#m Captain|captain.png|"What? You heard a transmission saying there's a unit stationed at March Ridge?"
+#m Captain|captain.png|"If convoys are moving in and out... then March Ridge might have actually held the city against the infected."
+#m Captain|captain.png|"Thank you. If we can't re-establish contact with higher command, we may need to consider direct contact with that unit."
+#stat_inc captain|reputation|10
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|10
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|10
+#set_flag mq06_reported_to_captain,true
+#exit
+
+*mq06_after
+#m Captain|captain.png|"That transmission from West Point made March Ridge our top priority. When preparations are done, I'll brief you immediately."
+#jump loop_regular
+
+*mq05_offer
+#is_quest mq05_to_the_river|locked
+    #m Captain|captain.png|"I analyzed the road-control plan. If we follow the north road out of Muldraugh, we can push by ground to the outskirts of West Point."
+    #m Captain|captain.png|"And if we can calibrate the GPS signal near West Point, the helicopter can approach overhead."
+    #m Captain|captain.png|"The problem is, this is a high-risk mission with an unknown timeline. It's a long road, and you'll have to move fast."
+    #m Captain|captain.png|"Of everyone we can deploy, you're the only one I can trust with it. Can you do it?"
+    #choice
+        mq05_accept|Accept
+        mq05_decline|Talk about it later
+#jump loop_regular
+
+*mq05_accept
+#m Captain|captain.png|"Thank you. Move out through Muldraugh, follow the north road, and reach the perimeter coordinates outside West Point."
+#m Captain|captain.png|"Once you arrive, the beacon should deploy automatically. Hold for about one minute. When the Pilot gets the signal, they'll come pull you out."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq05_to_the_river
+#jump loop_regular
+
+*mq05_decline
+#m Captain|captain.png|"Understood. We'll talk again when you're ready."
+#jump loop_regular
+
+*mq05_remind
+#is_task mq05_to_the_river|t1|uncompleted
+    #m Captain|captain.png|"First, move to the north entry point outside Muldraugh. That's the route toward West Point."
+    #jump loop_regular
+#is_task mq05_to_the_river|t2|uncompleted
+    #m Captain|captain.png|"Follow the road and push to the perimeter coordinates outside West Point. I've marked them on your map."
+    #jump loop_regular
+#is_task mq05_to_the_river|t3|uncompleted
+    #m Captain|captain.png|"Once you reach the target, hold for one minute until the GPS beacon stabilizes. The Pilot is waiting on the signal."
+    #jump loop_regular
+#is_task mq05_to_the_river|t4|uncompleted
+    #jump mq05_report
+#m Captain|captain.png|"Report what happened on site. Immediately."
+#jump loop_regular
+
+*mq05_report
+#m Captain|captain.png|"I'm glad you made it back. Thanks to you, we have an air insertion route to West Point."
+#m Captain|captain.png|"Now we can start prepping operations in West Point. This helps everyone."
+#stat_inc captain|reputation|15
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|10
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|15
+#set_flag mq05_reported_to_captain,true
+#exit
+
+*mq05_after
+#m Captain|captain.png|"The West Point route is open. Once operational prep is complete, we can deploy on short notice."
+#jump loop_regular
+
+*mq04_offer
+#is_quest mq04_lost_map|locked
+    #m Captain|captain.png|"Supplies are dropping, and the areas we can search are drying up. It's a problem."
+    #m Captain|captain.png|"If we could search a denser area like West Point, we'd have better odds."
+    #m Captain|captain.png|"But the closer we get, the GPS guidance signal gets unreliable. Helicopter movement becomes risky."
+    #m Captain|captain.png|"Ground travel isn't guaranteed either... and if the roads are already blocked, moving at all might be impossible."
+    #m Captain|captain.png|"There's a chance the Muldraugh Police Station still has a road-control plan drafted right after the pandemic hit. If you can secure that document, I can assess a viable ground route."
+    #m Captain|captain.png|"Can you go again?"
+    #choice
+        mq04_accept|Accept
+        mq04_decline|Talk about it later
+#jump loop_regular
+
+*mq04_accept
+#m Captain|captain.png|"Thank you. Once you secure the document, deliver it to me. I'll draft the plan."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq04_lost_map
+#jump loop_regular
+
+*mq04_decline
+#m Captain|captain.png|"Understood. We'll talk again when you're ready."
+#jump loop_regular
+
+*mq04_remind
+#is_task mq04_lost_map|t1|uncompleted
+    #m Captain|captain.png|"Proceed to the Muldraugh Police Station first. The paperwork should be inside."
+    #jump loop_regular
+#is_task mq04_lost_map|t2|uncompleted
+    #m Captain|captain.png|"Check the filing cabinets inside. Administrative documents are usually kept there."
+    #jump loop_regular
+#is_task mq04_lost_map|t3|uncompleted
+    #jump mq04_delivery
+#is_task mq04_lost_map|t5|uncompleted
+    #jump mq04_report
+#m Captain|captain.png|"Report how things are going. Immediately."
+#jump loop_regular
+
+*mq04_delivery
+#is_flag mq04_plan_secured,false
+    #m Captain|captain.png|"If you haven't found it yet, check file cabinets in the station. That's the most likely place for administrative documents."
+    #jump loop_regular
+#deliver mq04_lost_map|t3
+    #m Captain|captain.png|"Good work. The document's in solid condition. I'll analyze it."
+    #m Captain|captain.png|"Give me a little time. I'll brief you as soon as I've organized the details."
+    #jump mq04_report
+#m Captain|captain.png|"If needed, secure the document and bring it back when you can."
+#jump loop_regular
+
+*mq04_report
+#m Captain|captain.png|"It's not just me. Everyone's starting to trust and rely on you more and more. Thank you."
+#stat_inc captain|reputation|10
+#stat_inc bartender|reputation|10
+#stat_inc doctor|reputation|10
+#stat_inc gunner|reputation|10
+#stat_inc designer|reputation|10
+#stat_inc pilot|reputation|10
+#m Captain|captain.png|"And I'll issue you a few supply requisition forms. We'll start drafting a push toward West Point."
+#set_flag mq04_reported_to_captain,true
+#exit
+
+*mq04_after
+#m Captain|captain.png|"That road-control plan gave us a shot at finding a ground route to West Point. I'll prepare the next operation."
+#jump loop_regular
+
+*mq03_offer
+#is_quest mq03_first_raid|locked
+    #m Captain|captain.png|"Bunker supplies are running low. At this rate, we'll be out of ammo and medical stock in a matter of days."
+    #m Captain|captain.png|"The good news is, we got intel that a military supply crate is stored in a warehouse in central Muldraugh."
+    #m Captain|captain.png|"But we don't have anyone available to deploy. Can I ask you again?"
+    #choice
+        mq03_accept|Accept
+        mq03_decline|Talk about it later
+#jump loop_regular
+
+*mq03_accept
+#m Captain|captain.png|"Thank you. Recover the supply crate and deliver it to the Gunner."
+#m Captain|captain.png|"I'll write the details in your notes."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq03_first_raid
+#m Captain|captain.png|"Once the mission is complete, return and report immediately. It's still dangerous out there."
+#jump loop_regular
+
+*mq03_decline
+#m Captain|captain.png|"Understood. I'll try to handle what I can."
+#jump loop_regular
+
+*mq03_remind
+#is_task mq03_first_raid|t5|locked
+    #m Captain|captain.png|"I'm sorry to keep asking so much. Good luck."
+    #jump loop_regular
+#is_task mq03_first_raid|t5|unlocked
+    #jump mq03_report
+
+*mq03_report
+#m Captain|captain.png|"Thank you. Seriously. Everyone can breathe because of you."
+#m Captain|captain.png|"It's not much, but it's what I can offer. We'll be counting on you again."
+#set_flag mq03_reported_to_captain,true
+#exit
+
+*mq03_after
+#m Captain|captain.png|"Those supplies bought the bunker some breathing room. You did good work."
+#jump loop_regular
+
+*mq02_offer
+#m Captain|captain.png|"There's something I need to ask. The GPS guidance signal is weakening, and the ground equipment needs recalibration."
+#m Captain|captain.png|"Everyone we have left is either injured or critical to bunker operations. I can't send anyone else."
+#m Captain|captain.png|"I know it's dangerous out there... but I think I can trust you with it. Can you help?"
+#choice
+    mq02_accept|Say you'll help
+    mq02_decline|Talk later
+
+*mq02_accept
+#m Captain|captain.png|"Thank you. Take the Pilot's helicopter topside, then move to the coordinates marked on your map."
+#m Captain|captain.png|"Once you're on site, hold position for a moment. Calibration takes time."
+#m Captain|captain.png|"Once calibration starts, it won't stop even if you leave the exact spot. So if things get bad, get to cover."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq02_first_step
+#m Captain|captain.png|"When the signal stabilizes, report back immediately. Good luck."
+#m Captain|captain.png|"And there's something you need to remember. Once you go outside the bunker, you have to return within a few days, whether you complete the objective or not."
+#m Captain|captain.png|"Unless you're immune to airborne infection, symptoms will show up after a few days. No exceptions."
+#m Captain|captain.png|"Even if symptoms start, if you make it back here, we can administer infection suppressant. So don't give up. Not at the end."
+#m Captain|captain.png|"One more thing. Take this. It's not much, but it'll give you basic protection."
+#m Captain hands me a military combat knife.
+#add_item Base.HuntingKnife
+#m Captain|captain.png|"Come back alive. Good luck."
+#jump loop_regular
+
+*mq02_decline
+#m Captain|captain.png|"Understood. We'll talk again when you're ready."
+#jump loop_regular
+
+*mq02_remind
+#is_task mq02_first_step|t1|uncompleted
+    #m Captain|captain.png|"Head up to the upper access exit and get topside. We can't tune the signal until you're outside."
+    #jump loop_regular
+#is_task mq02_first_step|t2|uncompleted
+    #m Captain|captain.png|"Move to the point marked on your map. The calibration gear won't activate unless you're close enough."
+    #jump loop_regular
+#is_task mq02_first_step|t3|uncompleted
+    #m Captain|captain.png|"Once you're on site, hold on a little longer. The signal needs time to stabilize."
+    #jump loop_regular
+#is_task mq02_first_step|t4|uncompleted
+    #m Captain|captain.png|"Once calibration is complete, return to the bunker without delay. Outside is still unsafe."
+    #jump loop_regular
+#is_task mq02_first_step|t5|uncompleted
+    #jump mq02_report
+#m Captain|captain.png|"Report the moment you're back. There's a lot that needs doing."
+#jump loop_regular
+
+*mq02_report
+#m Captain|captain.png|"You're back. That tells me you got it done. Thank you for making it back safe."
+#m Captain|captain.png|"You seem capable of handling yourself, so I'll authorize bunker access. From here on out, you can run supply raids through the Pilot."
+#m Captain|captain.png|"And here. I'm issuing you a few items that should help with searching. I hope they make a difference."
+#set_flag mq02_reported_to_captain,true
+#exit
+
+*mq02_after
+#m Captain|captain.png|"The GPS guidance signal is stable again. It should be safer to move in and out now."
+#m Captain|captain.png|"Thank you. This will make supply runs a lot easier."
+#jump loop_regular
+
+*mq01_intro
+#m Captain|captain.png|"How are you feeling? Do you remember what happened?"
+#choice
+    mq01_s1|You don't remember anything.
+
+*mq01_s1
+#m Captain|captain.png|"Understood... We found you a few days ago in the lowest-level ward of this bunker. It wasn't on the blueprints."
+#m Captain|captain.png|"It looked like you'd been a patient, left there for days. When we found you, you were unconscious and half-frozen."
+#m Captain|captain.png|"The records we found had your name, but everything else was scrubbed."
+#m Captain|captain.png|"And judging by the military documents we found with you, you were likely tied to the military in some capacity..."
+#m Captain|captain.png|"I'd report it up the chain, but communications are down, so it's... complicated."
+#m Captain|captain.png|"...Alright. We'll worry about the paperwork later. For now, you need to stay here."
+#m Captain|captain.png|"And while you're here, outside access will be restricted. The surface is hell right now..."
+#choice
+    mq01_s2|Ask what's going on
+
+*mq01_s2
+#m Captain|captain.png|"Three days ago, a large-scale outbreak hit the Knox Country region."
+#m Captain|captain.png|"The problem is, it's not a normal disease. It makes the infected violently aggressive."
+#m Captain|captain.png|"And it looks like it brings the dead back up. Like something out of a zombie movie."
+#m Captain|captain.png|"It spreads through blood, saliva, contaminated food, and possibly even airborne exposure. It's viral, and we suspect gas masks won't help."
+#m Captain|captain.png|"So be careful. Don't even think about going outside. You're not cleared for it, and I won't authorize it."
+#m Captain|captain.png|"If you need anything, talk to the other people handling bunker stock."
+#m Captain|captain.png|"The residential wing is on B3. You can take the elevator down (press E at the elevator)."
+#m Captain|captain.png|"However, since there's hardly any furniture, daily life might be a bit inconvenient. I'll ask the troops on patrol to see if they can bring some in, but... please don't get your hopes up too high."
+#m Captain|captain.png|"That's the briefing. If you need anything, come find me."
+#set_flag living_quarter_key,true
+#set_flag mq01_captain_debriefed,true
+#task_unlock mq01_cold_reboot|t3
+#set_flag mq01_facility_briefed,true
+#exit
+
+*dialogue_exit
+#exit
+

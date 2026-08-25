@@ -1,0 +1,30 @@
+{
+    "IGUI_MissionsEvents_PagerMenu": "Missions and Events",
+
+    "IGUI_MissionsEvents_Title": "Missions and Events",
+
+    "IGUI_M1_Title": "Event 1",
+    "IGUI_M1_Objective": "Eliminate Hordes",
+    "IGUI_M1_Activate": "Activated",
+    "IGUI_M1_Disabled": "Disabled",
+    "IGUI_M1_Active": "Active",
+    "IGUI_M1_Available": "Available",
+    "IGUI_M1_Cooldown": "Unavailable",
+    "IGUI_SpawnHorde": "Horde detected within 50 tiles",
+
+    "IGUI_M2_BlockedByM1": "Event 1 in progress",
+    "IGUI_M1_BlockedByM2": "Event 2 in progress",
+
+    "IGUI_M2_Title": "Event 2",
+    "IGUI_M2_Objective": "Collect Items",
+    "IGUI_M2_Disabled": "Disabled",
+    "IGUI_M2_Cooldown": "Cooldown",
+    "IGUI_M2_Available": "Available",
+    "IGUI_M2_Activate": "Activate",
+    "IGUI_M2_Confirm": "Confirm",
+    "IGUI_M2_Starting": "Starting...",
+    "IGUI_M2_Loading": "Loading items...",
+    "IGUI_M2_Carpentry": "Carpentry",
+    "IGUI_M2_Electrician": "Electrician",
+    "IGUI_M2_Unknown": "Unknown"
+}

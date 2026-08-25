@@ -1,0 +1,3 @@
+EFZ_Maps_KO = {
+    IGUI_EFZ_NeedPlasterFirst = "먼저 석고를 칠해야 해.",
+}

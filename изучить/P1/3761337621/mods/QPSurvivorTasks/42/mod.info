@@ -1,0 +1,6 @@
+name=QP Survivor Tasks - Multiplayer Base Board
+id=QPSurvivorTasks
+description=Create and manage synchronized shared survivor task boards in Project Zomboid Build 41 and Build 42.
+poster=poster.png
+modversion=0.7.0
+pzversion=42

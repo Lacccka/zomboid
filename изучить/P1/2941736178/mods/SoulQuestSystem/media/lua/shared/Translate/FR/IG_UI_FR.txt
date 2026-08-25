@@ -1,0 +1,35 @@
+IGUI_FR = {
+   	IGUI_ItemCat_Quest = "Quête",
+
+	IGUI_XP_Quests = "Quêtes",
+	IGUI_XP_Quests_QuestLog = "Historique de quête",
+	IGUI_XP_Quests_ActiveQuests = "Quêtes en cours",
+	IGUI_XP_TaskStatus_Completed = "[TERMINÉE] ",
+	IGUI_XP_TaskStatus_Delivered = "[RENDUE] ",
+	IGUI_XP_TaskStatus_Done = "[EFFECTUÉE] "
+	IGUI_XP_TaskStatus_Failed = "[ÉCHOUíE] ",
+	IGUI_XP_TaskStatus_Obtained = "[OBTENU] ",
+	IGUI_XP_TaskStatus_Updated = "[MISE À JOUR] ",
+
+	IGUI_Decline = "Refuser",
+	IGUI_Dismiss = "Annuler",
+
+	IGUI_XP_Factions = "Factions",
+
+	IGUI_Factions_Template_Tier1 = "Étranger",
+	IGUI_Factions_Template_Tier2 = "Neutre",
+	IGUI_Factions_Template_Tier3 = "Connaissance",
+	IGUI_Factions_Template_Tier4 = "Amical",
+	IGUI_Factions_Template_Tier5 = "De confiance",
+
+	IGUI_Quest_ThankYouTester = "Vous avez réussi ce test. Donnez moi vos impressions à ce sujet.",
+
+	IGUI_Rewards = "Récompenses :"
+
+	IGUI_WorldEventName_TEST = "Raton qui parle",
+	IGUI_WorldEventName_TEST1 = "Raton qui parle",
+	IGUI_WorldEventName_TEST2 = "Spiffo",
+	IGUI_WorldEventName_TEST3 = "Connaissance Spiffo",
+	IGUI_WorldEventName_TEST4 = "Spiffo amical",
+	IGUI_WorldEventName_TEST5 = "Spiffo de confiance",
+}

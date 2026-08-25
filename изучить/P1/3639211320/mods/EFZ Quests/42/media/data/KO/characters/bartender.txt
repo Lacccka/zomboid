@@ -1,0 +1,6 @@
+#name bartender|바텐더
+#set_stat bartender|reputation|0
+
+#desc 바텐더
+#desc_append 수염이 잘 어울리는 이 중년의 남성은 벙커의 바텐더이자 주방장이다.
+#exit

@@ -1,0 +1,7 @@
+*signal
+#sfx EFZ_Radiosfx
+#m From an old walkie-talkie left behind beyond the gun shop's security shutter, a transmission comes through beneath a wash of static.
+#m "HQ, this is Alpha Company's convoy. Reporting requisition complete and we're nearing March Ridge."
+#m "ETA ten mikes. Hoping you'll be ready as fast as possible. Over..."
+#m A moment later, the radio seems to die with the battery, hissing with static before cutting out.
+#exit

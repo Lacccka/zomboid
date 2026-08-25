@@ -1,0 +1,21 @@
+#quest doc02_infection_profile
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|doc02_active|true
+        #action SetFlag|doc02_started|true
+        #action SetFlag|doc02_samples_collected|false
+        #action SetFlag|doc02_reported_to_doctor|false
+        #action UnlockTask|doc02_infection_profile|t1
+    #task t1
+        #set KillZombie|100
+        #action SetFlag|doc02_samples_collected|true
+        #action UnlockTask|doc02_infection_profile|t2
+    #task t2
+        #set RaiseFlag|doc02_reported_to_doctor
+    #task complete|unlocked|hidden
+        #set TaskCondition|doc02_infection_profile|t1,t2
+        #action Reward|EFZ.SupplyTicket,60,rare|EFZ.FirstAidBook,2,unique
+        #action SetFlag|doc02_active|false
+        #action SetFlag|doc02_completed|true
+        #action CompleteQuest|doc02_infection_profile
+

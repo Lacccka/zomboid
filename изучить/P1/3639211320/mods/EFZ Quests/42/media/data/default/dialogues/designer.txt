@@ -1,0 +1,224 @@
+#is_flag mq01_completed,false
+    #jump mq01_gate
+#is_flag designer_intro,false
+    #jump designer_intro
+#is_flag designer_intro,true
+    #jump loop_regular
+
+*mq01_gate
+#m Designer|designer.png|"Heard you woke up in the infirmary. Go see the Captain first."
+#m Designer|designer.png|"Come back with clearance and I'll get you looking like you didn't crawl out of a dumpster."
+#exit
+
+*designer_intro
+#m Designer|designer.png|"Welcome to the most civilized corner of this bunker. Name's Alex."
+#m Designer|designer.png|"Before the world went to hell, I was a fashion designer. If you need anything to wear, just say the word."
+#m Designer|designer.png|"And yeah, it's gonna sound weird, but I've got military gear too. The Captain asked me to manage it."
+#reveal designer
+#set_flag designer_intro,true
+#jump loop_regular
+
+*loop_regular
+#m Designer|designer.png|"Function and style. You get both with me. So, what're you looking for?"
+#choice
+    loop_ask|Ask a question
+    loop_subquest|Talk about helping out
+    loop_outfits|Trade
+    dialogue_exit|Leave
+
+*loop_ask
+#m Designer|designer.png|"You look like you've got questions."
+#choice
+    loop_ask_about_bunker|About the bunker...
+    loop_ask_about_outfits|About the clothes...
+    loop_ask_about_you|About you...
+    loop_regular|Talk about something else
+
+*loop_ask2
+#m Designer|designer.png|"Alright, what else?"
+#choice
+    loop_ask_about_bunker|About the bunker...
+    loop_ask_about_outfits|About the clothes...
+    loop_ask_about_you|About you...
+    loop_regular|Talk about something else
+
+*loop_ask_about_bunker
+#m Designer|designer.png|"It's old and sad. Like last season's leftovers dumped in a 90% off bin."
+#m Designer|designer.png|"Being stuck down here makes me miss my shop at Crossroads Mall."
+#m Designer|designer.png|"If things ever calm down, I'd love to actually go back..."
+#jump loop_ask2
+
+*loop_ask_about_outfits
+#m Designer|designer.png|"I always say it: real fashion has to do function and style at the same time."
+#m Designer|designer.png|"Clothes that are all flash and no substance? That's bad design. What you wear is more than just fabric on skin."
+#m Designer|designer.png|"But pure function with zero style is bad too. That's not clothing, that's equipment."
+#m Designer|designer.png|"That's why fashion design is business and art. If you drop either one, the whole point dies."
+#jump loop_ask2
+
+*loop_ask_about_you
+#m Designer|designer.png|"I'm Alex. Fashion designer."
+#m Designer|designer.png|"I was this close to launching a brand with my name on it... and then everything fell apart."
+#m Designer|designer.png|"When I get out of here, I'm taking another real shot at it. No excuses."
+#jump loop_ask2
+
+*loop_subquest
+#is_quest des03_runway_of_the_living|unlocked,uncompleted,unfailed
+    #jump des03_remind
+#is_quest des03_runway_of_the_living|completed
+    #jump des03_after
+#is_quest des02_functional_pattern|unlocked,uncompleted,unfailed
+    #jump des02_remind
+#is_quest des02_functional_pattern|completed
+    #is_quest des03_runway_of_the_living|locked
+        #jump des03_offer
+    #jump des02_after
+#is_quest des01_bring_back_sign|unlocked,uncompleted,unfailed
+    #jump des01_remind
+#is_quest des01_bring_back_sign|completed
+    #is_quest des02_functional_pattern|locked
+        #jump des02_offer
+    #jump des01_after
+#is_quest des01_bring_back_sign|locked
+    #is_flag mq02_completed,true
+        #jump des01_offer
+#is_quest des02_functional_pattern|locked
+    #is_flag des01_completed,true
+        #jump des02_offer
+#m Designer|designer.png|"Nothing I need right now. Want to grab some gear before you head out?"
+#jump loop_regular
+
+*des02_offer
+#m Designer|designer.png|"If I'm gonna make survival-ready outfits that actually work, I need a range of materials. Especially specialty stuff like turnout gear and police uniforms. That kind of kit is loaded with functional fabrics. I wanna study it."
+#m Designer|designer.png|"Can you bring me a firefighter jacket, firefighter pants, a firefighter helmet, and a police jacket? If I can break down the patterns, it'll help a lot."
+#choice
+    des02_accept|Accept
+    des02_decline|Talk about it later
+#jump loop_regular
+
+*des02_accept
+#m Designer|designer.png|"Thanks. As soon as you get samples, bring them straight back. I don't care if they're a little beat up."
+#quest_unlock des02_functional_pattern
+#jump loop_regular
+
+*des02_decline
+#m Designer|designer.png|"Fair. When you've got room to breathe, we'll talk."
+#jump loop_regular
+
+*des02_remind
+#is_task des02_functional_pattern|t1|uncompleted
+#m Designer|designer.png|"I need one each: firefighter jacket, firefighter pants, a firefighter helmet, and a police jacket. They're just for samples, so condition doesn't matter."
+    #deliver des02_functional_pattern|t1
+        #m Designer|designer.png|"Nice. You actually got the full set. I'll go through them later."
+        #exit
+    #m Designer|designer.png|"You're still missing some. Bring everything on the list."
+    #jump loop_regular
+#is_task des02_functional_pattern|t2|uncompleted
+    #jump des02_report
+#jump des02_after
+
+*des02_report
+#is_flag des02_reported_to_designer,true
+    #jump des02_after
+#m Designer|designer.png|"Perfect. I'll pull the patterns and start making bunker workwear, maybe even flame-resistant gear."
+#stat_inc designer|reputation|10
+#set_flag des02_reported_to_designer,true
+#jump des02_after
+
+*des02_after
+#m Designer|designer.png|"With these samples, I can start mixing and matching functional patterns. When I've got something worth showing, you'll be the first to see it."
+#jump loop_regular
+
+*des03_offer
+#m Designer|designer.png|"Lately, everyone in this bunker has that dead look in their eyes."
+#m Designer|designer.png|"Like they're forgetting what it even means to live like a human."
+#m Designer|designer.png|"I get it. Down here, even when you're breathing, it feels like you're slowly dying. So yeah... we need something. Anything. To remind us we're still alive."
+#m Designer|designer.png|"What if we put on a small fashion show? Bring me a few outfits with some life in them, and I can stage the whole thing."
+#choice
+    des03_accept|Accept
+    des03_decline|Talk about it later
+#jump loop_regular
+
+*des03_accept
+#m Designer|designer.png|"Hell yeah. Bring me everything on this list and I'll start styling it the second you walk in."
+#quest_unlock des03_runway_of_the_living
+#jump loop_regular
+
+*des03_decline
+#m Designer|designer.png|"No worries. We'll talk when it feels right."
+#jump loop_regular
+
+*des03_remind
+#is_task des03_runway_of_the_living|t1|uncompleted
+#m Designer|designer.png|"You remember the outfits for the show, right? I'm counting on you."
+    #deliver des03_runway_of_the_living|t1
+        #m Designer|designer.png|"No way, you got all of it. The colors and textures are perfect. Love the range."
+        #jump des03_report
+    #m Designer|designer.png|"Not all of it yet. Bring the full list."
+    #jump loop_regular
+#is_task des03_runway_of_the_living|t2|uncompleted
+    #jump des03_report
+#jump des03_after
+
+*des03_report
+#is_flag des03_reported_to_designer,true
+    #jump des03_after
+#m Designer|designer.png|"This is gonna make a real runway. Even if it's just for a minute, people will feel human again."
+#stat_inc designer|reputation|20
+#set_flag des03_reported_to_designer,true
+#exit
+
+*des03_after
+#m Designer|designer.png|"I hope the show helps. If people say it mattered, I'll cook up something else."
+#jump loop_regular
+
+*des01_offer
+#m Designer|designer.png|"I had a shop at Crossroads Mall. And it's just..."
+#m Designer|designer.png|"That place was my last scrap of pride, you know? I've been stuck wondering if it's still standing."
+#m Designer|designer.png|"If you head outside anyway, can you swing by Crossroads Mall and check if it's still there?"
+#choice
+    des01_accept|Accept
+    des01_decline|Talk about it later
+#jump loop_regular
+
+*des01_accept
+#m Designer|designer.png|"Thanks. My shop's right by the mall entrance. Just tell me if it's collapsed, and whether the sign's still up."
+#quest_unlock des01_bring_back_sign
+#jump loop_regular
+
+*des01_decline
+#m Designer|designer.png|"Okay. When you've got time, tell me."
+#jump loop_regular
+
+*des01_remind
+#is_task des01_bring_back_sign|t1|uncompleted
+    #m Designer|designer.png|"If you're near Crossroads Mall, check whether my shop's still intact. It's right by the entrance."
+    #jump loop_regular
+#is_task des01_bring_back_sign|t2|uncompleted
+    #jump des01_report
+#jump des01_after
+
+*des01_report
+#is_flag des01_reported_to_designer,true
+    #jump des01_after
+#m Designer|designer.png|"So? How bad was it? Raiders didn't strip it to the studs, did they?"
+#stat_inc designer|reputation|10
+#set_flag des01_reported_to_designer,true
+#m Designer|designer.png|"Thank God. Someday I'm going back and reopening it. Seriously... thank you for checking."
+#jump des01_after
+
+*des01_after
+#m Designer|designer.png|"Knowing it's still holding up helps more than you'd think. I'm going back one day. I have to."
+#jump loop_regular
+
+*loop_outfits
+#m Designer|designer.png|"Take a look. See if anything calls your name."
+#trade designer
+    #buyback_clear
+    #m Designer|designer.png|"Hope it looks good on you. Swing by if you need anything else."
+    #exit
+#m Designer|designer.png|"All good. If you spot something you like later, come tell me."
+#jump loop_regular
+
+*dialogue_exit
+#exit
+

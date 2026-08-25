@@ -1,0 +1,3 @@
+*mq11_last_ticketing
+#name Main-11. Last Ticketing
+#desc The captain asked you to check the aircraft status to confirm the exit methods left in Louisville International Airport. After inspecting the aircraft hangars and fuel status, return to the bunker and report the results.

@@ -1,0 +1,14 @@
+module Base
+{
+    sound ModpackFestivalMainMenuNight1
+    {
+        category = UI,
+        loop = true,
+        is3D = false,
+        clip
+        {
+            file = media/sound/MainMenu/night1-not-a-human.ogg,
+            volume = 0.9,
+        }
+    }
+}

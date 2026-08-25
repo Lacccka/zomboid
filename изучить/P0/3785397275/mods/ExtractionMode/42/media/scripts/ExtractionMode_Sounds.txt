@@ -1,0 +1,12 @@
+module Base
+{
+    sound ExtractionMode_WWLTense
+    {
+        category = Music,
+        master = Music,
+        clip
+        {
+            file = media/music/luatriggered/wwl_tense.ogg,
+        }
+    }
+}

@@ -1,0 +1,19 @@
+*mq11_last_ticketing_p1
+#name 1번 격납고 확인하기
+*mq11_last_ticketing_p2
+#name 2번 격납고 확인하기
+*mq11_last_ticketing_p3
+#name 3번 격납고 확인하기
+*mq11_last_ticketing_p4
+#name 4번 격납고 확인하기
+*mq11_last_ticketing_p5
+#name 5번 격납고 확인하기
+*mq11_last_ticketing_s1
+#name 유류고 확인하기
+*mq11_last_ticketing_t8
+#name 벙커로 복귀하기
+*mq11_last_ticketing_t9
+#name 캡틴에게 보고하기
+
+
+

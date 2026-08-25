@@ -1,0 +1,6 @@
+*mq10_departure_t1
+#name 루이빌 국제공항 외곽 좌표로 이동하기
+*mq10_departure_t2
+#name 대기하며 GPS 신호 유도하기
+*mq10_departure_t3
+#name 캡틴에게 보고하기

@@ -1,0 +1,213 @@
+#is_flag mq01_completed,false
+    #jump mq01_gate
+#is_flag pilot_intro,false
+    #jump pilot_intro
+#is_flag pilot_intro,true
+    #jump loop_regular
+
+*mq01_gate
+#m Pilot|pilot.png|"Before you talk to me, you should go get briefed by Captain Taylor first, man."
+#m Pilot|pilot.png|"If you're late, she's gonna ride you hard. She's picky as hell."
+#exit
+
+*pilot_intro
+#m Pilot|pilot.png|"Name's Morgan. People just call me 'Pilot'."
+#m Pilot|pilot.png|"I'm the only one flying a helicopter out of this bunker. Hopefully I get to give you a lift sometime!"
+#reveal pilot
+#set_flag pilot_intro,true
+#jump loop_regular
+
+*loop_regular
+#m Pilot|pilot.png|"Alright, what're you looking for today?"
+#choice
+    loop_ask|Ask a question
+    loop_routes_page1|Request a ride|mq02_started|true
+    loop_extract|Talk about the deployment and extraction|mq02_started|true
+    dialogue_exit|Leave
+
+*loop_ask
+#m Pilot|pilot.png|"Yeah? What's on your mind?"
+#choice
+    loop_ask_about_bunker|About the bunker...
+    loop_ask_about_pathfinding|About pathfinding...
+    loop_ask_about_you|About you...
+    loop_regular|Talk about something else
+
+*loop_ask2
+#m Pilot|pilot.png|"More questions?"
+#choice
+    loop_ask_about_bunker|About the bunker...
+    loop_ask_about_pathfinding|About pathfinding...
+    loop_ask_about_you|About you...
+    loop_regular|Talk about something else
+
+*loop_ask_about_bunker
+#m Pilot|pilot.png|"You know this bunker has a ridiculous amount to explore? I sneak around behind the Captain's back sometimes, and... yeah. It's wild."
+#m Pilot|pilot.png|"Hidden passages, sealed-off sections... why the hell did they build all this?"
+#m Pilot|pilot.png|"Kinda sucks the Captain won't share the blueprints."
+#jump loop_ask2
+
+*loop_ask_about_pathfinding
+#m Pilot|pilot.png|"Most of the danger stuff gets updated off military recon feeds."
+#m Pilot|pilot.png|"Outside's a total circus, but hey, at least GPS still works."
+#m Pilot|pilot.png|"Guess those freaks can't knock satellites outta space, huh? Ha."
+#jump loop_ask2
+
+*loop_ask_about_you
+#m Pilot|pilot.png|"Morgan. Folks around here just call me 'Pilot'."
+#m Pilot|pilot.png|"Because yeah, I'm the only helicopter pilot we've got."
+#m Pilot|pilot.png|"If we had more birds and more pilots, we could run real airlifts. Shame we can't."
+#jump loop_ask2
+
+*loop_routes
+#m Pilot|pilot.png|"Requesting an deployment? Alright, I'll pull up the routes."
+#jump loop_routes_page1
+
+*loop_routes_page1
+#m Pilot|pilot.png|"Just so you know: unless someone's down in the residential quarter, everybody's moving with you. Keep that in mind."
+#choice
+    route_muldraugh|Request a deployment to Muldraugh
+    route_westpoint|Request a deployment to Westpoint|mq05_completed|true
+    route_blackwood|Request a deployment to March Ridge|mq07_completed|true
+    route_rosewood|Request a deployment to Rosewood|mq09_active|true
+    loop_routes_page2|Next page|mq10_completed|true
+
+*loop_routes_page2
+#m Pilot|pilot.png|"Just so you know: unless someone's down in the residential quarter, everybody's moving with you. Keep that in mind."
+#choice
+    route_LVharbor|Request a deployment to the outskirts of Louisville|mq10_completed|true
+    route_louisvilleW|Request a deployment to the west side of Louisville|mq12_completed|true
+    route_louisvilleE|Request a deployment to the east side of Louisville|mq12_completed|true
+    loop_regular|I'm still deciding.
+
+*route_muldraugh
+#m Pilot|pilot.png|"Muldraugh, huh? Do one last headcount before we roll."
+#choice
+    route_muldraugh_confirm|All ready to go
+    loop_regular|I'll come back after I gear up
+
+*route_muldraugh_confirm
+#m Pilot|pilot.png|"Alright. Good luck out there! I'll mark your extraction point in green on the map."
+#fade_out black|1
+#sfx EFZ_Helicopter
+#wait 1
+#npc_remove
+#lua EFZ.TriggerDeployDialogueMuldraugh()
+#restock
+#wait 1
+#fade_in 2
+#exit
+
+*route_westpoint
+#m Pilot|pilot.png|"Heading to West Point? That place was dense for its size, so expect a whole lotta zombies. Button it up and stay sharp."
+#choice
+    route_westpoint_confirm|All ready to go
+    loop_regular|I'll come back after I gear up
+
+*route_westpoint_confirm
+#m Pilot|pilot.png|"Alright, I've got the coordinates. Extraction works the same as always, so don't get turned around."
+#fade_out black|1
+#sfx EFZ_Helicopter
+#wait 1
+#npc_remove
+#lua EFZ.TriggerDeployDialogueWestpoint()
+#restock
+#wait 1
+#fade_in 2
+#exit
+
+*route_blackwood
+#m Pilot|pilot.png|"March Ridge, got it. Lots of look-alike buildings out there, so it's real easy to lose your bearings. Watch it."
+#choice
+    route_blackwood_confirm|All ready to go
+    loop_regular|I'll come back after I gear up
+
+*route_blackwood_confirm
+#m Pilot|pilot.png|"Alright, route's set. I'll log your pickup coords too, so make it back in one piece."
+#fade_out black|1
+#sfx EFZ_Helicopter
+#wait 1
+#npc_remove
+#lua EFZ.TriggerDeployDialogueBlackwood()
+#restock
+#wait 1
+#fade_in 2
+#exit
+
+*route_rosewood
+#is_flag mq09_pilot_contacted,true
+    #m Pilot|pilot.png|"I told you already. The second I cross into Rosewood airspace, GPS drops dead."
+    #m Pilot|pilot.png|"I'll get you to March Ridge, but after that you're going on foot."
+    #jump loop_regular
+#m Pilot|pilot.png|"Yeah... that's gonna be a problem."
+#m Pilot|pilot.png|"Last time I dropped you off, I figured I'd do a quick recon pass over Rosewood. The second I crossed into Rosewood airspace, GPS just went dark."
+#m Pilot|pilot.png|"Feels like somebody's running a jammer nearby. I can't take the bird in there."
+#m Pilot|pilot.png|"I can get you as far as March Ridge. After that, you're walking, or you find a vehicle."
+#m Pilot|pilot.png|"Sorry, man. Wish I had a better answer."
+#set_flag mq09_pilot_contacted,true
+#jump loop_regular
+
+*route_LVharbor
+#m Pilot|pilot.png|"You want a drop near the Louisville airport. Just say when you're ready."
+#choice
+    route_LVharbor_confirm|All ready to go
+    loop_regular|I'll come back after I gear up
+
+*route_LVharbor_confirm
+#m Pilot|pilot.png|"Alright. Good luck out there! I'll mark your extraction point in green on the map."
+#fade_out black|1
+#sfx EFZ_Helicopter
+#wait 1
+#npc_remove
+#lua EFZ.TriggerDeployDialogueLVHarbor()
+#restock
+#wait 1
+#fade_in 2
+#exit
+
+*route_louisvilleW
+#m Pilot|pilot.png|"West Louisville, huh? City's huge, so don't go getting yourself lost."
+#choice
+    route_louisvilleW_confirm|All ready to go
+    loop_regular|I'll come back after I gear up
+
+*route_louisvilleW_confirm
+#m Pilot|pilot.png|"Alright. Good luck out there! I'll mark your extraction point in green on the map."
+#fade_out black|1
+#sfx EFZ_Helicopter
+#wait 1
+#npc_remove
+#lua EFZ.TriggerDeployDialogueLouisvilleW()
+#restock
+#wait 1
+#fade_in 2
+#exit
+
+*route_louisvilleE
+#m Pilot|pilot.png|"East Louisville, huh? City's huge, so don't go getting yourself lost."
+#choice
+    route_louisvilleE_confirm|All ready to go
+    loop_regular|I'll come back after I gear up
+
+*route_louisvilleE_confirm
+#m Pilot|pilot.png|"Alright. Good luck out there! I'll mark your extraction point in green on the map."
+#fade_out black|1
+#sfx EFZ_Helicopter
+#wait 1
+#npc_remove
+#lua EFZ.TriggerDeployDialogueLouisvilleE()
+#restock
+#wait 1
+#fade_in 2
+#exit
+
+*loop_extract
+#m Pilot|pilot.png|"Why do we have to follow the GPS beacon for the helicopter? Because noise brings the dead running, that's why."
+#m Pilot|pilot.png|"And raiders might roll in and try to shoot us down, too. So I fly the safest route I can."
+#m Pilot|pilot.png|"If you want back to the bunker, get to the preset coordinates and call me on shortwave. I'll hustle over and pull you out."
+#m Pilot|pilot.png|"Just don't ask me to bring your car. This is one Huey from the Vietnam War, not a miracle worker."
+#jump loop_regular
+
+*dialogue_exit
+#exit
+

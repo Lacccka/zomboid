@@ -1,0 +1,3 @@
+#npc_create gunner|gunner_normal|idle|20114,14,0|E
+#exit
+

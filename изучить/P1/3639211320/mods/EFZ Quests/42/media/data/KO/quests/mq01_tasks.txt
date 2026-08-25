@@ -1,0 +1,9 @@
+*mq01_cold_reboot_t1
+#name 상황 듣기
+*mq01_cold_reboot_t2
+#name 캡틴에게 보고하기
+*mq01_cold_reboot_t3
+#name 벙커 시설 안내 받기
+*mq01_cold_reboot_t4
+#name 추가 지시를 기다리기
+

@@ -1,0 +1,8 @@
+name=Extraction Mode
+id=ExtractionMode
+description=A multiplayer extraction mode featuring persistent hideout upgrades, rotating raid destinations, escalating hordes, helicopter extractions, and optional Bandits support. Currently in alpha.
+modversion=0.8.74
+versionMin=42.20
+poster=poster.png
+icon=extraction_icon.png
+author=Zakreon

@@ -1,0 +1,41 @@
+#quest mq09_lunatic
+    #task intro|unlocked|hidden
+        #set WaitUntil|time|false|0
+        #action SetFlag|mq09_active|true
+        #action SetFlag|mq09_started|true
+        #action SetFlag|mq09_pilot_contacted|false
+        #action SetFlag|mq09_prison_reached|false
+        #action SetFlag|mq09_voice_log_found|false
+        #action SetFlag|mq09_returned_to_bunker|false
+        #action SetFlag|mq09_reported_to_captain|false
+        #action UnlockTask|mq09_lunatic|t1
+    #task t1
+        #set RaiseFlag|mq09_pilot_contacted
+        #action UnlockTask|mq09_lunatic|t2
+    #task t2
+        #set GotoLocation|7342,11688,7622,11896,0|true
+        #action SetFlag|mq09_prison_reached|true
+        #action RunScript|marker_scripts.txt,add_marker_mq09_t3
+        #action UnlockTask|mq09_lunatic|t3
+    #task t3
+        #set LootContainer|filingcabinet|7611,11798,0|EFZ.DetaineeVisitationVoiceLog,true
+        #action SetFlag|mq09_voice_log_found|true
+        #action RunScript|marker_scripts.txt,remove_marker_mq09_t3
+        #action RunScript|mq09_voice_log.txt,monologue
+        #action UnlockTask|mq09_lunatic|t4
+    #task t4
+        #set GotoLocation|20108,17,0|building
+        #action SetFlag|mq09_returned_to_bunker|true
+        #action UnlockTask|mq09_lunatic|t5
+    #task t5
+        #set RaiseFlag|mq09_reported_to_captain
+    #task t6|unlocked|hidden
+        #set TaskCondition|mq09_lunatic|t1,t2,t3,t4,t5
+        #action Reward|EFZ.SupplyTicket,25,rare|Base.ShotgunSilencer,1,unique
+        #action SetFlag|mq09_active|false
+        #action SetFlag|mq09_completed|true
+        #action SetFlag|mq10_unlocked|true
+        #action CompleteQuest|mq09_lunatic
+
+
+

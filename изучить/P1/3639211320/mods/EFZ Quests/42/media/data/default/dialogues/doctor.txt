@@ -1,0 +1,365 @@
+#is_flag doctor_intro,true
+    #jump loop
+
+*doctor_intro
+#m Doc|doctor.png|"Are you awake? How are you feeling? You've been out for quite a while."
+#m Doc|doctor.png|"Please, just call me Doctor Cortman. I used to run Cortman Medical in Muldraugh."
+#reveal doctor
+#set_flag doctor_intro,true
+#jump loop
+
+*loop
+#is_flag mq01_completed,false
+    #is_flag mq01_active,false
+        #jump loop_mq01_prompt
+#is_flag mq01_active,true
+    #is_flag mq01_captain_debriefed,false
+        #jump loop_mq01_remind
+#jump loop_regular
+
+*loop_mq01_prompt
+#m Doc|doctor.png|"I've been doing everything I can, but... I honestly can't tell if you're fully back on your feet yet."
+#m Doc|doctor.png|"If you can stand, go see the captain... I mean, Captain Taylor. They'll want to know what happened to you."
+#choice
+    mq01_start|Ask why I'm here
+
+*mq01_start
+#m Doc|doctor.png|"The short version is: disaster hit all of Knox Country, and we took shelter here... but for some reason, you were found inside this bunker."
+#m Doc|doctor.png|"The captain can explain the rest. You should go see her."
+#quest_unlock mq01_cold_reboot
+#task_unlock mq01_cold_reboot|t1
+#set_flag mq01_active,true
+#set_flag mq01_doctor_briefed,true
+#jump loop_mq01_remind
+
+*loop_mq01_remind
+#m Doc|doctor.png|"The captain's in the storage room next to the infirmary."
+#jump dialogue_exit
+
+*loop_regular
+#m Doc|doctor.png|"No problems health-wise, right? What brings you in?"
+#choice
+    loop_ask|Ask a question
+    loop_quest|Talk about important missions
+    loop_subquest|Talk about helping out
+    loop_supplies|Trade
+    dialogue_exit|Leave
+
+*loop_quest
+#is_quest mq08_dirty_slate|unlocked,uncompleted,unfailed
+    #jump mq08_remind
+#is_quest mq08_dirty_slate|completed
+    #jump mq08_after
+#is_flag mq08_unlocked,true
+    #jump mq08_offer     
+#m Doc|doctor.png|"There's nothing else I need to ask right now. It'd be better to rest up... or focus on something else."
+#jump loop_regular
+
+*mq08_offer
+#is_quest mq08_dirty_slate|locked
+    #m Doc|doctor.png|"I can't say exactly what's going to happen. If Operation Clean Slate really goes through, every trip outside the bunker could mean heavy radiation exposure."
+    #m Doc|doctor.png|"There might be CBRN gear left behind by the military in March Ridge... They would've had advance notice of a nuclear strike plan, so it's possible they prepared at least a little."
+    #m Doc|doctor.png|"And if they did take delivery of protective gear, they'd probably store it at a nearby medical facility. It's simpler and more efficient than setting up a new field station from scratch."
+    #m Doc|doctor.png|"If you have the time, could you search the medical facilities in March Ridge and see if any CBRN gear is there? We need at least the bare minimum."
+    #choice
+        mq08_accept|Accept
+        mq08_decline|Talk about it later
+    #jump loop_regular
+#m Doc|doctor.png|"Let me know when you're ready. We desperately need that CBRN gear."
+#jump loop_regular
+
+*mq08_accept
+#m Doc|doctor.png|"Thank you. Please, try to secure it. Lives are riding on this."
+#lua EFZ.AssignDeployActive()
+#quest_unlock mq08_dirty_slate
+#jump loop_regular
+
+*mq08_decline
+#m Doc|doctor.png|"Alright. Let's talk again when you're ready."
+#jump loop_regular
+
+*mq08_remind
+#is_task mq08_dirty_slate|t1|uncompleted
+    #m Doc|doctor.png|"Head to the medical facilities in March Ridge."
+    #jump loop_regular
+#is_task mq08_dirty_slate|t2|uncompleted
+    #m Doc|doctor.png|"Check the lockers and storage cabinets inside the facility. There should be something in there."
+    #jump loop_regular
+#is_task mq08_dirty_slate|t3|uncompleted
+    #jump mq08_delivery_request
+#is_task mq08_dirty_slate|t4|uncompleted
+    #m Doc|doctor.png|"After you inspect what's in the box, we need to talk about what to do next."
+    #jump loop_regular
+#m Doc|doctor.png|"Thanks to you getting that gear, we can at least prepare. If you find anything else, please tell me."
+#jump loop_regular
+
+*mq08_delivery_request
+#m Doc|doctor.png|"Did you bring the CBRN gear?"
+#deliver mq08_dirty_slate|t3
+    #m Doc|doctor.png|"Good. The box is in decent shape. Let's see what's inside, one at a time."
+    #m Doc|doctor.png|"Filters, iodine, protective suits... and what's this?"
+    #m Doc|doctor.png|"'Radiation exposure zone and fallout projection map'? The explosion point isn't from outside of Knox Country. It's marked inside."
+    #m Doc|doctor.png|"If that's true, it means the warhead isn't coming from somewhere out there... it's being placed somewhere in here. Like... are they planning some kind of nuclear backpack?"
+    #m Doc|doctor.png|"It's a horrible thought. Whatever it is, thank you. Truly."
+    #stat_inc doctor|reputation|15
+    #stat_inc captain|reputation|10
+    #stat_inc bartender|reputation|5
+    #stat_inc gunner|reputation|5
+    #stat_inc designer|reputation|5
+    #stat_inc pilot|reputation|5
+    #set_flag mq08_reported_to_doctor,true
+    #set_flag mq08_fallout_map_found,true
+    #exit
+#m Doc|doctor.png|"If you find the gear, bring it straight back. We badly need those CBRN supplies."
+#jump loop_regular
+
+*mq08_after
+#m Doc|doctor.png|"That fallout projection map makes it a lot easier to judge what kind of preparations we need. If I learn more, I'll share it."
+#jump loop_regular
+
+*loop_subquest
+#is_quest doc04_last_patient|unlocked,uncompleted,unfailed
+    #jump doc04_remind
+#is_quest doc04_last_patient|completed
+    #jump doc04_after
+#is_quest doc01_cortman_files|unlocked,uncompleted,unfailed
+    #jump doc01_remind
+#is_quest doc02_infection_profile|unlocked,uncompleted,unfailed
+    #jump doc02_remind
+#is_quest doc03_med_shortage|unlocked,uncompleted,unfailed
+    #jump doc03_remind
+#is_quest doc03_med_shortage|completed
+    #is_flag mq12_completed,true
+        #is_quest doc04_last_patient|locked
+            #jump doc04_offer
+    #jump doc03_after
+#is_quest doc02_infection_profile|completed
+    #is_quest doc03_med_shortage|locked
+        #jump doc03_offer
+    #jump doc02_after
+#is_quest doc01_cortman_files|completed
+    #is_quest doc02_infection_profile|locked
+        #jump doc02_offer
+    #jump doc01_after
+#is_flag mq02_completed,true
+    #jump doc01_offer
+#m Doc|doctor.png|"There's nothing I need to ask of you right now. Want to talk about something else?"
+#jump loop_regular
+
+*doc01_offer
+#m Doc|doctor.png|"I left patient charts and prescription records back at Cortman Medical in Muldraugh."
+#m Doc|doctor.png|"Maybe they don't matter anymore... but I'd still like to remember who those people were."
+#m Doc|doctor.png|"If you have the time, could you retrieve those records for me?"
+#choice
+    doc01_accept|Accept
+    doc01_decline|Talk about it later
+#jump loop_regular
+
+*doc01_accept
+#m Doc|doctor.png|"Thank you. There's a bookshelf at my clinic where I kept all kinds of records... it should be there."
+#quest_unlock doc01_cortman_files
+#jump loop_regular
+
+*doc01_decline
+#m Doc|doctor.png|"Alright. Let's talk again when you have a little breathing room."
+#jump loop_regular
+
+*doc02_offer
+#m Doc|doctor.png|"I need more cases if I'm going to chart how fast the infection progresses."
+#m Doc|doctor.png|"If you're willing to help, it would mean a lot. You're the one out there dealing with the infected firsthand. To compare conditions properly, I need a sample size of at least a hundred."
+#m Doc|doctor.png|"If you have time, could you help collect data? If you put the infected down, I'll send a team afterward to take samples."
+#choice
+    doc02_accept|Accept
+    doc02_decline|Talk about it later
+#jump loop_regular
+
+*doc02_accept
+#m Doc|doctor.png|"Thank you. Please keep taking down the infected you run into out there. Once you've dealt with a hundred, just report back to me."
+#quest_unlock doc02_infection_profile
+#jump loop_regular
+
+*doc02_decline
+#m Doc|doctor.png|"Alright. When you're ready, let me know."
+#jump loop_regular
+
+*doc03_offer
+#m Doc|doctor.png|"We're going to run out of supplies in the infirmary, sooner than I'd like."
+#m Doc|doctor.png|"If it keeps going like this, I won't be able to treat people properly."
+#m Doc|doctor.png|"Could you gather the medications I write down for you? We need enough to last at least a month."
+#m Doc|doctor.png|"If you bring everything back, I'll sort the inventory and rework our medical support plan."
+#choice
+    doc03_accept|Accept
+    doc03_decline|Talk about it later
+#jump loop_regular
+
+*doc03_accept
+#m Doc|doctor.png|"Thank you. It'll take time to gather it all, I know... but please, as soon as you can."
+#quest_unlock doc03_med_shortage
+#jump loop_regular
+
+*doc03_decline
+#m Doc|doctor.png|"Alright. Let's talk again when you have a little breathing room."
+#jump loop_regular
+
+*doc01_remind
+#is_task doc01_cortman_files|t1|uncompleted
+    #m Doc|doctor.png|"Please go to Cortman Medical in Muldraugh. You'll need to check the shelves in the back."
+    #jump loop_regular
+#is_task doc01_cortman_files|t2|uncompleted
+    #m Doc|doctor.png|"I left patient charts and prescription records on the shelves inside Cortman Medical. Please bring them back."
+    #jump loop_regular
+#is_task doc01_cortman_files|t3|uncompleted
+    #jump doc01_delivery_request
+#is_task doc01_cortman_files|t4|uncompleted
+    #m Doc|doctor.png|"Once you return the records, I'd like to talk for a moment."
+    #jump loop_regular
+#jump doc01_after
+
+*doc01_delivery_request
+#m Doc|doctor.png|"Did you bring the patient charts?"
+#deliver doc01_cortman_files|t3
+    #m Doc|doctor.png|"...Thank you. I didn't think I'd ever see these again."
+    #m Doc|doctor.png|"I'll read through them and try to remember the names... the faces."
+    #stat_inc doctor|reputation|10
+    #set_flag doc01_reported_to_doctor,true
+    #exit
+#m Doc|doctor.png|"If you find them, bring them right back. I don't want to lose these records."
+#jump loop_regular
+
+*doc01_after
+#m Doc|doctor.png|"It eases my mind, having those records back. I won't forget these names."
+#jump loop_regular
+
+*doc02_remind
+#is_task doc02_infection_profile|t1|uncompleted
+    #m Doc|doctor.png|"I need more cases to identify infection patterns. Please take down 100 infected."
+    #jump loop_regular
+#is_task doc02_infection_profile|t2|uncompleted
+    #jump doc02_report_request
+#jump doc02_after
+
+*doc02_report_request
+#m Doc|doctor.png|"Have you put down enough infected? That should be enough of a sample to compare progression rates."
+#stat_inc doctor|reputation|10
+#set_flag doc02_reported_to_doctor,true
+#jump doc02_after
+
+*doc02_after
+#m Doc|doctor.png|"I'll analyze what you've gathered and work out a treatment plan. Thanks to you, I can help people a little more."
+#jump loop_regular
+
+*doc03_remind
+#is_task doc03_med_shortage|t1|uncompleted
+    #jump doc03_delivery_request
+#is_task doc03_med_shortage|t2|uncompleted
+    #jump doc03_delivery_request
+#jump doc03_after
+
+*doc03_delivery_request
+#m Doc|doctor.png|"Did you manage to gather all the medicine we need?"
+#deliver doc03_med_shortage|t1
+    #m Doc|doctor.png|"Thank you. This should keep us going for a while. I'll sort the inventory right away."
+    #stat_inc doctor|reputation|15
+    #set_flag doc03_reported_to_doctor,true
+    #exit
+#m Doc|doctor.png|"Once you have everything, hand it over right away. People are waiting."
+#jump loop_regular
+
+*doc03_after
+#m Doc|doctor.png|"With the inventory topped up, we'll be able to breathe for a bit. I appreciate it."
+#jump loop_regular
+
+*doc04_offer
+#m Doc|doctor.png|"It's been quite some time since we came into this bunker. There's something that's been weighing on me, ever since the beginning."
+#m Doc|doctor.png|"It's... about my ex-wife. When the pandemic first started, she called me for the first time since the divorce and made an appointment. I don't know why she insisted on seeing me, specifically."
+#m Doc|doctor.png|"And then... even long after the appointment date passed, she never came to the clinic."
+#m Doc|doctor.png|"The only thing I have to go on is an address. I heard it while I was writing up the appointment. If I give you that address... and if you have the time... could you check the place for me?"
+#choice
+    doc04_accept|Accept
+    doc04_decline|Talk about it later
+#jump loop_regular
+
+*doc04_accept
+#m Doc|doctor.png|"Thank you. I'll write the address down in a note for you. She might've left something behind."
+#quest_unlock doc04_last_patient
+#jump loop_regular
+
+*doc04_decline
+#m Doc|doctor.png|"Alright. When you're ready, let me know."
+#jump loop_regular
+
+*doc04_remind
+#is_task doc04_last_patient|t1|uncompleted
+    #m Doc|doctor.png|"My ex-wife's house is in Louisville. I'd really appreciate it if you could check on it."
+    #jump loop_regular
+#is_task doc04_last_patient|t2|uncompleted
+    #m Doc|doctor.png|"If you didn't find anything, please check the bedroom. I have a feeling it might be there."
+    #jump loop_regular
+#is_task doc04_last_patient|t3|uncompleted
+    #jump doc04_delivery_request
+#is_task doc04_last_patient|t4|uncompleted
+    #m Doc|doctor.png|"I'd like to talk for a moment."
+    #jump loop_regular
+#jump doc04_after
+
+*doc04_delivery_request
+#m Doc|doctor.png|"You're back... did you find anything?"
+#deliver doc04_last_patient|t3
+    #m Doc|doctor.png|"...Yeah. That handwriting... it's hers. At the end... she said she was sorry."
+    #m Doc|doctor.png|"Thank you... for looking. I think I need a little time to get my thoughts together."
+    #stat_inc doctor|reputation|20
+    #set_flag doc04_reported_to_doctor,true
+    #exit
+#m Doc|doctor.png|"Please, if you can, search the house and find the letter."
+#jump loop_regular
+
+*doc04_after
+#m Doc|doctor.png|"Thank you for bringing me the letter. It... sits heavy, but I guess there was no other way this could've gone."
+#jump loop_regular
+
+*loop_ask
+#m Doc|doctor.png|"Do you have a question?"
+#choice
+    loop_ask_about_bunker|About the bunker...
+    loop_ask_about_medical|About the medical support situation...
+    loop_ask_about_you|About you...
+    loop_regular|Talk about something else
+
+*loop_ask2
+#m Doc|doctor.png|"Anything else on your mind?"
+#choice
+    loop_ask_about_bunker|About the bunker...
+    loop_ask_about_medical|About the medical support situation...
+    loop_ask_about_you|About you...
+    loop_regular|Talk about something else
+
+*loop_ask_about_bunker
+#m Doc|doctor.png|"I'm worried this bunker isn't exactly the cleanest place to live."
+#m Doc|doctor.png|"At least the infirmary... I do my best to keep it as clean as I can."
+#m Doc|doctor.png|"For your sake, please try to keep up with your personal hygiene. When hygiene slips, health tends to follow."
+#jump loop_ask2
+
+*loop_ask_about_medical
+#m Doc|doctor.png|"It's... not good. We don't have enough medicine to cover everyone sheltering in this bunker."
+#m Doc|doctor.png|"For now, we're getting by on what I brought in with me, but I don't know how long that'll hold."
+#m Doc|doctor.png|"So I'm keeping medical support as limited as I can. I hope you understand."
+#jump loop_ask2
+
+*loop_ask_about_you
+#m Doc|doctor.png|"I'm Doctor Cortman. I ran Cortman Medical in Muldraugh."
+#m Doc|doctor.png|"A family doctor doing surgery down here... it sounds ridiculous, doesn't it?"
+#m Doc|doctor.png|"But we don't have a choice. I'm the only doctor we've got. And a doctor can't abandon patients."
+#jump loop_ask2
+
+*loop_supplies
+#m Doc|doctor.png|"Medical supplies... I don't have much, but I'll share what I can."
+#trade doctor
+    #buyback_clear
+    #m Doc|doctor.png|"Use them carefully. If you run low, come back."
+    #exit
+#m Doc|doctor.png|"No worries. But if you start feeling worse, come see me right away."
+#jump loop_regular
+
+*dialogue_exit
+#exit
+

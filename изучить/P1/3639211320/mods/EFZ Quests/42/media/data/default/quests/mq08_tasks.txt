@@ -1,0 +1,11 @@
+*mq08_dirty_slate_t1
+#name Arrive at the March Ridge Medical Facility
+*mq08_dirty_slate_t2
+#name Search for the NBC Equipment
+*mq08_dirty_slate_t3
+#name Deliver the Equipment to the Doctor
+*mq08_dirty_slate_t4
+#name Discuss the Situation with the Doctor
+
+
+

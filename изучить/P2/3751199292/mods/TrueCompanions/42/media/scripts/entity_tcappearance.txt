@@ -1,0 +1,65 @@
+module Base
+{
+    /*
+     * True Companions - Appearance Workstation
+     *
+     * A mirrored vanity. Right-click it (or stand at it and press the interact key)
+     * to rename a companion and change her hair, beard and hair colour.
+     *
+     * ONE TILE, ONE STAGE. Unlike the beacon this has no upgrade path -- it does one
+     * job and does not do it better with more parts.
+     *
+     * SPRITE: furniture_storage_01_40..43, "Mirror And / Drawers". Checked against the
+     * three properties that have each already caused a shipped bug on the beacon:
+     *   no IsSurfaceOffset  (would draw it 34px up, floating)
+     *   no SpriteGridPos    (would be one cell of a multi-tile sprite)
+     *   no IsoType / IsTableTop (would be a desk gadget, or hijacked by vanilla
+     *                            appliance behaviour)
+     * It also carries IsMirror, which is exactly what the thing is, and all four
+     * facings exist -- the build cursor rotates through W,N,E,S and ISBuildIsoEntity
+     * :getFace silently SKIPS a face that is missing, so a partial set gives fewer
+     * orientations than the player expects.
+     *
+     * Its tile definition includes `container = dresser`, so the placed object is also
+     * an ordinary chest of drawers you can store things in. That is a side effect of
+     * the sprite rather than a design goal, and it is harmless.
+     *
+     * INPUTS: every id verified present in media/scripts/generated/items (the Base.Stew
+     * lesson -- a recipe whose id does not exist eats its inputs and pays out nothing,
+     * silently). Scissors are kept, not consumed.
+     */
+    entity TCAppearanceStation
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_TCAppearanceStation,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            isThumpable = false,
+            face S { layer { row = furniture_storage_01_43, } }
+            face W { layer { row = furniture_storage_01_40, } }
+            face N { layer { row = furniture_storage_01_41, } }
+            face E { layer { row = furniture_storage_01_42, } }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWoodenStructureSmall,
+            time = 120,
+            category = Furniture,
+            Tags = Carpentry;Furniture,
+            xpAward = Woodwork:10,
+            Tooltip = Tooltip_craft_TCAppearanceStationDesc,
+            inputs
+            {
+                item 1 tags[base:hammer] mode:keep flags[Prop1;MayDegradeVeryLight],
+                item 1 [Base.Scissors] mode:keep flags[Prop2],
+                item 1 [Base.Mirror],
+                item 2 [Base.Plank],
+                item 4 [Base.Nails],
+            }
+        }
+    }
+}

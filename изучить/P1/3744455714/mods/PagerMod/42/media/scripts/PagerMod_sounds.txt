@@ -1,0 +1,63 @@
+/*
+ * PagerMod_sounds.txt
+ * Defines the "PagerBeep" notification sound. PagerMod.playBeep()
+ * (client/PagerMod_Client.lua) plays it via getSoundManager():playUISound(...)
+ * and PREFERS it automatically; until the clip below exists it falls back to the
+ * vanilla "UIActivateButton" UI click.
+ *
+ * The engine offers no per-play volume control from Lua for UI sounds, so the
+ * BeepVolume sandbox option works by picking one of the pre-scaled entries
+ * below (all four share the same .ogg, only the clip volume differs).
+ * "PagerBeep" (0.45) is the 100% level; the others are scaled from it.
+ *
+ * TO ENABLE THE REAL BEEP: drop a short clip (mono .ogg, ~0.2-0.5s) at
+ *   42/media/sound/PagerBeep.ogg   (this build)
+ * A missing file is harmless — the sound simply won't load and the fallback is used.
+ */
+sound PagerBeep
+{
+    category = UI,
+    loop = false,
+
+    clip
+    {
+        file = media/sound/PagerBeep.ogg,
+        volume = 0.45,
+    }
+}
+
+sound PagerBeep75
+{
+    category = UI,
+    loop = false,
+
+    clip
+    {
+        file = media/sound/PagerBeep.ogg,
+        volume = 0.34,
+    }
+}
+
+sound PagerBeep50
+{
+    category = UI,
+    loop = false,
+
+    clip
+    {
+        file = media/sound/PagerBeep.ogg,
+        volume = 0.22,
+    }
+}
+
+sound PagerBeep25
+{
+    category = UI,
+    loop = false,
+
+    clip
+    {
+        file = media/sound/PagerBeep.ogg,
+        volume = 0.11,
+    }
+}

@@ -1,0 +1,6 @@
+*bar02_black_label_t1
+#name 희귀 주류 찾기
+*bar02_black_label_t2
+#name 바텐더에게 전달하기
+
+

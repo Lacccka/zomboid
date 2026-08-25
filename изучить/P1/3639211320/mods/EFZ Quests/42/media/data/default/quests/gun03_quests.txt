@@ -1,0 +1,4 @@
+*gun03_prototype_weapon
+#name GUN-03. Prototype Weapon
+#desc The gunner is looking for the design of the prototype weapon left in the research facility. If I can gather the design, he may be able to create a weapon that can help everyone survive.
+

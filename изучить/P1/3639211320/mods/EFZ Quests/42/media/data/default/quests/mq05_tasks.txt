@@ -1,0 +1,10 @@
+*mq05_to_the_river_t1
+#name Secure the North Entrance of Muldraugh
+*mq05_to_the_river_t2
+#name Establish the Westpoint Entrance Route
+*mq05_to_the_river_t3
+#name Wait for the GPS Signal to Stabilize
+*mq05_to_the_river_t4
+#name Report to the Captain
+
+
