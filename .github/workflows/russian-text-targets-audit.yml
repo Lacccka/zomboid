@@ -47,6 +47,47 @@ jobs:
           find WorkshopPatches/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/media/lua/shared/Translate \
             -type f -name 'LCC_*.json' -print0 \
             | xargs -0 -n1 python3 -m json.tool >/dev/null
+      - name: Validate B42.20 percent formatting regressions
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('WorkshopPatches/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/media/lua/shared/Translate/RU')
+          targets = (
+              root / 'LCC_ImmersiveVehiclePaint_Sandbox.json',
+              root / 'LCC_Explosives_Sandbox.json',
+          )
+
+          def unsafe_percent(value: str) -> bool:
+              i = 0
+              while i < len(value):
+                  if value[i] != '%':
+                      i += 1
+                      continue
+                  if i + 1 < len(value) and value[i + 1] == '%':
+                      i += 2
+                      continue
+                  if i + 1 < len(value) and value[i + 1].isdigit():
+                      i += 2
+                      while i < len(value) and value[i].isdigit():
+                          i += 1
+                      continue
+                  return True
+              return False
+
+          bad = []
+          for path in targets:
+              data = json.loads(path.read_text(encoding='utf-8-sig'))
+              for key, value in data.items():
+                  if unsafe_percent(value):
+                      bad.append(f'{path.name}:{key}')
+
+          if bad:
+              raise SystemExit('Unsafe literal percent in B42.20 format-sensitive translations: ' + ', '.join(bad))
+          print('B42.20 percent-format regression check passed')
+          PY
       - name: Validate audit syntax
         run: python3 -m py_compile tools/audit_russian_text_targets.py
       - name: Verify active mod Russian coverage
