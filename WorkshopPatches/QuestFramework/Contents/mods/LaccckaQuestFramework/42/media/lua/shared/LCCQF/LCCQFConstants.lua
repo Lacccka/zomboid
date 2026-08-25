@@ -3,7 +3,7 @@ LCCQF = LCCQF or {}
 local Constants = {}
 
 Constants.MODULE = "LaccckaQuestFramework"
-Constants.VERSION = "0.2.2"
+Constants.VERSION = "0.2.3"
 Constants.LOG_PREFIX = "[LCCQF]"
 
 Constants.INTERACTION_RANGE = 3.25
@@ -20,6 +20,9 @@ Constants.COMMAND = {
     CHOOSE_DIALOGUE = "ChooseDialogue",
     CLOSE_DIALOGUE = "CloseDialogue",
     SPAWN_TEST_NPC = "SpawnTestNPC",
+    REQUEST_RUNTIME_BINDINGS = "RequestRuntimeBindings",
+    RUNTIME_BINDINGS = "RuntimeBindings",
+    RUNTIME_BINDING_UPSERT = "RuntimeBindingUpsert",
     DIALOGUE_STATE = "DialogueState",
     DIALOGUE_CLOSED = "DialogueClosed",
     STATUS = "Status",
