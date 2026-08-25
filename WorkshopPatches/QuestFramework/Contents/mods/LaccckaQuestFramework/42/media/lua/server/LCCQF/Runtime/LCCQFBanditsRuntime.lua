@@ -38,6 +38,7 @@ local function makeHandle(zombie, brain, definition)
         displayNameKey = definition.displayNameKey,
     }
     bindings[definition.npcId] = handle
+    LCCQF.NPCRuntime.BindRuntime(handle.runtimeId, definition.npcId)
     return handle
 end
 
@@ -60,6 +61,29 @@ local function getNPCId(brain)
     end
 
     return nil
+end
+
+function Adapter.RefreshRuntimeBindings()
+    local count = 0
+    if type(BanditClusters) ~= "table" then return count end
+
+    for _, cluster in pairs(BanditClusters) do
+        if type(cluster) == "table" then
+            for _, brain in pairs(cluster) do
+                if type(brain) == "table" and brain.id ~= nil then
+                    local npcId = getNPCId(brain)
+                    local definition = npcId and LCCQF.NPCRegistry.Get(npcId) or nil
+                    if definition and definition.runtime.adapter == "Bandits"
+                        and LCCQF.NPCRuntime.BindRuntime(brain.id, npcId)
+                    then
+                        count = count + 1
+                    end
+                end
+            end
+        end
+    end
+
+    return count
 end
 
 local function ensureState(zombie, brain, definition)
@@ -94,6 +118,8 @@ local function ensureState(zombie, brain, definition)
         Bandit.ForceStationary(zombie, true)
         changed = true
     end
+
+    LCCQF.NPCRuntime.BindRuntime(brain.id, definition.npcId)
 
     if changed then
         BanditBrain.Update(zombie, brain)
