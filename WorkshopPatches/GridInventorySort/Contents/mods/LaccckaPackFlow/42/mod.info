@@ -5,4 +5,4 @@ description=Refines spatial inventories with fast rotation-aware packing, capaci
 modversion=0.6.1
 versionMin=42.20.0
 require=\GridInventory
-loadafter=\GridInventory
+loadModAfter=\GridInventory
