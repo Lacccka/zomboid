@@ -3,12 +3,13 @@ LCCQF = LCCQF or {}
 local Constants = {}
 
 Constants.MODULE = "LaccckaQuestFramework"
-Constants.VERSION = "0.2.8"
+Constants.VERSION = "0.2.9"
 Constants.LOG_PREFIX = "[LCCQF]"
 
 Constants.INTERACTION_RANGE = 3.25
 Constants.SERVER_INTERACTION_RANGE = 4.0
 Constants.RUNTIME_RESOLVE_PADDING = 1.0
+Constants.RUNTIME_RECONCILE_INTERVAL_MS = 250
 Constants.REQUEST_COOLDOWN_MS = 150
 Constants.SESSION_TIMEOUT_MS = 15 * 60 * 1000
 Constants.COMMAND_HISTORY_TIMEOUT_MS = 30 * 60 * 1000
@@ -23,6 +24,7 @@ Constants.COMMAND = {
     REQUEST_RUNTIME_BINDINGS = "RequestRuntimeBindings",
     RUNTIME_BINDINGS = "RuntimeBindings",
     RUNTIME_BINDING_UPSERT = "RuntimeBindingUpsert",
+    RUNTIME_BINDING_REMOVE = "RuntimeBindingRemove",
     DIALOGUE_STATE = "DialogueState",
     DIALOGUE_CLOSED = "DialogueClosed",
     STATUS = "Status",
