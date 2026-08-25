@@ -19,17 +19,27 @@ local function getNode(session)
     return dialogue.nodes[session.nodeId]
 end
 
-local function makeView(session)
+local function isChoiceAvailable(player, session, choice, hooks)
+    if choice.condition == nil then return true end
+    if not hooks or type(hooks.IsChoiceAvailable) ~= "function" then return false end
+
+    local ok, allowed = pcall(hooks.IsChoiceAvailable, player, session, choice)
+    return ok and allowed == true
+end
+
+local function makeView(player, session, hooks)
     local node = getNode(session)
     if not node then return nil end
 
     local choices = {}
-    for i, choice in ipairs(node.choices or {}) do
-        if i > C.MAX_DIALOGUE_CHOICES then break end
-        choices[i] = {
-            choiceId = choice.id,
-            textKey = choice.textKey,
-        }
+    for _, choice in ipairs(node.choices or {}) do
+        if isChoiceAvailable(player, session, choice, hooks) then
+            choices[#choices + 1] = {
+                choiceId = choice.id,
+                textKey = choice.textKey,
+            }
+            if #choices >= C.MAX_DIALOGUE_CHOICES then break end
+        end
     end
 
     return {
@@ -43,7 +53,7 @@ local function makeView(session)
     }
 end
 
-function DialogueSession.Open(player, handle, definition)
+function DialogueSession.Open(player, handle, definition, hooks)
     local playerKey = getPlayerKey(player)
     local dialogue = definition and DialogueContent.Get(definition.dialogueId) or nil
     if not playerKey or not handle or not dialogue or not dialogue.nodes or not dialogue.nodes[dialogue.start] then
@@ -63,7 +73,7 @@ function DialogueSession.Open(player, handle, definition)
         touchedMs = now,
     }
     sessions[playerKey] = session
-    return makeView(session)
+    return makeView(player, session, hooks)
 end
 
 function DialogueSession.Get(player, sessionId)
@@ -73,7 +83,7 @@ function DialogueSession.Get(player, sessionId)
     return session
 end
 
-function DialogueSession.Choose(player, sessionId, choiceId)
+function DialogueSession.Choose(player, sessionId, choiceId, hooks)
     local session = DialogueSession.Get(player, sessionId)
     if not session then return nil, "unknown session" end
 
@@ -85,12 +95,23 @@ function DialogueSession.Choose(player, sessionId, choiceId)
 
     local selected = nil
     for _, choice in ipairs(node.choices or {}) do
-        if tostring(choice.id) == tostring(choiceId) then
+        if tostring(choice.id) == tostring(choiceId)
+            and isChoiceAvailable(player, session, choice, hooks)
+        then
             selected = choice
             break
         end
     end
     if not selected then return nil, "choice not allowed for current node" end
+
+    if selected.action ~= nil then
+        if not hooks or type(hooks.ExecuteAction) ~= "function" then
+            return nil, "dialogue action handler unavailable"
+        end
+        local ok, actionResult, actionErr = pcall(hooks.ExecuteAction, player, session, selected)
+        if not ok then return nil, "dialogue action failed" end
+        if actionResult ~= true then return nil, actionErr or "dialogue action rejected" end
+    end
 
     if selected.close then
         sessions[session.playerKey] = nil
@@ -105,7 +126,7 @@ function DialogueSession.Choose(player, sessionId, choiceId)
 
     session.nodeId = selected.next
     session.touchedMs = getTimestampMs()
-    return makeView(session)
+    return makeView(player, session, hooks)
 end
 
 function DialogueSession.Close(player, sessionId)
