@@ -14,6 +14,7 @@ local NPC_ID_FIELD = "lccqNpcId"
 local physicalByRuntimeId = setmetatable({}, { __mode = "v" })
 local physicalLogState = {}
 local unresolvedLogState = {}
+local rejectedLogState = {}
 local visualObserver = nil
 
 local function log(message)
@@ -74,6 +75,7 @@ local function rememberPhysical(object, brain, source)
     local ids = collectRuntimeIds(object, brain)
     for _, runtimeId in ipairs(ids) do
         physicalByRuntimeId[runtimeId] = object
+        unresolvedLogState[runtimeId] = nil
 
         local npcId = LCCQF.NPCRuntime.GetBoundNPCId(runtimeId)
         if npcId and not physicalLogState[runtimeId] then
@@ -126,20 +128,34 @@ local function resolveQuestIdentity(object, brain)
 end
 
 local function makeObjectCandidate(object, playerX, playerY, playerZ, rangeSq)
-    if not object or not instanceof(object, "IsoZombie") or object:isDead() then return nil end
+    if not object or not instanceof(object, "IsoZombie") then return nil, "not-IsoZombie" end
+    if object:isDead() then return nil, "dead" end
 
     local z = object:getZ()
-    if z == nil or math.abs(z - playerZ) >= 0.5 then return nil end
+    if z == nil then return nil, "missing-z" end
+    if math.abs(z - playerZ) >= 0.5 then
+        return nil, "z-mismatch objectZ=" .. tostring(z) .. " playerZ=" .. tostring(playerZ)
+    end
 
     local dx = object:getX() - playerX
     local dy = object:getY() - playerY
     local distanceSq = dx * dx + dy * dy
-    if distanceSq > rangeSq then return nil end
+    if distanceSq > rangeSq then
+        return nil, "out-of-range distance=" .. tostring(math.sqrt(distanceSq))
+    end
 
     local brain = BanditBrain.Get(object)
     local npcId, runtimeId = resolveQuestIdentity(object, brain)
-    local definition = npcId and LCCQF.NPCRegistry.Get(npcId) or nil
-    if not definition or definition.runtime.adapter ~= "Bandits" then return nil end
+    if not npcId then
+        local ids = collectRuntimeIds(object, brain)
+        return nil, "identity-unresolved ids=" .. table.concat(ids, ",")
+    end
+
+    local definition = LCCQF.NPCRegistry.Get(npcId)
+    if not definition then return nil, "definition-missing npcId=" .. tostring(npcId) end
+    if definition.runtime.adapter ~= "Bandits" then
+        return nil, "wrong-adapter npcId=" .. tostring(npcId)
+    end
 
     rememberPhysical(object, brain, "candidate")
     return {
@@ -147,7 +163,7 @@ local function makeObjectCandidate(object, playerX, playerY, playerZ, rangeSq)
         runtimeId = runtimeId,
         displayNameKey = definition.displayNameKey,
         distanceSq = distanceSq,
-    }
+    }, nil
 end
 
 local function cacheObjectForRuntimeId(runtimeId)
@@ -174,6 +190,23 @@ local function cacheObjectForRuntimeId(runtimeId)
     return nil, nil
 end
 
+local function reportUnresolvedLater(binding)
+    local runtimeId = tostring(binding.runtimeId)
+    local state = unresolvedLogState[runtimeId]
+    local now = getTimestampMs()
+
+    if state == nil then
+        unresolvedLogState[runtimeId] = now
+        return
+    end
+    if state == true or now - state < 1000 then return end
+
+    unresolvedLogState[runtimeId] = true
+    log("physical object unresolved npcId=" .. tostring(binding.npcId)
+        .. " runtimeId=" .. runtimeId
+        .. " afterMs=" .. tostring(now - state))
+end
+
 local function findFromRuntimeBindings(playerX, playerY, playerZ, rangeSq)
     local best = nil
 
@@ -183,17 +216,19 @@ local function findFromRuntimeBindings(playerX, playerY, playerZ, rangeSq)
             if definition and definition.runtime.adapter == "Bandits" then
                 local object, source = cacheObjectForRuntimeId(binding.runtimeId)
                 if object then
-                    local candidate = makeObjectCandidate(object, playerX, playerY, playerZ, rangeSq)
+                    unresolvedLogState[tostring(binding.runtimeId)] = nil
+                    local candidate, reason = makeObjectCandidate(object, playerX, playerY, playerZ, rangeSq)
                     if candidate and (not best or candidate.distanceSq < best.distanceSq) then
                         best = candidate
+                    elseif not candidate and not rejectedLogState[tostring(binding.runtimeId)] then
+                        rejectedLogState[tostring(binding.runtimeId)] = true
+                        log("physical object rejected source=" .. tostring(source)
+                            .. " npcId=" .. tostring(binding.npcId)
+                            .. " runtimeId=" .. tostring(binding.runtimeId)
+                            .. " reason=" .. tostring(reason))
                     end
-                elseif not unresolvedLogState[tostring(binding.runtimeId)] then
-                    -- One line per binding, not per tick. If this ever appears in
-                    -- a failed acceptance log we know the provider object was not
-                    -- exposed either by ApplyVisuals or BanditZombie.Cache.
-                    unresolvedLogState[tostring(binding.runtimeId)] = true
-                    log("physical object unresolved npcId=" .. tostring(binding.npcId)
-                        .. " runtimeId=" .. tostring(binding.runtimeId))
+                else
+                    reportUnresolvedLater(binding)
                 end
             end
         end
