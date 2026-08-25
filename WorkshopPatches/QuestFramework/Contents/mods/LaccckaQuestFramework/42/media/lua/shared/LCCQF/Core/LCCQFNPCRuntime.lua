@@ -4,6 +4,14 @@ LCCQF = LCCQF or {}
 
 local Runtime = LCCQF.NPCRuntime or {}
 local adapters = Runtime.adapters or {}
+local runtimeBindings = Runtime.runtimeBindings or {}
+
+local function normalizeRuntimeId(runtimeId)
+    if runtimeId == nil then return nil end
+    local value = tostring(runtimeId)
+    if value == "" then return nil end
+    return value
+end
 
 function Runtime.RegisterAdapter(adapterId, adapter)
     if type(adapterId) ~= "string" or adapterId == "" or type(adapter) ~= "table" then
@@ -21,6 +29,54 @@ function Runtime.GetAdapterForNPC(npcId)
     local definition = LCCQF.NPCRegistry.Get(npcId)
     if not definition then return nil, nil end
     return adapters[definition.runtime.adapter], definition
+end
+
+function Runtime.BindRuntime(runtimeId, npcId)
+    local key = normalizeRuntimeId(runtimeId)
+    if not key or type(npcId) ~= "string" or not LCCQF.NPCRegistry.IsRegistered(npcId) then
+        return false
+    end
+    runtimeBindings[key] = npcId
+    return true
+end
+
+function Runtime.UnbindRuntime(runtimeId, npcId)
+    local key = normalizeRuntimeId(runtimeId)
+    if not key then return false end
+    if npcId ~= nil and runtimeBindings[key] ~= npcId then return false end
+    runtimeBindings[key] = nil
+    return true
+end
+
+function Runtime.GetBoundNPCId(runtimeId)
+    local key = normalizeRuntimeId(runtimeId)
+    return key and runtimeBindings[key] or nil
+end
+
+function Runtime.ExportRuntimeBindings()
+    local result = {}
+    for runtimeId, npcId in pairs(runtimeBindings) do
+        result[#result + 1] = {
+            runtimeId = runtimeId,
+            npcId = npcId,
+        }
+    end
+    return result
+end
+
+function Runtime.ReplaceRuntimeBindings(entries)
+    for runtimeId in pairs(runtimeBindings) do
+        runtimeBindings[runtimeId] = nil
+    end
+
+    local count = 0
+    if type(entries) ~= "table" then return count end
+    for _, entry in ipairs(entries) do
+        if type(entry) == "table" and Runtime.BindRuntime(entry.runtimeId, entry.npcId) then
+            count = count + 1
+        end
+    end
+    return count
 end
 
 function Runtime.FindNearestInteractive(player, range)
@@ -51,6 +107,7 @@ function Runtime.Spawn(player, npcId)
 end
 
 Runtime.adapters = adapters
+Runtime.runtimeBindings = runtimeBindings
 LCCQF.NPCRuntime = Runtime
 
 return Runtime
