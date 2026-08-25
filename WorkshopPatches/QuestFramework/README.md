@@ -7,7 +7,7 @@ Build 42.20 multiplayer foundation for server-authoritative NPC interaction and 
 - one Bandits2-backed permanent test NPC (`lccq_test_npc_01`);
 - framework-owned logical identity in `NPCRegistry`;
 - replaceable `NPCRuntime` contract with Bandits2 isolated in `BanditsRuntime`;
-- nearby-NPC detection on the client through Bandits2's own `BanditZombie.CacheLightB` runtime view, with a `cell:getZombieList()` fallback for initial/late-join cache warmup;
+- nearby-NPC detection on the client through Bandits2's own `BanditZombie.CacheLightB` runtime view, with a local nearby-square fallback during cache warmup;
 - runtime-id matching accepts Bandits2's persisted `brain.id`/raw persistent outfit id and its normalized cache id, while the server-synchronized LCCQF binding remains the quest-identity authority;
 - `[E] Поговорить` interaction prompt;
 - server-side registry, runtime-id, same-Z and distance validation;
@@ -23,7 +23,7 @@ Bandits2 remains the current physical NPC runtime, but interaction, dialogue and
 
 The 0.2.3 dedicated-server log proved that spawning and network bindings were already working: the server created `lccq_test_npc_01`, broadcast its runtime id, and the client received that binding, but the client never logged `interaction target acquired`.
 
-The defect was the client adapter's assumption that every nearby Bandits2 zombie already had `zombie:getModData().brain`. Bandits2 42.20 does not use that as its primary client discovery contract: `BanditZombie.lua` classifies physical bandits through `getVariableBoolean("Bandit")`, maintains `BanditZombie.Cache` / `CacheLightB`, and rebuilds those caches from `cell:getZombieList()`. v0.2.4 follows that provider-native runtime view and uses `BanditBrain.Get()` only as optional metadata/legacy fallback.
+The defect was the client adapter's assumption that every nearby Bandits2 zombie already had `zombie:getModData().brain`. Bandits2 42.20 does not use that as its primary client discovery contract: `BanditZombie.lua` classifies physical bandits through `getVariableBoolean("Bandit")` and maintains `BanditZombie.Cache` / `CacheLightB`. v0.2.4 follows that provider-native runtime view and uses `BanditBrain.Get()` only as optional metadata/legacy fallback. Before the Bandits cache is warm, the adapter scans only the nearby squares around the player, following the same bounded proximity pattern used by interaction-focused NPC mods.
 
 A second compatibility detail is handled at the same boundary: Bandits2's server stores `brain.id` from `getPersistentOutfitID()`, while `BanditUtils.GetZombieID()` can clear the outfit hat bit for cache keys. The client adapter therefore tests all relevant runtime-id forms and returns the exact id that matched the framework binding, preserving server validation.
 
@@ -83,7 +83,7 @@ Useful markers include `[LCCQF][SERVER]`, `[LCCQF][CLIENT]` and `[LCCQF][RUNTIME
 - Bandits2 42.20 `BanditZombie`, `BanditBrain` and `BanditUtils` source was re-read against the repository snapshot;
 - `Chat with Me` was used only as an interaction/proximity architecture comparison; its weak DS authority model was not copied;
 - v0.2.4 removes the client-brain synchronization prerequisite and keeps dialogue authority on the server;
-- repository audit rules were updated so client use of Bandits2's own `getZombieList()` cache fallback is permitted while server-wide zombie scans remain forbidden;
+- the fallback scan remains bounded to nearby squares; the audit continues to reject broad `getZombieList()` scans in QuestFramework;
 - focused fresh dedicated-server/client runtime acceptance is still required before this change is promoted to a final report.
 
 ## Next milestone
