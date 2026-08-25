@@ -255,8 +255,6 @@ local function requestDialogue(player, args)
         return
     end
 
-    -- TalkToNPC objectives are advanced only after exact runtime-id and physical
-    -- range validation has succeeded on the server.
     QuestService.NotifyTalkToNPC(player, npcId)
 
     local view, err = DialogueSession.Open(player, handle, definition, makeDialogueHooks(handle))
@@ -371,9 +369,11 @@ local function onServerStarted()
         .. " questUpdateMs=" .. tostring(C.QUEST_UPDATE_INTERVAL_MS))
 end
 
-Events.OnClientCommand.Add(onClientCommand)
-Events.OnTick.Add(onTick)
-Events.EveryOneMinute.Add(pruneCommandHistory)
-Events.OnServerStarted.Add(onServerStarted)
+if isServer and isServer() then
+    Events.OnClientCommand.Add(onClientCommand)
+    Events.OnTick.Add(onTick)
+    Events.EveryOneMinute.Add(pruneCommandHistory)
+    Events.OnServerStarted.Add(onServerStarted)
+end
 
 return LCCQFInteractionServer
