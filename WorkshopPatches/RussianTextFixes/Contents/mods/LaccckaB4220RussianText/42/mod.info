@@ -4,4 +4,4 @@ author=Lacccka
 description=Russian localization and interface text fixes for selected Build 42 mods and supported UI keys. Do not use unless you are sure this patch is required. Patch/localization files only; original mods are not included.
 modversion=1.0.3
 versionMin=42.20.0
-loadafter=\Bandits2,\LifestyleHobbies
+loadModAfter=\Bandits2,\LifestyleHobbies
