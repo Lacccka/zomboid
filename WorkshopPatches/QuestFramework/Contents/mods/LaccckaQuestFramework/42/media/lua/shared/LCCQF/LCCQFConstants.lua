@@ -3,7 +3,7 @@ LCCQF = LCCQF or {}
 local Constants = {}
 
 Constants.MODULE = "LaccckaQuestFramework"
-Constants.VERSION = "0.2.3"
+Constants.VERSION = "0.2.4"
 Constants.LOG_PREFIX = "[LCCQF]"
 
 Constants.INTERACTION_RANGE = 3.25
