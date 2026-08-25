@@ -1,10 +1,24 @@
+require "Bandit"
 require "BanditBrain"
 require "BanditUtils"
+require "BanditZombie"
 require "LCCQF/Core/LCCQFNPCRuntime"
 require "LCCQF/Content/LCCQFNPCDefinitions"
 
 local Adapter = {}
 local NPC_ID_FIELD = "lccqNpcId"
+
+-- Client Bandits objects are not reliably discoverable through a fresh
+-- square:getMovingObjects() walk on B42.20 MP. Keep a provider-native view keyed
+-- by Bandits runtime id instead. Weak values avoid keeping unloaded zombies alive.
+local physicalByRuntimeId = setmetatable({}, { __mode = "v" })
+local physicalLogState = {}
+local unresolvedLogState = {}
+local visualObserver = nil
+
+local function log(message)
+    print("[LCCQF][RUNTIME:BANDITS] " .. tostring(message))
+end
 
 local function normalizeRuntimeId(value)
     if value == nil then return nil end
@@ -39,13 +53,11 @@ local function collectRuntimeIds(object, brain)
     local ids = {}
     local seen = {}
 
-    -- brain.id is the raw persistent outfit id produced by BanditServerSpawner
-    -- and is the id LCCQF broadcasts to clients.
+    -- brain.id is the exact id created by BanditServerSpawner and the id LCCQF
+    -- broadcasts. The fresh 0.2.5 MP log also proves Bandit.ApplyVisuals receives
+    -- this same id on the client even when LCCQF's square scan sees no target.
     if brain then addRuntimeId(ids, seen, brain.id) end
 
-    -- Bandits2 cache ids may normalize the persistent outfit id by clearing its
-    -- hat bit. Interaction does not depend on cache membership, but we still
-    -- accept both provider id forms when resolving the server binding.
     if object and object.getPersistentOutfitID then
         addRuntimeId(ids, seen, object:getPersistentOutfitID())
     end
@@ -56,18 +68,54 @@ local function collectRuntimeIds(object, brain)
     return ids
 end
 
+local function rememberPhysical(object, brain, source)
+    if not object or not instanceof(object, "IsoZombie") then return end
+
+    local ids = collectRuntimeIds(object, brain)
+    for _, runtimeId in ipairs(ids) do
+        physicalByRuntimeId[runtimeId] = object
+
+        local npcId = LCCQF.NPCRuntime.GetBoundNPCId(runtimeId)
+        if npcId and not physicalLogState[runtimeId] then
+            physicalLogState[runtimeId] = true
+            log("physical object observed source=" .. tostring(source)
+                .. " npcId=" .. tostring(npcId)
+                .. " runtimeId=" .. tostring(runtimeId))
+        end
+    end
+end
+
+local function ensureVisualObserver()
+    if type(Bandit) ~= "table" or type(Bandit.ApplyVisuals) ~= "function" then
+        return false
+    end
+    if Bandit.ApplyVisuals == visualObserver then return true end
+
+    local original = Bandit.ApplyVisuals
+    local observer
+    observer = function(bandit, brain, ...)
+        original(bandit, brain, ...)
+        local ok, err = pcall(rememberPhysical, bandit, brain, "Bandit.ApplyVisuals")
+        if not ok then
+            log("physical observer error=" .. tostring(err))
+        end
+    end
+
+    visualObserver = observer
+    Bandit.ApplyVisuals = observer
+    log("physical observer installed source=Bandit.ApplyVisuals")
+    return true
+end
+
 local function resolveQuestIdentity(object, brain)
     local runtimeIds = collectRuntimeIds(object, brain)
 
-    -- A server-synchronized runtime binding is the authoritative client-side
-    -- ownership and quest-identity check. Do not depend on the transient
-    -- getVariableBoolean("Bandit") classifier or CacheLightB membership.
     for _, runtimeId in ipairs(runtimeIds) do
         local npcId = LCCQF.NPCRuntime.GetBoundNPCId(runtimeId)
         if npcId then return npcId, runtimeId end
     end
 
-    -- Legacy migration only. New NPCs resolve through the binding map above.
+    -- Legacy migration only. New NPCs resolve through the server binding map.
     local npcId = getNPCId(brain)
     if npcId and runtimeIds[1] then
         LCCQF.NPCRuntime.BindRuntime(runtimeIds[1], npcId)
@@ -77,7 +125,7 @@ local function resolveQuestIdentity(object, brain)
     return nil, nil
 end
 
-local function getObjectCandidate(object, playerX, playerY, playerZ, rangeSq)
+local function makeObjectCandidate(object, playerX, playerY, playerZ, rangeSq)
     if not object or not instanceof(object, "IsoZombie") or object:isDead() then return nil end
 
     local z = object:getZ()
@@ -88,14 +136,12 @@ local function getObjectCandidate(object, playerX, playerY, playerZ, rangeSq)
     local distanceSq = dx * dx + dy * dy
     if distanceSq > rangeSq then return nil end
 
-    -- The physical object is discovered exactly like the working proximity
-    -- interaction mods in our research set: from nearby squares' moving-object
-    -- lists. Quest ownership is then proven by the exact server binding.
     local brain = BanditBrain.Get(object)
     local npcId, runtimeId = resolveQuestIdentity(object, brain)
     local definition = npcId and LCCQF.NPCRegistry.Get(npcId) or nil
     if not definition or definition.runtime.adapter ~= "Bandits" then return nil end
 
+    rememberPhysical(object, brain, "candidate")
     return {
         npcId = definition.npcId,
         runtimeId = runtimeId,
@@ -104,13 +150,65 @@ local function getObjectCandidate(object, playerX, playerY, playerZ, rangeSq)
     }
 end
 
+local function cacheObjectForRuntimeId(runtimeId)
+    local id = normalizeRuntimeId(runtimeId)
+    if not id then return nil, nil end
+
+    local object = physicalByRuntimeId[id]
+    if object then return object, "observed" end
+
+    local cache = BanditZombie and BanditZombie.Cache or nil
+    if type(cache) == "table" then
+        object = cache[id]
+        if not object then
+            local numericId = tonumber(id)
+            if numericId ~= nil then object = cache[numericId] end
+        end
+        if object then
+            local brain = BanditBrain.Get(object)
+            rememberPhysical(object, brain, "BanditZombie.Cache")
+            return object, "BanditZombie.Cache"
+        end
+    end
+
+    return nil, nil
+end
+
+local function findFromRuntimeBindings(playerX, playerY, playerZ, rangeSq)
+    local best = nil
+
+    for _, binding in ipairs(LCCQF.NPCRuntime.ExportRuntimeBindings()) do
+        if type(binding) == "table" then
+            local definition = LCCQF.NPCRegistry.Get(binding.npcId)
+            if definition and definition.runtime.adapter == "Bandits" then
+                local object, source = cacheObjectForRuntimeId(binding.runtimeId)
+                if object then
+                    local candidate = makeObjectCandidate(object, playerX, playerY, playerZ, rangeSq)
+                    if candidate and (not best or candidate.distanceSq < best.distanceSq) then
+                        best = candidate
+                    end
+                elseif not unresolvedLogState[tostring(binding.runtimeId)] then
+                    -- One line per binding, not per tick. If this ever appears in
+                    -- a failed acceptance log we know the provider object was not
+                    -- exposed either by ApplyVisuals or BanditZombie.Cache.
+                    unresolvedLogState[tostring(binding.runtimeId)] = true
+                    log("physical object unresolved npcId=" .. tostring(binding.npcId)
+                        .. " runtimeId=" .. tostring(binding.runtimeId))
+                end
+            end
+        end
+    end
+
+    return best
+end
+
 local function findFromNearbySquares(cell, playerX, playerY, playerZ, rangeSq, range)
     local best = nil
     local z = math.floor(playerZ)
     local tileRange = math.ceil(range) + 1
 
-    -- Deliberately bounded. We neither walk the whole cell zombie list nor scan
-    -- Bandits2's all-zombie cache every interaction tick.
+    -- Last-resort bounded fallback. The primary path above never depends on the
+    -- NPC appearing in this list; it follows Bandits2's own object exposure.
     for x = math.floor(playerX) - tileRange, math.floor(playerX) + tileRange do
         for y = math.floor(playerY) - tileRange, math.floor(playerY) + tileRange do
             local square = cell:getGridSquare(x, y, z)
@@ -118,8 +216,13 @@ local function findFromNearbySquares(cell, playerX, playerY, playerZ, rangeSq, r
                 local movingObjects = square:getMovingObjects()
                 if movingObjects then
                     for i = 0, movingObjects:size() - 1 do
-                        local candidate = getObjectCandidate(
-                            movingObjects:get(i),
+                        local object = movingObjects:get(i)
+                        if object and instanceof(object, "IsoZombie") then
+                            local brain = BanditBrain.Get(object)
+                            rememberPhysical(object, brain, "nearby-square")
+                        end
+                        local candidate = makeObjectCandidate(
+                            object,
                             playerX,
                             playerY,
                             playerZ,
@@ -140,6 +243,8 @@ end
 function Adapter.FindNearestInteractive(player, range)
     if not player or player:isDead() or player:getVehicle() then return nil end
 
+    ensureVisualObserver()
+
     local cell = player:getCell()
     if not cell then return nil end
 
@@ -148,9 +253,13 @@ function Adapter.FindNearestInteractive(player, range)
     local pz = player:getZ()
     local rangeSq = range * range
 
+    local best = findFromRuntimeBindings(px, py, pz, rangeSq)
+    if best then return best end
+
     return findFromNearbySquares(cell, px, py, pz, rangeSq, range)
 end
 
+ensureVisualObserver()
 LCCQF.NPCRuntime.RegisterAdapter("Bandits", Adapter)
 
 return Adapter
