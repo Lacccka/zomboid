@@ -34,8 +34,6 @@ function LCCQFDialoguePanel:initialise()
 end
 
 function LCCQFDialoguePanel:createChildren()
-    ISPanel.createChildren(self)
-
     local margin = 24
     local closeW = 32
 
@@ -112,7 +110,6 @@ function LCCQFDialoguePanel:showNode(nodeId)
         if choice then
             button:setTitle(choice.text or "...")
             button:setVisible(true)
-            button:setEnable(true)
         else
             button:setVisible(false)
         end
@@ -164,6 +161,7 @@ function LCCQFDialoguePanel.open(npcName, dialogueId, sessionId)
     local panel = LCCQFDialoguePanel:new(npcName, dialogueId, sessionId)
     panel:initialise()
     panel:addToUIManager()
+    panel:setAlwaysOnTop(true)
     LCCQFDialoguePanel.instance = panel
     return panel
 end
