@@ -2,7 +2,6 @@ require "LCCQF/LCCQFConstants"
 require "LCCQF/Core/LCCQFNPCRegistry"
 require "LCCQF/Core/LCCQFNPCRuntime"
 require "LCCQF/Content/LCCQFNPCDefinitions"
-require "LCCQF/Runtime/LCCQFBanditsRuntime"
 require "LCCQF/UI/LCCQFDialoguePanel"
 
 LCCQFInteractionClient = LCCQFInteractionClient or {}
@@ -65,19 +64,27 @@ local function logBindingDiagnostics(source)
 
     local px, py, pz = player:getX(), player:getY(), player:getZ()
     local bindings = LCCQF.NPCRuntime.ExportRuntimeBindings()
+    local inVehicle = player:getVehicle() ~= nil
+
     if #bindings == 0 then
-        log("binding diagnostic source=" .. tostring(source) .. " count=0")
+        log("binding diagnostic source=" .. tostring(source)
+            .. " count=0 vehicle=" .. tostring(inVehicle))
         return
     end
 
     for _, binding in ipairs(bindings) do
+        local definition = LCCQF.NPCRegistry.Get(binding.npcId)
         local anchor = LCCQF.NPCRuntime.GetRuntimeAnchor(binding.runtimeId)
+
         if anchor then
             local dx = anchor.x - px
             local dy = anchor.y - py
             local distance = math.sqrt(dx * dx + dy * dy)
             local sameZ = math.abs(anchor.z - pz) < 0.5
-            local eligible = sameZ and distance <= C.INTERACTION_RANGE
+            local registered = definition ~= nil
+            local interactive = definition ~= nil and definition.interactive ~= false
+            local eligible = registered and interactive and sameZ and distance <= C.INTERACTION_RANGE
+
             log("binding diagnostic source=" .. tostring(source)
                 .. " npcId=" .. tostring(binding.npcId)
                 .. " runtimeId=" .. tostring(binding.runtimeId)
@@ -85,12 +92,16 @@ local function logBindingDiagnostics(source)
                 .. " player=" .. tostring(px) .. "," .. tostring(py) .. "," .. tostring(pz)
                 .. " distance=" .. tostring(distance)
                 .. " sameZ=" .. tostring(sameZ)
+                .. " registered=" .. tostring(registered)
+                .. " interactive=" .. tostring(interactive)
+                .. " vehicle=" .. tostring(inVehicle)
                 .. " eligible=" .. tostring(eligible))
         else
             log("binding diagnostic source=" .. tostring(source)
                 .. " npcId=" .. tostring(binding.npcId)
                 .. " runtimeId=" .. tostring(binding.runtimeId)
-                .. " anchor=missing")
+                .. " anchor=missing"
+                .. " vehicle=" .. tostring(inVehicle))
         end
     end
 end
@@ -130,8 +141,9 @@ local function onKeyPressed(key)
     if key ~= Keyboard.KEY_E then return end
     if LCCQFDialoguePanel.instance then return end
 
-    -- Re-evaluate immediately on the input event. The key path never depends on
-    -- a previous render/update tick having discovered the target.
+    -- The key path reuses the same provider-neutral framework-anchor query used
+    -- by the prompt. No Bandits client adapter or physical IsoZombie lookup is
+    -- involved in deciding whether E may request a dialogue.
     refreshTarget(true)
     if not state.target then
         local now = getTimestampMs()
@@ -281,7 +293,7 @@ end
 local function onGameStart()
     log("loaded version=" .. tostring(C.VERSION)
         .. " runtime=Bandits interactKey=E range=" .. tostring(C.INTERACTION_RANGE)
-        .. " discovery=server-anchor")
+        .. " discovery=framework-anchor")
     state.bindingsSynchronized = false
     state.nextBindingRequestMs = 0
     state.nextTargetScanMs = 0
