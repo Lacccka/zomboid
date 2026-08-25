@@ -160,7 +160,9 @@ local function expireSessions()
     end
 end
 
-Events.EveryOneMinute.Add(expireSessions)
+if isServer and isServer() then
+    Events.EveryOneMinute.Add(expireSessions)
+end
 
 LCCQF.DialogueSession = DialogueSession
 
