@@ -2,86 +2,106 @@
 
 Build 42.20 multiplayer foundation for server-authoritative NPC interaction and dialogue.
 
-## Scope of v0.2.7
+## Scope of v0.2.8
 
-- one Bandits2-backed permanent test NPC (`lccq_test_npc_01`);
+- one Bandits2-backed test NPC (`lccq_test_npc_01`);
 - framework-owned logical identity in `NPCRegistry`;
-- replaceable `NPCRuntime` contract with Bandits2 isolated in the server runtime adapter;
-- server-synchronized interaction anchors (`runtimeId + npcId + x/y/z`) for stationary quest NPC prompt discovery;
-- no client-side Bandits physical-object lookup for prompt eligibility;
-- `[E] Поговорить` interaction prompt refreshed from synchronized anchor state;
-- `E` uses the standard `Events.OnKeyPressed` path and re-evaluates the target immediately on input;
-- server-side registry, runtime-id, same-Z, physical NPC and distance validation before dialogue opens;
+- provider-neutral client prompt discovery from synchronized `runtimeId + npcId + x/y/z` state;
+- Bandits2 is used only by the server runtime adapter for spawn and authoritative physical validation;
+- exactly one active runtime id is retained for each logical framework `npcId`;
+- `[E] Поговорить` is driven by `Events.OnKeyPressed` and the same framework-anchor query used by the prompt;
+- server-side runtime-id, physical NPC, same-Z and distance validation before dialogue opens;
 - server-owned `DialogueSession`, current node and allowed choices;
-- compact `RequestDialogue / ChooseDialogue / CloseDialogue` protocol;
-- admin/debug context-menu action for spawning the test NPC;
-- UTF-8-safe client localization;
-- no quests, rewards, reputation, journal, vendors, audio or framework-owned persistence yet.
+- no framework-owned NPC persistence yet.
 
-## Why v0.2.7 changes the interaction architecture
+## Why v0.2.8 is a structural correction
 
-The 0.2.6 multiplayer acceptance log proved that the previous client-discovery approach was solving the wrong problem.
+The fresh 0.2.7 multiplayer acceptance log removed the remaining uncertainty from the client side. The client received valid framework bindings and anchors and repeatedly calculated them as eligible at distances between roughly 0.2 and 2 tiles. Pressing `E` executed the diagnostic path, but `NPCRuntime.FindNearestInteractive()` still returned nil. There was no `interaction target acquired`, no `interaction requested` and therefore no server dialogue request.
 
-For runtime id `7340111`, the server successfully synchronized the Quest Framework binding and the client successfully observed the physical Bandits object through `Bandit.ApplyVisuals`. Despite both facts, no `interaction target acquired` marker was ever produced. The 0.2.6 adapter also emitted neither its `physical object rejected` nor its delayed `physical object unresolved` diagnostic. In other words, continuing to add more ways for the client to rediscover a Bandits `IsoZombie` was not giving us a stable interaction contract.
+This proves the failure was no longer spawn, networking, anchor data, distance arithmetic, input delivery or Bandits physical-object synchronization. It was inside the extra provider-adapter dispatch between the already-valid framework binding state and target selection.
 
-The same log contains the more useful fact: when the spawn action was invoked again, the server returned `AlreadyNearby`. That response is produced only after the server-side Bandits adapter successfully resolves the physical NPC near the requesting player. The server physical-resolution path therefore already works; duplicating it on the client is unnecessary.
+The 0.2.7 adapter also contained a hidden `player:getVehicle()` early return that was not represented by the old `eligible=true` diagnostic. The log does not prove the player was in a vehicle, so this is not claimed as the sole cause, but it demonstrates why provider-specific gates did not belong in generic prompt selection.
 
-v0.2.7 separates the two responsibilities:
+A second concrete design defect was found by reading the actual Build 42.20.3 Lua loader. Dedicated Server loads Lua paths in this order: `shared`, `client` for checksum, then `server`. `require()` resolves the first matching module name from those registered paths. We had two different implementations with the same relative require path:
+
+```text
+client/LCCQF/Runtime/LCCQFBanditsRuntime.lua
+server/LCCQF/Runtime/LCCQFBanditsRuntime.lua
+```
+
+The fresh server log directly exposed the collision by printing the client-only marker `client discovery=server-anchor physicalLookup=false` during dedicated-server startup. That module-name collision made adapter registration dependent on loader/path order and was invalid architecture even independently of the prompt failure.
+
+v0.2.8 removes both problems instead of adding another Bandits lookup.
+
+## Runtime boundaries
 
 ```text
 SERVER
-Bandits brain / physical NPC
+Bandits physical NPC / brain
         |
-        +--> runtimeId + npcId + interaction anchor (x/y/z)
-                          |
-                          v
-CLIENT                    prompt / nearest-target arithmetic only
-                          |
-                     player presses E
-                          |
-                          v
-SERVER             resolve real Bandits NPC again
-                   validate exact runtimeId + range
-                          |
-                          v
-                     DialogueSession
+        +--> BanditsServerRuntime
+        |        spawn + physical validation
+        |
+        +--> framework binding + interaction anchor
+                         |
+                         v
+SHARED NPCRuntime
+one active runtimeId per npcId
+provider-neutral nearest-anchor selection
+                         |
+                         v
+CLIENT
+prompt + E request only
+                         |
+                         v
+SERVER
+resolve the real NPC again
+validate runtimeId + distance + Z
+                         |
+                         v
+DialogueSession
 ```
 
-For the current stationary NPC, the interaction anchor is taken from the live server object when available and otherwise from Bandits' `brain.bornCoords`. The anchor is presentation/discovery data only. It is not trusted to open dialogue: pressing `E` still sends only `npcId` and `runtimeId`, and the server must resolve the real physical Bandits object inside `SERVER_INTERACTION_RANGE` before a session can open.
+`NPCRuntime.FindNearestInteractive()` now iterates framework bindings and anchors directly. It does not dispatch through a client Bandits adapter. Consequently there is no client `LCCQFBanditsRuntime.lua` anymore.
 
-This is also cleaner for the future framework. Quest identity no longer depends on `Bandit.ApplyVisuals`, `BanditZombie.Cache`, `CacheLightB`, `getVariableBoolean("Bandit")`, or a client `getMovingObjects()` scan. A future runtime provider only needs to expose an authoritative interaction anchor and implement server-side physical validation. Moving NPCs will require explicit anchor updates; v0.2.7 intentionally treats the current `stationary=true` NPC as the supported slice.
+The real Bandits server adapter now lives at the unique module path:
 
-## Runtime binding lifecycle
+`LCCQF/Runtime/LCCQFBanditsServerRuntime`
 
-`NPCRuntime` now stores two related pieces of state:
+The old server module path remains only as a compatibility wrapper that forwards to the uniquely named server module. There is no client file with the same relative path, so Build 42.20's path-order behavior cannot select the wrong implementation.
 
-- `runtimeId -> npcId` identity binding;
-- `runtimeId -> {x,y,z}` interaction anchor.
+## Binding lifecycle
 
-Full binding synchronization replaces both maps atomically. The Bandits server adapter rebuilds the binding set from the current `BanditClusters` snapshot instead of appending into an old Lua global table. This prevents stale test-runtime ids from surviving a Lua reset and being sent back to clients.
+`NPCRuntime` keeps:
 
-## Client update/input path
+- `runtimeId -> npcId`;
+- `runtimeId -> {x,y,z}`;
+- `npcId -> active runtimeId`.
 
-The prompt no longer relies on `Events.OnTick` polling. `OnPostUIDraw` performs a cheap throttled nearest-anchor calculation every 100 ms, and `Events.OnKeyPressed` forces one immediate calculation before handling `E`. The working Chat With Me reference also uses `Events.OnKeyPressed` for its interaction trigger; v0.2.7 follows that proven input event while retaining our server-authoritative validation model.
+Binding a new runtime id for the same logical NPC evicts the previous id and anchor. This prevents the 0.2.7 state in which `7340111`, `10485949` and later `11141215` could all be advertised for the same `lccq_test_npc_01`.
+
+Framework-owned NPC persistence is still deferred. The Bandits server adapter therefore no longer rebuilds Quest Framework bindings from every historical `BanditClusters` entry during startup. Old experimental `brain.key` string identity is not restored either. A current-process binding is synchronized normally; when spawning, a real framework-owned NPC physically near the player may be reused, but a far historical cluster can no longer block a fresh test spawn.
 
 ## Test deployment
 
-1. Sync/copy `LaccckaQuestFramework`.
-2. Confirm both sides load `0.2.7`.
-3. Join the dedicated server on foot.
-4. The full runtime sync should include at least one anchor-bearing binding when an existing test NPC is registered.
-5. If there is no current NPC, spawn one through the Quest Framework context action.
-6. The expected sequence is:
+1. Sync/copy `LaccckaQuestFramework` and confirm both sides load `0.2.8`.
+2. On dedicated-server startup expect the server-only runtime marker, never the old client runtime marker:
 
 ```text
-[LCCQF][RUNTIME:BANDITS] client discovery=server-anchor physicalLookup=false
-[LCCQF][CLIENT] loaded version=0.2.7 ... discovery=server-anchor
-[LCCQF][SERVER] runtime binding broadcast npcId=lccq_test_npc_01 runtimeId=... anchor=x,y,z
+[LCCQF][RUNTIME:BANDITS:SERVER] adapter registered module=LCCQFBanditsServerRuntime
+[LCCQF][SERVER] loaded version=0.2.8 ...
+```
+
+3. Join the server. With persistence deferred, a clean startup may synchronize `count=0` until the test NPC is spawned/rebound.
+4. Spawn the test NPC. Expected client sequence:
+
+```text
+[LCCQF][CLIENT] loaded version=0.2.8 ... discovery=framework-anchor
 [LCCQF][CLIENT] runtime binding received npcId=lccq_test_npc_01 runtimeId=... anchor=x,y,z
 [LCCQF][CLIENT] interaction target acquired npcId=lccq_test_npc_01 runtimeId=... distance=...
 ```
 
-7. Press `E`. Expected:
+5. Press `E`. Expected:
 
 ```text
 [LCCQF][CLIENT] interaction requested npcId=lccq_test_npc_01 runtimeId=...
@@ -89,20 +109,17 @@ The prompt no longer relies on `Events.OnTick` polling. `OnPostUIDraw` performs 
 [LCCQF][CLIENT] dialogue state session=... node=...
 ```
 
-8. Walk farther than four tiles and verify the server rejects/ends further interaction.
-9. Kill and respawn the NPC and verify the same framework `npcId` receives a new runtime id and anchor.
-10. Repeat with two clients.
+If `key-no-target` appears again, its diagnostic now includes registry/interaction and vehicle state; however the generic target query uses the same binding/anchor/registry conditions and does not reject players merely for being in a vehicle.
 
 ## Validation status
 
-- 0.2.6 was active on both client and server in the latest multiplayer log;
-- full runtime binding synchronization worked;
-- the client observed the exact physical Bandits object for the synchronized runtime id;
-- nevertheless the client physical-discovery layer produced no target and no decisive rejection result;
-- the same run proved server-side physical resolution works because a repeated spawn request resolved the existing NPC as `AlreadyNearby`;
-- v0.2.7 removes client physical-NPC rediscovery from the interaction contract and uses server-owned anchors instead;
-- fresh dedicated-server/client acceptance is still required before a final report is created.
+- 0.2.7 is confirmed active in the latest failed dedicated-server/client run;
+- its bindings, anchors, same-Z calculation, range calculation and `OnKeyPressed` path are all proven working by the log;
+- the remaining nil target is isolated to the old adapter-dispatch layer;
+- Build 42.20.3 game source proves the client/server same-name runtime modules were unsafe on dedicated server;
+- v0.2.8 removes client provider dispatch from prompt selection, removes the client Bandits runtime module, gives the server implementation a unique module name and enforces one active runtime per logical NPC;
+- fresh in-game acceptance is still required before any final report is created.
 
 ## Next milestone
 
-Do not add quests, trading or journal state until this vertical slice passes dedicated-server acceptance. After acceptance, extend the existing `DialogueSession`: nearby-player discovery, invitations, participant acceptance, synchronized narration/subtitles, then quest-instance creation.
+Do not add quests, trading, journal state or framework-owned persistence until this vertical slice passes dedicated-server acceptance.
