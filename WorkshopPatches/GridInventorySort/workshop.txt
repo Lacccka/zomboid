@@ -1,6 +1,6 @@
 version=1
 id=0
-title=Lacccka B42 Grid Inventory Sort
-description=Adds fast rotation-aware auto-sort, a bounded capacity-aware single grid for bag/world containers, stable configurable wheel scrolling, key-bound previous/next container navigation and server-issued token/CAS conflict-safe sorting to GridInventory for Build 42.20. This item contains integration files only; the original GridInventory mod is not included and must be installed separately.
+title=PackFlow
+description=Refines spatial inventories with fast rotation-aware packing, capacity-aware container layouts, stable configurable wheel scrolling, key-bound previous/next container navigation and conflict-safe multiplayer sorting for Build 42.20. Requires GridInventory; the dependency is not included and must be installed separately.
 tags=Build 42;Multiplayer;Interface
 visibility=private

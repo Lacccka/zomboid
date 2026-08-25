@@ -10,7 +10,7 @@
     "UI_LCC_GridSort_Nothing": "В этом контейнере нечего сортировать.",
     "UI_LCC_GridSort_NoSpace": "Эти предметы нельзя безопасно разместить в доступной сетке.",
     "UI_LCC_GridSort_Unavailable": "Автосортировка недоступна для этой сетки.",
-    "UI_LCC_GridPaneUX_OptionsSection": "Сортировка Grid Inventory",
+    "UI_LCC_GridPaneUX_OptionsSection": "PackFlow",
     "UI_LCC_GridPaneUX_NavigationTitle": "Прокрутка и переключение контейнеров",
     "UI_LCC_GridPaneUX_NavigationDescription": "Колесо мыши всегда прокручивает панель инвентаря. Для выбора предыдущего и следующего контейнера назначаются отдельные клавиши.",
     "UI_LCC_GridPaneUX_ScrollSpeed": "Скорость прокрутки колесом мыши",

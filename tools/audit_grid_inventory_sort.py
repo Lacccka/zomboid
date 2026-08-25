@@ -9,7 +9,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 PKG = ROOT / "WorkshopPatches" / "GridInventorySort"
-MOD = PKG / "Contents" / "mods" / "LaccckaB4220GridInventorySort" / "42"
+MOD = PKG / "Contents" / "mods" / "LaccckaPackFlow" / "42"
 
 FILES = {
     "modinfo": MOD / "mod.info",
@@ -61,7 +61,8 @@ require_markers(
     "mod.info",
     modinfo,
     (
-        "id=LaccckaB4220GridInventorySort",
+        "name=PackFlow",
+        "id=LaccckaPackFlow",
         "modversion=0.6.1",
         "versionMin=42.20.0",
         "require=\\GridInventory",
@@ -297,7 +298,7 @@ for obsolete in (
 require_markers(
     "workshop.txt",
     workshop,
-    ("id=0", "visibility=private", "original GridInventory mod is not included"),
+    ("id=0", "title=PackFlow", "visibility=private", "dependency is not included"),
 )
 
 expected_keys = {
