@@ -1,4 +1,4 @@
-# Quest Framework v0.2.1 runtime fixes
+# Quest Framework v0.2.1-v0.2.2 runtime fixes
 
 Date: 2026-08-25
 
@@ -28,14 +28,17 @@ The earlier `NPC already exists in Bandits persistence` result was also not a re
 
 ## Focused in-game retest
 
-1. Confirm server and client load `LCCQF` version `0.2.1`.
+Before the retest, v0.2.2 also moved every user-facing Russian/English string into client translation JSON. Network payloads now contain only ASCII translation keys, avoiding the Unicode low-byte truncation visible in the first logs. Target discovery refreshes the attached client brain from the authoritative cluster snapshot, and `E` interaction now fires on `OnKeyStartPressed`. Client logs report one `interaction target acquired` marker and one `interaction requested` marker for diagnosis without per-tick noise.
+
+1. Confirm server and client load `LCCQF` version `0.2.2`.
 2. Confirm the NPC Fixes `BanditUpdateShim` boot marker is `source-clean-coordinate-pursuit-v2 mode=PATCHED`.
 3. Use the admin action once. It must report success, produce one `[RUNTIME:BANDITS] spawned` line, and show Алексей nearby.
-4. Use the action again while he is present. It must report that he already exists, without creating a second NPC or a new runtime id.
-5. Approach within three tiles, press `E`, traverse every dialogue branch, and close normally.
-6. Open dialogue, walk beyond four tiles, then choose a reply. The server must close/reject the session.
-7. Kill Алексей several times across respawns to exercise the random key-drop branch. There must be no `setKeyId`, `expected argument of type int`, or `OnZombieDead(BanditUpdate.lua...)` exception.
-8. After each death, confirm corpse clothing remains intact and the next admin spawn obtains exactly one new runtime id.
-9. Repeat the dialogue checks with two clients and collect fresh client/server logs.
+4. Confirm the client logs `interaction target acquired` when entering range, displays `[E] Поговорить - Алексей`, and logs `interaction requested` immediately when `E` is pressed.
+5. Use the action again while he is present. It must report that he already exists, without creating a second NPC or a new runtime id.
+6. Traverse every dialogue branch and close normally; every Russian character must render correctly in the prompt, statuses, NPC name, dialogue and buttons.
+7. Open dialogue, walk beyond four tiles, then choose a reply. The server must close/reject the session.
+8. Kill Алексей several times across respawns to exercise the random key-drop branch. There must be no `setKeyId`, `expected argument of type int`, or `OnZombieDead(BanditUpdate.lua...)` exception.
+9. After each death, confirm corpse clothing remains intact and the next admin spawn obtains exactly one new runtime id.
+10. Repeat the dialogue checks with two clients and collect fresh client/server logs.
 
 Do not test or claim server-restart NPC restoration as part of this patch. That requires framework-owned persistence or a deliberate restore implementation behind `NPCRuntime`.

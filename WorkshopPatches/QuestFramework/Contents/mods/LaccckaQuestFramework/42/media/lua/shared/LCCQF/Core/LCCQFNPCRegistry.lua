@@ -18,8 +18,8 @@ function Registry.Register(definition)
     if not isIdentifier(definition.npcId) then
         return false, "invalid npcId"
     end
-    if not isIdentifier(definition.displayName) then
-        return false, "invalid displayName"
+    if not isIdentifier(definition.displayNameKey) then
+        return false, "invalid displayNameKey"
     end
     if not isIdentifier(definition.dialogueId) then
         return false, "invalid dialogueId"

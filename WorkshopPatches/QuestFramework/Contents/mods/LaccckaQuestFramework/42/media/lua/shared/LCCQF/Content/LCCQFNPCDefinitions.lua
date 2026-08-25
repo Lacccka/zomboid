@@ -5,7 +5,7 @@ local C = LCCQF.Constants
 
 local ok, err = LCCQF.NPCRegistry.Register({
     npcId = C.TEST_NPC_ID,
-    displayName = "Алексей",
+    displayNameKey = "IGUI_LCCQF_NPC_Alexey",
     dialogueId = "test_alexey",
     stationary = true,
     runtime = {

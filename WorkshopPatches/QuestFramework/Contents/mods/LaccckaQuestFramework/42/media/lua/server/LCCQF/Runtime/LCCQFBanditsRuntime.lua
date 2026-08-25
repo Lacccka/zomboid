@@ -35,7 +35,7 @@ local function makeHandle(zombie, brain, definition)
         entity = zombie,
         npcId = definition.npcId,
         runtimeId = tostring(brain.id),
-        displayName = brain.fullname or definition.displayName,
+        displayNameKey = definition.displayNameKey,
     }
     bindings[definition.npcId] = handle
     return handle
@@ -275,6 +275,8 @@ function Adapter.Spawn(player, definition)
     if not spawn then return nil, "no free spawn square nearby" end
 
     local previousIds = snapshotBrainIds()
+    local displayName = getText and getText(definition.displayNameKey) or "Alexey"
+    if displayName == definition.displayNameKey then displayName = "Alexey" end
 
     -- Bandits2 42.20 reads bandit.cid, while its custom loader stores general.cid.
     -- Its individual spawner also expects general.bid to be populated for later
@@ -292,7 +294,7 @@ function Adapter.Spawn(player, definition)
         permanent = true,
         hostile = false,
         hostileP = false,
-        fullname = definition.displayName,
+        fullname = displayName,
     })
     profile.cid = previousCid
     profile.general.bid = previousBid

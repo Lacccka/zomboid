@@ -50,7 +50,7 @@ local function getCandidate(object, playerX, playerY, playerZ, rangeSq)
     return {
         npcId = definition.npcId,
         runtimeId = tostring(brain.id),
-        displayName = brain.fullname or definition.displayName,
+        displayNameKey = definition.displayNameKey,
         distanceSq = distanceSq,
     }
 end

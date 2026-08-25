@@ -52,9 +52,11 @@ local function readIdentifier(args, field)
     return value
 end
 
-local function sendStatus(player, message)
+local function sendStatus(player, messageKey)
     if not player then return end
-    sendServerCommand(player, C.MODULE, C.COMMAND.STATUS, { message = tostring(message or "") })
+    sendServerCommand(player, C.MODULE, C.COMMAND.STATUS, {
+        messageKey = tostring(messageKey or "IGUI_LCCQF_Status_GenericError"),
+    })
 end
 
 local function sendDialogueState(player, view)
@@ -78,24 +80,24 @@ end
 
 local function spawnTestNPC(player)
     if not isPrivileged(player) then
-        sendStatus(player, "Недостаточно прав для создания тестового NPC.")
+        sendStatus(player, "IGUI_LCCQF_Status_NoPermission")
         log("spawn rejected: insufficient privileges player=" .. tostring(player and player:getUsername()))
         return
     end
 
     local handle, result = LCCQF.NPCRuntime.Spawn(player, C.TEST_NPC_ID)
     if not handle then
-        sendStatus(player, "Не удалось создать Алексея: " .. tostring(result))
+        sendStatus(player, "IGUI_LCCQF_Status_SpawnFailed")
         log("spawn rejected npcId=" .. C.TEST_NPC_ID .. " reason=" .. tostring(result))
         return
     end
 
     if result == "already loaded" then
-        sendStatus(player, "Алексей уже существует рядом.")
+        sendStatus(player, "IGUI_LCCQF_Status_AlreadyNearby")
     elseif result == "already registered" then
-        sendStatus(player, "Алексей уже зарегистрирован; подождите появления NPC.")
+        sendStatus(player, "IGUI_LCCQF_Status_AlreadyRegistered")
     else
-        sendStatus(player, "Тестовый NPC Алексей создан.")
+        sendStatus(player, "IGUI_LCCQF_Status_Spawned")
     end
 end
 
@@ -103,13 +105,13 @@ local function requestDialogue(player, args)
     local npcId = readIdentifier(args, "npcId")
     local runtimeId = readIdentifier(args, "runtimeId")
     if not npcId or not runtimeId then
-        sendStatus(player, "Некорректный запрос взаимодействия.")
+        sendStatus(player, "IGUI_LCCQF_Status_InvalidInteraction")
         return
     end
 
     local definition = LCCQF.NPCRegistry.Get(npcId)
     if not definition then
-        sendStatus(player, "Этот NPC не зарегистрирован в Quest Framework.")
+        sendStatus(player, "IGUI_LCCQF_Status_UnregisteredNPC")
         log("dialogue rejected: unknown npcId=" .. tostring(npcId))
         return
     end
@@ -121,14 +123,14 @@ local function requestDialogue(player, args)
         C.SERVER_INTERACTION_RANGE
     )
     if not handle then
-        sendStatus(player, "NPC не найден рядом или уже выгружен.")
+        sendStatus(player, "IGUI_LCCQF_Status_NPCUnavailable")
         log("dialogue rejected: unresolved npcId=" .. npcId .. " runtimeId=" .. runtimeId)
         return
     end
 
     local view, err = DialogueSession.Open(player, handle, definition)
     if not view then
-        sendStatus(player, "Диалог временно недоступен.")
+        sendStatus(player, "IGUI_LCCQF_Status_DialogueUnavailable")
         log("dialogue open failed npcId=" .. npcId .. " error=" .. tostring(err))
         return
     end
@@ -157,14 +159,14 @@ local function chooseDialogue(player, args)
     if not handle then
         DialogueSession.Close(player, sessionId)
         sendDialogueClosed(player, sessionId)
-        sendStatus(player, "Диалог закрыт: NPC больше не находится рядом.")
+        sendStatus(player, "IGUI_LCCQF_Status_DialogueTooFar")
         return
     end
 
     local result, err = DialogueSession.Choose(player, sessionId, choiceId)
     if not result then
         log("choice rejected session=" .. sessionId .. " choice=" .. choiceId .. " error=" .. tostring(err))
-        sendStatus(player, "Этот вариант ответа сейчас недоступен.")
+        sendStatus(player, "IGUI_LCCQF_Status_ChoiceUnavailable")
         return
     end
 

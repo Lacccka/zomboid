@@ -40,13 +40,17 @@ if rg -n 'choice\.next|showNode\(' "$lua_root/client"; then
     fail "client-owned dialogue transition reintroduced"
 fi
 
-rg -q '^modversion=0\.2\.1$' "$mod_info" || fail "mod.info version mismatch"
-rg -q 'Constants\.VERSION = "0\.2\.1"' "$lua_root/shared/LCCQF/LCCQFConstants.lua" \
+rg -q '^modversion=0\.2\.2$' "$mod_info" || fail "mod.info version mismatch"
+rg -q 'Constants\.VERSION = "0\.2\.2"' "$lua_root/shared/LCCQF/LCCQFConstants.lua" \
     || fail "Lua version mismatch"
 
 if rg -n 'brain\.key\s*=\s*definition\.npcId|key\s*=\s*definition\.npcId' \
     "$lua_root/client/LCCQF/Runtime" "$lua_root/server/LCCQF/Runtime"; then
     fail "framework npcId escaped into Bandits2 numeric door-key field"
+fi
+
+if LC_ALL=C rg -n '[^\x00-\x7F]' "$lua_root" -g '*.lua'; then
+    fail "non-ASCII user-facing text reintroduced into Lua/network payloads"
 fi
 
 if command -v lua >/dev/null 2>&1; then

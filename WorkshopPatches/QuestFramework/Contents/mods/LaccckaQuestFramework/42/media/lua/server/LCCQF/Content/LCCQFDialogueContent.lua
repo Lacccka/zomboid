@@ -7,25 +7,25 @@ local dialogues = {
         start = "start",
         nodes = {
             start = {
-                text = "Ты не похож на местного. Если пришёл поговорить — говори. Я пока никуда не спешу.",
+                textKey = "IGUI_LCCQF_Dialog_Start",
                 choices = {
-                    { id = "ask_work", text = "Есть работа?", next = "work" },
-                    { id = "ask_identity", text = "Кто ты?", next = "who" },
-                    { id = "leave", text = "Уйти", close = true },
+                    { id = "ask_work", textKey = "IGUI_LCCQF_Choice_AskWork", next = "work" },
+                    { id = "ask_identity", textKey = "IGUI_LCCQF_Choice_AskIdentity", next = "who" },
+                    { id = "leave", textKey = "IGUI_LCCQF_Choice_Leave", close = true },
                 },
             },
             work = {
-                text = "Работа будет. Но сейчас это только проверка нашей системы разговора. Позже отсюда сервер сможет создать настоящее задание.",
+                textKey = "IGUI_LCCQF_Dialog_Work",
                 choices = {
-                    { id = "back", text = "Понятно.", next = "start" },
-                    { id = "leave", text = "Уйти", close = true },
+                    { id = "back", textKey = "IGUI_LCCQF_Choice_Understood", next = "start" },
+                    { id = "leave", textKey = "IGUI_LCCQF_Choice_Leave", close = true },
                 },
             },
             who = {
-                text = "Зови меня Алексей. Для сервера я тестовый постоянный NPC, а для тебя — первый человек, с которым эта система умеет разговаривать.",
+                textKey = "IGUI_LCCQF_Dialog_Who",
                 choices = {
-                    { id = "back", text = "Вернуться к разговору.", next = "start" },
-                    { id = "leave", text = "Уйти", close = true },
+                    { id = "back", textKey = "IGUI_LCCQF_Choice_Back", next = "start" },
+                    { id = "leave", textKey = "IGUI_LCCQF_Choice_Leave", close = true },
                 },
             },
         },

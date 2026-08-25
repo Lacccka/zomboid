@@ -2,7 +2,7 @@
 
 Build 42.20 multiplayer foundation for server-authoritative NPC interaction and dialogue.
 
-## Scope of v0.2.1
+## Scope of v0.2.2
 
 - one Bandits2-backed permanent test NPC (`lccq_test_npc_01`);
 - framework-owned logical identity in `NPCRegistry`;
@@ -13,6 +13,7 @@ Build 42.20 multiplayer foundation for server-authoritative NPC interaction and 
 - server-owned `DialogueSession`, current node and allowed choices;
 - compact `RequestDialogue / ChooseDialogue / CloseDialogue` protocol with identifier limits and per-command throttling;
 - admin/debug context-menu action for spawning the test NPC;
+- UTF-8-safe client localization: the server sends ASCII translation keys, while Russian and English text is resolved from `Translate` files on each client;
 - no quests, rewards, reputation, journal, vendors, audio or framework-owned persistence yet.
 
 Bandits2 remains the current physical NPC runtime, but interaction, dialogue and UI code no longer imports `Bandit`, `BanditBrain` or `BanditCustom`. Those APIs and the current `bandit.cid` compatibility workaround exist only inside the Bandits adapter. Framework identity is stored in the namespaced `brain.lccqNpcId`; Bandits2's numeric `brain.key` field is never used for `npcId`. The project does not copy or patch Bandits2 source files.
@@ -49,7 +50,7 @@ The Bandits `brain.id` and zombie object are transient runtime handles. Dialogue
 10. Spawn him again after death and verify the new runtime id is accepted under the same framework `npcId`.
 11. Repeat with two clients standing near the same NPC; both should have independent server sessions.
 
-Bandits2 42.20 currently returns immediately from `BanditPermanent.Check`, so unload/restart restoration is not part of v0.2.1 acceptance. Framework-owned NPC persistence remains explicitly deferred; the adapter must not claim restart survival or create a duplicate merely because physical exposure is delayed.
+Bandits2 42.20 currently returns immediately from `BanditPermanent.Check`, so unload/restart restoration is not part of v0.2.2 acceptance. Framework-owned NPC persistence remains explicitly deferred; the adapter must not claim restart survival or create a duplicate merely because physical exposure is delayed.
 
 ## Expected log markers
 
@@ -64,8 +65,8 @@ Useful markers include `[LCCQF][SERVER]`, `[LCCQF][CLIENT]` and `[LCCQF][RUNTIME
 - all Lua files parse successfully with Lua 5.4;
 - `DialogueSession` open, allowed transition, rejected transition and close paths pass an isolated logic test;
 - B42.20.3 `TextManager`, `ISRichTextPanel`, `ISButton` and Bandits2 42.20 source signatures were checked against the repository snapshot;
-- the first dedicated-server run exposed and reproduced two adapter defects; v0.2.1 fixes them and is pending a focused fresh server/client retest.
+- the first dedicated-server run exposed adapter, localization and interaction-discovery defects; v0.2.2 fixes them and is pending a focused fresh server/client retest.
 
 ## Next milestone
 
-Do not add quests, trading or journal state until this v0.2.1 vertical slice passes dedicated-server acceptance. After acceptance, extend the existing `DialogueSession`: nearby-player discovery, invitations, participant acceptance, synchronized narration/subtitles, then quest-instance creation.
+Do not add quests, trading or journal state until this v0.2.2 vertical slice passes dedicated-server acceptance. After acceptance, extend the existing `DialogueSession`: nearby-player discovery, invitations, participant acceptance, synchronized narration/subtitles, then quest-instance creation.

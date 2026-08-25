@@ -28,7 +28,7 @@ local function makeView(session)
         if i > C.MAX_DIALOGUE_CHOICES then break end
         choices[i] = {
             choiceId = choice.id,
-            text = choice.text or "...",
+            textKey = choice.textKey,
         }
     end
 
@@ -36,9 +36,9 @@ local function makeView(session)
         sessionId = session.id,
         npcId = session.npcId,
         runtimeId = session.runtimeId,
-        npcName = session.npcName,
+        npcNameKey = session.npcNameKey,
         nodeId = session.nodeId,
-        text = node.text or "",
+        textKey = node.textKey,
         choices = choices,
     }
 end
@@ -56,7 +56,7 @@ function DialogueSession.Open(player, handle, definition)
         playerKey = playerKey,
         npcId = definition.npcId,
         runtimeId = tostring(handle.runtimeId),
-        npcName = handle.displayName or definition.displayName,
+        npcNameKey = definition.displayNameKey,
         dialogueId = definition.dialogueId,
         nodeId = dialogue.start,
         openedMs = now,
