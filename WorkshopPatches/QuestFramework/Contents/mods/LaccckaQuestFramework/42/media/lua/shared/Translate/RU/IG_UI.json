@@ -15,12 +15,29 @@
     "IGUI_LCCQF_Status_DialogueTooFar": "Диалог закрыт: NPC больше не находится рядом.",
     "IGUI_LCCQF_Status_ChoiceUnavailable": "Этот вариант ответа сейчас недоступен.",
     "IGUI_LCCQF_Status_GenericError": "Не удалось выполнить запрос Quest Framework.",
+
     "IGUI_LCCQF_Dialog_Start": "Ты не похож на местного. Если пришёл поговорить — говори. Я пока никуда не спешу.",
-    "IGUI_LCCQF_Dialog_Work": "Работа будет. Но сейчас это только проверка нашей системы разговора. Позже отсюда сервер сможет создать настоящее задание.",
+    "IGUI_LCCQF_Dialog_WorkOffer": "Есть одно дело. Примерно в двенадцати шагах к востоку отсюда стоит старый блокпост. Доберись до него, осмотрись и возвращайся ко мне.",
+    "IGUI_LCCQF_Dialog_WorkAccepted": "Хорошо. Иди на восток отсюда, доберись до старого блокпоста и потом возвращайся ко мне.",
+    "IGUI_LCCQF_Dialog_WorkActive": "Блокпост всё ещё ждёт. Иди на восток отсюда, доберись до места и возвращайся.",
+    "IGUI_LCCQF_Dialog_WorkCompleted": "На этот раз достаточно. Ты добрался до блокпоста и вернулся. Работа сделана.",
     "IGUI_LCCQF_Dialog_Who": "Зови меня Алексей. Для сервера я тестовый NPC, а для тебя — первый человек, с которым эта система умеет разговаривать.",
+
     "IGUI_LCCQF_Choice_AskWork": "Есть работа?",
+    "IGUI_LCCQF_Choice_QuestInProgress": "Насчёт блокпоста...",
+    "IGUI_LCCQF_Choice_QuestCompletedTopic": "Насчёт того блокпоста...",
+    "IGUI_LCCQF_Choice_AcceptQuest": "Я проверю.",
+    "IGUI_LCCQF_Choice_DeclineQuest": "Не сейчас.",
     "IGUI_LCCQF_Choice_AskIdentity": "Кто ты?",
     "IGUI_LCCQF_Choice_Leave": "Уйти",
     "IGUI_LCCQF_Choice_Understood": "Понятно.",
-    "IGUI_LCCQF_Choice_Back": "Вернуться к разговору."
+    "IGUI_LCCQF_Choice_Back": "Вернуться к разговору.",
+
+    "IGUI_LCCQF_Quest_Checkpoint_Title": "Старый блокпост",
+    "IGUI_LCCQF_Quest_Checkpoint_Description": "Алексей попросил добраться до старого блокпоста неподалёку к востоку от него, а затем вернуться.",
+    "IGUI_LCCQF_Quest_Checkpoint_Objective_Reach": "Добраться до старого блокпоста",
+    "IGUI_LCCQF_Quest_Checkpoint_Objective_Return": "Вернуться к Алексею",
+    "IGUI_LCCQF_QuestEvent_Accepted": "Задание принято: Старый блокпост.",
+    "IGUI_LCCQF_QuestEvent_ObjectiveComplete": "Этап задания выполнен.",
+    "IGUI_LCCQF_QuestEvent_Completed": "Задание выполнено: Старый блокпост."
 }
