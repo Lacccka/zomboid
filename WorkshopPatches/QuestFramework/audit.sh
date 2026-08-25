@@ -109,6 +109,8 @@ rg -q 'ExportRuntimeBindings' "$server_bandits" \
     || fail "server runtime refresh is not framework-state based"
 rg -q 'anchorFor' "$server_bandits" \
     || fail "Bandits server adapter does not publish interaction anchors"
+rg -q 'if isServer and isServer\(\) then' "$server_bandits" \
+    || fail "Bandits server event hooks are not guarded from client init"
 
 if rg -n 'brain\.key\s*==\s*definition\.npcId|Registry\.IsRegistered\(brain\.key\)' "$server_bandits"; then
     fail "legacy Bandits brain.key quest identity restoration reintroduced"
@@ -126,6 +128,10 @@ rg -q 'function DialogueSession\.InvalidateRuntime' "$dialogue_session" \
     || fail "dialogue runtime invalidation API missing"
 rg -q 'GetActiveRuntimeId' "$server_interaction" \
     || fail "server does not reject stale runtime ids before dialogue operations"
+rg -q 'if isServer and isServer\(\) then' "$server_interaction" \
+    || fail "interaction server event hooks are not guarded from client init"
+rg -q 'if isServer and isServer\(\) then' "$dialogue_session" \
+    || fail "dialogue expiry hook is not guarded from client init"
 
 rg -q 'function QuestRegistry\.Register' "$quest_registry" \
     || fail "quest definition registry missing"
