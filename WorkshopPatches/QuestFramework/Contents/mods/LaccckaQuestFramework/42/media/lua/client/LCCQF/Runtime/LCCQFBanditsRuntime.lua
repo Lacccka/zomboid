@@ -1,4 +1,5 @@
 require "BanditBrain"
+require "BanditUtils"
 require "LCCQF/Core/LCCQFNPCRuntime"
 require "LCCQF/Content/LCCQFNPCDefinitions"
 
@@ -6,39 +7,48 @@ local Adapter = {}
 local NPC_ID_FIELD = "lccqNpcId"
 
 local function getNPCId(brain)
+    if not brain then return nil end
     if type(brain[NPC_ID_FIELD]) == "string" then
         return brain[NPC_ID_FIELD]
     end
 
-    -- Migrate live v0.2.0 brains away from Bandits2's numeric door-key field.
+    -- Compatibility fallback for live v0.2.0 brains. Quest identity is no
+    -- longer expected to travel through Bandits2 brain snapshots.
     if type(brain.key) == "string" and LCCQF.NPCRegistry.IsRegistered(brain.key) then
-        brain[NPC_ID_FIELD] = brain.key
-        brain.key = nil
-        return brain[NPC_ID_FIELD]
+        return brain.key
     end
 
     return nil
 end
 
+local function getRuntimeId(object, brain)
+    local runtimeId = BanditUtils.GetZombieID and BanditUtils.GetZombieID(object) or nil
+    if runtimeId == nil and brain then runtimeId = brain.id end
+    if runtimeId == nil then return nil end
+    return tostring(runtimeId)
+end
+
 local function getCandidate(object, playerX, playerY, playerZ, rangeSq)
     if not object or not instanceof(object, "IsoZombie") or object:isDead() then return nil end
 
+    -- Bandits2 may keep an older attached brain after a later GlobalModData
+    -- update. Only use the brain to confirm provider ownership and as a legacy
+    -- fallback; framework identity comes from LCCQF's own runtime binding map.
     local brain = BanditBrain.Get(object)
-    if not brain or brain.id == nil then return nil end
+    if not brain then return nil end
 
-    -- The server transmits the framework tag immediately after Bandits creates
-    -- its brain. If the zombie was Banditized from the first cluster snapshot,
-    -- refresh its attached brain from the newer tagged snapshot here.
-    if type(brain[NPC_ID_FIELD]) ~= "string" and GetBanditClusterData then
-        local gmd = GetBanditClusterData(brain.id)
-        local current = gmd and (gmd[brain.id] or gmd[tostring(brain.id)]) or nil
-        if current and current ~= brain and type(current[NPC_ID_FIELD]) == "string" then
-            brain = current
-            BanditBrain.Update(object, brain)
+    local runtimeId = getRuntimeId(object, brain)
+    if not runtimeId then return nil end
+
+    local npcId = LCCQF.NPCRuntime.GetBoundNPCId(runtimeId)
+    if not npcId then
+        npcId = getNPCId(brain)
+        if npcId then
+            LCCQF.NPCRuntime.BindRuntime(runtimeId, npcId)
         end
     end
 
-    local definition = LCCQF.NPCRegistry.Get(getNPCId(brain))
+    local definition = npcId and LCCQF.NPCRegistry.Get(npcId) or nil
     if not definition or definition.runtime.adapter ~= "Bandits" then return nil end
     if math.abs(object:getZ() - playerZ) >= 0.5 then return nil end
 
@@ -49,7 +59,7 @@ local function getCandidate(object, playerX, playerY, playerZ, rangeSq)
 
     return {
         npcId = definition.npcId,
-        runtimeId = tostring(brain.id),
+        runtimeId = runtimeId,
         displayNameKey = definition.displayNameKey,
         distanceSq = distanceSq,
     }
