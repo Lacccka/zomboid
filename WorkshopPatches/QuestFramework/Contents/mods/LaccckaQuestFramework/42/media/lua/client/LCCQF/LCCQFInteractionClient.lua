@@ -2,11 +2,13 @@ require "LCCQF/LCCQFConstants"
 require "LCCQF/Core/LCCQFNPCRegistry"
 require "LCCQF/Core/LCCQFNPCRuntime"
 require "LCCQF/Content/LCCQFNPCDefinitions"
+require "LCCQF/Quest/LCCQFQuestClientState"
 require "LCCQF/UI/LCCQFDialoguePanel"
 
 LCCQFInteractionClient = LCCQFInteractionClient or {}
 
 local C = LCCQF.Constants
+local QuestClientState = LCCQF.QuestClientState
 local TRANSLATION_PREFIX = "IGUI_LCCQF_"
 local TARGET_SCAN_INTERVAL_MS = 100
 local state = {
@@ -16,7 +18,9 @@ local state = {
     statusUntilMs = 0,
     loggedTargetRuntimeId = nil,
     bindingsSynchronized = false,
+    questsSynchronized = false,
     nextBindingRequestMs = 0,
+    nextQuestRequestMs = 0,
     nextTargetScanMs = 0,
     lastNoTargetDiagnosticMs = 0,
     activeDialogueRuntimeId = nil,
@@ -124,13 +128,25 @@ local function requestRuntimeBindings()
     return true
 end
 
-local function maintainRuntimeBindingSync()
-    if state.bindingsSynchronized then return end
+local function requestQuestState()
+    local player = getSpecificPlayer(0)
+    if not player then return false end
+    sendClientCommand(player, C.MODULE, C.COMMAND.REQUEST_QUESTS, {})
+    return true
+end
 
+local function maintainServerStateSync()
     local now = getTimestampMs()
-    if now < state.nextBindingRequestMs then return end
-    state.nextBindingRequestMs = now + 2000
-    requestRuntimeBindings()
+
+    if not state.bindingsSynchronized and now >= state.nextBindingRequestMs then
+        state.nextBindingRequestMs = now + 2000
+        requestRuntimeBindings()
+    end
+
+    if not state.questsSynchronized and now >= state.nextQuestRequestMs then
+        state.nextQuestRequestMs = now + 2000
+        requestQuestState()
+    end
 end
 
 local function requestDialogue()
@@ -152,9 +168,6 @@ local function onKeyPressed(key)
     if key ~= Keyboard.KEY_E then return end
     if LCCQFDialoguePanel.instance then return end
 
-    -- The key path reuses the same provider-neutral framework-anchor query used
-    -- by the prompt. No Bandits client adapter or physical IsoZombie lookup is
-    -- involved in deciding whether E may request a dialogue.
     refreshTarget(true)
     if not state.target then
         local now = getTimestampMs()
@@ -192,7 +205,7 @@ local function localizeDialogueState(args)
 end
 
 local function onPostUIDraw()
-    maintainRuntimeBindingSync()
+    maintainServerStateSync()
     refreshTarget(false)
 
     local now = getTimestampMs()
@@ -300,6 +313,34 @@ local function onServerCommand(module, command, args)
         return
     end
 
+    if command == C.COMMAND.QUESTS then
+        local count = QuestClientState.Replace(args.quests)
+        state.questsSynchronized = true
+        log("quest state synchronized count=" .. tostring(count))
+        return
+    end
+
+    if command == C.COMMAND.QUEST_UPSERT then
+        if QuestClientState.Apply(args) then
+            log("quest state upsert questId=" .. tostring(args.questId)
+                .. " instanceId=" .. tostring(args.instanceId)
+                .. " state=" .. tostring(args.state)
+                .. " objective=" .. tostring(args.currentObjectiveId))
+        end
+        return
+    end
+
+    if command == C.COMMAND.QUEST_EVENT then
+        local message = localize(args.messageKey, "Quest updated")
+        setStatus(message, 5000)
+        log("quest event questId=" .. tostring(args.questId)
+            .. " instanceId=" .. tostring(args.instanceId)
+            .. " objective=" .. tostring(args.objectiveId)
+            .. " state=" .. tostring(args.state)
+            .. " messageKey=" .. tostring(args.messageKey))
+        return
+    end
+
     if command == C.COMMAND.DIALOGUE_STATE then
         local npcId = type(args.npcId) == "string" and args.npcId or nil
         if not npcId or not LCCQF.NPCRegistry.IsRegistered(npcId) then
@@ -333,15 +374,18 @@ end
 local function onGameStart()
     log("loaded version=" .. tostring(C.VERSION)
         .. " runtime=Bandits interactKey=E range=" .. tostring(C.INTERACTION_RANGE)
-        .. " discovery=framework-anchor lifecycle=explicit-remove")
+        .. " discovery=framework-anchor lifecycle=explicit-remove questViews=server-owned")
     state.bindingsSynchronized = false
+    state.questsSynchronized = false
     state.nextBindingRequestMs = 0
+    state.nextQuestRequestMs = 0
     state.nextTargetScanMs = 0
     state.lastNoTargetDiagnosticMs = 0
     state.target = nil
     state.loggedTargetRuntimeId = nil
     state.activeDialogueRuntimeId = nil
-    maintainRuntimeBindingSync()
+    QuestClientState.Clear()
+    maintainServerStateSync()
 end
 
 Events.OnGameStart.Add(onGameStart)
