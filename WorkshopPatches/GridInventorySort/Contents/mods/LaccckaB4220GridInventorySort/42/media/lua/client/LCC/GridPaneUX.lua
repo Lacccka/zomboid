@@ -7,6 +7,7 @@ LCC_GridPaneUX = LCC_GridPaneUX or {}
 local GridPaneUX = LCC_GridPaneUX
 
 local PIXELS_PER_SPEED_STEP = 9
+local CONTROLS_PAD = 1
 
 local function clampScroll(pane, value, scrollHeight)
     local viewHeight = pane.getHeight and pane:getHeight() or pane.height or 0
@@ -113,6 +114,71 @@ local function installPageWheel()
     ISInventoryPage.onMouseWheel = wrapper
 end
 
+local function snapshotGridHeights(pane)
+    local snapshot = {}
+    if not pane.gridContainerUis then return snapshot end
+
+    for _, grid in ipairs(pane.gridContainerUis) do
+        if not grid.isOverflow then
+            local height = grid.getHeight and grid:getHeight() or grid.height or 0
+            snapshot[grid] = {
+                height = height,
+                baseHeight = grid.baseGridHeight or height,
+            }
+        end
+    end
+    return snapshot
+end
+
+local function stabilizeGridHeights(pane, snapshot)
+    local grids = pane.gridContainerUis
+    local page = pane.inventoryPage
+    if not grids or not page then return end
+
+    local activeGrid = nil
+    for _, grid in ipairs(grids) do
+        if not grid.isOverflow and grid.inventoryContainer == pane.inventory then
+            activeGrid = grid
+            break
+        end
+    end
+
+    local controlsUI = page.controlsUI
+    local usingJoypad = JoypadState and JoypadState.players
+        and JoypadState.players[page.player + 1] ~= nil
+    local hasButtons = activeGrid and controlsUI and controlsUI.controls
+        and #controlsUI.controls > 0 and not usingJoypad
+    local footerHeight = 0
+    if hasButtons then
+        footerHeight = math.max(24, (controlsUI:getHeight() or 0) + (CONTROLS_PAD * 2))
+    end
+
+    -- Some refresh paths rebuild controls after the pane. Preserve the previous
+    -- reserve for the same active GridRender until the page update catches up.
+    local savedActive = activeGrid and snapshot[activeGrid] or nil
+    if activeGrid and footerHeight == 0 and savedActive then
+        local oldReserve = savedActive.height - savedActive.baseHeight
+        if oldReserve > 0 then footerHeight = oldReserve end
+    end
+
+    for _, grid in ipairs(grids) do
+        if not grid.isOverflow then
+            local baseHeight = grid.baseGridHeight
+                or (snapshot[grid] and snapshot[grid].baseHeight)
+                or (grid.getHeight and grid:getHeight())
+                or grid.height
+                or 0
+            local targetHeight = baseHeight
+            if grid == activeGrid and footerHeight > 0 then
+                targetHeight = baseHeight + footerHeight
+            end
+            if grid.getHeight and grid:getHeight() ~= targetHeight then
+                grid:setHeight(targetHeight)
+            end
+        end
+    end
+end
+
 local function installStableRefresh()
     if ISInventoryPane.refreshContainer == GridPaneUX.refreshWrapper then return end
 
@@ -120,11 +186,15 @@ local function installStableRefresh()
     local wrapper = function(self, ...)
         local stableHeight = self.myFinalHeight or 0
         local savedY = self.getYScroll and self:getYScroll() or 0
+        local gridHeights = snapshotGridHeights(self)
         local result = downstream(self, ...)
 
         -- Vanilla refreshContainer() briefly installs the height of its hidden
         -- list and clamps YScroll. GridInventory restores the grid height only
         -- in prerender(), which creates a visible one-frame jump while items move.
+        -- It also resets every GridRender to baseGridHeight, temporarily dropping
+        -- the active grid's footer reserve and pulling every lower row upward.
+        stabilizeGridHeights(self, gridHeights)
         if stableHeight > 0 and self.gridContainerUis then
             self:setScrollHeight(stableHeight)
             self:setYScroll(clampScroll(self, savedY, stableHeight))
