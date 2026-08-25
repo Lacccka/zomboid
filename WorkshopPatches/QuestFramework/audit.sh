@@ -32,11 +32,8 @@ if rg -n 'Bandit(Brain|Custom|Server)|require "Bandit"' "${non_runtime_files[@]}
     fail "Bandits API escaped the runtime adapter boundary"
 fi
 
-# A client-side getZombieList() fallback is intentional: Bandits2 itself uses it
-# to rebuild BanditZombie.Cache/CacheLightB. What must not return is a broad
-# server-side zombie scan for quest interaction validation.
-if rg -n 'getZombieList\(' "$lua_root/server"; then
-    fail "server-wide zombie scan reintroduced"
+if rg -n 'getZombieList\(' "$lua_root"; then
+    fail "broad zombie scan reintroduced"
 fi
 
 if rg -n 'choice\.next|showNode\(' "$lua_root/client"; then
