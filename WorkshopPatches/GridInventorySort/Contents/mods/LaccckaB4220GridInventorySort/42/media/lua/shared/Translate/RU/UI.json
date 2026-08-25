@@ -9,5 +9,14 @@
     "UI_LCC_GridSort_Locked": "Этот вложенный контейнер сейчас заблокирован.",
     "UI_LCC_GridSort_Nothing": "В этом контейнере нечего сортировать.",
     "UI_LCC_GridSort_NoSpace": "Эти предметы нельзя безопасно разместить в доступной сетке.",
-    "UI_LCC_GridSort_Unavailable": "Автосортировка недоступна для этой сетки."
+    "UI_LCC_GridSort_Unavailable": "Автосортировка недоступна для этой сетки.",
+    "UI_LCC_GridPaneUX_OptionsSection": "Сортировка Grid Inventory",
+    "UI_LCC_GridPaneUX_NavigationTitle": "Прокрутка и переключение контейнеров",
+    "UI_LCC_GridPaneUX_NavigationDescription": "Колесо мыши всегда прокручивает панель инвентаря. Для выбора предыдущего и следующего контейнера назначаются отдельные клавиши.",
+    "UI_LCC_GridPaneUX_ScrollSpeed": "Скорость прокрутки колесом мыши",
+    "UI_LCC_GridPaneUX_ScrollSpeed_Tooltip": "Определяет расстояние прокрутки панели инвентаря за один шаг колеса. 1 — минимальная скорость, 8 — максимальная.",
+    "UI_LCC_GridPaneUX_PreviousContainer": "Предыдущий контейнер",
+    "UI_LCC_GridPaneUX_PreviousContainer_Tooltip": "Выбирает предыдущий контейнер в окне под указателем мыши. Если указатель находится вне обоих окон, приоритет получает окно добычи.",
+    "UI_LCC_GridPaneUX_NextContainer": "Следующий контейнер",
+    "UI_LCC_GridPaneUX_NextContainer_Tooltip": "Выбирает следующий контейнер в окне под указателем мыши. Если указатель находится вне обоих окон, приоритет получает окно добычи."
 }

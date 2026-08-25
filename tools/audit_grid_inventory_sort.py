@@ -16,6 +16,7 @@ FILES = {
     "algorithm": MOD / "media" / "lua" / "client" / "LCC" / "GridAutoSort.lua",
     "network": MOD / "media" / "lua" / "client" / "LCC" / "GridSortNetwork.lua",
     "paneux": MOD / "media" / "lua" / "client" / "LCC" / "GridPaneUX.lua",
+    "paneoptions": MOD / "media" / "lua" / "client" / "LCC" / "GridPaneUXOptions.lua",
     "continuous": MOD / "media" / "lua" / "shared" / "LCC" / "GridContinuousGrid.lua",
     "state": MOD / "media" / "lua" / "shared" / "LCC" / "GridSortState.lua",
     "server": MOD / "media" / "lua" / "server" / "zzz_LCC_GridSortServer.lua",
@@ -49,6 +50,7 @@ modinfo = require_file("modinfo")
 algorithm = require_file("algorithm")
 network = require_file("network")
 paneux = require_file("paneux")
+paneoptions = require_file("paneoptions")
 continuous = require_file("continuous")
 state = require_file("state")
 server = require_file("server")
@@ -60,7 +62,7 @@ require_markers(
     modinfo,
     (
         "id=LaccckaB4220GridInventorySort",
-        "modversion=0.5.0",
+        "modversion=0.6.0",
         "versionMin=42.20.0",
         "require=\\GridInventory",
         "loadafter=\\GridInventory",
@@ -215,10 +217,42 @@ require_markers(
     "GridPaneUX.lua",
     paneux,
     (
-        "_lccGridSortPaneUXInstalled",
-        "_lccForcePaneScroll",
-        "scrollHeight > viewHeight + 2",
-        "unified inventory-pane scrolling installed",
+        'require("LCC/GridPaneUXOptions")',
+        "PIXELS_PER_SPEED_STEP = 9",
+        "GridPaneUXOptions.getScrollSpeed()",
+        "pane.smoothScrollTargetY = nil",
+        "ISInventoryPane.onMouseWheel = wrapper",
+        "ISInventoryPage.onMouseWheel = wrapper",
+        "ISInventoryPane.refreshContainer = wrapper",
+        "self:setScrollHeight(stableHeight)",
+        "GridPaneUXOptions.getPreviousContainerKey()",
+        "GridPaneUXOptions.getNextContainerKey()",
+        "page:selectPrevContainer()",
+        "page:selectNextContainer()",
+        "Events.OnKeyPressed.Add(onKeyPressed)",
+        "stable wheel scrolling and container keybinds registered",
+    ),
+)
+for forbidden_marker in ("_lccForcePaneScroll", "page:cycleContainer(del)", "SCROLL_MULT"):
+    if forbidden_marker in paneux:
+        errors.append(f"GridPaneUX.lua: obsolete wheel-to-container marker present: {forbidden_marker}")
+
+require_markers(
+    "GridPaneUXOptions.lua",
+    paneoptions,
+    (
+        'SECTION_ID = "LCCGridInventorySort"',
+        "DEFAULT_SCROLL_SPEED = 3",
+        "MIN_SCROLL_SPEED = 1",
+        "MAX_SCROLL_SPEED = 8",
+        'section:addSlider(',
+        '"previousContainerKey"',
+        '"nextContainerKey"',
+        "section:addKeyBind(",
+        "option.element.keyCode",
+        "function GridPaneUXOptions.getScrollSpeed()",
+        "function GridPaneUXOptions.getPreviousContainerKey()",
+        "function GridPaneUXOptions.getNextContainerKey()",
     ),
 )
 
@@ -274,6 +308,15 @@ expected_keys = {
     "UI_LCC_GridSort_Nothing",
     "UI_LCC_GridSort_NoSpace",
     "UI_LCC_GridSort_Unavailable",
+    "UI_LCC_GridPaneUX_OptionsSection",
+    "UI_LCC_GridPaneUX_NavigationTitle",
+    "UI_LCC_GridPaneUX_NavigationDescription",
+    "UI_LCC_GridPaneUX_ScrollSpeed",
+    "UI_LCC_GridPaneUX_ScrollSpeed_Tooltip",
+    "UI_LCC_GridPaneUX_PreviousContainer",
+    "UI_LCC_GridPaneUX_PreviousContainer_Tooltip",
+    "UI_LCC_GridPaneUX_NextContainer",
+    "UI_LCC_GridPaneUX_NextContainer_Tooltip",
 }
 
 for lang in ("en", "ru"):
