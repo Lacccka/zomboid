@@ -2,12 +2,11 @@ require "ISUI/ISPanel"
 require "ISUI/ISButton"
 require "ISUI/ISRichTextPanel"
 require "LCCQF/LCCQFConstants"
-require "LCCQF/LCCQFContent"
 
 LCCQFDialoguePanel = ISPanel:derive("LCCQFDialoguePanel")
 LCCQFDialoguePanel.instance = nil
 
-function LCCQFDialoguePanel:new(npcName, dialogueId, sessionId)
+function LCCQFDialoguePanel:new(npcName, sessionId, onChoice, onClose)
     local width = math.min(700, getCore():getScreenWidth() - 80)
     local height = math.min(430, getCore():getScreenHeight() - 80)
     local x = math.floor((getCore():getScreenWidth() - width) / 2)
@@ -18,13 +17,14 @@ function LCCQFDialoguePanel:new(npcName, dialogueId, sessionId)
     self.__index = self
 
     o.npcName = npcName or "NPC"
-    o.dialogueId = dialogueId
     o.sessionId = sessionId
-    o.currentNodeId = nil
+    o.onChoiceCallback = onChoice
+    o.onCloseCallback = onClose
     o.moveWithMouse = true
     o.backgroundColor = { r = 0.05, g = 0.05, b = 0.05, a = 0.94 }
     o.borderColor = { r = 0.55, g = 0.55, b = 0.55, a = 1.0 }
     o.choiceButtons = {}
+    o.closed = false
 
     return o
 end
@@ -63,18 +63,10 @@ function LCCQFDialoguePanel:createChildren()
         local button = ISButton:new(x, buttonY, buttonWidth, 44, "", self, LCCQFDialoguePanel.onChoicePressed)
         button:initialise()
         button:instantiate()
-        button.choiceIndex = i
+        button.choiceId = nil
         button:setVisible(false)
         self:addChild(button)
         self.choiceButtons[i] = button
-    end
-
-    local dialogue = LCCQF.GetDialogue(self.dialogueId)
-    if dialogue then
-        self:showNode(dialogue.start)
-    else
-        self.body.text = "Диалог не найден: " .. tostring(self.dialogueId)
-        self.body:paginate()
     end
 end
 
@@ -83,85 +75,79 @@ function LCCQFDialoguePanel:prerender()
     self:drawText(self.npcName, 24, 20, 1, 1, 1, 1, UIFont.Medium)
 end
 
-function LCCQFDialoguePanel:getCurrentNode()
-    local dialogue = LCCQF.GetDialogue(self.dialogueId)
-    if not dialogue or not dialogue.nodes then return nil end
-    return dialogue.nodes[self.currentNodeId]
+function LCCQFDialoguePanel:setChoicesEnabled(enabled)
+    for _, button in ipairs(self.choiceButtons) do
+        button.enable = enabled and button.choiceId ~= nil
+    end
 end
 
-function LCCQFDialoguePanel:showNode(nodeId)
-    local dialogue = LCCQF.GetDialogue(self.dialogueId)
-    if not dialogue or not dialogue.nodes then return end
+function LCCQFDialoguePanel:updateState(state)
+    if not state or tostring(state.sessionId) ~= tostring(self.sessionId) then return false end
 
-    local node = dialogue.nodes[nodeId]
-    if not node then return end
-
-    self.currentNodeId = nodeId
-    self.body.text = node.text or ""
+    self.npcName = state.npcName or self.npcName
+    self.body.text = tostring(state.text or "")
     self.body:paginate()
-    if self.body.setYScroll then
-        self.body:setYScroll(0)
-    end
+    self.body:setYScroll(0)
 
-    local choices = node.choices or {}
+    local choices = state.choices or {}
     for i = 1, #self.choiceButtons do
         local button = self.choiceButtons[i]
         local choice = choices[i]
-        if choice then
-            button:setTitle(choice.text or "...")
+        if choice and type(choice.choiceId) == "string" then
+            button.choiceId = choice.choiceId
+            button:setTitle(tostring(choice.text or "..."))
+            button.enable = true
             button:setVisible(true)
         else
+            button.choiceId = nil
+            button.enable = false
             button:setVisible(false)
         end
     end
+
+    return true
 end
 
 function LCCQFDialoguePanel:onChoicePressed(button)
-    local node = self:getCurrentNode()
-    if not node then return end
-
-    local choice = node.choices and node.choices[button.choiceIndex]
-    if not choice then return end
-
-    if choice.close then
-        self:close()
-        return
-    end
-
-    if choice.next then
-        self:showNode(choice.next)
-    end
+    if not button or not button.choiceId or not self.onChoiceCallback then return end
+    self:setChoicesEnabled(false)
+    self.onChoiceCallback(self.sessionId, button.choiceId)
 end
 
 function LCCQFDialoguePanel:onClosePressed()
-    self:close()
+    self:close(true)
 end
 
-function LCCQFDialoguePanel:close()
-    if self.sessionId and isClient() then
-        local player = getSpecificPlayer(0)
-        if player then
-            sendClientCommand(player, LCCQF.Constants.MODULE, "CloseDialogue", { sessionId = self.sessionId })
-        end
+function LCCQFDialoguePanel:close(notifyServer)
+    if self.closed then return end
+    self.closed = true
+
+    if notifyServer and self.onCloseCallback then
+        self.onCloseCallback(self.sessionId)
     end
 
     self:setVisible(false)
     self:removeFromUIManager()
-
     if LCCQFDialoguePanel.instance == self then
         LCCQFDialoguePanel.instance = nil
     end
 end
 
-function LCCQFDialoguePanel.open(npcName, dialogueId, sessionId)
-    if LCCQFDialoguePanel.instance then
-        LCCQFDialoguePanel.instance:close()
-    end
+function LCCQFDialoguePanel.open(state, onChoice, onClose)
+    if not state or not state.sessionId then return nil end
 
-    local panel = LCCQFDialoguePanel:new(npcName, dialogueId, sessionId)
+    local current = LCCQFDialoguePanel.instance
+    if current and tostring(current.sessionId) == tostring(state.sessionId) then
+        current:updateState(state)
+        return current
+    end
+    if current then current:close(true) end
+
+    local panel = LCCQFDialoguePanel:new(state.npcName, state.sessionId, onChoice, onClose)
     panel:initialise()
     panel:addToUIManager()
     panel:setAlwaysOnTop(true)
+    panel:updateState(state)
     LCCQFDialoguePanel.instance = panel
     return panel
 end

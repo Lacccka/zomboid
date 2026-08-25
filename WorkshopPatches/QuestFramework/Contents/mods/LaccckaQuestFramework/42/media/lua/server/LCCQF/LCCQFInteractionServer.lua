@@ -1,126 +1,79 @@
-require "Bandit"
-require "BanditBrain"
-require "BanditCustom"
 require "LCCQF/LCCQFConstants"
+require "LCCQF/Core/LCCQFNPCRegistry"
+require "LCCQF/Core/LCCQFNPCRuntime"
+require "LCCQF/Content/LCCQFNPCDefinitions"
+require "LCCQF/Runtime/LCCQFBanditsRuntime"
+require "LCCQF/Dialogue/LCCQFDialogueSession"
 
 LCCQFInteractionServer = LCCQFInteractionServer or {}
 
 local C = LCCQF.Constants
-local sessions = {}
+local DialogueSession = LCCQF.DialogueSession
+local lastCommandMs = {}
 
 local function log(message)
     print(C.LOG_PREFIX .. "[SERVER] " .. tostring(message))
 end
 
-local function sendStatus(player, message)
-    if not player then return end
-    sendServerCommand(player, C.MODULE, "Status", { message = tostring(message or "") })
-end
-
-local function getSessionKey(player)
+local function getPlayerKey(player)
     if not player then return nil end
-    if player.getOnlineID then
-        return tostring(player:getOnlineID())
-    end
-    if player.getUsername then
-        return tostring(player:getUsername())
-    end
-    return tostring(player)
+    if player.getOnlineID then return tostring(player:getOnlineID()) end
+    if player.getUsername then return tostring(player:getUsername()) end
+    return nil
 end
 
-local function getZombieList(player)
-    local cell = player and player:getCell() or getCell()
-    if not cell then return nil end
-    return cell:getZombieList()
+local function allowCommand(player, command)
+    local playerKey = getPlayerKey(player)
+    if not playerKey then return false end
+
+    local byCommand = lastCommandMs[playerKey] or {}
+    lastCommandMs[playerKey] = byCommand
+    local now = getTimestampMs()
+    local last = byCommand[command]
+    if last and now - last < C.REQUEST_COOLDOWN_MS then return false end
+    byCommand[command] = now
+    byCommand.lastSeen = now
+    return true
 end
 
-local function findQuestNPC(player, runtimeId, npcKey)
-    local zombies = getZombieList(player)
-    if not zombies then return nil, nil end
-
-    for i = 0, zombies:size() - 1 do
-        local zombie = zombies:get(i)
-        if zombie and not zombie:isDead() then
-            local brain = BanditBrain.Get(zombie)
-            if brain and brain.key == npcKey then
-                local runtimeMatches = runtimeId == nil or tostring(brain.id) == tostring(runtimeId)
-                if runtimeMatches then
-                    return zombie, brain
-                end
-            end
+local function pruneCommandHistory()
+    local now = getTimestampMs()
+    for playerKey, byCommand in pairs(lastCommandMs) do
+        if not byCommand.lastSeen or now - byCommand.lastSeen >= C.COMMAND_HISTORY_TIMEOUT_MS then
+            lastCommandMs[playerKey] = nil
         end
     end
-
-    return nil, nil
 end
 
-local function isInInteractionRange(player, npc)
-    if not player or not npc then return false end
-    if player:isDead() or npc:isDead() then return false end
+local function readIdentifier(args, field)
+    if type(args) ~= "table" then return nil end
+    local value = args[field]
+    if type(value) ~= "string" or value == "" or #value > C.MAX_IDENTIFIER_LENGTH then return nil end
+    return value
+end
 
-    local dz = math.abs(player:getZ() - npc:getZ())
-    if dz >= 0.5 then return false end
+local function sendStatus(player, message)
+    if not player then return end
+    sendServerCommand(player, C.MODULE, C.COMMAND.STATUS, { message = tostring(message or "") })
+end
 
-    local dx = player:getX() - npc:getX()
-    local dy = player:getY() - npc:getY()
-    local maxRange = C.SERVER_INTERACTION_RANGE
-    return (dx * dx + dy * dy) <= (maxRange * maxRange)
+local function sendDialogueState(player, view)
+    sendServerCommand(player, C.MODULE, C.COMMAND.DIALOGUE_STATE, view)
+end
+
+local function sendDialogueClosed(player, sessionId)
+    sendServerCommand(player, C.MODULE, C.COMMAND.DIALOGUE_CLOSED, {
+        sessionId = tostring(sessionId or ""),
+    })
 end
 
 local function isPrivileged(player)
     if not player then return false end
-
-    if isDebugEnabled and isDebugEnabled() then
-        return true
-    end
-
+    if isDebugEnabled and isDebugEnabled() then return true end
     if not player.getAccessLevel then return false end
+
     local access = tostring(player:getAccessLevel() or ""):lower()
     return access ~= "" and access ~= "none"
-end
-
-local function applyQuestNPCState(zombie, brain, definition)
-    if not zombie or not brain or not definition then return end
-
-    brain.hostile = false
-    brain.hostileP = false
-    brain.permanent = true
-
-    if definition.stationary then
-        Bandit.ForceStationary(zombie, true)
-    end
-
-    BanditBrain.Update(zombie, brain)
-
-    if TransmitBanditCluster and brain.id ~= nil then
-        TransmitBanditCluster(brain.id)
-    end
-end
-
-local function findSpawnSquare(player)
-    if not player then return nil end
-    local cell = player:getCell()
-    if not cell then return nil end
-
-    local px = math.floor(player:getX())
-    local py = math.floor(player:getY())
-    local pz = math.floor(player:getZ())
-    local offsets = {
-        { 2, 0 }, { -2, 0 }, { 0, 2 }, { 0, -2 },
-        { 2, 1 }, { 2, -1 }, { -2, 1 }, { -2, -1 },
-        { 1, 2 }, { -1, 2 }, { 1, -2 }, { -1, -2 },
-    }
-
-    for _, offset in ipairs(offsets) do
-        local x = px + offset[1]
-        local y = py + offset[2]
-        local square = cell:getGridSquare(x, y, pz)
-        if square and square:isFree(false) then
-            return { x = x, y = y, z = pz }
-        end
-    end
-
-    return nil
 end
 
 local function spawnTestNPC(player)
@@ -130,183 +83,131 @@ local function spawnTestNPC(player)
         return
     end
 
-    local definition = LCCQF.GetNPCDefinition(C.TEST_NPC_KEY)
-    if not definition then
-        sendStatus(player, "Не найдена конфигурация тестового NPC.")
+    local handle, result = LCCQF.NPCRuntime.Spawn(player, C.TEST_NPC_ID)
+    if not handle then
+        sendStatus(player, "Не удалось создать Алексея: " .. tostring(result))
+        log("spawn rejected npcId=" .. C.TEST_NPC_ID .. " reason=" .. tostring(result))
         return
     end
 
-    local existing, existingBrain = findQuestNPC(player, nil, definition.key)
-    if existing and existingBrain then
-        applyQuestNPCState(existing, existingBrain, definition)
-        sendStatus(player, "Алексей уже существует в загруженном мире.")
-        log("spawn skipped: existing npc id=" .. tostring(existingBrain.id))
-        return
+    if result == "already loaded" then
+        sendStatus(player, "Алексей уже существует рядом.")
+    else
+        sendStatus(player, "Тестовый NPC Алексей создан.")
     end
-
-    if not BanditServer or not BanditServer.Spawner or not BanditServer.Spawner.Individual then
-        sendStatus(player, "Bandits2 Spawner.Individual недоступен.")
-        log("spawn failed: BanditServer.Spawner.Individual unavailable")
-        return
-    end
-
-    local profile = BanditCustom.GetById(definition.bid)
-    if not profile or not profile.general then
-        sendStatus(player, "Профиль тестового NPC не загрузился из common/bandits.")
-        log("spawn failed: profile missing bid=" .. tostring(definition.bid))
-        return
-    end
-
-    -- Bandits2 Individual currently reads bandit.cid directly while the file loader stores it in general.cid.
-    -- Supplying the alias here keeps our integration source-clean and avoids patching Bandits2.
-    profile.cid = profile.general.cid
-
-    local spawn = findSpawnSquare(player)
-    if not spawn then
-        sendStatus(player, "Рядом нет свободной клетки для тестового NPC.")
-        return
-    end
-
-    BanditServer.Spawner.Individual(player, {
-        bid = definition.bid,
-        x = spawn.x,
-        y = spawn.y,
-        z = spawn.z,
-        program = "Defend",
-        permanent = true,
-        key = definition.key,
-        hostile = false,
-        hostileP = false,
-        fullname = definition.displayName,
-    })
-
-    local zombie, brain = findQuestNPC(player, nil, definition.key)
-    if not zombie or not brain then
-        sendStatus(player, "Bandits2 не вернул созданного NPC. Проверь серверный лог.")
-        log("spawn failed after Individual bid=" .. tostring(definition.bid))
-        return
-    end
-
-    applyQuestNPCState(zombie, brain, definition)
-    sendStatus(player, "Тестовый NPC Алексей создан.")
-    log("spawned npc key=" .. tostring(definition.key) .. " id=" .. tostring(brain.id) .. " x=" .. tostring(zombie:getX()) .. " y=" .. tostring(zombie:getY()))
 end
 
 local function requestDialogue(player, args)
-    args = args or {}
+    local npcId = readIdentifier(args, "npcId")
+    local runtimeId = readIdentifier(args, "runtimeId")
+    if not npcId or not runtimeId then
+        sendStatus(player, "Некорректный запрос взаимодействия.")
+        return
+    end
 
-    local definition = LCCQF.GetNPCDefinition(args.npcKey)
+    local definition = LCCQF.NPCRegistry.Get(npcId)
     if not definition then
         sendStatus(player, "Этот NPC не зарегистрирован в Quest Framework.")
-        log("dialogue rejected: unknown npc key=" .. tostring(args.npcKey))
+        log("dialogue rejected: unknown npcId=" .. tostring(npcId))
         return
     end
 
-    local npc, brain = findQuestNPC(player, args.npcRuntimeId, args.npcKey)
-    if not npc or not brain then
-        sendStatus(player, "NPC больше не найден рядом.")
-        log("dialogue rejected: npc missing key=" .. tostring(args.npcKey) .. " runtimeId=" .. tostring(args.npcRuntimeId))
+    local handle = LCCQF.NPCRuntime.ResolveForPlayer(
+        player,
+        npcId,
+        runtimeId,
+        C.SERVER_INTERACTION_RANGE
+    )
+    if not handle then
+        sendStatus(player, "NPC не найден рядом или уже выгружен.")
+        log("dialogue rejected: unresolved npcId=" .. npcId .. " runtimeId=" .. runtimeId)
         return
     end
 
-    if not isInInteractionRange(player, npc) then
-        sendStatus(player, "Подойди ближе к NPC.")
-        log("dialogue rejected: out of range player=" .. tostring(player:getUsername()) .. " npc=" .. tostring(args.npcKey))
+    local view, err = DialogueSession.Open(player, handle, definition)
+    if not view then
+        sendStatus(player, "Диалог временно недоступен.")
+        log("dialogue open failed npcId=" .. npcId .. " error=" .. tostring(err))
         return
     end
 
-    local sessionId = getRandomUUID()
-    local key = getSessionKey(player)
-    sessions[key] = {
-        id = sessionId,
-        npcKey = args.npcKey,
-        npcRuntimeId = brain.id,
-        openedWorldAge = getGameTime():getWorldAgeHours(),
-    }
+    sendDialogueState(player, view)
+    log("dialogue opened session=" .. view.sessionId .. " player=" .. tostring(player:getUsername()) .. " npcId=" .. npcId)
+end
 
-    sendServerCommand(player, C.MODULE, "OpenDialogue", {
-        sessionId = sessionId,
-        npcKey = args.npcKey,
-        npcRuntimeId = brain.id,
-        npcName = brain.fullname or definition.displayName,
-        dialogueId = definition.dialogueId,
-    })
+local function chooseDialogue(player, args)
+    local sessionId = readIdentifier(args, "sessionId")
+    local choiceId = readIdentifier(args, "choiceId")
+    if not sessionId or not choiceId then return end
 
-    log("dialogue opened session=" .. tostring(sessionId) .. " player=" .. tostring(player:getUsername()) .. " npc=" .. tostring(args.npcKey))
+    local session = DialogueSession.Get(player, sessionId)
+    if not session then
+        sendDialogueClosed(player, sessionId)
+        return
+    end
+
+    local handle = LCCQF.NPCRuntime.ResolveForPlayer(
+        player,
+        session.npcId,
+        session.runtimeId,
+        C.SERVER_INTERACTION_RANGE
+    )
+    if not handle then
+        DialogueSession.Close(player, sessionId)
+        sendDialogueClosed(player, sessionId)
+        sendStatus(player, "Диалог закрыт: NPC больше не находится рядом.")
+        return
+    end
+
+    local result, err = DialogueSession.Choose(player, sessionId, choiceId)
+    if not result then
+        log("choice rejected session=" .. sessionId .. " choice=" .. choiceId .. " error=" .. tostring(err))
+        sendStatus(player, "Этот вариант ответа сейчас недоступен.")
+        return
+    end
+
+    if result.closed then
+        sendDialogueClosed(player, result.sessionId)
+        log("dialogue finished session=" .. result.sessionId .. " player=" .. tostring(player:getUsername()))
+    else
+        sendDialogueState(player, result)
+    end
 end
 
 local function closeDialogue(player, args)
-    args = args or {}
-    local key = getSessionKey(player)
-    local session = key and sessions[key] or nil
-    if not session then return end
-
-    if args.sessionId == nil or tostring(args.sessionId) == tostring(session.id) then
-        log("dialogue closed session=" .. tostring(session.id) .. " player=" .. tostring(player:getUsername()))
-        sessions[key] = nil
+    local sessionId = readIdentifier(args, "sessionId")
+    if not sessionId then return end
+    if DialogueSession.Close(player, sessionId) then
+        log("dialogue closed session=" .. sessionId .. " player=" .. tostring(player:getUsername()))
     end
 end
 
 local function onClientCommand(module, command, player, args)
     if module ~= C.MODULE then return end
 
-    if command == "SpawnTestNPC" then
+    local knownCommand = command == C.COMMAND.SPAWN_TEST_NPC
+        or command == C.COMMAND.REQUEST_DIALOGUE
+        or command == C.COMMAND.CHOOSE_DIALOGUE
+        or command == C.COMMAND.CLOSE_DIALOGUE
+    if not knownCommand or not allowCommand(player, command) then return end
+
+    if command == C.COMMAND.SPAWN_TEST_NPC then
         spawnTestNPC(player)
-    elseif command == "RequestDialogue" then
+    elseif command == C.COMMAND.REQUEST_DIALOGUE then
         requestDialogue(player, args)
-    elseif command == "CloseDialogue" then
+    elseif command == C.COMMAND.CHOOSE_DIALOGUE then
+        chooseDialogue(player, args)
+    elseif command == C.COMMAND.CLOSE_DIALOGUE then
         closeDialogue(player, args)
     end
 end
 
-local function enforceQuestNPCState()
-    local zombies = getZombieList(nil)
-    if not zombies then return end
-
-    for i = 0, zombies:size() - 1 do
-        local zombie = zombies:get(i)
-        if zombie and not zombie:isDead() then
-            local brain = BanditBrain.Get(zombie)
-            if brain and brain.key then
-                local definition = LCCQF.GetNPCDefinition(brain.key)
-                if definition then
-                    local changed = false
-
-                    if brain.hostile then
-                        brain.hostile = false
-                        changed = true
-                    end
-                    if brain.hostileP then
-                        brain.hostileP = false
-                        changed = true
-                    end
-                    if not brain.permanent then
-                        brain.permanent = true
-                        changed = true
-                    end
-                    if definition.stationary and not brain.stationary then
-                        Bandit.ForceStationary(zombie, true)
-                        changed = true
-                    end
-
-                    if changed then
-                        BanditBrain.Update(zombie, brain)
-                        if TransmitBanditCluster and brain.id ~= nil then
-                            TransmitBanditCluster(brain.id)
-                        end
-                    end
-                end
-            end
-        end
-    end
-end
-
 local function onServerStarted()
-    log("loaded version=" .. tostring(C.VERSION) .. " serverRange=" .. tostring(C.SERVER_INTERACTION_RANGE))
+    log("loaded version=" .. tostring(C.VERSION) .. " runtime=Bandits serverRange=" .. tostring(C.SERVER_INTERACTION_RANGE))
 end
 
 Events.OnClientCommand.Add(onClientCommand)
-Events.EveryOneMinute.Add(enforceQuestNPCState)
+Events.EveryOneMinute.Add(pruneCommandHistory)
 Events.OnServerStarted.Add(onServerStarted)
 
 return LCCQFInteractionServer

@@ -1,5 +1,8 @@
-require "BanditBrain"
 require "LCCQF/LCCQFConstants"
+require "LCCQF/Core/LCCQFNPCRegistry"
+require "LCCQF/Core/LCCQFNPCRuntime"
+require "LCCQF/Content/LCCQFNPCDefinitions"
+require "LCCQF/Runtime/LCCQFBanditsRuntime"
 require "LCCQF/UI/LCCQFDialoguePanel"
 
 LCCQFInteractionClient = LCCQFInteractionClient or {}
@@ -22,64 +25,9 @@ local function setStatus(message, durationMs)
     state.statusUntilMs = getTimestampMs() + (durationMs or 3500)
 end
 
-local function getDefinitionFromZombie(zombie)
-    if not zombie then return nil, nil end
-
-    local brain = BanditBrain.Get(zombie)
-    if not brain or not brain.key then return nil, brain end
-
-    return LCCQF.GetNPCDefinition(brain.key), brain
-end
-
 local function scanNearestQuestNPC()
-    state.target = nil
-
     local player = getSpecificPlayer(0)
-    if not player or player:isDead() or player:getVehicle() then return end
-
-    local cell = player:getCell()
-    if not cell then return end
-
-    local px = player:getX()
-    local py = player:getY()
-    local pz = player:getZ()
-    local range = C.INTERACTION_RANGE
-    local rangeSq = range * range
-    local tileRange = math.ceil(range) + 1
-    local bestDistSq = rangeSq + 0.001
-
-    for x = math.floor(px) - tileRange, math.floor(px) + tileRange do
-        for y = math.floor(py) - tileRange, math.floor(py) + tileRange do
-            local square = cell:getGridSquare(x, y, math.floor(pz))
-            if square then
-                local moving = square:getMovingObjects()
-                for i = 0, moving:size() - 1 do
-                    local object = moving:get(i)
-                    if object and instanceof(object, "IsoZombie") and not object:isDead() then
-                        local definition, brain = getDefinitionFromZombie(object)
-                        if definition and brain and brain.id ~= nil then
-                            local dz = math.abs(object:getZ() - pz)
-                            if dz < 0.5 then
-                                local dx = object:getX() - px
-                                local dy = object:getY() - py
-                                local distSq = dx * dx + dy * dy
-                                if distSq <= rangeSq and distSq < bestDistSq then
-                                    bestDistSq = distSq
-                                    state.target = {
-                                        zombie = object,
-                                        npcKey = brain.key,
-                                        runtimeId = brain.id,
-                                        name = brain.fullname or definition.displayName or "NPC",
-                                        distanceSq = distSq,
-                                    }
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
+    state.target = LCCQF.NPCRuntime.FindNearestInteractive(player, C.INTERACTION_RANGE)
 end
 
 local function onTick()
@@ -99,17 +47,15 @@ local function requestDialogue()
     if now - state.lastRequestMs < 500 then return end
     state.lastRequestMs = now
 
-    sendClientCommand(player, C.MODULE, "RequestDialogue", {
-        npcKey = target.npcKey,
-        npcRuntimeId = target.runtimeId,
+    sendClientCommand(player, C.MODULE, C.COMMAND.REQUEST_DIALOGUE, {
+        npcId = target.npcId,
+        runtimeId = tostring(target.runtimeId),
     })
 end
 
 local function onKeyPressed(key)
     if key ~= Keyboard.KEY_E then return end
-    if not state.target then return end
-    if LCCQFDialoguePanel.instance then return end
-
+    if not state.target or LCCQFDialoguePanel.instance then return end
     requestDialogue()
 end
 
@@ -120,8 +66,8 @@ local function onPostUIDraw()
     local textManager = getTextManager()
 
     if state.target and not LCCQFDialoguePanel.instance then
-        local text = "[E] Поговорить — " .. tostring(state.target.name)
-        textManager:DrawStringCentre(UIFont.Medium, screenWidth / 2, screenHeight - 150, text, 1, 1, 1, 1)
+        local prompt = "[E] Поговорить — " .. tostring(state.target.displayName)
+        textManager:DrawStringCentre(UIFont.Medium, screenWidth / 2, screenHeight - 150, prompt, 1, 1, 1, 1)
     end
 
     if state.statusText and now <= state.statusUntilMs then
@@ -141,46 +87,64 @@ end
 
 local function spawnTestNPC(player)
     if not player then return end
-    sendClientCommand(player, C.MODULE, "SpawnTestNPC", {})
+    sendClientCommand(player, C.MODULE, C.COMMAND.SPAWN_TEST_NPC, {})
 end
 
 local function onFillWorldObjectContextMenu(playerNum, context, worldobjects, test)
     if test then return end
-
     local player = getSpecificPlayer(playerNum)
     if not isPrivilegedClient(player) then return end
-
     context:addOption("[Quest Framework] Создать тестового NPC", player, spawnTestNPC)
+end
+
+local function sendChoice(sessionId, choiceId)
+    local player = getSpecificPlayer(0)
+    if not player then return end
+    sendClientCommand(player, C.MODULE, C.COMMAND.CHOOSE_DIALOGUE, {
+        sessionId = tostring(sessionId),
+        choiceId = tostring(choiceId),
+    })
+end
+
+local function sendClose(sessionId)
+    local player = getSpecificPlayer(0)
+    if not player then return end
+    sendClientCommand(player, C.MODULE, C.COMMAND.CLOSE_DIALOGUE, {
+        sessionId = tostring(sessionId),
+    })
 end
 
 local function onServerCommand(module, command, args)
     if module ~= C.MODULE then return end
     args = args or {}
 
-    if command == "OpenDialogue" then
-        local definition = LCCQF.GetNPCDefinition(args.npcKey)
-        if not definition then
-            setStatus("Неизвестный NPC: " .. tostring(args.npcKey))
+    if command == C.COMMAND.DIALOGUE_STATE then
+        local npcId = type(args.npcId) == "string" and args.npcId or nil
+        if not npcId or not LCCQF.NPCRegistry.IsRegistered(npcId) then
+            setStatus("Сервер прислал неизвестного NPC.")
             return
         end
-
-        LCCQFDialoguePanel.open(
-            args.npcName or definition.displayName,
-            args.dialogueId or definition.dialogueId,
-            args.sessionId
-        )
-        log("dialogue opened session=" .. tostring(args.sessionId) .. " npc=" .. tostring(args.npcKey))
+        LCCQFDialoguePanel.open(args, sendChoice, sendClose)
+        log("dialogue state session=" .. tostring(args.sessionId) .. " node=" .. tostring(args.nodeId))
         return
     end
 
-    if command == "Status" then
+    if command == C.COMMAND.DIALOGUE_CLOSED then
+        local panel = LCCQFDialoguePanel.instance
+        if panel and tostring(panel.sessionId) == tostring(args.sessionId) then
+            panel:close(false)
+        end
+        return
+    end
+
+    if command == C.COMMAND.STATUS then
         setStatus(args.message or "Quest Framework")
         log(args.message or "status")
     end
 end
 
 local function onGameStart()
-    log("loaded version=" .. tostring(C.VERSION) .. " interactKey=E range=" .. tostring(C.INTERACTION_RANGE))
+    log("loaded version=" .. tostring(C.VERSION) .. " runtime=Bandits interactKey=E range=" .. tostring(C.INTERACTION_RANGE))
 end
 
 Events.OnGameStart.Add(onGameStart)

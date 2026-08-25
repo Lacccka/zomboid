@@ -1,8 +1,8 @@
 name=Lacccka Quest Framework
 id=LaccckaQuestFramework
 author=Lacccka
-description=Server-authoritative NPC interaction and dialogue foundation for Project Zomboid Build 42.20. Uses Bandits2 as the NPC runtime; no third-party Lua files are bundled.
-modversion=0.1.0
+description=Server-authoritative NPC interaction and dialogue foundation for Project Zomboid Build 42.20. Bandits2 is isolated behind a replaceable NPC runtime adapter; no third-party Lua files are bundled.
+modversion=0.2.0
 versionMin=42.20.0
 require=\Bandits2
 loadModAfter=\Bandits2,\LaccckaB4220NPCFixes
