@@ -1,10 +1,18 @@
 require "BanditBrain"
 require "BanditUtils"
+require "BanditZombie"
 require "LCCQF/Core/LCCQFNPCRuntime"
 require "LCCQF/Content/LCCQFNPCDefinitions"
 
 local Adapter = {}
 local NPC_ID_FIELD = "lccqNpcId"
+
+local function normalizeRuntimeId(value)
+    if value == nil then return nil end
+    local id = tostring(value)
+    if id == "" then return nil end
+    return id
+end
 
 local function getNPCId(brain)
     if not brain then return nil end
@@ -21,41 +29,68 @@ local function getNPCId(brain)
     return nil
 end
 
-local function getRuntimeId(object, brain)
-    local runtimeId = BanditUtils.GetZombieID and BanditUtils.GetZombieID(object) or nil
-    if runtimeId == nil and brain then runtimeId = brain.id end
-    if runtimeId == nil then return nil end
-    return tostring(runtimeId)
+local function addRuntimeId(ids, seen, value)
+    local id = normalizeRuntimeId(value)
+    if not id or seen[id] then return end
+    seen[id] = true
+    ids[#ids + 1] = id
 end
 
-local function getCandidate(object, playerX, playerY, playerZ, rangeSq)
-    if not object or not instanceof(object, "IsoZombie") or object:isDead() then return nil end
+local function collectRuntimeIds(object, brain, cacheId)
+    local ids = {}
+    local seen = {}
 
-    -- Bandits2 may keep an older attached brain after a later GlobalModData
-    -- update. Only use the brain to confirm provider ownership and as a legacy
-    -- fallback; framework identity comes from LCCQF's own runtime binding map.
-    local brain = BanditBrain.Get(object)
-    if not brain then return nil end
+    -- brain.id is the id Bandits2's server spawner persists and the id LCCQF
+    -- broadcasts. Prefer it whenever the client already has a brain snapshot.
+    if brain then addRuntimeId(ids, seen, brain.id) end
 
-    local runtimeId = getRuntimeId(object, brain)
-    if not runtimeId then return nil end
-
-    local npcId = LCCQF.NPCRuntime.GetBoundNPCId(runtimeId)
-    if not npcId then
-        npcId = getNPCId(brain)
-        if npcId then
-            LCCQF.NPCRuntime.BindRuntime(runtimeId, npcId)
-        end
+    -- Bandits2 GetZombieID() deliberately clears its hat bit for cache keys,
+    -- while BanditServerSpawner stores brain.id from getPersistentOutfitID().
+    -- Keep both forms so a quest NPC remains discoverable even before its brain
+    -- snapshot has arrived on this client.
+    if object and object.getPersistentOutfitID then
+        addRuntimeId(ids, seen, object:getPersistentOutfitID())
+    end
+    addRuntimeId(ids, seen, cacheId)
+    if object and BanditUtils.GetZombieID then
+        addRuntimeId(ids, seen, BanditUtils.GetZombieID(object))
     end
 
-    local definition = npcId and LCCQF.NPCRegistry.Get(npcId) or nil
-    if not definition or definition.runtime.adapter ~= "Bandits" then return nil end
-    if math.abs(object:getZ() - playerZ) >= 0.5 then return nil end
+    return ids
+end
 
-    local dx = object:getX() - playerX
-    local dy = object:getY() - playerY
+local function resolveQuestIdentity(object, brain, cacheId)
+    local runtimeIds = collectRuntimeIds(object, brain, cacheId)
+
+    -- Framework runtime bindings are the authoritative client-side quest
+    -- identity. Do not require zombie ModData.brain to be materialized first.
+    for _, runtimeId in ipairs(runtimeIds) do
+        local npcId = LCCQF.NPCRuntime.GetBoundNPCId(runtimeId)
+        if npcId then return npcId, runtimeId end
+    end
+
+    -- Legacy migration only. New NPCs are expected to resolve through the
+    -- server-synchronized binding map above.
+    local npcId = getNPCId(brain)
+    if npcId and runtimeIds[1] then
+        LCCQF.NPCRuntime.BindRuntime(runtimeIds[1], npcId)
+        return npcId, runtimeIds[1]
+    end
+
+    return nil, nil
+end
+
+local function makeCandidate(object, brain, cacheId, x, y, z, playerX, playerY, playerZ, rangeSq)
+    if z == nil or math.abs(z - playerZ) >= 0.5 then return nil end
+
+    local dx = x - playerX
+    local dy = y - playerY
     local distanceSq = dx * dx + dy * dy
     if distanceSq > rangeSq then return nil end
+
+    local npcId, runtimeId = resolveQuestIdentity(object, brain, cacheId)
+    local definition = npcId and LCCQF.NPCRegistry.Get(npcId) or nil
+    if not definition or definition.runtime.adapter ~= "Bandits" then return nil end
 
     return {
         npcId = definition.npcId,
@@ -63,6 +98,80 @@ local function getCandidate(object, playerX, playerY, playerZ, rangeSq)
         displayNameKey = definition.displayNameKey,
         distanceSq = distanceSq,
     }
+end
+
+local function getObjectCandidate(object, playerX, playerY, playerZ, rangeSq, cacheId)
+    if not object or not instanceof(object, "IsoZombie") or object:isDead() then return nil end
+    if not object:getVariableBoolean("Bandit") then return nil end
+
+    local brain = BanditBrain.Get(object)
+    return makeCandidate(
+        object,
+        brain,
+        cacheId,
+        object:getX(),
+        object:getY(),
+        object:getZ(),
+        playerX,
+        playerY,
+        playerZ,
+        rangeSq
+    )
+end
+
+local function findFromBanditsCache(playerX, playerY, playerZ, rangeSq)
+    local lightCache = BanditZombie and BanditZombie.CacheLightB or nil
+    if type(lightCache) ~= "table" then return nil end
+
+    local objectCache = BanditZombie.Cache or {}
+    local best = nil
+
+    for cacheId, light in pairs(lightCache) do
+        if type(light) == "table" and light.x ~= nil and light.y ~= nil and light.z ~= nil then
+            local object = objectCache[cacheId]
+            local candidate
+
+            if object then
+                candidate = getObjectCandidate(object, playerX, playerY, playerZ, rangeSq, cacheId)
+            else
+                candidate = makeCandidate(
+                    nil,
+                    light.brain,
+                    cacheId,
+                    light.x,
+                    light.y,
+                    light.z,
+                    playerX,
+                    playerY,
+                    playerZ,
+                    rangeSq
+                )
+            end
+
+            if candidate and (not best or candidate.distanceSq < best.distanceSq) then
+                best = candidate
+            end
+        end
+    end
+
+    return best
+end
+
+local function findFromZombieList(cell, playerX, playerY, playerZ, rangeSq)
+    if not cell or not cell.getZombieList then return nil end
+
+    local zombies = cell:getZombieList()
+    if not zombies then return nil end
+
+    local best = nil
+    for i = 0, zombies:size() - 1 do
+        local zombie = zombies:get(i)
+        local candidate = getObjectCandidate(zombie, playerX, playerY, playerZ, rangeSq, nil)
+        if candidate and (not best or candidate.distanceSq < best.distanceSq) then
+            best = candidate
+        end
+    end
+    return best
 end
 
 function Adapter.FindNearestInteractive(player, range)
@@ -75,25 +184,16 @@ function Adapter.FindNearestInteractive(player, range)
     local py = player:getY()
     local pz = player:getZ()
     local rangeSq = range * range
-    local tileRange = math.ceil(range) + 1
-    local best = nil
 
-    for x = math.floor(px) - tileRange, math.floor(px) + tileRange do
-        for y = math.floor(py) - tileRange, math.floor(py) + tileRange do
-            local square = cell:getGridSquare(x, y, math.floor(pz))
-            if square then
-                local movingObjects = square:getMovingObjects()
-                for i = 0, movingObjects:size() - 1 do
-                    local candidate = getCandidate(movingObjects:get(i), px, py, pz, rangeSq)
-                    if candidate and (not best or candidate.distanceSq < best.distanceSq) then
-                        best = candidate
-                    end
-                end
-            end
-        end
-    end
+    -- Bandits2 itself maintains this cache from OnZombieUpdate and uses
+    -- cell:getZombieList() when rebuilding it. Reuse the provider's canonical
+    -- client runtime view instead of assuming every nearby square already has a
+    -- synchronized brain in zombie ModData.
+    local best = findFromBanditsCache(px, py, pz, rangeSq)
+    if best then return best end
 
-    return best
+    -- Initial/late-join fallback before BanditZombie.CacheLightB is populated.
+    return findFromZombieList(cell, px, py, pz, rangeSq)
 end
 
 LCCQF.NPCRuntime.RegisterAdapter("Bandits", Adapter)
