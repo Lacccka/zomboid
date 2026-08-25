@@ -4,12 +4,17 @@
 -- display text can therefore reach Java Formatter as a conversion marker and
 -- raise UnknownFormatConversionException (for example, "30%)").
 --
--- Keep this patch deliberately narrow: only strings that MainOptions will feed
--- through getText() again are sanitized. Combo-box display values and
+-- Keep this patch deliberately narrow: only strings that MainOptions feeds
+-- through getText() again are sanitized. Combo-box display values and general
 -- descriptions are left untouched because MainOptions renders those directly.
 
 LCCRussianTextPercentGuard = LCCRussianTextPercentGuard or {}
 local state = LCCRussianTextPercentGuard
+local VERSION = "1.1.2"
+
+local function log(message)
+    print("[LCC][RussianText][ModOptionsPercentGuard] " .. tostring(message))
+end
 
 local function escapeUnsafePercents(value)
     if type(value) ~= "string" or not string.find(value, "%", 1, true) then
@@ -32,6 +37,9 @@ local function escapeUnsafePercents(value)
                 out[#out + 1] = "%%"
                 i = i + 2
             elseif nextCh ~= "" and string.match(nextCh, "%d") then
+                -- Preserve Java positional placeholders such as %1$s. Plain
+                -- percentages such as 30% never enter this branch because the
+                -- character after '%' is not a digit.
                 out[#out + 1] = "%"
                 i = i + 1
                 while i <= length and string.match(string.sub(value, i, i), "%d") do
@@ -50,31 +58,26 @@ local function escapeUnsafePercents(value)
 end
 
 local function sanitizeField(owner, field, scope)
-    if type(owner) ~= "table" then
-        return 0
-    end
+    if type(owner) ~= "table" then return 0 end
 
     local value = owner[field]
     local sanitized, changed = escapeUnsafePercents(value)
-    if not changed then
-        return 0
-    end
+    if not changed then return 0 end
 
     owner[field] = sanitized
-    print(string.format("[LCC][RussianText][ModOptionsPercentGuard] sanitized field=%s scope=%s", tostring(field), tostring(scope)))
+    log("sanitized field=" .. tostring(field) .. " scope=" .. tostring(scope))
     return 1
 end
 
 local function sanitizeOptions(options)
-    if type(options) ~= "table" then
-        return 0
-    end
+    if type(options) ~= "table" then return 0 end
 
-    local changed = sanitizeField(options, "name", options.id or options.modOptionsID or "panel")
+    local panelScope = options.id or options.modOptionsID or "panel"
+    local changed = sanitizeField(options, "name", panelScope)
+    changed = changed + sanitizeField(options, "tooltip", panelScope)
+
     local entries = options.options
-    if type(entries) ~= "table" then
-        return changed
-    end
+    if type(entries) ~= "table" then return changed end
 
     for index, option in pairs(entries) do
         if type(option) == "table" then
@@ -84,7 +87,10 @@ local function sanitizeOptions(options)
 
             if option.type == "multipletickbox" and type(option.values) == "table" then
                 for valueIndex, entry in pairs(option.values) do
-                    changed = changed + sanitizeField(entry, "name", tostring(scope) .. ":" .. tostring(valueIndex))
+                    if type(entry) == "table" then
+                        changed = changed + sanitizeField(entry, "name", tostring(scope) .. ":" .. tostring(valueIndex))
+                        changed = changed + sanitizeField(entry, "tooltip", tostring(scope) .. ":" .. tostring(valueIndex))
+                    end
                 end
             end
         end
@@ -94,9 +100,7 @@ local function sanitizeOptions(options)
 end
 
 local function install()
-    if state.installed then
-        return true
-    end
+    if state.installed then return true end
 
     if not MainOptions or not MainOptions.addModOptionsPanel then
         pcall(require, "OptionScreens/MainOptions")
@@ -105,6 +109,7 @@ local function install()
         pcall(require, "ISUI/MainOptions")
     end
     if not MainOptions or not MainOptions.addModOptionsPanel then
+        state.lastInstallResult = "MainOptions unavailable"
         return false
     end
 
@@ -112,17 +117,22 @@ local function install()
     MainOptions.addModOptionsPanel = function(self, options, ...)
         local changed = sanitizeOptions(options)
         if changed > 0 then
-            print(string.format("[LCC][RussianText][ModOptionsPercentGuard] sanitized=%d", changed))
+            log("sanitized=" .. tostring(changed))
         end
         return original(self, options, ...)
     end
 
     state.installed = true
+    state.version = VERSION
     state.originalAddModOptionsPanel = original
-    print("[LCC][RussianText][ModOptionsPercentGuard] installed")
+    state.lastInstallResult = "installed"
+    log("installed version=" .. VERSION)
     return true
 end
 
+-- This load marker is intentionally unconditional. If it is absent from a
+-- failing client log, the Workshop copy is older than this compatibility fix.
+log("loaded version=" .. VERSION)
 install()
 if Events and Events.OnGameBoot then
     Events.OnGameBoot.Add(install)
