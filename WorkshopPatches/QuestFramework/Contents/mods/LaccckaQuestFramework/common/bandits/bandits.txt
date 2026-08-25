@@ -1,0 +1,20 @@
+[e6b19154-2cf4-4ef9-9ad5-1ac8c85a0001]
+	general: modid = LaccckaQuestFramework
+	general: cid = c2c9d2b8-7a21-4e66-a8d9-1cfa01caa001
+	general: name = LCCQF_Test_Alexey
+	general: female = false
+	general: skin = 2
+	general: hairType = 1
+	general: beardType = 2
+	general: hairColor = 2
+	general: health = 9
+	general: strength = 5
+	general: endurance = 5
+	general: sight = 5
+	general: exp1 = 0
+	general: exp2 = 0
+	general: exp3 = 0
+	clothing: Tshirt = Base.Tshirt_CamoDesert
+	clothing: Pants = Base.Trousers_CamoDesert
+	clothing: Socks = Base.Socks_Long_White
+	clothing: Shoes = Base.Shoes_ArmyBootsDesert

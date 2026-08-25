@@ -1,0 +1,6 @@
+version=1
+id=0
+title=Lacccka Quest Framework
+description=Early-development Build 42.20 NPC interaction and dialogue framework for multiplayer servers. Uses Bandits2 as the NPC runtime and keeps interaction authorization server-side.
+tags=Build 42;Interface;Multiplayer
+visibility=private
