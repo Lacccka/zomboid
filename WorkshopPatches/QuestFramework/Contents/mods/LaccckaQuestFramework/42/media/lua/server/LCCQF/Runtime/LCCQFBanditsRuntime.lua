@@ -20,25 +20,51 @@ local function getBrain(zombie)
     local brain = BanditBrain.Get(zombie)
     if brain then return brain end
 
-    -- Dedicated-server spawns are registered in Bandits clusters, while
-    -- BanditBrain.Update is normally performed by the client Banditize path.
-    -- Resolve the server-side physical zombie through the provider's runtime id.
     local runtimeId = BanditUtils.GetZombieID(zombie)
     local gmd = runtimeId ~= nil and GetBanditClusterData(runtimeId) or nil
     if not gmd then return nil end
     return gmd[runtimeId] or gmd[tostring(runtimeId)]
 end
 
+local function anchorFor(zombie, brain)
+    if zombie and not zombie:isDead() then
+        return {
+            x = zombie:getX(),
+            y = zombie:getY(),
+            z = zombie:getZ(),
+        }
+    end
+
+    local coords = brain and brain.bornCoords or nil
+    if type(coords) == "table" and coords.x ~= nil and coords.y ~= nil and coords.z ~= nil then
+        return {
+            x = coords.x,
+            y = coords.y,
+            z = coords.z,
+        }
+    end
+
+    return nil
+end
+
 local function makeHandle(zombie, brain, definition)
     if not brain or not definition or brain.id == nil then return nil end
+
+    local anchor = anchorFor(zombie, brain)
     local handle = {
         entity = zombie,
         npcId = definition.npcId,
         runtimeId = tostring(brain.id),
         displayNameKey = definition.displayNameKey,
     }
+    if anchor then
+        handle.x = anchor.x
+        handle.y = anchor.y
+        handle.z = anchor.z
+    end
+
     bindings[definition.npcId] = handle
-    LCCQF.NPCRuntime.BindRuntime(handle.runtimeId, definition.npcId)
+    LCCQF.NPCRuntime.BindRuntime(handle.runtimeId, definition.npcId, anchor)
     return handle
 end
 
@@ -53,9 +79,6 @@ local function getNPCId(brain)
         return brain[NPC_ID_FIELD]
     end
 
-    -- v0.2.0 incorrectly reused Bandits2's numeric door-key field. Recognize
-    -- live legacy NPCs long enough to migrate them without treating stale
-    -- Bandits persistence entries as authoritative Quest Framework identity.
     if type(brain.key) == "string" and LCCQF.NPCRegistry.IsRegistered(brain.key) then
         return brain.key
     end
@@ -64,26 +87,38 @@ local function getNPCId(brain)
 end
 
 function Adapter.RefreshRuntimeBindings()
-    local count = 0
-    if type(BanditClusters) ~= "table" then return count end
+    local entries = {}
 
-    for _, cluster in pairs(BanditClusters) do
-        if type(cluster) == "table" then
-            for _, brain in pairs(cluster) do
-                if type(brain) == "table" and brain.id ~= nil then
-                    local npcId = getNPCId(brain)
-                    local definition = npcId and LCCQF.NPCRegistry.Get(npcId) or nil
-                    if definition and definition.runtime.adapter == "Bandits"
-                        and LCCQF.NPCRuntime.BindRuntime(brain.id, npcId)
-                    then
-                        count = count + 1
+    if type(BanditClusters) == "table" then
+        for _, cluster in pairs(BanditClusters) do
+            if type(cluster) == "table" then
+                for _, brain in pairs(cluster) do
+                    if type(brain) == "table" and brain.id ~= nil then
+                        local npcId = getNPCId(brain)
+                        local definition = npcId and LCCQF.NPCRegistry.Get(npcId) or nil
+                        if definition and definition.runtime.adapter == "Bandits" then
+                            local anchor = anchorFor(nil, brain)
+                            local entry = {
+                                runtimeId = tostring(brain.id),
+                                npcId = npcId,
+                            }
+                            if anchor then
+                                entry.x = anchor.x
+                                entry.y = anchor.y
+                                entry.z = anchor.z
+                            end
+                            entries[#entries + 1] = entry
+                        end
                     end
                 end
             end
         end
     end
 
-    return count
+    -- Runtime tables survive some Lua resets. Rebuild from Bandits' current
+    -- authoritative cluster snapshot instead of accumulating stale bindings from
+    -- earlier test NPC instances.
+    return LCCQF.NPCRuntime.ReplaceRuntimeBindings(entries)
 end
 
 local function ensureState(zombie, brain, definition)
@@ -119,7 +154,7 @@ local function ensureState(zombie, brain, definition)
         changed = true
     end
 
-    LCCQF.NPCRuntime.BindRuntime(brain.id, definition.npcId)
+    LCCQF.NPCRuntime.BindRuntime(brain.id, definition.npcId, anchorFor(zombie, brain))
 
     if changed then
         BanditBrain.Update(zombie, brain)
@@ -304,9 +339,6 @@ function Adapter.Spawn(player, definition)
     local displayName = getText and getText(definition.displayNameKey) or "Alexey"
     if displayName == definition.displayNameKey then displayName = "Alexey" end
 
-    -- Bandits2 42.20 reads bandit.cid, while its custom loader stores general.cid.
-    -- Its individual spawner also expects general.bid to be populated for later
-    -- restore. Keep both compatibility aliases scoped to this adapter.
     local previousCid = profile.cid
     local previousBid = profile.general.bid
     profile.cid = profile.general.cid
@@ -330,9 +362,6 @@ function Adapter.Spawn(player, definition)
         return nil, "Bandits2 spawn failed"
     end
 
-    -- Spawner.Individual registers the new brain synchronously, but the zombie is
-    -- added to square moving-object lists on a later engine update. Bind logical
-    -- identity now and let ResolveForPlayer attach the physical entity later.
     local brain = findCreatedBrain(previousIds, definition, spawn)
     if not brain then return nil, "Bandits2 did not register the spawned NPC" end
 
@@ -344,7 +373,9 @@ function Adapter.Spawn(player, definition)
 
     local handle = makeHandle(nil, brain, definition)
 
-    log("spawned npcId=" .. tostring(handle.npcId) .. " runtimeId=" .. tostring(handle.runtimeId))
+    log("spawned npcId=" .. tostring(handle.npcId)
+        .. " runtimeId=" .. tostring(handle.runtimeId)
+        .. " anchor=" .. tostring(handle.x) .. "," .. tostring(handle.y) .. "," .. tostring(handle.z))
     return handle
 end
 
