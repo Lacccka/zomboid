@@ -40,7 +40,7 @@
 
 Каталог [`WorkshopPatches`](./WorkshopPatches) и связанные файлы содержат исправления совместимости для Build 42.20.x и конфликтов между модами.
 
-Сам патч подключается как несколько локальных `Mod ID`, которые **не являются Steam Workshop ID**:
+Пакет разделён на независимые `Mod ID`; часть элементов уже опубликована в Steam Workshop и имеет собственный Workshop ID:
 
 - `LaccckaB4220PatchCore`
 - `LaccckaB4220RuntimeFixes`
@@ -49,6 +49,7 @@
 - `LaccckaB4220CompatBridges`
 - `LaccckaB4220SafetyFixes`
 - `LaccckaB4220RussianText`
+- `LaccckaPackFlow` — Workshop ID `3789630746`; targeted fix для `GridInventory`, жёстко зависит только от `GridInventory` и не требует других Lacccka-патчей
 
 ## Как читать структуру
 
