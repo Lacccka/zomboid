@@ -1,0 +1,14 @@
+{
+    "UI_optionscreen_binding_SwitchFireModeCat": "Переключить режим огня",
+    "UI_options_AWCWF_title": "Дополнительные настройки Modern Firearms System",
+    "UI_options_AWCWF_section_general": "Общие",
+    "UI_options_AWCWF_desc_general": "Дополнительные настройки Modern Firearms System. Управление настраивается на странице привязки клавиш игры.",
+    "UI_options_AWCWF_section_weapon_sounds": "Звуки оружия",
+    "UI_options_AWCWF_desc_weapon_sounds": "Отдельная настройка громкости выстрелов и перезарядки MFS независимо от остальных звуков игры.",
+    "UI_options_AWCWF_enable_new_gunshot": "Использовать новые звуки выстрелов",
+    "UI_options_AWCWF_enable_new_gunshot_tooltip": "Использовать многослойную звуковую систему выстрелов MFS. Отключите, чтобы вернуть стандартный звук оружия.",
+    "UI_options_AWCWF_weapon_shot_volume": "Громкость выстрелов",
+    "UI_options_AWCWF_weapon_shot_volume_tooltip": "Громкость выстрелов MFS: 0 — без звука, 1 — по умолчанию, 2 — двойная громкость.",
+    "UI_options_AWCWF_weapon_reload_volume": "Громкость перезарядки",
+    "UI_options_AWCWF_weapon_reload_volume_tooltip": "Громкость перезарядки MFS: 0 — без звука, 1 — по умолчанию, 2 — двойная громкость."
+}

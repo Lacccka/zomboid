@@ -1,0 +1,53 @@
+name: Active mod Russian localization audit
+
+on:
+  push:
+    paths:
+      - '3217685049/**'
+      - '3304582091/**'
+      - '3403490889/**'
+      - '3464606086/**'
+      - '3633421539/**'
+      - '3745718141/**'
+      - '3766508989/**'
+      - '3766693411/**'
+      - '3774448621/**'
+      - '3780151182/**'
+      - 'WorkshopPatches/RussianTextFixes/**'
+      - 'tools/audit_russian_text_targets.py'
+      - '.github/workflows/russian-text-targets-audit.yml'
+  pull_request:
+    paths:
+      - '3217685049/**'
+      - '3304582091/**'
+      - '3403490889/**'
+      - '3464606086/**'
+      - '3633421539/**'
+      - '3745718141/**'
+      - '3766508989/**'
+      - '3766693411/**'
+      - '3774448621/**'
+      - '3780151182/**'
+      - 'WorkshopPatches/RussianTextFixes/**'
+      - 'tools/audit_russian_text_targets.py'
+      - '.github/workflows/russian-text-targets-audit.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Validate generated translation JSON
+        shell: bash
+        run: |
+          find WorkshopPatches/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/media/lua/shared/Translate \
+            -type f -name 'LCC_*.json' -print0 \
+            | xargs -0 -n1 python3 -m json.tool >/dev/null
+      - name: Validate audit syntax
+        run: python3 -m py_compile tools/audit_russian_text_targets.py
+      - name: Verify active mod Russian coverage
+        run: python3 tools/audit_russian_text_targets.py

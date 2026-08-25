@@ -1,0 +1,11 @@
+{
+    "ContextMenu_LCC_Explosives_IgniteFlare": "Ignite Flare",
+    "ContextMenu_LCC_PZK_RemoveRust": "Remove Rust",
+    "Tooltip_LCC_PZK_RemoveRust": "Use Rust Solvent and Ripped Sheets to remove rust from this vehicle.",
+    "UI_LCC_SurvivalsHauler_ForceAttach": "Force Attach Hauler",
+    "UI_LCC_SurvivalsHauler_Load": "Load %1 [%2]",
+    "UI_LCC_SurvivalsHauler_NoVehicle": "No Vehicle To Load",
+    "UI_LCC_SurvivalsHauler_Full": "Hauler Full",
+    "UI_LCC_SurvivalsHauler_Unload": "Unload %1: %2",
+    "UI_LCC_SurvivalsHauler_Vehicle": "Vehicle"
+}

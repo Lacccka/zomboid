@@ -1,0 +1,11 @@
+{
+    "ContextMenu_LCC_Explosives_IgniteFlare": "Зажечь сигнальный огонь",
+    "ContextMenu_LCC_PZK_RemoveRust": "Удалить ржавчину",
+    "Tooltip_LCC_PZK_RemoveRust": "Используйте растворитель ржавчины и рваные простыни, чтобы удалить ржавчину с автомобиля.",
+    "UI_LCC_SurvivalsHauler_ForceAttach": "Принудительно присоединить автовоз",
+    "UI_LCC_SurvivalsHauler_Load": "Загрузить %1 [%2]",
+    "UI_LCC_SurvivalsHauler_NoVehicle": "Нет автомобиля для загрузки",
+    "UI_LCC_SurvivalsHauler_Full": "Автовоз заполнен",
+    "UI_LCC_SurvivalsHauler_Unload": "Выгрузить %1: %2",
+    "UI_LCC_SurvivalsHauler_Vehicle": "Автомобиль"
+}

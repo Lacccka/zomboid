@@ -1,0 +1,15 @@
+{
+    "IGUI_invpanel_Weight": "Вес",
+    "IGUI_invpanel_Condition": "Состояние",
+    "IGUI_Recoilpad": "Затыльник приклада",
+    "IGUI_CraftCategory_现代枪械系统ModernFirearmsSystem": "Современная оружейная система",
+    "IGUI_CraftingCategories_Ammunition": "Боеприпасы",
+    "IGUI_NONE": "Нет",
+    "IGUI_MFS_FireMode_Auto": "Режим огня: автоматический",
+    "IGUI_MFS_FireMode_Single": "Режим огня: одиночный",
+    "IGUI_MFS_GunLight_On": "Оружейный фонарь: включён",
+    "IGUI_MFS_GunLight_Off": "Оружейный фонарь: выключен",
+    "IGUI_MFS_GunLight_NoBattery": "Оружейный фонарь: батарея разряжена",
+    "IGUI_MFS_GunLight_Depleted": "Батарея оружейного фонаря разряжена",
+    "IGUI_MFS_GunLight_Low": "Низкий заряд батареи оружейного фонаря"
+}

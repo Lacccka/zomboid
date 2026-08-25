@@ -1,0 +1,4 @@
+{
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled": "Включить клавишу отладочной выдачи",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled_tooltip": "По умолчанию выключено. Если включить, Shift + «+» на цифровой клавиатуре (клавишу можно изменить в настройках модов) выдаёт одну светошумовую гранату для быстрой проверки траектории."
+}
