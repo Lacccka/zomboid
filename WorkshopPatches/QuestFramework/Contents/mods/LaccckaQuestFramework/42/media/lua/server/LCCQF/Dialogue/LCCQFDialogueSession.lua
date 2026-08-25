@@ -115,6 +115,21 @@ function DialogueSession.Close(player, sessionId)
     return true
 end
 
+function DialogueSession.InvalidateRuntime(runtimeId)
+    if runtimeId == nil then return 0 end
+    local key = tostring(runtimeId)
+    local closed = 0
+
+    for playerKey, session in pairs(sessions) do
+        if tostring(session.runtimeId) == key then
+            sessions[playerKey] = nil
+            closed = closed + 1
+        end
+    end
+
+    return closed
+end
+
 local function expireSessions()
     local now = getTimestampMs()
     for playerKey, session in pairs(sessions) do
