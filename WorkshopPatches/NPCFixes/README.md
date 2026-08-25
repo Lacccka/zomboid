@@ -4,7 +4,7 @@ Stable, source-clean Build 42.20 compatibility fixes for NPC combat and the NPC 
 
 This Workshop item contains LCC-authored shims, guards and lifecycle repairs only. It does **not** redistribute complete third-party Lua files or assets. The original mod must be installed separately.
 
-Current stable code version: `1.0.0`.
+Current stable code version: `1.0.2`.
 
 The source-clean architecture was accepted on 2026-08-21 against the normal Workshop `Bandits2` installation (Workshop ID `3268487204`), without `Bandits-LCC-Dev`. Both runtime transformers loaded in `mode=PATCHED`; `ClassCastException`, `AttackState.triggerPlayerReaction` and `NetworkZombieMind: goal character is not set` remained zero. See `docs/final-reports/npcfixes-source-clean-bandits-acceptance-2026-08-21.md`.
 
@@ -19,7 +19,7 @@ B42.20.3 vanilla `AttackState` is unsafe when an ordinary `IsoZombie` receives a
 - `PathFindBehavior2 Goal.Location` is refreshed only when the Bandit moved far enough or a bounded idle retry is needed;
 - the original Bandits `biteTab` / `Bite` / `BiteLow` implementation remains authoritative and is not copied into this patch.
 
-`client/BanditUpdate.lua` is a source-clean runtime transformer. It reads the installed `Bandits2` file with `getModFileReader()`, validates three exact B42.20 fingerprints, applies the coordinate-pursuit changes in memory, and executes the transformed source with `loadstring()`. If a future Bandits version no longer matches the fingerprints, the transformer logs a warning and runs that upstream file unchanged rather than guessing against new source.
+`client/BanditUpdate.lua` is a source-clean runtime transformer. It reads the installed `Bandits2` file with `getModFileReader()`, validates four exact B42.20 fingerprints, applies the coordinate-pursuit and typed death-key guards in memory, and executes the transformed source with `loadstring()`. If a future Bandits version no longer matches the fingerprints, the transformer logs a warning and runs that upstream file unchanged rather than guessing against new source.
 
 `shared/ZombieActions/ZAShoot.lua` uses the same mechanism for the one gunshot-alert block that previously created a vanilla zombie -> Bandit target. Idle zombies are sent to the shot coordinates instead.
 
@@ -84,4 +84,4 @@ Stable acceptance criteria remain:
 
 ## Publication state
 
-The code is stable `1.0.0`. The repository Workshop project may remain `id=0` / `visibility=private` until a real Workshop item ID and final preview are assigned. This staging metadata does not change the stability classification of the code itself.
+The code is stable `1.0.2`. The repository Workshop project may retain its existing publication metadata until a separate release decision is made. This metadata does not change the stability classification of the code itself.

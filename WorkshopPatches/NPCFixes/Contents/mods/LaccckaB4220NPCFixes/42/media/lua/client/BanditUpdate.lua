@@ -2,14 +2,14 @@
 --
 -- This file intentionally contains no upstream Bandits implementation. Because it
 -- occupies the BanditUpdate.lua module path, it reads the installed Bandits2
--- source directly from that mod, applies three exact B42.20 fingerprints, then
+-- source directly from that mod, applies four exact B42.20 fingerprints, then
 -- compiles and executes the transformed source. If the upstream fingerprints no
 -- longer match, the original source is executed unchanged and a loud warning is
 -- emitted instead of guessing against a new Bandits version.
 
 local MOD_ID = "Bandits2"
 local SOURCE_PATH = "media/lua/client/BanditUpdate.lua"
-local MARKER = "source-clean-coordinate-pursuit-v1"
+local MARKER = "source-clean-coordinate-pursuit-v2"
 LCC_NPCFIXES_BANDITUPDATE_SHIM = MARKER
 
 local function readUpstreamSource()
@@ -100,6 +100,16 @@ local CLOSE_RELATION = [[                    if zombie and bandit then
 local CLOSE_LOCATION = [[                    if zombie and bandit then
                         LCCPathZombieToBanditLocation(zombie, banditCached)]]
 
+-- Bandits2 passes brain.key to InventoryItem.setKeyId(int). Reject non-numeric
+-- values defensively so legacy integrations cannot crash the death cleanup.
+local DEATH_KEY_UNSAFE = [[        if brain.key and ZombRand(3) == 1 then
+            local item = BanditCompatibility.InstanceItem("Base.Key1")
+            item:setKeyId(brain.key)]]
+
+local DEATH_KEY_TYPED = [[        if type(brain.key) == "number" and ZombRand(3) == 1 then
+            local item = BanditCompatibility.InstanceItem("Base.Key1")
+            item:setKeyId(brain.key)]]
+
 local source, readErr = readUpstreamSource()
 if not source then
     error("[LCC][NPCFixes][BanditUpdateShim][FATAL] " .. tostring(readErr))
@@ -118,6 +128,11 @@ end
 
 if #reasons == 0 then
     nextSource, reason = replacePlainOnce(patched, CLOSE_RELATION, CLOSE_LOCATION, "close-character-relation")
+    if nextSource then patched = nextSource else reasons[#reasons + 1] = reason end
+end
+
+if #reasons == 0 then
+    nextSource, reason = replacePlainOnce(patched, DEATH_KEY_UNSAFE, DEATH_KEY_TYPED, "typed-death-key")
     if nextSource then patched = nextSource else reasons[#reasons + 1] = reason end
 end
 

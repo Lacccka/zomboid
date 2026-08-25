@@ -10,6 +10,8 @@ Mod ID: `LaccckaQuestFramework`
 
 The architecture pass after the 35 mod-research reports is implemented, but it is not yet a final in-game acceptance. This document belongs in `working-state`; it must move to `final-reports` only after a clean dedicated-server run with server and client logs.
 
+Superseded later on 2026-08-25 by `quest-framework-v0.2.1-runtime-fixes-2026-08-25.md` after the first dedicated-server log review found two adapter defects.
+
 ## Implemented boundaries
 
 - `LCCQFNPCRegistry` owns stable logical `npcId` definitions.
@@ -18,7 +20,7 @@ The architecture pass after the 35 mod-research reports is implemented, but it i
 - interaction and dialogue layers no longer see a Bandits brain or zombie object.
 - the server resolves the client-supplied transient runtime id only near the requesting player; the previous server-wide `getZombieList()` scan and minute-wide enforcement loop are removed.
 - Bandits2's `bandit.cid` / `bandit.general.cid` mismatch is handled temporarily and restored inside the server adapter.
-- persistent Bandits brains are checked before admin spawn so an unloaded logical NPC is not duplicated.
+- this original v0.2.0 persistence assumption was invalidated by runtime logs; see the v0.2.1 working state.
 
 ## Dialogue authority
 

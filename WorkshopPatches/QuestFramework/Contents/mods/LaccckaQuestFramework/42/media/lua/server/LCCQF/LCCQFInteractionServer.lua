@@ -92,6 +92,8 @@ local function spawnTestNPC(player)
 
     if result == "already loaded" then
         sendStatus(player, "Алексей уже существует рядом.")
+    elseif result == "already registered" then
+        sendStatus(player, "Алексей уже зарегистрирован; подождите появления NPC.")
     else
         sendStatus(player, "Тестовый NPC Алексей создан.")
     end

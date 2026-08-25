@@ -3,14 +3,42 @@ require "LCCQF/Core/LCCQFNPCRuntime"
 require "LCCQF/Content/LCCQFNPCDefinitions"
 
 local Adapter = {}
+local NPC_ID_FIELD = "lccqNpcId"
+
+local function getNPCId(brain)
+    if type(brain[NPC_ID_FIELD]) == "string" then
+        return brain[NPC_ID_FIELD]
+    end
+
+    -- Migrate live v0.2.0 brains away from Bandits2's numeric door-key field.
+    if type(brain.key) == "string" and LCCQF.NPCRegistry.IsRegistered(brain.key) then
+        brain[NPC_ID_FIELD] = brain.key
+        brain.key = nil
+        return brain[NPC_ID_FIELD]
+    end
+
+    return nil
+end
 
 local function getCandidate(object, playerX, playerY, playerZ, rangeSq)
     if not object or not instanceof(object, "IsoZombie") or object:isDead() then return nil end
 
     local brain = BanditBrain.Get(object)
-    if not brain or not brain.key or brain.id == nil then return nil end
+    if not brain or brain.id == nil then return nil end
 
-    local definition = LCCQF.NPCRegistry.Get(brain.key)
+    -- The server transmits the framework tag immediately after Bandits creates
+    -- its brain. If the zombie was Banditized from the first cluster snapshot,
+    -- refresh its attached brain from the newer tagged snapshot here.
+    if type(brain[NPC_ID_FIELD]) ~= "string" and GetBanditClusterData then
+        local gmd = GetBanditClusterData(brain.id)
+        local current = gmd and (gmd[brain.id] or gmd[tostring(brain.id)]) or nil
+        if current and current ~= brain and type(current[NPC_ID_FIELD]) == "string" then
+            brain = current
+            BanditBrain.Update(object, brain)
+        end
+    end
+
+    local definition = LCCQF.NPCRegistry.Get(getNPCId(brain))
     if not definition or definition.runtime.adapter ~= "Bandits" then return nil end
     if math.abs(object:getZ() - playerZ) >= 0.5 then return nil end
 

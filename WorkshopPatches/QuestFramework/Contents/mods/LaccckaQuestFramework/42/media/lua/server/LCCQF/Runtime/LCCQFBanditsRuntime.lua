@@ -1,12 +1,14 @@
 require "Bandit"
 require "BanditBrain"
 require "BanditCustom"
+require "BanditUtils"
 require "LCCQF/Core/LCCQFNPCRuntime"
 require "LCCQF/Content/LCCQFNPCDefinitions"
 
 local C = LCCQF.Constants
 local Adapter = {}
 local bindings = {}
+local NPC_ID_FIELD = "lccqNpcId"
 
 local function log(message)
     print(C.LOG_PREFIX .. "[RUNTIME:BANDITS] " .. tostring(message))
@@ -14,12 +16,21 @@ end
 
 local function getBrain(zombie)
     if not zombie or zombie:isDead() then return nil end
-    return BanditBrain.Get(zombie)
+
+    local brain = BanditBrain.Get(zombie)
+    if brain then return brain end
+
+    -- Dedicated-server spawns are registered in Bandits clusters, while
+    -- BanditBrain.Update is normally performed by the client Banditize path.
+    -- Resolve the server-side physical zombie through the provider's runtime id.
+    local runtimeId = BanditUtils.GetZombieID(zombie)
+    local gmd = runtimeId ~= nil and GetBanditClusterData(runtimeId) or nil
+    if not gmd then return nil end
+    return gmd[runtimeId] or gmd[tostring(runtimeId)]
 end
 
-local function bind(zombie, brain, definition)
-    if not zombie or not brain or not definition or brain.id == nil then return nil end
-
+local function makeHandle(zombie, brain, definition)
+    if not brain or not definition or brain.id == nil then return nil end
     local handle = {
         entity = zombie,
         npcId = definition.npcId,
@@ -28,6 +39,27 @@ local function bind(zombie, brain, definition)
     }
     bindings[definition.npcId] = handle
     return handle
+end
+
+local function bind(zombie, brain, definition)
+    if not zombie then return nil end
+    return makeHandle(zombie, brain, definition)
+end
+
+local function getNPCId(brain)
+    if not brain then return nil end
+    if type(brain[NPC_ID_FIELD]) == "string" then
+        return brain[NPC_ID_FIELD]
+    end
+
+    -- v0.2.0 incorrectly reused Bandits2's numeric door-key field. Recognize
+    -- live legacy NPCs long enough to migrate them without treating stale
+    -- Bandits persistence entries as authoritative Quest Framework identity.
+    if type(brain.key) == "string" and LCCQF.NPCRegistry.IsRegistered(brain.key) then
+        return brain.key
+    end
+
+    return nil
 end
 
 local function ensureState(zombie, brain, definition)
@@ -46,6 +78,18 @@ local function ensureState(zombie, brain, definition)
         brain.permanent = true
         changed = true
     end
+    if brain[NPC_ID_FIELD] ~= definition.npcId then
+        brain[NPC_ID_FIELD] = definition.npcId
+        changed = true
+    end
+    if brain.key == definition.npcId then
+        brain.key = nil
+        changed = true
+    end
+    if brain.bid == nil and definition.runtime.profileId then
+        brain.bid = definition.runtime.profileId
+        changed = true
+    end
     if definition.stationary and not brain.stationary then
         Bandit.ForceStationary(zombie, true)
         changed = true
@@ -61,7 +105,7 @@ end
 
 local function matches(zombie, definition, runtimeId)
     local brain = getBrain(zombie)
-    if not brain or brain.key ~= definition.npcId or brain.id == nil then return nil end
+    if not brain or getNPCId(brain) ~= definition.npcId or brain.id == nil then return nil end
     if runtimeId ~= nil and tostring(brain.id) ~= tostring(runtimeId) then return nil end
     return brain
 end
@@ -107,13 +151,55 @@ local function scanNearPlayer(player, definition, runtimeId, range)
     return nil
 end
 
-local function findPersistentBrain(npcId)
+local function findOwnedBrain(npcId)
     if type(BanditClusters) ~= "table" then return nil end
 
     for _, cluster in pairs(BanditClusters) do
         if type(cluster) == "table" then
             for _, brain in pairs(cluster) do
-                if type(brain) == "table" and brain.key == npcId then
+                if type(brain) == "table" and brain[NPC_ID_FIELD] == npcId then
+                    return brain
+                end
+            end
+        end
+    end
+
+    return nil
+end
+
+local function snapshotBrainIds()
+    local ids = {}
+    if type(BanditClusters) ~= "table" then return ids end
+
+    for _, cluster in pairs(BanditClusters) do
+        if type(cluster) == "table" then
+            for _, brain in pairs(cluster) do
+                if type(brain) == "table" and brain.id ~= nil then
+                    ids[tostring(brain.id)] = true
+                end
+            end
+        end
+    end
+
+    return ids
+end
+
+local function findCreatedBrain(previousIds, definition, spawn)
+    if type(BanditClusters) ~= "table" then return nil end
+
+    for _, cluster in pairs(BanditClusters) do
+        if type(cluster) == "table" then
+            for _, brain in pairs(cluster) do
+                local coords = type(brain) == "table" and brain.bornCoords or nil
+                if type(brain) == "table"
+                    and brain.id ~= nil
+                    and not previousIds[tostring(brain.id)]
+                    and brain.bid == definition.runtime.profileId
+                    and coords
+                    and math.floor(coords.x) == spawn.x
+                    and math.floor(coords.y) == spawn.y
+                    and math.floor(coords.z) == spawn.z
+                then
                     return brain
                 end
             end
@@ -171,9 +257,9 @@ function Adapter.Spawn(player, definition)
     local loaded = Adapter.ResolveForPlayer(player, definition, nil, 12)
     if loaded then return loaded, "already loaded" end
 
-    local persistentBrain = findPersistentBrain(definition.npcId)
-    if persistentBrain then
-        return nil, "NPC already exists in Bandits persistence (runtimeId=" .. tostring(persistentBrain.id) .. ")"
+    local ownedBrain = findOwnedBrain(definition.npcId)
+    if ownedBrain then
+        return makeHandle(nil, ownedBrain, definition), "already registered"
     end
 
     if not BanditServer or not BanditServer.Spawner or not BanditServer.Spawner.Individual then
@@ -188,10 +274,15 @@ function Adapter.Spawn(player, definition)
     local spawn = findSpawnSquare(player)
     if not spawn then return nil, "no free spawn square nearby" end
 
+    local previousIds = snapshotBrainIds()
+
     -- Bandits2 42.20 reads bandit.cid, while its custom loader stores general.cid.
-    -- Keep the compatibility alias scoped to this adapter and restore the shared profile afterwards.
+    -- Its individual spawner also expects general.bid to be populated for later
+    -- restore. Keep both compatibility aliases scoped to this adapter.
     local previousCid = profile.cid
+    local previousBid = profile.general.bid
     profile.cid = profile.general.cid
+    profile.general.bid = definition.runtime.profileId
     local ok, err = pcall(BanditServer.Spawner.Individual, player, {
         bid = definition.runtime.profileId,
         x = spawn.x,
@@ -199,20 +290,31 @@ function Adapter.Spawn(player, definition)
         z = spawn.z,
         program = definition.runtime.program or "Defend",
         permanent = true,
-        key = definition.npcId,
         hostile = false,
         hostileP = false,
         fullname = definition.displayName,
     })
     profile.cid = previousCid
+    profile.general.bid = previousBid
 
     if not ok then
         log("spawn error npcId=" .. tostring(definition.npcId) .. " error=" .. tostring(err))
         return nil, "Bandits2 spawn failed"
     end
 
-    local handle = Adapter.ResolveForPlayer(player, definition, nil, 12)
-    if not handle then return nil, "Bandits2 did not expose the spawned NPC" end
+    -- Spawner.Individual registers the new brain synchronously, but the zombie is
+    -- added to square moving-object lists on a later engine update. Bind logical
+    -- identity now and let ResolveForPlayer attach the physical entity later.
+    local brain = findCreatedBrain(previousIds, definition, spawn)
+    if not brain then return nil, "Bandits2 did not register the spawned NPC" end
+
+    brain[NPC_ID_FIELD] = definition.npcId
+    brain.key = nil
+    local gmd = GetBanditClusterData and GetBanditClusterData(brain.id) or nil
+    if gmd then gmd[brain.id] = brain end
+    if TransmitBanditCluster then TransmitBanditCluster(brain.id) end
+
+    local handle = makeHandle(nil, brain, definition)
 
     log("spawned npcId=" .. tostring(handle.npcId) .. " runtimeId=" .. tostring(handle.runtimeId))
     return handle
