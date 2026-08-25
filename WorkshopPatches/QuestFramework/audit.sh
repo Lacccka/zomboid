@@ -36,12 +36,16 @@ if rg -n 'getZombieList\(' "$lua_root"; then
     fail "broad zombie scan reintroduced"
 fi
 
+if rg -n 'if\s+not\s+object:getVariableBoolean\("Bandit"\)' "$lua_root/client/LCCQF/Runtime"; then
+    fail "transient Bandit animation variable reintroduced as quest identity gate"
+fi
+
 if rg -n 'choice\.next|showNode\(' "$lua_root/client"; then
     fail "client-owned dialogue transition reintroduced"
 fi
 
-rg -q '^modversion=0\.2\.4$' "$mod_info" || fail "mod.info version mismatch"
-rg -q 'Constants\.VERSION = "0\.2\.4"' "$lua_root/shared/LCCQF/LCCQFConstants.lua" \
+rg -q '^modversion=0\.2\.5$' "$mod_info" || fail "mod.info version mismatch"
+rg -q 'Constants\.VERSION = "0\.2\.5"' "$lua_root/shared/LCCQF/LCCQFConstants.lua" \
     || fail "Lua version mismatch"
 
 if rg -n 'brain\.key\s*=\s*definition\.npcId|key\s*=\s*definition\.npcId' \
