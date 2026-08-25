@@ -3,14 +3,18 @@ require "LCCQF/Core/LCCQFNPCRegistry"
 require "LCCQF/Core/LCCQFNPCRuntime"
 require "LCCQF/Content/LCCQFNPCDefinitions"
 require "LCCQF/Runtime/LCCQFBanditsRuntime"
+require "LCCQF/Content/LCCQFQuestDefinitions"
+require "LCCQF/Quest/LCCQFQuestService"
 require "LCCQF/Dialogue/LCCQFDialogueSession"
 
 LCCQFInteractionServer = LCCQFInteractionServer or {}
 
 local C = LCCQF.Constants
 local DialogueSession = LCCQF.DialogueSession
+local QuestService = LCCQF.QuestService
 local lastCommandMs = {}
 local nextRuntimeReconcileMs = 0
+local nextQuestUpdateMs = 0
 
 local function log(message)
     print(C.LOG_PREFIX .. "[SERVER] " .. tostring(message))
@@ -68,6 +72,25 @@ local function sendDialogueClosed(player, sessionId)
     sendServerCommand(player, C.MODULE, C.COMMAND.DIALOGUE_CLOSED, {
         sessionId = tostring(sessionId or ""),
     })
+end
+
+local function sendQuestState(player)
+    if not player then return end
+    local quests = QuestService.ExportViews(player)
+    sendServerCommand(player, C.MODULE, C.COMMAND.QUESTS, {
+        quests = quests,
+    })
+    log("quest state sent player=" .. tostring(player:getUsername()) .. " count=" .. tostring(#quests))
+end
+
+local function onQuestEvent(kind, player, payload)
+    if not player or type(payload) ~= "table" then return end
+
+    if kind == "upsert" then
+        sendServerCommand(player, C.MODULE, C.COMMAND.QUEST_UPSERT, payload)
+    elseif kind == "event" then
+        sendServerCommand(player, C.MODULE, C.COMMAND.QUEST_EVENT, payload)
+    end
 end
 
 local function getRuntimeAdapter()
@@ -145,6 +168,20 @@ local function onRuntimeBindingEvent(kind, handle, reason)
     end
 end
 
+local function makeDialogueHooks(handle)
+    return {
+        IsChoiceAvailable = function(player, session, choice)
+            return QuestService.EvaluateCondition(player, choice.condition)
+        end,
+        ExecuteAction = function(player, session, choice)
+            return QuestService.ExecuteAction(player, choice.action, {
+                giverNpcId = session.npcId,
+                giverHandle = handle,
+            })
+        end,
+    }
+end
+
 local function isPrivileged(player)
     if not player then return false end
     if isDebugEnabled and isDebugEnabled() then return true end
@@ -179,6 +216,22 @@ local function spawnTestNPC(player)
     end
 end
 
+local function resolveDialogueHandle(player, npcId, runtimeId)
+    local activeRuntimeId = LCCQF.NPCRuntime.GetActiveRuntimeId(npcId)
+    if tostring(activeRuntimeId or "") ~= tostring(runtimeId or "") then
+        return nil, "stale"
+    end
+
+    local handle = LCCQF.NPCRuntime.ResolveForPlayer(
+        player,
+        npcId,
+        runtimeId,
+        C.SERVER_INTERACTION_RANGE
+    )
+    if not handle then return nil, "unresolved" end
+    return handle
+end
+
 local function requestDialogue(player, args)
     local npcId = readIdentifier(args, "npcId")
     local runtimeId = readIdentifier(args, "runtimeId")
@@ -194,28 +247,19 @@ local function requestDialogue(player, args)
         return
     end
 
-    local activeRuntimeId = LCCQF.NPCRuntime.GetActiveRuntimeId(npcId)
-    if tostring(activeRuntimeId or "") ~= runtimeId then
-        sendStatus(player, "IGUI_LCCQF_Status_NPCUnavailable")
-        log("dialogue rejected: stale runtime npcId=" .. npcId
-            .. " requested=" .. runtimeId
-            .. " active=" .. tostring(activeRuntimeId))
-        return
-    end
-
-    local handle = LCCQF.NPCRuntime.ResolveForPlayer(
-        player,
-        npcId,
-        runtimeId,
-        C.SERVER_INTERACTION_RANGE
-    )
+    local handle, resolveReason = resolveDialogueHandle(player, npcId, runtimeId)
     if not handle then
         sendStatus(player, "IGUI_LCCQF_Status_NPCUnavailable")
-        log("dialogue rejected: unresolved npcId=" .. npcId .. " runtimeId=" .. runtimeId)
+        log("dialogue rejected: " .. tostring(resolveReason)
+            .. " npcId=" .. npcId .. " runtimeId=" .. runtimeId)
         return
     end
 
-    local view, err = DialogueSession.Open(player, handle, definition)
+    -- TalkToNPC objectives are advanced only after exact runtime-id and physical
+    -- range validation has succeeded on the server.
+    QuestService.NotifyTalkToNPC(player, npcId)
+
+    local view, err = DialogueSession.Open(player, handle, definition, makeDialogueHooks(handle))
     if not view then
         sendStatus(player, "IGUI_LCCQF_Status_DialogueUnavailable")
         log("dialogue open failed npcId=" .. npcId .. " error=" .. tostring(err))
@@ -237,20 +281,7 @@ local function chooseDialogue(player, args)
         return
     end
 
-    local activeRuntimeId = LCCQF.NPCRuntime.GetActiveRuntimeId(session.npcId)
-    if tostring(activeRuntimeId or "") ~= tostring(session.runtimeId) then
-        DialogueSession.Close(player, sessionId)
-        sendDialogueClosed(player, sessionId)
-        sendStatus(player, "IGUI_LCCQF_Status_NPCUnavailable")
-        return
-    end
-
-    local handle = LCCQF.NPCRuntime.ResolveForPlayer(
-        player,
-        session.npcId,
-        session.runtimeId,
-        C.SERVER_INTERACTION_RANGE
-    )
+    local handle = resolveDialogueHandle(player, session.npcId, session.runtimeId)
     if not handle then
         DialogueSession.Close(player, sessionId)
         sendDialogueClosed(player, sessionId)
@@ -258,7 +289,12 @@ local function chooseDialogue(player, args)
         return
     end
 
-    local result, err = DialogueSession.Choose(player, sessionId, choiceId)
+    local result, err = DialogueSession.Choose(
+        player,
+        sessionId,
+        choiceId,
+        makeDialogueHooks(handle)
+    )
     if not result then
         log("choice rejected session=" .. sessionId .. " choice=" .. choiceId .. " error=" .. tostring(err))
         sendStatus(player, "IGUI_LCCQF_Status_ChoiceUnavailable")
@@ -286,6 +322,7 @@ local function onClientCommand(module, command, player, args)
 
     local knownCommand = command == C.COMMAND.SPAWN_TEST_NPC
         or command == C.COMMAND.REQUEST_RUNTIME_BINDINGS
+        or command == C.COMMAND.REQUEST_QUESTS
         or command == C.COMMAND.REQUEST_DIALOGUE
         or command == C.COMMAND.CHOOSE_DIALOGUE
         or command == C.COMMAND.CLOSE_DIALOGUE
@@ -295,6 +332,8 @@ local function onClientCommand(module, command, player, args)
         spawnTestNPC(player)
     elseif command == C.COMMAND.REQUEST_RUNTIME_BINDINGS then
         sendRuntimeBindings(player)
+    elseif command == C.COMMAND.REQUEST_QUESTS then
+        sendQuestState(player)
     elseif command == C.COMMAND.REQUEST_DIALOGUE then
         requestDialogue(player, args)
     elseif command == C.COMMAND.CHOOSE_DIALOGUE then
@@ -306,9 +345,16 @@ end
 
 local function onTick()
     local now = getTimestampMs()
-    if now < nextRuntimeReconcileMs then return end
-    nextRuntimeReconcileMs = now + C.RUNTIME_RECONCILE_INTERVAL_MS
-    reconcileRuntimeBindings()
+
+    if now >= nextRuntimeReconcileMs then
+        nextRuntimeReconcileMs = now + C.RUNTIME_RECONCILE_INTERVAL_MS
+        reconcileRuntimeBindings()
+    end
+
+    if now >= nextQuestUpdateMs then
+        nextQuestUpdateMs = now + C.QUEST_UPDATE_INTERVAL_MS
+        QuestService.Tick()
+    end
 end
 
 local function onServerStarted()
@@ -316,11 +362,13 @@ local function onServerStarted()
     if adapter and adapter.SetBindingEventSink then
         adapter.SetBindingEventSink(onRuntimeBindingEvent)
     end
+    QuestService.SetEventSink(onQuestEvent)
 
     local bindingCount = refreshRuntimeBindings()
     log("loaded version=" .. tostring(C.VERSION) .. " runtime=Bandits serverRange="
         .. tostring(C.SERVER_INTERACTION_RANGE) .. " restoredBindings=" .. tostring(bindingCount)
-        .. " lifecycleReconcileMs=" .. tostring(C.RUNTIME_RECONCILE_INTERVAL_MS))
+        .. " lifecycleReconcileMs=" .. tostring(C.RUNTIME_RECONCILE_INTERVAL_MS)
+        .. " questUpdateMs=" .. tostring(C.QUEST_UPDATE_INTERVAL_MS))
 end
 
 Events.OnClientCommand.Add(onClientCommand)
