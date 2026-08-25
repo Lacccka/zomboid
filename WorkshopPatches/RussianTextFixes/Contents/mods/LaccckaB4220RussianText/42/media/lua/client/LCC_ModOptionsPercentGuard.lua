@@ -1,16 +1,18 @@
 -- Build 42.20.x compatibility guard for PZAPI Mod Options.
--- MainOptions:addModOptionsPanel() calls getText() on option names/tooltips even
--- when a mod has already passed resolved display text. A literal '%' in that
--- display text can therefore reach Java Formatter as a conversion marker and
--- raise UnknownFormatConversionException (for example, "30%)").
 --
--- Keep this patch deliberately narrow: only strings that MainOptions feeds
--- through getText() again are sanitized. Combo-box display values and general
--- descriptions are left untouched because MainOptions renders those directly.
+-- Vanilla MainOptions:addModOptionsPanel() takes no panel argument. It calls
+-- PZAPI.ModOptions:load(), iterates PZAPI.ModOptions.Data, and then feeds panel
+-- and option display strings through getText(). Mods may already have resolved
+-- those strings, so a literal '%' can reach Java Formatter as a conversion
+-- marker and raise UnknownFormatConversionException (for example, "30%)").
+--
+-- Keep this guard narrow: sanitize only fields which vanilla MainOptions sends
+-- through getText() again. Descriptions and combobox values are rendered through
+-- different paths and are intentionally left alone.
 
 LCCRussianTextPercentGuard = LCCRussianTextPercentGuard or {}
 local state = LCCRussianTextPercentGuard
-local VERSION = "1.1.2"
+local VERSION = "1.1.3"
 
 local function log(message)
     print("[LCC][RussianText][ModOptionsPercentGuard] " .. tostring(message))
@@ -34,12 +36,11 @@ local function escapeUnsafePercents(value)
         else
             local nextCh = string.sub(value, i + 1, i + 1)
             if nextCh == "%" then
+                -- Already escaped for java.util.Formatter.
                 out[#out + 1] = "%%"
                 i = i + 2
             elseif nextCh ~= "" and string.match(nextCh, "%d") then
-                -- Preserve Java positional placeholders such as %1$s. Plain
-                -- percentages such as 30% never enter this branch because the
-                -- character after '%' is not a digit.
+                -- Preserve positional placeholders such as %1$s.
                 out[#out + 1] = "%"
                 i = i + 1
                 while i <= length and string.match(string.sub(value, i, i), "%d") do
@@ -57,45 +58,51 @@ local function escapeUnsafePercents(value)
     return table.concat(out), changed
 end
 
-local function sanitizeField(owner, field, scope)
+local function sanitizeField(owner, field)
     if type(owner) ~= "table" then return 0 end
 
-    local value = owner[field]
-    local sanitized, changed = escapeUnsafePercents(value)
+    local sanitized, changed = escapeUnsafePercents(owner[field])
     if not changed then return 0 end
 
     owner[field] = sanitized
-    log("sanitized field=" .. tostring(field) .. " scope=" .. tostring(scope))
     return 1
 end
 
-local function sanitizeOptions(options)
+local function sanitizePanel(options)
     if type(options) ~= "table" then return 0 end
 
-    local panelScope = options.id or options.modOptionsID or "panel"
-    local changed = sanitizeField(options, "name", panelScope)
-    changed = changed + sanitizeField(options, "tooltip", panelScope)
-
-    local entries = options.options
+    local changed = sanitizeField(options, "name")
+    local entries = options.data
     if type(entries) ~= "table" then return changed end
 
-    for index, option in pairs(entries) do
+    for _, option in ipairs(entries) do
         if type(option) == "table" then
-            local scope = option.id or option.name or index
-            changed = changed + sanitizeField(option, "name", scope)
-            changed = changed + sanitizeField(option, "tooltip", scope)
+            changed = changed + sanitizeField(option, "name")
+            changed = changed + sanitizeField(option, "tooltip")
 
             if option.type == "multipletickbox" and type(option.values) == "table" then
-                for valueIndex, entry in pairs(option.values) do
+                for _, entry in ipairs(option.values) do
                     if type(entry) == "table" then
-                        changed = changed + sanitizeField(entry, "name", tostring(scope) .. ":" .. tostring(valueIndex))
-                        changed = changed + sanitizeField(entry, "tooltip", tostring(scope) .. ":" .. tostring(valueIndex))
+                        changed = changed + sanitizeField(entry, "name")
+                        changed = changed + sanitizeField(entry, "tooltip")
                     end
                 end
             end
         end
     end
 
+    return changed
+end
+
+local function sanitizeModOptionsData()
+    if not PZAPI or not PZAPI.ModOptions or type(PZAPI.ModOptions.Data) ~= "table" then
+        return 0
+    end
+
+    local changed = 0
+    for _, options in ipairs(PZAPI.ModOptions.Data) do
+        changed = changed + sanitizePanel(options)
+    end
     return changed
 end
 
@@ -114,12 +121,25 @@ local function install()
     end
 
     local original = MainOptions.addModOptionsPanel
-    MainOptions.addModOptionsPanel = function(self, options, ...)
-        local changed = sanitizeOptions(options)
-        if changed > 0 then
-            log("sanitized=" .. tostring(changed))
+    MainOptions.addModOptionsPanel = function(self, ...)
+        -- Match B42.20's real control flow. load() only restores option values
+        -- from ModOptions.ini; it does not rebuild Data, so preloading here is
+        -- safe and lets us sanitize the exact tables the original will render.
+        if PZAPI and PZAPI.ModOptions and PZAPI.ModOptions.load then
+            local ok, err = pcall(function()
+                PZAPI.ModOptions:load()
+            end)
+            if not ok then
+                log("preload failed error=" .. tostring(err))
+            end
         end
-        return original(self, options, ...)
+
+        local changed = sanitizeModOptionsData()
+        if changed > 0 then
+            log("sanitized count=" .. tostring(changed))
+        end
+
+        return original(self, ...)
     end
 
     state.installed = true
