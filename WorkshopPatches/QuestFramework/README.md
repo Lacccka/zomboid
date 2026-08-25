@@ -7,9 +7,9 @@ Build 42.20 multiplayer foundation for server-authoritative NPC interaction and 
 - one Bandits2-backed permanent test NPC (`lccq_test_npc_01`);
 - framework-owned logical identity in `NPCRegistry`;
 - replaceable `NPCRuntime` contract with Bandits2 isolated in `BanditsRuntime`;
-- nearby-NPC detection on the client through Bandits2's physical `BanditZombie.Cache`, with a bounded nearby-square fallback;
-- runtime-id matching accepts Bandits2's persisted `brain.id`/raw persistent outfit id and its normalized cache id, while the server-synchronized LCCQF binding is the authoritative quest-identity gate;
-- no dependency on the transient `getVariableBoolean("Bandit")` classifier for interaction eligibility;
+- nearby-NPC detection from the player's bounded nearby-square `getMovingObjects()` view, matching the proven proximity-scanner pattern from the researched interaction mods;
+- runtime-id matching accepts Bandits2's persisted `brain.id`/raw persistent outfit id and its normalized `BanditUtils.GetZombieID()` form, while the server-synchronized LCCQF binding is the authoritative quest-identity gate;
+- no dependency on the transient `getVariableBoolean("Bandit")` classifier or `CacheLightB` membership for interaction eligibility;
 - `[E] Поговорить` interaction prompt;
 - server-side registry, runtime-id, same-Z and distance validation;
 - server-owned `DialogueSession`, current node and allowed choices;
@@ -26,9 +26,9 @@ The 0.2.4 fresh multiplayer acceptance log removed the remaining ambiguity. The 
 
 That means spawning, server authority, binding synchronization, physical zombie synchronization and Bandits brain identity were already functioning. The remaining failure was inside the client discovery filter itself.
 
-Bandits2's `BanditZombie.lua` stores every valid physical `IsoZombie` in `BanditZombie.Cache` before it classifies the object with `getVariableBoolean("Bandit")`. Only after that transient classification does the object enter `CacheLightB`. On a multiplayer client that variable can therefore lag behind a valid synchronized physical object and its framework binding. v0.2.5 no longer treats that animation/runtime classifier as proof of quest ownership.
+Bandits2's `BanditZombie.lua` stores a physical `IsoZombie` before it classifies the object with `getVariableBoolean("Bandit")`; only after that transient classification does it enter `CacheLightB`. On a multiplayer client that classifier can lag behind a valid synchronized object and its framework binding. v0.2.5 therefore does not use either the animation variable or `CacheLightB` as quest ownership proof.
 
-The authoritative interaction gate is now the exact runtime id synchronized by the server: the adapter gathers `brain.id`, raw `getPersistentOutfitID()`, the Bandits cache id and `BanditUtils.GetZombieID()`, then accepts a physical object only when one of those ids resolves through `LCCQF.NPCRuntime.GetBoundNPCId()`. The primary provider scan uses `BanditZombie.Cache`; the fallback scans only nearby squares' moving objects. There is no whole-cell `getZombieList()` interaction scan.
+The physical lookup now follows the simplest already-proven interaction pattern in the repository: scan only nearby squares around the player and inspect each square's `getMovingObjects()`. For each live `IsoZombie`, the adapter gathers `brain.id`, raw `getPersistentOutfitID()` and `BanditUtils.GetZombieID()`, then accepts the object only if one of those ids resolves through `LCCQF.NPCRuntime.GetBoundNPCId()`. This keeps the scan local while making the server-synchronized binding the exact authority boundary. There is no whole-cell `getZombieList()` scan and no all-zombie cache scan every interaction tick.
 
 A second compatibility detail remains handled at the same boundary: Bandits2's server stores `brain.id` from `getPersistentOutfitID()`, while `BanditUtils.GetZombieID()` can clear the outfit hat bit for cache keys. The client adapter tests all relevant runtime-id forms and returns the exact id that matched the framework binding, preserving server validation.
 
@@ -58,7 +58,7 @@ The Bandits `brain.id` and zombie object are transient runtime handles. Dialogue
 4. Join the dedicated server with an admin account or run a debug client.
 5. Right-click the world and choose `[Quest Framework] Создать тестового NPC`.
 6. Confirm the server logs `spawned npcId=lccq_test_npc_01 runtimeId=...` and the client receives the same runtime binding.
-7. Approach Алексей within about 3 tiles. The client must log `interaction target acquired npcId=lccq_test_npc_01 runtimeId=...` and show the interaction prompt.
+7. Approach Алексей within about 3 tiles. The client must now log `interaction target acquired npcId=lccq_test_npc_01 runtimeId=...` and show the interaction prompt.
 8. Press `E`. The client must log `interaction requested ...`; the server must validate the request and only then send `DialogueState` to that client.
 9. Exercise all dialogue buttons. Every button sends only its `choiceId`; the server must return the next `DialogueState` or `DialogueClosed`.
 10. Walk beyond 4 tiles before choosing a reply. The server must close the session instead of accepting the transition.
@@ -87,9 +87,9 @@ Useful markers include `[LCCQF][SERVER]`, `[LCCQF][CLIENT]` and `[LCCQF][RUNTIME
 - the 0.2.4 fresh MP log proved the updated Workshop package was active on both server and client;
 - the same log proved exact runtime bindings and exact physical Bandits NPC ids existed on the client while QuestFramework still returned no interaction target;
 - Bandits2 42.20 `BanditZombie`, `BanditBrain` and `BanditUtils` source was re-read against the repository snapshot;
-- `Chat with Me` remains only an interaction/proximity architecture comparison; its weak DS authority model is not copied;
+- researched NPC-interaction mods were used for their bounded nearby-square discovery pattern only; their weaker authority models are not copied;
 - v0.2.5 removes the transient Bandit-variable/`CacheLightB` eligibility gate and uses exact server-synchronized runtime bindings instead;
-- the fallback scan remains bounded to nearby squares; the audit rejects broad `getZombieList()` scans and the old transient-variable identity gate;
+- the audit rejects broad `getZombieList()` scans and the old transient-variable identity gate;
 - focused fresh dedicated-server/client runtime acceptance is still required before this change is promoted to a final report.
 
 ## Next milestone
