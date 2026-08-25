@@ -1,0 +1,28 @@
+name: Quest Framework audit
+
+on:
+  push:
+    paths:
+      - 'WorkshopPatches/QuestFramework/**'
+      - '.github/workflows/quest-framework-audit.yml'
+  pull_request:
+    paths:
+      - 'WorkshopPatches/QuestFramework/**'
+      - '.github/workflows/quest-framework-audit.yml'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lua syntax checker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.4 ripgrep
+
+      - name: Validate audit script syntax
+        run: bash -n WorkshopPatches/QuestFramework/audit.sh
+
+      - name: Verify Quest Framework contracts
+        run: bash WorkshopPatches/QuestFramework/audit.sh
