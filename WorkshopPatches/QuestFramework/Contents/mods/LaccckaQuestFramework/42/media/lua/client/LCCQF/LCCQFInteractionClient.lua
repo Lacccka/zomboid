@@ -51,6 +51,12 @@ local function onTick()
     end
 end
 
+local function requestRuntimeBindings()
+    local player = getSpecificPlayer(0)
+    if not player then return end
+    sendClientCommand(player, C.MODULE, C.COMMAND.REQUEST_RUNTIME_BINDINGS, {})
+end
+
 local function requestDialogue()
     local player = getSpecificPlayer(0)
     local target = state.target
@@ -156,6 +162,22 @@ local function onServerCommand(module, command, args)
     if module ~= C.MODULE then return end
     args = args or {}
 
+    if command == C.COMMAND.RUNTIME_BINDINGS then
+        local count = LCCQF.NPCRuntime.ReplaceRuntimeBindings(args.bindings)
+        log("runtime bindings synchronized count=" .. tostring(count))
+        scanNearestQuestNPC()
+        return
+    end
+
+    if command == C.COMMAND.RUNTIME_BINDING_UPSERT then
+        if LCCQF.NPCRuntime.BindRuntime(args.runtimeId, args.npcId) then
+            log("runtime binding received npcId=" .. tostring(args.npcId)
+                .. " runtimeId=" .. tostring(args.runtimeId))
+            scanNearestQuestNPC()
+        end
+        return
+    end
+
     if command == C.COMMAND.DIALOGUE_STATE then
         local npcId = type(args.npcId) == "string" and args.npcId or nil
         if not npcId or not LCCQF.NPCRegistry.IsRegistered(npcId) then
@@ -184,6 +206,7 @@ end
 
 local function onGameStart()
     log("loaded version=" .. tostring(C.VERSION) .. " runtime=Bandits interactKey=E range=" .. tostring(C.INTERACTION_RANGE))
+    requestRuntimeBindings()
 end
 
 Events.OnGameStart.Add(onGameStart)
