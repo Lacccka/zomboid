@@ -9,15 +9,16 @@ LCCQFInteractionClient = LCCQFInteractionClient or {}
 
 local C = LCCQF.Constants
 local TRANSLATION_PREFIX = "IGUI_LCCQF_"
+local TARGET_SCAN_INTERVAL_MS = 100
 local state = {
     target = nil,
-    tick = 0,
     lastRequestMs = 0,
     statusText = nil,
     statusUntilMs = 0,
     loggedTargetRuntimeId = nil,
     bindingsSynchronized = false,
     nextBindingRequestMs = 0,
+    nextTargetScanMs = 0,
 }
 
 local function log(message)
@@ -29,20 +30,29 @@ local function setStatus(message, durationMs)
     state.statusUntilMs = getTimestampMs() + (durationMs or 3500)
 end
 
-local function scanNearestQuestNPC()
+local function updateLoggedTarget()
+    local runtimeId = state.target and tostring(state.target.runtimeId) or nil
+    if runtimeId == state.loggedTargetRuntimeId then return end
+
+    if runtimeId then
+        log("interaction target acquired npcId=" .. tostring(state.target.npcId)
+            .. " runtimeId=" .. runtimeId
+            .. " distance=" .. tostring(math.sqrt(state.target.distanceSq or 0)))
+    elseif state.loggedTargetRuntimeId then
+        log("interaction target lost runtimeId=" .. tostring(state.loggedTargetRuntimeId))
+    end
+    state.loggedTargetRuntimeId = runtimeId
+end
+
+local function refreshTarget(force)
+    local now = getTimestampMs()
+    if not force and now < state.nextTargetScanMs then return state.target end
+    state.nextTargetScanMs = now + TARGET_SCAN_INTERVAL_MS
+
     local player = getSpecificPlayer(0)
     state.target = LCCQF.NPCRuntime.FindNearestInteractive(player, C.INTERACTION_RANGE)
-
-    local runtimeId = state.target and tostring(state.target.runtimeId) or nil
-    if runtimeId ~= state.loggedTargetRuntimeId then
-        if runtimeId then
-            log("interaction target acquired npcId=" .. tostring(state.target.npcId)
-                .. " runtimeId=" .. runtimeId)
-        elseif state.loggedTargetRuntimeId then
-            log("interaction target lost runtimeId=" .. tostring(state.loggedTargetRuntimeId))
-        end
-        state.loggedTargetRuntimeId = runtimeId
-    end
+    updateLoggedTarget()
+    return state.target
 end
 
 local function requestRuntimeBindings()
@@ -59,16 +69,6 @@ local function maintainRuntimeBindingSync()
     if now < state.nextBindingRequestMs then return end
     state.nextBindingRequestMs = now + 2000
     requestRuntimeBindings()
-end
-
-local function onTick()
-    maintainRuntimeBindingSync()
-
-    state.tick = state.tick + 1
-    if state.tick >= 10 then
-        state.tick = 0
-        scanNearestQuestNPC()
-    end
 end
 
 local function requestDialogue()
@@ -88,7 +88,13 @@ end
 
 local function onKeyPressed(key)
     if key ~= Keyboard.KEY_E then return end
-    if not state.target or LCCQFDialoguePanel.instance then return end
+    if LCCQFDialoguePanel.instance then return end
+
+    -- Re-evaluate immediately on the input event. The key path never depends on
+    -- a previous render/update tick having discovered the target.
+    refreshTarget(true)
+    if not state.target then return end
+
     log("interaction requested npcId=" .. tostring(state.target.npcId)
         .. " runtimeId=" .. tostring(state.target.runtimeId))
     requestDialogue()
@@ -116,6 +122,9 @@ local function localizeDialogueState(args)
 end
 
 local function onPostUIDraw()
+    maintainRuntimeBindingSync()
+    refreshTarget(false)
+
     local now = getTimestampMs()
     local screenWidth = getCore():getScreenWidth()
     local screenHeight = getCore():getScreenHeight()
@@ -180,15 +189,16 @@ local function onServerCommand(module, command, args)
         local count = LCCQF.NPCRuntime.ReplaceRuntimeBindings(args.bindings)
         state.bindingsSynchronized = true
         log("runtime bindings synchronized count=" .. tostring(count))
-        scanNearestQuestNPC()
+        refreshTarget(true)
         return
     end
 
     if command == C.COMMAND.RUNTIME_BINDING_UPSERT then
-        if LCCQF.NPCRuntime.BindRuntime(args.runtimeId, args.npcId) then
+        if LCCQF.NPCRuntime.BindRuntime(args.runtimeId, args.npcId, args) then
             log("runtime binding received npcId=" .. tostring(args.npcId)
-                .. " runtimeId=" .. tostring(args.runtimeId))
-            scanNearestQuestNPC()
+                .. " runtimeId=" .. tostring(args.runtimeId)
+                .. " anchor=" .. tostring(args.x) .. "," .. tostring(args.y) .. "," .. tostring(args.z))
+            refreshTarget(true)
         end
         return
     end
@@ -220,15 +230,19 @@ local function onServerCommand(module, command, args)
 end
 
 local function onGameStart()
-    log("loaded version=" .. tostring(C.VERSION) .. " runtime=Bandits interactKey=E range=" .. tostring(C.INTERACTION_RANGE))
+    log("loaded version=" .. tostring(C.VERSION)
+        .. " runtime=Bandits interactKey=E range=" .. tostring(C.INTERACTION_RANGE)
+        .. " discovery=server-anchor")
     state.bindingsSynchronized = false
     state.nextBindingRequestMs = 0
+    state.nextTargetScanMs = 0
+    state.target = nil
+    state.loggedTargetRuntimeId = nil
     maintainRuntimeBindingSync()
 end
 
 Events.OnGameStart.Add(onGameStart)
-Events.OnTick.Add(onTick)
-Events.OnKeyStartPressed.Add(onKeyPressed)
+Events.OnKeyPressed.Add(onKeyPressed)
 Events.OnPostUIDraw.Add(onPostUIDraw)
 Events.OnServerCommand.Add(onServerCommand)
 Events.OnFillWorldObjectContextMenu.Add(onFillWorldObjectContextMenu)
