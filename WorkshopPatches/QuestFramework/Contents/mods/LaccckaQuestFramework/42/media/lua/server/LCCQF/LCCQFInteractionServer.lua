@@ -89,12 +89,19 @@ end
 
 local function broadcastRuntimeBinding(handle)
     if not handle or not handle.runtimeId or not handle.npcId then return end
-    sendServerCommand(C.MODULE, C.COMMAND.RUNTIME_BINDING_UPSERT, {
+
+    local payload = {
         runtimeId = tostring(handle.runtimeId),
         npcId = tostring(handle.npcId),
-    })
+        x = handle.x,
+        y = handle.y,
+        z = handle.z,
+    }
+    sendServerCommand(C.MODULE, C.COMMAND.RUNTIME_BINDING_UPSERT, payload)
+
     log("runtime binding broadcast npcId=" .. tostring(handle.npcId)
-        .. " runtimeId=" .. tostring(handle.runtimeId))
+        .. " runtimeId=" .. tostring(handle.runtimeId)
+        .. " anchor=" .. tostring(handle.x) .. "," .. tostring(handle.y) .. "," .. tostring(handle.z))
 end
 
 local function isPrivileged(player)
