@@ -50,7 +50,7 @@ rg -q 'ExportRuntimeBindings' "$client_bandits" \
     || fail "client adapter does not enumerate framework runtime bindings"
 rg -q 'runtimeAnchors' "$shared_runtime" \
     || fail "runtime anchor storage missing"
-rg -q 'ReplaceRuntimeBindings(entries)' "$server_bandits" \
+rg -q 'ReplaceRuntimeBindings\(entries\)' "$server_bandits" \
     || fail "server runtime refresh does not rebuild stale binding state"
 rg -q 'anchorFor' "$server_bandits" \
     || fail "Bandits server adapter does not publish interaction anchors"
