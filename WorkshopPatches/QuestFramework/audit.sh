@@ -4,9 +4,10 @@ set -euo pipefail
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 lua_root="$project_root/Contents/mods/LaccckaQuestFramework/42/media/lua"
 mod_info="$project_root/Contents/mods/LaccckaQuestFramework/42/mod.info"
-client_bandits="$lua_root/client/LCCQF/Runtime/LCCQFBanditsRuntime.lua"
 client_interaction="$lua_root/client/LCCQF/LCCQFInteractionClient.lua"
-server_bandits="$lua_root/server/LCCQF/Runtime/LCCQFBanditsRuntime.lua"
+legacy_client_bandits="$lua_root/client/LCCQF/Runtime/LCCQFBanditsRuntime.lua"
+server_bandits_wrapper="$lua_root/server/LCCQF/Runtime/LCCQFBanditsRuntime.lua"
+server_bandits="$lua_root/server/LCCQF/Runtime/LCCQFBanditsServerRuntime.lua"
 shared_runtime="$lua_root/shared/LCCQF/Core/LCCQFNPCRuntime.lua"
 
 fail() {
@@ -17,12 +18,16 @@ fail() {
 for required in \
     "$lua_root/shared/LCCQF/Core/LCCQFNPCRegistry.lua" \
     "$shared_runtime" \
-    "$client_bandits" \
+    "$client_interaction" \
+    "$server_bandits_wrapper" \
     "$server_bandits" \
     "$lua_root/server/LCCQF/Dialogue/LCCQFDialogueSession.lua"
 do
     [[ -f "$required" ]] || fail "missing $required"
 done
+
+[[ ! -e "$legacy_client_bandits" ]] \
+    || fail "legacy client/server Bandits runtime module-name collision reintroduced"
 
 non_runtime_files=(
     "$client_interaction"
@@ -33,29 +38,43 @@ non_runtime_files=(
 )
 
 if rg -n 'Bandit(Brain|Custom|Server)|require "Bandit"' "${non_runtime_files[@]}"; then
-    fail "Bandits API escaped the runtime adapter boundary"
+    fail "Bandits API escaped the server runtime adapter boundary"
 fi
 
 if rg -n 'getZombieList\(' "$lua_root"; then
     fail "broad zombie scan reintroduced"
 fi
 
-if rg -n 'BanditBrain|BanditUtils|BanditZombie|Bandit\.ApplyVisuals|IsoZombie|getMovingObjects' "$client_bandits"; then
-    fail "client interaction discovery depends on Bandits physical-object lookup"
+if rg -n 'LCCQF/Runtime/LCCQFBanditsRuntime' "$client_interaction"; then
+    fail "client interaction depends on a Bandits adapter module"
 fi
 
-rg -q 'GetRuntimeAnchor' "$client_bandits" \
-    || fail "client adapter is not driven by synchronized interaction anchors"
-rg -q 'ExportRuntimeBindings' "$client_bandits" \
-    || fail "client adapter does not enumerate framework runtime bindings"
+rg -q 'function Runtime\.FindNearestInteractive' "$shared_runtime" \
+    || fail "provider-neutral interaction discovery missing"
 rg -q 'runtimeAnchors' "$shared_runtime" \
     || fail "runtime anchor storage missing"
-rg -q 'ReplaceRuntimeBindings\(entries\)' "$server_bandits" \
-    || fail "server runtime refresh does not rebuild stale binding state"
+rg -q 'activeRuntimeByNPCId' "$shared_runtime" \
+    || fail "one-active-runtime-per-npc invariant missing"
+rg -q 'definition\.interactive ~= false' "$shared_runtime" \
+    || fail "generic framework interaction eligibility missing"
+
+rg -q 'LCCQFBanditsServerRuntime' "$server_bandits_wrapper" \
+    || fail "legacy server module does not redirect to unique server runtime"
+rg -q 'RUNTIME:BANDITS:SERVER' "$server_bandits" \
+    || fail "unique Bandits server runtime marker missing"
+rg -q 'function Adapter\.RefreshRuntimeBindings' "$server_bandits" \
+    || fail "server runtime binding sync hook missing"
+rg -q 'ExportRuntimeBindings' "$server_bandits" \
+    || fail "server runtime refresh is not framework-state based"
 rg -q 'anchorFor' "$server_bandits" \
     || fail "Bandits server adapter does not publish interaction anchors"
+
+if rg -n 'brain\.key\s*==\s*definition\.npcId|Registry\.IsRegistered\(brain\.key\)' "$server_bandits"; then
+    fail "legacy Bandits brain.key quest identity restoration reintroduced"
+fi
+
 rg -q 'Events\.OnKeyPressed\.Add' "$client_interaction" \
-    || fail "interaction input is not using the proven OnKeyPressed event"
+    || fail "interaction input is not using OnKeyPressed"
 
 if rg -n 'Events\.OnKeyStartPressed\.Add|Events\.OnTick\.Add\(onTick\)' "$client_interaction"; then
     fail "legacy client interaction polling path reintroduced"
@@ -65,12 +84,12 @@ if rg -n 'choice\.next|showNode\(' "$lua_root/client"; then
     fail "client-owned dialogue transition reintroduced"
 fi
 
-rg -q '^modversion=0\.2\.7$' "$mod_info" || fail "mod.info version mismatch"
-rg -q 'Constants\.VERSION = "0\.2\.7"' "$lua_root/shared/LCCQF/LCCQFConstants.lua" \
+rg -q '^modversion=0\.2\.8$' "$mod_info" || fail "mod.info version mismatch"
+rg -q 'Constants\.VERSION = "0\.2\.8"' "$lua_root/shared/LCCQF/LCCQFConstants.lua" \
     || fail "Lua version mismatch"
 
 if rg -n 'brain\.key\s*=\s*definition\.npcId|key\s*=\s*definition\.npcId' \
-    "$lua_root/client/LCCQF/Runtime" "$lua_root/server/LCCQF/Runtime"; then
+    "$lua_root/server/LCCQF/Runtime"; then
     fail "framework npcId escaped into Bandits2 numeric door-key field"
 fi
 
