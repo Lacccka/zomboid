@@ -6,6 +6,7 @@ local Runtime = LCCQF.NPCRuntime or {}
 local adapters = Runtime.adapters or {}
 local runtimeBindings = Runtime.runtimeBindings or {}
 local runtimeAnchors = Runtime.runtimeAnchors or {}
+local activeRuntimeByNPCId = Runtime.activeRuntimeByNPCId or {}
 
 local function normalizeRuntimeId(runtimeId)
     if runtimeId == nil then return nil end
@@ -33,6 +34,18 @@ local function normalizeAnchor(anchor)
     return { x = x, y = y, z = z }
 end
 
+local function clearRuntimeKey(key)
+    if not key then return end
+
+    local npcId = runtimeBindings[key]
+    runtimeBindings[key] = nil
+    runtimeAnchors[key] = nil
+
+    if npcId and activeRuntimeByNPCId[npcId] == key then
+        activeRuntimeByNPCId[npcId] = nil
+    end
+end
+
 function Runtime.RegisterAdapter(adapterId, adapter)
     if type(adapterId) ~= "string" or adapterId == "" or type(adapter) ~= "table" then
         return false
@@ -57,7 +70,20 @@ function Runtime.BindRuntime(runtimeId, npcId, anchor)
         return false
     end
 
+    local previousNpcId = runtimeBindings[key]
+    if previousNpcId and previousNpcId ~= npcId and activeRuntimeByNPCId[previousNpcId] == key then
+        activeRuntimeByNPCId[previousNpcId] = nil
+    end
+
+    -- One logical framework NPC may expose only one active runtime handle.
+    -- This prevents stale Bandits runtime ids from competing for one npcId.
+    local previousRuntimeId = activeRuntimeByNPCId[npcId]
+    if previousRuntimeId and previousRuntimeId ~= key then
+        clearRuntimeKey(previousRuntimeId)
+    end
+
     runtimeBindings[key] = npcId
+    activeRuntimeByNPCId[npcId] = key
 
     local normalizedAnchor = normalizeAnchor(anchor)
     if normalizedAnchor then
@@ -72,8 +98,7 @@ function Runtime.UnbindRuntime(runtimeId, npcId)
     if not key then return false end
     if npcId ~= nil and runtimeBindings[key] ~= npcId then return false end
 
-    runtimeBindings[key] = nil
-    runtimeAnchors[key] = nil
+    clearRuntimeKey(key)
     return true
 end
 
@@ -85,6 +110,11 @@ end
 function Runtime.GetRuntimeAnchor(runtimeId)
     local key = normalizeRuntimeId(runtimeId)
     return key and runtimeAnchors[key] or nil
+end
+
+function Runtime.GetActiveRuntimeId(npcId)
+    if type(npcId) ~= "string" then return nil end
+    return activeRuntimeByNPCId[npcId]
 end
 
 function Runtime.ExportRuntimeBindings()
@@ -112,27 +142,66 @@ function Runtime.ReplaceRuntimeBindings(entries)
     for runtimeId in pairs(runtimeAnchors) do
         runtimeAnchors[runtimeId] = nil
     end
+    for npcId in pairs(activeRuntimeByNPCId) do
+        activeRuntimeByNPCId[npcId] = nil
+    end
+
+    if type(entries) == "table" then
+        for _, entry in ipairs(entries) do
+            if type(entry) == "table" then
+                Runtime.BindRuntime(entry.runtimeId, entry.npcId, entry)
+            end
+        end
+    end
 
     local count = 0
-    if type(entries) ~= "table" then return count end
-    for _, entry in ipairs(entries) do
-        if type(entry) == "table" and Runtime.BindRuntime(entry.runtimeId, entry.npcId, entry) then
-            count = count + 1
-        end
+    for _ in pairs(runtimeBindings) do
+        count = count + 1
     end
     return count
 end
 
+-- Client prompt discovery is provider-neutral. A synchronized framework binding
+-- plus its server-owned interaction anchor is sufficient to select a candidate.
+-- Provider adapters are reserved for authoritative Spawn/ResolveForPlayer work.
 function Runtime.FindNearestInteractive(player, range)
+    if not player or player:isDead() then return nil end
+
+    local numericRange = finiteNumber(range)
+    if not numericRange or numericRange <= 0 then return nil end
+
+    local px = player:getX()
+    local py = player:getY()
+    local pz = player:getZ()
+    local rangeSq = numericRange * numericRange
     local best = nil
-    for _, adapter in pairs(adapters) do
-        if adapter.FindNearestInteractive then
-            local candidate = adapter.FindNearestInteractive(player, range)
-            if candidate and (not best or candidate.distanceSq < best.distanceSq) then
-                best = candidate
+
+    for runtimeId, npcId in pairs(runtimeBindings) do
+        local definition = LCCQF.NPCRegistry.Get(npcId)
+        local anchor = runtimeAnchors[runtimeId]
+
+        if definition and anchor and definition.interactive ~= false then
+            local dz = math.abs(anchor.z - pz)
+            if dz < 0.5 then
+                local dx = anchor.x - px
+                local dy = anchor.y - py
+                local distanceSq = dx * dx + dy * dy
+
+                if distanceSq <= rangeSq and (not best or distanceSq < best.distanceSq) then
+                    best = {
+                        npcId = definition.npcId,
+                        runtimeId = runtimeId,
+                        displayNameKey = definition.displayNameKey,
+                        distanceSq = distanceSq,
+                        anchorX = anchor.x,
+                        anchorY = anchor.y,
+                        anchorZ = anchor.z,
+                    }
+                end
             end
         end
     end
+
     return best
 end
 
@@ -153,6 +222,7 @@ end
 Runtime.adapters = adapters
 Runtime.runtimeBindings = runtimeBindings
 Runtime.runtimeAnchors = runtimeAnchors
+Runtime.activeRuntimeByNPCId = activeRuntimeByNPCId
 LCCQF.NPCRuntime = Runtime
 
 return Runtime
