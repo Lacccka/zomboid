@@ -157,20 +157,39 @@ local function findFromBanditsCache(playerX, playerY, playerZ, rangeSq)
     return best
 end
 
-local function findFromZombieList(cell, playerX, playerY, playerZ, rangeSq)
-    if not cell or not cell.getZombieList then return nil end
-
-    local zombies = cell:getZombieList()
-    if not zombies then return nil end
-
+local function findFromNearbySquares(cell, playerX, playerY, playerZ, rangeSq, range)
     local best = nil
-    for i = 0, zombies:size() - 1 do
-        local zombie = zombies:get(i)
-        local candidate = getObjectCandidate(zombie, playerX, playerY, playerZ, rangeSq, nil)
-        if candidate and (not best or candidate.distanceSq < best.distanceSq) then
-            best = candidate
+    local z = math.floor(playerZ)
+    local tileRange = math.ceil(range) + 1
+
+    -- Local fallback for the short window before BanditZombie.CacheLightB is
+    -- warm. This mirrors the proximity-scanner pattern used by dialogue mods,
+    -- but provider ownership is checked through Bandits2's Bandit variable and
+    -- quest identity still comes from the server-synchronized binding map.
+    for x = math.floor(playerX) - tileRange, math.floor(playerX) + tileRange do
+        for y = math.floor(playerY) - tileRange, math.floor(playerY) + tileRange do
+            local square = cell:getGridSquare(x, y, z)
+            if square then
+                local movingObjects = square:getMovingObjects()
+                if movingObjects then
+                    for i = 0, movingObjects:size() - 1 do
+                        local candidate = getObjectCandidate(
+                            movingObjects:get(i),
+                            playerX,
+                            playerY,
+                            playerZ,
+                            rangeSq,
+                            nil
+                        )
+                        if candidate and (not best or candidate.distanceSq < best.distanceSq) then
+                            best = candidate
+                        end
+                    end
+                end
+            end
         end
     end
+
     return best
 end
 
@@ -185,15 +204,12 @@ function Adapter.FindNearestInteractive(player, range)
     local pz = player:getZ()
     local rangeSq = range * range
 
-    -- Bandits2 itself maintains this cache from OnZombieUpdate and uses
-    -- cell:getZombieList() when rebuilding it. Reuse the provider's canonical
-    -- client runtime view instead of assuming every nearby square already has a
-    -- synchronized brain in zombie ModData.
+    -- Bandits2's own client runtime view is the primary source. Crucially, a
+    -- synchronized zombie ModData.brain is optional rather than a prerequisite.
     local best = findFromBanditsCache(px, py, pz, rangeSq)
     if best then return best end
 
-    -- Initial/late-join fallback before BanditZombie.CacheLightB is populated.
-    return findFromZombieList(cell, px, py, pz, rangeSq)
+    return findFromNearbySquares(cell, px, py, pz, rangeSq, range)
 end
 
 LCCQF.NPCRuntime.RegisterAdapter("Bandits", Adapter)
