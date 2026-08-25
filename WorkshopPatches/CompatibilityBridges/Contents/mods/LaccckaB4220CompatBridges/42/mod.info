@@ -4,4 +4,4 @@ author=Lacccka
 description=Targeted legacy API and module-path compatibility bridges for selected Build 42 mods. Lacccka B42 Patch Core is strongly recommended; without Core this patch runs in degraded fallback mode and correct operation is not guaranteed. Patch files only; original mods are not included.
 modversion=1.1.0
 versionMin=42.20.0
-loadafter=\LaccckaB4220PatchCore,\ModernFirearmsSystem,\MFS_community_fix,\PZKCarzoneWorkshop,\PzkVanillaPlusCarPack,\StandardizedVehicleUpgrades3Core,\tsarslib,\zReFRAMEWORK
+loadModAfter=\LaccckaB4220PatchCore,\ModernFirearmsSystem,\MFS_community_fix,\PZKCarzoneWorkshop,\PzkVanillaPlusCarPack,\StandardizedVehicleUpgrades3Core,\tsarslib,\zReFRAMEWORK
