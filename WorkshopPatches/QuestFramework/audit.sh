@@ -5,13 +5,23 @@ project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 lua_root="$project_root/Contents/mods/LaccckaQuestFramework/42/media/lua"
 mod_info="$project_root/Contents/mods/LaccckaQuestFramework/42/mod.info"
 client_interaction="$lua_root/client/LCCQF/LCCQFInteractionClient.lua"
+client_quest_state="$lua_root/client/LCCQF/Quest/LCCQFQuestClientState.lua"
 legacy_client_bandits="$lua_root/client/LCCQF/Runtime/LCCQFBanditsRuntime.lua"
 server_interaction="$lua_root/server/LCCQF/LCCQFInteractionServer.lua"
 server_bandits_wrapper="$lua_root/server/LCCQF/Runtime/LCCQFBanditsRuntime.lua"
 server_bandits="$lua_root/server/LCCQF/Runtime/LCCQFBanditsServerRuntime.lua"
 dialogue_session="$lua_root/server/LCCQF/Dialogue/LCCQFDialogueSession.lua"
+dialogue_content="$lua_root/server/LCCQF/Content/LCCQFDialogueContent.lua"
+quest_definitions="$lua_root/server/LCCQF/Content/LCCQFQuestDefinitions.lua"
+quest_registry="$lua_root/server/LCCQF/Quest/LCCQFQuestRegistry.lua"
+quest_instance="$lua_root/server/LCCQF/Quest/LCCQFQuestInstance.lua"
+quest_service="$lua_root/server/LCCQF/Quest/LCCQFQuestService.lua"
+objective_reach="$lua_root/server/LCCQF/Quest/Objectives/LCCQFObjectiveReachArea.lua"
+objective_talk="$lua_root/server/LCCQF/Quest/Objectives/LCCQFObjectiveTalkToNPC.lua"
 shared_runtime="$lua_root/shared/LCCQF/Core/LCCQFNPCRuntime.lua"
 constants="$lua_root/shared/LCCQF/LCCQFConstants.lua"
+translation_en="$lua_root/shared/Translate/EN/IG_UI.json"
+translation_ru="$lua_root/shared/Translate/RU/IG_UI.json"
 
 fail() {
     echo "QuestFramework audit: FAIL: $1" >&2
@@ -22,10 +32,20 @@ for required in \
     "$lua_root/shared/LCCQF/Core/LCCQFNPCRegistry.lua" \
     "$shared_runtime" \
     "$client_interaction" \
+    "$client_quest_state" \
     "$server_interaction" \
     "$server_bandits_wrapper" \
     "$server_bandits" \
-    "$dialogue_session"
+    "$dialogue_session" \
+    "$dialogue_content" \
+    "$quest_definitions" \
+    "$quest_registry" \
+    "$quest_instance" \
+    "$quest_service" \
+    "$objective_reach" \
+    "$objective_talk" \
+    "$translation_en" \
+    "$translation_ru"
 do
     [[ -f "$required" ]] || fail "missing $required"
 done
@@ -35,8 +55,15 @@ done
 
 non_runtime_files=(
     "$client_interaction"
+    "$client_quest_state"
     "$lua_root/client/LCCQF/UI/LCCQFDialoguePanel.lua"
     "$server_interaction"
+    "$dialogue_session"
+    "$quest_registry"
+    "$quest_instance"
+    "$quest_service"
+    "$objective_reach"
+    "$objective_talk"
     "$lua_root/shared/LCCQF/Core/LCCQFNPCRegistry.lua"
     "$shared_runtime"
 )
@@ -100,6 +127,43 @@ rg -q 'function DialogueSession\.InvalidateRuntime' "$dialogue_session" \
 rg -q 'GetActiveRuntimeId' "$server_interaction" \
     || fail "server does not reject stale runtime ids before dialogue operations"
 
+rg -q 'function QuestRegistry\.Register' "$quest_registry" \
+    || fail "quest definition registry missing"
+rg -q 'function QuestInstance\.Create' "$quest_instance" \
+    || fail "QuestInstance creation missing"
+rg -q 'function QuestInstance\.CompleteCurrentObjective' "$quest_instance" \
+    || fail "QuestInstance objective transition missing"
+rg -q 'function QuestService\.Accept' "$quest_service" \
+    || fail "server quest accept path missing"
+rg -q 'function QuestService\.NotifyTalkToNPC' "$quest_service" \
+    || fail "TalkToNPC server transition missing"
+rg -q 'function QuestService\.Tick' "$quest_service" \
+    || fail "server objective update loop missing"
+rg -q 'QuestService\.NotifyTalkToNPC' "$server_interaction" \
+    || fail "validated dialogue interaction is not connected to TalkToNPC objectives"
+rg -q 'QuestService\.EvaluateCondition' "$server_interaction" \
+    || fail "dialogue choice conditions are not server-authoritative"
+rg -q 'QuestService\.ExecuteAction' "$server_interaction" \
+    || fail "dialogue quest actions are not server-authoritative"
+rg -q 'isChoiceAvailable' "$dialogue_session" \
+    || fail "dialogue session does not revalidate conditional choices"
+rg -q 'questAccept' "$dialogue_content" \
+    || fail "first dialogue quest offer missing"
+rg -q 'type = "ReachArea"' "$quest_definitions" \
+    || fail "first ReachArea objective missing"
+rg -q 'type = "TalkToNPC"' "$quest_definitions" \
+    || fail "first return-to-NPC objective missing"
+rg -q 'REQUEST_QUESTS' "$constants" \
+    || fail "quest state request protocol missing"
+rg -q 'QUEST_UPSERT' "$server_interaction" \
+    || fail "server quest view synchronization missing"
+rg -q 'QuestClientState\.Apply' "$client_interaction" \
+    || fail "client sanitized quest view store not connected"
+
+if rg -n 'QuestService\.(Accept|ExecuteAction|NotifyTalkToNPC|Tick)|CompleteCurrentObjective|questAccept' "$lua_root/client"; then
+    fail "client-owned quest state transition reintroduced"
+fi
+
 rg -q 'Events\.OnKeyPressed\.Add' "$client_interaction" \
     || fail "interaction input is not using OnKeyPressed"
 
@@ -111,8 +175,8 @@ if rg -n 'choice\.next|showNode\(' "$lua_root/client"; then
     fail "client-owned dialogue transition reintroduced"
 fi
 
-rg -q '^modversion=0\.2\.9$' "$mod_info" || fail "mod.info version mismatch"
-rg -q 'Constants\.VERSION = "0\.2\.9"' "$constants" \
+rg -q '^modversion=0\.3\.0$' "$mod_info" || fail "mod.info version mismatch"
+rg -q 'Constants\.VERSION = "0\.3\.0"' "$constants" \
     || fail "Lua version mismatch"
 
 if rg -n 'brain\.key\s*=\s*definition\.npcId|key\s*=\s*definition\.npcId' \
@@ -122,6 +186,11 @@ fi
 
 if LC_ALL=C rg -n '[^\x00-\x7F]' "$lua_root" -g '*.lua'; then
     fail "non-ASCII user-facing text reintroduced into Lua/network payloads"
+fi
+
+if command -v python3 >/dev/null 2>&1; then
+    python3 -m json.tool "$translation_en" >/dev/null
+    python3 -m json.tool "$translation_ru" >/dev/null
 fi
 
 if command -v lua >/dev/null 2>&1; then
