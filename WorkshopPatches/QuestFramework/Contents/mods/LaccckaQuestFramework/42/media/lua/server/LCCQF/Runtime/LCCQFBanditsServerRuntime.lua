@@ -9,13 +9,16 @@ local C = LCCQF.Constants
 local Adapter = {}
 local bindings = {}
 local NPC_ID_FIELD = "lccqNpcId"
+local UNLOAD_GRACE_MS = 750
+local REBIND_DISCOVERY_RANGE = 8
+local bindingEventSink = nil
 
 local function log(message)
     print(C.LOG_PREFIX .. "[RUNTIME:BANDITS:SERVER] " .. tostring(message))
 end
 
-local function getBrain(zombie)
-    if not zombie or zombie:isDead() then return nil end
+local function getBrainRaw(zombie)
+    if not zombie then return nil end
 
     local brain = BanditBrain.Get(zombie)
     if brain then return brain end
@@ -24,6 +27,11 @@ local function getBrain(zombie)
     local gmd = runtimeId ~= nil and GetBanditClusterData(runtimeId) or nil
     if not gmd then return nil end
     return gmd[runtimeId] or gmd[tostring(runtimeId)]
+end
+
+local function getBrain(zombie)
+    if not zombie or zombie:isDead() then return nil end
+    return getBrainRaw(zombie)
 end
 
 local function anchorFor(zombie, brain)
@@ -47,15 +55,28 @@ local function anchorFor(zombie, brain)
     return nil
 end
 
+local function emitBindingEvent(kind, handle, reason)
+    if not bindingEventSink or not handle or not handle.runtimeId or not handle.npcId then return end
+    bindingEventSink(kind, {
+        runtimeId = tostring(handle.runtimeId),
+        npcId = tostring(handle.npcId),
+        x = handle.x,
+        y = handle.y,
+        z = handle.z,
+    }, reason)
+end
+
 local function makeHandle(zombie, brain, definition)
     if not brain or not definition or brain.id == nil then return nil end
 
     local anchor = anchorFor(zombie, brain)
     local handle = {
         entity = zombie,
+        brain = brain,
         npcId = definition.npcId,
         runtimeId = tostring(brain.id),
         displayNameKey = definition.displayNameKey,
+        missingSinceMs = nil,
     }
     if anchor then
         handle.x = anchor.x
@@ -76,9 +97,9 @@ end
 local function getNPCId(brain)
     if not brain then return nil end
 
-    -- Only the namespaced field is authoritative in 0.2.8. Older experiments
-    -- wrote npcId into Bandits' brain.key (a numeric door-key field); do not
-    -- resurrect those legacy bindings from persisted Bandits clusters.
+    -- Only the namespaced field is authoritative. Older experiments wrote
+    -- npcId into Bandits' brain.key (a numeric door-key field); never restore
+    -- framework identity from that provider-owned field.
     if type(brain[NPC_ID_FIELD]) == "string"
         and LCCQF.NPCRegistry.IsRegistered(brain[NPC_ID_FIELD])
     then
@@ -88,11 +109,14 @@ local function getNPCId(brain)
     return nil
 end
 
+function Adapter.SetBindingEventSink(sink)
+    bindingEventSink = type(sink) == "function" and sink or nil
+end
+
 function Adapter.RefreshRuntimeBindings()
-    -- Framework-owned persistence is intentionally deferred. Do not reconstruct
-    -- quest bindings from every historical Bandits cluster on startup: the 0.2.7
-    -- acceptance run proved that this resurrects multiple runtime ids for one
-    -- logical npcId. Current-process bindings are already stored in NPCRuntime.
+    -- Framework-owned persistence is intentionally deferred. Current-process
+    -- logical bindings are synchronized from NPCRuntime only; historical
+    -- Bandits clusters are not resurrected as framework NPCs at startup.
     return #LCCQF.NPCRuntime.ExportRuntimeBindings()
 end
 
@@ -253,17 +277,128 @@ local function findSpawnSquare(player)
     return nil
 end
 
+local function invalidateDeadZombie(zombie)
+    if not zombie then return end
+
+    local runtimeId = BanditUtils.GetZombieID(zombie)
+    local brain = getBrainRaw(zombie)
+    local npcId = runtimeId ~= nil and LCCQF.NPCRuntime.GetBoundNPCId(runtimeId) or nil
+    npcId = npcId or getNPCId(brain)
+    if not runtimeId or not npcId then return end
+
+    local cached = bindings[npcId]
+    if cached and tostring(cached.runtimeId) == tostring(runtimeId) then
+        bindings[npcId] = nil
+    end
+
+    if LCCQF.NPCRuntime.UnbindRuntime(runtimeId, npcId) then
+        local handle = cached or {
+            runtimeId = tostring(runtimeId),
+            npcId = npcId,
+        }
+        emitBindingEvent("remove", handle, "death")
+        log("runtime invalidated reason=death npcId=" .. tostring(npcId)
+            .. " runtimeId=" .. tostring(runtimeId))
+    end
+end
+
+local function safeSquare(zombie)
+    if not zombie or not zombie.getSquare then return nil end
+    local ok, square = pcall(zombie.getSquare, zombie)
+    return ok and square or nil
+end
+
+local function playerNearAnchor(player, handle, range)
+    if not player or not handle or handle.x == nil or handle.y == nil or handle.z == nil then return false end
+    if player:isDead() or math.abs(player:getZ() - handle.z) >= 0.5 then return false end
+    local dx = player:getX() - handle.x
+    local dy = player:getY() - handle.y
+    return (dx * dx + dy * dy) <= (range * range)
+end
+
+local function tryRebindInactive(handle)
+    if not handle or handle.entity or not getOnlinePlayers then return false end
+    local definition = LCCQF.NPCRegistry.Get(handle.npcId)
+    if not definition then return false end
+
+    local players = getOnlinePlayers()
+    if not players then return false end
+
+    for i = 0, players:size() - 1 do
+        local player = players:get(i)
+        if playerNearAnchor(player, handle, REBIND_DISCOVERY_RANGE) then
+            local rebound = scanNearPlayer(player, definition, handle.runtimeId, REBIND_DISCOVERY_RANGE)
+            if rebound then
+                emitBindingEvent("upsert", rebound, "rematerialized")
+                log("runtime rebound npcId=" .. tostring(rebound.npcId)
+                    .. " runtimeId=" .. tostring(rebound.runtimeId))
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+function Adapter.ReconcileRuntimeBindings()
+    local now = getTimestampMs()
+    local removed = 0
+    local rebound = 0
+
+    for npcId, handle in pairs(bindings) do
+        if handle.entity then
+            if handle.entity:isDead() then
+                invalidateDeadZombie(handle.entity)
+                removed = removed + 1
+            else
+                local square = safeSquare(handle.entity)
+                if square then
+                    handle.missingSinceMs = nil
+                    local brain = getBrain(handle.entity)
+                    if brain then
+                        local anchor = anchorFor(handle.entity, brain)
+                        handle.x = anchor and anchor.x or handle.x
+                        handle.y = anchor and anchor.y or handle.y
+                        handle.z = anchor and anchor.z or handle.z
+                        LCCQF.NPCRuntime.BindRuntime(handle.runtimeId, npcId, anchor)
+                    end
+                else
+                    handle.missingSinceMs = handle.missingSinceMs or now
+                    if now - handle.missingSinceMs >= UNLOAD_GRACE_MS then
+                        handle.entity = nil
+                        handle.missingSinceMs = nil
+                        if LCCQF.NPCRuntime.UnbindRuntime(handle.runtimeId, npcId) then
+                            emitBindingEvent("remove", handle, "unload")
+                            removed = removed + 1
+                            log("runtime invalidated reason=unload npcId=" .. tostring(npcId)
+                                .. " runtimeId=" .. tostring(handle.runtimeId))
+                        end
+                    end
+                end
+            end
+        elseif LCCQF.NPCRuntime.GetActiveRuntimeId(npcId) == nil then
+            if tryRebindInactive(handle) then rebound = rebound + 1 end
+        end
+    end
+
+    return removed, rebound
+end
+
 function Adapter.ResolveForPlayer(player, definition, runtimeId, range)
     if not definition or definition.runtime.adapter ~= "Bandits" then return nil end
 
     local cached = bindings[definition.npcId]
     if cached and cached.entity then
-        local brain = matches(cached.entity, definition, runtimeId)
-        if brain and isInRange(player, cached.entity, range) then
-            ensureState(cached.entity, brain, definition)
-            return bind(cached.entity, brain, definition)
+        local brain = matches(cached.entity, definition, nil)
+        if brain then
+            local runtimeMatches = runtimeId == nil or tostring(cached.runtimeId) == tostring(runtimeId)
+            if runtimeMatches and isInRange(player, cached.entity, range) then
+                ensureState(cached.entity, brain, definition)
+                return bind(cached.entity, brain, definition)
+            end
+            return nil
         end
-        bindings[definition.npcId] = nil
+        cached.entity = nil
     end
 
     return scanNearPlayer(player, definition, runtimeId, range)
@@ -336,6 +471,11 @@ function Adapter.Spawn(player, definition)
 end
 
 LCCQF.NPCRuntime.RegisterAdapter("Bandits", Adapter)
+
+if isServer and isServer() then
+    Events.OnZombieDead.Add(invalidateDeadZombie)
+end
+
 log("adapter registered module=LCCQFBanditsServerRuntime")
 
 return Adapter
