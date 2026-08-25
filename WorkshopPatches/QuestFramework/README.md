@@ -85,7 +85,7 @@ Framework-owned NPC persistence is still deferred. The Bandits server adapter th
 ## Test deployment
 
 1. Sync/copy `LaccckaQuestFramework` and confirm both sides load `0.2.8`.
-2. On dedicated-server startup expect the server-only runtime marker, never the old client runtime marker:
+2. On dedicated-server startup expect the server runtime marker:
 
 ```text
 [LCCQF][RUNTIME:BANDITS:SERVER] adapter registered module=LCCQFBanditsServerRuntime
@@ -109,17 +109,35 @@ Framework-owned NPC persistence is still deferred. The Bandits server adapter th
 [LCCQF][CLIENT] dialogue state session=... node=...
 ```
 
-If `key-no-target` appears again, its diagnostic now includes registry/interaction and vehicle state; however the generic target query uses the same binding/anchor/registry conditions and does not reject players merely for being in a vehicle.
-
 ## Validation status
 
-- 0.2.7 is confirmed active in the latest failed dedicated-server/client run;
-- its bindings, anchors, same-Z calculation, range calculation and `OnKeyPressed` path are all proven working by the log;
-- the remaining nil target is isolated to the old adapter-dispatch layer;
-- Build 42.20.3 game source proves the client/server same-name runtime modules were unsafe on dedicated server;
-- v0.2.8 removes client provider dispatch from prompt selection, removes the client Bandits runtime module, gives the server implementation a unique module name and enforces one active runtime per logical NPC;
-- fresh in-game acceptance is still required before any final report is created.
+**0.2.8 passed the dedicated-server/client vertical-slice acceptance on Build 42.20.3.**
+
+The accepted run confirmed:
+
+- initial clean full sync with `count=0`;
+- runtime binding broadcast and immediate client `interaction target acquired`;
+- `[E]` interaction request delivery;
+- server-authoritative dialogue open;
+- repeated `start / who / work` node transitions;
+- session close and finish paths;
+- authoritative rejection after the first NPC died;
+- replacement with a new runtime id and successful interaction;
+- reconnect/full-sync recovery with `count=1` and automatic target reacquisition;
+- client range loss and `DialogueTooFar` enforcement;
+- no Quest Framework Lua runtime exception or crash during the accepted interaction sequence.
+
+The final acceptance report is stored in:
+
+`docs/final-reports/quest-framework-interaction-dialogue-acceptance-2026-08-25.md`
+
+Two residual observations remain intentionally open: stale client binding/anchor state is not proactively removed when the physical NPC dies or unloads, and one near-boundary request after reconnect was transiently rejected as `NPCUnavailable` before succeeding less than a second later.
 
 ## Next milestone
 
-Do not add quests, trading, journal state or framework-owned persistence until this vertical slice passes dedicated-server acceptance.
+Do one stabilization/multiplayer pass before adding real quest state:
+
+1. add explicit runtime binding invalidation/removal for NPC death/unload/replacement;
+2. instrument or smooth the short client/server range-edge mismatch without weakening exact runtime-id validation;
+3. run a two-client acceptance: both clients discover the same NPC, maintain independent `DialogueSession` state, survive one client disconnect/reconnect, and receive binding invalidation consistently;
+4. after that passes, introduce the first minimal server-owned `QuestInstance` lifecycle: offer -> accept -> objective state -> complete/cancel, with journal/trading/rewards still deferred.
