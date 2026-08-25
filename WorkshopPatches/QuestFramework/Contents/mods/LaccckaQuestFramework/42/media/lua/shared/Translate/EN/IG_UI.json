@@ -15,12 +15,29 @@
     "IGUI_LCCQF_Status_DialogueTooFar": "Dialogue closed because the NPC is no longer nearby.",
     "IGUI_LCCQF_Status_ChoiceUnavailable": "That response is not currently available.",
     "IGUI_LCCQF_Status_GenericError": "Quest Framework request failed.",
+
     "IGUI_LCCQF_Dialog_Start": "You do not look local. If you came to talk, talk. I am not going anywhere yet.",
-    "IGUI_LCCQF_Dialog_Work": "There will be work. For now, this only tests our dialogue system. Later the server will be able to create a real quest from here.",
+    "IGUI_LCCQF_Dialog_WorkOffer": "I do have something. There is an old checkpoint about a dozen steps east of here. Go make sure you can reach the place, then come back to me.",
+    "IGUI_LCCQF_Dialog_WorkAccepted": "Good. Head east from here, reach the old checkpoint area, and then return to me.",
+    "IGUI_LCCQF_Dialog_WorkActive": "The checkpoint is still waiting. Head east from here, reach the area, then come back.",
+    "IGUI_LCCQF_Dialog_WorkCompleted": "That is enough for now. You reached the checkpoint and came back. The job is done.",
     "IGUI_LCCQF_Dialog_Who": "Call me Alexey. To the server I am a test NPC; to you I am the first person this system can talk through.",
+
     "IGUI_LCCQF_Choice_AskWork": "Any work?",
+    "IGUI_LCCQF_Choice_QuestInProgress": "About the checkpoint...",
+    "IGUI_LCCQF_Choice_QuestCompletedTopic": "About that checkpoint...",
+    "IGUI_LCCQF_Choice_AcceptQuest": "I will check it.",
+    "IGUI_LCCQF_Choice_DeclineQuest": "Not now.",
     "IGUI_LCCQF_Choice_AskIdentity": "Who are you?",
     "IGUI_LCCQF_Choice_Leave": "Leave",
     "IGUI_LCCQF_Choice_Understood": "Understood.",
-    "IGUI_LCCQF_Choice_Back": "Return to the conversation."
+    "IGUI_LCCQF_Choice_Back": "Return to the conversation.",
+
+    "IGUI_LCCQF_Quest_Checkpoint_Title": "Old Checkpoint",
+    "IGUI_LCCQF_Quest_Checkpoint_Description": "Alexey asked you to reach an old checkpoint a short distance east of him and then return.",
+    "IGUI_LCCQF_Quest_Checkpoint_Objective_Reach": "Reach the old checkpoint area",
+    "IGUI_LCCQF_Quest_Checkpoint_Objective_Return": "Return to Alexey",
+    "IGUI_LCCQF_QuestEvent_Accepted": "Quest accepted: Old Checkpoint.",
+    "IGUI_LCCQF_QuestEvent_ObjectiveComplete": "Quest objective completed.",
+    "IGUI_LCCQF_QuestEvent_Completed": "Quest completed: Old Checkpoint."
 }
