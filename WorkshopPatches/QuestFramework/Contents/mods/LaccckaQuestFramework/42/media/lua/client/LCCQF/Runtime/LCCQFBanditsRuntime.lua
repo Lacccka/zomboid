@@ -40,14 +40,13 @@ local function collectRuntimeIds(object, brain, cacheId)
     local ids = {}
     local seen = {}
 
-    -- brain.id is the id Bandits2's server spawner persists and the id LCCQF
-    -- broadcasts. Prefer it whenever the client already has a brain snapshot.
+    -- brain.id is the raw persistent outfit id produced by BanditServerSpawner
+    -- and is the id LCCQF broadcasts to clients.
     if brain then addRuntimeId(ids, seen, brain.id) end
 
-    -- Bandits2 GetZombieID() deliberately clears its hat bit for cache keys,
-    -- while BanditServerSpawner stores brain.id from getPersistentOutfitID().
-    -- Keep both forms so a quest NPC remains discoverable even before its brain
-    -- snapshot has arrived on this client.
+    -- Bandits2 cache ids may be normalized (hat bit cleared), while brain.id is
+    -- raw. Keep all provider id forms and resolve them against LCCQF's binding
+    -- table rather than relying on a transient animation variable.
     if object and object.getPersistentOutfitID then
         addRuntimeId(ids, seen, object:getPersistentOutfitID())
     end
@@ -62,15 +61,16 @@ end
 local function resolveQuestIdentity(object, brain, cacheId)
     local runtimeIds = collectRuntimeIds(object, brain, cacheId)
 
-    -- Framework runtime bindings are the authoritative client-side quest
-    -- identity. Do not require zombie ModData.brain to be materialized first.
+    -- A server-synchronized runtime binding is the authoritative ownership and
+    -- quest-identity check. This is stronger than getVariableBoolean("Bandit"):
+    -- the latter is an animation/runtime classification that can lag behind a
+    -- valid synchronized Bandits brain/object on MP clients.
     for _, runtimeId in ipairs(runtimeIds) do
         local npcId = LCCQF.NPCRuntime.GetBoundNPCId(runtimeId)
         if npcId then return npcId, runtimeId end
     end
 
-    -- Legacy migration only. New NPCs are expected to resolve through the
-    -- server-synchronized binding map above.
+    -- Legacy migration only. New NPCs resolve through the binding map above.
     local npcId = getNPCId(brain)
     if npcId and runtimeIds[1] then
         LCCQF.NPCRuntime.BindRuntime(runtimeIds[1], npcId)
@@ -102,8 +102,11 @@ end
 
 local function getObjectCandidate(object, playerX, playerY, playerZ, rangeSq, cacheId)
     if not object or not instanceof(object, "IsoZombie") or object:isDead() then return nil end
-    if not object:getVariableBoolean("Bandit") then return nil end
 
+    -- Do not gate on object:getVariableBoolean("Bandit"). Fresh MP acceptance
+    -- logs proved LCCQF can receive the exact server binding and BanditBrain can
+    -- already expose the same id while that transient variable/cache classifier
+    -- still prevents discovery. Exact bound runtime identity is the safe gate.
     local brain = BanditBrain.Get(object)
     return makeCandidate(
         object,
@@ -120,37 +123,14 @@ local function getObjectCandidate(object, playerX, playerY, playerZ, rangeSq, ca
 end
 
 local function findFromBanditsCache(playerX, playerY, playerZ, rangeSq)
-    local lightCache = BanditZombie and BanditZombie.CacheLightB or nil
-    if type(lightCache) ~= "table" then return nil end
+    local objectCache = BanditZombie and BanditZombie.Cache or nil
+    if type(objectCache) ~= "table" then return nil end
 
-    local objectCache = BanditZombie.Cache or {}
     local best = nil
-
-    for cacheId, light in pairs(lightCache) do
-        if type(light) == "table" and light.x ~= nil and light.y ~= nil and light.z ~= nil then
-            local object = objectCache[cacheId]
-            local candidate
-
-            if object then
-                candidate = getObjectCandidate(object, playerX, playerY, playerZ, rangeSq, cacheId)
-            else
-                candidate = makeCandidate(
-                    nil,
-                    light.brain,
-                    cacheId,
-                    light.x,
-                    light.y,
-                    light.z,
-                    playerX,
-                    playerY,
-                    playerZ,
-                    rangeSq
-                )
-            end
-
-            if candidate and (not best or candidate.distanceSq < best.distanceSq) then
-                best = candidate
-            end
+    for cacheId, object in pairs(objectCache) do
+        local candidate = getObjectCandidate(object, playerX, playerY, playerZ, rangeSq, cacheId)
+        if candidate and (not best or candidate.distanceSq < best.distanceSq) then
+            best = candidate
         end
     end
 
@@ -162,10 +142,10 @@ local function findFromNearbySquares(cell, playerX, playerY, playerZ, rangeSq, r
     local z = math.floor(playerZ)
     local tileRange = math.ceil(range) + 1
 
-    -- Local fallback for the short window before BanditZombie.CacheLightB is
-    -- warm. This mirrors the proximity-scanner pattern used by dialogue mods,
-    -- but provider ownership is checked through Bandits2's Bandit variable and
-    -- quest identity still comes from the server-synchronized binding map.
+    -- Correctness fallback: inspect only nearby moving objects, as proven by
+    -- existing NPC interaction mods. No whole-cell zombie-list scan is used.
+    -- Quest ownership is accepted only when one of the object's Bandits runtime
+    -- ids matches a server-synchronized LCCQF binding.
     for x = math.floor(playerX) - tileRange, math.floor(playerX) + tileRange do
         for y = math.floor(playerY) - tileRange, math.floor(playerY) + tileRange do
             local square = cell:getGridSquare(x, y, z)
@@ -204,8 +184,8 @@ function Adapter.FindNearestInteractive(player, range)
     local pz = player:getZ()
     local rangeSq = range * range
 
-    -- Bandits2's own client runtime view is the primary source. Crucially, a
-    -- synchronized zombie ModData.brain is optional rather than a prerequisite.
+    -- BanditZombie.Cache contains the provider's synchronized physical objects
+    -- regardless of whether CacheLightB has already classified them as bandits.
     local best = findFromBanditsCache(px, py, pz, rangeSq)
     if best then return best end
 
