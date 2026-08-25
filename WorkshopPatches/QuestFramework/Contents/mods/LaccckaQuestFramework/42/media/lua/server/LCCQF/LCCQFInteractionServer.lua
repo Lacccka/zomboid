@@ -10,6 +10,7 @@ LCCQFInteractionServer = LCCQFInteractionServer or {}
 local C = LCCQF.Constants
 local DialogueSession = LCCQF.DialogueSession
 local lastCommandMs = {}
+local nextRuntimeReconcileMs = 0
 
 local function log(message)
     print(C.LOG_PREFIX .. "[SERVER] " .. tostring(message))
@@ -69,8 +70,21 @@ local function sendDialogueClosed(player, sessionId)
     })
 end
 
+local function getRuntimeAdapter()
+    return LCCQF.NPCRuntime.GetAdapter("Bandits")
+end
+
+local function reconcileRuntimeBindings()
+    local adapter = getRuntimeAdapter()
+    if adapter and adapter.ReconcileRuntimeBindings then
+        return adapter.ReconcileRuntimeBindings()
+    end
+    return 0, 0
+end
+
 local function refreshRuntimeBindings()
-    local adapter = LCCQF.NPCRuntime.GetAdapter("Bandits")
+    reconcileRuntimeBindings()
+    local adapter = getRuntimeAdapter()
     if adapter and adapter.RefreshRuntimeBindings then
         return adapter.RefreshRuntimeBindings()
     end
@@ -102,6 +116,33 @@ local function broadcastRuntimeBinding(handle)
     log("runtime binding broadcast npcId=" .. tostring(handle.npcId)
         .. " runtimeId=" .. tostring(handle.runtimeId)
         .. " anchor=" .. tostring(handle.x) .. "," .. tostring(handle.y) .. "," .. tostring(handle.z))
+end
+
+local function broadcastRuntimeBindingRemoval(handle, reason)
+    if not handle or not handle.runtimeId or not handle.npcId then return end
+
+    local runtimeId = tostring(handle.runtimeId)
+    local npcId = tostring(handle.npcId)
+    local closedSessions = DialogueSession.InvalidateRuntime(runtimeId)
+
+    sendServerCommand(C.MODULE, C.COMMAND.RUNTIME_BINDING_REMOVE, {
+        runtimeId = runtimeId,
+        npcId = npcId,
+        reason = tostring(reason or "invalidated"),
+    })
+
+    log("runtime binding removed npcId=" .. npcId
+        .. " runtimeId=" .. runtimeId
+        .. " reason=" .. tostring(reason or "invalidated")
+        .. " closedSessions=" .. tostring(closedSessions))
+end
+
+local function onRuntimeBindingEvent(kind, handle, reason)
+    if kind == "remove" then
+        broadcastRuntimeBindingRemoval(handle, reason)
+    elseif kind == "upsert" then
+        broadcastRuntimeBinding(handle)
+    end
 end
 
 local function isPrivileged(player)
@@ -153,6 +194,15 @@ local function requestDialogue(player, args)
         return
     end
 
+    local activeRuntimeId = LCCQF.NPCRuntime.GetActiveRuntimeId(npcId)
+    if tostring(activeRuntimeId or "") ~= runtimeId then
+        sendStatus(player, "IGUI_LCCQF_Status_NPCUnavailable")
+        log("dialogue rejected: stale runtime npcId=" .. npcId
+            .. " requested=" .. runtimeId
+            .. " active=" .. tostring(activeRuntimeId))
+        return
+    end
+
     local handle = LCCQF.NPCRuntime.ResolveForPlayer(
         player,
         npcId,
@@ -184,6 +234,14 @@ local function chooseDialogue(player, args)
     local session = DialogueSession.Get(player, sessionId)
     if not session then
         sendDialogueClosed(player, sessionId)
+        return
+    end
+
+    local activeRuntimeId = LCCQF.NPCRuntime.GetActiveRuntimeId(session.npcId)
+    if tostring(activeRuntimeId or "") ~= tostring(session.runtimeId) then
+        DialogueSession.Close(player, sessionId)
+        sendDialogueClosed(player, sessionId)
+        sendStatus(player, "IGUI_LCCQF_Status_NPCUnavailable")
         return
     end
 
@@ -246,13 +304,27 @@ local function onClientCommand(module, command, player, args)
     end
 end
 
+local function onTick()
+    local now = getTimestampMs()
+    if now < nextRuntimeReconcileMs then return end
+    nextRuntimeReconcileMs = now + C.RUNTIME_RECONCILE_INTERVAL_MS
+    reconcileRuntimeBindings()
+end
+
 local function onServerStarted()
+    local adapter = getRuntimeAdapter()
+    if adapter and adapter.SetBindingEventSink then
+        adapter.SetBindingEventSink(onRuntimeBindingEvent)
+    end
+
     local bindingCount = refreshRuntimeBindings()
     log("loaded version=" .. tostring(C.VERSION) .. " runtime=Bandits serverRange="
-        .. tostring(C.SERVER_INTERACTION_RANGE) .. " restoredBindings=" .. tostring(bindingCount))
+        .. tostring(C.SERVER_INTERACTION_RANGE) .. " restoredBindings=" .. tostring(bindingCount)
+        .. " lifecycleReconcileMs=" .. tostring(C.RUNTIME_RECONCILE_INTERVAL_MS))
 end
 
 Events.OnClientCommand.Add(onClientCommand)
+Events.OnTick.Add(onTick)
 Events.EveryOneMinute.Add(pruneCommandHistory)
 Events.OnServerStarted.Add(onServerStarted)
 
