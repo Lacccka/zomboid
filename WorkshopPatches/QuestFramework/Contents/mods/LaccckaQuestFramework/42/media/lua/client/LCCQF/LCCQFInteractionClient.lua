@@ -19,6 +19,7 @@ local state = {
     nextBindingRequestMs = 0,
     nextTargetScanMs = 0,
     lastNoTargetDiagnosticMs = 0,
+    activeDialogueRuntimeId = nil,
 }
 
 local function log(message)
@@ -28,6 +29,16 @@ end
 local function setStatus(message, durationMs)
     state.statusText = tostring(message or "")
     state.statusUntilMs = getTimestampMs() + (durationMs or 3500)
+end
+
+local function closeDialogueForRuntime(runtimeId, source)
+    if runtimeId == nil or tostring(state.activeDialogueRuntimeId or "") ~= tostring(runtimeId) then return false end
+
+    local panel = LCCQFDialoguePanel.instance
+    if panel then panel:close(false) end
+    state.activeDialogueRuntimeId = nil
+    log("dialogue invalidated runtimeId=" .. tostring(runtimeId) .. " source=" .. tostring(source))
+    return true
 end
 
 local function updateLoggedTarget()
@@ -248,19 +259,44 @@ local function onServerCommand(module, command, args)
         local count = LCCQF.NPCRuntime.ReplaceRuntimeBindings(args.bindings)
         state.bindingsSynchronized = true
         log("runtime bindings synchronized count=" .. tostring(count))
+
+        if state.activeDialogueRuntimeId
+            and not LCCQF.NPCRuntime.GetBoundNPCId(state.activeDialogueRuntimeId)
+        then
+            closeDialogueForRuntime(state.activeDialogueRuntimeId, "full-sync")
+        end
+
         logBindingDiagnostics("full-sync")
         refreshTarget(true)
         return
     end
 
     if command == C.COMMAND.RUNTIME_BINDING_UPSERT then
+        local previousRuntimeId = type(args.npcId) == "string"
+            and LCCQF.NPCRuntime.GetActiveRuntimeId(args.npcId) or nil
+
         if LCCQF.NPCRuntime.BindRuntime(args.runtimeId, args.npcId, args) then
+            if previousRuntimeId and tostring(previousRuntimeId) ~= tostring(args.runtimeId) then
+                closeDialogueForRuntime(previousRuntimeId, "replacement")
+            end
+
             log("runtime binding received npcId=" .. tostring(args.npcId)
                 .. " runtimeId=" .. tostring(args.runtimeId)
                 .. " anchor=" .. tostring(args.x) .. "," .. tostring(args.y) .. "," .. tostring(args.z))
             logBindingDiagnostics("upsert")
             refreshTarget(true)
         end
+        return
+    end
+
+    if command == C.COMMAND.RUNTIME_BINDING_REMOVE then
+        local removed = LCCQF.NPCRuntime.UnbindRuntime(args.runtimeId, args.npcId)
+        closeDialogueForRuntime(args.runtimeId, "binding-remove:" .. tostring(args.reason))
+        log("runtime binding removal received npcId=" .. tostring(args.npcId)
+            .. " runtimeId=" .. tostring(args.runtimeId)
+            .. " reason=" .. tostring(args.reason)
+            .. " applied=" .. tostring(removed))
+        refreshTarget(true)
         return
     end
 
@@ -271,6 +307,7 @@ local function onServerCommand(module, command, args)
             return
         end
         LCCQFDialoguePanel.open(localizeDialogueState(args), sendChoice, sendClose)
+        state.activeDialogueRuntimeId = tostring(args.runtimeId or "")
         log("dialogue state session=" .. tostring(args.sessionId) .. " node=" .. tostring(args.nodeId))
         return
     end
@@ -279,6 +316,9 @@ local function onServerCommand(module, command, args)
         local panel = LCCQFDialoguePanel.instance
         if panel and tostring(panel.sessionId) == tostring(args.sessionId) then
             panel:close(false)
+            state.activeDialogueRuntimeId = nil
+        elseif not panel then
+            state.activeDialogueRuntimeId = nil
         end
         return
     end
@@ -293,13 +333,14 @@ end
 local function onGameStart()
     log("loaded version=" .. tostring(C.VERSION)
         .. " runtime=Bandits interactKey=E range=" .. tostring(C.INTERACTION_RANGE)
-        .. " discovery=framework-anchor")
+        .. " discovery=framework-anchor lifecycle=explicit-remove")
     state.bindingsSynchronized = false
     state.nextBindingRequestMs = 0
     state.nextTargetScanMs = 0
     state.lastNoTargetDiagnosticMs = 0
     state.target = nil
     state.loggedTargetRuntimeId = nil
+    state.activeDialogueRuntimeId = nil
     maintainRuntimeBindingSync()
 end
 
