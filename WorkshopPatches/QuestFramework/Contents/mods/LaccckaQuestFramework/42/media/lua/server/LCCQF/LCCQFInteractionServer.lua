@@ -69,6 +69,34 @@ local function sendDialogueClosed(player, sessionId)
     })
 end
 
+local function refreshRuntimeBindings()
+    local adapter = LCCQF.NPCRuntime.GetAdapter("Bandits")
+    if adapter and adapter.RefreshRuntimeBindings then
+        return adapter.RefreshRuntimeBindings()
+    end
+    return 0
+end
+
+local function sendRuntimeBindings(player)
+    if not player then return end
+    refreshRuntimeBindings()
+    local bindings = LCCQF.NPCRuntime.ExportRuntimeBindings()
+    sendServerCommand(player, C.MODULE, C.COMMAND.RUNTIME_BINDINGS, {
+        bindings = bindings,
+    })
+    log("runtime bindings sent player=" .. tostring(player:getUsername()) .. " count=" .. tostring(#bindings))
+end
+
+local function broadcastRuntimeBinding(handle)
+    if not handle or not handle.runtimeId or not handle.npcId then return end
+    sendServerCommand(C.MODULE, C.COMMAND.RUNTIME_BINDING_UPSERT, {
+        runtimeId = tostring(handle.runtimeId),
+        npcId = tostring(handle.npcId),
+    })
+    log("runtime binding broadcast npcId=" .. tostring(handle.npcId)
+        .. " runtimeId=" .. tostring(handle.runtimeId))
+end
+
 local function isPrivileged(player)
     if not player then return false end
     if isDebugEnabled and isDebugEnabled() then return true end
@@ -91,6 +119,8 @@ local function spawnTestNPC(player)
         log("spawn rejected npcId=" .. C.TEST_NPC_ID .. " reason=" .. tostring(result))
         return
     end
+
+    broadcastRuntimeBinding(handle)
 
     if result == "already loaded" then
         sendStatus(player, "IGUI_LCCQF_Status_AlreadyNearby")
@@ -190,6 +220,7 @@ local function onClientCommand(module, command, player, args)
     if module ~= C.MODULE then return end
 
     local knownCommand = command == C.COMMAND.SPAWN_TEST_NPC
+        or command == C.COMMAND.REQUEST_RUNTIME_BINDINGS
         or command == C.COMMAND.REQUEST_DIALOGUE
         or command == C.COMMAND.CHOOSE_DIALOGUE
         or command == C.COMMAND.CLOSE_DIALOGUE
@@ -197,6 +228,8 @@ local function onClientCommand(module, command, player, args)
 
     if command == C.COMMAND.SPAWN_TEST_NPC then
         spawnTestNPC(player)
+    elseif command == C.COMMAND.REQUEST_RUNTIME_BINDINGS then
+        sendRuntimeBindings(player)
     elseif command == C.COMMAND.REQUEST_DIALOGUE then
         requestDialogue(player, args)
     elseif command == C.COMMAND.CHOOSE_DIALOGUE then
@@ -207,7 +240,9 @@ local function onClientCommand(module, command, player, args)
 end
 
 local function onServerStarted()
-    log("loaded version=" .. tostring(C.VERSION) .. " runtime=Bandits serverRange=" .. tostring(C.SERVER_INTERACTION_RANGE))
+    local bindingCount = refreshRuntimeBindings()
+    log("loaded version=" .. tostring(C.VERSION) .. " runtime=Bandits serverRange="
+        .. tostring(C.SERVER_INTERACTION_RANGE) .. " restoredBindings=" .. tostring(bindingCount))
 end
 
 Events.OnClientCommand.Add(onClientCommand)
