@@ -19,6 +19,7 @@ local state = {
     bindingsSynchronized = false,
     nextBindingRequestMs = 0,
     nextTargetScanMs = 0,
+    lastNoTargetDiagnosticMs = 0,
 }
 
 local function log(message)
@@ -53,6 +54,45 @@ local function refreshTarget(force)
     state.target = LCCQF.NPCRuntime.FindNearestInteractive(player, C.INTERACTION_RANGE)
     updateLoggedTarget()
     return state.target
+end
+
+local function logBindingDiagnostics(source)
+    local player = getSpecificPlayer(0)
+    if not player then
+        log("binding diagnostic source=" .. tostring(source) .. " player=unavailable")
+        return
+    end
+
+    local px, py, pz = player:getX(), player:getY(), player:getZ()
+    local bindings = LCCQF.NPCRuntime.ExportRuntimeBindings()
+    if #bindings == 0 then
+        log("binding diagnostic source=" .. tostring(source) .. " count=0")
+        return
+    end
+
+    for _, binding in ipairs(bindings) do
+        local anchor = LCCQF.NPCRuntime.GetRuntimeAnchor(binding.runtimeId)
+        if anchor then
+            local dx = anchor.x - px
+            local dy = anchor.y - py
+            local distance = math.sqrt(dx * dx + dy * dy)
+            local sameZ = math.abs(anchor.z - pz) < 0.5
+            local eligible = sameZ and distance <= C.INTERACTION_RANGE
+            log("binding diagnostic source=" .. tostring(source)
+                .. " npcId=" .. tostring(binding.npcId)
+                .. " runtimeId=" .. tostring(binding.runtimeId)
+                .. " anchor=" .. tostring(anchor.x) .. "," .. tostring(anchor.y) .. "," .. tostring(anchor.z)
+                .. " player=" .. tostring(px) .. "," .. tostring(py) .. "," .. tostring(pz)
+                .. " distance=" .. tostring(distance)
+                .. " sameZ=" .. tostring(sameZ)
+                .. " eligible=" .. tostring(eligible))
+        else
+            log("binding diagnostic source=" .. tostring(source)
+                .. " npcId=" .. tostring(binding.npcId)
+                .. " runtimeId=" .. tostring(binding.runtimeId)
+                .. " anchor=missing")
+        end
+    end
 end
 
 local function requestRuntimeBindings()
@@ -93,7 +133,14 @@ local function onKeyPressed(key)
     -- Re-evaluate immediately on the input event. The key path never depends on
     -- a previous render/update tick having discovered the target.
     refreshTarget(true)
-    if not state.target then return end
+    if not state.target then
+        local now = getTimestampMs()
+        if now - state.lastNoTargetDiagnosticMs >= 2000 then
+            state.lastNoTargetDiagnosticMs = now
+            logBindingDiagnostics("key-no-target")
+        end
+        return
+    end
 
     log("interaction requested npcId=" .. tostring(state.target.npcId)
         .. " runtimeId=" .. tostring(state.target.runtimeId))
@@ -189,6 +236,7 @@ local function onServerCommand(module, command, args)
         local count = LCCQF.NPCRuntime.ReplaceRuntimeBindings(args.bindings)
         state.bindingsSynchronized = true
         log("runtime bindings synchronized count=" .. tostring(count))
+        logBindingDiagnostics("full-sync")
         refreshTarget(true)
         return
     end
@@ -198,6 +246,7 @@ local function onServerCommand(module, command, args)
             log("runtime binding received npcId=" .. tostring(args.npcId)
                 .. " runtimeId=" .. tostring(args.runtimeId)
                 .. " anchor=" .. tostring(args.x) .. "," .. tostring(args.y) .. "," .. tostring(args.z))
+            logBindingDiagnostics("upsert")
             refreshTarget(true)
         end
         return
@@ -236,6 +285,7 @@ local function onGameStart()
     state.bindingsSynchronized = false
     state.nextBindingRequestMs = 0
     state.nextTargetScanMs = 0
+    state.lastNoTargetDiagnosticMs = 0
     state.target = nil
     state.loggedTargetRuntimeId = nil
     maintainRuntimeBindingSync()
