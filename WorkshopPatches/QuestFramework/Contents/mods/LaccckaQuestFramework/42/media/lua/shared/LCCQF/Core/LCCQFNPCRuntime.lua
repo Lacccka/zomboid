@@ -4,6 +4,7 @@ LCCQF = LCCQF or {}
 
 local Runtime = LCCQF.NPCRuntime or {}
 local adapters = Runtime.adapters or {}
+local clientResolvers = Runtime.clientResolvers or {}
 local runtimeBindings = Runtime.runtimeBindings or {}
 local runtimeAnchors = Runtime.runtimeAnchors or {}
 local activeRuntimeByNPCId = Runtime.activeRuntimeByNPCId or {}
@@ -54,6 +55,16 @@ function Runtime.RegisterAdapter(adapterId, adapter)
     return true
 end
 
+function Runtime.RegisterClientResolver(adapterId, resolver)
+    if type(adapterId) ~= "string" or adapterId == "" or type(resolver) ~= "table"
+        or type(resolver.Resolve) ~= "function"
+    then
+        return false
+    end
+    clientResolvers[adapterId] = resolver
+    return true
+end
+
 function Runtime.GetAdapter(adapterId)
     return adapters[adapterId]
 end
@@ -62,6 +73,18 @@ function Runtime.GetAdapterForNPC(npcId)
     local definition = LCCQF.NPCRegistry.Get(npcId)
     if not definition then return nil, nil end
     return adapters[definition.runtime.adapter], definition
+end
+
+function Runtime.ResolveClientEntity(npcId)
+    local definition = LCCQF.NPCRegistry.Get(npcId)
+    if not definition or type(definition.runtime) ~= "table" then return nil end
+    local resolver = clientResolvers[definition.runtime.adapter]
+    if not resolver then return nil end
+    local runtimeId = Runtime.GetActiveRuntimeId(npcId)
+    if not runtimeId then return nil end
+    local ok, entity = pcall(resolver.Resolve, npcId, runtimeId, definition)
+    if not ok then return nil end
+    return entity
 end
 
 function Runtime.BindRuntime(runtimeId, npcId, anchor)
@@ -134,15 +157,9 @@ function Runtime.ExportRuntimeBindings()
 end
 
 function Runtime.ReplaceRuntimeBindings(entries)
-    for runtimeId in pairs(runtimeBindings) do
-        runtimeBindings[runtimeId] = nil
-    end
-    for runtimeId in pairs(runtimeAnchors) do
-        runtimeAnchors[runtimeId] = nil
-    end
-    for npcId in pairs(activeRuntimeByNPCId) do
-        activeRuntimeByNPCId[npcId] = nil
-    end
+    for runtimeId in pairs(runtimeBindings) do runtimeBindings[runtimeId] = nil end
+    for runtimeId in pairs(runtimeAnchors) do runtimeAnchors[runtimeId] = nil end
+    for npcId in pairs(activeRuntimeByNPCId) do activeRuntimeByNPCId[npcId] = nil end
 
     if type(entries) == "table" then
         for _, entry in ipairs(entries) do
@@ -153,16 +170,10 @@ function Runtime.ReplaceRuntimeBindings(entries)
     end
 
     local count = 0
-    for _ in pairs(runtimeBindings) do
-        count = count + 1
-    end
+    for _ in pairs(runtimeBindings) do count = count + 1 end
     return count
 end
 
--- Provider-neutral classification for systems that must distinguish physical
--- NPC implementations from ordinary world entities (for example Kill/ClearArea).
--- Each adapter decides whether it owns the concrete entity; quest code never
--- imports Bandits2 or another provider directly.
 function Runtime.IsFrameworkEntity(entity)
     if not entity then return false end
     for _, adapter in pairs(adapters) do
@@ -174,9 +185,6 @@ function Runtime.IsFrameworkEntity(entity)
     return false
 end
 
--- Client prompt discovery is provider-neutral. A synchronized framework binding
--- plus its server-owned interaction anchor is sufficient to select a candidate.
--- Provider adapters are reserved for authoritative Spawn/ResolveForPlayer work.
 function Runtime.FindNearestInteractive(player, range)
     if not player or player:isDead() then return nil end
 
@@ -233,6 +241,7 @@ function Runtime.Spawn(player, npcId)
 end
 
 Runtime.adapters = adapters
+Runtime.clientResolvers = clientResolvers
 Runtime.runtimeBindings = runtimeBindings
 Runtime.runtimeAnchors = runtimeAnchors
 Runtime.activeRuntimeByNPCId = activeRuntimeByNPCId
