@@ -118,6 +118,10 @@ rg -q 'ExportRuntimeBindings' "$server_bandits" \
     || fail "server runtime refresh is not framework-state based"
 rg -q 'anchorFor' "$server_bandits" \
     || fail "Bandits server adapter does not publish interaction anchors"
+rg -q 'MOVEMENT_PUBLISH_DISTANCE' "$server_bandits" \
+    || fail "moving NPC anchor replication threshold missing"
+rg -q 'emitBindingEvent\("upsert", handle, "movement"\)' "$server_bandits" \
+    || fail "moving NPC anchors are not replicated to clients"
 rg -q 'if isServer and isServer\(\) then' "$server_bandits" \
     || fail "Bandits server event hooks are not guarded from client init"
 
@@ -187,8 +191,12 @@ rg -q 'getSymbolsAPIv2' "$client_quest_marker" \
     || fail "world-map symbols v2 adapter missing"
 rg -q 'addUntranslatedText|addTexture' "$client_quest_marker" \
     || fail "quest marker renderer missing"
-rg -q 'setUserDefined\(false\)' "$client_quest_marker" \
-    || fail "quest marker is incorrectly treated as a user map annotation"
+rg -q 'setUserDefined\(true\)' "$client_quest_marker" \
+    || fail "quest marker is not visible independently of the B42 PlaceNames renderer flag"
+rg -q 'clearOwnedSymbols' "$client_quest_marker" \
+    || fail "quest marker stale-symbol cleanup missing"
+rg -q 'countOwnedSymbols' "$client_quest_marker" \
+    || fail "quest marker integrity check missing"
 rg -q 'QuestClientState\.AddListener' "$client_quest_marker" \
     || fail "quest marker lifecycle is not driven by quest-state changes"
 rg -q 'function Hub\.RegisterPage' "$client_hub" \
