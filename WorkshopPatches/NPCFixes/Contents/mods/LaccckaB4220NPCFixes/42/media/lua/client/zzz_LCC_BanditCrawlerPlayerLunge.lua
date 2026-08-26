@@ -5,7 +5,7 @@
 
 if isServer() then return end
 
-local MARKER = "ordinary-crawler-player-lunge-v2"
+local MARKER = "ordinary-crawler-player-lunge-v1"
 LCC_NPCFIXES_CRAWLER_PLAYER_LUNGE = MARKER
 
 local function isBandit(character)
