@@ -1,5 +1,9 @@
 require "LCCQF/Quest/Objectives/LCCQFObjectiveReachArea"
 require "LCCQF/Quest/Objectives/LCCQFObjectiveTalkToNPC"
+require "LCCQF/Quest/Objectives/LCCQFObjectiveFetch"
+require "LCCQF/Quest/Objectives/LCCQFObjectiveDeliver"
+require "LCCQF/Quest/Objectives/LCCQFObjectiveKill"
+require "LCCQF/Quest/Objectives/LCCQFObjectiveClearArea"
 
 LCCQF = LCCQF or {}
 
@@ -8,6 +12,10 @@ local QuestInstance = LCCQF.QuestInstance or {}
 local handlers = {
     ReachArea = LCCQF.QuestObjectives.ReachArea,
     TalkToNPC = LCCQF.QuestObjectives.TalkToNPC,
+    Fetch = LCCQF.QuestObjectives.Fetch,
+    Deliver = LCCQF.QuestObjectives.Deliver,
+    Kill = LCCQF.QuestObjectives.Kill,
+    ClearArea = LCCQF.QuestObjectives.ClearArea,
 }
 
 local function createObjective(spec, context)
@@ -27,16 +35,11 @@ local function validatePersistedObjective(objective, spec)
     if tostring(objective.id or "") ~= tostring(spec.id or "") then return false end
     if tostring(objective.type or "") ~= tostring(spec.type or "") then return false end
 
-    if objective.type == "ReachArea" then
-        if tonumber(objective.x) == nil
-            or tonumber(objective.y) == nil
-            or tonumber(objective.z) == nil
-            or tonumber(objective.radius) == nil
-        then
-            return false
-        end
+    local handler = handlers[spec.type]
+    if not handler then return false end
+    if handler.ValidatePersisted and not handler.ValidatePersisted(objective, spec) then
+        return false
     end
-
     return true
 end
 
@@ -142,19 +145,34 @@ function QuestInstance.CompleteCurrentObjective(instance, reason)
     return true, true
 end
 
+local function makeObjectiveView(objective)
+    local handler = objective and handlers[objective.type] or nil
+    local progress, required
+    if handler and handler.MakeProgressView then
+        progress, required = handler.MakeProgressView(objective)
+    end
+
+    if tonumber(progress) == nil then
+        progress = objective and objective.state == "completed" and 1 or 0
+    end
+    if tonumber(required) == nil then required = 1 end
+
+    return {
+        id = objective.id,
+        type = objective.type,
+        titleKey = objective.titleKey,
+        state = objective.state,
+        progress = tonumber(progress) or 0,
+        required = math.max(1, tonumber(required) or 1),
+    }
+end
+
 function QuestInstance.MakeView(instance)
     if not instance then return nil end
 
     local objectives = {}
     for index, objective in ipairs(instance.objectives or {}) do
-        objectives[index] = {
-            id = objective.id,
-            type = objective.type,
-            titleKey = objective.titleKey,
-            state = objective.state,
-            progress = objective.state == "completed" and 1 or 0,
-            required = 1,
-        }
+        objectives[index] = makeObjectiveView(objective)
     end
 
     local current = QuestInstance.GetCurrentObjective(instance)
