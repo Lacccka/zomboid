@@ -75,8 +75,6 @@ function Runtime.BindRuntime(runtimeId, npcId, anchor)
         activeRuntimeByNPCId[previousNpcId] = nil
     end
 
-    -- One logical framework NPC may expose only one active runtime handle.
-    -- This prevents stale Bandits runtime ids from competing for one npcId.
     local previousRuntimeId = activeRuntimeByNPCId[npcId]
     if previousRuntimeId and previousRuntimeId ~= key then
         clearRuntimeKey(previousRuntimeId)
@@ -159,6 +157,21 @@ function Runtime.ReplaceRuntimeBindings(entries)
         count = count + 1
     end
     return count
+end
+
+-- Provider-neutral classification for systems that must distinguish physical
+-- NPC implementations from ordinary world entities (for example Kill/ClearArea).
+-- Each adapter decides whether it owns the concrete entity; quest code never
+-- imports Bandits2 or another provider directly.
+function Runtime.IsFrameworkEntity(entity)
+    if not entity then return false end
+    for _, adapter in pairs(adapters) do
+        if type(adapter) == "table" and type(adapter.OwnsEntity) == "function" then
+            local ok, owned = pcall(adapter.OwnsEntity, entity)
+            if ok and owned == true then return true end
+        end
+    end
+    return false
 end
 
 -- Client prompt discovery is provider-neutral. A synchronized framework binding
