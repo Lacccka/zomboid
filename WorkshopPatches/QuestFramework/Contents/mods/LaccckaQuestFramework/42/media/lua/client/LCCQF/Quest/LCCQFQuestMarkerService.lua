@@ -8,8 +8,15 @@ local MarkerService = LCCQF.QuestMarkerService or {}
 local hiddenMaps = {}
 local activeSymbols = {}
 local dirty = true
-local nextRetryMs = 0
+local nextIntegrityMs = 0
 local lastMarkerApiFailure = nil
+
+-- B42.20.3 hides non-user-defined symbols when the map renderer's PlaceNames
+-- layer is disabled. The engine flag therefore cannot represent framework
+-- ownership. Quest authority remains server-side; this distinctive trailing-
+-- space token lets the client adapter remove/rebuild only its own annotations.
+local MARKER_TEXT = "!   "
+local INTEGRITY_INTERVAL_MS = 1000
 
 local function log(message)
     print("[LCCQF][MARKER:CLIENT] " .. tostring(message))
@@ -46,6 +53,42 @@ local function getSymbolsAPI(player)
     return symbols
 end
 
+local function isOwnedSymbol(symbol)
+    if not symbol or not symbol.isText or not symbol.getUntranslatedText then return false end
+
+    local okText, isText = pcall(function() return symbol:isText() end)
+    if not okText or not isText then return false end
+
+    local okValue, text = pcall(function() return symbol:getUntranslatedText() end)
+    return okValue and text == MARKER_TEXT
+end
+
+local function clearOwnedSymbols(symbols)
+    if not symbols then return 0 end
+
+    local removed = 0
+    for index = symbols:getSymbolCount() - 1, 0, -1 do
+        local symbol = symbols:getSymbolByIndex(index)
+        if isOwnedSymbol(symbol) then
+            local ok = pcall(function() symbols:removeSymbolByIndex(index) end)
+            if ok then removed = removed + 1 end
+        end
+    end
+    return removed
+end
+
+local function countOwnedSymbols(symbols)
+    if not symbols then return 0 end
+
+    local count = 0
+    for index = symbols:getSymbolCount() - 1, 0, -1 do
+        if isOwnedSymbol(symbols:getSymbolByIndex(index)) then
+            count = count + 1
+        end
+    end
+    return count
+end
+
 local function clearActiveSymbols()
     for _, entry in ipairs(activeSymbols) do
         if entry.symbols and entry.symbol then
@@ -66,10 +109,21 @@ local function validMarker(marker)
         and tonumber(marker.y) ~= nil
 end
 
+local function shouldRender(marker)
+    return validMarker(marker) and tostring(marker.mode or "EXACT") ~= "HIDDEN"
+end
+
+local function expectedMarkerCount()
+    local count = 0
+    for _, quest in ipairs(QuestClientState.ListActive()) do
+        if shouldRender(quest.marker) then count = count + 1 end
+    end
+    return count
+end
+
 local function addExactMarker(symbols, marker)
-    -- Build 42.20.3 getSymbolsAPIv2() returns WorldMapSymbolsV2. Its Lua-facing
-    -- addUntranslatedText overload accepts only (text, layer/font, x, y).
-    -- Presentation properties belong to the returned WorldMapTextSymbolV2.
+    -- getSymbolsAPIv2() exposes WorldMapSymbolsV2. The Lua-facing overload is
+    -- addUntranslatedText(text, layer/font, x, y); styling is applied after.
     local layerId = "text-note"
     if symbols.getDefaultTextLayerID then
         layerId = symbols:getDefaultTextLayerID() or layerId
@@ -78,7 +132,7 @@ local function addExactMarker(symbols, marker)
     end
 
     local symbol = symbols:addUntranslatedText(
-        "!",
+        MARKER_TEXT,
         layerId,
         tonumber(marker.x),
         tonumber(marker.y)
@@ -89,7 +143,13 @@ local function addExactMarker(symbols, marker)
     symbol:setRGBA(1.0, 0.35, 0.10, 1.0)
     symbol:setScale(1.15)
     symbol:setCollide(false)
-    symbol:setUserDefined(false)
+    symbol:setVisible(true)
+
+    -- This is an engine rendering flag, not quest ownership/authority. B42.20.3
+    -- suppresses non-user-defined symbols with PlaceNames disabled. We clean,
+    -- restore and lifecycle-manage these symbols ourselves from quest views.
+    symbol:setUserDefined(true)
+
     if symbol.setApplyZoom then symbol:setApplyZoom(false) end
     if marker.minZoom and symbol.setMinZoom then symbol:setMinZoom(tonumber(marker.minZoom) or 0) end
     if marker.maxZoom and symbol.setMaxZoom then symbol:setMaxZoom(tonumber(marker.maxZoom) or 24) end
@@ -106,7 +166,7 @@ local function safeAddExactMarker(symbols, marker)
     local errorText = tostring(symbolOrError)
     if errorText ~= lastMarkerApiFailure then
         lastMarkerApiFailure = errorText
-        log("marker creation failed; marker disabled until quest state changes: " .. errorText)
+        log("marker creation failed; presentation disabled until next rebuild: " .. errorText)
     end
     return nil
 end
@@ -118,12 +178,14 @@ function MarkerService.Rebuild()
     local symbols = getSymbolsAPI(player)
     if not symbols then return false end
 
+    -- Remove both current references and any stale copy restored from map save.
     clearActiveSymbols()
+    clearOwnedSymbols(symbols)
 
     local count = 0
     for _, quest in ipairs(QuestClientState.ListActive()) do
         local marker = quest.marker
-        if validMarker(marker) and tostring(marker.mode or "EXACT") ~= "HIDDEN" then
+        if shouldRender(marker) then
             local symbol = safeAddExactMarker(symbols, marker)
             if symbol then
                 activeSymbols[#activeSymbols + 1] = {
@@ -136,23 +198,22 @@ function MarkerService.Rebuild()
         end
     end
 
-    -- A Java/Lua API mismatch is a presentation failure, not a reason to throw
-    -- once per retry tick. A later quest-state change can request another build.
     dirty = false
+    nextIntegrityMs = getTimestampMs() + INTEGRITY_INTERVAL_MS
     log("rebuilt count=" .. tostring(count))
     return true
 end
 
 function MarkerService.MarkDirty()
     dirty = true
-    nextRetryMs = 0
+    nextIntegrityMs = 0
 end
 
 function MarkerService.Reset()
     clearActiveSymbols()
     hiddenMaps = {}
     dirty = true
-    nextRetryMs = 0
+    nextIntegrityMs = 0
     lastMarkerApiFailure = nil
 end
 
@@ -162,11 +223,23 @@ local function onQuestStateChanged()
 end
 
 local function onTick()
-    if not dirty then return end
     local now = getTimestampMs()
-    if now < nextRetryMs then return end
-    nextRetryMs = now + 1000
-    MarkerService.Rebuild()
+    if now < nextIntegrityMs then return end
+    nextIntegrityMs = now + INTEGRITY_INTERVAL_MS
+
+    local player = getSpecificPlayer(0)
+    if not player then return end
+    local symbols = getSymbolsAPI(player)
+    if not symbols then
+        dirty = true
+        return
+    end
+
+    if countOwnedSymbols(symbols) ~= expectedMarkerCount() then
+        dirty = true
+    end
+
+    if dirty then MarkerService.Rebuild() end
 end
 
 local function onGameStart()
