@@ -1,9 +1,17 @@
--- Lacccka B42 NPC Fixes: Build 42.20.4 callback bridge for Bandits2.
+-- Lacccka B42 NPC Fixes: loadstring-free Bandits 42.20 compatibility bridge.
 --
--- B42.20.4 removed runtime Lua source compilation. This bridge leaves the
--- installed Bandits2 sources untouched, identifies Bandits' registered event
--- callbacks through LuaEventManager, and wraps only the unsafe seams.
--- No third-party implementation file is bundled or executed from text.
+-- Build 42.20 no longer guarantees runtime Lua source compilation. This file
+-- therefore leaves the installed Bandits2 sources untouched and adapts only
+-- public runtime seams. The upstream source is read for exact fingerprints only;
+-- it is never compiled or executed from text.
+--
+-- Ordinary zombies are stopped at BanditUpdate's consecutive compatibility
+-- predicates before the unsafe upstream UpdateZombies() character-target block.
+-- A later LCC OnZombieUpdate callback performs coordinate-only pursuit and the
+-- original Bandits bite/dragdown lifecycle. Active Bandits continue through the
+-- original OnBanditUpdate implementation. Non-combat quest NPCs use one-tick
+-- public Bandit.IsSleeping/Bandit.GetTask gates so generic combat/collision task
+-- generation cannot pre-empt their custom ZombieProgram.
 
 if isServer() then return end
 
@@ -14,36 +22,40 @@ require "BanditUtils"
 require "BanditCompatibility"
 require "ZombieActions/ZAShoot"
 
-local MARKER = "loadstring-free-callback-bridge-v1"
+local MARKER = "loadstring-free-predicate-bridge-v2"
 local MOD_ID = "Bandits2"
 local BANDIT_UPDATE_PATH = "media/lua/client/BanditUpdate.lua"
 local ZA_SHOOT_PATH = "media/lua/shared/ZombieActions/ZAShoot.lua"
+local PREDICATE_PROBE_TTL_MS = 5
 local LCC_PURSUIT_ALIGN_DIST2 = 0.5625 -- 0.75 tile
 local LCC_PURSUIT_IDLE_RETRY_MS = 750
 
+LCC_NPCFIXES_BANDITUPDATE_SHIM = MARKER
 LCC_NPCFIXES_CALLBACK_BRIDGE = LCC_NPCFIXES_CALLBACK_BRIDGE or {}
 local Bridge = LCC_NPCFIXES_CALLBACK_BRIDGE
 Bridge.marker = MARKER
-Bridge.originalCallbacks = Bridge.originalCallbacks or {}
 Bridge.installed = Bridge.installed or false
-Bridge.installAttempts = Bridge.installAttempts or 0
 Bridge.stats = Bridge.stats or {
+    ordinaryUpdateBypasses = 0,
     coordinatePursuits = 0,
     closeBites = 0,
     nonCombatCombatSkips = 0,
     nonCombatCollisionSkips = 0,
-    nonCombatHitSkips = 0,
     invalidDeathKeysSuppressed = 0,
     shotCoordinateAlerts = 0,
     staleRelationsCleared = 0,
+    zombifyTransitions = 0,
 }
 
+local predicateProbeAt = setmetatable({}, { __mode = "k" })
+local ordinaryTick = setmetatable({}, { __mode = "k" })
+local nonCombatTick = setmetatable({}, { __mode = "k" })
 local pursuitRetryAt = setmetatable({}, { __mode = "k" })
 local biteTab = setmetatable({}, { __mode = "k" })
 local warned = {}
 
 local function log(level, message)
-    print("[LCC][NPCFixes][CallbackBridge][" .. tostring(level) .. "] marker=" .. MARKER .. " " .. tostring(message))
+    print("[LCC][NPCFixes][PredicateBridge][" .. tostring(level) .. "] marker=" .. MARKER .. " " .. tostring(message))
 end
 
 local function warnOnce(key, message)
@@ -96,9 +108,10 @@ end
 
 local function validateUpstream()
     local updateOk, updateReason = validateSource(BANDIT_UPDATE_PATH, {
-        "local function OnBanditUpdate(zombie)",
-        "local function OnHitZombie(zombie, attacker, bodyPartType, handWeapon)",
-        "local function OnZombieDead(bandit)",
+        [[    if BanditCompatibility.IsReanimatedForGrappleOnly(zombie) then return end
+
+    if BanditCompatibility.IsRagdoll(zombie) then return end]],
+        "local function UpdateZombies(zombie)",
         "                zombie:pathToCharacter(bandit)",
         [[                    if zombie and bandit  then
                         zombie:spotted(bandit, true)
@@ -107,10 +120,10 @@ local function validateUpstream()
                         zombie:setAttackedBy(bandit)]],
         "local combatTasks = ManageCombat(bandit)",
         "local colissionTasks = ManageCollisions(bandit)",
+        [[    local task = Bandit.GetTask(bandit)
+    if not task then return {} end
+    if not (task.action == "Move" or task.action == "GoTo") then return {} end]],
         "item:setKeyId(brain.key)",
-        "Events.OnZombieUpdate.Add(OnBanditUpdate)",
-        "Events.OnHitZombie.Add(OnHitZombie)",
-        "Events.OnZombieDead.Add(OnZombieDead)",
     })
     if not updateOk then return false, updateReason end
 
@@ -119,10 +132,15 @@ local function validateUpstream()
         [[                    zombie:spottedNew(shooter, true)
                     zombie:addAggro(shooter, 1)
                     zombie:setTarget(shooter)]],
+        "BanditUtils.ManageLineOfFire(shooter, enemy, weaponItem)",
     })
     if not shootOk then return false, shootReason end
-
     return true
+end
+
+local function nowMs()
+    if type(getTimestampMs) == "function" then return getTimestampMs() end
+    return 0
 end
 
 local function isBandit(character)
@@ -154,37 +172,30 @@ local function isNonCombatBandit(bandit)
     return okVar and value == true
 end
 
-local function isPendingNonCombatBandit(zombie)
-    if not zombie or not BanditUtils or type(BanditUtils.GetZombieID) ~= "function"
-            or not BanditZombie or type(BanditZombie.CacheLightB) ~= "table" then
-        return false
+local function getZombieIdSafe(zombie)
+    if not zombie or not BanditUtils or type(BanditUtils.GetZombieID) ~= "function" then return nil end
+    local ok, id = pcall(BanditUtils.GetZombieID, zombie)
+    return ok and id or nil
+end
+
+local function getClusterBrain(zombie)
+    if type(GetBanditClusterData) ~= "function" then
+        return nil, false
     end
-    local okId, id = pcall(BanditUtils.GetZombieID, zombie)
-    if not okId or id == nil then return false end
-    local light = BanditZombie.CacheLightB[id]
-    return light ~= nil and isNonCombatBrain(light.brain)
-end
+    local id = getZombieIdSafe(zombie)
+    if id == nil then return nil, false end
 
-local function isNonCombatLight(light)
-    if not light then return false end
-    if isNonCombatBrain(light.brain) then return true end
-    local id = light.id
-    local real = id and BanditZombie and BanditZombie.Cache and BanditZombie.Cache[id] or nil
-    return real ~= nil and isNonCombatBandit(real)
-end
-
-local function currentBanditTarget(zombie)
-    local ok, target = pcall(function() return zombie:getTarget() end)
-    if ok and isBandit(target) then return target end
-    return nil
+    local ok, gmd = pcall(GetBanditClusterData, id)
+    if not ok then return nil, false end
+    return gmd and gmd[id] or nil, true
 end
 
 local function sanitizeUnsafeBanditRelation(zombie)
     if not isOrdinaryZombie(zombie) then return false end
     local changed = false
 
-    local target = currentBanditTarget(zombie)
-    if target then
+    local okTarget, target = pcall(function() return zombie:getTarget() end)
+    if okTarget and isBandit(target) then
         if pcall(function() zombie:setTarget(nil) end) then changed = true end
     end
 
@@ -197,23 +208,86 @@ local function sanitizeUnsafeBanditRelation(zombie)
     if okPfb and pfb then
         local okGoal, goalCharacter = pcall(function() return pfb:isGoalCharacter() end)
         if okGoal and goalCharacter then
-            local okTarget, targetChar = pcall(function() return pfb:getTargetChar() end)
-            if okTarget and isBandit(targetChar) then
+            local okGoalTarget, targetChar = pcall(function() return pfb:getTargetChar() end)
+            if okGoalTarget and isBandit(targetChar) then
                 if pcall(function() pfb:cancel() end) then changed = true end
             end
         end
-    end
-
-    local okSpotted, spotted = pcall(function() return zombie.spottedLast end)
-    if okSpotted and isBandit(spotted) then
-        pcall(function() zombie.spottedLast = nil end)
-        changed = true
     end
 
     if changed then
         Bridge.stats.staleRelationsCleared = Bridge.stats.staleRelationsCleared + 1
     end
     return changed
+end
+
+local function updateCacheAfterZombify(zombie)
+    local id = getZombieIdSafe(zombie)
+    if id == nil or not BanditZombie then return end
+
+    local wasBandit = type(BanditZombie.CacheLightB) == "table" and BanditZombie.CacheLightB[id] ~= nil
+    local wasZombie = type(BanditZombie.CacheLightZ) == "table" and BanditZombie.CacheLightZ[id] ~= nil
+    local light = type(BanditZombie.CacheLight) == "table" and BanditZombie.CacheLight[id] or nil
+
+    if type(BanditZombie.CacheLightB) == "table" then BanditZombie.CacheLightB[id] = nil end
+    if light then
+        light.isBandit = false
+        light.brain = nil
+        light.rid = nil
+        if type(BanditZombie.CacheLightZ) == "table" then BanditZombie.CacheLightZ[id] = light end
+    end
+
+    if wasBandit and type(BanditZombie.CacheLightBCnt) == "number" then
+        BanditZombie.CacheLightBCnt = math.max(0, BanditZombie.CacheLightBCnt - 1)
+    end
+    if light and not wasZombie and type(BanditZombie.CacheLightZCnt) == "number" then
+        BanditZombie.CacheLightZCnt = BanditZombie.CacheLightZCnt + 1
+    end
+end
+
+local function safeZombify(bandit)
+    if not isBandit(bandit) then return false end
+
+    bandit:setNoTeeth(false)
+    bandit:setUseless(false)
+    bandit:setVariable("Bandit", false)
+    bandit:setVariable("BanditPrimary", "")
+    bandit:setVariable("BanditSecondary", "")
+    bandit:setWalkType("2")
+    bandit:setVariable("BanditWalkType", "")
+    bandit:setPrimaryHandItem(nil)
+    bandit:setSecondaryHandItem(nil)
+    bandit:resetEquippedHandsModels()
+    bandit:clearAttachedItems()
+
+    local okMd, md = pcall(function() return bandit:getModData() end)
+    if okMd and md then md.brainId = nil end
+    BanditBrain.Remove(bandit)
+    updateCacheAfterZombify(bandit)
+    Bridge.stats.zombifyTransitions = Bridge.stats.zombifyTransitions + 1
+    return true
+end
+
+local function prepareOrdinaryZombie(zombie)
+    if isBandit(zombie) then safeZombify(zombie) end
+    if not isOrdinaryZombie(zombie) then return false end
+
+    sanitizeUnsafeBanditRelation(zombie)
+    BanditBrain.Remove(zombie)
+
+    if zombie:isUseless() then zombie:setUseless(false) end
+    if zombie:getPrimaryHandItem() then zombie:setPrimaryHandItem(nil) end
+    if zombie:getSecondaryHandItem() then zombie:setSecondaryHandItem(nil) end
+
+    local target = zombie:getTarget()
+    if target and instanceof(target, "IsoZombie") then
+        zombie:setVariable("ZombieBiteDone", true)
+        zombie:setNoTeeth(true)
+    else
+        zombie:setNoTeeth(false)
+    end
+    zombie:setVariable("NoLungeAttack", false)
+    return true
 end
 
 local function pathToCoordinate(zombie, x, y, z)
@@ -231,15 +305,10 @@ local function pathToCoordinate(zombie, x, y, z)
         local aligned = dz < 0.5 and (dx * dx + dy * dy) <= LCC_PURSUIT_ALIGN_DIST2
 
         if aligned then
-            if zombie:getActionStateName() ~= "idle" then
-                return false
-            end
-
-            local now = getTimestampMs()
+            if zombie:getActionStateName() ~= "idle" then return false end
+            local now = nowMs()
             local lastRetry = pursuitRetryAt[zombie] or 0
-            if now - lastRetry < LCC_PURSUIT_IDLE_RETRY_MS then
-                return false
-            end
+            if now - lastRetry < LCC_PURSUIT_IDLE_RETRY_MS then return false end
             pursuitRetryAt[zombie] = now
         end
     end
@@ -256,30 +325,33 @@ local function selectNearestCombatBandit(zombie)
     local zx, zy, zz = zombie:getX(), zombie:getY(), zombie:getZ()
     local px, py, pz = player:getX(), player:getY(), player:getZ()
     local distPlayer2 = ((px - zx) * (px - zx)) + ((py - zy) * (py - zy))
-    if distPlayer2 < 4 and math.abs(pz - zz) < 0.3 then
-        return nil
-    end
+    if distPlayer2 < 4 and math.abs(pz - zz) < 0.3 then return nil end
 
+    local ownId = getZombieIdSafe(zombie)
     local bestDist2 = math.huge
-    local bestLight, bestId = nil, nil
+    local bestBandit, bestLight = nil, nil
     local cache = BanditZombie and BanditZombie.CacheLightB or nil
     if type(cache) ~= "table" then return nil end
 
     for id, light in pairs(cache) do
-        if light and not isNonCombatLight(light) then
-            local dz = math.abs((light.z or zz) - zz)
-            if dz < 0.31 then
-                local dx = light.x - zx
-                local dy = light.y - zy
-                local distManhattan = math.abs(dx) + math.abs(dy)
-                if distManhattan <= 28 then
-                    local manhattanSq = distManhattan * distManhattan
-                    if manhattanSq < (2 * bestDist2) then
-                        local dist2 = (dx * dx) + (dy * dy)
-                        if dist2 < bestDist2 then
-                            bestDist2 = dist2
-                            bestLight = light
-                            bestId = light.id or id
+        if light and id ~= ownId then
+            local realId = light.id or id
+            local real = BanditZombie.Cache and BanditZombie.Cache[realId] or nil
+            if real and real ~= zombie and real:isAlive() and isBandit(real) and not isNonCombatBandit(real) then
+                local dz = math.abs((light.z or zz) - zz)
+                if dz < 0.31 then
+                    local dx = light.x - zx
+                    local dy = light.y - zy
+                    local distManhattan = math.abs(dx) + math.abs(dy)
+                    if distManhattan <= 28 then
+                        local manhattanSq = distManhattan * distManhattan
+                        if manhattanSq < (2 * bestDist2) then
+                            local dist2 = (dx * dx) + (dy * dy)
+                            if dist2 < bestDist2 then
+                                bestDist2 = dist2
+                                bestBandit = real
+                                bestLight = light
+                            end
                         end
                     end
                 end
@@ -287,10 +359,8 @@ local function selectNearestCombatBandit(zombie)
         end
     end
 
-    if not bestLight or bestDist2 >= 400 then return nil end
-    local bandit = bestId and BanditZombie.Cache and BanditZombie.Cache[bestId] or nil
-    if not bandit or not bandit:isAlive() or isNonCombatBandit(bandit) then return nil end
-    return bandit, bestLight, bestDist2
+    if not bestBandit or bestDist2 >= 400 then return nil end
+    return bestBandit, bestLight, bestDist2
 end
 
 local function processCoordinateBite(zombie)
@@ -298,7 +368,7 @@ local function processCoordinateBite(zombie)
     if not state then return false end
 
     local bandit = state.bandit
-    if not bandit or not bandit:isAlive() or isNonCombatBandit(bandit) then
+    if not bandit or not bandit:isAlive() or not isBandit(bandit) or isNonCombatBandit(bandit) then
         biteTab[zombie] = nil
         return false
     end
@@ -313,19 +383,13 @@ local function processCoordinateBite(zombie)
     if tick == 14 then
         local dist = BanditUtils.DistTo(zombie:getX(), zombie:getY(), bandit:getX(), bandit:getY())
         if dist < 0.8 then
-            if ZombRand(4) == 1 then
-                zombie:playSound("ZombieBite")
-            else
-                zombie:playSound("ZombieScratch")
-            end
+            if ZombRand(4) == 1 then zombie:playSound("ZombieBite") else zombie:playSound("ZombieScratch") end
 
             local teeth = BanditCompatibility.InstanceItem("Base.RollingPin")
             if teeth then
                 BanditCompatibility.Splash(bandit, teeth, zombie)
                 bandit:setHitFromBehind(zombie:isBehind(bandit))
-                if instanceof(bandit, "IsoZombie") then
-                    bandit:setPlayerAttackPosition(bandit:testDotSide(zombie))
-                end
+                bandit:setPlayerAttackPosition(bandit:testDotSide(zombie))
 
                 if not bandit:isOnKillDone() and not Bandit.HasTaskType(bandit, "Die") then
                     Bandit.ClearTasks(bandit)
@@ -335,11 +399,10 @@ local function processCoordinateBite(zombie)
 
                     local player = getSpecificPlayer(0)
                     if player then
-                        local args = {
+                        sendClientCommand(player, "Sync", "Health", {
                             id = BanditUtils.GetCharacterID(bandit),
                             h = bandit:getHealth(),
-                        }
-                        sendClientCommand(player, "Sync", "Health", args)
+                        })
                     end
                 end
             end
@@ -354,7 +417,7 @@ local function processCoordinateBite(zombie)
 end
 
 local function updateOrdinaryZombieCoordinateCombat(zombie)
-    if not isOrdinaryZombie(zombie) or not zombie:isAlive() then return end
+    if not zombie or not zombie:isAlive() or not isOrdinaryZombie(zombie) then return end
     if processCoordinateBite(zombie) then return end
 
     local asn = zombie:getActionStateName()
@@ -367,17 +430,14 @@ local function updateOrdinaryZombieCoordinateCombat(zombie)
     local bandit, light, dist2 = selectNearestCombatBandit(zombie)
     if not bandit or not light then return end
 
-    local zz = zombie:getZ()
     if dist2 > 9 then
-        if zombie:CanSee(bandit) then
-            pathToCoordinate(zombie, light.x, light.y, light.z)
-        end
+        if zombie:CanSee(bandit) then pathToCoordinate(zombie, light.x, light.y, light.z) end
         return
     end
 
     pathToCoordinate(zombie, light.x, light.y, light.z)
+    if dist2 >= 0.64 or math.abs(zombie:getZ() - light.z) >= 0.3 then return end
 
-    if dist2 >= 0.64 or math.abs(zz - light.z) >= 0.3 then return end
     local zombieSquare = zombie:getSquare()
     local banditSquare = bandit:getSquare()
     if not zombieSquare or not banditSquare or zombieSquare:isSomethingTo(banditSquare) then return end
@@ -413,11 +473,7 @@ local function updateOrdinaryZombieCoordinateCombat(zombie)
     local bumpType = zombie:getBumpType()
     if bumpType ~= "Bite" and bumpType ~= "BiteLow" and asn ~= "staggerback" then
         bandit:setZombiesDontAttack(true)
-        if bandit:isProne() or bandit:isCrawling() then
-            zombie:setBumpType("BiteLow")
-        else
-            zombie:setBumpType("Bite")
-        end
+        if bandit:isProne() or bandit:isCrawling() then zombie:setBumpType("BiteLow") else zombie:setBumpType("Bite") end
         biteTab[zombie] = { bandit = bandit, tick = 0 }
         Bridge.stats.closeBites = Bridge.stats.closeBites + 1
     end
@@ -430,15 +486,90 @@ local function hasCollision(bandit)
     return ok and value == true
 end
 
-local function callNonCombatBanditUpdate(original, bandit)
+local function installPredicateBridge()
+    if Bridge.originalIsReanimated then return true end
+    if type(BanditCompatibility.IsReanimatedForGrappleOnly) ~= "function"
+            or type(BanditCompatibility.IsRagdoll) ~= "function" then
+        return false, "BanditCompatibility predicate seam unavailable"
+    end
+
+    local originalIsReanimated = BanditCompatibility.IsReanimatedForGrappleOnly
+    local originalIsRagdoll = BanditCompatibility.IsRagdoll
+    Bridge.originalIsReanimated = originalIsReanimated
+    Bridge.originalIsRagdoll = originalIsRagdoll
+
+    BanditCompatibility.IsReanimatedForGrappleOnly = function(zombie, ...)
+        local result = originalIsReanimated(zombie, ...)
+        if zombie and not result then
+            predicateProbeAt[zombie] = nowMs()
+        elseif zombie then
+            predicateProbeAt[zombie] = nil
+        end
+        return result
+    end
+
+    BanditCompatibility.IsRagdoll = function(zombie, ...)
+        local result = originalIsRagdoll(zombie, ...)
+        if not zombie or result then
+            if zombie then predicateProbeAt[zombie] = nil end
+            return result
+        end
+
+        local armedAt = predicateProbeAt[zombie]
+        predicateProbeAt[zombie] = nil
+        if armedAt == nil or nowMs() - armedAt > PREDICATE_PROBE_TTL_MS then
+            return result
+        end
+
+        local clusterBrain, clusterOk = getClusterBrain(zombie)
+        if not clusterOk then
+            warnOnce("cluster-probe", "GetBanditClusterData failed; preserving upstream OnBanditUpdate behavior")
+            return result
+        end
+
+        if clusterBrain then
+            ordinaryTick[zombie] = nil
+            if isNonCombatBrain(clusterBrain) or isNonCombatBandit(zombie) then
+                local crawling = false
+                pcall(function() crawling = zombie:isCrawling() end)
+                nonCombatTick[zombie] = {
+                    combatGateSeen = crawling,
+                    collisionSuppressed = false,
+                }
+            else
+                nonCombatTick[zombie] = nil
+            end
+            return result
+        end
+
+        -- No Bandits cluster brain: the object must stay/become an ordinary
+        -- zombie. Returning true here exits the original OnBanditUpdate before
+        -- its unsafe UpdateZombies() character-target logic. Our later event
+        -- callback performs the source-clean equivalent.
+        ordinaryTick[zombie] = true
+        nonCombatTick[zombie] = nil
+        Bridge.stats.ordinaryUpdateBypasses = Bridge.stats.ordinaryUpdateBypasses + 1
+        return true
+    end
+
+    return true
+end
+
+local function installNonCombatTaskGates()
+    if Bridge.originalIsSleeping then return true end
+    if type(Bandit.IsSleeping) ~= "function" or type(Bandit.GetTask) ~= "function" then
+        return false, "Bandit task gate seam unavailable"
+    end
+
     local originalIsSleeping = Bandit.IsSleeping
     local originalGetTask = Bandit.GetTask
-    local combatGateSeen = false
-    local collisionSuppressed = false
+    Bridge.originalIsSleeping = originalIsSleeping
+    Bridge.originalGetTask = originalGetTask
 
     Bandit.IsSleeping = function(candidate, ...)
-        if candidate == bandit and not combatGateSeen then
-            combatGateSeen = true
+        local state = candidate and nonCombatTick[candidate] or nil
+        if state and not state.combatGateSeen then
+            state.combatGateSeen = true
             Bridge.stats.nonCombatCombatSkips = Bridge.stats.nonCombatCombatSkips + 1
             return true
         end
@@ -446,135 +577,38 @@ local function callNonCombatBanditUpdate(original, bandit)
     end
 
     Bandit.GetTask = function(candidate, ...)
-        if candidate == bandit and combatGateSeen and not collisionSuppressed and hasCollision(bandit) then
-            collisionSuppressed = true
+        local state = candidate and nonCombatTick[candidate] or nil
+        if state and state.combatGateSeen and not state.collisionSuppressed and hasCollision(candidate) then
+            state.collisionSuppressed = true
             Bridge.stats.nonCombatCollisionSkips = Bridge.stats.nonCombatCollisionSkips + 1
             return nil
         end
         return originalGetTask(candidate, ...)
     end
 
-    local ok, err = pcall(original, bandit)
-    Bandit.IsSleeping = originalIsSleeping
-    Bandit.GetTask = originalGetTask
-
-    if not ok then error(err) end
+    return true
 end
 
-local function callOrdinaryZombieUpdate(original, zombie)
-    sanitizeUnsafeBanditRelation(zombie)
+local function installDeathKeyGuard()
+    if Bridge.originalBrainGet then return true end
+    if type(BanditBrain.Get) ~= "function" then return false, "BanditBrain.Get unavailable" end
 
-    local originalCacheLightB = BanditZombie.CacheLightB
-    BanditZombie.CacheLightB = {}
-    local ok, err = pcall(original, zombie)
-    BanditZombie.CacheLightB = originalCacheLightB
-
-    if not ok then error(err) end
-
-    sanitizeUnsafeBanditRelation(zombie)
-    updateOrdinaryZombieCoordinateCombat(zombie)
-end
-
-local function wrapOnBanditUpdate(original)
-    return function(zombie)
-        if not zombie then return original(zombie) end
-        if isNonCombatBandit(zombie) or isPendingNonCombatBandit(zombie) then
-            return callNonCombatBanditUpdate(original, zombie)
-        end
-        if isOrdinaryZombie(zombie) then
-            return callOrdinaryZombieUpdate(original, zombie)
-        end
-        return original(zombie)
-    end
-end
-
-local function wrapOnHitZombie(original)
-    return function(zombie, attacker, bodyPartType, handWeapon)
-        if isNonCombatBandit(zombie) then
-            Bridge.stats.nonCombatHitSkips = Bridge.stats.nonCombatHitSkips + 1
-            return
-        end
-        return original(zombie, attacker, bodyPartType, handWeapon)
-    end
-end
-
-local function wrapOnZombieDead(original)
-    return function(bandit)
-        local brain = bandit and BanditBrain.Get(bandit) or nil
-        local invalidKey = type(brain) == "table" and brain.key ~= nil and type(brain.key) ~= "number"
-        local oldKey = invalidKey and brain.key or nil
-        if invalidKey then
-            brain.key = nil
-            Bridge.stats.invalidDeathKeysSuppressed = Bridge.stats.invalidDeathKeysSuppressed + 1
-        end
-
-        local ok, err = pcall(original, bandit)
-        if not ok then
-            if invalidKey and type(brain) == "table" then brain.key = oldKey end
-            error(err)
-        end
-    end
-end
-
-local function callbackDescription(callback)
-    if not KahluaUtil or not KahluaUtil.rawTostring2 then return nil end
-    local ok, description = pcall(function() return KahluaUtil.rawTostring2(callback) end)
-    return ok and description or nil
-end
-
-local function getEventCallbacks(eventName)
-    if not LuaEventManager or not LuaEventManager.AddEvent then
-        return nil, "LuaEventManager.AddEvent unavailable"
-    end
-    local ok, event = pcall(function() return LuaEventManager.AddEvent(eventName) end)
-    if not ok or not event or not event.callbacks then
-        return nil, "callbacks unavailable for " .. tostring(eventName)
-    end
-    return event.callbacks
-end
-
-local function findBanditsCallback(eventName, functionName)
-    local callbacks, callbacksErr = getEventCallbacks(eventName)
-    if not callbacks then return nil, nil, callbacksErr end
-
-    local foundIndex, foundCallback, foundDescription = nil, nil, nil
-    local nearMatches = {}
-    for i = 0, callbacks:size() - 1 do
-        local callback = callbacks:get(i)
-        local description = callbackDescription(callback)
-        if description and string.find(description, functionName, 1, true)
-                and string.find(description, "BanditUpdate.lua", 1, true) then
-            nearMatches[#nearMatches + 1] = description
-            if string.find(description, "MOD: Bandits", 1, true) then
-                if foundCallback ~= nil then
-                    return nil, nil, "multiple Bandits callbacks for " .. tostring(functionName)
-                end
-                foundIndex = i
-                foundCallback = callback
-                foundDescription = description
+    local originalBrainGet = BanditBrain.Get
+    Bridge.originalBrainGet = originalBrainGet
+    BanditBrain.Get = function(zombie, ...)
+        local brain = originalBrainGet(zombie, ...)
+        if type(brain) == "table" and brain.key ~= nil and type(brain.key) ~= "number"
+                and zombie and isBandit(zombie) then
+            local dead = false
+            local okDead, value = pcall(function() return not zombie:isAlive() or zombie:getHealth() <= 0 end)
+            dead = okDead and value == true
+            if dead then
+                brain.key = nil
+                Bridge.stats.invalidDeathKeysSuppressed = Bridge.stats.invalidDeathKeysSuppressed + 1
             end
         end
+        return brain
     end
-
-    if not foundCallback then
-        local suffix = #nearMatches > 0 and (" candidates=" .. table.concat(nearMatches, " || ")) or ""
-        return nil, nil, "Bandits callback not found: " .. tostring(functionName) .. suffix
-    end
-    return callbacks, foundIndex, foundCallback, foundDescription
-end
-
-local function replaceBanditsCallback(eventName, functionName, wrapperFactory)
-    local key = eventName .. ":" .. functionName
-    if Bridge.originalCallbacks[key] then return true end
-
-    local callbacks, index, original, descriptionOrErr = findBanditsCallback(eventName, functionName)
-    if not callbacks then return false, descriptionOrErr end
-
-    local wrapper = wrapperFactory(original)
-    callbacks:set(index, wrapper)
-    Bridge.originalCallbacks[key] = original
-    log("PATCH", "event=" .. eventName .. " callback=" .. functionName .. " index=" .. tostring(index)
-        .. " source=" .. tostring(descriptionOrErr))
     return true
 end
 
@@ -617,29 +651,45 @@ local function installShootWrapper()
         local brain = bandit and BanditBrain.Get(bandit) or nil
         local weapon = brain and brain.weapons and task and brain.weapons[task.slot] or nil
         local bulletsBefore = weapon and weapon.bulletsLeft or nil
-
         local originalCacheLightZ = BanditZombie.CacheLightZ
+
         BanditZombie.CacheLightZ = {}
         local ok, result = pcall(original, bandit, task)
         BanditZombie.CacheLightZ = originalCacheLightZ
-
         if not ok then error(result) end
 
         local fired = weapon and bulletsBefore ~= nil and weapon.bulletsLeft ~= nil
             and weapon.bulletsLeft < bulletsBefore
-        if fired then
-            alertShotCoordinates(bandit, weapon, originalCacheLightZ)
-        end
+        if fired then alertShotCoordinates(bandit, weapon, originalCacheLightZ) end
         return result
     end
 
-    log("PATCH", "ZombieActions.Shoot.onComplete coordinate-alert wrapper installed")
     return true
+end
+
+local function postBanditUpdate(zombie)
+    local wasOrdinary = ordinaryTick[zombie] == true
+    ordinaryTick[zombie] = nil
+    nonCombatTick[zombie] = nil
+    predicateProbeAt[zombie] = nil
+
+    if not wasOrdinary or not zombie then return end
+    local alive = false
+    local okAlive, value = pcall(function() return zombie:isAlive() end)
+    alive = okAlive and value == true
+    if not alive then return end
+
+    if not prepareOrdinaryZombie(zombie) then return end
+    updateOrdinaryZombieCoordinateCombat(zombie)
 end
 
 function Bridge.install()
     if Bridge.installed then return true end
-    Bridge.installAttempts = Bridge.installAttempts + 1
+
+    if type(GetBanditClusterData) ~= "function" then
+        log("ERROR", "GetBanditClusterData unavailable")
+        return false
+    end
 
     local fingerprintsOk, fingerprintErr = validateUpstream()
     if not fingerprintsOk then
@@ -647,43 +697,23 @@ function Bridge.install()
         return false
     end
 
-    local updateOk, updateErr = replaceBanditsCallback("OnZombieUpdate", "OnBanditUpdate", wrapOnBanditUpdate)
-    if not updateOk then
-        log("ERROR", "OnBanditUpdate bridge failed: " .. tostring(updateErr))
-        return false
-    end
+    local predicateOk, predicateErr = installPredicateBridge()
+    if not predicateOk then log("ERROR", predicateErr); return false end
 
-    local hitOk, hitErr = replaceBanditsCallback("OnHitZombie", "OnHitZombie", wrapOnHitZombie)
-    if not hitOk then
-        log("ERROR", "OnHitZombie bridge failed: " .. tostring(hitErr))
-        return false
-    end
+    local taskOk, taskErr = installNonCombatTaskGates()
+    if not taskOk then log("ERROR", taskErr); return false end
 
-    local deadOk, deadErr = replaceBanditsCallback("OnZombieDead", "OnZombieDead", wrapOnZombieDead)
-    if not deadOk then
-        log("ERROR", "OnZombieDead bridge failed: " .. tostring(deadErr))
-        return false
-    end
+    local deathOk, deathErr = installDeathKeyGuard()
+    if not deathOk then log("ERROR", deathErr); return false end
 
     local shootOk, shootErr = installShootWrapper()
-    if not shootOk then
-        log("ERROR", "ZAShoot bridge failed: " .. tostring(shootErr))
-        return false
-    end
+    if not shootOk then log("ERROR", shootErr); return false end
 
+    Events.OnZombieUpdate.Add(postBanditUpdate)
     Bridge.installed = true
-    log("BOOT", "mode=CALLBACK_BRIDGE source=Bandits2 runtimeTransform=false bundledUpstream=false"
+    log("BOOT", "mode=PREDICATE_BRIDGE source=Bandits2 runtimeTransform=false bundledUpstream=false"
         .. " pursuit=coordinate-only nonCombatProgram=LCCQFQuestGiver")
     return true
 end
 
-local function retryInstall()
-    if not Bridge.installed then Bridge.install() end
-end
-
 Bridge.install()
-if not Bridge._retryRegistered then
-    Events.OnGameStart.Add(retryInstall)
-    Events.OnCreatePlayer.Add(function() retryInstall() end)
-    Bridge._retryRegistered = true
-end
