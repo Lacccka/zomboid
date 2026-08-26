@@ -67,7 +67,8 @@ max_size() {
     fi
 }
 
-# Bandits-LCC-Dev is an internal research tree, not a Workshop package.
+# Bandits-LCC-Dev and QuestFramework are development trees, not part of the
+# nine grouped published/staged compatibility packages audited below.
 expected_patch_dirs=(
     ActivityFixes
     CompatibilityBridges
@@ -86,10 +87,11 @@ trap 'rm -f "$tmp_actual_dirs" "$tmp_expected_dirs"' EXIT
 
 find "$SPLIT" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' \
     | grep -Fvx 'Bandits-LCC-Dev' \
+    | grep -Fvx 'QuestFramework' \
     | sort > "$tmp_actual_dirs"
 printf '%s\n' "${expected_patch_dirs[@]}" | sort > "$tmp_expected_dirs"
 if ! diff -u "$tmp_expected_dirs" "$tmp_actual_dirs"; then
-    error "WorkshopPatches published/staged set must contain exactly the nine supported package directories; Bandits-LCC-Dev is ignored as internal research"
+    error "WorkshopPatches published/staged set must contain exactly the nine supported package directories; development trees are ignored"
 fi
 
 core="$SPLIT/PatchCore/Contents/mods/LaccckaB4220PatchCore/42/media"
@@ -102,6 +104,7 @@ safety="$SPLIT/SafetyFixes/Contents/mods/LaccckaB4220SafetyFixes/42/media"
 grid_sort="$SPLIT/GridInventorySort/Contents/mods/LaccckaB4220GridInventorySort/42/media"
 text42="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/media"
 text_common="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/common/media"
+quest="$SPLIT/QuestFramework/Contents/mods/LaccckaQuestFramework/42/media"
 
 required_files=(
     "$core/lua/shared/LCC/Guard.lua"
@@ -114,7 +117,8 @@ required_files=(
     "$runtime/lua/shared/LCC/Guard.lua"
     "$runtime/lua/shared/zzz_LCC_BanditsFarmingGuard.lua"
 
-    "$npc/lua/client/BanditUpdate.lua"
+    "$npc/lua/client/zz_LCC_BanditCallbackBridge.lua"
+    "$npc/lua/client/zzz_LCC_BanditCrawlerPlayerLunge.lua"
     "$npc/lua/client/zz_LCC_BanditClothingRestore.lua"
     "$npc/lua/client/zzzz_LCC_BanditRelationshipSuppression.lua"
     "$npc/lua/client/zzzzzzz_LCC_BanditFakeHitPfbCleanup.lua"
@@ -123,7 +127,6 @@ required_files=(
     "$npc/lua/server/zz_LCC_BanditServerClothingRestore.lua"
     "$npc/lua/server/zzz_LCC_BanditServerClothingSnapshotFallback.lua"
     "$npc/lua/shared/LCC/Guard.lua"
-    "$npc/lua/shared/ZombieActions/ZAShoot.lua"
 
     "$experimental/lua/client/zzz_LCC_BanditsAdminSpawnMenu.lua"
     "$experimental/lua/client/zzz_LCC_BanditsTargetDiagnostics.lua"
@@ -237,8 +240,8 @@ require_marker "$runtime_dedicated" 'Events.EveryOneMinute.Add(pruneRegistry)' "
 forbid_marker "$runtime_dedicated" 'getZombieList()' "RuntimeFixes dedicated lookup must not scan the complete server zombie list"
 
 # NPCFixes: stable source-clean combat/death/corpse behavior.
-npc_update="$npc/lua/client/BanditUpdate.lua"
-npc_shoot="$npc/lua/shared/ZombieActions/ZAShoot.lua"
+npc_bridge="$npc/lua/client/zz_LCC_BanditCallbackBridge.lua"
+npc_crawler="$npc/lua/client/zzz_LCC_BanditCrawlerPlayerLunge.lua"
 npc_live_clothes="$npc/lua/client/zz_LCC_BanditClothingRestore.lua"
 npc_relation="$npc/lua/client/zzzz_LCC_BanditRelationshipSuppression.lua"
 npc_fake_late="$npc/lua/client/zzzzzzz_LCC_BanditFakeHitPfbCleanup.lua"
@@ -247,21 +250,35 @@ npc_die="$npc/lua/client/zzzzzzzz_LCC_BanditTerminalDiePump.lua"
 npc_server_clothes="$npc/lua/server/zz_LCC_BanditServerClothingRestore.lua"
 npc_server_fallback="$npc/lua/server/zzz_LCC_BanditServerClothingSnapshotFallback.lua"
 
-for shim in "$npc_update" "$npc_shoot"; do
-    require_marker "$shim" 'getModFileReader' "NPCFixes source shim must read installed upstream source: ${shim#$ROOT/}"
-    require_marker "$shim" 'loadstring' "NPCFixes source shim lost runtime compilation: ${shim#$ROOT/}"
-    require_marker "$shim" 'replacePlainOnce' "NPCFixes source shim lost exact fingerprint replacement: ${shim#$ROOT/}"
-    require_marker "$shim" 'MOD_ID = "Bandits2"' "NPCFixes source shim lost explicit Bandits2 source selection: ${shim#$ROOT/}"
-    require_marker "$shim" 'BYPASS_FINGERPRINT' "NPCFixes source shim must fail open on upstream fingerprint drift: ${shim#$ROOT/}"
-    require_marker "$shim" 'bundledUpstream=false' "NPCFixes source shim must report source-clean execution: ${shim#$ROOT/}"
+# Build 42.20 runtime compilation is not part of the stable contract anymore.
+for forbidden in \
+    "$npc/lua/client/BanditUpdate.lua" \
+    "$npc/lua/shared/ZombieActions/ZAShoot.lua" \
+    "$npc/lua/client/BanditZombie.lua" \
+    "$npc/lua/server/BanditServerWanderers.lua" \
+    "$npc/lua/client/zzzzzz_LCC_BanditPursuitStallTrace.lua" \
+    "$npc/lua/client/zzzzz_LCC_BanditPfbLateSweep.lua" \
+    "$npc/lua/client/zz_LCC_BanditCloseRangeBiteTrace.lua" \
+    "$npc/lua/client/zzz_LCC_BanditBiteOutcomeTrace.lua"; do
+    [[ ! -e "$forbidden" ]] || error "NPCFixes must not contain upstream same-path source or experimental diagnostics: ${forbidden#$ROOT/}"
 done
-max_size "$npc_update" 20000 "NPCFixes BanditUpdate.lua must remain a small transformer, not an upstream source copy"
-max_size "$npc_shoot" 12000 "NPCFixes ZAShoot.lua must remain a small transformer, not an upstream source copy"
-require_marker "$npc_update" 'source-clean-coordinate-pursuit-v1' "NPCFixes pursuit shim lost validated marker"
-require_marker "$npc_update" 'LCC_PURSUIT_ALIGN_DIST2 = 0.5625' "NPCFixes pursuit shim lost 0.75-tile throttle"
-require_marker "$npc_update" 'LCC_PURSUIT_IDLE_RETRY_MS = 750' "NPCFixes pursuit shim lost bounded idle retry"
-require_marker "$npc_shoot" 'source-clean-gunshot-coordinate-alert-v1' "NPCFixes gunshot shim lost validated marker"
-require_marker "$npc_shoot" 'zombie:pathToLocationF(sx, sy, sz)' "NPCFixes gunshot shim lost coordinate-only alert"
+
+require_marker "$npc_bridge" 'loadstring-free-predicate-bridge-v2' "NPCFixes lost the validated loadstring-free bridge marker"
+require_marker "$npc_bridge" 'getModFileReader' "NPCFixes bridge must fingerprint the installed Bandits2 source"
+require_marker "$npc_bridge" 'BanditCompatibility.IsReanimatedForGrappleOnly = function' "NPCFixes bridge lost the first predicate probe"
+require_marker "$npc_bridge" 'BanditCompatibility.IsRagdoll = function' "NPCFixes bridge lost the OnBanditUpdate discriminator"
+require_marker "$npc_bridge" 'ordinaryTick[zombie] = true' "NPCFixes bridge lost ordinary-zombie UpdateZombies bypass"
+require_marker "$npc_bridge" 'LCC_PURSUIT_ALIGN_DIST2 = 0.5625' "NPCFixes pursuit bridge lost 0.75-tile throttle"
+require_marker "$npc_bridge" 'LCC_PURSUIT_IDLE_RETRY_MS = 750' "NPCFixes pursuit bridge lost bounded idle retry"
+require_marker "$npc_bridge" 'zombie:pathToLocationF(x, y, z)' "NPCFixes pursuit bridge lost coordinate-only movement"
+require_marker "$npc_bridge" 'ZombieActions.Shoot.onComplete = function' "NPCFixes gunshot bridge lost upstream wrapper"
+require_marker "$npc_bridge" 'BanditZombie.CacheLightZ = {}' "NPCFixes gunshot bridge must suppress only the upstream character-alert loop"
+require_marker "$npc_bridge" 'runtimeTransform=false' "NPCFixes bridge must report source-clean execution"
+forbid_marker "$npc_bridge" 'loadstring' "NPCFixes must not use runtime Lua source compilation"
+forbid_marker "$npc_bridge" 'LuaEventManager.AddEvent' "NPCFixes must not depend on inaccessible Event.callbacks internals"
+max_size "$npc_bridge" 45000 "NPCFixes predicate bridge is unexpectedly large; verify it has not become an upstream source copy"
+require_marker "$npc_crawler" 'ordinary-crawler-player-lunge-v1' "NPCFixes lost preserved crawler-player behavior"
+require_marker "$npc_crawler" 'LungeState.instance()' "NPCFixes crawler seam lost the upstream lunge transition"
 require_marker "$npc_relation" 'character-relation-suppression-v6' "NPCFixes relationship suppression lost validated marker"
 require_marker "$npc_fake_late" 'fake-hit-relation-cleanup-v3' "NPCFixes late fake-hit cleanup lost validated marker"
 require_marker "$npc_fake_now" 'fake-hit-immediate-cleanup-v1' "NPCFixes immediate fake-hit cleanup lost validated marker"
@@ -270,15 +287,13 @@ require_marker "$npc_live_clothes" 'real-worn-reconnect-v2' "NPCFixes live cloth
 require_marker "$npc_server_clothes" 'server-authoritative-death-worn-v2' "NPCFixes server clothing repair lost validated marker"
 require_marker "$npc_server_fallback" 'server-death-worn-remove-snapshot-v2' "NPCFixes clothing race fallback lost validated marker"
 
-for forbidden in \
-    "$npc/lua/client/BanditZombie.lua" \
-    "$npc/lua/server/BanditServerWanderers.lua" \
-    "$npc/lua/client/zzzzzz_LCC_BanditPursuitStallTrace.lua" \
-    "$npc/lua/client/zzzzz_LCC_BanditPfbLateSweep.lua" \
-    "$npc/lua/client/zz_LCC_BanditCloseRangeBiteTrace.lua" \
-    "$npc/lua/client/zzz_LCC_BanditBiteOutcomeTrace.lua"; do
-    [[ ! -e "$forbidden" ]] || error "NPCFixes must not contain upstream source or experimental diagnostics: ${forbidden#$ROOT/}"
-done
+# QuestFramework is still a development tree, but its NPCFixes compatibility
+# marker must track the stable scheduling seam when the tree is present.
+quest_npc_compat="$quest/lua/client/LCCQF/Runtime/zz_LCCQFNPCFixesCompatibility.lua"
+if [[ -e "$quest_npc_compat" ]]; then
+    require_marker "$quest_npc_compat" 'loadstring-free-predicate-bridge-v2' "QuestFramework expects a stale NPCFixes scheduling seam"
+    require_marker "$quest_npc_compat" 'runtimeTransform=false' "QuestFramework NPCFixes compatibility log lost the no-transform contract"
+fi
 
 # NPCCombatExperimental: diagnostics/admin only; no production target disconnect.
 experimental_admin="$experimental/lua/client/zzz_LCC_BanditsAdminSpawnMenu.lua"
@@ -446,7 +461,7 @@ for folder in "${expected_patch_dirs[@]}"; do
 
     if [[ "$folder" == "NPCFixes" ]]; then
         grep -Fxq 'name=Lacccka B42 NPC Fixes' "$modinfo" || error "$folder: wrong stable public mod name"
-        grep -Fxq 'modversion=1.0.1' "$modinfo" || error "$folder: stable version must be 1.0.1"
+        grep -Fxq 'modversion=1.0.5' "$modinfo" || error "$folder: stable version must be 1.0.5"
         grep -Fxq 'title=Lacccka B42 NPC Fixes' "$workshop" || error "$folder: wrong stable Workshop title"
         grep -Fxq 'visibility=public' "$workshop" || error "$folder: published stable Workshop item must remain public"
     fi
@@ -513,4 +528,4 @@ if (( fail != 0 )); then
     exit 1
 fi
 
-printf 'Grouped Workshop patches audit: OK (9 package directories; NPCFixes=stable 1.0.1 published; NPCCombatExperimental=diagnostics-only 0.2.1; GridInventorySort=0.1.0 private staging id=0; Bandits-LCC-Dev excluded as internal)\n'
+printf 'Grouped Workshop patches audit: OK (9 package directories; NPCFixes=stable 1.0.5 loadstring-free published; NPCCombatExperimental=diagnostics-only 0.2.1; GridInventorySort=0.1.0 private staging id=0; development trees excluded)\n'
