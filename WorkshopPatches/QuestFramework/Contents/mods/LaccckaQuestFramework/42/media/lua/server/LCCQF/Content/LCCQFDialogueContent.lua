@@ -25,10 +25,28 @@ local dialogues = {
                         next = "work_active",
                     },
                     {
-                        id = "ask_work_completed",
-                        textKey = "IGUI_LCCQF_Choice_QuestCompletedTopic",
-                        condition = { kind = "questState", questId = C.TEST_QUEST_ID, state = "completed" },
-                        next = "work_completed",
+                        id = "ask_supply_available",
+                        textKey = "IGUI_LCCQF_Choice_AskSupplyWork",
+                        condition = {
+                            kind = "all",
+                            conditions = {
+                                { kind = "questState", questId = C.TEST_QUEST_ID, state = "completed" },
+                                { kind = "questState", questId = C.TEST_QUEST_2_ID, state = "available" },
+                            },
+                        },
+                        next = "supply_offer",
+                    },
+                    {
+                        id = "ask_supply_active",
+                        textKey = "IGUI_LCCQF_Choice_SupplyInProgress",
+                        condition = { kind = "questState", questId = C.TEST_QUEST_2_ID, state = "active" },
+                        next = "supply_active",
+                    },
+                    {
+                        id = "ask_supply_completed",
+                        textKey = "IGUI_LCCQF_Choice_SupplyCompletedTopic",
+                        condition = { kind = "questState", questId = C.TEST_QUEST_2_ID, state = "completed" },
+                        next = "supply_completed",
                     },
                     { id = "ask_identity", textKey = "IGUI_LCCQF_Choice_AskIdentity", next = "who" },
                     { id = "leave", textKey = "IGUI_LCCQF_Choice_Leave", close = true },
@@ -62,8 +80,42 @@ local dialogues = {
                     { id = "leave", textKey = "IGUI_LCCQF_Choice_Leave", close = true },
                 },
             },
-            work_completed = {
-                textKey = "IGUI_LCCQF_Dialog_WorkCompleted",
+            supply_offer = {
+                textKey = "IGUI_LCCQF_Dialog_SupplyOffer",
+                choices = {
+                    {
+                        id = "accept_supply_run",
+                        textKey = "IGUI_LCCQF_Choice_AcceptSupplyQuest",
+                        condition = {
+                            kind = "all",
+                            conditions = {
+                                { kind = "questState", questId = C.TEST_QUEST_ID, state = "completed" },
+                                { kind = "questState", questId = C.TEST_QUEST_2_ID, state = "available" },
+                            },
+                        },
+                        action = { kind = "questAccept", questId = C.TEST_QUEST_2_ID },
+                        next = "supply_accepted",
+                    },
+                    { id = "decline_supply", textKey = "IGUI_LCCQF_Choice_DeclineQuest", next = "start" },
+                    { id = "leave", textKey = "IGUI_LCCQF_Choice_Leave", close = true },
+                },
+            },
+            supply_accepted = {
+                textKey = "IGUI_LCCQF_Dialog_SupplyAccepted",
+                choices = {
+                    { id = "back", textKey = "IGUI_LCCQF_Choice_Understood", next = "start" },
+                    { id = "leave", textKey = "IGUI_LCCQF_Choice_Leave", close = true },
+                },
+            },
+            supply_active = {
+                textKey = "IGUI_LCCQF_Dialog_SupplyActive",
+                choices = {
+                    { id = "back", textKey = "IGUI_LCCQF_Choice_Back", next = "start" },
+                    { id = "leave", textKey = "IGUI_LCCQF_Choice_Leave", close = true },
+                },
+            },
+            supply_completed = {
+                textKey = "IGUI_LCCQF_Dialog_SupplyCompleted",
                 choices = {
                     { id = "back", textKey = "IGUI_LCCQF_Choice_Back", next = "start" },
                     { id = "leave", textKey = "IGUI_LCCQF_Choice_Leave", close = true },
