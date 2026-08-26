@@ -341,6 +341,10 @@ local function onClientCommand(module, command, player, args)
     end
 end
 
+local function onPlayerDeath(player)
+    QuestService.OnPlayerDeath(player)
+end
+
 local function onTick()
     local now = getTimestampMs()
 
@@ -362,11 +366,13 @@ local function onServerStarted()
     end
     QuestService.SetEventSink(onQuestEvent)
 
+    local persistenceOk, persistenceErr = QuestService.Initialize()
     local bindingCount = refreshRuntimeBindings()
     log("loaded version=" .. tostring(C.VERSION) .. " runtime=Bandits serverRange="
         .. tostring(C.SERVER_INTERACTION_RANGE) .. " restoredBindings=" .. tostring(bindingCount)
         .. " lifecycleReconcileMs=" .. tostring(C.RUNTIME_RECONCILE_INTERVAL_MS)
-        .. " questUpdateMs=" .. tostring(C.QUEST_UPDATE_INTERVAL_MS))
+        .. " questUpdateMs=" .. tostring(C.QUEST_UPDATE_INTERVAL_MS)
+        .. " persistence=" .. tostring(persistenceOk and "ready" or persistenceErr or "unavailable"))
 end
 
 if isServer and isServer() then
@@ -374,6 +380,9 @@ if isServer and isServer() then
     Events.OnTick.Add(onTick)
     Events.EveryOneMinute.Add(pruneCommandHistory)
     Events.OnServerStarted.Add(onServerStarted)
+    if Events.OnPlayerDeath then
+        Events.OnPlayerDeath.Add(onPlayerDeath)
+    end
 end
 
 return LCCQFInteractionServer
