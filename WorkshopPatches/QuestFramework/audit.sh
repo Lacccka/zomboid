@@ -6,6 +6,7 @@ lua_root="$project_root/Contents/mods/LaccckaQuestFramework/42/media/lua"
 mod_info="$project_root/Contents/mods/LaccckaQuestFramework/42/mod.info"
 client_interaction="$lua_root/client/LCCQF/LCCQFInteractionClient.lua"
 client_quest_state="$lua_root/client/LCCQF/Quest/LCCQFQuestClientState.lua"
+client_character_lifecycle="$lua_root/client/LCCQF/Quest/LCCQFCharacterProjectionLifecycle.lua"
 client_quest_marker="$lua_root/client/LCCQF/Quest/LCCQFQuestMarkerService.lua"
 client_hub="$lua_root/client/LCCQF/UI/LCCQFHub.lua"
 client_hub_bootstrap="$lua_root/client/LCCQF/zz_LCCQFRPGHubBootstrap.lua"
@@ -13,16 +14,24 @@ legacy_client_bandits="$lua_root/client/LCCQF/Runtime/LCCQFBanditsRuntime.lua"
 server_interaction="$lua_root/server/LCCQF/LCCQFInteractionServer.lua"
 server_bandits_wrapper="$lua_root/server/LCCQF/Runtime/LCCQFBanditsRuntime.lua"
 server_bandits="$lua_root/server/LCCQF/Runtime/LCCQFBanditsServerRuntime.lua"
+server_bandits_ownership="$lua_root/server/LCCQF/Runtime/LCCQFBanditsEntityOwnership.lua"
+server_quest_giver_protection="$lua_root/server/LCCQF/Runtime/zz_LCCQFBanditsQuestGiverProtection.lua"
 dialogue_session="$lua_root/server/LCCQF/Dialogue/LCCQFDialogueSession.lua"
 dialogue_content="$lua_root/server/LCCQF/Content/LCCQFDialogueContent.lua"
 quest_definitions="$lua_root/server/LCCQF/Content/LCCQFQuestDefinitions.lua"
 quest_registry="$lua_root/server/LCCQF/Quest/LCCQFQuestRegistry.lua"
 quest_instance="$lua_root/server/LCCQF/Quest/LCCQFQuestInstance.lua"
 quest_service="$lua_root/server/LCCQF/Quest/LCCQFQuestService.lua"
+quest_event_bridge="$lua_root/server/LCCQF/Quest/zz_LCCQFQuestEventBridge.lua"
 character_identity="$lua_root/server/LCCQF/Persistence/LCCQFCharacterIdentity.lua"
 quest_persistence="$lua_root/server/LCCQF/Persistence/LCCQFQuestPersistence.lua"
 objective_reach="$lua_root/server/LCCQF/Quest/Objectives/LCCQFObjectiveReachArea.lua"
 objective_talk="$lua_root/server/LCCQF/Quest/Objectives/LCCQFObjectiveTalkToNPC.lua"
+objective_item_utils="$lua_root/server/LCCQF/Quest/Objectives/LCCQFObjectiveItemUtils.lua"
+objective_fetch="$lua_root/server/LCCQF/Quest/Objectives/LCCQFObjectiveFetch.lua"
+objective_deliver="$lua_root/server/LCCQF/Quest/Objectives/LCCQFObjectiveDeliver.lua"
+objective_kill="$lua_root/server/LCCQF/Quest/Objectives/LCCQFObjectiveKill.lua"
+objective_clear="$lua_root/server/LCCQF/Quest/Objectives/LCCQFObjectiveClearArea.lua"
 shared_runtime="$lua_root/shared/LCCQF/Core/LCCQFNPCRuntime.lua"
 constants="$lua_root/shared/LCCQF/LCCQFConstants.lua"
 translation_en="$lua_root/shared/Translate/EN/IG_UI.json"
@@ -38,22 +47,31 @@ for required in \
     "$shared_runtime" \
     "$client_interaction" \
     "$client_quest_state" \
+    "$client_character_lifecycle" \
     "$client_quest_marker" \
     "$client_hub" \
     "$client_hub_bootstrap" \
     "$server_interaction" \
     "$server_bandits_wrapper" \
     "$server_bandits" \
+    "$server_bandits_ownership" \
+    "$server_quest_giver_protection" \
     "$dialogue_session" \
     "$dialogue_content" \
     "$quest_definitions" \
     "$quest_registry" \
     "$quest_instance" \
     "$quest_service" \
+    "$quest_event_bridge" \
     "$character_identity" \
     "$quest_persistence" \
     "$objective_reach" \
     "$objective_talk" \
+    "$objective_item_utils" \
+    "$objective_fetch" \
+    "$objective_deliver" \
+    "$objective_kill" \
+    "$objective_clear" \
     "$translation_en" \
     "$translation_ru"
 do
@@ -66,6 +84,7 @@ done
 non_runtime_files=(
     "$client_interaction"
     "$client_quest_state"
+    "$client_character_lifecycle"
     "$client_quest_marker"
     "$client_hub"
     "$client_hub_bootstrap"
@@ -75,10 +94,16 @@ non_runtime_files=(
     "$quest_registry"
     "$quest_instance"
     "$quest_service"
+    "$quest_event_bridge"
     "$character_identity"
     "$quest_persistence"
     "$objective_reach"
     "$objective_talk"
+    "$objective_item_utils"
+    "$objective_fetch"
+    "$objective_deliver"
+    "$objective_kill"
+    "$objective_clear"
     "$lua_root/shared/LCCQF/Core/LCCQFNPCRegistry.lua"
     "$shared_runtime"
 )
@@ -105,6 +130,8 @@ rg -q 'function Runtime\.UnbindRuntime' "$shared_runtime" \
     || fail "runtime unbind lifecycle API missing"
 rg -q 'definition\.interactive ~= false' "$shared_runtime" \
     || fail "generic framework interaction eligibility missing"
+rg -q 'function Runtime\.IsFrameworkEntity' "$shared_runtime" \
+    || fail "provider-neutral framework entity classifier missing"
 
 rg -q 'LCCQFBanditsServerRuntime' "$server_bandits_wrapper" \
     || fail "legacy server module does not redirect to unique server runtime"
@@ -130,6 +157,12 @@ rg -q 'emitBindingEvent\("upsert", handle, "movement"\)' "$server_bandits" \
     || fail "moving NPC anchors are not replicated to clients"
 rg -q 'if isServer and isServer\(\) then' "$server_bandits" \
     || fail "Bandits server event hooks are not guarded from client init"
+rg -q 'function adapter\.OwnsEntity' "$server_bandits_ownership" \
+    || fail "Bandits provider entity ownership classifier missing"
+rg -q 'setInvulnerable\(true\)' "$server_quest_giver_protection" \
+    || fail "essential quest giver server invulnerability enforcement missing"
+rg -q 'setTarget\(nil\)' "$server_quest_giver_protection" \
+    || fail "essential quest giver zombie aggro suppression missing"
 
 if rg -n 'brain\.key\s*==\s*definition\.npcId|Registry\.IsRegistered\(brain\.key\)' "$server_bandits"; then
     fail "legacy Bandits brain.key quest identity restoration reintroduced"
@@ -162,12 +195,29 @@ rg -q 'ownerCharacterId' "$quest_instance" \
     || fail "QuestInstance is not owned by durable character identity"
 rg -q 'function QuestInstance\.CompleteCurrentObjective' "$quest_instance" \
     || fail "QuestInstance objective transition missing"
+for objective_type in ReachArea TalkToNPC Fetch Deliver Kill ClearArea; do
+    rg -q "$objective_type = LCCQF\.QuestObjectives\.$objective_type" "$quest_instance" \
+        || fail "objective handler not registered: $objective_type"
+done
+rg -q 'handler\.ValidatePersisted' "$quest_instance" \
+    || fail "objective-specific persistence validation missing"
+rg -q 'handler\.MakeProgressView' "$quest_instance" \
+    || fail "objective progress projection missing"
+
 rg -q 'function QuestService\.Initialize' "$quest_service" \
     || fail "quest persistence initialization missing"
 rg -q 'function QuestService\.Accept' "$quest_service" \
     || fail "server quest accept path missing"
 rg -q 'function QuestService\.NotifyTalkToNPC' "$quest_service" \
     || fail "TalkToNPC server transition missing"
+rg -q 'function QuestService\.NotifyZombieDead' "$quest_service" \
+    || fail "Kill objective server death transition missing"
+rg -q 'handler\.EvaluateTick' "$quest_service" \
+    || fail "generic tick objective dispatch missing"
+rg -q 'handler\.EvaluateTalk' "$quest_service" \
+    || fail "generic talk objective dispatch missing"
+rg -q 'handler\.EvaluateZombieDeath' "$quest_service" \
+    || fail "generic zombie-death objective dispatch missing"
 rg -q 'function QuestService\.OnPlayerDeath' "$quest_service" \
     || fail "character retirement path missing"
 rg -q 'function QuestService\.Tick' "$quest_service" \
@@ -179,23 +229,50 @@ rg -q 'QuestService\.Initialize' "$server_interaction" \
 rg -q 'Events\.OnPlayerDeath|QuestService\.OnPlayerDeath' "$server_interaction" \
     || fail "server interaction layer does not retire dead character identities"
 rg -q 'QuestService\.NotifyTalkToNPC' "$server_interaction" \
-    || fail "validated dialogue interaction is not connected to TalkToNPC objectives"
+    || fail "validated dialogue interaction is not connected to talk objectives"
 rg -q 'QuestService\.EvaluateCondition' "$server_interaction" \
     || fail "dialogue choice conditions are not server-authoritative"
 rg -q 'QuestService\.ExecuteAction' "$server_interaction" \
     || fail "dialogue quest actions are not server-authoritative"
+rg -q 'Events\.OnZombieDead\.Add' "$quest_event_bridge" \
+    || fail "authoritative quest zombie death bridge missing"
+rg -q 'IsFrameworkEntity' "$quest_event_bridge" \
+    || fail "quest zombie death bridge does not exclude framework NPCs"
 rg -q 'isChoiceAvailable' "$dialogue_session" \
     || fail "dialogue session does not revalidate conditional choices"
 rg -q 'questAccept' "$dialogue_content" \
-    || fail "first dialogue quest offer missing"
-rg -q 'type = "ReachArea"' "$quest_definitions" \
-    || fail "first ReachArea objective missing"
-rg -q 'type = "TalkToNPC"' "$quest_definitions" \
-    || fail "first return-to-NPC objective missing"
+    || fail "dialogue quest offer missing"
+rg -q 'condition.kind == "all"' "$quest_service" \
+    || fail "composite server-authoritative dialogue conditions missing"
+
+for objective_type in ReachArea TalkToNPC Fetch Deliver Kill ClearArea; do
+    rg -q "type = \"$objective_type\"" "$quest_definitions" \
+        || fail "test quest coverage missing objective type: $objective_type"
+done
 rg -q 'mode = "EXACT"' "$quest_definitions" \
-    || fail "first authored QuestMarker presentation missing"
+    || fail "exact QuestMarker presentation missing"
+rg -q 'mode = "AREA"' "$quest_definitions" \
+    || fail "area QuestMarker presentation missing"
 rg -q 'function ReachArea\.MakeMarkerView' "$objective_reach" \
     || fail "ReachArea marker projection missing"
+rg -q 'function ClearArea\.MakeMarkerView' "$objective_clear" \
+    || fail "ClearArea marker projection missing"
+rg -q 'function Fetch\.EvaluateTick' "$objective_fetch" \
+    || fail "Fetch objective evaluator missing"
+rg -q 'function Deliver\.EvaluateTalk' "$objective_deliver" \
+    || fail "Deliver objective talk evaluator missing"
+rg -q 'ItemUtils\.Remove' "$objective_deliver" \
+    || fail "Deliver objective does not consume server-validated items"
+rg -q 'sendRemoveItemFromContainer' "$objective_item_utils" \
+    || fail "server item removal is not replicated to inventory clients"
+rg -q 'function Kill\.EvaluateZombieDeath' "$objective_kill" \
+    || fail "Kill objective death evaluator missing"
+rg -q 'getAttackedBy' "$objective_kill" \
+    || fail "Kill objective does not use authoritative B42 attacker credit"
+rg -q 'function ClearArea\.EvaluateTick' "$objective_clear" \
+    || fail "ClearArea objective evaluator missing"
+rg -q 'IsFrameworkEntity' "$objective_clear" \
+    || fail "ClearArea does not exclude framework-owned NPC entities"
 rg -q 'markerId = tostring\(instance\.id\)' "$quest_instance" \
     || fail "QuestInstance does not expose stable per-objective marker projection"
 rg -q 'REQUEST_QUESTS' "$constants" \
@@ -228,6 +305,14 @@ fi
 
 rg -q 'function QuestClientState\.AddListener' "$client_quest_state" \
     || fail "quest client state change notification missing"
+rg -q 'function QuestClientState\.BeginCharacterTransition' "$client_quest_state" \
+    || fail "per-life client quest projection reset missing"
+rg -q 'Events\.OnPlayerDeath\.Add' "$client_character_lifecycle" \
+    || fail "client death projection reset hook missing"
+rg -q 'Events\.OnCreatePlayer\.Add' "$client_character_lifecycle" \
+    || fail "new-character authoritative quest resync hook missing"
+rg -q 'LCCQF/Quest/LCCQFCharacterProjectionLifecycle' "$client_hub_bootstrap" \
+    || fail "character projection lifecycle is not loaded"
 rg -q 'getSymbolsAPIv2' "$client_quest_marker" \
     || fail "world-map symbols v2 adapter missing"
 rg -q 'addUntranslatedText|addTexture' "$client_quest_marker" \
@@ -249,7 +334,7 @@ rg -q 'LCCQF/Quest/LCCQFQuestMarkerService' "$client_hub_bootstrap" \
 rg -q 'LCCQF/UI/LCCQFHub' "$client_hub_bootstrap" \
     || fail "RPG hub bootstrap does not load tabbed hub"
 
-if rg -n 'QuestService\.(Accept|ExecuteAction|NotifyTalkToNPC|Tick)|CompleteCurrentObjective|questAccept' "$lua_root/client"; then
+if rg -n 'QuestService\.(Accept|ExecuteAction|NotifyTalkToNPC|NotifyZombieDead|Tick)|CompleteCurrentObjective|questAccept' "$lua_root/client"; then
     fail "client-owned quest state transition reintroduced"
 fi
 
@@ -268,8 +353,8 @@ if rg -n 'choice\.next|showNode\(' "$lua_root/client"; then
     fail "client-owned dialogue transition reintroduced"
 fi
 
-rg -q '^modversion=0\.3\.2$' "$mod_info" || fail "mod.info version mismatch"
-rg -q 'Constants\.VERSION = "0\.3\.2"' "$constants" \
+rg -q '^modversion=0\.3\.3$' "$mod_info" || fail "mod.info version mismatch"
+rg -q 'Constants\.VERSION = "0\.3\.3"' "$constants" \
     || fail "Lua version mismatch"
 rg -q 'Constants\.PERSISTENCE_SCHEMA_VERSION = 1' "$constants" \
     || fail "world persistence schema constant missing"
@@ -277,6 +362,8 @@ rg -q 'Constants\.QUEST_PERSISTENCE_SCHEMA_VERSION = 1' "$constants" \
     || fail "quest persistence schema constant missing"
 rg -q 'Constants\.CHARACTER_ID_MODDATA_KEY' "$constants" \
     || fail "character identity modData key missing"
+rg -q 'Constants\.TEST_QUEST_2_ID' "$constants" \
+    || fail "second objective-runtime test quest id missing"
 
 if rg -n 'brain\.key\s*=\s*definition\.npcId|key\s*=\s*definition\.npcId' \
     "$lua_root/server/LCCQF/Runtime"; then
