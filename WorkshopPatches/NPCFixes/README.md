@@ -4,9 +4,15 @@ Stable, source-clean Build 42.20 compatibility fixes for NPC combat and the NPC 
 
 This Workshop item contains LCC-authored shims, guards and lifecycle repairs only. It does **not** redistribute complete third-party Lua files or assets. The original mod must be installed separately.
 
-Current stable code version: `1.0.2`.
+Current code version: `1.0.3`. Version `1.0.2` remains the last full runtime-accepted baseline. Version `1.0.3` rebases the `BanditUpdate.lua` transformer onto the Bandits Workshop update imported on 2026-08-26 and requires the normal regression pass before a new runtime acceptance claim is made.
 
 The source-clean architecture was accepted on 2026-08-21 against the normal Workshop `Bandits2` installation (Workshop ID `3268487204`), without `Bandits-LCC-Dev`. Both runtime transformers loaded in `mode=PATCHED`; `ClassCastException`, `AttackState.triggerPlayerReaction` and `NetworkZombieMind: goal character is not set` remained zero. See `docs/final-reports/npcfixes-source-clean-bandits-acceptance-2026-08-21.md`.
+
+## 2026-08-26 Bandits compatibility rebase
+
+The 2026-08-26 Bandits update retained the unsafe ordinary-zombie -> Bandit character-target block and the unsafe untyped `brain.key -> setKeyId()` seam, but changed formatting inside the close-range relationship block. `BanditUpdate.lua` transformer marker `source-clean-coordinate-pursuit-v3` now explicitly accepts both known exact forms of that block. Matching remains strict: the transformer does not normalize arbitrary whitespace or use fuzzy patterns, and any unknown future source still enters `BYPASS_FINGERPRINT`.
+
+The remaining wrappers continue to target APIs that are present in the imported update (`BanditUtils.Hit`, `ZombieActions.Smack.onWorking`, `Bandit.ApplyVisuals`, `Bandit.UpdateItemsToSpawnAtDeath`). The upstream drag-down path also still routes `onground` through the early-return action-state set, so the terminal `Die` pump is retained pending runtime regression.
 
 ## Scope
 
@@ -19,7 +25,7 @@ B42.20.3 vanilla `AttackState` is unsafe when an ordinary `IsoZombie` receives a
 - `PathFindBehavior2 Goal.Location` is refreshed only when the Bandit moved far enough or a bounded idle retry is needed;
 - the original Bandits `biteTab` / `Bite` / `BiteLow` implementation remains authoritative and is not copied into this patch.
 
-`client/BanditUpdate.lua` is a source-clean runtime transformer. It reads the installed `Bandits2` file with `getModFileReader()`, validates four exact B42.20 fingerprints, applies the coordinate-pursuit and typed death-key guards in memory, and executes the transformed source with `loadstring()`. If a future Bandits version no longer matches the fingerprints, the transformer logs a warning and runs that upstream file unchanged rather than guessing against new source.
+`client/BanditUpdate.lua` is a source-clean runtime transformer. It reads the installed `Bandits2` file with `getModFileReader()`, validates four exact B42.20 transformation seams, applies the coordinate-pursuit and typed death-key guards in memory, and executes the transformed source with `loadstring()`. Known upstream formatting variants are whitelisted explicitly. If a future Bandits version no longer matches the accepted fingerprints, the transformer logs a warning and runs that upstream file unchanged rather than guessing against new source.
 
 `shared/ZombieActions/ZAShoot.lua` uses the same mechanism for the one gunshot-alert block that previously created a vanilla zombie -> Bandit target. Idle zombies are sent to the shot coordinates instead.
 
@@ -65,8 +71,10 @@ Normal regression tests use the original `Bandits2` plus the split patches. Do *
 
 Required transformer boot markers:
 
-- `[LCC][NPCFixes][BanditUpdateShim][BOOT] ... mode=PATCHED`
+- `[LCC][NPCFixes][BanditUpdateShim][BOOT] ... marker=source-clean-coordinate-pursuit-v3 ... mode=PATCHED`
 - `[LCC][NPCFixes][ZAShootShim][BOOT] ... mode=PATCHED`
+
+For the 2026-08-26 Bandits source revision the first marker should also report `closeVariant=2`; the pre-update source reports `closeVariant=1`.
 
 Any `BYPASS_FINGERPRINT`, `BYPASS_COMPILE` or `[FATAL]` means the installed upstream version is outside the currently accepted transformer contract and must be investigated before support is claimed.
 
@@ -84,4 +92,4 @@ Stable acceptance criteria remain:
 
 ## Publication state
 
-The code is stable `1.0.2`. The repository Workshop project may retain its existing publication metadata until a separate release decision is made. This metadata does not change the stability classification of the code itself.
+Version `1.0.3` is the current compatibility candidate for the Bandits update imported on 2026-08-26. Publish/accept it as the new stable runtime baseline only after the regression contract above passes on the normal Workshop `Bandits2` installation.
