@@ -41,6 +41,13 @@ local function questStateText(state)
     return tostring(state or "-")
 end
 
+local function objectiveProgressSuffix(objective)
+    local required = math.max(1, math.floor(tonumber(objective and objective.required) or 1))
+    if required <= 1 then return "" end
+    local progress = math.max(0, math.min(required, math.floor(tonumber(objective.progress) or 0)))
+    return " (" .. tostring(progress) .. "/" .. tostring(required) .. ")"
+end
+
 function Hub.RegisterPage(definition)
     if type(definition) ~= "table" or type(definition.id) ~= "string"
         or type(definition.create) ~= "function"
@@ -138,7 +145,9 @@ function LCCQFQuestHubPage:updateDetail()
         elseif objective.state == "active" then
             prefix = "[>] "
         end
-        lines[#lines + 1] = prefix .. localize(objective.titleKey, tostring(objective.id or "Objective"))
+        lines[#lines + 1] = prefix
+            .. localize(objective.titleKey, tostring(objective.id or "Objective"))
+            .. objectiveProgressSuffix(objective)
     end
 
     if view.marker and view.state == "active" then
