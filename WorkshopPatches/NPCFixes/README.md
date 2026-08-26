@@ -1,43 +1,148 @@
 # Lacccka B42 NPC Fixes
 
-Stable, source-clean Build 42.20 compatibility fixes for NPC combat, provider scheduling and the NPC death/corpse lifecycle. The current integration target is `Bandits2` on Build 42.20.3.
+Stable, source-clean Build 42.20 compatibility fixes for Bandits2 NPC combat, provider scheduling and the NPC death/corpse lifecycle.
 
-This Workshop item contains LCC-authored shims, guards and lifecycle repairs only. It does **not** redistribute complete third-party Lua files or assets. The original mod must be installed separately.
+This Workshop item contains LCC-authored bridges, guards and lifecycle repairs only. It does **not** redistribute complete third-party Lua files or assets. `Bandits2` must be installed separately.
 
-Current code version: `1.0.4`. Version `1.0.2` remains the last full general runtime-accepted baseline. Version `1.0.3` rebased the `BanditUpdate.lua` transformer onto the Bandits Workshop update imported on 2026-08-26. Version `1.0.4` adds a pre-program non-combat scheduling seam required by the current Quest Framework Bandits adapter; that new seam still requires runtime smoke acceptance before it is treated as validated behavior.
+Current code version: **`1.0.5`**.
 
-The source-clean architecture was accepted on 2026-08-21 against the normal Workshop `Bandits2` installation (Workshop ID `3268487204`), without `Bandits-LCC-Dev`. Both runtime transformers loaded in `mode=PATCHED`; `ClassCastException`, `AttackState.triggerPlayerReaction` and `NetworkZombieMind: goal character is not set` remained zero. See `docs/final-reports/npcfixes-source-clean-bandits-acceptance-2026-08-21.md`.
+Version `1.0.5` removes the two runtime source transformers used by the earlier implementation. The package no longer provides its own files at either of these upstream module paths:
 
-## 2026-08-26 Bandits compatibility rebase
+- `media/lua/client/BanditUpdate.lua`
+- `media/lua/shared/ZombieActions/ZAShoot.lua`
 
-The 2026-08-26 Bandits update retained the unsafe ordinary-zombie -> Bandit character-target block and the unsafe untyped `brain.key -> setKeyId()` seam, but changed formatting inside the close-range relationship block. The transformer keeps both known exact forms whitelisted. Matching remains strict: it does not normalize arbitrary whitespace or use fuzzy patterns, and any unknown future source enters `BYPASS_FINGERPRINT`.
+The installed Bandits2 versions of those files now load normally and remain the authoritative implementation. NPCFixes reads the installed files with `getModFileReader()` only to verify exact compatibility fingerprints. The text is never compiled or executed.
 
-Version `1.0.4` advances the `BanditUpdate.lua` marker to `source-clean-coordinate-pursuit-v4` and adds explicit non-combat scheduling gates. This was required after Quest Framework testing demonstrated that a custom Bandits `ZombieProgram` executes too late to prevent generic `ManageCombat()` from creating a `Run` escape task.
+The previous source-clean runtime behavior accepted on 2026-08-21 remains the regression baseline for combat/death/corpse behavior. Version `1.0.5` is a new compatibility candidate because the runtime-source-compilation mechanism itself had to be removed. It therefore requires a fresh in-game smoke test before being called runtime accepted.
 
-The remaining wrappers continue to target APIs that are present in the imported update (`BanditUtils.Hit`, `ZombieActions.Smack.onWorking`, `Bandit.ApplyVisuals`, `Bandit.UpdateItemsToSpawnAtDeath`). The upstream drag-down path also still routes `onground` through the early-return action-state set, so the terminal `Die` pump is retained pending runtime regression.
+## Why 1.0.5 changed architecture
 
-## Scope
+The old `BanditUpdate.lua` and `ZAShoot.lua` shims read the user's installed Bandits2 source, patched exact strings in memory and executed the result through `loadstring()`.
 
-### Zombie -> NPC combat
+That mechanism is no longer a valid Build 42.20 runtime contract. NPCFixes 1.0.5 therefore adapts public Bandits runtime APIs instead of compiling Lua source text.
 
-B42.20.3 vanilla `AttackState` is unsafe when an ordinary `IsoZombie` receives a Bandit NPC (also represented as `IsoZombie`) through vanilla character-target APIs. The validated architecture therefore keeps ordinary-zombie -> Bandit pursuit coordinate-only:
+The main bridge is:
 
-- no `pathToCharacter(Bandit)`;
-- no `spotted/addAggro/setTarget/setAttackedBy(Bandit)` bridge for the Bandits custom bite path;
-- `PathFindBehavior2 Goal.Location` is refreshed only when the Bandit moved far enough or a bounded idle retry is needed;
-- the original Bandits `biteTab` / `Bite` / `BiteLow` implementation remains authoritative and is not copied into this patch.
+`42/media/lua/client/zz_LCC_BanditCallbackBridge.lua`
 
-`client/BanditUpdate.lua` is a source-clean runtime transformer. It reads the installed `Bandits2` file with `getModFileReader()`, validates exact B42.20 transformation seams, applies the compatibility guards in memory, and executes the transformed source with `loadstring()`. Known upstream formatting variants are whitelisted explicitly. If a future Bandits version no longer matches the accepted fingerprints, the transformer logs a warning and runs that upstream file unchanged rather than guessing against new source.
+Compatibility marker:
 
-`shared/ZombieActions/ZAShoot.lua` uses the same mechanism for the one gunshot-alert block that previously created a vanilla zombie -> Bandit target. Idle zombies are sent to the shot coordinates instead.
+`loadstring-free-predicate-bridge-v2`
 
-### Non-combat Bandits scheduling
+Despite the historical filename, this file does **not** introspect or replace private event callback lists. An early prototype attempted to use `LuaEventManager` internals, but Build 42's production Kahlua exposure does not expose `Event.callbacks` as a usable Lua field. That design was rejected before publication.
 
-Bandits generic scheduling happens before a custom `ZombieProgram`:
+## Upstream fingerprint contract
+
+The bridge still verifies the installed Bandits2 revision before installing invasive wrappers. It reads the upstream files as text and requires exact, unique fingerprints for the specific seams on which 1.0.5 depends.
+
+For `BanditUpdate.lua` this includes:
+
+- the consecutive `IsReanimatedForGrappleOnly()` / `IsRagdoll()` early-return seam;
+- the unsafe ordinary-zombie `UpdateZombies()` block;
+- `pathToCharacter(bandit)`;
+- the close-range `spotted/addAggro/setTarget/setAttackedBy` block;
+- `ManageCombat()` and `ManageCollisions()` dispatch;
+- the collision `Bandit.GetTask()` gate;
+- the untyped `brain.key -> setKeyId()` call.
+
+For `ZombieActions/ZAShoot.lua` this includes:
+
+- `ZombieActions.Shoot.onComplete`;
+- the idle-zombie `spottedNew/addAggro/setTarget(shooter)` alert block;
+- the later `BanditUtils.ManageLineOfFire()` call.
+
+If those exact seams no longer match, the 1.0.5 bridge logs an upstream-validation error and does not claim that the new Bandits revision is supported. It does not heuristically rewrite unknown source.
+
+## Ordinary zombie -> Bandit combat
+
+Build 42 networking is unsafe when an ordinary `IsoZombie` is made to pursue a Bandit NPC, also represented as `IsoZombie`, through vanilla character-target relationships. In particular, a `PathFindBehavior2 Goal.Character -> Bandit` cannot be serialized as if it were a player target.
+
+NPCFixes therefore keeps this relation coordinate-only.
+
+### Predicate handshake
+
+Upstream `OnBanditUpdate()` currently enters through these two consecutive public compatibility predicates:
+
+```lua
+if BanditCompatibility.IsReanimatedForGrappleOnly(zombie) then return end
+if BanditCompatibility.IsRagdoll(zombie) then return end
+```
+
+NPCFixes wraps both predicates.
+
+The first call arms a very short per-object probe. The immediately following `IsRagdoll()` call identifies the `OnBanditUpdate` entry without reading private `LuaEventManager` state.
+
+The bridge then checks Bandits cluster authority through `GetBanditClusterData(id)`:
+
+- if the cluster contains a Bandit brain, the original Bandits `OnBanditUpdate` continues normally;
+- if the cluster contains a non-combat Quest Framework brain, the original Bandit update continues but one-tick task-generation gates are armed;
+- if the cluster does **not** contain a Bandit brain, the second predicate returns `true` for that one `OnBanditUpdate` entry, so upstream exits before its unsafe `UpdateZombies()` character-target block.
+
+A later LCC `OnZombieUpdate` handler then performs only the source-clean ordinary-zombie behavior required for Bandits interaction.
+
+This handshake is deliberately different from globally hiding `BanditZombie.CacheLightB`: that cache is also the upstream Bandit activity/materialization gate and is used by other Bandits utilities, so globally replacing it would break unrelated behavior.
+
+### Coordinate pursuit
+
+The LCC ordinary-zombie handler selects the nearest live combat Bandit from the real Bandits caches while excluding:
+
+- the current zombie itself;
+- stale/non-Bandit cache entries;
+- Quest Framework non-combat Bandits.
+
+Movement is issued only through:
+
+```lua
+zombie:pathToLocationF(x, y, z)
+```
+
+It never intentionally constructs `Goal.Character -> Bandit`.
+
+The pursuit retains the established anti-repath controls:
+
+- alignment threshold: `0.5625` squared tiles (`0.75` tile);
+- bounded idle retry: `750 ms`;
+- Bandits controller ownership check;
+- original broad-phase/radius constraints.
+
+Before coordinate processing, the bridge also sanitizes any stale Bandit target, attacked-by relation or Bandit `Goal.Character` left by an earlier runtime state.
+
+### Bite / drag-down lifecycle
+
+The close-range Bandits zombie-vs-Bandit behavior remains functionally represented:
+
+- facing check;
+- `Bite` / `BiteLow` bump animation;
+- delayed bite/scratch impact;
+- Bandit visual splash;
+- Bandit health/infection update and MP health sync;
+- multi-zombie drag-down / terminal `Die` behavior.
+
+This is a narrow compatibility reproduction of the unsafe `UpdateZombies()` path, not a copy of the complete third-party `BanditUpdate.lua` implementation.
+
+### Bandit -> ordinary transition
+
+Because the ordinary-zombie branch now exits before upstream reaches its local `Zombify()` helper, 1.0.5 performs the equivalent small state transition when an object still has the Bandit variable but no longer has a cluster brain. It also updates the existing Bandit light caches and counters so the object immediately returns to the ordinary-zombie cache side.
+
+## Ordinary crawler -> player behavior
+
+Upstream BanditUpdate has a small pre-`UpdateZombies()` special case that lets a crawling ordinary zombie lunge a nearby player.
+
+Because the 1.0.5 predicate bridge exits ordinary zombies earlier, this behavior is preserved separately in:
+
+`42/media/lua/client/zzz_LCC_BanditCrawlerPlayerLunge.lua`
+
+Marker:
+
+`ordinary-crawler-player-lunge-v1`
+
+It is intentionally limited to the original public transition: a live ordinary crawler, a nearby visible player target, no blocking wall, correct facing, then `LungeState` plus path cancellation. It does not target Bandits.
+
+## Non-combat Bandits scheduling
+
+Bandits generic task generation runs before a custom `ZombieProgram`:
 
 ```text
-UpdateZombies
-ManageActionState
 GenerateTask
   -> ManageEndurance
   -> ManageHealth
@@ -46,97 +151,144 @@ GenerateTask
   -> custom ZombieProgram
 ```
 
-`Bandit.ForceStationary()` only sets `brain.stationary`; it does not prevent `ManageCombat()` from creating a movement task. In particular, when enemies outnumber friendlies sufficiently, upstream Bandits clears tasks and creates a `Run` escape task.
+`Bandit.ForceStationary()` alone does not prevent `ManageCombat()` from generating escape movement.
 
-For provider roles marked non-combat, marker `source-clean-coordinate-pursuit-v4` therefore adds four exact pre-program gates:
-
-- `non-combat-victim-selection`: ordinary zombies do not choose the non-combat Bandit as their Bandits prey candidate;
-- `non-combat-combat-dispatch`: the Bandit does not enter generic `ManageCombat()`;
-- `non-combat-collision-dispatch`: collision handling cannot generate movement/climb/breach work for the role;
-- `non-combat-hit-dispatch`: Bandits-specific hit reaction and task mutation are skipped.
-
-The canonical provider brain flag is currently:
+Quest Framework therefore marks its presentation NPC with the canonical brain flag:
 
 ```lua
 brain.lccqNonCombat = true
 ```
 
-The Quest Framework giver can also be recognized during first materialization by `brain.program.name == "LCCQFQuestGiver"`, before the client-side role program has had a chance to publish the canonical flag.
+The first materialization can also be identified from:
 
-The physical Bandit remains in `BanditZombie.Cache` and `BanditZombie.CacheLightB`. This is intentional: removing it from `CacheLightB` is invalid because upstream `OnBanditUpdate` uses that cache as an activity/materialization gate and returns before the custom program when the entry is absent.
+```lua
+brain.program.name == "LCCQFQuestGiver"
+```
 
-Detailed rationale: `docs/design/bandits-non-combat-npc-scheduling-policy.md`.
+For an active non-combat Bandit the predicate handshake arms a one-update task gate:
 
-### Relationship and fake-hit sanitation
+- the first `Bandit.IsSleeping(bandit)` call used by `ManageCombat()` returns `true`, causing generic combat to produce no task;
+- the collision-specific first `Bandit.GetTask(bandit)` returns `nil` when a collision is actually present, preventing climb/breach/movement generation;
+- the later `Bandit.GetTask()` used by normal `ProcessTask()` is not suppressed.
 
-The remaining melee/gun retaliation seams are sanitized after real Bandit damage. Only unsafe Bandit character relationships are removed; ordinary zombie -> player combat is left untouched.
+For crawling non-combat Bandits, `ManageCombat()` already exits before checking sleeping state; the gate starts directly at collision suppression.
 
-Bandits gun damage also uses `getCell():getFakeZombieForHit()`. B42.20 can temporarily promote that helper into `IsoZombie.target` or `PathFindBehavior2 Goal.Character`, which `NetworkZombieMind` cannot serialize as a player target. The stable fix uses two exact layers:
+The physical Quest Framework giver additionally remains protected by its provider program (`ForceStationary`, `ClearMoveTasks`, `setInvulnerable(true)`, `setShootable(false)`, `setIgnoreStaggerBack(true)`).
 
-- immediate cleanup after the Bandit gun-hit chain;
-- a late `OnZombieUpdate` cleanup for any relation that survives engine hit-reaction processing.
+### Non-combat hit limitation to test
 
-Both layers recognize only the exact cell fake-hit zombie and do not cancel arbitrary NPC targets from other mods.
+The old source transformer could insert an early return directly inside Bandits' local `OnHitZombie` callback. A source-clean runtime wrapper cannot replace that local callback through supported public event APIs.
 
-### Terminal drag-down death
+1.0.5 therefore relies on the Quest Framework provider's physical `invulnerable` / `shootable=false` contract to prevent normal hit entry for presentation NPCs. This must be explicitly tested in the 1.0.5 smoke pass. The README does not claim that the old local hit-dispatch seam is still patched internally.
 
-Bandits can enqueue a locked `Die` task while the NPC is already `onground`. Upstream `ManageActionState()` returns before its local `ProcessTask()`, starving that retained terminal task and allowing a living downed NPC to become a long-lived target magnet for an entire horde.
+## Gunshot zombie alerts
 
-The terminal-Die guard only progresses an **already existing** `Die` task while a live Bandit is in the exact `onground` state. It never invents a death task or changes ordinary-zombie targeting.
+The installed Bandits2 `ZombieActions.Shoot.onComplete` remains authoritative for firing, projectiles, sound, line-of-fire damage, shell/rack behavior and weapon state.
 
-### Clothing and corpse lifecycle
+NPCFixes wraps that public function. During the original call only, `BanditZombie.CacheLightZ` is temporarily presented as empty, which makes the upstream character-alert loop a no-op. The original `BanditUtils.ManageLineOfFire()` still executes and obtains characters from world squares rather than from `CacheLightZ`.
 
-`Bandit.ApplyVisuals()` can leave configured clothing as ItemVisual-only state. The client repair recreates typed real WornItems for live/reconnected Bandits.
+After a successful shot, NPCFixes iterates the real saved zombie-light cache and sends eligible idle ordinary zombies to the **shot coordinates** with `pathToLocationF()`.
 
-On dedicated server, corpse durability requires the same `InventoryItem` object to exist in both the dying zombie inventory and WornItems before `IsoDeadBody` is constructed. The server death-boundary repair enforces that invariant. A separate `BanditRemove` snapshot fallback covers the race where cluster brain data is deleted before server `OnZombieDead` can resolve `brain.clothing`.
+No `spottedNew(Bandit)`, `addAggro(Bandit)` or `setTarget(Bandit)` is required for the sound response.
+
+## Death-key compatibility
+
+Bandits2 can pass `brain.key` directly to `InventoryItem.setKeyId(int)`. Legacy integrations may supply a nonnumeric value.
+
+1.0.5 guards the public `BanditBrain.Get()` result for dead Bandits and removes a nonnumeric key before the upstream death callback reaches `setKeyId()`. Numeric keys remain untouched.
+
+This is intentionally narrow and exists only to prevent the Java type-conversion crash.
+
+## Relationship and fake-hit sanitation
+
+The existing stable relationship guards remain in the package.
+
+Bandit melee/gun damage can leave an ordinary zombie with unsafe Bandit character relationships. The stable sanitation removes only Bandit targets/attacked-by/PFB character goals; it does not clear normal zombie -> player aggression globally.
+
+Bandits gun damage also uses `getCell():getFakeZombieForHit()`. Build 42 can transiently promote that helper into an `IsoZombie.target` or a PFB character goal. NPCFixes retains both immediate and late cleanup layers for the exact fake-hit helper.
+
+## Terminal drag-down death
+
+Bandits can enqueue a locked `Die` task while the NPC is already `onground`. Upstream action-state handling can return before normal task processing, leaving the live downed Bandit stuck.
+
+The terminal-Die pump still progresses only an **already existing** `Die` task for a live Bandit in the exact terminal state. It never invents arbitrary deaths.
+
+## Clothing and corpse lifecycle
+
+The existing clothing/corpse fixes are unchanged by the 1.0.5 architecture migration:
+
+- client live/reconnect repair recreates typed real WornItems where Bandits visuals alone are insufficient;
+- dedicated-server death-boundary repair ensures the same real item objects exist in inventory/WornItems before corpse construction;
+- the `BanditRemove` snapshot fallback covers the race where cluster brain data disappears before server `OnZombieDead` resolves configured clothing.
 
 ## Source-clean contract
 
-The stable item must not contain complete copies of Bandits `BanditUpdate.lua`, `ZAShoot.lua`, `BanditZombie.lua`, server schedulers, assets, or other upstream implementation files. The two same-path files in this package are small runtime transformers; they read the user's installed `Bandits2` source at runtime.
+NPCFixes 1.0.5 must **not** contain complete upstream Bandits implementation files.
 
-The transformers are intentionally version-pinned by exact fingerprints. A fingerprint bypass is a compatibility warning and must be investigated before claiming support for a newer Bandits release.
+In particular these paths must be absent from the package:
 
-## Relationship to the other LCC patches
+- `lua/client/BanditUpdate.lua`
+- `lua/shared/ZombieActions/ZAShoot.lua`
+- `lua/client/BanditZombie.lua`
+- Bandits server schedulers or assets.
+
+Runtime source compilation is not part of the contract. Source reads are fingerprint validation only.
+
+The split audit enforces the absence of same-path upstream files and the presence of the new predicate/task bridge markers.
+
+## Relationship to other LCC packages
 
 - `PatchCore` provides the preferred shared guard implementation and is strongly recommended.
-- `RuntimeFixes` remains focused on lower-level runtime/dedicated/API compatibility and does not absorb NPC combat/death behavior.
-- `QuestFramework` currently **requires** NPCFixes while Bandits2 is its physical provider because non-combat quest-giver scheduling must be vetoed inside `BanditUpdate` before custom programs run.
-- `NPCCombatExperimental` is diagnostics and admin stress tooling only. It may be enabled for regression testing, but is not required for normal play.
-- `Bandits-LCC-Dev` is an internal repository test stand and is not a Workshop package.
+- `RuntimeFixes` owns lower-level runtime/dedicated/cache compatibility. NPCFixes intentionally loads after it; the predicate bridge wraps the already-guarded `IsReanimatedForGrappleOnly` implementation.
+- `QuestFramework` currently requires NPCFixes while Bandits2 is its physical NPC provider. Its compatibility check now expects `loadstring-free-predicate-bridge-v2` and `runtimeTransform=false`.
+- `NPCCombatExperimental` remains diagnostics/admin stress tooling only and is not required for normal play.
+- `Bandits-LCC-Dev` is an internal repository research/test tree, not a Workshop dependency.
 
-## Stable regression contract
+## Expected 1.0.5 boot markers
 
-Normal regression tests use the original `Bandits2` plus the split patches. Do **not** copy `Bandits-LCC-Dev` into the game.
+A compatible client should report the predicate bridge boot line containing:
 
-Required transformer boot markers:
+```text
+[LCC][NPCFixes][PredicateBridge][BOOT] marker=loadstring-free-predicate-bridge-v2 mode=PREDICATE_BRIDGE source=Bandits2 runtimeTransform=false bundledUpstream=false pursuit=coordinate-only nonCombatProgram=LCCQFQuestGiver
+```
 
-- `[LCC][NPCFixes][BanditUpdateShim][BOOT] ... marker=source-clean-coordinate-pursuit-v4 ... mode=PATCHED ... nonCombatProgram=LCCQFQuestGiver ...`
-- `[LCC][NPCFixes][ZAShootShim][BOOT] ... mode=PATCHED`
+Crawler preservation should also report:
 
-For the 2026-08-26 Bandits source revision the first marker should also report `closeVariant=2`; the pre-update source reports `closeVariant=1`.
+```text
+[LCC][NPCFixes][CrawlerLunge][BOOT] marker=ordinary-crawler-player-lunge-v1
+```
 
-Any `BYPASS_FINGERPRINT`, `BYPASS_COMPILE` or `[FATAL]` means the installed upstream version is outside the currently accepted transformer contract and must be investigated before support is claimed.
+Quest Framework, when enabled, should report the matching scheduling seam as available.
 
-Stable general acceptance criteria remain:
+Any line like:
 
-- no `AttackState.triggerPlayerReaction` / `IsoZombie -> IsoPlayer ClassCastException`;
-- no `NetworkZombieMind: goal character is not set`;
-- no sustained zombie pathfind/walktoward freeze;
-- zombies remain active without a nearby player waking them;
-- normal zombie -> player attacks remain unchanged;
-- no long-lived living `onground` Bandit target magnet after terminal `Die` is assigned;
-- client live/reconnect clothing repair remains functional;
-- server clothing primary/fallback keep `errors=0`;
-- corpses retain the configured wearable set without duplicate-loot regression.
+```text
+[LCC][NPCFixes][PredicateBridge][ERROR] ... upstream validation failed ...
+```
 
-Additional `1.0.4` non-combat smoke criteria:
+means the installed Bandits2 revision no longer matches the accepted seam contract and must be reviewed before compatibility is claimed.
 
-- the Quest Framework giver is not selected by ordinary zombies as Bandits prey;
-- it does not receive generic `Run`/escape movement from `ManageCombat`;
-- Bandits collision/hit handlers do not take ownership of the non-combat role;
-- `[E]` interaction remains functional;
-- no `require("BanditZombie") failed` warning originates from the Quest Framework giver program.
+There is no `BYPASS_COMPILE` mode in 1.0.5 because no runtime source compilation is performed.
+
+## 1.0.5 runtime smoke contract
+
+The repository/static pass is not a substitute for a live Build 42.20 MP test. Before publishing 1.0.5 as runtime accepted, verify at minimum:
+
+1. Client boot has the expected predicate/crawler markers and no runtime-source-compilation error.
+2. A normal Bandit materializes and continues normal movement/combat/task processing.
+3. Removing a Bandit from cluster authority returns the physical object to ordinary-zombie state without stale Bandit cache state.
+4. An ordinary zombie can pursue a combat Bandit at long and short range without `Goal.Character -> Bandit`, `NetworkZombieMind: goal character is not set`, `AttackState.triggerPlayerReaction` or IsoZombie/IsoPlayer cast errors.
+5. Close zombie bite/drag-down still damages/kills a combat Bandit and health synchronization remains correct in MP.
+6. A crawling ordinary zombie can still lunge/attack a nearby player normally.
+7. A Bandit gunshot attracts idle ordinary zombies to the shot coordinates while real projectile/line-of-fire damage still works.
+8. The Quest Framework giver is never selected by the LCC zombie-vs-Bandit selector, receives no generic `Run` escape task, and collision handling does not take over its movement.
+9. The Quest Framework giver remains unshootable/invulnerable in normal player combat and `[E]` interaction/dialogue still works.
+10. A Bandit with a legacy nonnumeric `brain.key` can die without the `setKeyId(int)` conversion error.
+11. Normal zombie -> player combat remains unchanged, including crawler close-range behavior.
+12. Existing terminal-Die, clothing, corpse and reconnect regression checks remain clean.
 
 ## Publication state
 
-Version `1.0.4` is the current compatibility candidate for the 2026-08-26 Bandits source plus the non-combat provider scheduling seam. The previous general source-clean acceptance remains valid for its tested surface, but the new `1.0.4` scheduling seam must pass the short Quest Framework smoke test before it is treated as runtime accepted.
+`1.0.5` is the current **static compatibility candidate** for the imported 2026-08-26 Bandits2 source and the Build 42.20 runtime without the old source-compilation dependency.
+
+Do not treat 1.0.5 as runtime accepted until the smoke contract above has been exercised against the actual client/server runtime and logs reviewed.
