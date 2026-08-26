@@ -18,14 +18,37 @@ local function createObjective(spec, context)
     return handler.Create(spec, context)
 end
 
-function QuestInstance.Create(definition, ownerKey, context)
-    if not definition or not ownerKey then return nil, "invalid quest instance context" end
+local function isValidInstanceState(state)
+    return state == "active" or state == "completed"
+end
+
+local function validatePersistedObjective(objective, spec)
+    if type(objective) ~= "table" or type(spec) ~= "table" then return false end
+    if tostring(objective.id or "") ~= tostring(spec.id or "") then return false end
+    if tostring(objective.type or "") ~= tostring(spec.type or "") then return false end
+
+    if objective.type == "ReachArea" then
+        if tonumber(objective.x) == nil
+            or tonumber(objective.y) == nil
+            or tonumber(objective.z) == nil
+            or tonumber(objective.radius) == nil
+        then
+            return false
+        end
+    end
+
+    return true
+end
+
+function QuestInstance.Create(definition, ownerCharacterId, context)
+    if not definition or not ownerCharacterId then return nil, "invalid quest instance context" end
 
     local now = getTimestampMs()
     local instance = {
+        schemaVersion = 1,
         id = tostring(getRandomUUID()),
         questId = definition.questId,
-        ownerKey = tostring(ownerKey),
+        ownerCharacterId = tostring(ownerCharacterId),
         giverNpcId = definition.giverNpcId,
         titleKey = definition.titleKey,
         descriptionKey = definition.descriptionKey,
@@ -46,6 +69,48 @@ function QuestInstance.Create(definition, ownerKey, context)
 
     if #instance.objectives == 0 then return nil, "quest has no objectives" end
     return instance
+end
+
+function QuestInstance.Restore(raw, definition, ownerCharacterId)
+    if type(raw) ~= "table" or not definition or not ownerCharacterId then return nil end
+    if type(raw.id) ~= "string" or raw.id == "" then return nil end
+    if tostring(raw.questId or "") ~= tostring(definition.questId or "") then return nil end
+    if not isValidInstanceState(raw.state) then return nil end
+    if type(raw.objectives) ~= "table" then return nil end
+
+    local objectiveCount = #(definition.objectives or {})
+    if objectiveCount == 0 then return nil end
+
+    local currentIndex = math.floor(tonumber(raw.currentObjectiveIndex) or 1)
+    if currentIndex < 1 or currentIndex > objectiveCount then return nil end
+
+    local objectives = {}
+    for index, spec in ipairs(definition.objectives or {}) do
+        local objective = raw.objectives[index]
+        if not validatePersistedObjective(objective, spec) then return nil end
+
+        objective.id = spec.id
+        objective.type = spec.type
+        objective.titleKey = spec.titleKey
+        if raw.state == "completed" or index < currentIndex then
+            objective.state = "completed"
+        elseif index == currentIndex then
+            objective.state = "active"
+        else
+            objective.state = "pending"
+        end
+        objectives[index] = objective
+    end
+
+    raw.schemaVersion = 1
+    raw.ownerKey = nil
+    raw.ownerCharacterId = tostring(ownerCharacterId)
+    raw.giverNpcId = definition.giverNpcId
+    raw.titleKey = definition.titleKey
+    raw.descriptionKey = definition.descriptionKey
+    raw.currentObjectiveIndex = currentIndex
+    raw.objectives = objectives
+    return raw
 end
 
 function QuestInstance.GetCurrentObjective(instance)
