@@ -14,10 +14,9 @@ local NON_COMBAT_VARIABLE = "LCCQFNonCombat"
 local nextUpdateMs = 0
 local reported = {}
 
--- B42.20.3 PlayerCheats is Java userdata and its internal set(CheatType,...)
--- method is not a Lua-indexable API. Do not attempt getCheats():set(...).
--- Zombie-vs-bandit aggro suppression is handled on the controlling client by
--- removing essential quest givers from BanditZombie.CacheLightB.
+-- Keep the dedicated-server protection on Lua-exposed character/Bandits APIs.
+-- Zombie-vs-bandit aggro suppression itself is performed on the controlling
+-- client by excluding essential quest givers from BanditZombie.CacheLightB.
 
 local function log(message)
     print(C.LOG_PREFIX .. "[QUEST-GIVER-PROTECTION:SERVER] " .. tostring(message))
