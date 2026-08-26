@@ -2,14 +2,14 @@
 --
 -- This file intentionally contains no upstream Bandits implementation. Because it
 -- occupies the BanditUpdate.lua module path, it reads the installed Bandits2
--- source directly from that mod, applies four exact B42.20 fingerprints, then
--- compiles and executes the transformed source. If the upstream fingerprints no
--- longer match, the original source is executed unchanged and a loud warning is
--- emitted instead of guessing against a new Bandits version.
+-- source directly from that mod, applies four exact B42.20 seams, then compiles
+-- and executes the transformed source. Known upstream formatting revisions are
+-- whitelisted explicitly; unknown fingerprints still bypass the patch instead of
+-- being transformed heuristically.
 
 local MOD_ID = "Bandits2"
 local SOURCE_PATH = "media/lua/client/BanditUpdate.lua"
-local MARKER = "source-clean-coordinate-pursuit-v2"
+local MARKER = "source-clean-coordinate-pursuit-v3"
 LCC_NPCFIXES_BANDITUPDATE_SHIM = MARKER
 
 local function readUpstreamSource()
@@ -41,6 +41,31 @@ local function replacePlainOnce(source, needle, replacement, label)
         return nil, label .. " fingerprint is not unique"
     end
     return string.sub(source, 1, first - 1) .. replacement .. string.sub(source, last + 1)
+end
+
+local function replacePlainOnceAny(source, variants, replacement, label)
+    local matchedFirst, matchedLast, matchedVariant = nil, nil, nil
+
+    for index, needle in ipairs(variants) do
+        local first, last = string.find(source, needle, 1, true)
+        if first then
+            if string.find(source, needle, last + 1, true) then
+                return nil, label .. " fingerprint variant " .. tostring(index) .. " is not unique"
+            end
+            if matchedVariant ~= nil then
+                return nil, label .. " multiple fingerprint variants matched"
+            end
+            matchedFirst, matchedLast, matchedVariant = first, last, index
+        end
+    end
+
+    if matchedVariant == nil then
+        return nil, label .. " fingerprint missing"
+    end
+
+    return string.sub(source, 1, matchedFirst - 1)
+        .. replacement
+        .. string.sub(source, matchedLast + 1), nil, matchedVariant
 end
 
 local HELPER_ANCHOR = [[-- table of bandits being attacked by zombies
@@ -91,11 +116,21 @@ end
 local FAR_CHARACTER_PATH = [[                zombie:pathToCharacter(bandit)]]
 local FAR_LOCATION_PATH = [[                LCCPathZombieToBanditLocation(zombie, banditCached)]]
 
-local CLOSE_RELATION = [[                    if zombie and bandit then
+-- Bandits 2026-08-26 retained the same unsafe relationship block but changed
+-- whitespace in the condition. Keep both known exact forms instead of weakening
+-- the transformer to whitespace-insensitive matching.
+local CLOSE_RELATION_VARIANTS = {
+[[                    if zombie and bandit then
                         zombie:spotted(bandit, true)
                         zombie:addAggro(bandit, 1)
                         zombie:setTarget(bandit)
-                        zombie:setAttackedBy(bandit)]]
+                        zombie:setAttackedBy(bandit)]],
+[[                    if zombie and bandit  then
+                        zombie:spotted(bandit, true)
+                        zombie:addAggro(bandit, 1)
+                        zombie:setTarget(bandit)
+                        zombie:setAttackedBy(bandit)]],
+}
 
 local CLOSE_LOCATION = [[                    if zombie and bandit then
                         LCCPathZombieToBanditLocation(zombie, banditCached)]]
@@ -117,6 +152,7 @@ end
 
 local patched = source
 local reasons = {}
+local closeVariant = nil
 
 local nextSource, reason = replacePlainOnce(patched, HELPER_ANCHOR, HELPER_REPLACEMENT, "helper-anchor")
 if nextSource then patched = nextSource else reasons[#reasons + 1] = reason end
@@ -127,7 +163,12 @@ if #reasons == 0 then
 end
 
 if #reasons == 0 then
-    nextSource, reason = replacePlainOnce(patched, CLOSE_RELATION, CLOSE_LOCATION, "close-character-relation")
+    nextSource, reason, closeVariant = replacePlainOnceAny(
+        patched,
+        CLOSE_RELATION_VARIANTS,
+        CLOSE_LOCATION,
+        "close-character-relation"
+    )
     if nextSource then patched = nextSource else reasons[#reasons + 1] = reason end
 end
 
@@ -169,4 +210,6 @@ if not ok then
 end
 
 print("[LCC][NPCFixes][BanditUpdateShim][BOOT] marker=" .. MARKER
-    .. " mode=" .. mode .. " source=Bandits2 runtimeTransform=true bundledUpstream=false")
+    .. " mode=" .. mode
+    .. " closeVariant=" .. tostring(closeVariant or "n/a")
+    .. " source=Bandits2 runtimeTransform=true bundledUpstream=false")
