@@ -14,9 +14,9 @@ local NON_COMBAT_VARIABLE = "LCCQFNonCombat"
 local nextUpdateMs = 0
 local reported = {}
 
--- Keep the dedicated-server protection on Lua-exposed character/Bandits APIs.
--- Zombie-vs-bandit aggro suppression itself is performed on the controlling
--- client by excluding essential quest givers from BanditZombie.CacheLightB.
+-- The server owns the durable provider policy. Generic Bandits combat/victim
+-- selection is vetoed on the controlling client by the NPCFixes BanditUpdate
+-- scheduling seam before custom ZombiePrograms execute.
 
 local function log(message)
     print(C.LOG_PREFIX .. "[QUEST-GIVER-PROTECTION:SERVER] " .. tostring(message))
@@ -49,8 +49,8 @@ local function enforceProgram(brain)
         brain.program.stage = "Prepare"
         changed = true
     end
-    if brain.lccqIgnoreZombieAggro ~= true then
-        brain.lccqIgnoreZombieAggro = true
+    if brain.lccqNonCombat ~= true then
+        brain.lccqNonCombat = true
         changed = true
     end
     return changed
@@ -109,7 +109,7 @@ local function enforceProtectedNPC(zombie, brain)
         reported[runtimeId] = true
         log("protected npcId=" .. tostring(brain.lccqNpcId)
             .. " runtimeId=" .. runtimeId
-            .. " zombieAggro=bandit-cache-optout"
+            .. " nonCombatScheduling=true"
             .. " shootable=" .. tostring(zombie.isShootable and zombie:isShootable() or "unknown")
             .. " invulnerable=" .. tostring(zombie.isInvulnerable and zombie:isInvulnerable() or "unknown"))
     end
@@ -168,7 +168,7 @@ if isServer and isServer() then
     Events.OnTick.Add(onTick)
     log("loaded program=" .. PROGRAM_ID
         .. " intervalMs=" .. tostring(UPDATE_INTERVAL_MS)
-        .. " zombieAggro=bandit-cache-optout nonCombat=true")
+        .. " nonCombatScheduling=true")
 end
 
 return true
