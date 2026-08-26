@@ -1,41 +1,23 @@
 require "LCCQF/LCCQFConstants"
 require "LCCQF/Quest/LCCQFQuestRegistry"
 require "LCCQF/Quest/LCCQFQuestInstance"
+require "LCCQF/Persistence/LCCQFQuestPersistence"
 
 LCCQF = LCCQF or {}
 
 local C = LCCQF.Constants
 local QuestRegistry = LCCQF.QuestRegistry
 local QuestInstance = LCCQF.QuestInstance
+local QuestPersistence = LCCQF.QuestPersistence
 local QuestService = LCCQF.QuestService or {}
-local players = {}
 local eventSink = nil
 
 local function log(message)
     print(C.LOG_PREFIX .. "[QUEST:SERVER] " .. tostring(message))
 end
 
-local function getPlayerKey(player)
-    if not player then return nil end
-    if player.getOnlineID then return tostring(player:getOnlineID()) end
-    if player.getUsername then return tostring(player:getUsername()) end
-    return nil
-end
-
 local function getStore(player, create)
-    local playerKey = getPlayerKey(player)
-    if not playerKey then return nil, nil end
-
-    local store = players[playerKey]
-    if not store and create then
-        store = {
-            playerKey = playerKey,
-            byInstanceId = {},
-            byQuestId = {},
-        }
-        players[playerKey] = store
-    end
-    return store, playerKey
+    return QuestPersistence.GetQuestStore(player, create == true)
 end
 
 local function emit(kind, player, payload)
@@ -63,10 +45,12 @@ local function completeCurrentObjective(player, instance, reason)
     local completed, questCompleted = QuestInstance.CompleteCurrentObjective(instance, reason)
     if not completed then return false end
 
+    QuestPersistence.Touch(instance.ownerCharacterId)
     emitEvent(player, instance, "IGUI_LCCQF_QuestEvent_ObjectiveComplete", objective)
     emitUpsert(player, instance)
 
     log("objective completed player=" .. tostring(player:getUsername())
+        .. " characterId=" .. tostring(instance.ownerCharacterId)
         .. " questId=" .. tostring(instance.questId)
         .. " instanceId=" .. tostring(instance.id)
         .. " objectiveId=" .. tostring(objective.id)
@@ -75,18 +59,27 @@ local function completeCurrentObjective(player, instance, reason)
     if questCompleted then
         emitEvent(player, instance, "IGUI_LCCQF_QuestEvent_Completed", objective)
         log("quest completed player=" .. tostring(player:getUsername())
+            .. " characterId=" .. tostring(instance.ownerCharacterId)
             .. " questId=" .. tostring(instance.questId)
             .. " instanceId=" .. tostring(instance.id))
     end
     return true
 end
 
+function QuestService.Initialize()
+    return QuestPersistence.Initialize()
+end
+
 function QuestService.SetEventSink(sink)
     eventSink = type(sink) == "function" and sink or nil
 end
 
+function QuestService.GetCharacterId(player)
+    return QuestPersistence.GetCharacterId(player)
+end
+
 function QuestService.GetPlayerKey(player)
-    return getPlayerKey(player)
+    return QuestService.GetCharacterId(player)
 end
 
 function QuestService.GetInstanceForQuest(player, questId)
@@ -123,8 +116,8 @@ function QuestService.Accept(player, questId, context)
         return nil, "invalid quest giver"
     end
 
-    local store, playerKey = getStore(player, true)
-    if not store or not playerKey then return nil, "player unavailable" end
+    local store, characterId = getStore(player, true)
+    if not store or not characterId then return nil, "character unavailable" end
 
     local previous = QuestService.GetInstanceForQuest(player, questId)
     if previous then
@@ -132,16 +125,18 @@ function QuestService.Accept(player, questId, context)
         if definition.repeatable ~= true then return nil, "quest already completed" end
     end
 
-    local instance, err = QuestInstance.Create(definition, playerKey, context)
+    local instance, err = QuestInstance.Create(definition, characterId, context)
     if not instance then return nil, err end
 
     store.byInstanceId[instance.id] = instance
     store.byQuestId[questId] = instance.id
+    QuestPersistence.Touch(characterId)
 
     emitUpsert(player, instance)
     emitEvent(player, instance, "IGUI_LCCQF_QuestEvent_Accepted", QuestInstance.GetCurrentObjective(instance))
 
     log("quest accepted player=" .. tostring(player:getUsername())
+        .. " characterId=" .. tostring(characterId)
         .. " questId=" .. tostring(questId)
         .. " instanceId=" .. tostring(instance.id)
         .. " giverNpcId=" .. tostring(definition.giverNpcId))
@@ -182,8 +177,14 @@ function QuestService.NotifyTalkToNPC(player, npcId)
 end
 
 function QuestService.UpdatePlayer(player)
+    if not player then return 0 end
+    if player.isDead and player:isDead() then
+        QuestService.OnPlayerDeath(player)
+        return 0
+    end
+
     local store = getStore(player, false)
-    if not store or not player then return 0 end
+    if not store then return 0 end
 
     local changed = 0
     for _, instance in pairs(store.byInstanceId) do
@@ -202,6 +203,15 @@ function QuestService.UpdatePlayer(player)
     return changed
 end
 
+function QuestService.OnPlayerDeath(player)
+    local changed, characterId = QuestPersistence.RetireCharacter(player, "death")
+    if changed then
+        log("character retired player=" .. tostring(player and player:getUsername())
+            .. " characterId=" .. tostring(characterId))
+    end
+    return changed
+end
+
 function QuestService.Tick()
     if not getOnlinePlayers then return 0 end
     local onlinePlayers = getOnlinePlayers()
@@ -215,7 +225,7 @@ function QuestService.Tick()
 end
 
 function QuestService.ExportViews(player)
-    local store = getStore(player, false)
+    local store = getStore(player, true)
     local result = {}
     if not store then return result end
 
