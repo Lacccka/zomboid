@@ -6,8 +6,26 @@ local C = LCCQF.Constants
 local ok, err = LCCQF.NPCRegistry.Register({
     npcId = C.TEST_NPC_ID,
     displayNameKey = "IGUI_LCCQF_NPC_Alexey",
+    summaryKey = "IGUI_LCCQF_NPC_Alexey_Summary",
     dialogueId = "test_alexey",
     stationary = true,
+    portrait = {
+        provider = "live-runtime",
+        zoom = 12,
+        yOffset = -0.78,
+        xOffset = 0,
+        direction = "S",
+    },
+    initialKnowledgeFacts = {
+        "met_alexey",
+    },
+    knowledgeFacts = {
+        {
+            id = "met_alexey",
+            titleKey = "IGUI_LCCQF_NPC_Alexey_Fact_Met_Title",
+            textKey = "IGUI_LCCQF_NPC_Alexey_Fact_Met_Text",
+        },
+    },
     runtime = {
         adapter = "Bandits",
         profileId = C.TEST_NPC_BID,
