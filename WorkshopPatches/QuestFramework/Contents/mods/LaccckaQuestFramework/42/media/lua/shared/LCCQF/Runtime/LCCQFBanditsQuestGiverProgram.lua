@@ -5,22 +5,53 @@ require "BanditPrograms"
 ZombiePrograms = ZombiePrograms or {}
 
 local Program = ZombiePrograms.LCCQFQuestGiver or {}
+local zombieDontAttackCheat = nil
+local cheatResolved = false
+
+local function resolveZombieDontAttackCheat()
+    if cheatResolved then return zombieDontAttackCheat end
+    cheatResolved = true
+    if CheatType and CheatType.fromString then
+        zombieDontAttackCheat = CheatType.fromString("ZOMBIES_DONT_ATTACK")
+    end
+    return zombieDontAttackCheat
+end
+
+local function applyZombieIgnoreFlag(bandit)
+    if not bandit or not bandit.getCheats then return end
+    local cheats = bandit:getCheats()
+    local flag = resolveZombieDontAttackCheat()
+    if cheats and flag then
+        cheats:set(flag, true)
+    end
+end
+
+local function recoverStandingState(bandit)
+    if bandit.isKnockedDown and bandit:isKnockedDown() and bandit.setKnockedDown then
+        bandit:setKnockedDown(false)
+    end
+    if bandit.isOnFloor and bandit:isOnFloor() and bandit.setOnFloor then
+        bandit:setOnFloor(false)
+    end
+    if bandit.setFallOnFront then
+        bandit:setFallOnFront(false)
+    end
+end
 
 local function enforceQuestGiverRole(bandit)
     if not bandit or bandit:isDead() then return end
 
-    -- Bandits2 Defend is unsuitable for a static quest giver: it explicitly
-    -- clears stationary mode and can switch outdoor NPCs to Looter. Keep this
-    -- provider-specific role anchored instead of fighting that program every
-    -- server reconciliation tick.
     Bandit.ForceStationary(bandit, true)
     Bandit.ClearMoveTasks(bandit)
 
-    -- This program is deliberately reserved for essential quest givers.
-    -- Other framework NPC roles may remain mortal by using another program.
-    if bandit.setInvulnerable then
-        bandit:setInvulnerable(true)
-    end
+    -- Essential quest givers are presentation/interaction entities, not combat
+    -- targets. Keep a layered policy because Bandits2 is client-driven in MP.
+    if bandit.setUseless then bandit:setUseless(true) end
+    if bandit.setInvulnerable then bandit:setInvulnerable(true) end
+    if bandit.setShootable then bandit:setShootable(false) end
+    if bandit.setIgnoreStaggerBack then bandit:setIgnoreStaggerBack(true) end
+    applyZombieIgnoreFlag(bandit)
+    recoverStandingState(bandit)
 end
 
 Program.Init = function(bandit)
@@ -39,8 +70,6 @@ end
 Program.Main = function(bandit)
     enforceQuestGiverRole(bandit)
 
-    -- A small idle task keeps the physical NPC visually alive without creating
-    -- Move/GoTo work or handing control to Bandits2 combat/looter programs.
     return {
         status = true,
         next = "Main",
