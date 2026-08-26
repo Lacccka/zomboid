@@ -14,6 +14,10 @@ local reported = {}
 local zombieDontAttackCheat = nil
 local cheatResolved = false
 
+-- Regression note: the old post-acquisition policy used setTarget(nil). It was
+-- too late in the zombie/network lifecycle and did not prevent attack/hit
+-- states reliably. Keep aggro suppression target-side via ZOMBIES_DONT_ATTACK.
+
 local function log(message)
     print(C.LOG_PREFIX .. "[QUEST-GIVER-PROTECTION:SERVER] " .. tostring(message))
 end
