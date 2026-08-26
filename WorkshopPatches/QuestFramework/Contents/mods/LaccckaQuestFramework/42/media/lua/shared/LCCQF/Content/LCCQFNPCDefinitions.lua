@@ -12,7 +12,7 @@ local ok, err = LCCQF.NPCRegistry.Register({
         adapter = "Bandits",
         profileId = C.TEST_NPC_BID,
         clanId = C.TEST_NPC_CID,
-        program = "Defend",
+        program = "LCCQFQuestGiver",
     },
 })
 
