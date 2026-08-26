@@ -93,6 +93,17 @@ function QuestInstance.MakeView(instance)
     end
 
     local current = QuestInstance.GetCurrentObjective(instance)
+    local marker = nil
+    if current then
+        local handler = handlers[current.type]
+        if handler and handler.MakeMarkerView then
+            marker = handler.MakeMarkerView(current)
+            if marker then
+                marker.markerId = tostring(instance.id) .. ":" .. tostring(current.id)
+            end
+        end
+    end
+
     return {
         instanceId = instance.id,
         questId = instance.questId,
@@ -102,6 +113,7 @@ function QuestInstance.MakeView(instance)
         state = instance.state,
         currentObjectiveId = current and current.id or nil,
         objectives = objectives,
+        marker = marker,
     }
 end
 

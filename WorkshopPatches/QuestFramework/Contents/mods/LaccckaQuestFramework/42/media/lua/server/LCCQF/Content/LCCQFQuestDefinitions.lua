@@ -21,6 +21,13 @@ local ok, err = LCCQF.QuestRegistry.Register({
                 dy = 0,
                 dz = 0,
             },
+            marker = {
+                visible = true,
+                mode = "EXACT",
+                labelKey = "IGUI_LCCQF_Quest_Checkpoint_Marker",
+                showOnWorldMap = true,
+                showOnMiniMap = false,
+            },
         },
         {
             id = "return_to_alexey",

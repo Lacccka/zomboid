@@ -6,6 +6,9 @@ lua_root="$project_root/Contents/mods/LaccckaQuestFramework/42/media/lua"
 mod_info="$project_root/Contents/mods/LaccckaQuestFramework/42/mod.info"
 client_interaction="$lua_root/client/LCCQF/LCCQFInteractionClient.lua"
 client_quest_state="$lua_root/client/LCCQF/Quest/LCCQFQuestClientState.lua"
+client_quest_marker="$lua_root/client/LCCQF/Quest/LCCQFQuestMarkerService.lua"
+client_hub="$lua_root/client/LCCQF/UI/LCCQFHub.lua"
+client_hub_bootstrap="$lua_root/client/LCCQF/zz_LCCQFRPGHubBootstrap.lua"
 legacy_client_bandits="$lua_root/client/LCCQF/Runtime/LCCQFBanditsRuntime.lua"
 server_interaction="$lua_root/server/LCCQF/LCCQFInteractionServer.lua"
 server_bandits_wrapper="$lua_root/server/LCCQF/Runtime/LCCQFBanditsRuntime.lua"
@@ -33,6 +36,9 @@ for required in \
     "$shared_runtime" \
     "$client_interaction" \
     "$client_quest_state" \
+    "$client_quest_marker" \
+    "$client_hub" \
+    "$client_hub_bootstrap" \
     "$server_interaction" \
     "$server_bandits_wrapper" \
     "$server_bandits" \
@@ -56,6 +62,9 @@ done
 non_runtime_files=(
     "$client_interaction"
     "$client_quest_state"
+    "$client_quest_marker"
+    "$client_hub"
+    "$client_hub_bootstrap"
     "$lua_root/client/LCCQF/UI/LCCQFDialoguePanel.lua"
     "$server_interaction"
     "$dialogue_session"
@@ -159,12 +168,37 @@ rg -q 'type = "ReachArea"' "$quest_definitions" \
     || fail "first ReachArea objective missing"
 rg -q 'type = "TalkToNPC"' "$quest_definitions" \
     || fail "first return-to-NPC objective missing"
+rg -q 'mode = "EXACT"' "$quest_definitions" \
+    || fail "first authored QuestMarker presentation missing"
+rg -q 'function ReachArea\.MakeMarkerView' "$objective_reach" \
+    || fail "ReachArea marker projection missing"
+rg -q 'markerId = tostring\(instance\.id\)' "$quest_instance" \
+    || fail "QuestInstance does not expose stable per-objective marker projection"
 rg -q 'REQUEST_QUESTS' "$constants" \
     || fail "quest state request protocol missing"
 rg -q 'QUEST_UPSERT' "$server_interaction" \
     || fail "server quest view synchronization missing"
 rg -q 'QuestClientState\.Apply' "$client_interaction" \
     || fail "client sanitized quest view store not connected"
+
+rg -q 'function QuestClientState\.AddListener' "$client_quest_state" \
+    || fail "quest client state change notification missing"
+rg -q 'getSymbolsAPIv2' "$client_quest_marker" \
+    || fail "world-map symbols v2 adapter missing"
+rg -q 'addUntranslatedText|addTexture' "$client_quest_marker" \
+    || fail "quest marker renderer missing"
+rg -q 'setUserDefined\(false\)' "$client_quest_marker" \
+    || fail "quest marker is incorrectly treated as a user map annotation"
+rg -q 'QuestClientState\.AddListener' "$client_quest_marker" \
+    || fail "quest marker lifecycle is not driven by quest-state changes"
+rg -q 'function Hub\.RegisterPage' "$client_hub" \
+    || fail "RPG hub page registry missing"
+rg -q 'IGUI_LCCQF_Hub_Tab_Quests' "$client_hub" \
+    || fail "Quest hub page missing"
+rg -q 'LCCQF/Quest/LCCQFQuestMarkerService' "$client_hub_bootstrap" \
+    || fail "RPG hub bootstrap does not load quest marker service"
+rg -q 'LCCQF/UI/LCCQFHub' "$client_hub_bootstrap" \
+    || fail "RPG hub bootstrap does not load tabbed hub"
 
 if rg -n 'QuestService\.(Accept|ExecuteAction|NotifyTalkToNPC|Tick)|CompleteCurrentObjective|questAccept' "$lua_root/client"; then
     fail "client-owned quest state transition reintroduced"
@@ -181,8 +215,8 @@ if rg -n 'choice\.next|showNode\(' "$lua_root/client"; then
     fail "client-owned dialogue transition reintroduced"
 fi
 
-rg -q '^modversion=0\.3\.0$' "$mod_info" || fail "mod.info version mismatch"
-rg -q 'Constants\.VERSION = "0\.3\.0"' "$constants" \
+rg -q '^modversion=0\.3\.1$' "$mod_info" || fail "mod.info version mismatch"
+rg -q 'Constants\.VERSION = "0\.3\.1"' "$constants" \
     || fail "Lua version mismatch"
 
 if rg -n 'brain\.key\s*=\s*definition\.npcId|key\s*=\s*definition\.npcId' \

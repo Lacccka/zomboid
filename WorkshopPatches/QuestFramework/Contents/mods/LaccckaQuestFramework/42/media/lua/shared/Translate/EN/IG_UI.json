@@ -17,9 +17,9 @@
     "IGUI_LCCQF_Status_GenericError": "Quest Framework request failed.",
 
     "IGUI_LCCQF_Dialog_Start": "You do not look local. If you came to talk, talk. I am not going anywhere yet.",
-    "IGUI_LCCQF_Dialog_WorkOffer": "I do have something. There is an old checkpoint about a dozen steps east of here. Go make sure you can reach the place, then come back to me.",
-    "IGUI_LCCQF_Dialog_WorkAccepted": "Good. Head east from here, reach the old checkpoint area, and then return to me.",
-    "IGUI_LCCQF_Dialog_WorkActive": "The checkpoint is still waiting. Head east from here, reach the area, then come back.",
+    "IGUI_LCCQF_Dialog_WorkOffer": "I do have something. There is an old checkpoint not far from here. I will mark the place on your map. Reach it, look around, then come back to me.",
+    "IGUI_LCCQF_Dialog_WorkAccepted": "Good. The checkpoint is marked on your map. Reach the place, then return to me.",
+    "IGUI_LCCQF_Dialog_WorkActive": "The checkpoint is still waiting. Check your map, reach the marked place, then come back.",
     "IGUI_LCCQF_Dialog_WorkCompleted": "That is enough for now. You reached the checkpoint and came back. The job is done.",
     "IGUI_LCCQF_Dialog_Who": "Call me Alexey. To the server I am a test NPC; to you I am the first person this system can talk through.",
 
@@ -34,10 +34,24 @@
     "IGUI_LCCQF_Choice_Back": "Return to the conversation.",
 
     "IGUI_LCCQF_Quest_Checkpoint_Title": "Old Checkpoint",
-    "IGUI_LCCQF_Quest_Checkpoint_Description": "Alexey asked you to reach an old checkpoint a short distance east of him and then return.",
+    "IGUI_LCCQF_Quest_Checkpoint_Description": "Alexey asked you to reach the old checkpoint marked on your world map and then return to him.",
     "IGUI_LCCQF_Quest_Checkpoint_Objective_Reach": "Reach the old checkpoint area",
     "IGUI_LCCQF_Quest_Checkpoint_Objective_Return": "Return to Alexey",
+    "IGUI_LCCQF_Quest_Checkpoint_Marker": "Old checkpoint",
     "IGUI_LCCQF_QuestEvent_Accepted": "Quest accepted: Old Checkpoint.",
     "IGUI_LCCQF_QuestEvent_ObjectiveComplete": "Quest objective completed.",
-    "IGUI_LCCQF_QuestEvent_Completed": "Quest completed: Old Checkpoint."
+    "IGUI_LCCQF_QuestEvent_Completed": "Quest completed: Old Checkpoint.",
+
+    "IGUI_LCCQF_Hub_Title": "Quest Framework",
+    "IGUI_LCCQF_Hub_Tab_Quests": "Quests",
+    "IGUI_LCCQF_Hub_QuestList": "Quests",
+    "IGUI_LCCQF_Hub_Status": "Status",
+    "IGUI_LCCQF_Hub_Objectives": "Objectives",
+    "IGUI_LCCQF_Hub_State_Active": "Active",
+    "IGUI_LCCQF_Hub_State_Completed": "Completed",
+    "IGUI_LCCQF_Hub_State_Failed": "Failed",
+    "IGUI_LCCQF_Hub_State_Cancelled": "Cancelled",
+    "IGUI_LCCQF_Hub_NoQuestSelected": "No quest selected",
+    "IGUI_LCCQF_Hub_NoQuests": "There are no known quests yet.",
+    "IGUI_LCCQF_Hub_MapMarkerActive": "The active objective is marked on the world map."
 }

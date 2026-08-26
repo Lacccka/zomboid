@@ -17,9 +17,9 @@
     "IGUI_LCCQF_Status_GenericError": "Не удалось выполнить запрос Quest Framework.",
 
     "IGUI_LCCQF_Dialog_Start": "Ты не похож на местного. Если пришёл поговорить — говори. Я пока никуда не спешу.",
-    "IGUI_LCCQF_Dialog_WorkOffer": "Есть одно дело. Примерно в двенадцати шагах к востоку отсюда стоит старый блокпост. Доберись до него, осмотрись и возвращайся ко мне.",
-    "IGUI_LCCQF_Dialog_WorkAccepted": "Хорошо. Иди на восток отсюда, доберись до старого блокпоста и потом возвращайся ко мне.",
-    "IGUI_LCCQF_Dialog_WorkActive": "Блокпост всё ещё ждёт. Иди на восток отсюда, доберись до места и возвращайся.",
+    "IGUI_LCCQF_Dialog_WorkOffer": "Есть одно дело. Неподалёку отсюда стоит старый блокпост. Я отмечу место на твоей карте. Доберись туда, осмотрись и возвращайся ко мне.",
+    "IGUI_LCCQF_Dialog_WorkAccepted": "Хорошо. Блокпост отмечен на карте. Доберись до места, а потом возвращайся ко мне.",
+    "IGUI_LCCQF_Dialog_WorkActive": "Блокпост всё ещё ждёт. Посмотри карту, доберись до отмеченного места и возвращайся.",
     "IGUI_LCCQF_Dialog_WorkCompleted": "На этот раз достаточно. Ты добрался до блокпоста и вернулся. Работа сделана.",
     "IGUI_LCCQF_Dialog_Who": "Зови меня Алексей. Для сервера я тестовый NPC, а для тебя — первый человек, с которым эта система умеет разговаривать.",
 
@@ -34,10 +34,24 @@
     "IGUI_LCCQF_Choice_Back": "Вернуться к разговору.",
 
     "IGUI_LCCQF_Quest_Checkpoint_Title": "Старый блокпост",
-    "IGUI_LCCQF_Quest_Checkpoint_Description": "Алексей попросил добраться до старого блокпоста неподалёку к востоку от него, а затем вернуться.",
+    "IGUI_LCCQF_Quest_Checkpoint_Description": "Алексей попросил добраться до старого блокпоста, отмеченного на карте мира, а затем вернуться к нему.",
     "IGUI_LCCQF_Quest_Checkpoint_Objective_Reach": "Добраться до старого блокпоста",
     "IGUI_LCCQF_Quest_Checkpoint_Objective_Return": "Вернуться к Алексею",
+    "IGUI_LCCQF_Quest_Checkpoint_Marker": "Старый блокпост",
     "IGUI_LCCQF_QuestEvent_Accepted": "Задание принято: Старый блокпост.",
     "IGUI_LCCQF_QuestEvent_ObjectiveComplete": "Этап задания выполнен.",
-    "IGUI_LCCQF_QuestEvent_Completed": "Задание выполнено: Старый блокпост."
+    "IGUI_LCCQF_QuestEvent_Completed": "Задание выполнено: Старый блокпост.",
+
+    "IGUI_LCCQF_Hub_Title": "Quest Framework",
+    "IGUI_LCCQF_Hub_Tab_Quests": "Квесты",
+    "IGUI_LCCQF_Hub_QuestList": "Квесты",
+    "IGUI_LCCQF_Hub_Status": "Статус",
+    "IGUI_LCCQF_Hub_Objectives": "Этапы",
+    "IGUI_LCCQF_Hub_State_Active": "В процессе",
+    "IGUI_LCCQF_Hub_State_Completed": "Выполнено",
+    "IGUI_LCCQF_Hub_State_Failed": "Провалено",
+    "IGUI_LCCQF_Hub_State_Cancelled": "Отменено",
+    "IGUI_LCCQF_Hub_NoQuestSelected": "Квест не выбран",
+    "IGUI_LCCQF_Hub_NoQuests": "Пока нет известных квестов.",
+    "IGUI_LCCQF_Hub_MapMarkerActive": "Текущая цель отмечена на карте мира."
 }
