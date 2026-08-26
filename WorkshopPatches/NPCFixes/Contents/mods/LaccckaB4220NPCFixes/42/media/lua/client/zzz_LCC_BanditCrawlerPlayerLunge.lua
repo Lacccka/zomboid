@@ -5,7 +5,7 @@
 
 if isServer() then return end
 
-local MARKER = "ordinary-crawler-player-lunge-v1"
+local MARKER = "ordinary-crawler-player-lunge-v2"
 LCC_NPCFIXES_CRAWLER_PLAYER_LUNGE = MARKER
 
 local function isBandit(character)
@@ -28,6 +28,14 @@ local function onZombieUpdate(zombie)
     local px, py, pz = target:getX(), target:getY(), target:getZ()
     local dx, dy = zx - px, zy - py
     local dist2 = (dx * dx) + (dy * dy)
+
+    -- B42 LungeState.execute() normalizes zombie.vectorToTarget and passes it
+    -- directly to setForwardDirection(). When crawler and player overlap in XY,
+    -- vectorToTarget can be exactly zero and the engine throws
+    -- "Forward Direction cannot be zero length vector". Do not force the
+    -- preserved lunge seam for that degenerate overlap frame.
+    if dist2 <= 0.0001 then return end
+
     if dist2 >= 0.64 or math.abs(zz - pz) >= 0.3 or not zombie:CanSee(target) then return end
     if zombieSquare:isSomethingTo(targetSquare) or not zombie:isFacingObject(target, 0.3) then return end
 
