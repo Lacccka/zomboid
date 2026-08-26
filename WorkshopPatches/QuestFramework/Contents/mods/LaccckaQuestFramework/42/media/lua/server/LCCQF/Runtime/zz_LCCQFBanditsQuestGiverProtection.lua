@@ -7,12 +7,35 @@ LCCQF = LCCQF or {}
 
 local C = LCCQF.Constants
 local PROGRAM_ID = "LCCQFQuestGiver"
-local SCAN_RANGE = 8
+local SCAN_RANGE = 12
 local UPDATE_INTERVAL_MS = 250
 local nextUpdateMs = 0
+local reported = {}
+local zombieDontAttackCheat = nil
+local cheatResolved = false
 
 local function log(message)
     print(C.LOG_PREFIX .. "[QUEST-GIVER-PROTECTION:SERVER] " .. tostring(message))
+end
+
+local function resolveZombieDontAttackCheat()
+    if cheatResolved then return zombieDontAttackCheat end
+    cheatResolved = true
+
+    if CheatType and CheatType.fromString then
+        zombieDontAttackCheat = CheatType.fromString("ZOMBIES_DONT_ATTACK")
+    end
+    return zombieDontAttackCheat
+end
+
+local function setZombieIgnoreFlag(zombie)
+    if not zombie or not zombie.getCheats then return false end
+    local cheats = zombie:getCheats()
+    local flag = resolveZombieDontAttackCheat()
+    if not cheats or not flag then return false end
+
+    cheats:set(flag, true)
+    return zombie.isZombiesDontAttack and zombie:isZombiesDontAttack() == true
 end
 
 local function isProtectedBrain(brain)
@@ -28,46 +51,39 @@ local function isProtectedBrain(brain)
         and definition.runtime.program == PROGRAM_ID
 end
 
-local function clearZombieTargets(protected)
-    local cell = protected and protected:getCell() or nil
-    if not cell then return 0 end
-
-    local px = math.floor(protected:getX())
-    local py = math.floor(protected:getY())
-    local pz = math.floor(protected:getZ())
-    local cleared = 0
-
-    for x = px - SCAN_RANGE, px + SCAN_RANGE do
-        for y = py - SCAN_RANGE, py + SCAN_RANGE do
-            local square = cell:getGridSquare(x, y, pz)
-            if square then
-                local movingObjects = square:getMovingObjects()
-                for i = 0, movingObjects:size() - 1 do
-                    local candidate = movingObjects:get(i)
-                    if candidate and candidate ~= protected and instanceof(candidate, "IsoZombie")
-                        and candidate.getTarget and candidate:getTarget() == protected
-                    then
-                        candidate:setTarget(nil)
-                        candidate.spottedLast = nil
-                        cleared = cleared + 1
-                    end
-                end
-            end
-        end
+local function enforceProgram(brain)
+    local changed = false
+    if type(brain.program) ~= "table" then
+        brain.program = {}
+        changed = true
     end
+    if brain.program.name ~= PROGRAM_ID then
+        brain.program.name = PROGRAM_ID
+        brain.program.stage = "Prepare"
+        changed = true
+    elseif type(brain.program.stage) ~= "string" or brain.program.stage == "" then
+        brain.program.stage = "Prepare"
+        changed = true
+    end
+    return changed
+end
 
-    return cleared
+local function recoverStandingState(zombie)
+    if zombie.isKnockedDown and zombie:isKnockedDown() and zombie.setKnockedDown then
+        zombie:setKnockedDown(false)
+    end
+    if zombie.isOnFloor and zombie:isOnFloor() and zombie.setOnFloor then
+        zombie:setOnFloor(false)
+    end
+    if zombie.setFallOnFront then
+        zombie:setFallOnFront(false)
+    end
 end
 
 local function enforceProtectedNPC(zombie, brain)
     if not zombie or zombie:isDead() or not isProtectedBrain(brain) then return false end
 
-    local changed = false
-
-    if brain.program ~= PROGRAM_ID then
-        brain.program = PROGRAM_ID
-        changed = true
-    end
+    local changed = enforceProgram(brain)
 
     if not brain.stationary then
         Bandit.ForceStationary(zombie, true)
@@ -76,11 +92,13 @@ local function enforceProtectedNPC(zombie, brain)
 
     Bandit.ClearMoveTasks(zombie)
 
-    if zombie.setInvulnerable then
-        zombie:setInvulnerable(true)
-    end
+    if zombie.setUseless then zombie:setUseless(true) end
+    if zombie.setInvulnerable then zombie:setInvulnerable(true) end
+    if zombie.setShootable then zombie:setShootable(false) end
+    if zombie.setIgnoreStaggerBack then zombie:setIgnoreStaggerBack(true) end
+    recoverStandingState(zombie)
 
-    local cleared = clearZombieTargets(zombie)
+    local zombieIgnore = setZombieIgnoreFlag(zombie)
 
     if changed then
         BanditBrain.Update(zombie, brain)
@@ -89,10 +107,14 @@ local function enforceProtectedNPC(zombie, brain)
         end
     end
 
-    if cleared > 0 then
-        log("cleared zombie targets npcId=" .. tostring(brain.lccqNpcId)
-            .. " runtimeId=" .. tostring(brain.id)
-            .. " count=" .. tostring(cleared))
+    local runtimeId = tostring(brain.id or zombie)
+    if not reported[runtimeId] then
+        reported[runtimeId] = true
+        log("protected npcId=" .. tostring(brain.lccqNpcId)
+            .. " runtimeId=" .. runtimeId
+            .. " zombiesDontAttack=" .. tostring(zombieIgnore)
+            .. " shootable=" .. tostring(zombie.isShootable and zombie:isShootable() or "unknown")
+            .. " invulnerable=" .. tostring(zombie.isInvulnerable and zombie:isInvulnerable() or "unknown"))
     end
 
     return true
@@ -106,10 +128,9 @@ local function scanNearPlayer(player, seen)
     local px = math.floor(player:getX())
     local py = math.floor(player:getY())
     local pz = math.floor(player:getZ())
-    local scanRange = SCAN_RANGE + 4
 
-    for x = px - scanRange, px + scanRange do
-        for y = py - scanRange, py + scanRange do
+    for x = px - SCAN_RANGE, px + SCAN_RANGE do
+        for y = py - SCAN_RANGE, py + SCAN_RANGE do
             local square = cell:getGridSquare(x, y, pz)
             if square then
                 local movingObjects = square:getMovingObjects()
@@ -150,7 +171,7 @@ if isServer and isServer() then
     Events.OnTick.Add(onTick)
     log("loaded program=" .. PROGRAM_ID
         .. " intervalMs=" .. tostring(UPDATE_INTERVAL_MS)
-        .. " zombieAggro=clear-target serverInvulnerable=true")
+        .. " zombieAggro=cheat-flag nonCombat=true")
 end
 
 return true
