@@ -68,16 +68,21 @@ local function replacePlainOnceAny(source, variants, replacement, label)
         .. string.sub(source, matchedLast + 1), nil, matchedVariant
 end
 
--- Runtime adapters may mark a Bandits brain non-combat. This must be consulted
--- inside BanditUpdate itself: generic combat and zombie-victim selection run
--- before custom ZombiePrograms, so a program cannot veto those decisions later.
+-- Runtime adapters may mark a Bandits brain non-combat. The current Quest
+-- Framework provider also identifies its essential giver by program name, which
+-- exists in the very first cluster snapshot before the physical NPC materializes.
+-- This decision must happen inside BanditUpdate: generic combat and zombie-victim
+-- selection run before custom ZombiePrograms.
 local NON_COMBAT_HELPER_ANCHOR = [[local iter3 = 0]]
 local NON_COMBAT_HELPER_REPLACEMENT = [[local iter3 = 0
 
 local function LCCIsNonCombatBandit(bandit)
     if not bandit then return false end
     local brain = BanditBrain.Get(bandit)
-    return type(brain) == "table" and brain.lccqNonCombat == true
+    if type(brain) ~= "table" then return false end
+    if brain.lccqNonCombat == true then return true end
+    local program = brain.program
+    return type(program) == "table" and program.name == "LCCQFQuestGiver"
 end]]
 
 local HELPER_ANCHOR = [[-- table of bandits being attacked by zombies
@@ -332,5 +337,5 @@ end
 print("[LCC][NPCFixes][BanditUpdateShim][BOOT] marker=" .. MARKER
     .. " mode=" .. mode
     .. " closeVariant=" .. tostring(closeVariant or "n/a")
-    .. " nonCombatBrainFlag=lccqNonCombat"
+    .. " nonCombatProgram=LCCQFQuestGiver"
     .. " source=Bandits2 runtimeTransform=true bundledUpstream=false")
