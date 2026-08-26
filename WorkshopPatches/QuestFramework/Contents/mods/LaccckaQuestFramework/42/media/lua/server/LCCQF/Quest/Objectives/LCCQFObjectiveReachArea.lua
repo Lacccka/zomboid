@@ -69,6 +69,14 @@ function ReachArea.Create(spec, context)
     }
 end
 
+function ReachArea.ValidatePersisted(objective)
+    return type(objective) == "table"
+        and tonumber(objective.x) ~= nil
+        and tonumber(objective.y) ~= nil
+        and tonumber(objective.z) ~= nil
+        and tonumber(objective.radius) ~= nil
+end
+
 function ReachArea.MakeMarkerView(objective)
     if not objective or objective.state ~= "active" or not objective.marker then return nil end
 
@@ -96,16 +104,26 @@ function ReachArea.MakeMarkerView(objective)
     }
 end
 
-function ReachArea.Evaluate(player, objective)
-    if not player or not objective or objective.state ~= "active" then return false end
-    if player.isDead and player:isDead() then return false end
+function ReachArea.EvaluateTick(player, objective)
+    if not player or not objective or objective.state ~= "active" then return false, false end
+    if player.isDead and player:isDead() then return false, false end
 
     local px, py, pz = player:getX(), player:getY(), player:getZ()
-    if math.abs(pz - objective.z) >= 0.5 then return false end
+    if math.abs(pz - objective.z) >= 0.5 then return false, false end
 
     local dx = px - objective.x
     local dy = py - objective.y
-    return (dx * dx + dy * dy) <= (objective.radius * objective.radius)
+    return (dx * dx + dy * dy) <= (objective.radius * objective.radius), false, "reach_area"
+end
+
+-- Backward-compatible alias for the accepted 0.3.1/0.3.2 contract.
+function ReachArea.Evaluate(player, objective)
+    local complete = ReachArea.EvaluateTick(player, objective)
+    return complete == true
+end
+
+function ReachArea.MakeProgressView(objective)
+    return objective and objective.state == "completed" and 1 or 0, 1
 end
 
 LCCQF.QuestObjectives.ReachArea = ReachArea
