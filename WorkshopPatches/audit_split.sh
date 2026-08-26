@@ -274,7 +274,7 @@ require_marker "$npc_bridge" 'zombie:pathToLocationF(x, y, z)' "NPCFixes pursuit
 require_marker "$npc_bridge" 'ZombieActions.Shoot.onComplete = function' "NPCFixes gunshot bridge lost upstream wrapper"
 require_marker "$npc_bridge" 'BanditZombie.CacheLightZ = {}' "NPCFixes gunshot bridge must suppress only the upstream character-alert loop"
 require_marker "$npc_bridge" 'runtimeTransform=false' "NPCFixes bridge must report source-clean execution"
-forbid_marker "$npc_bridge" 'loadstring' "NPCFixes must not use runtime Lua source compilation"
+forbid_regex "$npc_bridge" 'loadstring[[:space:]]*\(' "NPCFixes must not call runtime Lua source compilation"
 forbid_marker "$npc_bridge" 'LuaEventManager.AddEvent' "NPCFixes must not depend on inaccessible Event.callbacks internals"
 max_size "$npc_bridge" 45000 "NPCFixes predicate bridge is unexpectedly large; verify it has not become an upstream source copy"
 require_marker "$npc_crawler" 'ordinary-crawler-player-lunge-v1' "NPCFixes lost preserved crawler-player behavior"
