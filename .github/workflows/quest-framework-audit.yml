@@ -4,10 +4,12 @@ on:
   push:
     paths:
       - 'WorkshopPatches/QuestFramework/**'
+      - 'WorkshopPatches/NPCFixes/Contents/mods/LaccckaB4220NPCFixes/42/media/lua/client/BanditUpdate.lua'
       - '.github/workflows/quest-framework-audit.yml'
   pull_request:
     paths:
       - 'WorkshopPatches/QuestFramework/**'
+      - 'WorkshopPatches/NPCFixes/Contents/mods/LaccckaB4220NPCFixes/42/media/lua/client/BanditUpdate.lua'
       - '.github/workflows/quest-framework-audit.yml'
 
 jobs:
