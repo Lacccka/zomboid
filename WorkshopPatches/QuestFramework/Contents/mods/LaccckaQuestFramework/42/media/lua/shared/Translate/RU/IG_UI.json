@@ -74,6 +74,7 @@
     "IGUI_LCCQF_Hub_KnownPerson_DefaultSummary": "Известная личность",
     "IGUI_LCCQF_Hub_Person_History": "Известная история",
     "IGUI_LCCQF_Hub_Person_NoHistory": "Вы пока не узнали ничего дополнительного.",
+    "IGUI_LCCQF_Hub_Person_Quests": "Задания персонажа",
     "IGUI_LCCQF_Hub_Person_ActiveQuests": "Активные задания",
     "IGUI_LCCQF_Hub_Person_CompletedQuests": "Выполненные задания",
     "IGUI_LCCQF_Hub_Portrait_Unavailable": "Портрет недоступен, пока NPC не загружен в мире",
