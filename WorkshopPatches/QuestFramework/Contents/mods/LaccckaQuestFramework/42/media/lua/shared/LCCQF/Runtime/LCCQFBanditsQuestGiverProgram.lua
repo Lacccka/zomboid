@@ -18,8 +18,8 @@ local NON_COMBAT_VARIABLE = "LCCQFNonCombat"
 local function excludeFromBanditsZombieCombat(bandit)
     if not bandit then return end
 
-    -- Do not use getCheats()/PlayerCheats here. PlayerCheats is a Java userdata
-    -- that is not exposed as a Lua-indexable API in B42.20.3.
+    -- Keep this path on Lua-exposed Bandits/character APIs only. The engine's
+    -- internal cheat-state object is not a supported Kahlua surface in B42.20.3.
     local modData = bandit.getModData and bandit:getModData() or nil
     if modData then
         modData[NON_COMBAT_MODDATA_KEY] = true
