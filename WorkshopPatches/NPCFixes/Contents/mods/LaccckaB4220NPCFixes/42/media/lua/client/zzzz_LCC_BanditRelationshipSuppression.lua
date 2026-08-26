@@ -1,16 +1,18 @@
 -- LCC controlled suppression of unsafe Bandit -> ordinary-zombie character
--- relationships for B42.20.3.
+-- relationships for Build 42.20.
 --
--- ZAShoot.lua is source-edited to alert ordinary zombies with coordinates only.
--- This companion sanitizes the two remaining retaliation seams after actual
--- Bandit damage: ZombieActions.Smack and BanditUtils.Hit.
+-- NPCFixes 1.0.5 leaves upstream ZAShoot.lua untouched. The predicate bridge
+-- wraps ZombieActions.Shoot.onComplete so ordinary zombies respond to gunshots
+-- with coordinates instead of a Bandit character target. This companion still
+-- sanitizes the remaining retaliation seams after actual Bandit damage:
+-- ZombieActions.Smack and BanditUtils.Hit.
 --
 -- v6 additionally removes the hidden PathFindBehavior2 Goal.Character -> Bandit
--- relation. Build 42.20.3 NetworkZombieMind.set() rejects any character path goal
+-- relation. Build 42.20 NetworkZombieMind.set() rejects any character path goal
 -- whose target is not IsoPlayer, even when zombie:getTarget() has already been
 -- cleared. We cancel only that unsafe PFB character goal and do not issue an
--- exact-coordinate replacement path. Normal BanditUpdate coordinate pursuit and
--- gunshot sound-coordinate alerts remain responsible for movement.
+-- exact-coordinate replacement path here. The 1.0.5 predicate bridge owns
+-- coordinate pursuit and gunshot sound-coordinate movement.
 if isServer() then return end
 
 local MARKER = "character-relation-suppression-v6"
@@ -148,13 +150,13 @@ local function sanitizeBanditRelationship(victim, attacker, source, clearAttacke
         end
     end
 
-    -- Build 42.20.3 keeps PathFindBehavior2.goalCharacter independently from
+    -- Build 42.20 keeps PathFindBehavior2.goalCharacter independently from
     -- IsoZombie.target. Leaving Goal.Character -> Bandit produces
     -- NetworkZombieMind: goal character is not set. Cancel only that stale goal.
     local pfbCancelled = cancelBanditCharacterGoal(victim)
 
-    -- No exact-coordinate path is issued here. The normal zombie update will
-    -- rediscover a nearby Bandit and use the existing coordinate-only pursuit.
+    -- No exact-coordinate path is issued here. The predicate bridge owns the
+    -- normal coordinate-only pursuit on the ordinary-zombie update path.
     stats.retaliationPathsSuppressed = stats.retaliationPathsSuppressed + 1
     logPairOnce(source, victim, attacker, targetCleared, attackedByCleared, pfbCancelled)
     return targetCleared or attackedByCleared or pfbCancelled
