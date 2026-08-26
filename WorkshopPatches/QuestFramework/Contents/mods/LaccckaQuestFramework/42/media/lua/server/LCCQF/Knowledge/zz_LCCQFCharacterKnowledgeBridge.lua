@@ -1,20 +1,58 @@
 require "LCCQF/LCCQFConstants"
+require "LCCQF/Core/LCCQFNPCRegistry"
 require "LCCQF/Persistence/LCCQFCharacterKnowledge"
 require "LCCQF/Dialogue/LCCQFDialogueSession"
+require "LCCQF/Quest/LCCQFQuestService"
 
 LCCQF = LCCQF or {}
 
 local C = LCCQF.Constants
+local NPCRegistry = LCCQF.NPCRegistry
 local CharacterKnowledge = LCCQF.CharacterKnowledge
 local DialogueSession = LCCQF.DialogueSession
+local QuestService = LCCQF.QuestService
 local installed = false
 
 local function log(message)
     print(C.LOG_PREFIX .. "[KNOWLEDGE:BRIDGE] " .. tostring(message))
 end
 
+local function reconcileQuestKnowledge(player)
+    if not player or not QuestService or type(QuestService.ExportViews) ~= "function" then return 0 end
+
+    local changed = 0
+    for _, quest in ipairs(QuestService.ExportViews(player)) do
+        local npcId = type(quest) == "table" and quest.giverNpcId or nil
+        local definition = npcId and NPCRegistry.Get(npcId) or nil
+        if definition then
+            local ok, discovered = CharacterKnowledge.DiscoverNPC(
+                player,
+                npcId,
+                "quest-history-migration"
+            )
+            if ok and discovered then changed = changed + 1 end
+
+            local byQuest = type(definition.questKnowledgeFacts) == "table"
+                and definition.questKnowledgeFacts[quest.questId]
+                or nil
+            local facts = type(byQuest) == "table" and byQuest[quest.state] or nil
+            for _, factId in ipairs(type(facts) == "table" and facts or {}) do
+                local factOk, unlocked = CharacterKnowledge.UnlockFact(
+                    player,
+                    npcId,
+                    factId,
+                    "quest-state:" .. tostring(quest.questId) .. ":" .. tostring(quest.state)
+                )
+                if factOk and unlocked then changed = changed + 1 end
+            end
+        end
+    end
+    return changed
+end
+
 local function sendSnapshot(player)
     if not player then return end
+    local reconciled = reconcileQuestKnowledge(player)
     local people, revision = CharacterKnowledge.ExportViews(player)
     sendServerCommand(player, C.MODULE, C.COMMAND.KNOWLEDGE, {
         people = people,
@@ -22,7 +60,8 @@ local function sendSnapshot(player)
     })
     log("snapshot sent player=" .. tostring(player:getUsername())
         .. " people=" .. tostring(#people)
-        .. " revision=" .. tostring(revision))
+        .. " revision=" .. tostring(revision)
+        .. " reconciled=" .. tostring(reconciled))
 end
 
 local function onKnowledgeEvent(kind, player, payload)
@@ -75,7 +114,8 @@ local function onServerStarted()
     local wrapped = installDialogueDiscovery()
     log("loaded version=" .. tostring(C.VERSION)
         .. " persistence=" .. tostring(ok and "ready" or err or "unavailable")
-        .. " dialogueDiscovery=" .. tostring(wrapped))
+        .. " dialogueDiscovery=" .. tostring(wrapped)
+        .. " questHistoryReconcile=true")
 end
 
 if isServer and isServer() then
