@@ -2,116 +2,177 @@
 
 Build 42.20 multiplayer foundation for server-authoritative NPC interaction, dialogue, quests and future faction/world simulation.
 
-## Current version: v0.3.2
+## Current version: v0.3.3
 
-v0.3.2 keeps the accepted v0.3.1 quest/RPG Hub/map-marker slice and adds the first durable persistence boundary:
+v0.3.3 keeps the accepted v0.3.1 quest/RPG Hub/map-marker slice and the v0.3.2 durable character/persistence boundary, then adds the first extensible objective runtime.
 
-- framework-owned `characterId` for one player-character life;
-- the character id is stored in the saved Project Zomboid player `modData`;
-- world-owned Quest Framework state is stored through B42 `ModData` / `GlobalModData`;
-- quest instances are keyed by `characterId`, not `onlineID` or username;
-- persisted quest instances are normalized and restored against current quest definitions;
-- canonical `ReachArea` geometry survives restart instead of being recomputed from the current NPC position;
-- dead character ids are retired so a new life cannot silently inherit the old RPG identity;
-- persistence tables are schema-versioned from the first durable format.
+Current objective handlers:
 
-The complete discovery / `Known People` / faction-relations layer is intentionally not implemented yet. Its architectural contract is documented in:
+- `ReachArea` — server position/radius validation;
+- `TalkToNPC` — completion through a validated framework NPC interaction;
+- `Kill` — server `OnZombieDead` credit using the B42 attacker recorded on the dead zombie;
+- `Fetch` — server inventory ownership/count validation;
+- `Deliver` — validated NPC interaction plus server-side inventory removal and replication;
+- `ClearArea` — bounded server world-square scan around canonical quest geometry.
 
-`docs/design/character-knowledge-discovery-and-life-cycle.md`
+The quest service dispatches generic handler capabilities (`EvaluateTick`, `EvaluateTalk`, `EvaluateZombieDeath`) instead of growing one branch per objective type.
 
-## Architectural boundary
+## Durable identity and persistence
 
-```text
-WORLD SAVE
-GlobalModData / LCCQF_Persistence
-    |
-    +--> characterId -> character RPG record
-                         |
-                         +--> persisted QuestInstances
-
-SAVED PLAYER CHARACTER
-player:getModData()
-    |
-    +--> lccqCharacterId
-
-SERVER
-QuestDefinition
-    |
-    v
-QuestInstance
-    |
-    +--> canonical objective state
-    +--> canonical QuestTarget geometry
-    +--> marker presentation policy
-                 |
-                 v
-          sanitized quest view
-                 |
-                 v
-CLIENT
-QuestClientState
-    |
-    +--> RPG Hub / Quests page
-    |
-    +--> QuestMarkerService
-             |
-             v
-       WorldMapSymbols API
-```
-
-`QuestTarget != QuestMarker` remains a hard rule.
-
-The server decides what completes an objective. The client marker only visualizes information the server explicitly permits the character to know. Removing, moving or forging a local map symbol cannot complete a quest.
-
-## Durable character identity
-
-Quest Framework does not treat multiplayer connection identity as RPG character identity.
-
-`onlineID` remains valid for transient connection concerns such as request throttling, but it must not own quests, reputation, discovery or future faction relations.
-
-v0.3.2 assigns a UUID to one Project Zomboid character life:
+Quest Framework does not use multiplayer connection identity as RPG identity.
 
 ```text
+SAVED PZ CHARACTER
 player:getModData().lccqCharacterId
+        |
+        v
+WORLD SAVE / GlobalModData
+LCCQF_Persistence.characters[characterId]
+        |
+        +--> persisted QuestInstances
 ```
 
-Project Zomboid serializes object/player modData with the character save. The Quest Framework world persistence then stores RPG state under that UUID.
+`onlineID` remains valid only for transient connection concerns such as request throttling. It must not own quests, reputation, discovery or future faction relations.
 
-When the character dies the UUID is marked `retired` in the world store. If a later live player object presents a retired id because of engine/save-copy behavior, the framework issues a new UUID rather than reusing the dead character's identity.
+When a character dies, its framework UUID is marked `retired`. A later live character cannot reuse a retired identity.
 
-This is the foundation for the long-term rule:
+This implements the long-term rule:
 
 > The world survives character death; the dead character's personal knowledge, relations and quest history do not transfer to the new character.
 
 ## World existence vs character knowledge
 
-An NPC or faction may exist in the persistent world while a character knows nothing about it.
+World existence and character knowledge are separate states.
 
-A fresh character must not automatically receive a global list of NPCs, factions or locations. Future `Known People` and `Factions` pages will be projections of explicit character discovery state.
-
-Example future flow:
+An NPC, faction, base or location may persist in the world while a fresh character knows nothing about it. Future `Known People` and `Factions` pages must be projections of explicit per-character discovery state rather than global registries.
 
 ```text
 Alexey exists in world
-    |
-    |  fresh character has no knowledge entry
-    v
-validated interaction with Alexey
-    |
-    v
-DiscoverNPC(alexey)
-    |
-    v
-Alexey becomes visible in Known People
+        !=
+current character knows Alexey
 ```
 
-Discovery and relations are separate. Knowing that Alexey exists must not automatically grant trust, reputation or friendship.
+A future validated discovery transition will look conceptually like:
 
-## Quest persistence
+```text
+validated interaction / information source
+        -> DiscoverNPC(alexey)
+        -> CharacterKnowledge records discovery
+        -> Alexey appears in Known People
+```
 
-The B42.20.3 engine exposes `ModData.getOrCreate(tag)` over `GlobalModData`. That data is saved in the world's `global_mod_data.bin`.
+Discovery does not imply trust, reputation or friendship.
 
-Quest Framework uses a dedicated tagged root with versioned records:
+Detailed contract:
+
+`docs/design/character-knowledge-discovery-and-life-cycle.md`
+
+## NPC runtime boundary
+
+Framework logical identity remains independent from Bandits2 physical identity.
+
+```text
+framework npcId
+    |
+    v
+NPCRuntime adapter boundary
+    |
+    v
+Bandits2 physical runtime / IsoZombie
+```
+
+Bandits2 is a provider, not the owner of quest/NPC identity.
+
+`NPCRuntime.IsFrameworkEntity(entity)` provides provider-neutral world classification. Individual adapters implement ownership checks, allowing quest systems such as `Kill` and `ClearArea` to exclude physical framework NPCs without importing Bandits APIs.
+
+The current essential test quest-giver role additionally has server-side protection that attempts to keep Alexey stationary, invulnerable and removed from ordinary zombie targeting. This protection still requires runtime acceptance after the issues found in the v0.3.2 test.
+
+## Quest instance model
+
+The server owns canonical instances:
+
+```text
+QuestInstance
+├── id
+├── questId
+├── ownerCharacterId
+├── state
+├── currentObjectiveIndex
+├── objectives[]
+└── canonical objective geometry/progress
+```
+
+The client receives sanitized views only.
+
+`QuestTarget != QuestMarker` remains a hard rule. A marker visualizes authorized information; it never completes an objective.
+
+## Objective runtime
+
+Each objective module may expose only the capabilities it needs:
+
+```text
+Create(spec, context)
+ValidatePersisted(objective)
+EvaluateTick(player, objective)
+EvaluateTalk(player, objective, npcId)
+EvaluateZombieDeath(player, objective, zombie)
+MakeProgressView(objective)
+MakeMarkerView(objective)
+```
+
+`QuestService` invokes these capabilities generically.
+
+### Kill
+
+`Kill` advances only from server `OnZombieDead`. The B42 dead zombie exposes `getAttackedBy()`, so the current implementation credits the direct `IsoPlayer` attacker recorded by the engine. Framework-owned physical NPC entities are filtered before quest kill dispatch.
+
+### Fetch
+
+`Fetch` recursively counts matching full item types in the character inventory and nested carried containers. The client cannot declare that an item was obtained.
+
+### Deliver
+
+`Deliver` remains active until the player performs a validated interaction with the authored NPC while possessing the required items. The server removes the exact items and uses the B42 inventory-removal replication API.
+
+### ClearArea
+
+`ClearArea` stores canonical `x/y/z/radius` geometry in the QuestInstance and scans only the bounded area when the owning player is sufficiently near it. It does not use `getZombieList()` or another global zombie scan.
+
+Framework-owned NPC entities and B42 `useless` physical zombies are not counted as hostile clearance targets.
+
+## Test quests
+
+### 1. Old Checkpoint / Старый блокпост
+
+Accepted in v0.3.1:
+
+```text
+ReachArea
+    -> TalkToNPC Alexey
+    -> completed
+```
+
+Its persisted definition is intentionally unchanged in v0.3.3 so existing v0.3.2 saves are not invalidated by an objective-list migration.
+
+### 2. Roadside Supplies / Припасы у дороги
+
+Available from Alexey after `Old Checkpoint` is completed by the current character:
+
+```text
+Kill 3 infected
+    -> Fetch 2 x Base.Sheet
+    -> ClearArea at an authored roadside point
+    -> Deliver 2 x Base.Sheet to Alexey
+    -> completed
+```
+
+This second quest is developer acceptance content for the v0.3.3 objective runtime. It is not intended as final authored RPG content.
+
+The RPG Hub now projects numeric progress for objectives whose required count is greater than one, for example `1/3` kills or `1/2` sheets.
+
+## Persistence
+
+World persistence uses B42 `ModData.getOrCreate(tag)` / `GlobalModData` and is schema-versioned.
 
 ```text
 LCCQF_Persistence
@@ -119,7 +180,6 @@ LCCQF_Persistence
 ├── characters
 │   └── <characterId>
 │       ├── status
-│       ├── created / updated world time
 │       └── quests
 │           ├── schemaVersion = 1
 │           ├── byInstanceId
@@ -127,187 +187,88 @@ LCCQF_Persistence
 └── retiredCharacterIds
 ```
 
-The marker UI object itself is never persisted. After reconnect/restart the server restores canonical quest state, sends a sanitized quest view, and the client rebuilds the marker from that view.
+Canonical objective geometry and progress are persisted. UI objects and map symbols are not.
 
-Persisted `ReachArea` objectives keep their already-authored target coordinates and radius. They are not regenerated from the giver NPC after a restart.
-
-## Quest kernel
-
-The server-owned quest layer is split into:
-
-- `Quest/LCCQFQuestRegistry.lua` — validates quest definitions;
-- `Quest/LCCQFQuestInstance.lua` — creates, restores and progresses sequential instances;
-- `Quest/LCCQFQuestService.lua` — conditions, actions, objective evaluation and network views;
-- `Persistence/LCCQFCharacterIdentity.lua` — one-life durable character identity and retirement;
-- `Persistence/LCCQFQuestPersistence.lua` — world-backed character quest stores and restore normalization;
-- `Quest/Objectives/LCCQFObjectiveReachArea.lua` — authoritative server position check and marker projection;
-- `Quest/Objectives/LCCQFObjectiveTalkToNPC.lua` — validated NPC interaction completion;
-- `Content/LCCQFQuestDefinitions.lua` — authored quest and presentation policy.
-
-The client has no quest-completion or persistence authority.
-
-## First quest: Old Checkpoint / Старый блокпост
-
-```text
-Talk to Alexey
-    |
-    v
-Accept Old Checkpoint
-    |
-    v
-SERVER creates and persists ReachArea target
-    |
-    +--> SERVER keeps exact radius validation
-    |
-    +--> CLIENT receives EXACT QuestMarker projection
-                     |
-                     v
-               world-map ! marker
-                     |
-                     v
-SERVER detects player inside ReachArea
-    |
-    v
-marker disappears from new quest view
-    |
-    v
-TalkToNPC: Return to Alexey
-    |
-    v
-exact NPC runtime/range validation
-    |
-    v
-QuestInstance COMPLETED
-```
-
-For the current test quest the initial target is created from Alexey's validated framework handle with `dx=12, dy=0`, same Z and a server radius of 2.25 tiles. Once the instance exists, those canonical coordinates belong to that quest instance and are persisted.
-
-## Quest markers
-
-The first marker mode is `EXACT`.
-
-The client `LCCQFQuestMarkerService.lua`:
-
-- observes `QuestClientState` changes;
-- uses a hidden `ISWorldMap` to reach `getSymbolsAPIv2()`;
-- creates a service-owned `!` text symbol;
-- uses the B42 `userDefined=true` rendering flag because non-user-defined text symbols are hidden when the renderer's `PlaceNames` layer is disabled;
-- identifies and cleans only its own symbols;
-- checks marker integrity and can rebuild presentation from authoritative quest state;
-- removes the marker when the active objective no longer exposes it.
-
-`userDefined=true` is only an engine rendering flag here. The user does not own quest state and deleting a local symbol cannot alter objective progress.
-
-Future presentation modes remain:
-
-- `EXACT`;
-- `APPROXIMATE`;
-- `AREA`;
-- `HIDDEN`.
-
-## RPG Hub
-
-The floating `QF` button opens a reusable page host. v0.3.2 still registers only the `Quests / Квесты` page.
-
-Future pages should use the same host, including:
-
-```text
-RPG Hub
-├── Quests
-├── Factions
-├── Known People
-├── Reputation / Relations
-└── World information
-```
-
-Those future pages must obey the character-knowledge contract: they show only entities discovered by the current character, never every entity present in the world simulation.
-
-## Accepted runtime history
+## Runtime acceptance history
 
 ### v0.2.8
 
-Accepted interaction/dialogue vertical slice:
+Accepted interaction/dialogue slice:
 
 `NPC -> proximity -> E -> server validation -> DialogueSession -> dialogue UI`.
 
 ### v0.2.9
 
-Available single-client lifecycle acceptance passed:
-
-- exact runtime interaction and dialogue;
-- range enforcement;
-- death invalidation;
-- replacement physical runtime gets a new runtime id;
-- unload/rematerialization/reconnect binding behavior.
-
-Two-client concurrency remains pending.
-
-### v0.3.0
-
-Quest accept/runtime synchronization worked. The first ReachArea test exposed ambiguous human navigation wording rather than an objective-authority failure.
+Single-client runtime lifecycle acceptance passed for exact runtime interaction, range enforcement, death invalidation, physical runtime replacement and unload/rematerialization behavior. Two-client concurrency remains pending.
 
 ### v0.3.1
 
-**Single-client dedicated multiplayer acceptance passed on 2026-08-26.**
-
-The complete first quest was finished end to end:
-
-- dialogue and quest acceptance;
-- RPG Hub state;
-- visible world-map marker;
-- server ReachArea completion;
-- marker removal;
-- return-to-Alexey objective;
-- completed quest state.
-
-During that test the first physical Alexey died and a later Bandits runtime representing the same framework `npcId` successfully accepted the quest turn-in. That confirmed logical NPC identity is independent of one Bandits runtime object.
+Single-client dedicated multiplayer quest/RPG Hub/world-map-marker acceptance passed on 2026-08-26.
 
 See:
 
 `docs/final-reports/quest-framework-quest-hub-marker-acceptance-2026-08-26.md`
 
-## v0.3.2 test plan
+### v0.3.2
 
-v0.3.2 is implemented and must receive runtime persistence acceptance.
+Runtime persistence test exposed two post-implementation defects outside the durable world-store design:
 
-The next game run should combine persistence testing with the pending Alexey quest-giver-role smoke test.
+- a new character received a correct new server `characterId`, but the client retained the previous life's stale quest projection until a full restart;
+- the Bandits quest-giver role could still move after shove/combat and could still be killed by zombies.
 
-Recommended sequence:
+The first issue is now addressed by client per-life projection reset/resync. Quest-giver physical protection is now reinforced on the server and requires the next runtime test.
 
-1. Deploy v0.3.2 to both server and client.
-2. Confirm server log reports `loaded version=0.3.2` and `persistence=ready`.
-3. Confirm a `characterId` is assigned for the current character.
-4. Spawn a new Alexey and verify he remains stationary and cannot be killed by zombies during the test window.
-5. Accept `Old Checkpoint` and confirm the active marker.
-6. Disconnect/reconnect without dying. The same quest and marker must return.
-7. Restart the dedicated server. The same active quest/objective/marker must return.
-8. Complete `reach_checkpoint`; restart or reconnect again and verify `return_to_alexey` remains current.
-9. Finish the quest; restart again and verify the quest remains completed and cannot be offered again to the same character.
-10. Die and create a new character. The old character id must be retired and the new character must receive another id.
-11. The new character must not inherit the old personal quest history.
-12. Full `Known People` / faction-discovery reset is not yet an acceptance requirement because those systems are not implemented in v0.3.2.
+## Combined v0.3.3 acceptance plan
+
+The next game run should test v0.3.2 fixes and v0.3.3 objective expansion together.
+
+1. Deploy v0.3.3 to server and client and confirm `loaded version=0.3.3` plus `persistence=ready`.
+2. Spawn/use a fresh Alexey. Shove him and expose him to zombies; he must not run away under AI control or die.
+3. Verify an existing character receives only its own authoritative quest snapshot after reconnect/restart.
+4. Die and create a new character. Old quest views must disappear immediately and must not reappear after the new snapshot.
+5. Complete `Old Checkpoint` for the test character if required to unlock the second test quest.
+6. Accept `Roadside Supplies`.
+7. Kill three ordinary infected and verify Hub progress reaches `3/3` from server death events.
+8. Obtain two `Base.Sheet` items and verify Fetch reaches `2/2` without a client command completing it.
+9. Reach the marked roadside `ClearArea`. If infected are inside the area, clear them; the objective must complete only when the bounded server scan satisfies `maxRemaining=0`.
+10. Return to Alexey. The `Deliver` objective must consume exactly two sheets on validated interaction and complete the quest.
+11. Reconnect/restart during at least one objective with partial progress and verify the same objective/progress returns.
+12. Restart after completion and verify the completed second quest persists for the same character.
+
+Full `Known People` / faction discovery is still not part of this acceptance run.
 
 ## Regression constraints
 
 Do not reintroduce:
 
 - provider-specific physical lookup into generic client interaction discovery;
-- client `getZombieList()` scans;
+- client/global `getZombieList()` scans;
+- Bandits API imports inside quest objective modules;
+- counting framework-owned physical NPCs as infected quest targets;
 - multiple active runtime ids for one logical NPC;
-- client-authoritative dialogue transitions;
-- client-authoritative quest acceptance/objective completion/rewards;
-- using a map marker as objective authority;
-- equating `QuestTarget` with `QuestMarker`;
-- framework NPC/quest identity stored in Bandits runtime identity;
-- `onlineID` or username as durable RPG character identity;
+- client-authoritative dialogue or quest transitions;
+- map markers as objective authority;
+- framework identity stored as Bandits physical identity;
+- `onlineID` or username as durable RPG identity;
 - client access to server persistence internals;
-- recomputing persisted canonical quest targets from a moved/rematerialized NPC;
+- recomputing persisted canonical quest targets from a rematerialized NPC;
 - inheriting a retired character's RPG identity into a new life;
-- exposing all world NPCs/factions in future RPG UI without character discovery;
-- unguarded server event hooks that rely only on `/server/` placement.
+- exposing every world NPC/faction to a fresh character without discovery.
 
-## Next after v0.3.2 acceptance
+## Next after v0.3.3 acceptance
 
-Do not immediately build the full faction simulation.
+The next milestone should be the **Character Knowledge / discovery foundation**, not the full faction simulator.
 
-After persistence/character-lifecycle acceptance, the next useful expansion is the reusable character knowledge boundary plus additional quest objectives such as `Fetch`, `Deliver`, `Kill` and `ClearArea`. `Known People`, faction discovery and relationship projections should then be built on the durable `characterId` rather than on account or connection identity.
+Recommended order:
+
+```text
+CharacterKnowledge store
+    -> DiscoverNPC / DiscoverFaction server transitions
+    -> sanitized Known People projection
+    -> Known People page in RPG Hub
+    -> NPC relationship state
+    -> faction discovery / faction relations
+    -> larger faction/world simulation
+```
+
+This layer must be keyed by durable `characterId`. A new character begins with no discovered Alexey/factions even though those entities continue to exist in the persistent world.
