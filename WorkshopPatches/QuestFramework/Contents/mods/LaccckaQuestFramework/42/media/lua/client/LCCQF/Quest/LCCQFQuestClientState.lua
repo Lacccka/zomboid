@@ -4,6 +4,7 @@ local QuestClientState = LCCQF.QuestClientState or {}
 local byInstanceId = {}
 local listeners = QuestClientState._listeners or {}
 local revision = tonumber(QuestClientState._revision) or 0
+local synchronized = QuestClientState._synchronized == true
 
 local function validView(view)
     return type(view) == "table"
@@ -40,8 +41,21 @@ function QuestClientState.GetRevision()
     return revision
 end
 
+function QuestClientState.IsSynchronized()
+    return synchronized
+end
+
+function QuestClientState.BeginCharacterTransition(source)
+    byInstanceId = {}
+    synchronized = false
+    QuestClientState._synchronized = false
+    notifyChanged("character-transition:" .. tostring(source or "unknown"), nil)
+end
+
 function QuestClientState.Clear()
     byInstanceId = {}
+    synchronized = false
+    QuestClientState._synchronized = false
     notifyChanged("clear", nil)
 end
 
@@ -61,6 +75,8 @@ function QuestClientState.Replace(views)
             count = count + 1
         end
     end
+    synchronized = true
+    QuestClientState._synchronized = true
     notifyChanged("replace", nil)
     return count
 end
