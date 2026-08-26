@@ -16,6 +16,7 @@ server_bandits_wrapper="$lua_root/server/LCCQF/Runtime/LCCQFBanditsRuntime.lua"
 server_bandits="$lua_root/server/LCCQF/Runtime/LCCQFBanditsServerRuntime.lua"
 server_bandits_ownership="$lua_root/server/LCCQF/Runtime/LCCQFBanditsEntityOwnership.lua"
 server_quest_giver_protection="$lua_root/server/LCCQF/Runtime/zz_LCCQFBanditsQuestGiverProtection.lua"
+shared_quest_giver_program="$lua_root/shared/LCCQF/Runtime/LCCQFBanditsQuestGiverProgram.lua"
 dialogue_session="$lua_root/server/LCCQF/Dialogue/LCCQFDialogueSession.lua"
 dialogue_content="$lua_root/server/LCCQF/Content/LCCQFDialogueContent.lua"
 quest_definitions="$lua_root/server/LCCQF/Content/LCCQFQuestDefinitions.lua"
@@ -45,6 +46,7 @@ fail() {
 for required in \
     "$lua_root/shared/LCCQF/Core/LCCQFNPCRegistry.lua" \
     "$shared_runtime" \
+    "$shared_quest_giver_program" \
     "$client_interaction" \
     "$client_quest_state" \
     "$client_character_lifecycle" \
@@ -161,8 +163,19 @@ rg -q 'function adapter\.OwnsEntity' "$server_bandits_ownership" \
     || fail "Bandits provider entity ownership classifier missing"
 rg -q 'setInvulnerable\(true\)' "$server_quest_giver_protection" \
     || fail "essential quest giver server invulnerability enforcement missing"
-rg -q 'setTarget\(nil\)' "$server_quest_giver_protection" \
-    || fail "essential quest giver zombie aggro suppression missing"
+rg -q 'setShootable\(false\)' "$server_quest_giver_protection" \
+    || fail "essential quest giver server combat target suppression missing"
+rg -q 'lccqIgnoreZombieAggro' "$server_quest_giver_protection" \
+    || fail "essential quest giver server non-combat marker missing"
+rg -q 'BanditZombie\.CacheLightB' "$shared_quest_giver_program" \
+    || fail "Bandits zombie combat-cache opt-out missing"
+rg -q 'setShootable\(false\)' "$shared_quest_giver_program" \
+    || fail "client physical quest giver combat target suppression missing"
+rg -q 'if not \(isServer and isServer\(\)\) then' "$shared_quest_giver_program" \
+    || fail "client-only BanditZombie dependency is not guarded from dedicated server"
+if rg -n 'getCheats\(|CheatType|PlayerCheats' "$server_quest_giver_protection" "$shared_quest_giver_program"; then
+    fail "non-Lua PlayerCheats access reintroduced"
+fi
 
 if rg -n 'brain\.key\s*==\s*definition\.npcId|Registry\.IsRegistered\(brain\.key\)' "$server_bandits"; then
     fail "legacy Bandits brain.key quest identity restoration reintroduced"
