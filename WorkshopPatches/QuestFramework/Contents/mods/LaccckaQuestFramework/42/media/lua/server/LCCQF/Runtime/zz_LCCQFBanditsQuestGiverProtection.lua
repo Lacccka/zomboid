@@ -9,37 +9,18 @@ local C = LCCQF.Constants
 local PROGRAM_ID = "LCCQFQuestGiver"
 local SCAN_RANGE = 12
 local UPDATE_INTERVAL_MS = 250
+local NON_COMBAT_MODDATA_KEY = "lccqIgnoreZombieAggro"
+local NON_COMBAT_VARIABLE = "LCCQFNonCombat"
 local nextUpdateMs = 0
 local reported = {}
-local zombieDontAttackCheat = nil
-local cheatResolved = false
 
--- Regression note: the old post-acquisition policy used setTarget(nil). It was
--- too late in the zombie/network lifecycle and did not prevent attack/hit
--- states reliably. Keep aggro suppression target-side via ZOMBIES_DONT_ATTACK.
+-- B42.20.3 PlayerCheats is Java userdata and its internal set(CheatType,...)
+-- method is not a Lua-indexable API. Do not attempt getCheats():set(...).
+-- Zombie-vs-bandit aggro suppression is handled on the controlling client by
+-- removing essential quest givers from BanditZombie.CacheLightB.
 
 local function log(message)
     print(C.LOG_PREFIX .. "[QUEST-GIVER-PROTECTION:SERVER] " .. tostring(message))
-end
-
-local function resolveZombieDontAttackCheat()
-    if cheatResolved then return zombieDontAttackCheat end
-    cheatResolved = true
-
-    if CheatType and CheatType.fromString then
-        zombieDontAttackCheat = CheatType.fromString("ZOMBIES_DONT_ATTACK")
-    end
-    return zombieDontAttackCheat
-end
-
-local function setZombieIgnoreFlag(zombie)
-    if not zombie or not zombie.getCheats then return false end
-    local cheats = zombie:getCheats()
-    local flag = resolveZombieDontAttackCheat()
-    if not cheats or not flag then return false end
-
-    cheats:set(flag, true)
-    return zombie.isZombiesDontAttack and zombie:isZombiesDontAttack() == true
 end
 
 local function isProtectedBrain(brain)
@@ -69,7 +50,21 @@ local function enforceProgram(brain)
         brain.program.stage = "Prepare"
         changed = true
     end
+    if brain.lccqIgnoreZombieAggro ~= true then
+        brain.lccqIgnoreZombieAggro = true
+        changed = true
+    end
     return changed
+end
+
+local function markNonCombatPhysicalState(zombie)
+    local modData = zombie.getModData and zombie:getModData() or nil
+    if modData then
+        modData[NON_COMBAT_MODDATA_KEY] = true
+    end
+    if zombie.setVariable then
+        zombie:setVariable(NON_COMBAT_VARIABLE, true)
+    end
 end
 
 local function recoverStandingState(zombie)
@@ -95,14 +90,13 @@ local function enforceProtectedNPC(zombie, brain)
     end
 
     Bandit.ClearMoveTasks(zombie)
+    markNonCombatPhysicalState(zombie)
 
     if zombie.setUseless then zombie:setUseless(true) end
     if zombie.setInvulnerable then zombie:setInvulnerable(true) end
     if zombie.setShootable then zombie:setShootable(false) end
     if zombie.setIgnoreStaggerBack then zombie:setIgnoreStaggerBack(true) end
     recoverStandingState(zombie)
-
-    local zombieIgnore = setZombieIgnoreFlag(zombie)
 
     if changed then
         BanditBrain.Update(zombie, brain)
@@ -116,7 +110,7 @@ local function enforceProtectedNPC(zombie, brain)
         reported[runtimeId] = true
         log("protected npcId=" .. tostring(brain.lccqNpcId)
             .. " runtimeId=" .. runtimeId
-            .. " zombiesDontAttack=" .. tostring(zombieIgnore)
+            .. " zombieAggro=bandit-cache-optout"
             .. " shootable=" .. tostring(zombie.isShootable and zombie:isShootable() or "unknown")
             .. " invulnerable=" .. tostring(zombie.isInvulnerable and zombie:isInvulnerable() or "unknown"))
     end
@@ -175,7 +169,7 @@ if isServer and isServer() then
     Events.OnTick.Add(onTick)
     log("loaded program=" .. PROGRAM_ID
         .. " intervalMs=" .. tostring(UPDATE_INTERVAL_MS)
-        .. " zombieAggro=cheat-flag nonCombat=true")
+        .. " zombieAggro=bandit-cache-optout nonCombat=true")
 end
 
 return true
