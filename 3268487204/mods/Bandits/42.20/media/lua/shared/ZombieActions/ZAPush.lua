@@ -34,7 +34,7 @@ end
 ZombieActions.Push = {}
 ZombieActions.Push.onStart = function(bandit, task)
 
-    local anim = "Shove"
+    local anim = BanditUtils.Choice({"Shove", "HighKick", "FrontKick"})
 
     if anim then
         task.anim = anim
@@ -52,14 +52,9 @@ ZombieActions.Push.onWorking = function(bandit, task)
     local bumpType = bandit:getBumpType()
     if bumpType ~= task.anim then return task.hit == true end
 
-    if not task.hit and task.time <= 50 then
+    if not task.hit and task.time <= 60 then
 
         task.hit = true
-
-        local asn = bandit:getActionStateName()
-        -- print ("SHOVE AS:" .. asn)
-        if asn == "getup" or asn == "getup-fromonback" or asn == "getup-fromonfront" or asn == "getup-fromsitting"
-                 or asn =="staggerback" or asn == "staggerback-knockeddown" or asn == "falldown" then return false end
 
         local enemy = BanditZombie.Cache[task.eid]
         if enemy then 

@@ -136,7 +136,7 @@ function BanditMenu.MakeProcedure (player, square)
     for k, v in pairs(lines) do
         output = output .. v
     end
-    print (output)
+    -- print (output)
     fileWriter:write(output)
     fileWriter:close()
                             
@@ -221,9 +221,6 @@ function BanditMenu.WorldContextMenuPre(playerID, context, worldobjects, test)
     local player = getSpecificPlayer(playerID)
     local square = BanditCompatibility.GetClickedSquare()
 
-    print (player:getDirectionAngle())
-    print ("ROOF: " .. tostring(square:haveRoofFull()))
-    print (player:getDirectionAngle())
     local zombie = square:getZombie()
     if not zombie then
         local squareS = square:getS()
@@ -236,10 +233,6 @@ function BanditMenu.WorldContextMenuPre(playerID, context, worldobjects, test)
                 end
             end
         end
-    end
-
-    if zombie then
-        print ("zombieid" .. BanditUtils.GetZombieID(zombie))
     end
 
     -- Player options

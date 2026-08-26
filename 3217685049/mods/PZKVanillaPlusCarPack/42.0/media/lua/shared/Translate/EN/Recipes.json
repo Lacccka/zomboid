@@ -1,5 +1,7 @@
 {
-    "Recipe_ATAPZKTuningMag": "PZK Tuning",
-    "Recipe_SplitTruckTarpBedCover": "Recycle Truck Tarp Bed Cover",
-    "Recipe_MakeTruckTarpBedCover": "Make Truck Tarp Bed Cover"
+    "ATAPZKTuningMag": "PZK Tuning",
+    "SplitTruckTarpBedCover": "Recycle Truck Tarp Bed Cover",
+    "MakeTruckTarpBedCover": "Make Truck Tarp Bed Cover",
+	"MakeTruckSideWoodboards": "Make Truck Side Woodboards",
+	"DestroyTruckSideWoodboards": "Recycle Truck Side Woodboards"
 }

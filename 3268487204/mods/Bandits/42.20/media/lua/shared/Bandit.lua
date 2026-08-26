@@ -288,7 +288,7 @@ function Bandit.AddTask(zombie, task)
     if brain then
 
         if #brain.tasks > 9 then
-            print ("[WARN] Task queue too big, flushing!")
+            print ("[BANDITS][WARN] Task queue too big, flushing!")
             brain.tasks = {}
         end
 
@@ -302,7 +302,7 @@ function Bandit.AddTaskFirst(zombie, task)
     if brain then
 
         if #brain.tasks > 9 then
-            print ("[WARN] Task queue too big, flushing!")
+            print ("[BANDITS][WARN] Task queue too big, flushing!")
             brain.tasks = {}
         end
 
@@ -1138,7 +1138,7 @@ function Bandit.UpdateItemsToSpawnAtDeath(zombie, brain)
                     item:getModData().preserve = true
                     zombie:addItemToSpawnAtDeath(item)
                 else
-                    print ("[WARN] Unknown item: " .. tab.itemType)
+                    print ("[BANDITS][WARN] Unknown item: " .. tab.itemType)
                 end
             end
         end
@@ -1154,7 +1154,7 @@ function Bandit.UpdateItemsToSpawnAtDeath(zombie, brain)
                     if item then
                         bag:getInventory():AddItem(item)
                     else
-                        print ("[WARN] Unknown item: " .. tab.itemType)
+                        print ("[BANDITS][WARN] Unknown item: " .. tab.itemType)
                     end
                 end
             end
@@ -1235,7 +1235,8 @@ function Bandit.Say(zombie, phrase, force)
                     local emitter = zombie:getEmitter()
                     if not emitter:isPlaying(sound) then
                         local id = emitter:playSound(sound)
-                        emitter:setVolume(id, BanditUtils.FixVolume(1))
+                        -- print ("played sound: " .. sound .. " with id: " .. tostring(id))
+                        -- emitter:setVolume(id, BanditUtils.FixVolume(1))
                     end
                     
                     --zombie:getEmitter():playVocals(sound)

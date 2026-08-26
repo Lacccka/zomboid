@@ -250,10 +250,7 @@ module Base
 
 
 		template = Trunk/part/TruckBedOpen,
-		part TruckBed
-		{
 
-		}
 		
 		template = Seat/part/SeatFrontLeft,
 		template = Seat/part/SeatFrontRight,

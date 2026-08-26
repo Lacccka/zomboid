@@ -670,5 +670,6 @@
     "IGUI_RS_EmptyWaterTank": "Empty the Water Tank",
     "IGUI_RS_FilterGood": "Water filter: Operational",
     "IGUI_RS_FilterOK": "Water filter: Requires maintenance",
-    "IGUI_RS_FilterBad": "Water filter: Contaminated"
+    "IGUI_RS_FilterBad": "Water filter: Contaminated",
+	"IGUI_CraftingCategories_Vehicles": "Vehicles"
 }

@@ -344,7 +344,7 @@ module Base
 
 		template = Window/part/WindowFrontLeft,
 		template = Window/part/WindowFrontRight,
-		template = Window/part/WindowRearLeft,
+		template = WindowNoDoor/part/WindowRearLeft,
 		part WindowRearLeft
 		{
 			area = TireRearLeft,
@@ -354,7 +354,7 @@ module Base
 			}
 			
 		}
-		template = Window/part/WindowRearRight,
+		template = WindowNoDoor/part/WindowRearRight,
 		part WindowRearRight
 		{
 			area = TireRearRight,

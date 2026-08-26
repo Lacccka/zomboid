@@ -246,8 +246,8 @@ module Base
 		template = Windshield/part/WindshieldRear,
 		template = Window/part/WindowFrontLeft,
 		template = Window/part/WindowFrontRight,
-		template = Window/part/WindowRearLeft,
-		template = Window/part/WindowRearRight,
+		template = WindowNoDoor/part/WindowRearLeft,
+		template = WindowNoDoor/part/WindowRearRight,
 
 		part WindowRearLeft
 		{
