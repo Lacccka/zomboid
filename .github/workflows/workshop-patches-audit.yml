@@ -19,9 +19,24 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+      - name: Install Lua syntax checker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.4
       - name: Validate audit script syntax
         shell: bash
         run: bash -n WorkshopPatches/audit_split.sh
       - name: Verify grouped Workshop patch contracts
         shell: bash
         run: bash WorkshopPatches/audit_split.sh
+      - name: Verify wanderer devirtualization preservation guard
+        shell: bash
+        run: |
+          guard='WorkshopPatches/NPCFixes/Contents/mods/LaccckaB4220NPCFixes/42/media/lua/server/zz_LCC_BanditWandererDevirtualizationGuard.lua'
+          test -s "$guard"
+          grep -Fq 'wanderer-devirtualization-bandit-preservation-v1' "$guard"
+          grep -Fq 'PURGE_RADIUS = 30' "$guard"
+          grep -Fq 'BanditUtils.DistTo = function' "$guard"
+          grep -Fq 'DEFER_ON_BANDIT_OVERLAP' "$guard"
+          grep -Fq 'findBanditInPurgeCircle' "$guard"
+          lua -e "assert(loadfile([[$guard]]))"
