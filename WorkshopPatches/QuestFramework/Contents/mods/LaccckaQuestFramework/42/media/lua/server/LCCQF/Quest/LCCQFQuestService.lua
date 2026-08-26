@@ -38,6 +38,18 @@ local function emitEvent(player, instance, messageKey, objective)
     })
 end
 
+local function touchProgress(player, instance, objective, source)
+    instance.updatedMs = getTimestampMs()
+    QuestPersistence.Touch(instance.ownerCharacterId)
+    emitUpsert(player, instance)
+    log("objective progress player=" .. tostring(player:getUsername())
+        .. " characterId=" .. tostring(instance.ownerCharacterId)
+        .. " questId=" .. tostring(instance.questId)
+        .. " instanceId=" .. tostring(instance.id)
+        .. " objectiveId=" .. tostring(objective and objective.id)
+        .. " source=" .. tostring(source))
+end
+
 local function completeCurrentObjective(player, instance, reason)
     local objective = QuestInstance.GetCurrentObjective(instance)
     if not objective then return false end
@@ -64,6 +76,16 @@ local function completeCurrentObjective(player, instance, reason)
             .. " instanceId=" .. tostring(instance.id))
     end
     return true
+end
+
+local function applyHandlerResult(player, instance, objective, complete, changed, reason, source)
+    if complete == true then
+        return completeCurrentObjective(player, instance, reason or source or "objective") and 1 or 0
+    end
+    if changed == true then
+        touchProgress(player, instance, objective, source)
+    end
+    return 0
 end
 
 function QuestService.Initialize()
@@ -104,6 +126,13 @@ function QuestService.EvaluateCondition(player, condition)
         local expected = condition.state
         if type(questId) ~= "string" or type(expected) ~= "string" then return false end
         return QuestService.GetQuestState(player, questId) == expected
+    end
+
+    if condition.kind == "all" and type(condition.conditions) == "table" then
+        for _, nested in ipairs(condition.conditions) do
+            if not QuestService.EvaluateCondition(player, nested) then return false end
+        end
+        return true
     end
 
     return false
@@ -163,13 +192,36 @@ function QuestService.NotifyTalkToNPC(player, npcId)
     for _, instance in pairs(store.byInstanceId) do
         if instance.state == "active" then
             local objective = QuestInstance.GetCurrentObjective(instance)
-            if objective and objective.type == "TalkToNPC" then
-                local handler = QuestInstance.GetHandler(objective.type)
-                if handler and handler.EvaluateTalk and handler.EvaluateTalk(objective, npcId) then
-                    if completeCurrentObjective(player, instance, "talk_to_npc") then
-                        completed = completed + 1
-                    end
-                end
+            local handler = objective and QuestInstance.GetHandler(objective.type) or nil
+            if handler and handler.EvaluateTalk then
+                local complete, changed, reason = handler.EvaluateTalk(player, objective, npcId)
+                completed = completed + applyHandlerResult(
+                    player, instance, objective, complete, changed, reason, "talk"
+                )
+            end
+        end
+    end
+    return completed
+end
+
+function QuestService.NotifyZombieDead(zombie)
+    if not zombie or not zombie.getAttackedBy then return 0 end
+    local player = zombie:getAttackedBy()
+    if not player or not instanceof or not instanceof(player, "IsoPlayer") then return 0 end
+
+    local store = getStore(player, false)
+    if not store then return 0 end
+
+    local completed = 0
+    for _, instance in pairs(store.byInstanceId) do
+        if instance.state == "active" then
+            local objective = QuestInstance.GetCurrentObjective(instance)
+            local handler = objective and QuestInstance.GetHandler(objective.type) or nil
+            if handler and handler.EvaluateZombieDeath then
+                local complete, changed, reason = handler.EvaluateZombieDeath(player, objective, zombie)
+                completed = completed + applyHandlerResult(
+                    player, instance, objective, complete, changed, reason, "zombie-death"
+                )
             end
         end
     end
@@ -186,21 +238,20 @@ function QuestService.UpdatePlayer(player)
     local store = getStore(player, false)
     if not store then return 0 end
 
-    local changed = 0
+    local completed = 0
     for _, instance in pairs(store.byInstanceId) do
         if instance.state == "active" then
             local objective = QuestInstance.GetCurrentObjective(instance)
-            if objective and objective.type == "ReachArea" then
-                local handler = QuestInstance.GetHandler(objective.type)
-                if handler and handler.Evaluate and handler.Evaluate(player, objective) then
-                    if completeCurrentObjective(player, instance, "reach_area") then
-                        changed = changed + 1
-                    end
-                end
+            local handler = objective and QuestInstance.GetHandler(objective.type) or nil
+            if handler and handler.EvaluateTick then
+                local complete, changed, reason = handler.EvaluateTick(player, objective)
+                completed = completed + applyHandlerResult(
+                    player, instance, objective, complete, changed, reason, "tick"
+                )
             end
         end
     end
-    return changed
+    return completed
 end
 
 function QuestService.OnPlayerDeath(player)
