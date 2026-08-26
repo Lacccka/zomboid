@@ -219,6 +219,7 @@ module Base
         ModelWeaponPart = Gunpart.AR15_slience Gunpart.AR15_slience Canon Canon,
         ModelWeaponPart = Gunpart.558holo Gunpart.558holo Scope Scope,
         ModelWeaponPart = Gunpart.ar15Stock Gunpart.ar15Stock Stock Stock,
+        ModelWeaponPart = Gunpart.MFS_M203 Gunpart.MFS_M203 Stool Stool,
     
     }
     model MK12_cat

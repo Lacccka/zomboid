@@ -210,6 +210,7 @@ item Saiga12_cat
         ModelWeaponPart = Gunpart.DBAL77Laser_cat Gunpart.DBAL77Laser_cat Laser Laser,
         ModelWeaponPart = Gunpart.Harris_Open1 Gunpart.Harris_Open1 Stool Stool,
         ModelWeaponPart = Gunpart.XM157_cat Gunpart.XM157_cat Scope Scope,
+        ModelWeaponPart = Gunpart.MFS_GP25 Gunpart.MFS_GP25 Stool Stool,
     }   
     model Saiga12_cat
 	{

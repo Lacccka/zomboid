@@ -276,7 +276,9 @@
     "Base.bolt": "Standard Crossbow Bolt",
     "Base.firebolt": "Incendiary Crossbow Bolt",
     "Base.boombolt": "Explosive Crossbow Bolt",
-    "Base.GrenadeAmmo": "Underbarrel Grenade Round",
+    "Base.GrenadeAmmo": "40mm Grenade Round",
+    "Base.MFS_MTL30_cat": "FN MTL-30 Grenade Launcher",
+    "MFS_Explosives.40mmExplosives": "40mm Warhead",
     "Base.RPGRocket": "RPG Rocket Projectile",
     "Base.308Bullets": "7.62×51mm NATO Ammo",
     "Base.308Box": "Boxed 7.62×51mm Ammo",
@@ -605,5 +607,9 @@
     "Gunpart.Clip_M14_Albedo":"M14 Albedo 20 round Magazine (decoration part)",
     "Base.MK47Clip": "7.62×51mm 60-Round Coupled Magazine",
     "Base.RPGClip": "15-Round Grenade Magazine",
-    "Base.GrenadeAmmoClip": "5-Round Grenade Magazine"
+    "Base.GrenadeAmmoClip": "5-Round 40mm Grenade Magazine",
+    "Base.MFS_M203": "MFS M203 Grenade Launcher Mode",
+    "Gunpart.MFS_M203": "MFS M203 Grenade Launcher (New)",
+    "Base.MFS_GP25": "MFS GP25 Grenade Launcher Mode",
+    "Gunpart.MFS_GP25": "MFS GP25 Grenade Launcher (New)"
 }

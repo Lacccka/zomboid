@@ -227,6 +227,7 @@ module Base
         ModelWeaponPart = Gunpart.ar15_ddStock Gunpart.ar15_ddStock Stock Stock,
         ModelWeaponPart = Gunpart.AKS74U_cat22 Gunpart.AKS74U_cat22,
         ModelWeaponPart = Gunpart.AKS74U_cat11 Gunpart.AKS74U_cat11,
+        ModelWeaponPart = Gunpart.MFS_GP25 Gunpart.MFS_GP25 Stool Stool,
     }
     model AKS74U_cat
     {

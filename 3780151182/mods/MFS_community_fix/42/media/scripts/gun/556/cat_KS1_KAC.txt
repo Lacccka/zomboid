@@ -229,6 +229,7 @@ module Base
         ModelWeaponPart = Gunpart.558holo Gunpart.558holo Scope Scope,
         ModelWeaponPart = Gunpart.ar15Stock Gunpart.ar15Stock Stock Stock,
         ModelWeaponPart = Gunpart.ar15_ddStock Gunpart.ar15_ddStock Stock Stock,
+        ModelWeaponPart = Gunpart.MFS_M203 Gunpart.MFS_M203 Stool Stool,
     }   
     model KS1_KAC_cat
 	{

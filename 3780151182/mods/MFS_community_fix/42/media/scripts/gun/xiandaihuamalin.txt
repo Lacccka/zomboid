@@ -67,7 +67,7 @@ module Base
         BreakSound  =   MSR700Break,
         TwoHandWeapon = TRUE,
         MetalValue = 45,
-        AmmoBox = Bullets45Box,
+        AmmoBox = Bullets44Box,
         MaxAmmo = 13,
 		EquipSound = MSR700Equip,
 		UnequipSound = MSR700UnEquip,

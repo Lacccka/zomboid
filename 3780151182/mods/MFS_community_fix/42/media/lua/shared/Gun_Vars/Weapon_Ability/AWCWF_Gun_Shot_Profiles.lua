@@ -3407,6 +3407,24 @@ AWCWF_GunShotProfiles.M1918_cat = {
     fallback = "GunShot"
 }
 
+-- Rebuilt 40 mm launcher. Shot_40mm is a complete, single-layer report, so it
+-- must not be combined with the rifle core/mechanical/distance layer sets.
+AWCWF_GunShotProfiles.MFS_MTL30_cat = {
+    triggerLayers = {},
+    normalLayers = {"Shot_40mm"},
+    suppressorLayers = {"Shot_40mm"},
+    fallback = "Shot_40mm"
+}
+
+-- Phase 6 URG-S/M203 pseudo launcher. Use the same already-tested complete
+-- 40 mm report as the standalone launcher; do not add rifle layers to it.
+AWCWF_GunShotProfiles.MFS_M203 = {
+    triggerLayers = {},
+    normalLayers = {"Shot_40mm"},
+    suppressorLayers = {"Shot_40mm"},
+    fallback = "Shot_40mm"
+}
+
 AWCWF_GunShotProfiles.XXXX = {
     triggerLayers = {"AW_0000_Fire_FCG"},
     normalLayers = {"AW_0000_Fire_Core", "AW_0000_Fire_Mech", "AW_0000_Fire_Dist",

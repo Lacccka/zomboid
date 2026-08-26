@@ -205,6 +205,7 @@ module Base
         ModelWeaponPart = Gunpart.x8Scope Gunpart.x8Scope Scope Scope,
         ModelWeaponPart = Gunpart.ar15_ddStock Gunpart.ar15_ddStock Stock Stock,
         ModelWeaponPart = Gunpart.ar15Stock Gunpart.ar15Stock Stock Stock,
+        ModelWeaponPart = Gunpart.MFS_M203 Gunpart.MFS_M203 Stool Stool,
     }
     model Christine45_cat
     {

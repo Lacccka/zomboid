@@ -1,0 +1,125 @@
+module Base
+{
+    item MTL30_cat
+    {
+        Tags = base:hasmetal;base:firearm,
+        DisplayCategory = Weapon,
+        ImpactSound        =        null,
+        MinSightRange = 2,
+        MaxSightRange = 20.0,        
+        MaxRange        =        30,
+        WeaponSprite        =        MTL30_cat,
+        SoundVolume        =        35,
+        MinAngle        =        0.90,
+        ItemType = base:weapon,
+        MinimumSwingTime        =        0.5,
+        ToHitModifier        =        1.5,
+        NPCSoundBoost        =        1.5,
+        KnockBackOnNoDeath        =        TRUE,
+        Ranged        =        TRUE,
+        SwingAmountBeforeImpact        =        0,
+        ProjectileCount        =        1,
+        ConditionLowerChanceOneIn        =        126,
+        Weight        =        7,
+        SplatNumber        =        3,
+        PushBackMod        =        0.3,
+        SubCategory        =        Firearm,
+        ConditionMax        =        25,
+        ShareDamage        =        FALSE,
+        MaxHitCount        =        0,
+        PiercingBullets = TRUE,
+        IsAimedFirearm        =        TRUE,
+        DoorDamage        =        0,
+        UseEndurance        =        FALSE,
+        SwingAnim        =        Rifle,
+        DisplayName        =        MTL30_cat,
+        MinRange        =        0.0,
+        SwingTime        =        0.7,
+        MultipleHitConditionAffected        =        FALSE,
+        BringToBearSound = MSR700BringToBear,
+        SwingSound        =        M82_cat,
+        HitSound = BulletHitBody,
+        ClickSound = M16Jam,
+        SoundRadius        =        60,
+        MinDamage        =        0,
+        MaxDamage        =        0,
+        SplatSize        =        3,
+        KnockdownMod        =        1,
+        SplatBloodOnNoDeath        =        TRUE,
+        Icon        =        1_MTL30_cat,
+        RunAnim        =        Run_Weapon2,
+        IdleAnim        =        Idle_Weapon2,
+        CriticalChance = 0,
+        CritDmgMultiplier = 0,
+        AimingPerkCritModifier = 2,
+        HitChance = 80,
+        AimingPerkHitChanceModifier = 2,
+        AimingPerkMinAngleModifier = 0,
+        AimingPerkRangeModifier = 0,
+        RecoilDelay = 30,
+        SoundGain = 2,
+        ReloadTime = 60,
+        AimingTime = 70,
+        RequiresEquippedBothHands = TRUE,
+        BreakSound  =   MSR700Break,
+        TwoHandWeapon = TRUE,
+        MetalValue = 45,
+        AmmoBox = Bullets50Box,
+        MaxAmmo = 5,
+        EquipSound = MSR700Equip,
+        UnequipSound = MSR700UnEquip,
+        InsertAmmoSound = MSR700InsertAmmo,
+        EjectAmmoSound = MSR700EjectAmmo,
+        InsertAmmoStartSound = MSR700InsertAmmoStart,
+        InsertAmmoStopSound = MSR700InsertAmmoStop,
+        EjectAmmoStartSound = MSR700EjectAmmoStart,
+        EjectAmmoStopSound = MSR700EjectAmmoStop,
+        ShellFallSound = MSR700CartridgeFall,
+        RackSound = M82_cat1,
+        MagazineType = Base.GrenadeAmmoClip,
+        AmmoType = base:GrenadeAmmo,
+        WeaponReloadType = boltaction,
+        JamGunChance = 0,
+        MuzzleFlashModelKey = muzzle_flash_assault_rifle,
+        AttachmentType = Rifle,
+        StopPower = 2,
+        PiercingBullets = False,
+      
+    }
+    model MTL30_cat
+        {
+        mesh = MTL30_cat,
+            texture = GunTexture/MTL30_cat,
+        cullface = None,
+    attachment muzzle
+        {
+        offset = 0 0.84 0.019,
+        rotate = 90.0000 180.0000 0.0000,
+        }
+       attachment Canon
+        {
+            offset = 0 0.0 0.00,
+            rotate = 0.0 0.0 0.0,
+        }
+	attachment Scope
+        {
+            offset = 0 0.02 0.01,
+            rotate = 0.0 0.0 0.0,
+        }
+	attachment Stool
+        {
+            offset = 0 0.05 -0.015,
+            rotate = 0.0 0.0 0.0,
+        }
+	attachment Grip
+        {
+            offset = 0 0.01 -0.01,
+            rotate = 0.0 0.0 0.0,
+        }
+	attachment Light
+        {
+            offset = 0 0.02 -0.01,
+            rotate = 0.0 0.0 0.0,
+        }
+    }
+}

@@ -232,7 +232,13 @@ function AWCWF_Attach.Apply_Effect(player, weapon, froceUpdate)
         end
 
     end
-    if handweapon and not AWCWF_AdditionalParts.GetWeaponModelInstance(player, handweapon) then
+    -- Reflection access is blocked in non-debug Build 42, so the borrowed host
+    -- model cannot be found for an M203 pseudo item. Its validated WeaponSprite
+    -- and copied visual map are sufficient for the existing composite renderer.
+    local isUnderbarrelVisualProxy = handweapon
+        and handweapon:getModData().MFSUnderbarrelVisualProxy == true
+    if handweapon and not isUnderbarrelVisualProxy
+        and not AWCWF_AdditionalParts.GetWeaponModelInstance(player, handweapon) then
         for i, v in pairs(LocalAttachItems) do
             if v:getModData().ishandweapon then
                 player:removeAttachedItem(v);

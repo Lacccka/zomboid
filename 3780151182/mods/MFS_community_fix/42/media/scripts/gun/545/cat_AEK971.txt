@@ -208,6 +208,7 @@ module Base
         ModelWeaponPart = Gunpart.HAMR_cat Gunpart.HAMR_cat Scope Scope,
         ModelWeaponPart = Gunpart.WB_xie Gunpart.WB_xie Grip Grip,
         ModelWeaponPart = Gunpart.Harris_Open1 Gunpart.Harris_Open1 Stool Stool,
+        ModelWeaponPart = Gunpart.MFS_GP25 Gunpart.MFS_GP25 Stool Stool,
     }   
     model AEK971_cat
 	{

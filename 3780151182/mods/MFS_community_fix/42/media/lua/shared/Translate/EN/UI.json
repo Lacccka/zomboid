@@ -1,6 +1,7 @@
 {
     "UI_optionscreen_binding_KeySetting_AWCWF": "Modern Firearm System Key Settings",
     "UI_optionscreen_binding_LauchGrenadelauncherat": "Launch Attached Device",
+    "UI_optionscreen_binding_ToggleGrenadeLauncherMode": "Toggle Grenade Launcher Mode",
     "UI_optionscreen_binding_OpenWindownCat": "Open Weapon Console",
     "UI_optionscreen_binding_GunLineDown": "Switch Tactical Stance",
     "UI_optionscreen_binding_SwtichLightSet": "Toggle Light Mode",
@@ -21,5 +22,11 @@
     "UI_options_AWCWF_weapon_shot_volume": "Weapon Shot Volume",
     "UI_options_AWCWF_weapon_shot_volume_tooltip": "Adjust MFS gunshot volume. 0 mutes it, 1 is the default, and 2 is double volume.",
     "UI_options_AWCWF_weapon_reload_volume": "Weapon Reload Volume",
-    "UI_options_AWCWF_weapon_reload_volume_tooltip": "Adjust MFS reload volume. 0 mutes it, 1 is the default, and 2 is double volume."
+    "UI_options_AWCWF_weapon_reload_volume_tooltip": "Adjust MFS reload volume. 0 mutes it, 1 is the default, and 2 is double volume.",
+    "UI_options_AWCWF_section_handgun_grip": "Handgun Grip Position",
+    "UI_options_AWCWF_desc_handgun_grip": "MFS pistol models were built around a body replacer with smaller hands, so on the default game body the pistol can sit slightly behind the hand. These settings correct that. Rifles are not affected.",
+    "UI_options_AWCWF_handgun_grip_body_replacer": "VSGirlBody Installed",
+    "UI_options_AWCWF_handgun_grip_body_replacer_tooltip": "Tick this if you use VSGirlBody mod. VSGirlBody then use the pistol position the models were originally built for, Leave unticked if you use the default game body.",
+    "UI_options_AWCWF_handgun_grip_offset": "Handgun Grip Offset",
+    "UI_options_AWCWF_handgun_grip_offset_tooltip": "How far forward the held pistol sits in the hand. 0.03 suits the default game body. Set 0 to use the model position unchanged. Handguns only."
 }

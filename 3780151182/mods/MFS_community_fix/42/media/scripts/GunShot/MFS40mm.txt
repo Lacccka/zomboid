@@ -1,0 +1,30 @@
+module Base
+{
+    sound Shot_40mm
+    {
+        category = AW_Weapon_Shot,
+        is3D = true,
+        clip
+        {
+            file = media/sound/Shot_40mm.wav,
+            distanceMin = 0,
+            distanceMax = 160,
+            reverbFactor = 0.15,
+            volume = 1.0,
+        }
+    }
+
+    sound M203_Reload
+    {
+        category = Item,
+        is3D = true,
+        maxInstancesPerEmitter = 1,
+        clip
+        {
+            file = media/sound/M203_reload.wav,
+            distanceMin = 0,
+            distanceMax = 20,
+            volume = 0.8,
+        }
+    }
+}

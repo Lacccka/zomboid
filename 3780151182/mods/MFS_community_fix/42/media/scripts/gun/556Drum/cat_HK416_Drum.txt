@@ -224,6 +224,7 @@ module Base
         ModelWeaponPart = Gunpart.ar15_ddStock Gunpart.ar15_ddStock Stock Stock,
         ModelWeaponPart = Gunpart.HK416_cat22 Gunpart.HK416_cat22,
         ModelWeaponPart = Gunpart.HK416_cat11 Gunpart.HK416_cat11,
+        ModelWeaponPart = Gunpart.MFS_M203 Gunpart.MFS_M203 Stool Stool,
     }
     model HK416_cat_Drum
     {

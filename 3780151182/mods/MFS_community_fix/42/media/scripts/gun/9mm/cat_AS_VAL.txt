@@ -202,6 +202,7 @@ module Base
         ModelWeaponPart = Gunpart.M26_cat_empty Gunpart.M26_cat_empty,
         ModelWeaponPart = Gunpart.558holo Gunpart.558holo Scope Scope,
         ModelWeaponPart = Gunpart.ar15Stock Gunpart.ar15Stock Stock Stock,
+        ModelWeaponPart = Gunpart.MFS_M203 Gunpart.MFS_M203 Stool Stool,
     }
     model AS_VAL_cat
     {

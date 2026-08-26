@@ -208,6 +208,7 @@ module Base
         ModelWeaponPart = Gunpart.AR15_slience Gunpart.AR15_slience Canon Canon,
         ModelWeaponPart = Gunpart.558holo Gunpart.558holo Scope Scope,
         ModelWeaponPart = Gunpart.ar15Stock Gunpart.ar15Stock Stock Stock,
+        ModelWeaponPart = Gunpart.MFS_GP25 Gunpart.MFS_GP25 Stool Stool,
     
     }
     model VSSM_cat_Drum

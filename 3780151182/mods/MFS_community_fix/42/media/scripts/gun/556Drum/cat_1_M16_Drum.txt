@@ -207,6 +207,7 @@ module Base
         ModelWeaponPart = Gunpart.VP09 Gunpart.VP09 Canon Canon,
         ModelWeaponPart = Gunpart.FortisNitride_RED2 Gunpart.FortisNitride_RED2 Canon Canon,
         ModelWeaponPart = Gunpart.GunLight Gunpart.GunLight Light Light, 
+        ModelWeaponPart = Gunpart.MFS_M203 Gunpart.MFS_M203 Stool Stool,
     
     }
     model AssaultRifle_Drum

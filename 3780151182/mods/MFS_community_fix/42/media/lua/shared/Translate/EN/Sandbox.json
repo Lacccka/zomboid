@@ -151,5 +151,6 @@
     "Sandbox_ModernFirearmsSystemSandboxGun_L92_Carbine_Spawn": "Vanilla L92 Carbine Spawn Chance",
     "Sandbox_ModernFirearmsSystemSandboxGun_L94_Rifle_Spawn": "Vanilla L94 Rifle Spawn Chance",
     "Sandbox_ModernFirearmsSystemSandboxGun_TrapperCarbine_Spawn": "Vanilla Trapper Carbine Spawn Chance",
-    "Sandbox_ModernFirearmsSystemSandboxGun_UTS15_cat_Spawn": "UTS-15 Bullpup Shotgun Spawn Chance"
+    "Sandbox_ModernFirearmsSystemSandboxGun_UTS15_cat_Spawn": "UTS-15 Bullpup Shotgun Spawn Chance",
+    "Sandbox_ModernFirearmsSystemSandboxGun_MFS_MTL30_cat_Spawn": "FN MTL-30 Grenade Launcher Spawn"
 }

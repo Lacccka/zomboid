@@ -230,6 +230,7 @@ module Base
         ModelWeaponPart = Gunpart.AAC_Silencer_2 Gunpart.AAC_Silencer_2 Canon Canon,
         ModelWeaponPart = Gunpart.XY_M4MK18 Gunpart.XY_M4MK18 Canon Canon,
         ModelWeaponPart = Gunpart.XY_SP Gunpart.XY_SP Canon Canon,
+        ModelWeaponPart = Gunpart.MFS_GP25 Gunpart.MFS_GP25 Stool Stool,
     }   
     model Type81_cat
 	{

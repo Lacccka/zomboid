@@ -13,6 +13,13 @@ bind.value = "LauchGrenadelauncherat";
 bind.key = Keyboard.KEY_G;
 table.insert(keyBinding, bind);
 
+-- Rebuilt registry-based underbarrel mode. Keep the legacy launch binding above
+-- until the original M203/GP25/M28 implementation is retired.
+bind = {};
+bind.value = "ToggleGrenadeLauncherMode";
+bind.key = Keyboard.KEY_G;
+table.insert(keyBinding, bind);
+
 bind = {};
 bind.value = "OpenWindownCat";
 bind.key = Keyboard.KEY_T;

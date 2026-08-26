@@ -1,8 +1,10 @@
+require "MFSUnderbarrelRegistry"
+
 MFSInspectFix = MFSInspectFix or {}
 
 local Fix = MFSInspectFix
 
-Fix.VERSION = "1.3.0"
+Fix.VERSION = "1.3.1-underbarrel-guard"
 Fix.DEFAULT_X = 100
 Fix.DEFAULT_Y = 100
 Fix.MIN_VISIBLE_WIDTH = 200
@@ -79,6 +81,15 @@ end
 
 function Fix.isInspectableWeapon(weapon)
     if not weapon or not instanceof(weapon, "HandWeapon") then
+        return false
+    end
+    -- Registered launcher-mode weapons are held-only mechanical proxies. They
+    -- borrow their host rifle's sprite and visual parts but are not physical
+    -- attachment-editing targets. Guard the shared predicate because this file
+    -- installs the final T-key handler after risky_inspect_core.lua; guarding
+    -- only riskyUI.inspectOnKey is therefore insufficient. This also protects
+    -- direct Fix.open calls, window updates and riskyInspectAction.
+    if MFSUnderbarrelRegistry.isPseudo(weapon) then
         return false
     end
     return weapon:IsWeapon() and weapon:isRanged()

@@ -210,6 +210,7 @@ CyclicRateMultiplier = 1.6,
         ModelWeaponPart = Gunpart.AAC_Silencer_2 Gunpart.AAC_Silencer_2 Canon Canon,
         ModelWeaponPart = Gunpart.XY_M4MK18 Gunpart.XY_M4MK18 Canon Canon,
         ModelWeaponPart = Gunpart.XY_SP Gunpart.XY_SP Canon Canon,
+        ModelWeaponPart = Gunpart.MFS_M203 Gunpart.MFS_M203 Stool Stool,
     }   
     model MCX_cat_Drum
 	{

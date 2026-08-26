@@ -216,6 +216,7 @@ module Base
         ModelWeaponPart = Gunpart.Harris_Open1 Gunpart.Harris_Open1 Stool Stool,
         ModelWeaponPart = Gunpart.M203_cat Gunpart.M203_cat Stool Stool,
         ModelWeaponPart = Gunpart.M203_cat_empty Gunpart.M203_cat_empty Stool Stool,
+        ModelWeaponPart = Gunpart.MFS_M203 Gunpart.MFS_M203 Stool Stool,
         ModelWeaponPart = Gunpart.M26_cat Gunpart.M26_cat,
         ModelWeaponPart = Gunpart.M26_cat_empty Gunpart.M26_cat_empty,
         ModelWeaponPart = Gunpart.bayonet_cat Gunpart.bayonet_cat,

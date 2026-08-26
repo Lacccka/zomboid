@@ -1,7 +1,9 @@
 {
     "Base.M240BeltBox": "M240 7.62×51mm 100 发弹链箱",
     "Base.HuntingRifle": "雷明顿 MSR",
-    "Base.GrenadeAmmo": "下挂式榴弹弹药",
+    "Base.GrenadeAmmo": "40毫米榴弹",
+    "Base.MFS_MTL30_cat": "FN MTL-30 榴弹发射器",
+    "MFS_Explosives.40mmExplosives": "40毫米弹头",
     "Base.part1_cat": "枪械弹匣零件",
     "Base.part2_cat": "枪械金属零件",
     "Base.part3_cat": "枪械聚合物零件",
@@ -407,5 +409,7 @@
     "Base.AA12Clip": "AA12 20 发霰弹弹鼓",
     "Base.MK47Clip": "7.62×51mm 60 发并联弹匣",
     "Base.RPGClip": "15 发榴弹弹匣",
-    "Base.GrenadeAmmoClip": "5 发榴弹弹匣"
+    "Base.GrenadeAmmoClip": "5 发 40毫米榴弹弹匣",
+    "Base.MFS_M203": "MFS M203 榴弹发射器模式",
+    "Gunpart.MFS_M203": "MFS M203 榴弹发射器（测试版）"
 }

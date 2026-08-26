@@ -1,5 +1,7 @@
+require "MFSUnderbarrelRegistry"
+
 MFSPerformanceSafety = MFSPerformanceSafety or {}
-MFSPerformanceSafety.showMagazineOverride = "1.3.1"
+MFSPerformanceSafety.showMagazineOverride = "1.3.2-underbarrel-proxy-exclusion"
 if MFSPerformanceSafety.showMagazineCallback then
     Events.OnPlayerUpdate.Remove(MFSPerformanceSafety.showMagazineCallback)
 end
@@ -37,6 +39,17 @@ local function showMagazine(playerObj)
 
     local weapon = playerObj:getPrimaryHandItem()
     if not weapon or not weapon:IsWeapon() or not weapon:isRanged() then
+        playerState[playerObj] = nil
+        return
+    end
+
+    -- Underbarrel pseudos are chamberless loose-round launchers, so their
+    -- isContainsClip() correctly remains false. Their native Clip weapon part
+    -- is not the launcher's ammunition container: it is a visual clone of the
+    -- linked host rifle's magazine. Applying the normal detachable-magazine
+    -- visibility rule would clear that clone after a shot and it could never be
+    -- restored by a 40 mm reload. The maintained proxy catalog owns this part.
+    if MFSUnderbarrelRegistry.isPseudo(weapon) then
         playerState[playerObj] = nil
         return
     end

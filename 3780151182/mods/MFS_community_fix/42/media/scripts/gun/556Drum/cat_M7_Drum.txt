@@ -226,6 +226,7 @@ module Base
         ModelWeaponPart = Gunpart.QT_sr Gunpart.QT_sr Stock Stock,
         ModelWeaponPart = Gunpart.M7_cat22 Gunpart.M7_cat22,
         ModelWeaponPart = Gunpart.M7_cat11 Gunpart.M7_cat11,
+        ModelWeaponPart = Gunpart.MFS_M203 Gunpart.MFS_M203 Stool Stool,
     }
     model M7_cat_Drum
     {

@@ -28,7 +28,8 @@ module Gunpart{
         	    texture = GunTexture/MZ_RMR,
             }	
 	        	*/
-	        	item MZ_paoduijing
+
+	    item MZ_paoduijing
             {
                 StaticModel = MZ_paoduijing,
                 DisplayCategory = WeaponPart,
@@ -77,7 +78,9 @@ AMB17_cat_Drum;Groza_cat;Groza_cat_Drum;M1887_cat;M870_cat;TTI_Benelli_M4_cat;4g
             cullface = None,
             mesh = 主瞄具/PEScope_cat,
         	    texture = GunTexture/PEScope_cat,
-            }	item PSO_1_cat
+            }	
+	    
+ 	    item PSO_1_cat
             {
                 StaticModel = PSO_1_cat,
                 DisplayCategory = WeaponPart,
@@ -100,7 +103,9 @@ AMB17_cat_Drum;Groza_cat;Groza_cat_Drum;M1887_cat;M870_cat;TTI_Benelli_M4_cat;4g
             cullface = None,
             mesh = 主瞄具/PSO_1_cat,
         	    texture = GunTexture/PSO_1_cat,
-            }	item Unertl8X_cat
+            }	
+
+	    item Unertl8X_cat
             {
                 StaticModel = Unertl8X_cat,
                 DisplayCategory = WeaponPart,
@@ -123,7 +128,8 @@ AMB17_cat_Drum;Groza_cat;Groza_cat_Drum;M1887_cat;M870_cat;TTI_Benelli_M4_cat;4g
             cullface = None,
             mesh = 主瞄具/Unertl8X_cat,
         	    texture = GunTexture/Unertl8X_cat,
-            }	item HAMR_cat
+            }	
+	    item HAMR_cat
             {
                 StaticModel = HAMR_cat,
                 DisplayCategory = WeaponPart,
@@ -284,7 +290,7 @@ AMB17_cat_Drum;Groza_cat;Groza_cat_Drum;M1887_cat;M870_cat;TTI_Benelli_M4_cat;4g
             mesh = 主瞄具/ATACR,
         	    texture = GunTexture/ATACR,
             }	
-item WaltherMRS_1
+	    item WaltherMRS_1
             {
                 StaticModel = WaltherMRS_1,
                 DisplayCategory = WeaponPart,
@@ -306,7 +312,9 @@ item WaltherMRS_1
             cullface = None,
             mesh = 主瞄具/WaltherMRS_1,
         	    texture = GunTexture/WaltherMRS_1,
-            }item MZ_UH1
+            }
+	    
+            item MZ_UH1
             {
                 StaticModel = MZ_UH1,
                 DisplayCategory = WeaponPart,
@@ -390,7 +398,7 @@ item WaltherMRS_1
          }
 
 
-item MZ_LTHY
+	 item MZ_LTHY
             {
                 StaticModel = MZ_LTHY,
                 DisplayCategory = WeaponPart,
@@ -440,7 +448,8 @@ item MZ_LTHY
             cullface = None,
             mesh = 主瞄具/CQBR_ACOG_RU,
         	    texture = GunTexture/CQBR_ACOG_RU,
-            }	item Carryhandle
+            }	
+	    item Carryhandle
             {
                 StaticModel = Carryhandle,
                 DisplayCategory = WeaponPart,
@@ -487,7 +496,8 @@ item MZ_LTHY
             cullface = None,
             mesh = 主瞄具/558holo,
         	    texture = GunTexture/558holo,
-            }item MZ_HCO
+            }
+	    item MZ_HCO
             {
                 StaticModel = MZ_HCO,
                 DisplayCategory = WeaponPart,
@@ -510,7 +520,9 @@ item MZ_LTHY
             cullface = None,
             mesh = 主瞄具/MZ_HCO,
         	    texture = GunTexture/MZ_HCO,
-            }item XM157_cat
+            }
+	    
+		item XM157_cat
             {
                 StaticModel = XM157_cat,
                 DisplayCategory = WeaponPart,

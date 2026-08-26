@@ -51,7 +51,7 @@ module Gunpart{
                 ItemType = base:weaponpart,                DisplayName = M203_cat,
                 Icon = M203_cat,
                 Weight = 0.2,
-                MountOn = Christine45_cat;HK416_cat;HK416_cat_Drum;AS_VAL_MOD4_cat;AS_VAL_MOD4_cat_Drum;AS_VAL_cat;AS_VAL_cat_Drum;AS_VAL_MOD4_cat_Drum;NoveskeN4_cat;NoveskeN4_cat_Drum;KS1_KAC_cat;KS1_KAC_cat_Drum;M4A1S_cat;M4A1S_cat_Drum;M4Mk18_cat;M4Mk18_cat_Drum;MCX_cat;MCX_cat_Drum;MK12_cat;MK12_cat_Drum;SG553_cat;SG553_cat_Drum;URG_S_cat,
+                MountOn = Christine45_cat;HK416_cat;HK416_cat_Drum;AS_VAL_MOD4_cat;AS_VAL_MOD4_cat_Drum;AS_VAL_cat;AS_VAL_cat_Drum;AS_VAL_MOD4_cat_Drum;NoveskeN4_cat;NoveskeN4_cat_Drum;KS1_KAC_cat;KS1_KAC_cat_Drum;M4A1S_cat;M4A1S_cat_Drum;M4Mk18_cat;M4Mk18_cat_Drum;MCX_cat;MCX_cat_Drum;MK12_cat;MK12_cat_Drum;SG553_cat;SG553_cat_Drum;URG_S_cat;URG_S_cat_Drum,
                 PartType = Stool,
                 WorldStaticModel = M203_cat,
         		        Tooltip = Tooltip_GunP,
@@ -62,7 +62,7 @@ module Gunpart{
                 ItemType = base:weaponpart,                DisplayName = M203_cat,
                 Icon = M203_cat,
                 Weight = 0.2,
-                MountOn = Christine45_cat;HK416_cat;HK416_cat_Drum;AS_VAL_MOD4_cat;AS_VAL_MOD4_cat_Drum;AS_VAL_cat;AS_VAL_cat_Drum;AS_VAL_MOD4_cat_Drum;NoveskeN4_cat;NoveskeN4_cat_Drum;KS1_KAC_cat;KS1_KAC_cat_Drum;M4A1S_cat;M4A1S_cat_Drum;M4Mk18_cat;M4Mk18_cat_Drum;MCX_cat;MCX_cat_Drum;MK12_cat;MK12_cat_Drum;SG553_cat;SG553_cat_Drum;URG_S_cat,
+                MountOn = Christine45_cat;HK416_cat;HK416_cat_Drum;AS_VAL_MOD4_cat;AS_VAL_MOD4_cat_Drum;AS_VAL_cat;AS_VAL_cat_Drum;AS_VAL_MOD4_cat_Drum;NoveskeN4_cat;NoveskeN4_cat_Drum;KS1_KAC_cat;KS1_KAC_cat_Drum;M4A1S_cat;M4A1S_cat_Drum;M4Mk18_cat;M4Mk18_cat_Drum;MCX_cat;MCX_cat_Drum;MK12_cat;MK12_cat_Drum;SG553_cat;SG553_cat_Drum;URG_S_cat;URG_S_cat_Drum,
                 PartType = Stool,
                 WorldStaticModel = M203_cat,
         		        Tooltip = Tooltip_GunP,
@@ -213,4 +213,42 @@ module Gunpart{
         			rotate = 90.0000 0.0000 0.0000,
         		}
             }
-        }
+            item MFS_M203
+            {
+                DisplayCategory = WeaponPart,
+                ItemType = base:weaponpart,
+                DisplayName = MFS_M203,
+                Icon = M203_cat,
+                Weight = 1.0,
+                MountOn = AssaultRifle;AssaultRifle_Drum;HK416_cat;HK416_cat_Drum;KS1_KAC_cat;KS1_KAC_cat_Drum;M4A1S_cat;M4A1S_cat_Drum;M4Mk18_cat;M4Mk18_cat_Drum;M7_cat;M7_cat_Drum;MCX_cat;MCX_cat_Drum;MK12_cat;MK12_cat_Drum;NoveskeN4_cat;NoveskeN4_cat_Drum;SAI_GRY_cat;SAI_GRY_cat_Drum;SG553_cat;SG553_cat_Drum;URG_S_cat;URG_S_cat_Drum;Christine45_cat;AS_VAL_cat;AS_VAL_cat_Drum;AS_VAL_MOD4_cat;AS_VAL_MOD4_cat_Drum,
+                PartType = Stool,
+                WorldStaticModel = M203_cat,
+                Tooltip = Tooltip_GunP,
+            }
+            model MFS_M203
+            {
+                cullface = None,
+                mesh = 下挂/M203_cat,
+                texture = GunTexture/M203_cat,
+            }
+
+	    item MFS_GP25
+            {
+                DisplayCategory = WeaponPart,
+                ItemType = base:weaponpart,                
+		DisplayName = GP25_cat,
+                Icon = GP25_cat,
+                Weight = 1.0,
+                MountOn = AEK971_cat;AEK971_cat_Drum;AK12_cat;AK12_cat_Drum;AN94_cat;AN94_cat_Drum;AKS74U_cat;AKS74U_cat_Drum;AK103_cat;AK103_cat_Drum;mk47_cat;mk47_cat_Drum;RPK16_cat;RPK16_cat_Drum;Type81_cat;Type81_cat_Drum;Saiga12_cat;origin12_cat;VSSM_cat;VSSM_cat_Drum,
+                PartType = Stool,
+                WorldStaticModel = GP25_cat,
+        	Tooltip = Tooltip_GunP,
+            }
+	    model MFS_GP25
+        	{
+        	    cullface = None,
+        	    mesh = 下挂/GP25_cat,
+        	    texture = GunTexture/GP25_cat,
+            }
+           }
+

@@ -460,6 +460,45 @@ module Base
         inputs { item 1 [Gunpart.Recoilpad_cat] mode:destroy, item 1 tags[base:screwdriver] mode:keep flags[Prop2;MayDegradeLight], }
         outputs { item 1 Base.RecoilPad, }
     }
-}
 
+    /* Save-compatibility migrations. These are free in-hand conversions, not
+       fabrication: no tool, material, skill or work surface is required. The
+       legacy loaded variants return their contained 40 mm round separately
+       because rebuilt physical launcher attachments do not store ammunition. */
+    craftRecipe MFS_Convert_Legacy_Loaded_M203
+    {
+        time = 1, timedAction = Making, AllowBatchCraft = false,
+        Tags = InHandCraft;CanBeDoneInDark,
+        category = 现代枪械系统ModernFirearmsSystem,
+        inputs { item 1 [Gunpart.M203_cat] mode:destroy, }
+        outputs { item 1 Gunpart.MFS_M203, item 1 Base.GrenadeAmmo, }
+    }
+
+    craftRecipe MFS_Convert_Legacy_Empty_M203
+    {
+        time = 1, timedAction = Making, AllowBatchCraft = false,
+        Tags = InHandCraft;CanBeDoneInDark,
+        category = 现代枪械系统ModernFirearmsSystem,
+        inputs { item 1 [Gunpart.M203_cat_empty] mode:destroy, }
+        outputs { item 1 Gunpart.MFS_M203, }
+    }
+
+    craftRecipe MFS_Convert_Legacy_Loaded_GP25
+    {
+        time = 1, timedAction = Making, AllowBatchCraft = false,
+        Tags = InHandCraft;CanBeDoneInDark,
+        category = 现代枪械系统ModernFirearmsSystem,
+        inputs { item 1 [Gunpart.GP25_cat] mode:destroy, }
+        outputs { item 1 Gunpart.MFS_GP25, item 1 Base.GrenadeAmmo, }
+    }
+
+    craftRecipe MFS_Convert_Legacy_Empty_GP25
+    {
+        time = 1, timedAction = Making, AllowBatchCraft = false,
+        Tags = InHandCraft;CanBeDoneInDark,
+        category = 现代枪械系统ModernFirearmsSystem,
+        inputs { item 1 [Gunpart.GP25_cat_empty] mode:destroy, }
+        outputs { item 1 Gunpart.MFS_GP25, }
+    }
+}
 

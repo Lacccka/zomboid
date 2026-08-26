@@ -1175,7 +1175,8 @@ module Base
             item 1 tags[base:drillmetal] mode:keep flags[MayDegradeLight],
             item 1 tags[base:file] mode:keep flags[MayDegradeLight],
         }
-        outputs { item 1 Gunpart.M203_cat_empty, }
+        /* Rebuilt launcher part has no loaded/empty physical-part state. */
+        outputs { item 1 Gunpart.MFS_M203, }
     }
 
     craftRecipe MFS_Craft_Empty_GP25_Launcher
@@ -1197,7 +1198,8 @@ module Base
             item 1 tags[base:drillmetal] mode:keep flags[MayDegradeLight],
             item 1 tags[base:file] mode:keep flags[MayDegradeLight],
         }
-        outputs { item 1 Gunpart.GP25_cat_empty, }
+        /* Rebuilt launcher part has no loaded/empty physical-part state. */
+        outputs { item 1 Gunpart.MFS_GP25, }
     }
 
 }

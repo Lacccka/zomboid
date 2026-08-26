@@ -93,6 +93,30 @@ function AWCWF_Options.Init()
     weaponReloadVolume.onChangeApply = function(_, volume)
         applyCategorySoundVolume(SOUND_CATEGORY_RELOAD, volume)
     end
+
+    -- HANDGUN GRIP OFFSET. Logic lives in MFSHandgunGripOffset.lua; this file
+    -- only owns the option page. Referenced lazily because that file loads
+    -- AFTER this one (alphabetical order) and is not defined yet at Init time.
+    options:addTitle(getText("UI_options_AWCWF_section_handgun_grip"))
+    options:addDescription(getText("UI_options_AWCWF_desc_handgun_grip"))
+
+    local bodyReplacer = options:addTickBox("handgun_grip_body_replacer",
+        getText("UI_options_AWCWF_handgun_grip_body_replacer"), false,
+        getText("UI_options_AWCWF_handgun_grip_body_replacer_tooltip"))
+
+    local gripOffset = options:addSlider("handgun_grip_offset", getText("UI_options_AWCWF_handgun_grip_offset"), 0,
+        0.08, 0.005, 0.03, getText("UI_options_AWCWF_handgun_grip_offset_tooltip"))
+
+    local function refreshHandgunGrip()
+        if MFSHandgunGripOffset then
+            MFSHandgunGripOffset.onOptionChanged()
+        end
+    end
+
+    bodyReplacer.onChange = refreshHandgunGrip
+    bodyReplacer.onChangeApply = refreshHandgunGrip
+    gripOffset.onChange = refreshHandgunGrip
+    gripOffset.onChangeApply = refreshHandgunGrip
 end
 
 AWCWF_Options.Init()

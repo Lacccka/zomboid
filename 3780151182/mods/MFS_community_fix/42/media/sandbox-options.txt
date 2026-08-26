@@ -27,3 +27,11 @@ page = ModernFirearmsSystemSandbox_Gun,
 translation = ModernFirearmsSystemSandboxGun_DoubleBarrelShotgunSawnoff_Spawn,
 
 }
+
+option ModernFirearmsSystemSandboxGun._MFS_MTL30_cat_Spawn
+{
+    type = boolean,
+    default = true,
+    page = ModernFirearmsSystemSandbox_Gun,
+    translation = ModernFirearmsSystemSandboxGun_MFS_MTL30_cat_Spawn,
+}

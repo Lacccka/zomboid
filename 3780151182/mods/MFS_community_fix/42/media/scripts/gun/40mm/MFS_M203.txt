@@ -1,0 +1,233 @@
+module Base
+{
+     /* functional M203 launcher as a gun, but should not rendered */
+    item MFS_M203
+    {
+        Tags = base:hasmetal;base:firearm,
+        DisplayCategory = Weapon,
+        ItemType = base:weapon,
+        DisplayName = MFS_M203,
+        Icon = M203_cat,
+        WeaponSprite = TempNilItem,
+        Weight = 0.0,
+
+        Ranged = TRUE,
+        IsAimedFirearm = TRUE,
+        IsAimedHandWeapon = TRUE,
+        RequiresEquippedBothHands = TRUE,
+        TwoHandWeapon = TRUE,
+        SwingAnim = Rifle,
+        RunAnim = Run_Weapon2,
+        IdleAnim = Idle_Weapon2,
+        AttachmentType = Rifle,
+
+        MinSightRange = 2,
+        MaxSightRange = 20,
+        MinRange = 0,
+        MaxRange = 30,
+        MinAngle = 0.90,
+        HitChance = 80,
+        AimingTime = 30,
+        RecoilDelay = 30,
+        ReloadTime = 45,
+        SwingTime = 0.7,
+        MinimumSwingTime = 0.5,
+
+        RangeFalloff = TRUE,
+        ProjectileCount = 0,
+        MaxHitCount = 0,
+        MinDamage = 0,
+        MaxDamage = 0,
+        DoorDamage = 0,
+        CriticalChance = 0,
+        CritDmgMultiplier = 0,
+        PushBackMod = 0,
+        KnockdownMod = 0,
+        PiercingBullets = FALSE,
+        UseEndurance = FALSE,
+
+        SwingSound = Shot_40mm,
+        ClickSound = M16Jam,
+        BringToBearSound = M16BringToBear,
+        EquipSound = M16Equip,
+        UnequipSound = M16UnEquip,
+        InsertAmmoSound = M203_Reload,
+        EjectAmmoSound = MSR700EjectAmmo,
+        RackSound = M16Rack,
+        SoundRadius = 60,
+        SoundVolume = 35,
+
+        ConditionMax = 25,
+        ConditionLowerChanceOneIn = 126,
+        JamGunChance = 0,
+        MaxAmmo = 1,
+        AmmoType = efk:cat_grenadeammo,
+        WeaponReloadType = boltactionnomag,
+        InsertAllBulletsReload = TRUE,
+        RackAfterShoot = FALSE,
+        HaveChamber = FALSE,
+        FireMode = Single,
+
+        /* =================== Allowed Stock Parts =================== */
+        /*
+         * Canonical Phase 6 catalog, audited against Part/Stock.txt.
+         * Every entry below is a real Gunpart item with PartType=Stock, a
+         * declared model, and MountOn overlap with an M203-capable host rifle.
+         * Four-token mappings keep the model on the host weapon's Stock anchor.
+         * comment out item indicate that the part is currently not in use/functional
+         */
+        ModelWeaponPart = Gunpart.ar15_ddStock Gunpart.ar15_ddStock Stock Stock,
+        ModelWeaponPart = Gunpart.ar15Stock Gunpart.ar15Stock Stock Stock,
+        ModelWeaponPart = Gunpart.CombatOps_Stock_blk Gunpart.CombatOps_Stock_blk Stock Stock,
+        ModelWeaponPart = Gunpart.HeraCQR_Stock Gunpart.HeraCQR_Stock Stock Stock,
+        ModelWeaponPart = Gunpart.MagpulStock Gunpart.MagpulStock Stock Stock,
+        ModelWeaponPart = Gunpart.Mk18Stock Gunpart.Mk18Stock Stock Stock,
+        ModelWeaponPart = Gunpart.QT_F93 Gunpart.QT_F93 Stock Stock,
+        ModelWeaponPart = Gunpart.QT_Gen3 Gunpart.QT_Gen3 Stock Stock,
+        ModelWeaponPart = Gunpart.QT_LDT416 Gunpart.QT_LDT416 Stock Stock,
+        ModelWeaponPart = Gunpart.TroyM7_Blk Gunpart.TroyM7_Blk Stock Stock,
+        ModelWeaponPart = Gunpart.VltorEmod_Blk_Stock Gunpart.VltorEmod_Blk_Stock Stock Stock,
+
+        /* =================== Allowed Scope =================== */
+        /* ModelWeaponPart = Gunpart.MZ_RMR Gunpart.MZ_RMR Scope Scope, */
+        ModelWeaponPart = Gunpart.MZ_paoduijing Gunpart.MZ_paoduijing Scope Scope, 
+	ModelWeaponPart = Gunpart.PEScope_cat Gunpart.PEScope_cat Scope Scope,
+	ModelWeaponPart = Gunpart.PSO_1_cat Gunpart.PSO_1_cat Scope Scope, 
+	ModelWeaponPart = Gunpart.Unertl8X_cat Gunpart.Unertl8X_cat Scope Scope, 
+        ModelWeaponPart = Gunpart.HAMR_cat Gunpart.HAMR_cat Scope Scope, 
+	ModelWeaponPart = Gunpart.TA11_4X_Scope Gunpart.TA11_4X_Scope Scope Scope, 
+	ModelWeaponPart = Gunpart.VortexSight Gunpart.VortexSight Scope Scope,
+	ModelWeaponPart = Gunpart.COMPM4 Gunpart.COMPM4 Scope Scope,
+	ModelWeaponPart = Gunpart.Snipex24 Gunpart.Snipex24 Scope Scope,
+	ModelWeaponPart = Gunpart.ATACR Gunpart.ATACR Scope Scope,
+	ModelWeaponPart = Gunpart.WaltherMRS_1 Gunpart.WaltherMRS_1 Scope Scope,
+	ModelWeaponPart = Gunpart.MZ_UH1 Gunpart.MZ_UH1 Scope Scope,
+	ModelWeaponPart = Gunpart.CQBR_ACOG_RU Gunpart.CQBR_ACOG_RU Scope Scope,
+	ModelWeaponPart = Gunpart.Carryhandle Gunpart.Carryhandle Scope Scope,
+	ModelWeaponPart = Gunpart.558holo Gunpart.558holo Scope Scope,
+	ModelWeaponPart = Gunpart.MZ_HCO Gunpart.MZ_HCO Scope Scope,
+	ModelWeaponPart = Gunpart.XM157_cat Gunpart.XM157_cat Scope Scope,
+
+        /* =================== Allowed Pistol Scope =================== */
+        /* This is not really needed for launcher, but keep it as an example table */
+        ModelWeaponPart = Gunpart.WaltherMRS_2 Gunpart.WaltherMRS_2 Scope Scope, 
+   	ModelWeaponPart = Gunpart.HD511a_cat Gunpart.HD511a_cat Scope Scope, 
+   	ModelWeaponPart = Gunpart.MZ_LTHY Gunpart.MZ_LTHY Scope Scope, 
+
+        /* =================== Allowed L_Scope =================== */
+	ModelWeaponPart = Gunpart.ThermalImaging_cat Gunpart.ThermalImaging_cat L_Scope L_Scope,
+	ModelWeaponPart = Gunpart.HeartbeatSensor Gunpart.HeartbeatSensor L_Scope L_Scope,
+	ModelWeaponPart = Gunpart.HeartbeatSensorPlus Gunpart.HeartbeatSensorPlus L_Scope L_Scope,
+	ModelWeaponPart = Gunpart.AmmoPD Gunpart.AmmoPD L_Scope L_Scope,
+
+        /* =================== Allowed R_Scope =================== */
+	ModelWeaponPart = Gunpart.leupold Gunpart.leupold R_Scope R_Scope,
+	ModelWeaponPart = Gunpart.G33_cat Gunpart.G33_cat R_Scope R_Scope,
+
+        /* =================== Allowed Barrel (not rendered part) =================== */
+	ModelWeaponPart = Gunpart.QG_TAB Gunpart.QG_TAB,
+	ModelWeaponPart = Gunpart.QG_CCTB Gunpart.QG_CCTB,
+	ModelWeaponPart = Gunpart.QG_CSB Gunpart.QG_CSB,
+	ModelWeaponPart = Gunpart.QG_ATSB Gunpart.QG_ATSB,
+	ModelWeaponPart = Gunpart.QG_TTAB Gunpart.QG_TTAB,
+	ModelWeaponPart = Gunpart.QG_CCB Gunpart.QG_CCB,
+	ModelWeaponPart = Gunpart.QG_CFWSB Gunpart.QG_CFWSB,
+
+        /* =================== Allowed sling/recoilpad (not rendered part) =================== */
+	ModelWeaponPart = Gunpart.Sling_cat Gunpart.Sling_cat,
+	ModelWeaponPart = Gunpart.Recoilpad_cat Gunpart.Recoilpad_cat,
+	ModelWeaponPart = Gunpart.AmmoStraps_cat Gunpart.AmmoStraps_cat,
+
+        /* =================== Allowed sling/ammo belt (has mesh but probalby not used at this time)=================== */
+	ModelWeaponPart = Gunpart.AmmoShellDish_cat Gunpart.AmmoShellDish_cat,
+
+        /* =================== Allowed Grip =================== */
+        ModelWeaponPart = Gunpart.AFG_Blk Gunpart.AFG_Blk Grip Grip,
+        ModelWeaponPart = Gunpart.ASh-12_Grip Gunpart.ASh-12_Grip Grip Grip,
+        ModelWeaponPart = Gunpart.CobraGrip Gunpart.CobraGrip Grip Grip,
+        ModelWeaponPart = Gunpart.HeraCQR_Grip Gunpart.HeraCQR_Grip Grip Grip,
+        ModelWeaponPart = Gunpart.SE-5Grip Gunpart.SE-5Grip Grip Grip,
+        ModelWeaponPart = Gunpart.TshiftGrip Gunpart.TshiftGrip Grip Grip,
+        ModelWeaponPart = Gunpart.WB_SST Gunpart.WB_SST Grip Grip,
+        ModelWeaponPart = Gunpart.WB_xie Gunpart.WB_xie Grip Grip,
+
+        /* =================== Allowed Light =================== */
+        ModelWeaponPart = Gunpart.ArmytekPredator_Bottom Gunpart.ArmytekPredator_Bottom Light Light,
+        ModelWeaponPart = Gunpart.ArmytekPredator_Bottom1 Gunpart.ArmytekPredator_Bottom1 Light Light,
+
+        /* =================== Allowed Laser =================== */
+        ModelWeaponPart = Gunpart.DBAL_9021_Bottom Gunpart.DBAL_9021_Bottom Laser Laser,
+        ModelWeaponPart = Gunpart.DBAL77Laser_cat Gunpart.DBAL77Laser_cat Laser Laser,
+        ModelWeaponPart = Gunpart.PEQ_cat Gunpart.PEQ_cat Laser Laser,
+
+        /* =================== Allowed Stool (bipod/launcher/bayonet) =================== */
+        ModelWeaponPart = Gunpart.Harris_Open Gunpart.Harris_Open Stool Stool,
+        ModelWeaponPart = Gunpart.Harris_Open1 Gunpart.Harris_Open1 Stool Stool,
+        ModelWeaponPart = Gunpart.M203_cat Gunpart.M203_cat Stool Stool,
+        ModelWeaponPart = Gunpart.M203_cat_empty Gunpart.M203_cat_empty Stool Stool,
+        ModelWeaponPart = Gunpart.GP25_cat Gunpart.GP25_cat Stool Stool,
+        ModelWeaponPart = Gunpart.GP25_cat_empty Gunpart.GP25_cat_empty Stool Stool,
+        /* ModelWeaponPart = Gunpart.M28_cat Gunpart.M28_cat Stool Stool, */
+        /* ModelWeaponPart = Gunpart.M28_cat_empty Gunpart.M28_cat_empty Stool Stool, */
+        ModelWeaponPart = Gunpart.bayonet_cat Gunpart.bayonet_cat Stool Stool,
+        ModelWeaponPart = Gunpart.bayonet1_cat Gunpart.bayonet1_cat Stool Stool,
+        ModelWeaponPart = Gunpart.bayonet2_cat Gunpart.bayonet2_cat Stool Stool,
+        ModelWeaponPart = Gunpart.MFS_M203 Gunpart.MFS_M203 Stool Stool,
+
+        /* =================== Allowed Cannon device =================== */
+        ModelWeaponPart = Gunpart.AR15_slience Gunpart.AR15_slience Canon Canon,
+        ModelWeaponPart = Gunpart.VP09 Gunpart.VP09 Canon Canon,
+        ModelWeaponPart = Gunpart.XY_baoguo Gunpart.XY_baoguo Canon Canon,
+        ModelWeaponPart = Gunpart.XY_Beowulf Gunpart.XY_Beowulf Canon Canon,
+        ModelWeaponPart = Gunpart.XY_fang Gunpart.XY_fang Canon Canon,
+        ModelWeaponPart = Gunpart.XY_kac Gunpart.XY_kac Canon Canon,
+        ModelWeaponPart = Gunpart.XY_M4MK18 Gunpart.XY_M4MK18 Canon Canon,
+        ModelWeaponPart = Gunpart.XY_OF Gunpart.XY_OF Canon Canon,
+        ModelWeaponPart = Gunpart.XY_pomen Gunpart.XY_pomen Canon Canon,
+        ModelWeaponPart = Gunpart.XY_sr_s Gunpart.XY_sr_s Canon Canon,
+        ModelWeaponPart = Gunpart.XY_yazhui Gunpart.XY_yazhui Canon Canon,
+        ModelWeaponPart = Gunpart.XY_yazhuiX Gunpart.XY_yazhuiX Canon Canon,
+
+        /* =================== Allowed cosmetic magazine (clip) =================== */
+        /* Two-token mappings preserve each magazine model's baked placement. */
+        ModelWeaponPart = Gunpart.Clip_AS_VAL_MOD4_cat Gunpart.Clip_AS_VAL_MOD4_cat,
+        ModelWeaponPart = Gunpart.Clip_AssaultRifle Gunpart.Clip_AssaultRifle,
+        ModelWeaponPart = Gunpart.Clip_HK416_cat Gunpart.Clip_HK416_cat,
+        ModelWeaponPart = Gunpart.Clip_KS1_KAC_cat Gunpart.Clip_KS1_KAC_cat,
+        ModelWeaponPart = Gunpart.Clip_M4A1S_cat Gunpart.Clip_M4A1S_cat,
+        ModelWeaponPart = Gunpart.Clip_M4Mk18_cat Gunpart.Clip_M4Mk18_cat,
+        ModelWeaponPart = Gunpart.Clip_M7_cat Gunpart.Clip_M7_cat,
+        ModelWeaponPart = Gunpart.Clip_MCX_cat Gunpart.Clip_MCX_cat,
+        ModelWeaponPart = Gunpart.Clip_MK12_cat Gunpart.Clip_MK12_cat,
+        ModelWeaponPart = Gunpart.Clip_NoveskeN4_cat Gunpart.Clip_NoveskeN4_cat,
+        ModelWeaponPart = Gunpart.Clip_SAI_GRY_cat Gunpart.Clip_SAI_GRY_cat,
+        ModelWeaponPart = Gunpart.Clip_SG553_cat Gunpart.Clip_SG553_cat,
+        ModelWeaponPart = Gunpart.Clip_URG_S_cat Gunpart.Clip_URG_S_cat,
+        ModelWeaponPart = Gunpart.Clip_Christine45_cat Gunpart.Clip_Christine45_cat,
+        ModelWeaponPart = Gunpart.Clip_AS_VAL_cat Gunpart.Clip_AS_VAL_cat,
+
+
+        /* =================== Allowed cosmetic drum =================== */
+        ModelWeaponPart = Gunpart.Clip_AS_VAL_MOD4_cat_Drum Gunpart.Clip_AS_VAL_MOD4_cat_Drum,
+        ModelWeaponPart = Gunpart.Clip_AssaultRifle_Drum Gunpart.Clip_AssaultRifle_Drum,
+        ModelWeaponPart = Gunpart.Clip_HK416_cat_Drum Gunpart.Clip_HK416_cat_Drum,
+        ModelWeaponPart = Gunpart.Clip_KS1_KAC_cat_Drum Gunpart.Clip_KS1_KAC_cat_Drum,
+        ModelWeaponPart = Gunpart.Clip_M4A1S_cat_Drum Gunpart.Clip_M4A1S_cat_Drum,
+        ModelWeaponPart = Gunpart.Clip_M4Mk18_cat_Drum Gunpart.Clip_M4Mk18_cat_Drum,
+        ModelWeaponPart = Gunpart.Clip_M7_cat_Drum Gunpart.Clip_M7_cat_Drum,
+        ModelWeaponPart = Gunpart.Clip_MCX_cat_Drum Gunpart.Clip_MCX_cat_Drum,
+        ModelWeaponPart = Gunpart.Clip_MK12_cat_Drum Gunpart.Clip_MK12_cat_Drum,
+        ModelWeaponPart = Gunpart.Clip_NoveskeN4_cat_Drum Gunpart.Clip_NoveskeN4_cat_Drum,
+        ModelWeaponPart = Gunpart.Clip_SAI_GRY_cat_Drum Gunpart.Clip_SAI_GRY_cat_Drum,
+        ModelWeaponPart = Gunpart.Clip_SG553_cat_Drum Gunpart.Clip_SG553_cat_Drum,
+        ModelWeaponPart = Gunpart.Clip_URG_S_cat_Drum Gunpart.Clip_URG_S_cat_Drum,
+        ModelWeaponPart = Gunpart.Clip_AS_VAL_cat_Drum Gunpart.Clip_AS_VAL_cat_Drum,
+    }
+
+    model MFS_M203
+    {
+        mesh = WorldItems/Nails,
+        texture = WorldItems/Nails,
+        scale = 0.01,
+    }
+}

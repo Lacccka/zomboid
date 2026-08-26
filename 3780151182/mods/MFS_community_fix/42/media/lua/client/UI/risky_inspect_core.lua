@@ -5,6 +5,7 @@
 require "ISUI/ISPanel"
 require "TimedActions/ISEquipWeaponAction"
 require "Gun_Vars/Weapon_Ability/AWCWF_Exact_RPM"
+require "MFSUnderbarrelRegistry"
 riskyInspectWindow = nil
 riskyShowPotentialAttachment = true
 riskyUI = ISPanel:derive("riskyUI")
@@ -776,6 +777,17 @@ end
 riskyUI.inspectOnKey = function(_keyPressed)
     if _keyPressed == getCore():getKey("OpenWindownCat") then
         local weapon = getPlayer():getPrimaryHandItem()
+        -- Registered underbarrel pseudos are held-only mechanical proxies, not
+        -- inspectable physical rifles. Their borrowed sprite/visual clones do
+        -- not form a valid attachment-editing target. Stop before constructing
+        -- riskyUI so T cannot enter the normal firearm inspection pipeline.
+        if MFSUnderbarrelRegistry.isPseudo(weapon) then
+            if riskyInspectWindow then
+                riskyInspectWindow:close()
+                riskyInspectWindow = nil
+            end
+            return
+        end
         if (weapon ~= nil and weapon:IsWeapon()) then
             if riskyInspectWindow == nil or not riskyInspectWindow:getIsVisible() then
                 riskyInspectWindow = riskyUI:new(getPlayer():getModData().inspectWindowPos[1],

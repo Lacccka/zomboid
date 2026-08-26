@@ -1,0 +1,23 @@
+module Base
+{
+    /*  Overlay replacement for the original MFS magazine. It still contains
+        Base.GrenadeAmmo, but now matches the rebuilt launcher's dedicated ammo
+        registry key and full weapon type.
+        NOTE: PZ script files are NOT Lua - use block comments, never '--'.  */
+    item GrenadeAmmoClip
+    {
+        DisplayCategory = Ammo,
+        CanStack = FALSE,
+        Weight = 0.5,
+        ItemType = base:normal,
+        InsertAllBulletsLoad = TRUE,
+        DisplayName = GrenadeAmmo榴弹弹匣,
+        Icon = Bullets50Clip,
+        MaxAmmo = 5,
+        AmmoType = efk:cat_grenadeammo,
+        StaticModel = GunMagazine,
+        Tags = base:gunmagazine,
+        GunType = Base.MFS_MTL30_cat,
+        WorldStaticModel = Bullets50Clip,
+    }
+}

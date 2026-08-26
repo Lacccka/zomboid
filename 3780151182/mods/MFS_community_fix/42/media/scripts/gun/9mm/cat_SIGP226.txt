@@ -242,9 +242,8 @@ attachment muzzle
         }
         attachment Scope
         {
-            offset = -0.00 -0.0 0.0,
-            rotate = 0.0000 0.0000 .0000,
-            
+            offset = -0.00 0.1 0.0,
+            rotate = 0.0000 0.0000 .0000,      
         }
         attachment Grip
         {

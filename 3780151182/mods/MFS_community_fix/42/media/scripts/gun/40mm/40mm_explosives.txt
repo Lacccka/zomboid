@@ -1,0 +1,34 @@
+module MFS_Explosives
+{
+    /*  this is the end object during the 40mm grenade hit and explosion */
+    item 40mmExplosives
+    {
+        DisplayCategory = Explosives,
+        ItemType = base:weapon,
+        Weight = 0.4,
+        Icon = M67Grenade,
+        ExplosionPower = 120,
+        ExplosionRange = 10,
+        ExplosionSound = PipeBombExplode,
+        FireStartingEnergy = 0,
+        FireStartingChance = 0,
+        MaxDamage = 0.0,
+        MaxHitcount = 0,
+        MaxRange = 30.0,
+        MinDamage = 0.0,
+        MinimumSwingtime = 1.5,
+        PhysicsObject = Base.GrenadeAmmo,
+        SwingAmountBeforeImpact = 0.1,
+        SwingAnim = Throw,
+        SwingSound = PipeBombThrow,
+        Swingtime = 1.5,
+        Tooltip = Tooltip_Trap,
+        UseSelf = true,
+        WeaponSprite = Base.GrenadeAmmo,
+        WorldStaticModel = Base.GrenadeAmmo,
+        ConditionMax = 1,
+        /*AttachmentType = GrenadeSlot,*/
+    }
+
+  
+}
