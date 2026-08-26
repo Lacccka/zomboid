@@ -11,6 +11,7 @@ local bindings = {}
 local NPC_ID_FIELD = "lccqNpcId"
 local UNLOAD_GRACE_MS = 750
 local REBIND_DISCOVERY_RANGE = 8
+local MOVEMENT_PUBLISH_DISTANCE = 0.5
 local bindingEventSink = nil
 
 local function log(message)
@@ -66,22 +67,51 @@ local function emitBindingEvent(kind, handle, reason)
     }, reason)
 end
 
+local function markPublished(handle)
+    if not handle then return end
+    handle.publishedX = handle.x
+    handle.publishedY = handle.y
+    handle.publishedZ = handle.z
+end
+
+local function movementNeedsPublish(handle)
+    if not handle or handle.x == nil or handle.y == nil or handle.z == nil then return false end
+    if handle.publishedX == nil or handle.publishedY == nil or handle.publishedZ == nil then return true end
+    if math.abs(handle.z - handle.publishedZ) >= 0.5 then return true end
+
+    local dx = handle.x - handle.publishedX
+    local dy = handle.y - handle.publishedY
+    return (dx * dx + dy * dy) >= (MOVEMENT_PUBLISH_DISTANCE * MOVEMENT_PUBLISH_DISTANCE)
+end
+
 local function makeHandle(zombie, brain, definition)
     if not brain or not definition or brain.id == nil then return nil end
 
     local anchor = anchorFor(zombie, brain)
+    local previous = bindings[definition.npcId]
+    local runtimeId = tostring(brain.id)
     local handle = {
         entity = zombie,
         brain = brain,
         npcId = definition.npcId,
-        runtimeId = tostring(brain.id),
+        runtimeId = runtimeId,
         displayNameKey = definition.displayNameKey,
         missingSinceMs = nil,
     }
+
     if anchor then
         handle.x = anchor.x
         handle.y = anchor.y
         handle.z = anchor.z
+    end
+
+    if previous and tostring(previous.runtimeId) == runtimeId then
+        handle.publishedX = previous.publishedX
+        handle.publishedY = previous.publishedY
+        handle.publishedZ = previous.publishedZ
+    end
+    if handle.publishedX == nil and anchor then
+        markPublished(handle)
     end
 
     bindings[definition.npcId] = handle
@@ -97,9 +127,6 @@ end
 local function getNPCId(brain)
     if not brain then return nil end
 
-    -- Only the namespaced field is authoritative. Older experiments wrote
-    -- npcId into Bandits' brain.key (a numeric door-key field); never restore
-    -- framework identity from that provider-owned field.
     if type(brain[NPC_ID_FIELD]) == "string"
         and LCCQF.NPCRegistry.IsRegistered(brain[NPC_ID_FIELD])
     then
@@ -114,9 +141,6 @@ function Adapter.SetBindingEventSink(sink)
 end
 
 function Adapter.RefreshRuntimeBindings()
-    -- Framework-owned persistence is intentionally deferred. Current-process
-    -- logical bindings are synchronized from NPCRuntime only; historical
-    -- Bandits clusters are not resurrected as framework NPCs at startup.
     return #LCCQF.NPCRuntime.ExportRuntimeBindings()
 end
 
@@ -329,6 +353,7 @@ local function tryRebindInactive(handle)
         if playerNearAnchor(player, handle, REBIND_DISCOVERY_RANGE) then
             local rebound = scanNearPlayer(player, definition, handle.runtimeId, REBIND_DISCOVERY_RANGE)
             if rebound then
+                markPublished(rebound)
                 emitBindingEvent("upsert", rebound, "rematerialized")
                 log("runtime rebound npcId=" .. tostring(rebound.npcId)
                     .. " runtimeId=" .. tostring(rebound.runtimeId))
@@ -361,6 +386,11 @@ function Adapter.ReconcileRuntimeBindings()
                         handle.y = anchor and anchor.y or handle.y
                         handle.z = anchor and anchor.z or handle.z
                         LCCQF.NPCRuntime.BindRuntime(handle.runtimeId, npcId, anchor)
+
+                        if movementNeedsPublish(handle) then
+                            markPublished(handle)
+                            emitBindingEvent("upsert", handle, "movement")
+                        end
                     end
                 else
                     handle.missingSinceMs = handle.missingSinceMs or now
@@ -376,8 +406,8 @@ function Adapter.ReconcileRuntimeBindings()
                     end
                 end
             end
-        elseif LCCQF.NPCRuntime.GetActiveRuntimeId(npcId) == nil then
-            if tryRebindInactive(handle) then rebound = rebound + 1 end
+        elseif tryRebindInactive(handle) then
+            rebound = rebound + 1
         end
     end
 
@@ -409,8 +439,6 @@ function Adapter.Spawn(player, definition)
         return nil, "invalid Bandits NPC definition"
     end
 
-    -- Reuse only a real framework-owned NPC that is physically near this player.
-    -- Do not let a historical far-away Bandits cluster block a fresh test spawn.
     local loaded = Adapter.ResolveForPlayer(player, definition, nil, 12)
     if loaded then return loaded, "already loaded" end
 
