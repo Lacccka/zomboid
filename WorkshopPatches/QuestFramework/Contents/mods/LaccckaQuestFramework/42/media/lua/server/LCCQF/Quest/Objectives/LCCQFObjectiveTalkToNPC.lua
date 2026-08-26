@@ -20,10 +20,20 @@ function TalkToNPC.Create(spec, context)
     }
 end
 
-function TalkToNPC.EvaluateTalk(objective, npcId)
-    if not objective or objective.state ~= "active" then return false end
-    if type(npcId) ~= "string" then return false end
-    return tostring(objective.npcId) == tostring(npcId)
+function TalkToNPC.ValidatePersisted(objective)
+    return type(objective) == "table"
+        and type(objective.npcId) == "string"
+        and objective.npcId ~= ""
+end
+
+function TalkToNPC.EvaluateTalk(player, objective, npcId)
+    if not objective or objective.state ~= "active" then return false, false end
+    if type(npcId) ~= "string" then return false, false end
+    return tostring(objective.npcId) == tostring(npcId), false, "talk_to_npc"
+end
+
+function TalkToNPC.MakeProgressView(objective)
+    return objective and objective.state == "completed" and 1 or 0, 1
 end
 
 LCCQF.QuestObjectives.TalkToNPC = TalkToNPC
