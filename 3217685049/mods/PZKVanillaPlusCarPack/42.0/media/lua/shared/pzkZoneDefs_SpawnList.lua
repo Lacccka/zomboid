@@ -311,14 +311,6 @@ if VehicleZoneDistribution then
 		VehicleZoneDistribution.construction.baseVehicleQuality = 0.43;
 		VehicleZoneDistribution.construction.chanceToSpawnSpecial = 0;
 		
-		-- racecar
-		VehicleZoneDistribution.racecar = VehicleZoneDistribution.Racing or {};
-		VehicleZoneDistribution.racecar.vehicles = VehicleZoneDistribution.racecar.vehicles or {};
-		if not VehicleZoneDistribution.racecar.spawnRate then VehicleZoneDistribution.racecar.spawnRate = 45 end
-		if not VehicleZoneDistribution.racecar.chanceToPartDamage then VehicleZoneDistribution.racecar.chanceToPartDamage = 60 end
-		if not VehicleZoneDistribution.racecar.baseVehicleQuality then VehicleZoneDistribution.racecar.baseVehicleQuality = 0.43 end
-		if not VehicleZoneDistribution.racecar.chanceToSpawnSpecial then VehicleZoneDistribution.racecar.chanceToSpawnSpecial = 0 end
-		if not VehicleZoneDistribution.racecar.chanceToSpawnNormal then VehicleZoneDistribution.racecar.chanceToSpawnNormal = 0 end
 		
 		-- hotpursuit
 		VehicleZoneDistribution.hotpursuit = VehicleZoneDistribution.hotpursuit or {};

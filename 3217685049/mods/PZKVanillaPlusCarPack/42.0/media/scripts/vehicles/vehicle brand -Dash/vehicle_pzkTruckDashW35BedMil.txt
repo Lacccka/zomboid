@@ -36,12 +36,19 @@ module Base
 		{
 			table install
 			{
-				requireInstalled = DoorRear,
+
 			}
 		}
 		template = Window/part/WindowFrontLeft,
 		template = Window/part/WindowFrontRight,
 		template = Door/part/DoorRear,
+		part DoorRear
+		{
+			table install
+			{
+
+			}
+		}
 		template = Trunk/part/TruckBed,
 		part TruckBed
 		{

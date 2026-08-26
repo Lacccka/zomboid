@@ -330,9 +330,10 @@ module Base
 		{
 			table install
 			{
-				requireInstalled = DoorRear,
+
 			}
 		}
+
 
 		template = Window/part/WindowFrontLeft,
 		template = Window/part/WindowFrontRight,

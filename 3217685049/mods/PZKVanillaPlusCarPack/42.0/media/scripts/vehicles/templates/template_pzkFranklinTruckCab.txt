@@ -359,7 +359,7 @@ module Base
 		{
 			table install
 			{
-				requireInstalled = DoorRear,
+
 			}
 		}
 

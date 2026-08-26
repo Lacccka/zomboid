@@ -328,7 +328,7 @@ module Base
 		{
 			table install
 			{
-				requireInstalled = DoorRear,
+
 			}
 		}
 
@@ -404,7 +404,7 @@ module Base
 
 			table uninstall
 			{
-				requireUninstalled = WindshieldRear,
+
 			}
 
 			hasLightsRear = false,
