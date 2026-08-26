@@ -26,6 +26,13 @@ local function requestSnapshot(player, source)
     return true
 end
 
+local function requestCurrentPlayerSnapshot(source)
+    local player = getSpecificPlayer(0)
+    if not player or player:isDead() then return false end
+    pendingResync = true
+    return requestSnapshot(player, source)
+end
+
 local function beginTransition(source)
     KnownPeople.BeginCharacterTransition(source)
     pendingResync = false
@@ -62,16 +69,23 @@ local function onServerCommand(module, command, args)
             log("known person upsert npcId=" .. tostring(args.npcId)
                 .. " revision=" .. tostring(args.knowledgeRevision))
         end
+        return
+    end
+
+    -- A completed authoritative quest may unlock new biography/history facts.
+    -- Re-request the sanitized knowledge projection instead of deriving those
+    -- facts from client quest state.
+    if command == C.COMMAND.QUEST_EVENT
+        and args.state == "completed"
+        and args.messageKey == "IGUI_LCCQF_QuestEvent_Completed"
+    then
+        requestCurrentPlayerSnapshot("quest-completed")
     end
 end
 
 local function onGameStart()
     KnownPeople.Clear()
-    local player = getSpecificPlayer(0)
-    if player and not player:isDead() then
-        pendingResync = true
-        requestSnapshot(player, "game-start")
-    end
+    requestCurrentPlayerSnapshot("game-start")
 end
 
 local function onTick()
