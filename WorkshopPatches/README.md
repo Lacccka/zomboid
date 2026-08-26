@@ -26,7 +26,9 @@ Every Workshop item must keep this warning:
 | `GridInventorySort` | `LaccckaPackFlow` | `3789630746` | Lacccka B42 Pack Flow | Targeted spatial-inventory fixes for GridInventory, including capacity-aware layouts, stable scrolling/navigation and multiplayer-safe sorting. |
 | `RussianTextFixes` | `LaccckaB4220RussianText` | `3786176120` | Lacccka B42 Russian Text Fixes | Russian localization and skill/UI text corrections. |
 
-`NPCFixes` code is stable `1.0.1`. Its source-clean transformers passed an acceptance run against the normal Workshop `Bandits2` installation on 2026-08-21. The Workshop project remains private with staging `id=0` only until a real Workshop ID and final preview are assigned.
+`NPCFixes` code is currently `1.0.3`. Version `1.0.2` is the last full runtime-accepted baseline from 2026-08-21; `1.0.3` rebases the source-clean `BanditUpdate.lua` transformer onto the Bandits Workshop source imported on 2026-08-26 and is pending the normal runtime regression pass. The Workshop project remains private with staging `id=0` only until a real Workshop ID and final preview are assigned.
+
+`RussianTextFixes` is currently `1.1.4`; the 2026-08-26 update adds the revised PZK Vanilla Plus Car Pack recipe keys and the new vehicle crafting-category translation.
 
 ## Dependency model
 
