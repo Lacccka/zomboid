@@ -3,7 +3,7 @@ LCCQF = LCCQF or {}
 local Constants = {}
 
 Constants.MODULE = "LaccckaQuestFramework"
-Constants.VERSION = "0.3.1"
+Constants.VERSION = "0.3.2"
 Constants.LOG_PREFIX = "[LCCQF]"
 
 Constants.INTERACTION_RANGE = 3.25
@@ -16,6 +16,11 @@ Constants.SESSION_TIMEOUT_MS = 15 * 60 * 1000
 Constants.COMMAND_HISTORY_TIMEOUT_MS = 30 * 60 * 1000
 Constants.MAX_IDENTIFIER_LENGTH = 96
 Constants.MAX_DIALOGUE_CHOICES = 3
+
+Constants.PERSISTENCE_TAG = "LCCQF_Persistence"
+Constants.PERSISTENCE_SCHEMA_VERSION = 1
+Constants.QUEST_PERSISTENCE_SCHEMA_VERSION = 1
+Constants.CHARACTER_ID_MODDATA_KEY = "lccqCharacterId"
 
 Constants.COMMAND = {
     REQUEST_DIALOGUE = "RequestDialogue",
