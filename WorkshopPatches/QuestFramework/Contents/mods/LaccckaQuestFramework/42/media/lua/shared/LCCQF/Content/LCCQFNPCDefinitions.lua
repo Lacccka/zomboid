@@ -25,6 +25,24 @@ local ok, err = LCCQF.NPCRegistry.Register({
             titleKey = "IGUI_LCCQF_NPC_Alexey_Fact_Met_Title",
             textKey = "IGUI_LCCQF_NPC_Alexey_Fact_Met_Text",
         },
+        {
+            id = "checkpoint_completed",
+            titleKey = "IGUI_LCCQF_NPC_Alexey_Fact_Checkpoint_Title",
+            textKey = "IGUI_LCCQF_NPC_Alexey_Fact_Checkpoint_Text",
+        },
+        {
+            id = "supply_run_completed",
+            titleKey = "IGUI_LCCQF_NPC_Alexey_Fact_Supply_Title",
+            textKey = "IGUI_LCCQF_NPC_Alexey_Fact_Supply_Text",
+        },
+    },
+    questKnowledgeFacts = {
+        [C.TEST_QUEST_ID] = {
+            completed = { "checkpoint_completed" },
+        },
+        [C.TEST_QUEST_2_ID] = {
+            completed = { "supply_run_completed" },
+        },
     },
     runtime = {
         adapter = "Bandits",
