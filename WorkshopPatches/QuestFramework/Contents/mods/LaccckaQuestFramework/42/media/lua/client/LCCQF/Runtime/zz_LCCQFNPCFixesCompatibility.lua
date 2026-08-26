@@ -3,7 +3,7 @@ require "LCCQF/LCCQFConstants"
 LCCQF = LCCQF or {}
 
 local C = LCCQF.Constants
-local EXPECTED_BANDITUPDATE_SHIM = "source-clean-coordinate-pursuit-v4"
+local EXPECTED_NPCFIXES_SEAM = "loadstring-free-predicate-bridge-v2"
 local reported = false
 
 local function log(message)
@@ -15,14 +15,15 @@ local function checkNPCFixesCompatibility()
     reported = true
 
     local actual = LCC_NPCFIXES_BANDITUPDATE_SHIM
-    if actual == EXPECTED_BANDITUPDATE_SHIM then
-        log("BanditUpdate seam compatible expected=" .. EXPECTED_BANDITUPDATE_SHIM
+    if actual == EXPECTED_NPCFIXES_SEAM then
+        log("NPCFixes scheduling seam compatible expected=" .. EXPECTED_NPCFIXES_SEAM
             .. " actual=" .. tostring(actual)
+            .. " runtimeTransform=false"
             .. " nonCombatScheduling=available")
         return
     end
 
-    log("WARNING stale-or-missing BanditUpdate seam expected=" .. EXPECTED_BANDITUPDATE_SHIM
+    log("WARNING stale-or-missing NPCFixes scheduling seam expected=" .. EXPECTED_NPCFIXES_SEAM
         .. " actual=" .. tostring(actual)
         .. " nonCombatScheduling=unavailable"
         .. " action=update-LaccckaB4220NPCFixes-client-content")
