@@ -19,6 +19,8 @@ quest_definitions="$lua_root/server/LCCQF/Content/LCCQFQuestDefinitions.lua"
 quest_registry="$lua_root/server/LCCQF/Quest/LCCQFQuestRegistry.lua"
 quest_instance="$lua_root/server/LCCQF/Quest/LCCQFQuestInstance.lua"
 quest_service="$lua_root/server/LCCQF/Quest/LCCQFQuestService.lua"
+character_identity="$lua_root/server/LCCQF/Persistence/LCCQFCharacterIdentity.lua"
+quest_persistence="$lua_root/server/LCCQF/Persistence/LCCQFQuestPersistence.lua"
 objective_reach="$lua_root/server/LCCQF/Quest/Objectives/LCCQFObjectiveReachArea.lua"
 objective_talk="$lua_root/server/LCCQF/Quest/Objectives/LCCQFObjectiveTalkToNPC.lua"
 shared_runtime="$lua_root/shared/LCCQF/Core/LCCQFNPCRuntime.lua"
@@ -48,6 +50,8 @@ for required in \
     "$quest_registry" \
     "$quest_instance" \
     "$quest_service" \
+    "$character_identity" \
+    "$quest_persistence" \
     "$objective_reach" \
     "$objective_talk" \
     "$translation_en" \
@@ -71,6 +75,8 @@ non_runtime_files=(
     "$quest_registry"
     "$quest_instance"
     "$quest_service"
+    "$character_identity"
+    "$quest_persistence"
     "$objective_reach"
     "$objective_talk"
     "$lua_root/shared/LCCQF/Core/LCCQFNPCRegistry.lua"
@@ -150,14 +156,28 @@ rg -q 'function QuestRegistry\.Register' "$quest_registry" \
     || fail "quest definition registry missing"
 rg -q 'function QuestInstance\.Create' "$quest_instance" \
     || fail "QuestInstance creation missing"
+rg -q 'function QuestInstance\.Restore' "$quest_instance" \
+    || fail "persisted QuestInstance restore path missing"
+rg -q 'ownerCharacterId' "$quest_instance" \
+    || fail "QuestInstance is not owned by durable character identity"
 rg -q 'function QuestInstance\.CompleteCurrentObjective' "$quest_instance" \
     || fail "QuestInstance objective transition missing"
+rg -q 'function QuestService\.Initialize' "$quest_service" \
+    || fail "quest persistence initialization missing"
 rg -q 'function QuestService\.Accept' "$quest_service" \
     || fail "server quest accept path missing"
 rg -q 'function QuestService\.NotifyTalkToNPC' "$quest_service" \
     || fail "TalkToNPC server transition missing"
+rg -q 'function QuestService\.OnPlayerDeath' "$quest_service" \
+    || fail "character retirement path missing"
 rg -q 'function QuestService\.Tick' "$quest_service" \
     || fail "server objective update loop missing"
+rg -q 'QuestPersistence\.GetQuestStore' "$quest_service" \
+    || fail "QuestService does not use world-backed persistence"
+rg -q 'QuestService\.Initialize' "$server_interaction" \
+    || fail "server startup does not initialize quest persistence"
+rg -q 'Events\.OnPlayerDeath|QuestService\.OnPlayerDeath' "$server_interaction" \
+    || fail "server interaction layer does not retire dead character identities"
 rg -q 'QuestService\.NotifyTalkToNPC' "$server_interaction" \
     || fail "validated dialogue interaction is not connected to TalkToNPC objectives"
 rg -q 'QuestService\.EvaluateCondition' "$server_interaction" \
@@ -184,6 +204,27 @@ rg -q 'QUEST_UPSERT' "$server_interaction" \
     || fail "server quest view synchronization missing"
 rg -q 'QuestClientState\.Apply' "$client_interaction" \
     || fail "client sanitized quest view store not connected"
+
+rg -q 'ModData\.getOrCreate\(C\.PERSISTENCE_TAG\)' "$character_identity" \
+    || fail "B42 GlobalModData-backed world persistence missing"
+rg -q 'player:getModData\(\)' "$character_identity" \
+    || fail "per-character saved modData identity anchor missing"
+rg -q 'getRandomUUID\(\)' "$character_identity" \
+    || fail "framework character UUID creation missing"
+rg -q 'retiredCharacterIds' "$character_identity" \
+    || fail "retired character identity guard missing"
+rg -q 'function CharacterIdentity\.Retire' "$character_identity" \
+    || fail "character identity retirement API missing"
+rg -q 'function QuestPersistence\.GetQuestStore' "$quest_persistence" \
+    || fail "persistent quest store API missing"
+rg -q 'QuestInstance\.Restore' "$quest_persistence" \
+    || fail "persistent quest store does not normalize restored instances"
+rg -q 'QUEST_PERSISTENCE_SCHEMA_VERSION' "$quest_persistence" \
+    || fail "versioned quest persistence schema missing"
+
+if rg -n 'getOnlineID\(' "$quest_service" "$character_identity" "$quest_persistence"; then
+    fail "transient onlineID reintroduced as durable quest/character owner"
+fi
 
 rg -q 'function QuestClientState\.AddListener' "$client_quest_state" \
     || fail "quest client state change notification missing"
@@ -212,6 +253,10 @@ if rg -n 'QuestService\.(Accept|ExecuteAction|NotifyTalkToNPC|Tick)|CompleteCurr
     fail "client-owned quest state transition reintroduced"
 fi
 
+if rg -n 'LCCQF/Persistence/' "$lua_root/client"; then
+    fail "client depends directly on server persistence internals"
+fi
+
 rg -q 'Events\.OnKeyPressed\.Add' "$client_interaction" \
     || fail "interaction input is not using OnKeyPressed"
 
@@ -223,9 +268,15 @@ if rg -n 'choice\.next|showNode\(' "$lua_root/client"; then
     fail "client-owned dialogue transition reintroduced"
 fi
 
-rg -q '^modversion=0\.3\.1$' "$mod_info" || fail "mod.info version mismatch"
-rg -q 'Constants\.VERSION = "0\.3\.1"' "$constants" \
+rg -q '^modversion=0\.3\.2$' "$mod_info" || fail "mod.info version mismatch"
+rg -q 'Constants\.VERSION = "0\.3\.2"' "$constants" \
     || fail "Lua version mismatch"
+rg -q 'Constants\.PERSISTENCE_SCHEMA_VERSION = 1' "$constants" \
+    || fail "world persistence schema constant missing"
+rg -q 'Constants\.QUEST_PERSISTENCE_SCHEMA_VERSION = 1' "$constants" \
+    || fail "quest persistence schema constant missing"
+rg -q 'Constants\.CHARACTER_ID_MODDATA_KEY' "$constants" \
+    || fail "character identity modData key missing"
 
 if rg -n 'brain\.key\s*=\s*definition\.npcId|key\s*=\s*definition\.npcId' \
     "$lua_root/server/LCCQF/Runtime"; then
