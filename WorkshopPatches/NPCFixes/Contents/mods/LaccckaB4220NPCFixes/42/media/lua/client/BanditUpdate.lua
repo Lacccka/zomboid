@@ -1,15 +1,15 @@
--- Lacccka B42 NPC Fixes: source-clean Bandits 42.20 pursuit shim.
+-- Lacccka B42 NPC Fixes: source-clean Bandits 42.20 pursuit/non-combat shim.
 --
 -- This file intentionally contains no upstream Bandits implementation. Because it
 -- occupies the BanditUpdate.lua module path, it reads the installed Bandits2
--- source directly from that mod, applies four exact B42.20 seams, then compiles
--- and executes the transformed source. Known upstream formatting revisions are
--- whitelisted explicitly; unknown fingerprints still bypass the patch instead of
--- being transformed heuristically.
+-- source directly from that mod, applies exact B42.20 seams, then compiles and
+-- executes the transformed source. Known upstream formatting revisions are
+-- whitelisted explicitly; unknown fingerprints bypass the patch instead of being
+-- transformed heuristically.
 
 local MOD_ID = "Bandits2"
 local SOURCE_PATH = "media/lua/client/BanditUpdate.lua"
-local MARKER = "source-clean-coordinate-pursuit-v3"
+local MARKER = "source-clean-coordinate-pursuit-v4"
 LCC_NPCFIXES_BANDITUPDATE_SHIM = MARKER
 
 local function readUpstreamSource()
@@ -67,6 +67,18 @@ local function replacePlainOnceAny(source, variants, replacement, label)
         .. replacement
         .. string.sub(source, matchedLast + 1), nil, matchedVariant
 end
+
+-- Runtime adapters may mark a Bandits brain non-combat. This must be consulted
+-- inside BanditUpdate itself: generic combat and zombie-victim selection run
+-- before custom ZombiePrograms, so a program cannot veto those decisions later.
+local NON_COMBAT_HELPER_ANCHOR = [[local iter3 = 0]]
+local NON_COMBAT_HELPER_REPLACEMENT = [[local iter3 = 0
+
+local function LCCIsNonCombatBandit(bandit)
+    if not bandit then return false end
+    local brain = BanditBrain.Get(bandit)
+    return type(brain) == "table" and brain.lccqNonCombat == true
+end]]
 
 local HELPER_ANCHOR = [[-- table of bandits being attacked by zombies
 local biteTab = {}
@@ -135,6 +147,64 @@ local CLOSE_RELATION_VARIANTS = {
 local CLOSE_LOCATION = [[                    if zombie and bandit then
                         LCCPathZombieToBanditLocation(zombie, banditCached)]]
 
+-- Do not let normal zombies discover a non-combat Bandits NPC as prey. Keep the
+-- entry in CacheLightB because BanditUpdate uses cache presence to decide whether
+-- the physical Bandit itself is active and may execute its custom program.
+local VICTIM_SELECTION_UNSAFE = [[    for _, bandit in pairs(banditList) do
+        local dist2 = ((bandit.x - zx) * (bandit.x - zx)) + ((bandit.y - zy) * (bandit.y - zy))
+        if dist2 < dist2max then
+            dist2max = dist2
+            banditCached = bandit
+        end
+    end]]
+
+local VICTIM_SELECTION_FILTERED = [[    for _, bandit in pairs(banditList) do
+        local candidate = BanditZombie.Cache[bandit.id]
+        if candidate and not LCCIsNonCombatBandit(candidate) then
+            local dist2 = ((bandit.x - zx) * (bandit.x - zx)) + ((bandit.y - zy) * (bandit.y - zy))
+            if dist2 < dist2max then
+                dist2max = dist2
+                banditCached = bandit
+            end
+        end
+    end]]
+
+-- Bandits generic combat runs before custom ZombiePrograms. A non-combat NPC
+-- must never enter ManageCombat, otherwise the "enemies >= friendlies + 2"
+-- branch generates a Run escape task even when brain.stationary is true.
+local COMBAT_DISPATCH_UNSAFE = [[    -- MANAGE MELEE / SHOOTING TASKS
+    if #tasks == 0  then
+        -- local ts = getTimestampMs()
+        local combatTasks = ManageCombat(bandit)]]
+
+local COMBAT_DISPATCH_FILTERED = [[    -- MANAGE MELEE / SHOOTING TASKS
+    if #tasks == 0 and not LCCIsNonCombatBandit(bandit) then
+        -- local ts = getTimestampMs()
+        local combatTasks = ManageCombat(bandit)]]
+
+-- Collision handling can also create movement/climb/breach tasks. Non-combat
+-- presentation NPCs leave those decisions to their custom program.
+local COLLISION_DISPATCH_UNSAFE = [[    -- MANAGE COLLISION TASKS
+    if #tasks == 0 then
+        -- local ts = getTimestampMs()
+        local colissionTasks = ManageCollisions(bandit)]]
+
+local COLLISION_DISPATCH_FILTERED = [[    -- MANAGE COLLISION TASKS
+    if #tasks == 0 and not LCCIsNonCombatBandit(bandit) then
+        -- local ts = getTimestampMs()
+        local colissionTasks = ManageCollisions(bandit)]]
+
+-- Ignore Bandits-specific hit/friendly-fire reactions for non-combat NPCs.
+-- Native targetability is separately controlled by the provider/runtime layer.
+local HIT_DISPATCH_UNSAFE = [[    if not zombie:getVariableBoolean("Bandit") then return end
+
+    local bandit = zombie]]
+
+local HIT_DISPATCH_FILTERED = [[    if not zombie:getVariableBoolean("Bandit") then return end
+    if LCCIsNonCombatBandit(zombie) then return end
+
+    local bandit = zombie]]
+
 -- Bandits2 passes brain.key to InventoryItem.setKeyId(int). Reject non-numeric
 -- values defensively so legacy integrations cannot crash the death cleanup.
 local DEATH_KEY_UNSAFE = [[        if brain.key and ZombRand(3) == 1 then
@@ -154,8 +224,58 @@ local patched = source
 local reasons = {}
 local closeVariant = nil
 
-local nextSource, reason = replacePlainOnce(patched, HELPER_ANCHOR, HELPER_REPLACEMENT, "helper-anchor")
+local nextSource, reason = replacePlainOnce(
+    patched,
+    NON_COMBAT_HELPER_ANCHOR,
+    NON_COMBAT_HELPER_REPLACEMENT,
+    "non-combat-helper"
+)
 if nextSource then patched = nextSource else reasons[#reasons + 1] = reason end
+
+if #reasons == 0 then
+    nextSource, reason = replacePlainOnce(patched, HELPER_ANCHOR, HELPER_REPLACEMENT, "helper-anchor")
+    if nextSource then patched = nextSource else reasons[#reasons + 1] = reason end
+end
+
+if #reasons == 0 then
+    nextSource, reason = replacePlainOnce(
+        patched,
+        VICTIM_SELECTION_UNSAFE,
+        VICTIM_SELECTION_FILTERED,
+        "non-combat-victim-selection"
+    )
+    if nextSource then patched = nextSource else reasons[#reasons + 1] = reason end
+end
+
+if #reasons == 0 then
+    nextSource, reason = replacePlainOnce(
+        patched,
+        COMBAT_DISPATCH_UNSAFE,
+        COMBAT_DISPATCH_FILTERED,
+        "non-combat-combat-dispatch"
+    )
+    if nextSource then patched = nextSource else reasons[#reasons + 1] = reason end
+end
+
+if #reasons == 0 then
+    nextSource, reason = replacePlainOnce(
+        patched,
+        COLLISION_DISPATCH_UNSAFE,
+        COLLISION_DISPATCH_FILTERED,
+        "non-combat-collision-dispatch"
+    )
+    if nextSource then patched = nextSource else reasons[#reasons + 1] = reason end
+end
+
+if #reasons == 0 then
+    nextSource, reason = replacePlainOnce(
+        patched,
+        HIT_DISPATCH_UNSAFE,
+        HIT_DISPATCH_FILTERED,
+        "non-combat-hit-dispatch"
+    )
+    if nextSource then patched = nextSource else reasons[#reasons + 1] = reason end
+end
 
 if #reasons == 0 then
     nextSource, reason = replacePlainOnce(patched, FAR_CHARACTER_PATH, FAR_LOCATION_PATH, "far-character-path")
@@ -212,4 +332,5 @@ end
 print("[LCC][NPCFixes][BanditUpdateShim][BOOT] marker=" .. MARKER
     .. " mode=" .. mode
     .. " closeVariant=" .. tostring(closeVariant or "n/a")
+    .. " nonCombatBrainFlag=lccqNonCombat"
     .. " source=Bandits2 runtimeTransform=true bundledUpstream=false")
