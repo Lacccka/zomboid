@@ -1,4 +1,5 @@
 require "LCCQF/Quest/LCCQFQuestClientState"
+require "LCCQF/Quest/LCCQFCharacterProjectionLifecycle"
 require "LCCQF/Quest/LCCQFQuestMarkerService"
 require "LCCQF/UI/LCCQFHub"
 
