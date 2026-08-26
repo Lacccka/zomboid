@@ -9,6 +9,7 @@ local hiddenMaps = {}
 local activeSymbols = {}
 local dirty = true
 local nextRetryMs = 0
+local lastMarkerApiFailure = nil
 
 local function log(message)
     print("[LCCQF][MARKER:CLIENT] " .. tostring(message))
@@ -66,16 +67,26 @@ local function validMarker(marker)
 end
 
 local function addExactMarker(symbols, marker)
+    -- Build 42.20.3 getSymbolsAPIv2() returns WorldMapSymbolsV2. Its Lua-facing
+    -- addUntranslatedText overload accepts only (text, layer/font, x, y).
+    -- Presentation properties belong to the returned WorldMapTextSymbolV2.
+    local layerId = "text-note"
+    if symbols.getDefaultTextLayerID then
+        layerId = symbols:getDefaultTextLayerID() or layerId
+    elseif symbols.getDefaultLayerID then
+        layerId = symbols:getDefaultLayerID() or layerId
+    end
+
     local symbol = symbols:addUntranslatedText(
         "!",
-        "text-note",
+        layerId,
         tonumber(marker.x),
-        tonumber(marker.y),
-        1.0, 0.35, 0.10, 1.0
+        tonumber(marker.y)
     )
     if not symbol then return nil end
 
     symbol:setAnchor(0.5, 0.5)
+    symbol:setRGBA(1.0, 0.35, 0.10, 1.0)
     symbol:setScale(1.15)
     symbol:setCollide(false)
     symbol:setUserDefined(false)
@@ -83,6 +94,21 @@ local function addExactMarker(symbols, marker)
     if marker.minZoom and symbol.setMinZoom then symbol:setMinZoom(tonumber(marker.minZoom) or 0) end
     if marker.maxZoom and symbol.setMaxZoom then symbol:setMaxZoom(tonumber(marker.maxZoom) or 24) end
     return symbol
+end
+
+local function safeAddExactMarker(symbols, marker)
+    local ok, symbolOrError = pcall(addExactMarker, symbols, marker)
+    if ok then
+        lastMarkerApiFailure = nil
+        return symbolOrError
+    end
+
+    local errorText = tostring(symbolOrError)
+    if errorText ~= lastMarkerApiFailure then
+        lastMarkerApiFailure = errorText
+        log("marker creation failed; marker disabled until quest state changes: " .. errorText)
+    end
+    return nil
 end
 
 function MarkerService.Rebuild()
@@ -98,7 +124,7 @@ function MarkerService.Rebuild()
     for _, quest in ipairs(QuestClientState.ListActive()) do
         local marker = quest.marker
         if validMarker(marker) and tostring(marker.mode or "EXACT") ~= "HIDDEN" then
-            local symbol = addExactMarker(symbols, marker)
+            local symbol = safeAddExactMarker(symbols, marker)
             if symbol then
                 activeSymbols[#activeSymbols + 1] = {
                     markerId = marker.markerId,
@@ -110,6 +136,8 @@ function MarkerService.Rebuild()
         end
     end
 
+    -- A Java/Lua API mismatch is a presentation failure, not a reason to throw
+    -- once per retry tick. A later quest-state change can request another build.
     dirty = false
     log("rebuilt count=" .. tostring(count))
     return true
@@ -125,6 +153,7 @@ function MarkerService.Reset()
     hiddenMaps = {}
     dirty = true
     nextRetryMs = 0
+    lastMarkerApiFailure = nil
 end
 
 local function onQuestStateChanged()
