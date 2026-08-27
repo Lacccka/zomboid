@@ -122,4 +122,82 @@ register({
     },
 })
 
+register({
+    questId = C.TEST_QUEST_BRANCH_SUPPORT_ID,
+    titleKey = "IGUI_LCCQF_Quest_BranchSupport_Title",
+    descriptionKey = "IGUI_LCCQF_Quest_BranchSupport_Description",
+    giverNpcId = C.TEST_NPC_ID,
+    repeatable = false,
+    branch = {
+        groupId = C.TEST_BRANCH_GROUP_ID,
+        optionId = C.TEST_BRANCH_SUPPORT_OPTION,
+    },
+    acceptCondition = {
+        kind = "all",
+        conditions = {
+            { kind = "questState", questId = C.TEST_QUEST_2_ID, state = "completed" },
+            {
+                kind = "questBranchAvailable",
+                groupId = C.TEST_BRANCH_GROUP_ID,
+                optionId = C.TEST_BRANCH_SUPPORT_OPTION,
+            },
+        },
+    },
+    relationshipReward = {
+        trust = 5,
+        reputation = 5,
+        hostility = 0,
+    },
+    factionReward = {
+        reputation = 10,
+    },
+    objectives = {
+        {
+            id = "confirm_support",
+            type = "TalkToNPC",
+            titleKey = "IGUI_LCCQF_Quest_BranchSupport_Objective",
+            npcId = C.TEST_NPC_ID,
+        },
+    },
+})
+
+register({
+    questId = C.TEST_QUEST_BRANCH_INDEPENDENT_ID,
+    titleKey = "IGUI_LCCQF_Quest_BranchIndependent_Title",
+    descriptionKey = "IGUI_LCCQF_Quest_BranchIndependent_Description",
+    giverNpcId = C.TEST_NPC_ID,
+    repeatable = false,
+    branch = {
+        groupId = C.TEST_BRANCH_GROUP_ID,
+        optionId = C.TEST_BRANCH_INDEPENDENT_OPTION,
+    },
+    acceptCondition = {
+        kind = "all",
+        conditions = {
+            { kind = "questState", questId = C.TEST_QUEST_2_ID, state = "completed" },
+            {
+                kind = "questBranchAvailable",
+                groupId = C.TEST_BRANCH_GROUP_ID,
+                optionId = C.TEST_BRANCH_INDEPENDENT_OPTION,
+            },
+        },
+    },
+    relationshipReward = {
+        trust = 2,
+        reputation = 1,
+        hostility = 0,
+    },
+    factionReward = {
+        reputation = -5,
+    },
+    objectives = {
+        {
+            id = "confirm_independence",
+            type = "TalkToNPC",
+            titleKey = "IGUI_LCCQF_Quest_BranchIndependent_Objective",
+            npcId = C.TEST_NPC_ID,
+        },
+    },
+})
+
 return LCCQF.QuestRegistry
