@@ -38,6 +38,24 @@ local function validateFacts(definition)
     return true
 end
 
+local function validateRanks(definition)
+    if definition.ranks == nil then return true end
+    if type(definition.ranks) ~= "table" then return false, "ranks must be a table" end
+
+    local seen = {}
+    for _, rank in ipairs(definition.ranks) do
+        if type(rank) ~= "table"
+            or not isIdentifier(rank.rankId)
+            or not isIdentifier(rank.displayNameKey)
+        then
+            return false, "invalid faction rank"
+        end
+        if seen[rank.rankId] then return false, "duplicate faction rank" end
+        seen[rank.rankId] = true
+    end
+    return true
+end
+
 function Registry.Register(definition)
     if type(definition) ~= "table" then return false, "definition must be a table" end
     if not isIdentifier(definition.factionId) then return false, "invalid factionId" end
@@ -47,6 +65,8 @@ function Registry.Register(definition)
 
     local factsOk, factsErr = validateFacts(definition)
     if not factsOk then return false, factsErr end
+    local ranksOk, ranksErr = validateRanks(definition)
+    if not ranksOk then return false, ranksErr end
 
     definitions[definition.factionId] = definition
     return true
@@ -59,6 +79,15 @@ end
 
 function Registry.IsRegistered(factionId)
     return Registry.Get(factionId) ~= nil
+end
+
+function Registry.GetRank(factionId, rankId)
+    local definition = Registry.Get(factionId)
+    if not definition or not isIdentifier(rankId) then return nil end
+    for _, rank in ipairs(type(definition.ranks) == "table" and definition.ranks or {}) do
+        if rank.rankId == rankId then return rank end
+    end
+    return nil
 end
 
 function Registry.GetDefinitions()
