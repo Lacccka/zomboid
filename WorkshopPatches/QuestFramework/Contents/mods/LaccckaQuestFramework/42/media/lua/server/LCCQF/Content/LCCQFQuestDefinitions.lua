@@ -22,6 +22,9 @@ register({
         reputation = 10,
         hostility = 0,
     },
+    factionReward = {
+        reputation = 10,
+    },
     objectives = {
         {
             id = "reach_checkpoint",
@@ -68,6 +71,11 @@ register({
         trust = 15,
         reputation = 20,
         hostility = -5,
+    },
+    factionReward = {
+        reputation = 15,
+        member = true,
+        rankId = "associate",
     },
     objectives = {
         {
