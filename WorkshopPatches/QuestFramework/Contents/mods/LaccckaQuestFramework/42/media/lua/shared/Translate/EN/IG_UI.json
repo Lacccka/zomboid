@@ -32,6 +32,7 @@
     "IGUI_LCCQF_Dialog_SupplyActive": "Finish the current step. Your quest log has the exact objective and progress.",
     "IGUI_LCCQF_Dialog_SupplyCompleted": "Good. The road is quieter and the supplies are here. That job is finished.",
     "IGUI_LCCQF_Dialog_Who": "Call me Alexey. To the server I am a test NPC; to you I am the first person this system can talk through.",
+    "IGUI_LCCQF_Dialog_Trust": "You did what we agreed on. That is enough for a start. Keep it that way and I will have fewer reasons to doubt you.",
 
     "IGUI_LCCQF_Choice_AskWork": "Any work?",
     "IGUI_LCCQF_Choice_QuestInProgress": "About the checkpoint...",
@@ -42,6 +43,8 @@
     "IGUI_LCCQF_Choice_AcceptSupplyQuest": "I will handle it.",
     "IGUI_LCCQF_Choice_DeclineQuest": "Not now.",
     "IGUI_LCCQF_Choice_AskIdentity": "Who are you?",
+    "IGUI_LCCQF_Choice_AskTrust": "We have worked together. Do you trust me?",
+    "IGUI_LCCQF_Choice_AcknowledgeTrust": "Fair enough.",
     "IGUI_LCCQF_Choice_Leave": "Leave",
     "IGUI_LCCQF_Choice_Understood": "Understood.",
     "IGUI_LCCQF_Choice_Back": "Return to the conversation.",
