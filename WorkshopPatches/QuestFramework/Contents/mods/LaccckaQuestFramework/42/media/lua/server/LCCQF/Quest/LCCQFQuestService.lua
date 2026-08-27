@@ -1,18 +1,23 @@
 require "LCCQF/LCCQFConstants"
+require "LCCQF/Core/LCCQFNPCRegistry"
 require "LCCQF/Quest/LCCQFQuestRegistry"
 require "LCCQF/Quest/LCCQFQuestInstance"
 require "LCCQF/Persistence/LCCQFQuestPersistence"
 require "LCCQF/Persistence/LCCQFCharacterRelationships"
+require "LCCQF/Persistence/LCCQFCharacterFactionRelationships"
 
 LCCQF = LCCQF or {}
 
 local C = LCCQF.Constants
+local NPCRegistry = LCCQF.NPCRegistry
 local QuestRegistry = LCCQF.QuestRegistry
 local QuestInstance = LCCQF.QuestInstance
 local QuestPersistence = LCCQF.QuestPersistence
 local CharacterRelationships = LCCQF.CharacterRelationships
+local CharacterFactionRelationships = LCCQF.CharacterFactionRelationships
 local QuestService = LCCQF.QuestService or {}
 local eventSink = nil
+local eventListeners = QuestService._eventListeners or {}
 
 local RELATIONSHIP_STATS = {
     trust = true,
@@ -30,6 +35,12 @@ end
 
 local function emit(kind, player, payload)
     if eventSink then eventSink(kind, player, payload) end
+    for _, listener in ipairs(eventListeners) do
+        local ok, err = pcall(listener, kind, player, payload)
+        if not ok then
+            log("event listener failed error=" .. tostring(err))
+        end
+    end
 end
 
 local function emitUpsert(player, instance)
@@ -114,6 +125,33 @@ local function resolveRelationshipNpcId(spec, context)
     return nil
 end
 
+local function factionForNPC(npcId)
+    local definition = type(npcId) == "string" and NPCRegistry.Get(npcId) or nil
+    return definition and definition.factionId or nil
+end
+
+local function resolveFactionId(spec, context)
+    if type(spec) ~= "table" then return nil end
+    if type(spec.factionId) == "string" and spec.factionId ~= "" then return spec.factionId end
+
+    local target = spec.target
+    context = type(context) == "table" and context or {}
+    if target == "dialogueFaction" then
+        return context.dialogueFactionId
+            or factionForNPC(context.dialogueNpcId or context.npcId or context.giverNpcId)
+    end
+    if target == "giverFaction" then
+        return context.giverFactionId or factionForNPC(context.giverNpcId)
+    end
+    if target == "contextFaction" or target == nil then
+        return context.factionId
+            or context.dialogueFactionId
+            or context.giverFactionId
+            or factionForNPC(context.npcId or context.dialogueNpcId or context.giverNpcId)
+    end
+    return nil
+end
+
 local function compareValues(actual, operator, expected)
     if operator == "==" or operator == "=" then return actual == expected end
     if operator == "!=" or operator == "~=" then return actual ~= expected end
@@ -128,11 +166,34 @@ end
 function QuestService.Initialize()
     local ok, err = QuestPersistence.Initialize()
     if not ok then return false, err end
-    return CharacterRelationships.Initialize()
+    local relationshipOk, relationshipErr = CharacterRelationships.Initialize()
+    if not relationshipOk then return false, relationshipErr end
+    return CharacterFactionRelationships.Initialize()
 end
 
 function QuestService.SetEventSink(sink)
     eventSink = type(sink) == "function" and sink or nil
+end
+
+function QuestService.AddEventListener(listener)
+    if type(listener) ~= "function" then return false end
+    for _, current in ipairs(eventListeners) do
+        if current == listener then return true end
+    end
+    eventListeners[#eventListeners + 1] = listener
+    QuestService._eventListeners = eventListeners
+    return true
+end
+
+function QuestService.RemoveEventListener(listener)
+    for index = #eventListeners, 1, -1 do
+        if eventListeners[index] == listener then
+            table.remove(eventListeners, index)
+            QuestService._eventListeners = eventListeners
+            return true
+        end
+    end
+    return false
 end
 
 function QuestService.GetCharacterId(player)
@@ -194,6 +255,36 @@ function QuestService.EvaluateCondition(player, condition, context)
         return actual == condition.value
     end
 
+    if condition.kind == "factionReputation" then
+        local factionId = resolveFactionId(condition, context)
+        local expected = tonumber(condition.value)
+        if type(factionId) ~= "string" or expected == nil then return false end
+        local actual = CharacterFactionRelationships.GetReputation(player, factionId)
+        if actual == nil then return false end
+        return compareValues(actual, condition.op or ">=", expected)
+    end
+
+    if condition.kind == "factionTier" then
+        local factionId = resolveFactionId(condition, context)
+        if type(factionId) ~= "string" or type(condition.value) ~= "string" then return false end
+        local actual = CharacterFactionRelationships.GetTier(player, factionId)
+        if actual == nil then return false end
+        return compareValues(actual, condition.op or "==", condition.value)
+    end
+
+    if condition.kind == "factionMembership" then
+        local factionId = resolveFactionId(condition, context)
+        if type(factionId) ~= "string" or (condition.value ~= true and condition.value ~= false) then return false end
+        return CharacterFactionRelationships.IsMember(player, factionId) == condition.value
+    end
+
+    if condition.kind == "factionRank" then
+        local factionId = resolveFactionId(condition, context)
+        if type(factionId) ~= "string" or type(condition.value) ~= "string" then return false end
+        local actual = CharacterFactionRelationships.GetRankId(player, factionId)
+        return compareValues(actual, condition.op or "==", condition.value)
+    end
+
     if condition.kind == "all" and type(condition.conditions) == "table" then
         for _, nested in ipairs(condition.conditions) do
             if not QuestService.EvaluateCondition(player, nested, context) then return false end
@@ -220,6 +311,9 @@ function QuestService.Accept(player, questId, context)
     if not definition then return nil, "unknown quest" end
     if not context or tostring(context.giverNpcId or "") ~= tostring(definition.giverNpcId) then
         return nil, "invalid quest giver"
+    end
+    if context.giverFactionId == nil then
+        context.giverFactionId = factionForNPC(definition.giverNpcId)
     end
     if definition.acceptCondition ~= nil
         and not QuestService.EvaluateCondition(player, definition.acceptCondition, context)
@@ -292,6 +386,32 @@ function QuestService.ExecuteAction(player, action, context)
             npcId,
             action.flag,
             action.value,
+            tostring(action.source or "dialogue-action")
+        )
+        return ok == true, ok and nil or changedOrErr
+    end
+
+    if action.kind == "factionReputationDelta" then
+        local factionId = resolveFactionId(action, context)
+        if type(factionId) ~= "string" then return false, "faction target unavailable" end
+        local ok, changedOrErr = CharacterFactionRelationships.AdjustReputation(
+            player,
+            factionId,
+            action.delta or action.reputation,
+            tostring(action.source or "dialogue-action"),
+            type(action.token) == "string" and action.token or nil
+        )
+        return ok == true, ok and nil or changedOrErr
+    end
+
+    if action.kind == "factionMembership" then
+        local factionId = resolveFactionId(action, context)
+        if type(factionId) ~= "string" then return false, "faction target unavailable" end
+        local ok, changedOrErr = CharacterFactionRelationships.SetMembership(
+            player,
+            factionId,
+            action.member,
+            action.rankId,
             tostring(action.source or "dialogue-action")
         )
         return ok == true, ok and nil or changedOrErr
