@@ -32,6 +32,13 @@ local dialogues = {
                             conditions = {
                                 { kind = "questState", questId = C.TEST_QUEST_ID, state = "completed" },
                                 { kind = "questState", questId = C.TEST_QUEST_2_ID, state = "available" },
+                                {
+                                    kind = "relationship",
+                                    target = "dialogueNpc",
+                                    stat = "trust",
+                                    op = ">=",
+                                    value = 5,
+                                },
                             },
                         },
                         next = "supply_offer",
@@ -91,6 +98,13 @@ local dialogues = {
                             conditions = {
                                 { kind = "questState", questId = C.TEST_QUEST_ID, state = "completed" },
                                 { kind = "questState", questId = C.TEST_QUEST_2_ID, state = "available" },
+                                {
+                                    kind = "relationship",
+                                    target = "dialogueNpc",
+                                    stat = "trust",
+                                    op = ">=",
+                                    value = 5,
+                                },
                             },
                         },
                         action = { kind = "questAccept", questId = C.TEST_QUEST_2_ID },
@@ -124,7 +138,58 @@ local dialogues = {
             who = {
                 textKey = "IGUI_LCCQF_Dialog_Who",
                 choices = {
+                    {
+                        id = "ask_trust",
+                        textKey = "IGUI_LCCQF_Choice_AskTrust",
+                        condition = {
+                            kind = "all",
+                            conditions = {
+                                {
+                                    kind = "relationship",
+                                    target = "dialogueNpc",
+                                    stat = "trust",
+                                    op = ">=",
+                                    value = 20,
+                                },
+                                {
+                                    kind = "relationshipFlag",
+                                    target = "dialogueNpc",
+                                    flag = "trust_topic_acknowledged",
+                                    value = false,
+                                },
+                            },
+                        },
+                        next = "trust_topic",
+                    },
                     { id = "back", textKey = "IGUI_LCCQF_Choice_Back", next = "start" },
+                    { id = "leave", textKey = "IGUI_LCCQF_Choice_Leave", close = true },
+                },
+            },
+            trust_topic = {
+                textKey = "IGUI_LCCQF_Dialog_Trust",
+                choices = {
+                    {
+                        id = "acknowledge_trust",
+                        textKey = "IGUI_LCCQF_Choice_AcknowledgeTrust",
+                        action = {
+                            kind = "all",
+                            actions = {
+                                {
+                                    kind = "relationshipDelta",
+                                    target = "dialogueNpc",
+                                    delta = { trust = 2, reputation = 1 },
+                                    token = "dialogue:trust-topic:v1",
+                                },
+                                {
+                                    kind = "relationshipFlag",
+                                    target = "dialogueNpc",
+                                    flag = "trust_topic_acknowledged",
+                                    value = true,
+                                },
+                            },
+                        },
+                        next = "start",
+                    },
                     { id = "leave", textKey = "IGUI_LCCQF_Choice_Leave", close = true },
                 },
             },
