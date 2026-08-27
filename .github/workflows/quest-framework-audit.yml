@@ -24,7 +24,12 @@ jobs:
           sudo apt-get install -y lua5.4 ripgrep
 
       - name: Validate audit script syntax
-        run: bash -n WorkshopPatches/QuestFramework/audit.sh
+        run: |
+          bash -n WorkshopPatches/QuestFramework/audit.sh
+          bash -n WorkshopPatches/QuestFramework/audit-relationships.sh
 
       - name: Verify Quest Framework contracts
         run: bash WorkshopPatches/QuestFramework/audit.sh
+
+      - name: Verify NPC relationship contracts
+        run: bash WorkshopPatches/QuestFramework/audit-relationships.sh
