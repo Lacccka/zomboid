@@ -14,6 +14,11 @@ local MIN_SCORE = -100
 local MAX_SCORE = 100
 local MIN_HOSTILITY = 0
 local MAX_HOSTILITY = 100
+local PUBLIC_STATS = {
+    trust = true,
+    reputation = true,
+    hostility = true,
+}
 
 local function log(message)
     print(C.LOG_PREFIX .. "[RELATIONSHIP:SERVER] " .. tostring(message))
@@ -67,6 +72,7 @@ local function normalizeEntry(entry, npcId)
     entry.trust = clamp(entry.trust, MIN_SCORE, MAX_SCORE)
     entry.reputation = clamp(entry.reputation, MIN_SCORE, MAX_SCORE)
     entry.hostility = clamp(entry.hostility, MIN_HOSTILITY, MAX_HOSTILITY)
+    if type(entry.flags) ~= "table" then entry.flags = {} end
     if type(entry.appliedTokens) ~= "table" then entry.appliedTokens = {} end
     return entry
 end
@@ -81,11 +87,20 @@ local function ensureEntry(store, npcId)
             reputation = 0,
             hostility = 0,
             establishedWorldHours = worldHours(),
+            flags = {},
             appliedTokens = {},
         }
         store.byNPCId[npcId] = entry
     end
     return normalizeEntry(entry, npcId), created
+end
+
+local function getEntry(player, npcId)
+    if not validId(npcId) then return nil end
+    local store = getStore(player, false)
+    if not store then return nil end
+    local entry = store.byNPCId[npcId]
+    return type(entry) == "table" and normalizeEntry(entry, npcId) or nil
 end
 
 local function tierFor(entry)
@@ -202,12 +217,53 @@ function CharacterRelationships.Adjust(player, npcId, delta, source, token)
     return true, changed, makeView(entry)
 end
 
+function CharacterRelationships.SetFlag(player, npcId, flagId, value, source)
+    if not player or not validId(npcId) or not NPCRegistry.Get(npcId) or not validId(flagId) then
+        return false, "invalid relationship flag"
+    end
+    if value ~= true and value ~= false then return false, "relationship flag must be boolean" end
+
+    local store, characterId = getStore(player, true)
+    if not store or not characterId then return false, "character unavailable" end
+
+    local entry = ensureEntry(store, npcId)
+    local oldValue = entry.flags[flagId] == true
+    if oldValue == value then return true, false, makeView(entry) end
+
+    entry.flags[flagId] = value and true or nil
+    entry.lastSource = tostring(source or "relationship-flag")
+    entry.updatedWorldHours = worldHours()
+    touch(store, characterId)
+    emitUpsert(player, store, npcId, entry)
+    log("relationship flag changed characterId=" .. tostring(characterId)
+        .. " npcId=" .. tostring(npcId)
+        .. " flagId=" .. tostring(flagId)
+        .. " value=" .. tostring(value)
+        .. " source=" .. tostring(source or "relationship-flag"))
+    return true, true, makeView(entry)
+end
+
+function CharacterRelationships.GetStat(player, npcId, stat)
+    if type(stat) ~= "string" or not PUBLIC_STATS[stat] then return nil end
+    local entry = getEntry(player, npcId)
+    return entry and tonumber(entry[stat]) or nil
+end
+
+function CharacterRelationships.GetTier(player, npcId)
+    local entry = getEntry(player, npcId)
+    return entry and tierFor(entry) or nil
+end
+
+function CharacterRelationships.GetFlag(player, npcId, flagId)
+    if not validId(flagId) then return nil end
+    local entry = getEntry(player, npcId)
+    if not entry then return nil end
+    return entry.flags[flagId] == true
+end
+
 function CharacterRelationships.ExportView(player, npcId)
-    if not validId(npcId) then return nil end
-    local store = getStore(player, false)
-    if not store then return nil end
-    local entry = store.byNPCId[npcId]
-    return type(entry) == "table" and makeView(normalizeEntry(entry, npcId)) or nil
+    local entry = getEntry(player, npcId)
+    return entry and makeView(entry) or nil
 end
 
 function CharacterRelationships.GetRevision(player)
