@@ -28,12 +28,24 @@ local function validateObjective(objective, index)
     return true
 end
 
+local function validateBranch(branch)
+    if branch == nil then return true end
+    if type(branch) ~= "table" then return false, "branch must be a table" end
+    if not validIdentifier(branch.groupId) then return false, "invalid branch groupId" end
+    if not validIdentifier(branch.optionId) then return false, "invalid branch optionId" end
+    return true
+end
+
 local function validateDefinition(definition)
     if type(definition) ~= "table" then return false, "quest definition must be a table" end
     if not validIdentifier(definition.questId) then return false, "invalid questId" end
     if not validIdentifier(definition.titleKey) then return false, "invalid titleKey" end
     if not validIdentifier(definition.descriptionKey) then return false, "invalid descriptionKey" end
     if not validIdentifier(definition.giverNpcId) then return false, "invalid giverNpcId" end
+
+    local branchOk, branchErr = validateBranch(definition.branch)
+    if not branchOk then return false, branchErr end
+
     if type(definition.objectives) ~= "table" or #definition.objectives == 0 then
         return false, "quest requires at least one objective"
     end
