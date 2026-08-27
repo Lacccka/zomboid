@@ -16,6 +16,10 @@ local QuestState = LCCQF.QuestClientState
 local Runtime = LCCQF.NPCRuntime
 local TRANSLATION_PREFIX = "IGUI_LCCQF_"
 
+local CARD_BG = { r = 0.055, g = 0.055, b = 0.055, a = 0.72 }
+local CARD_BORDER = { r = 0.34, g = 0.34, b = 0.34, a = 0.72 }
+local SEPARATOR = { r = 0.52, g = 0.52, b = 0.52, a = 0.28 }
+
 local function localize(key, fallback)
     if type(key) ~= "string" or #key > C.MAX_IDENTIFIER_LENGTH
         or string.sub(key, 1, #TRANSLATION_PREFIX) ~= TRANSLATION_PREFIX
@@ -89,6 +93,23 @@ local function selectListItemByField(list, field, value)
     return false
 end
 
+local function configureRichPanel(panel)
+    panel.autosetheight = false
+    panel.background = false
+    panel.clip = true
+    panel.borderColor = { r = 0, g = 0, b = 0, a = 0 }
+    panel.defaultFont = UIFont.NewSmall
+    panel.marginLeft = 14
+    panel.marginRight = 14
+    panel.marginTop = 12
+    panel.marginBottom = 12
+end
+
+local function drawCard(panel, x, y, width, height)
+    panel:drawRect(x, y, width, height, CARD_BG.a, CARD_BG.r, CARD_BG.g, CARD_BG.b)
+    panel:drawRectBorder(x, y, width, height, CARD_BORDER.a, CARD_BORDER.r, CARD_BORDER.g, CARD_BORDER.b)
+end
+
 LCCQFKnownPeoplePage = ISPanel:derive("LCCQFKnownPeoplePage")
 
 function LCCQFKnownPeoplePage:new(x, y, width, height)
@@ -96,7 +117,16 @@ function LCCQFKnownPeoplePage:new(x, y, width, height)
     setmetatable(o, self)
     self.__index = self
     o.background = false
-    o.listWidth = math.min(270, math.floor(width * 0.33))
+    o.listWidth = math.min(250, math.max(215, math.floor(width * 0.255)))
+    o.detailX = o.listWidth + 30
+    o.detailWidth = width - o.detailX - 12
+    o.detailTop = 56
+    o.portraitWidth = math.min(245, math.max(210, math.floor(o.detailWidth * 0.34)))
+    o.portraitHeight = math.min(300, math.max(245, math.floor((height - 150) * 0.63)))
+    o.infoX = o.detailX + o.portraitWidth + 22
+    o.infoWidth = math.max(220, width - o.infoX - 12)
+    o.relatedTitleY = o.detailTop + o.portraitHeight + 24
+    o.relatedListY = o.relatedTitleY + 32
     o.lastKnowledgeRevision = -1
     o.lastQuestRevision = -1
     o.selectedNpcId = Hub.selectedPersonId
@@ -110,9 +140,7 @@ function LCCQFKnownPeoplePage:initialise()
 end
 
 function LCCQFKnownPeoplePage:createChildren()
-    local detailX = self.listWidth + 28
-
-    self.personList = ISScrollingListBox:new(12, 52, self.listWidth - 24, self.height - 64)
+    self.personList = ISScrollingListBox:new(12, 54, self.listWidth - 24, self.height - 66)
     self.personList:initialise()
     self.personList:instantiate()
     self.personList:setFont(UIFont.Small, 7)
@@ -120,7 +148,12 @@ function LCCQFKnownPeoplePage:createChildren()
     self.personList:setOnMouseDownFunction(self, LCCQFKnownPeoplePage.onPersonSelected)
     self:addChild(self.personList)
 
-    self.portrait = ISUI3DModel:new(detailX, 58, 210, 250)
+    self.portrait = ISUI3DModel:new(
+        self.detailX + 8,
+        self.detailTop + 8,
+        self.portraitWidth - 16,
+        self.portraitHeight - 16
+    )
     self.portrait:initialise()
     self.portrait:instantiate()
     self.portrait.backgroundColor = { r = 0, g = 0, b = 0, a = 0 }
@@ -131,23 +164,26 @@ function LCCQFKnownPeoplePage:createChildren()
     self.portrait:setDoRandomExtAnimations(true)
     self:addChild(self.portrait)
 
-    self.info = ISRichTextPanel:new(detailX + 230, 58, self.width - detailX - 246, 250)
+    self.info = ISRichTextPanel:new(
+        self.infoX,
+        self.detailTop,
+        self.infoWidth,
+        self.portraitHeight
+    )
     self.info:initialise()
     self.info:instantiate()
-    self.info.autosetheight = false
-    self.info.background = false
-    self.info.borderColor = { r = 0, g = 0, b = 0, a = 0 }
+    configureRichPanel(self.info)
     self:addChild(self.info)
 
     self.relatedQuestList = ISScrollingListBox:new(
-        detailX,
-        344,
-        self.width - detailX - 14,
-        math.max(74, self.height - 356)
+        self.detailX,
+        self.relatedListY,
+        self.detailWidth,
+        math.max(72, self.height - self.relatedListY - 12)
     )
     self.relatedQuestList:initialise()
     self.relatedQuestList:instantiate()
-    self.relatedQuestList:setFont(UIFont.Small, 5)
+    self.relatedQuestList:setFont(UIFont.Small, 6)
     self.relatedQuestList.drawBorder = true
     self.relatedQuestList:setOnMouseDownFunction(self, LCCQFKnownPeoplePage.onRelatedQuestSelected)
     self:addChild(self.relatedQuestList)
@@ -198,6 +234,7 @@ function LCCQFKnownPeoplePage:updateDetail()
     if not view then
         self.info.text = localize("IGUI_LCCQF_Hub_NoPersonSelected", "No person selected")
         self.info:paginate()
+        self.info:setYScroll(0)
         self.portrait:setVisible(false)
         self.portraitHasCharacter = false
         return
@@ -206,8 +243,6 @@ function LCCQFKnownPeoplePage:updateDetail()
     self:applyPortrait(view)
 
     local lines = {
-        "<H2>" .. personName(view) .. "</H2>",
-        "",
         localize(view.summaryKey, localize("IGUI_LCCQF_Hub_KnownPerson_DefaultSummary", "Known person")),
         "",
         "<H2>" .. localize("IGUI_LCCQF_Hub_Person_History", "Known history") .. "</H2>",
@@ -218,8 +253,11 @@ function LCCQFKnownPeoplePage:updateDetail()
     else
         for _, fact in ipairs(view.facts or {}) do
             local title = localize(fact.titleKey, "")
-            if title ~= "" then lines[#lines + 1] = "<H2>" .. title .. "</H2>" end
-            lines[#lines + 1] = localize(fact.textKey, "")
+            if title ~= "" then
+                lines[#lines + 1] = title
+            end
+            local text = localize(fact.textKey, "")
+            if text ~= "" then lines[#lines + 1] = text end
             lines[#lines + 1] = ""
         end
     end
@@ -231,13 +269,13 @@ function LCCQFKnownPeoplePage:updateDetail()
     local active, completed = questsForPerson(view.npcId)
     for _, quest in ipairs(active) do
         self.relatedQuestList:addItem(
-            "[" .. localize("IGUI_LCCQF_Hub_State_Active", "Active") .. "] " .. questTitle(quest),
+            ">  " .. questTitle(quest) .. "  -  " .. questStateText(quest.state),
             quest
         )
     end
     for _, quest in ipairs(completed) do
         self.relatedQuestList:addItem(
-            "[" .. localize("IGUI_LCCQF_Hub_State_Completed", "Completed") .. "] " .. questTitle(quest),
+            "x  " .. questTitle(quest) .. "  -  " .. questStateText(quest.state),
             quest
         )
     end
@@ -280,24 +318,26 @@ end
 function LCCQFKnownPeoplePage:prerender()
     ISPanel.prerender(self)
     self:drawText(localize("IGUI_LCCQF_Hub_KnownPeople", "Known people"), 12, 18, 1, 1, 1, 1, UIFont.Medium)
-    self:drawRect(self.listWidth, 12, 1, self.height - 24, 0.35, 0.6, 0.6, 0.6)
+    self:drawRect(self.listWidth, 12, 1, self.height - 24, SEPARATOR.a, SEPARATOR.r, SEPARATOR.g, SEPARATOR.b)
 
     if self.selectedNpcId then
         local view = KnownPeople.Get(self.selectedNpcId)
-        self:drawText(personName(view), self.listWidth + 28, 18, 1, 1, 1, 1, UIFont.Medium)
+        self:drawText(personName(view), self.detailX, 18, 1, 1, 1, 1, UIFont.Medium)
+        drawCard(self, self.detailX, self.detailTop, self.portraitWidth, self.portraitHeight)
+        drawCard(self, self.infoX, self.detailTop, self.infoWidth, self.portraitHeight)
         self:drawText(
             localize("IGUI_LCCQF_Hub_Person_Quests", "Assignments"),
-            self.listWidth + 28,
-            318,
+            self.detailX,
+            self.relatedTitleY,
             1, 1, 1, 1,
             UIFont.Medium
         )
+
         if not self.portraitHasCharacter then
-            self:drawRectBorder(self.listWidth + 28, 58, 210, 250, 0.65, 0.45, 0.45, 0.45)
             self:drawTextCentre(
                 localize("IGUI_LCCQF_Hub_Portrait_Unavailable", "Portrait unavailable while NPC is not loaded"),
-                self.listWidth + 133,
-                174,
+                self.detailX + math.floor(self.portraitWidth / 2),
+                self.detailTop + math.floor(self.portraitHeight / 2) - 8,
                 0.7, 0.7, 0.7, 1,
                 UIFont.Small
             )
@@ -305,8 +345,8 @@ function LCCQFKnownPeoplePage:prerender()
     else
         self:drawText(
             localize("IGUI_LCCQF_Hub_NoKnownPeople", "You do not know anyone yet."),
-            self.listWidth + 28,
-            58,
+            self.detailX,
+            self.detailTop,
             0.8, 0.8, 0.8, 1,
             UIFont.Medium
         )
@@ -320,9 +360,12 @@ function LCCQFQuestJournalPage:new(x, y, width, height)
     setmetatable(o, self)
     self.__index = self
     o.background = false
-    o.listWidth = math.min(300, math.floor(width * 0.37))
+    o.listWidth = math.min(300, math.max(245, math.floor(width * 0.30)))
+    o.detailX = o.listWidth + 30
+    o.detailWidth = width - o.detailX - 12
     o.lastRevision = -1
     o.selectedQuestId = Hub.selectedQuestId
+    o.detailTitle = ""
     o.showCompleted = false
     return o
 end
@@ -357,22 +400,20 @@ function LCCQFQuestJournalPage:createChildren()
     self:addChild(self.completedList)
 
     self.detail = ISRichTextPanel:new(
-        self.listWidth + 28,
-        60,
-        self.width - self.listWidth - 44,
+        self.detailX,
+        58,
+        self.detailWidth,
         self.height - 112
     )
     self.detail:initialise()
     self.detail:instantiate()
-    self.detail.autosetheight = false
-    self.detail.background = false
-    self.detail.borderColor = { r = 0, g = 0, b = 0, a = 0 }
+    configureRichPanel(self.detail)
     self:addChild(self.detail)
 
     self.giverButton = ISButton:new(
-        self.listWidth + 28,
+        self.detailX,
         self.height - 42,
-        self.width - self.listWidth - 44,
+        math.min(420, self.detailWidth),
         30,
         "",
         self,
@@ -390,7 +431,8 @@ end
 function LCCQFQuestJournalPage:layoutLists()
     local top = 54
     if self.showCompleted then
-        local activeHeight = math.max(110, math.floor((self.height - 98) * 0.52))
+        local usable = self.height - top - 54
+        local activeHeight = math.max(105, math.floor(usable * 0.54))
         self.activeList:setY(top)
         self.activeList:setHeight(activeHeight)
         self.completedToggle:setY(top + activeHeight + 8)
@@ -452,6 +494,7 @@ end
 function LCCQFQuestJournalPage:updateDetail()
     local view = self.selectedQuestId and QuestState.Get(self.selectedQuestId) or nil
     if not view then
+        self.detailTitle = localize("IGUI_LCCQF_Hub_NoQuestSelected", "No quest selected")
         self.detail.text = localize("IGUI_LCCQF_Hub_NoQuests", "There are no quests yet.")
         self.detail:paginate()
         self.detail:setYScroll(0)
@@ -459,9 +502,8 @@ function LCCQFQuestJournalPage:updateDetail()
         return
     end
 
+    self.detailTitle = questTitle(view)
     local lines = {
-        "<H1>" .. questTitle(view) .. "</H1>",
-        "",
         localize(view.descriptionKey, ""),
         "",
         localize("IGUI_LCCQF_Hub_Status", "Status") .. ": " .. questStateText(view.state),
@@ -474,7 +516,7 @@ function LCCQFQuestJournalPage:updateDetail()
         if objective.state == "completed" then
             prefix = "[x] "
         elseif objective.state == "active" then
-            prefix = "[>] "
+            prefix = ">  "
         end
         lines[#lines + 1] = prefix
             .. localize(objective.titleKey, tostring(objective.id or "Objective"))
@@ -549,7 +591,20 @@ function LCCQFQuestJournalPage:prerender()
         localize("IGUI_LCCQF_Hub_ActiveQuests", "Active quests"),
         12, 18, 1, 1, 1, 1, UIFont.Medium
     )
-    self:drawRect(self.listWidth, 12, 1, self.height - 24, 0.35, 0.6, 0.6, 0.6)
+    self:drawRect(self.listWidth, 12, 1, self.height - 24, SEPARATOR.a, SEPARATOR.r, SEPARATOR.g, SEPARATOR.b)
+
+    if self.selectedQuestId then
+        drawCard(self, self.detailX, 58, self.detailWidth, self.height - 112)
+        self:drawText(self.detailTitle or "", self.detailX, 18, 1, 1, 1, 1, UIFont.Medium)
+    else
+        self:drawText(
+            localize("IGUI_LCCQF_Hub_NoQuests", "There are no quests yet."),
+            self.detailX,
+            58,
+            0.8, 0.8, 0.8, 1,
+            UIFont.Medium
+        )
+    end
 end
 
 function Hub.OpenPerson(npcId)
