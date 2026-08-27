@@ -33,6 +33,9 @@ local function ensureStore(record)
     if type(store.byQuestId) ~= "table" then
         store.byQuestId = {}
     end
+    if type(store.branchChoices) ~= "table" then
+        store.branchChoices = {}
+    end
     return store
 end
 
@@ -61,6 +64,15 @@ local function normalizeStore(characterId, store)
             store.byInstanceId[canonicalId] = instance
             canonicalByQuestId[instance.questId] = canonicalId
             restored = restored + 1
+
+            local branch = definition.branch
+            if type(branch) == "table"
+                and type(branch.groupId) == "string"
+                and type(branch.optionId) == "string"
+                and store.branchChoices[branch.groupId] == nil
+            then
+                store.branchChoices[branch.groupId] = branch.optionId
+            end
         else
             store.byInstanceId[instanceId] = nil
             dropped = dropped + 1
