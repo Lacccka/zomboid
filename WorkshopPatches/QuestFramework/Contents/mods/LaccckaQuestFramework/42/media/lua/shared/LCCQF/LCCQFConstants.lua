@@ -56,6 +56,11 @@ Constants.TEST_NPC_CID = "c2c9d2b8-7a21-4e66-a8d9-1cfa01caa001"
 Constants.TEST_FACTION_ID = "lccq_checkpoint_survivors"
 Constants.TEST_QUEST_ID = "lccq_test_checkpoint"
 Constants.TEST_QUEST_2_ID = "lccq_test_supply_run"
+Constants.TEST_QUEST_BRANCH_SUPPORT_ID = "lccq_test_branch_support"
+Constants.TEST_QUEST_BRANCH_INDEPENDENT_ID = "lccq_test_branch_independent"
+Constants.TEST_BRANCH_GROUP_ID = "checkpoint_alignment"
+Constants.TEST_BRANCH_SUPPORT_OPTION = "support_group"
+Constants.TEST_BRANCH_INDEPENDENT_OPTION = "stay_independent"
 
 LCCQF.Constants = Constants
 
