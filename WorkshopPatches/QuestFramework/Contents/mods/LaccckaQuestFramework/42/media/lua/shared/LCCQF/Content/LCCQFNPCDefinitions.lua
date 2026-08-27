@@ -1,5 +1,6 @@
 require "LCCQF/LCCQFConstants"
 require "LCCQF/Core/LCCQFNPCRegistry"
+require "LCCQF/Content/LCCQFFactionDefinitions"
 
 local C = LCCQF.Constants
 
@@ -8,6 +9,8 @@ local ok, err = LCCQF.NPCRegistry.Register({
     displayNameKey = "IGUI_LCCQF_NPC_Alexey",
     summaryKey = "IGUI_LCCQF_NPC_Alexey_Summary",
     dialogueId = "test_alexey",
+    factionId = C.TEST_FACTION_ID,
+    revealFactionOnDiscovery = true,
     stationary = true,
     portrait = {
         provider = "live-runtime",
