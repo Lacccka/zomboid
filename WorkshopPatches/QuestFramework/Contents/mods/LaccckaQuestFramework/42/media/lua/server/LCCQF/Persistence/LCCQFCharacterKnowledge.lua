@@ -1,12 +1,14 @@
 require "LCCQF/LCCQFConstants"
 require "LCCQF/Core/LCCQFNPCRegistry"
 require "LCCQF/Persistence/LCCQFCharacterIdentity"
+require "LCCQF/Persistence/LCCQFCharacterRelationships"
 
 LCCQF = LCCQF or {}
 
 local C = LCCQF.Constants
 local NPCRegistry = LCCQF.NPCRegistry
 local CharacterIdentity = LCCQF.CharacterIdentity
+local CharacterRelationships = LCCQF.CharacterRelationships
 local CharacterKnowledge = LCCQF.CharacterKnowledge or {}
 local eventSink = nil
 
@@ -77,7 +79,7 @@ local function makeFactView(definition, entry, factId)
     }
 end
 
-local function makeKnownPersonView(npcId, entry)
+local function makeKnownPersonView(player, npcId, entry)
     local definition = NPCRegistry.Get(npcId)
     if not definition or type(entry) ~= "table" then return nil end
 
@@ -97,12 +99,13 @@ local function makeKnownPersonView(npcId, entry)
         discoveredWorldHours = tonumber(entry.discoveredWorldHours) or 0,
         facts = facts,
         portrait = sanitizePortrait(definition),
+        relationship = CharacterRelationships.ExportView(player, npcId),
     }
 end
 
 local function emitUpsert(player, npcId, entry)
     if not eventSink then return end
-    local view = makeKnownPersonView(npcId, entry)
+    local view = makeKnownPersonView(player, npcId, entry)
     if view then eventSink("upsert", player, view) end
 end
 
@@ -114,7 +117,10 @@ end
 function CharacterKnowledge.Initialize()
     local ok, err = CharacterIdentity.Initialize()
     if not ok then return false, err end
-    log("initialized schemaVersion=" .. tostring(C.KNOWLEDGE_PERSISTENCE_SCHEMA_VERSION))
+    local relationshipOk, relationshipErr = CharacterRelationships.Initialize()
+    if not relationshipOk then return false, relationshipErr end
+    log("initialized schemaVersion=" .. tostring(C.KNOWLEDGE_PERSISTENCE_SCHEMA_VERSION)
+        .. " relationships=" .. tostring(C.RELATIONSHIP_PERSISTENCE_SCHEMA_VERSION))
     return true
 end
 
@@ -152,12 +158,22 @@ function CharacterKnowledge.DiscoverNPC(player, npcId, source)
         end
     end
 
+    local relationshipOk, relationshipCreated = CharacterRelationships.EnsureNPC(
+        player,
+        npcId,
+        "knowledge-discovery"
+    )
+    if not relationshipOk then
+        log("relationship establishment failed npcId=" .. tostring(npcId))
+    end
+
     if changed then
         touch(knowledge, characterId)
         emitUpsert(player, npcId, entry)
         log("npc discovered characterId=" .. tostring(characterId)
             .. " npcId=" .. tostring(npcId)
-            .. " source=" .. tostring(source or "interaction"))
+            .. " source=" .. tostring(source or "interaction")
+            .. " relationshipCreated=" .. tostring(relationshipCreated == true))
     end
     return true, created
 end
@@ -184,13 +200,27 @@ function CharacterKnowledge.UnlockFact(player, npcId, factId, source)
     return true, true
 end
 
+function CharacterKnowledge.GetView(player, npcId)
+    if not player or not validId(npcId) then return nil end
+    local knowledge = getStore(player, false)
+    if not knowledge then return nil end
+    local entry = knowledge.knownNPCs[npcId]
+    return type(entry) == "table" and makeKnownPersonView(player, npcId, entry) or nil
+end
+
+function CharacterKnowledge.GetRevision(player)
+    local knowledge = getStore(player, false)
+    if not knowledge then return 0 end
+    return math.max(0, math.floor(tonumber(knowledge.revision) or 0))
+end
+
 function CharacterKnowledge.ExportViews(player)
     local knowledge = getStore(player, true)
     local result = {}
     if not knowledge then return result, 0 end
 
     for npcId, entry in pairs(knowledge.knownNPCs) do
-        local view = makeKnownPersonView(npcId, entry)
+        local view = makeKnownPersonView(player, npcId, entry)
         if view then result[#result + 1] = view end
     end
     table.sort(result, function(a, b)
