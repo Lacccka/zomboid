@@ -7,6 +7,12 @@ local ok, err = LCCQF.FactionRegistry.Register({
     factionId = C.TEST_FACTION_ID,
     displayNameKey = "IGUI_LCCQF_Faction_CheckpointSurvivors",
     summaryKey = "IGUI_LCCQF_Faction_CheckpointSurvivors_Summary",
+    ranks = {
+        {
+            rankId = "associate",
+            displayNameKey = "IGUI_LCCQF_Faction_CheckpointSurvivors_Rank_Associate",
+        },
+    },
     initialKnowledgeFacts = {
         "checkpoint_group_identified",
     },
