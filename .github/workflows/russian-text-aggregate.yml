@@ -17,11 +17,15 @@ jobs:
   aggregate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout branch
+      - name: Checkout translation patch only
         uses: actions/checkout@v4
         with:
           ref: agent/b42-20-compatibility-patch
-          fetch-depth: 0
+          fetch-depth: 1
+          sparse-checkout: |
+            WorkshopPatches/RussianTextFixes
+            scripts/aggregate_russian_text.py
+          sparse-checkout-cone-mode: false
 
       - name: Build canonical Build 42 translation tables
         run: python3 scripts/aggregate_russian_text.py
@@ -30,7 +34,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          RU='WorkshopPatches/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/media/lua/shared/Translate/RU'
           python3 - <<'PY'
           import json
           from pathlib import Path
