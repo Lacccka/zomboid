@@ -26,6 +26,18 @@ local function factionName(view)
     return localize(view.displayNameKey, tostring(view.factionId or "Faction"))
 end
 
+local function relationTierText(tier)
+    local keys = {
+        hostile = "IGUI_LCCQF_Hub_FactionRelation_Tier_Hostile",
+        unfriendly = "IGUI_LCCQF_Hub_FactionRelation_Tier_Unfriendly",
+        neutral = "IGUI_LCCQF_Hub_FactionRelation_Tier_Neutral",
+        friendly = "IGUI_LCCQF_Hub_FactionRelation_Tier_Friendly",
+        allied = "IGUI_LCCQF_Hub_FactionRelation_Tier_Allied",
+    }
+    local key = keys[tier] or keys.neutral
+    return localize(key, tostring(tier or "neutral"))
+end
+
 local function removeRegisteredPage(pageId)
     for index = #Hub.pages, 1, -1 do
         if Hub.pages[index].id == pageId then table.remove(Hub.pages, index) end
@@ -116,11 +128,32 @@ function LCCQFKnownFactionsPage:updateDetail()
         return
     end
 
+    local relation = type(view.relationship) == "table" and view.relationship or {
+        reputation = 0,
+        tier = "neutral",
+        member = false,
+    }
+
+    local membershipText = relation.member == true
+        and localize("IGUI_LCCQF_Hub_FactionRelation_Member", "Member")
+        or localize("IGUI_LCCQF_Hub_FactionRelation_Outsider", "Outsider")
+
     local lines = {
         localize(view.summaryKey, localize("IGUI_LCCQF_Hub_KnownFaction_DefaultSummary", "Known faction")),
         "",
-        "<H2>" .. localize("IGUI_LCCQF_Hub_Faction_History", "Known information") .. "</H2>",
+        "<H2>" .. localize("IGUI_LCCQF_Hub_FactionRelation", "Standing") .. "</H2>",
+        localize("IGUI_LCCQF_Hub_FactionRelation_Status", "Status") .. ": " .. relationTierText(relation.tier),
+        localize("IGUI_LCCQF_Hub_FactionRelation_Reputation", "Reputation") .. ": " .. tostring(math.floor(tonumber(relation.reputation) or 0)),
+        localize("IGUI_LCCQF_Hub_FactionRelation_Membership", "Membership") .. ": " .. membershipText,
     }
+
+    if relation.member == true and type(relation.rank) == "table" then
+        lines[#lines + 1] = localize("IGUI_LCCQF_Hub_FactionRelation_Rank", "Rank")
+            .. ": " .. localize(relation.rank.displayNameKey, tostring(relation.rank.rankId or "-"))
+    end
+
+    lines[#lines + 1] = ""
+    lines[#lines + 1] = "<H2>" .. localize("IGUI_LCCQF_Hub_Faction_History", "Known information") .. "</H2>"
 
     if #(view.facts or {}) == 0 then
         lines[#lines + 1] = localize(
