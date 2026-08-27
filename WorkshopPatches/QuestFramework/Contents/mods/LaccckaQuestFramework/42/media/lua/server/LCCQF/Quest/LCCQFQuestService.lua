@@ -217,6 +217,14 @@ function QuestService.GetQuestState(player, questId)
     return instance.state or "available"
 end
 
+function QuestService.GetBranchChoice(player, groupId)
+    if type(groupId) ~= "string" or groupId == "" then return nil end
+    local store = getStore(player, false)
+    if not store or type(store.branchChoices) ~= "table" then return nil end
+    local optionId = store.branchChoices[groupId]
+    return type(optionId) == "string" and optionId or nil
+end
+
 function QuestService.EvaluateCondition(player, condition, context)
     if condition == nil then return true end
     if type(condition) ~= "table" then return false end
@@ -226,6 +234,18 @@ function QuestService.EvaluateCondition(player, condition, context)
         local expected = condition.state
         if type(questId) ~= "string" or type(expected) ~= "string" then return false end
         return QuestService.GetQuestState(player, questId) == expected
+    end
+
+    if condition.kind == "questBranch" then
+        if type(condition.groupId) ~= "string" or type(condition.optionId) ~= "string" then return false end
+        local actual = QuestService.GetBranchChoice(player, condition.groupId)
+        return compareValues(actual, condition.op or "==", condition.optionId)
+    end
+
+    if condition.kind == "questBranchAvailable" then
+        if type(condition.groupId) ~= "string" or type(condition.optionId) ~= "string" then return false end
+        local actual = QuestService.GetBranchChoice(player, condition.groupId)
+        return actual == nil or actual == condition.optionId
     end
 
     if condition.kind == "relationship" then
@@ -330,11 +350,23 @@ function QuestService.Accept(player, questId, context)
         if definition.repeatable ~= true then return nil, "quest already completed" end
     end
 
+    local branch = definition.branch
+    local currentBranchChoice = nil
+    if type(branch) == "table" then
+        currentBranchChoice = store.branchChoices[branch.groupId]
+        if currentBranchChoice ~= nil and currentBranchChoice ~= branch.optionId then
+            return nil, "quest branch already chosen"
+        end
+    end
+
     local instance, err = QuestInstance.Create(definition, characterId, context)
     if not instance then return nil, err end
 
     store.byInstanceId[instance.id] = instance
     store.byQuestId[questId] = instance.id
+    if type(branch) == "table" and currentBranchChoice == nil then
+        store.branchChoices[branch.groupId] = branch.optionId
+    end
     QuestPersistence.Touch(characterId)
 
     emitUpsert(player, instance)
@@ -344,7 +376,9 @@ function QuestService.Accept(player, questId, context)
         .. " characterId=" .. tostring(characterId)
         .. " questId=" .. tostring(questId)
         .. " instanceId=" .. tostring(instance.id)
-        .. " giverNpcId=" .. tostring(definition.giverNpcId))
+        .. " giverNpcId=" .. tostring(definition.giverNpcId)
+        .. " branchGroup=" .. tostring(branch and branch.groupId or "none")
+        .. " branchOption=" .. tostring(branch and branch.optionId or "none"))
     return instance
 end
 
@@ -534,6 +568,7 @@ function QuestService.ExportViews(player)
     return result
 end
 
+QuestService._eventListeners = eventListeners
 LCCQF.QuestService = QuestService
 
 return QuestService
