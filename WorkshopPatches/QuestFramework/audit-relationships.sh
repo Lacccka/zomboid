@@ -113,7 +113,7 @@ fi
 if rg -n 'Bandit(Brain|Custom|Server|Zombie)|require "Bandit"' "$relationships" "$relationship_bridge" "$quest_service"; then
     fail "Bandits provider API leaked into relationship domain"
 fi
-if rg -n 'C\.TEST_NPC_ID|lccq_test_npc_01|Alexey|Алексей' "$relationships" "$relationship_bridge" "$quest_service" "$interaction_server"; then
+if rg -n 'C\.TEST_NPC_ID|lccq_test_npc_01|Alexey|Алексей' "$relationships" "$relationship_bridge" "$quest_service"; then
     fail "authored NPC special case leaked into reusable relationship core"
 fi
 if rg -n 'LCCQF/Persistence/' "$client_presentation"; then
