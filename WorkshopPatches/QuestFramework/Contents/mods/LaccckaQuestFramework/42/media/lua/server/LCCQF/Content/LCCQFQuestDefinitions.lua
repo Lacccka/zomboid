@@ -57,6 +57,13 @@ register({
     descriptionKey = "IGUI_LCCQF_Quest_SupplyRun_Description",
     giverNpcId = C.TEST_NPC_ID,
     repeatable = false,
+    acceptCondition = {
+        kind = "relationship",
+        target = "giverNpc",
+        stat = "trust",
+        op = ">=",
+        value = 5,
+    },
     relationshipReward = {
         trust = 15,
         reputation = 20,
