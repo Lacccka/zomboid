@@ -74,20 +74,12 @@ local function installQuestObserver()
         observerInstalled = true
         return true
     end
-    if type(QuestService.SetEventSink) ~= "function" then return false end
+    if type(QuestService.AddEventListener) ~= "function" then return false end
 
-    local originalSetEventSink = QuestService.SetEventSink
-    QuestService.SetEventSink = function(sink)
-        local downstream = type(sink) == "function" and sink or nil
-        return originalSetEventSink(function(kind, player, payload)
-            onQuestEvent(kind, player, payload)
-            if downstream then downstream(kind, player, payload) end
-        end)
-    end
-
+    QuestService.AddEventListener(onQuestEvent)
     QuestService.__LCCQFRelationshipEventObserver = true
     observerInstalled = true
-    log("quest completion observer installed")
+    log("quest completion listener installed")
     return true
 end
 
