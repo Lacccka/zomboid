@@ -1,12 +1,14 @@
 require "LCCQF/LCCQFConstants"
 require "LCCQF/Core/LCCQFFactionRegistry"
 require "LCCQF/Persistence/LCCQFCharacterIdentity"
+require "LCCQF/Persistence/LCCQFCharacterFactionRelationships"
 
 LCCQF = LCCQF or {}
 
 local C = LCCQF.Constants
 local FactionRegistry = LCCQF.FactionRegistry
 local CharacterIdentity = LCCQF.CharacterIdentity
+local CharacterFactionRelationships = LCCQF.CharacterFactionRelationships
 local CharacterFactionKnowledge = LCCQF.CharacterFactionKnowledge or {}
 local eventSink = nil
 
@@ -65,7 +67,7 @@ local function makeFactView(definition, entry, factId)
     }
 end
 
-local function makeView(factionId, entry)
+local function makeView(player, factionId, entry)
     local definition = FactionRegistry.Get(factionId)
     if not definition or type(entry) ~= "table" then return nil end
 
@@ -81,6 +83,7 @@ local function makeView(factionId, entry)
         summaryKey = definition.summaryKey,
         discoveredWorldHours = tonumber(entry.discoveredWorldHours) or 0,
         facts = facts,
+        relationship = CharacterFactionRelationships.ExportView(player, factionId),
     }
 end
 
@@ -91,7 +94,7 @@ end
 
 local function emitUpsert(player, store, factionId, entry)
     if not eventSink then return end
-    local view = makeView(factionId, entry)
+    local view = makeView(player, factionId, entry)
     if not view then return end
     view.factionKnowledgeRevision = math.max(0, math.floor(tonumber(store.revision) or 0))
     eventSink("upsert", player, view)
@@ -100,6 +103,8 @@ end
 function CharacterFactionKnowledge.Initialize()
     local ok, err = CharacterIdentity.Initialize()
     if not ok then return false, err end
+    local relationOk, relationErr = CharacterFactionRelationships.Initialize()
+    if not relationOk then return false, relationErr end
     log("initialized schemaVersion=" .. tostring(C.FACTION_KNOWLEDGE_PERSISTENCE_SCHEMA_VERSION))
     return true
 end
@@ -112,6 +117,13 @@ function CharacterFactionKnowledge.DiscoverFaction(player, factionId, source)
     if not player or not validId(factionId) then return false, "invalid faction discovery" end
     local definition = FactionRegistry.Get(factionId)
     if not definition then return false, "unknown faction" end
+
+    local relationOk, relationErr = CharacterFactionRelationships.EnsureFaction(
+        player,
+        factionId,
+        "faction-discovery"
+    )
+    if not relationOk then return false, relationErr end
 
     local store, characterId = getStore(player, true)
     if not store or not characterId then return false, "character unavailable" end
@@ -181,7 +193,13 @@ function CharacterFactionKnowledge.GetView(player, factionId)
     local store = getStore(player, false)
     if not store then return nil end
     local entry = store.knownFactions[factionId]
-    return type(entry) == "table" and makeView(factionId, entry) or nil
+    return type(entry) == "table" and makeView(player, factionId, entry) or nil
+end
+
+function CharacterFactionKnowledge.GetRevision(player)
+    local store = getStore(player, false)
+    if not store then return 0 end
+    return math.max(0, math.floor(tonumber(store.revision) or 0))
 end
 
 function CharacterFactionKnowledge.ExportViews(player)
@@ -190,7 +208,7 @@ function CharacterFactionKnowledge.ExportViews(player)
     if not store then return result, 0 end
 
     for factionId, entry in pairs(store.knownFactions) do
-        local view = makeView(factionId, entry)
+        local view = makeView(player, factionId, entry)
         if view then result[#result + 1] = view end
     end
     table.sort(result, function(a, b)
