@@ -2,6 +2,7 @@ require "LCCQF/LCCQFConstants"
 require "LCCQF/Quest/LCCQFQuestRegistry"
 require "LCCQF/Quest/LCCQFQuestInstance"
 require "LCCQF/Persistence/LCCQFQuestPersistence"
+require "LCCQF/Persistence/LCCQFCharacterRelationships"
 
 LCCQF = LCCQF or {}
 
@@ -9,8 +10,15 @@ local C = LCCQF.Constants
 local QuestRegistry = LCCQF.QuestRegistry
 local QuestInstance = LCCQF.QuestInstance
 local QuestPersistence = LCCQF.QuestPersistence
+local CharacterRelationships = LCCQF.CharacterRelationships
 local QuestService = LCCQF.QuestService or {}
 local eventSink = nil
+
+local RELATIONSHIP_STATS = {
+    trust = true,
+    reputation = true,
+    hostility = true,
+}
 
 local function log(message)
     print(C.LOG_PREFIX .. "[QUEST:SERVER] " .. tostring(message))
@@ -88,8 +96,39 @@ local function applyHandlerResult(player, instance, objective, complete, changed
     return 0
 end
 
+local function resolveRelationshipNpcId(spec, context)
+    if type(spec) ~= "table" then return nil end
+    if type(spec.npcId) == "string" and spec.npcId ~= "" then return spec.npcId end
+
+    local target = spec.target
+    context = type(context) == "table" and context or {}
+    if target == "dialogueNpc" then
+        return context.dialogueNpcId or context.npcId or context.giverNpcId
+    end
+    if target == "giverNpc" then
+        return context.giverNpcId
+    end
+    if target == "contextNpc" or target == nil then
+        return context.npcId or context.dialogueNpcId or context.giverNpcId
+    end
+    return nil
+end
+
+local function compareValues(actual, operator, expected)
+    if operator == "==" or operator == "=" then return actual == expected end
+    if operator == "!=" or operator == "~=" then return actual ~= expected end
+    if type(actual) ~= "number" or type(expected) ~= "number" then return false end
+    if operator == ">=" then return actual >= expected end
+    if operator == "<=" then return actual <= expected end
+    if operator == ">" then return actual > expected end
+    if operator == "<" then return actual < expected end
+    return false
+end
+
 function QuestService.Initialize()
-    return QuestPersistence.Initialize()
+    local ok, err = QuestPersistence.Initialize()
+    if not ok then return false, err end
+    return CharacterRelationships.Initialize()
 end
 
 function QuestService.SetEventSink(sink)
@@ -117,7 +156,7 @@ function QuestService.GetQuestState(player, questId)
     return instance.state or "available"
 end
 
-function QuestService.EvaluateCondition(player, condition)
+function QuestService.EvaluateCondition(player, condition, context)
     if condition == nil then return true end
     if type(condition) ~= "table" then return false end
 
@@ -128,11 +167,49 @@ function QuestService.EvaluateCondition(player, condition)
         return QuestService.GetQuestState(player, questId) == expected
     end
 
+    if condition.kind == "relationship" then
+        local npcId = resolveRelationshipNpcId(condition, context)
+        local stat = condition.stat
+        local expected = tonumber(condition.value)
+        if type(npcId) ~= "string" or not RELATIONSHIP_STATS[stat] or expected == nil then return false end
+        local actual = CharacterRelationships.GetStat(player, npcId, stat)
+        if actual == nil then return false end
+        return compareValues(actual, condition.op or ">=", expected)
+    end
+
+    if condition.kind == "relationshipTier" then
+        local npcId = resolveRelationshipNpcId(condition, context)
+        if type(npcId) ~= "string" or type(condition.value) ~= "string" then return false end
+        local actual = CharacterRelationships.GetTier(player, npcId)
+        if actual == nil then return false end
+        return compareValues(actual, condition.op or "==", condition.value)
+    end
+
+    if condition.kind == "relationshipFlag" then
+        local npcId = resolveRelationshipNpcId(condition, context)
+        if type(npcId) ~= "string" or type(condition.flag) ~= "string" then return false end
+        if condition.value ~= true and condition.value ~= false then return false end
+        local actual = CharacterRelationships.GetFlag(player, npcId, condition.flag)
+        if actual == nil then return false end
+        return actual == condition.value
+    end
+
     if condition.kind == "all" and type(condition.conditions) == "table" then
         for _, nested in ipairs(condition.conditions) do
-            if not QuestService.EvaluateCondition(player, nested) then return false end
+            if not QuestService.EvaluateCondition(player, nested, context) then return false end
         end
         return true
+    end
+
+    if condition.kind == "any" and type(condition.conditions) == "table" then
+        for _, nested in ipairs(condition.conditions) do
+            if QuestService.EvaluateCondition(player, nested, context) then return true end
+        end
+        return false
+    end
+
+    if condition.kind == "not" and type(condition.condition) == "table" then
+        return not QuestService.EvaluateCondition(player, condition.condition, context)
     end
 
     return false
@@ -143,6 +220,11 @@ function QuestService.Accept(player, questId, context)
     if not definition then return nil, "unknown quest" end
     if not context or tostring(context.giverNpcId or "") ~= tostring(definition.giverNpcId) then
         return nil, "invalid quest giver"
+    end
+    if definition.acceptCondition ~= nil
+        and not QuestService.EvaluateCondition(player, definition.acceptCondition, context)
+    then
+        return nil, "quest prerequisites not met"
     end
 
     local store, characterId = getStore(player, true)
@@ -179,6 +261,48 @@ function QuestService.ExecuteAction(player, action, context)
     if action.kind == "questAccept" then
         local instance, err = QuestService.Accept(player, action.questId, context)
         return instance ~= nil, err
+    end
+
+    if action.kind == "relationshipDelta" then
+        local npcId = resolveRelationshipNpcId(action, context)
+        if type(npcId) ~= "string" then return false, "relationship target unavailable" end
+        local delta = action.delta
+        if type(delta) ~= "table" then
+            delta = {
+                trust = action.trust,
+                reputation = action.reputation,
+                hostility = action.hostility,
+            }
+        end
+        local ok, changedOrErr = CharacterRelationships.Adjust(
+            player,
+            npcId,
+            delta,
+            tostring(action.source or "dialogue-action"),
+            type(action.token) == "string" and action.token or nil
+        )
+        return ok == true, ok and nil or changedOrErr
+    end
+
+    if action.kind == "relationshipFlag" then
+        local npcId = resolveRelationshipNpcId(action, context)
+        if type(npcId) ~= "string" then return false, "relationship target unavailable" end
+        local ok, changedOrErr = CharacterRelationships.SetFlag(
+            player,
+            npcId,
+            action.flag,
+            action.value,
+            tostring(action.source or "dialogue-action")
+        )
+        return ok == true, ok and nil or changedOrErr
+    end
+
+    if action.kind == "all" and type(action.actions) == "table" then
+        for _, nested in ipairs(action.actions) do
+            local ok, err = QuestService.ExecuteAction(player, nested, context)
+            if not ok then return false, err end
+        end
+        return true
     end
 
     return false, "unsupported dialogue action"
