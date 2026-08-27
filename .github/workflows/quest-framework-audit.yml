@@ -28,6 +28,7 @@ jobs:
           bash -n WorkshopPatches/QuestFramework/audit.sh
           bash -n WorkshopPatches/QuestFramework/audit-relationships.sh
           bash -n WorkshopPatches/QuestFramework/audit-factions.sh
+          bash -n WorkshopPatches/QuestFramework/audit-faction-relationships.sh
 
       - name: Verify Quest Framework contracts
         run: bash WorkshopPatches/QuestFramework/audit.sh
@@ -37,3 +38,6 @@ jobs:
 
       - name: Verify faction discovery contracts
         run: bash WorkshopPatches/QuestFramework/audit-factions.sh
+
+      - name: Verify faction relationship contracts
+        run: bash WorkshopPatches/QuestFramework/audit-faction-relationships.sh
