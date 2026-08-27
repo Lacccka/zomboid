@@ -17,6 +17,11 @@ register({
     descriptionKey = "IGUI_LCCQF_Quest_Checkpoint_Description",
     giverNpcId = C.TEST_NPC_ID,
     repeatable = false,
+    relationshipReward = {
+        trust = 8,
+        reputation = 10,
+        hostility = 0,
+    },
     objectives = {
         {
             id = "reach_checkpoint",
@@ -52,6 +57,11 @@ register({
     descriptionKey = "IGUI_LCCQF_Quest_SupplyRun_Description",
     giverNpcId = C.TEST_NPC_ID,
     repeatable = false,
+    relationshipReward = {
+        trust = 15,
+        reputation = 20,
+        hostility = -5,
+    },
     objectives = {
         {
             id = "kill_zombies",
