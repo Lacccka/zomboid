@@ -6,7 +6,8 @@ require "LCCQF/Quest/LCCQFQuestMarkerService"
 require "LCCQF/Runtime/LCCQFBanditsClientPresentation"
 require "LCCQF/UI/LCCQFHub"
 require "LCCQF/UI/LCCQFRPGJournalPages"
+require "LCCQF/Relationship/LCCQFKnownPeopleRelationshipPresentation"
 
-print("[LCCQF][CLIENT] RPG hub bootstrap loaded people=true journal=true portrait=ISUI3DModel")
+print("[LCCQF][CLIENT] RPG hub bootstrap loaded people=true journal=true portrait=ISUI3DModel relationships=true")
 
 return LCCQFHub
