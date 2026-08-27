@@ -1,0 +1,62 @@
+name: Russian text canonical aggregate
+
+on:
+  push:
+    branches:
+      - agent/b42-20-compatibility-patch
+    paths:
+      - 'WorkshopPatches/RussianTextFixes/**'
+      - 'scripts/aggregate_russian_text.py'
+      - '.github/workflows/russian-text-aggregate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/b42-20-compatibility-patch
+          fetch-depth: 0
+
+      - name: Build canonical Build 42 translation tables
+        run: python3 scripts/aggregate_russian_text.py
+
+      - name: Validate generated JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          RU='WorkshopPatches/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/media/lua/shared/Translate/RU'
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          ru = Path('WorkshopPatches/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/media/lua/shared/Translate/RU')
+          for name in ('ContextMenu.json', 'Fluids.json', 'IG_UI.json', 'ItemName.json', 'Recipes.json', 'Sandbox.json', 'Tooltip.json', 'UI.json'):
+              path = ru / name
+              if path.exists():
+                  with path.open('r', encoding='utf-8-sig') as fh:
+                      value = json.load(fh)
+                  if not isinstance(value, dict):
+                      raise SystemExit(f'{path}: expected object')
+                  print(f'{path}: {len(value)} keys')
+          PY
+
+      - name: Commit aggregate if changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo 'Canonical translation tables are already up to date.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add WorkshopPatches/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/media/lua/shared/Translate/RU \
+                  WorkshopPatches/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/mod.info
+          git commit -m 'fix(russian-text): expose split translations to Build 42 loader'
+          git push origin HEAD:agent/b42-20-compatibility-patch
