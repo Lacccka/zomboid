@@ -11,6 +11,7 @@ local CharacterIdentity = LCCQF.CharacterIdentity
 local CharacterRelationships = LCCQF.CharacterRelationships
 local CharacterKnowledge = LCCQF.CharacterKnowledge or {}
 local eventSink = nil
+local viewDecorators = CharacterKnowledge._viewDecorators or {}
 
 local function log(message)
     print(C.LOG_PREFIX .. "[KNOWLEDGE:SERVER] " .. tostring(message))
@@ -79,6 +80,16 @@ local function makeFactView(definition, entry, factId)
     }
 end
 
+local function applyViewDecorators(player, npcId, definition, view)
+    for _, decorator in ipairs(viewDecorators) do
+        local ok, err = pcall(decorator, player, npcId, definition, view)
+        if not ok then
+            log("view decorator failed npcId=" .. tostring(npcId) .. " error=" .. tostring(err))
+        end
+    end
+    return view
+end
+
 local function makeKnownPersonView(player, npcId, entry)
     local definition = NPCRegistry.Get(npcId)
     if not definition or type(entry) ~= "table" then return nil end
@@ -91,7 +102,7 @@ local function makeKnownPersonView(player, npcId, entry)
         end
     end
 
-    return {
+    local view = {
         npcId = npcId,
         displayNameKey = definition.displayNameKey,
         aliasKey = definition.aliasKey,
@@ -101,6 +112,7 @@ local function makeKnownPersonView(player, npcId, entry)
         portrait = sanitizePortrait(definition),
         relationship = CharacterRelationships.ExportView(player, npcId),
     }
+    return applyViewDecorators(player, npcId, definition, view)
 end
 
 local function emitUpsert(player, npcId, entry)
@@ -126,6 +138,25 @@ end
 
 function CharacterKnowledge.SetEventSink(sink)
     eventSink = type(sink) == "function" and sink or nil
+end
+
+function CharacterKnowledge.AddViewDecorator(decorator)
+    if type(decorator) ~= "function" then return false end
+    for _, current in ipairs(viewDecorators) do
+        if current == decorator then return true end
+    end
+    viewDecorators[#viewDecorators + 1] = decorator
+    return true
+end
+
+function CharacterKnowledge.RemoveViewDecorator(decorator)
+    for index = #viewDecorators, 1, -1 do
+        if viewDecorators[index] == decorator then
+            table.remove(viewDecorators, index)
+            return true
+        end
+    end
+    return false
 end
 
 function CharacterKnowledge.DiscoverNPC(player, npcId, source)
@@ -229,5 +260,6 @@ function CharacterKnowledge.ExportViews(player)
     return result, math.max(0, math.floor(tonumber(knowledge.revision) or 0))
 end
 
+CharacterKnowledge._viewDecorators = viewDecorators
 LCCQF.CharacterKnowledge = CharacterKnowledge
 return CharacterKnowledge
