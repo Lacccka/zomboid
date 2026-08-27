@@ -169,15 +169,31 @@ local function onRuntimeBindingEvent(kind, handle, reason)
 end
 
 local function makeDialogueHooks(handle)
+    local function makeContext(session, choice)
+        return {
+            npcId = session.npcId,
+            dialogueNpcId = session.npcId,
+            giverNpcId = session.npcId,
+            giverHandle = handle,
+            sessionId = session.id,
+            choiceId = choice and choice.id or nil,
+        }
+    end
+
     return {
         IsChoiceAvailable = function(player, session, choice)
-            return QuestService.EvaluateCondition(player, choice.condition)
+            return QuestService.EvaluateCondition(
+                player,
+                choice.condition,
+                makeContext(session, choice)
+            )
         end,
         ExecuteAction = function(player, session, choice)
-            return QuestService.ExecuteAction(player, choice.action, {
-                giverNpcId = session.npcId,
-                giverHandle = handle,
-            })
+            return QuestService.ExecuteAction(
+                player,
+                choice.action,
+                makeContext(session, choice)
+            )
         end,
     }
 end
