@@ -50,6 +50,27 @@ local dialogues = {
                         next = "supply_active",
                     },
                     {
+                        id = "ask_alignment",
+                        textKey = "IGUI_LCCQF_Choice_AskAlignment",
+                        condition = {
+                            kind = "all",
+                            conditions = {
+                                { kind = "questState", questId = C.TEST_QUEST_2_ID, state = "completed" },
+                                {
+                                    kind = "questBranchAvailable",
+                                    groupId = C.TEST_BRANCH_GROUP_ID,
+                                    optionId = C.TEST_BRANCH_SUPPORT_OPTION,
+                                },
+                                {
+                                    kind = "questBranchAvailable",
+                                    groupId = C.TEST_BRANCH_GROUP_ID,
+                                    optionId = C.TEST_BRANCH_INDEPENDENT_OPTION,
+                                },
+                            },
+                        },
+                        next = "alignment_offer",
+                    },
+                    {
                         id = "ask_supply_completed",
                         textKey = "IGUI_LCCQF_Choice_SupplyCompletedTopic",
                         condition = { kind = "questState", questId = C.TEST_QUEST_2_ID, state = "completed" },
@@ -125,6 +146,48 @@ local dialogues = {
                 textKey = "IGUI_LCCQF_Dialog_SupplyActive",
                 choices = {
                     { id = "back", textKey = "IGUI_LCCQF_Choice_Back", next = "start" },
+                    { id = "leave", textKey = "IGUI_LCCQF_Choice_Leave", close = true },
+                },
+            },
+            alignment_offer = {
+                textKey = "IGUI_LCCQF_Dialog_AlignmentOffer",
+                choices = {
+                    {
+                        id = "choose_support_group",
+                        textKey = "IGUI_LCCQF_Choice_AlignmentSupport",
+                        condition = {
+                            kind = "questBranchAvailable",
+                            groupId = C.TEST_BRANCH_GROUP_ID,
+                            optionId = C.TEST_BRANCH_SUPPORT_OPTION,
+                        },
+                        action = { kind = "questAccept", questId = C.TEST_QUEST_BRANCH_SUPPORT_ID },
+                        next = "alignment_support_accepted",
+                    },
+                    {
+                        id = "choose_stay_independent",
+                        textKey = "IGUI_LCCQF_Choice_AlignmentIndependent",
+                        condition = {
+                            kind = "questBranchAvailable",
+                            groupId = C.TEST_BRANCH_GROUP_ID,
+                            optionId = C.TEST_BRANCH_INDEPENDENT_OPTION,
+                        },
+                        action = { kind = "questAccept", questId = C.TEST_QUEST_BRANCH_INDEPENDENT_ID },
+                        next = "alignment_independent_accepted",
+                    },
+                    { id = "back", textKey = "IGUI_LCCQF_Choice_Back", next = "start" },
+                },
+            },
+            alignment_support_accepted = {
+                textKey = "IGUI_LCCQF_Dialog_AlignmentSupportAccepted",
+                choices = {
+                    { id = "back", textKey = "IGUI_LCCQF_Choice_Understood", next = "start" },
+                    { id = "leave", textKey = "IGUI_LCCQF_Choice_Leave", close = true },
+                },
+            },
+            alignment_independent_accepted = {
+                textKey = "IGUI_LCCQF_Dialog_AlignmentIndependentAccepted",
+                choices = {
+                    { id = "back", textKey = "IGUI_LCCQF_Choice_Understood", next = "start" },
                     { id = "leave", textKey = "IGUI_LCCQF_Choice_Leave", close = true },
                 },
             },
