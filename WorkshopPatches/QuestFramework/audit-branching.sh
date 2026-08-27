@@ -43,7 +43,7 @@ require_pattern 'store\.branchChoices\[branch\.groupId\] = branch\.optionId' "$s
 require_pattern 'TEST_BRANCH_GROUP_ID' "$constants" "test branch group missing"
 require_pattern 'TEST_BRANCH_SUPPORT_OPTION' "$constants" "support branch option missing"
 require_pattern 'TEST_BRANCH_INDEPENDENT_OPTION' "$constants" "independent branch option missing"
-require_pattern 'branch = {' "$definitions" "authored branch metadata missing"
+require_pattern 'branch = \{' "$definitions" "authored branch metadata missing"
 require_pattern 'C\.TEST_BRANCH_SUPPORT_OPTION' "$definitions" "support branch quest missing"
 require_pattern 'C\.TEST_BRANCH_INDEPENDENT_OPTION' "$definitions" "independent branch quest missing"
 require_pattern 'kind = "questBranchAvailable"' "$definitions" "branch availability prerequisite missing from authored quests"
