@@ -48,6 +48,15 @@ local function objectiveProgressSuffix(objective)
     return " (" .. tostring(progress) .. "/" .. tostring(required) .. ")"
 end
 
+local function measureTabWidth(title)
+    local measured = 0
+    local ok, value = pcall(function()
+        return getTextManager():MeasureStringX(UIFont.Medium, title)
+    end)
+    if ok then measured = tonumber(value) or 0 end
+    return math.max(176, math.ceil(measured + 38))
+end
+
 function Hub.RegisterPage(definition)
     if type(definition) ~= "table" or type(definition.id) ~= "string"
         or type(definition.create) ~= "function"
@@ -63,6 +72,8 @@ function Hub.RegisterPage(definition)
     return true
 end
 
+-- Legacy fallback page. LCCQFRPGJournalPages replaces this registration with
+-- the v0.3.4 journal once the RPG Hub bootstrap finishes loading.
 LCCQFQuestHubPage = ISPanel:derive("LCCQFQuestHubPage")
 
 function LCCQFQuestHubPage:new(x, y, width, height)
@@ -212,8 +223,8 @@ function LCCQFHubPanel:new(x, y, width, height)
     setmetatable(o, self)
     self.__index = self
     o.moveWithMouse = true
-    o.backgroundColor = { r = 0.045, g = 0.045, b = 0.045, a = 0.96 }
-    o.borderColor = { r = 0.55, g = 0.55, b = 0.55, a = 1.0 }
+    o.backgroundColor = { r = 0.035, g = 0.035, b = 0.035, a = 0.97 }
+    o.borderColor = { r = 0.48, g = 0.48, b = 0.48, a = 0.9 }
     o.pagePanels = {}
     o.tabButtons = {}
     o.activePageId = nil
@@ -225,7 +236,7 @@ function LCCQFHubPanel:initialise()
 end
 
 function LCCQFHubPanel:createChildren()
-    self.closeButton = ISButton:new(self.width - 48, 14, 32, 28, "X", self, LCCQFHubPanel.onClosePressed)
+    self.closeButton = ISButton:new(self.width - 46, 14, 30, 28, "X", self, LCCQFHubPanel.onClosePressed)
     self.closeButton:initialise()
     self.closeButton:instantiate()
     self:addChild(self.closeButton)
@@ -233,13 +244,14 @@ function LCCQFHubPanel:createChildren()
     local x = 18
     for _, definition in ipairs(Hub.pages) do
         local title = localize(definition.labelKey, definition.id)
-        local button = ISButton:new(x, 52, 132, 34, title, self, LCCQFHubPanel.onTabPressed)
+        local tabWidth = measureTabWidth(title)
+        local button = ISButton:new(x, 54, tabWidth, 36, title, self, LCCQFHubPanel.onTabPressed)
         button:initialise()
         button:instantiate()
         button.pageId = definition.id
         self:addChild(button)
         self.tabButtons[#self.tabButtons + 1] = button
-        x = x + 140
+        x = x + tabWidth + 8
     end
 
     if Hub.pages[1] then self:switchPage(Hub.pages[1].id) end
@@ -268,7 +280,7 @@ function LCCQFHubPanel:switchPage(pageId)
         end
         if not definition then return end
 
-        page = definition.create(self, 16, 96, self.width - 32, self.height - 112)
+        page = definition.create(self, 16, 104, self.width - 32, self.height - 120)
         page:initialise()
         page:instantiate()
         self:addChild(page)
@@ -285,7 +297,8 @@ end
 
 function LCCQFHubPanel:prerender()
     ISPanel.prerender(self)
-    self:drawText(localize("IGUI_LCCQF_Hub_Title", "Quest Framework"), 18, 18, 1, 1, 1, 1, UIFont.Large)
+    self:drawText(localize("IGUI_LCCQF_Hub_Title", "Quest Framework"), 18, 16, 1, 1, 1, 1, UIFont.Large)
+    self:drawRect(18, 96, self.width - 36, 1, 0.3, 0.55, 0.55, 0.55)
 end
 
 LCCQFHubButton = ISButton:derive("LCCQFHubButton")
@@ -315,8 +328,10 @@ function Hub.Toggle()
 
     local screenWidth = getCore():getScreenWidth()
     local screenHeight = getCore():getScreenHeight()
-    local width = math.min(860, screenWidth - 80)
-    local height = math.min(580, screenHeight - 80)
+    local width = math.min(1040, math.max(760, screenWidth - 72))
+    local height = math.min(700, math.max(520, screenHeight - 72))
+    width = math.min(width, screenWidth - 24)
+    height = math.min(height, screenHeight - 24)
     local x = math.floor((screenWidth - width) / 2)
     local y = math.floor((screenHeight - height) / 2)
 
