@@ -10,7 +10,8 @@ require "LCCQF/UI/LCCQFHub"
 require "LCCQF/UI/LCCQFRPGJournalPages"
 require "LCCQF/Relationship/LCCQFKnownPeopleRelationshipPresentation"
 require "LCCQF/UI/LCCQFFactionPage"
+require "LCCQF/Faction/LCCQFKnownPeopleFactionPresentation"
 
-print("[LCCQF][CLIENT] RPG hub bootstrap loaded people=true factions=true journal=true portrait=ISUI3DModel relationships=true")
+print("[LCCQF][CLIENT] RPG hub bootstrap loaded people=true factions=true journal=true portrait=ISUI3DModel relationships=true crossNav=true")
 
 return LCCQFHub
