@@ -63,7 +63,7 @@ require_pattern 'CharacterFactionRelationships\.EnsureFaction' "$faction_knowled
 
 require_pattern 'factionReward' "$quest_definitions" "quest faction rewards missing"
 require_pattern 'quest-faction-completed:' "$faction_bridge" "faction quest reward idempotency token missing"
-require_pattern 'quest-history-reconcile' "$faction_bridge" "faction quest history reconciliation missing"
+require_pattern 'quest-faction-history-reconcile' "$faction_bridge" "faction quest history reconciliation missing"
 require_pattern 'QuestService\.AddEventListener' "$faction_bridge" "faction bridge does not use multi-listener quest event bus"
 require_pattern 'KNOWN_FACTION_UPSERT' "$faction_bridge" "faction relationship changes do not update known faction projection"
 
