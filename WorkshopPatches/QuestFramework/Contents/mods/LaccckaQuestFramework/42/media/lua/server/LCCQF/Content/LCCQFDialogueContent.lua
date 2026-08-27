@@ -131,7 +131,50 @@ local dialogues = {
             supply_completed = {
                 textKey = "IGUI_LCCQF_Dialog_SupplyCompleted",
                 choices = {
+                    {
+                        id = "ask_faction_membership",
+                        textKey = "IGUI_LCCQF_Choice_AskFactionMembership",
+                        condition = {
+                            kind = "all",
+                            conditions = {
+                                {
+                                    kind = "factionReputation",
+                                    target = "dialogueFaction",
+                                    op = ">=",
+                                    value = 20,
+                                },
+                                {
+                                    kind = "factionMembership",
+                                    target = "dialogueFaction",
+                                    value = true,
+                                },
+                                {
+                                    kind = "factionRank",
+                                    target = "dialogueFaction",
+                                    value = "associate",
+                                },
+                            },
+                        },
+                        next = "faction_member",
+                    },
                     { id = "back", textKey = "IGUI_LCCQF_Choice_Back", next = "start" },
+                    { id = "leave", textKey = "IGUI_LCCQF_Choice_Leave", close = true },
+                },
+            },
+            faction_member = {
+                textKey = "IGUI_LCCQF_Dialog_FactionMember",
+                choices = {
+                    {
+                        id = "acknowledge_faction_member",
+                        textKey = "IGUI_LCCQF_Choice_AcknowledgeFactionMembership",
+                        action = {
+                            kind = "factionReputationDelta",
+                            target = "dialogueFaction",
+                            delta = 1,
+                            token = "dialogue:faction-member-topic:v1",
+                        },
+                        next = "start",
+                    },
                     { id = "leave", textKey = "IGUI_LCCQF_Choice_Leave", close = true },
                 },
             },
