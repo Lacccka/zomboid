@@ -4,6 +4,7 @@ local ItemFootprint = require("Algorithm/ItemFootprint")
 local GridClientNetwork = require("Network/GridClientNetwork")
 local GridSortState = require("LCC/GridSortState")
 local GridSortNetwork = require("LCC/GridSortNetwork")
+local okSearch, GridInventory_Search = pcall(require, "System/GridInventory_Search")
 
 local GridAutoSort = {}
 
@@ -38,9 +39,6 @@ local function itemFullType(item)
 end
 
 local function normalizedName(item)
-    -- string.lower() handles the ASCII portion of localized names and leaves
-    -- other UTF-8 bytes deterministic. The visible display name remains the
-    -- primary key; full type and item id make ties stable across clients.
     return string.lower(itemDisplayName(item))
 end
 
@@ -68,9 +66,6 @@ local function makeDescriptor(item)
     }
 end
 
--- Read the physical ItemContainer directly, using exactly the same filter as the
--- dedicated server. The old model-based collector could miss an item for one UI
--- refresh and was the main source of SortRequest membership mismatches.
 local function collectDescriptors(container, playerNum)
     local model = GridContainer.getOrCreate(container, playerNum)
     local out = {}
@@ -106,8 +101,6 @@ local function nameFirst(a, b)
     if a.sortType ~= b.sortType then return a.sortType < b.sortType end
     local ak, bk = tostring(a.compatKey or ""), tostring(b.compatKey or "")
     if ak ~= bk then return ak < bk end
-    -- Exact/similar items stay adjacent, while larger members of the same name
-    -- group are placed first to keep stack and packing behaviour reliable.
     if a.area ~= b.area then return a.area > b.area end
     if a.longSide ~= b.longSide then return a.longSide > b.longSide end
     if a.shortSide ~= b.shortSide then return a.shortSide > b.shortSide end
@@ -247,10 +240,6 @@ end
 local function computePacked(descriptors, width, height)
     if lowerBoundArea(descriptors) > width * height then return nil end
 
-    -- Visible item name is now the canonical ordering. Preserve that ordering
-    -- whenever it can be represented by the grid. Geometry-only passes are a
-    -- safety fallback for pathological Tetris layouts where strict alphabetical
-    -- insertion would otherwise make a container unsortable despite enough area.
     local named = packGreedy(descriptors, width, height, nameFirst)
     if named then return named end
 
@@ -295,37 +284,49 @@ local function isNestedBagContainer(container)
     return parentContainer:getContainingItem() ~= nil
 end
 
-function GridAutoSort.canSort(gridUi)
-    if not gridUi or gridUi.isOverflow or not gridUi.inventoryContainer then
-        return false, "unavailable"
+local function needsSearch(container, playerNum, gridUi)
+    if gridUi and gridUi.needsSearch and gridUi:needsSearch() then return true end
+    if okSearch and GridInventory_Search and GridInventory_Search.needsSearch then
+        local ok, result = pcall(function()
+            return GridInventory_Search.needsSearch(playerNum or 0, container)
+        end)
+        if ok and result then return true end
     end
+    return false
+end
 
-    local container = gridUi.inventoryContainer
+function GridAutoSort.canSortContainer(container, playerNum, gridUi)
+    if not container then return false, "unavailable" end
+    if gridUi and gridUi.isOverflow then return false, "unavailable" end
     if container.getType and container:getType() == "floor" then return false, "floor" end
     local parent = container.getParent and container:getParent()
     if parent and instanceof and instanceof(parent, "IsoDeadBody") then return false, "corpse" end
     if isClient and isClient() and isNestedBagContainer(container) then return false, "nested" end
     if GridSortNetwork.isPending(container) then return false, "busy" end
-    if gridUi.needsSearch and gridUi:needsSearch() then return false, "search" end
+    if needsSearch(container, playerNum, gridUi) then return false, "search" end
 
-    local model = GridContainer.getOrCreate(container, gridUi.playerNum or 0)
+    local model = GridContainer.getOrCreate(container, playerNum or 0)
     if hasPendingWork(container, model) then return false, "busy" end
 
     local okBag, BagDrop = pcall(require, "System/GridInventory_BagDrop")
     if okBag and BagDrop and BagDrop.isNestedLocked then
-        local player = getSpecificPlayer(gridUi.playerNum or 0)
+        local player = getSpecificPlayer(playerNum or 0)
         if BagDrop.isNestedLocked(container, player) then return false, "locked" end
     end
     return true
 end
 
-function GridAutoSort.computeTargets(gridUi)
-    local can, reason = GridAutoSort.canSort(gridUi)
+function GridAutoSort.canSort(gridUi)
+    if not gridUi or not gridUi.inventoryContainer then return false, "unavailable" end
+    return GridAutoSort.canSortContainer(gridUi.inventoryContainer, gridUi.playerNum or 0, gridUi)
+end
+
+function GridAutoSort.computeTargetsForContainer(container, playerNum, gridUi)
+    local can, reason = GridAutoSort.canSortContainer(container, playerNum, gridUi)
     if not can then return nil, reason end
 
     local startedAt = nowMs()
-    local container = gridUi.inventoryContainer
-    local descriptors, model = collectDescriptors(container, gridUi.playerNum or 0)
+    local descriptors, model = collectDescriptors(container, playerNum or 0)
     if #descriptors < 2 then return nil, "nothing" end
     if hasPendingWork(container, model) then return nil, "busy" end
 
@@ -358,6 +359,12 @@ function GridAutoSort.computeTargets(gridUi)
     return targets, nil
 end
 
+function GridAutoSort.computeTargets(gridUi)
+    if not gridUi or not gridUi.inventoryContainer then return nil, "unavailable" end
+    return GridAutoSort.computeTargetsForContainer(
+        gridUi.inventoryContainer, gridUi.playerNum or 0, gridUi)
+end
+
 local function targetDiffers(t, signature)
     local item = t.item and t.item.itemObj
     local md = item and item.getModData and item:getModData() or nil
@@ -370,11 +377,10 @@ local function targetDiffers(t, signature)
         or md.gridPage ~= nil
 end
 
-function GridAutoSort.sort(gridUi)
-    local targets, reason = GridAutoSort.computeTargets(gridUi)
+function GridAutoSort.sortContainer(container, playerNum, gridUi)
+    local targets, reason = GridAutoSort.computeTargetsForContainer(container, playerNum, gridUi)
     if not targets then return false, reason end
 
-    local container = gridUi.inventoryContainer
     local signature = GridContainer.containerSignature(container)
     local changed = false
     for _, t in ipairs(targets) do
@@ -401,9 +407,14 @@ function GridAutoSort.sort(gridUi)
             md.gridManual = true
         end
     end
-    GridClientNetwork.markGridChanged(container, gridUi.playerNum or 0)
-    gridUi.selectedItems = {}
+    GridClientNetwork.markGridChanged(container, playerNum or 0)
+    if gridUi then gridUi.selectedItems = {} end
     return true, "sorted"
+end
+
+function GridAutoSort.sort(gridUi)
+    if not gridUi or not gridUi.inventoryContainer then return false, "unavailable" end
+    return GridAutoSort.sortContainer(gridUi.inventoryContainer, gridUi.playerNum or 0, gridUi)
 end
 
 return GridAutoSort
