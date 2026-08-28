@@ -21,6 +21,10 @@ local function nowMs()
     return getTimestampMs and getTimestampMs() or (getTimeInMillis and getTimeInMillis() or 0)
 end
 
+local function itemId(self)
+    return self.item and self.item.getID and self.item:getID() or "?"
+end
+
 local function shouldUseVisualFloor(self)
     if not isClient() then return false end
     if not self.character or not self.item then return false end
@@ -56,6 +60,12 @@ function LCCMassInventoryTransferAction:update()
                 self.maxTime = displayTime
                 self.action:setTime(displayTime)
             end
+            if not self._lccDurationLogged then
+                self._lccDurationLogged = true
+                print("[LCC GridSort] mass transfer timing item=" .. tostring(itemId(self))
+                    .. " serverTicks=" .. tostring(duration)
+                    .. " visualTicks=" .. tostring(displayTime))
+            end
         elseif self.maxTime == -1 then
             self.maxTime = self._lccVisualFloorTicks
             self.action:setTime(self.maxTime)
@@ -71,8 +81,17 @@ function LCCMassInventoryTransferAction:forceComplete()
     -- because waitForFinished=true disables maxTime completion entirely. Hold
     -- only the *visual completion* until the floor; the server transaction has
     -- already remained authoritative throughout.
-    if self._lccVisualUntil and nowMs() < self._lccVisualUntil then
+    local now = nowMs()
+    if self._lccVisualUntil and now < self._lccVisualUntil then
         self._lccServerDoneBeforeVisualFloor = true
+        if not self._lccFloorLogged then
+            self._lccFloorLogged = true
+            local elapsed = self._lccVisualStartedAt and (now - self._lccVisualStartedAt) or -1
+            print("[LCC GridSort] mass transfer visual floor holding item="
+                .. tostring(itemId(self))
+                .. " elapsedMs=" .. tostring(elapsed)
+                .. " remainingMs=" .. tostring(self._lccVisualUntil - now))
+        end
         return
     end
 
