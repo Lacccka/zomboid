@@ -10,6 +10,25 @@ local GridAutoSort = {}
 
 local SLOW_SOLVE_WARN_MS = 75
 
+local RUSSIAN_CASE_PAIRS = {
+    { "А", "а" }, { "Б", "б" }, { "В", "в" }, { "Г", "г" }, { "Д", "д" }, { "Е", "е" },
+    { "Ё", "ё" }, { "Ж", "ж" }, { "З", "з" }, { "И", "и" }, { "Й", "й" }, { "К", "к" },
+    { "Л", "л" }, { "М", "м" }, { "Н", "н" }, { "О", "о" }, { "П", "п" }, { "Р", "р" },
+    { "С", "с" }, { "Т", "т" }, { "У", "у" }, { "Ф", "ф" }, { "Х", "х" }, { "Ц", "ц" },
+    { "Ч", "ч" }, { "Ш", "ш" }, { "Щ", "щ" }, { "Ъ", "ъ" }, { "Ы", "ы" }, { "Ь", "ь" },
+    { "Э", "э" }, { "Ю", "ю" }, { "Я", "я" },
+}
+
+local RUSSIAN_ALPHABET = {
+    "а", "б", "в", "г", "д", "е", "ё", "ж", "з", "и", "й", "к", "л", "м", "н", "о", "п",
+    "р", "с", "т", "у", "ф", "х", "ц", "ч", "ш", "щ", "ъ", "ы", "ь", "э", "ю", "я",
+}
+
+local RUSSIAN_COLLATION = {}
+for index, letter in ipairs(RUSSIAN_ALPHABET) do
+    RUSSIAN_COLLATION[index] = { letter, string.format("{%02d}", index) }
+end
+
 local function nowMs()
     return getTimestampMs and getTimestampMs() or (getTimeInMillis and getTimeInMillis() or 0)
 end
@@ -38,8 +57,66 @@ local function itemFullType(item)
     return tostring(moduleName) .. "." .. tostring(typeName)
 end
 
-local function normalizedName(item)
-    return string.lower(itemDisplayName(item))
+local function foldCase(value)
+    local text = string.lower(tostring(value or ""))
+    for _, pair in ipairs(RUSSIAN_CASE_PAIRS) do
+        text = string.gsub(text, pair[1], pair[2])
+    end
+    return text
+end
+
+local function russianCollationKey(value)
+    local key = value
+    for _, pair in ipairs(RUSSIAN_COLLATION) do
+        key = string.gsub(key, pair[1], pair[2])
+    end
+    return key
+end
+
+local function naturalSortKey(value)
+    local text = foldCase(value)
+    local parts = {}
+    local position = 1
+    while position <= #text do
+        local digitStart, digitEnd = string.find(text, "%d+", position)
+        if digitStart == position then
+            local digits = string.sub(text, digitStart, digitEnd)
+            local significant = string.gsub(digits, "^0+", "")
+            if significant == "" then significant = "0" end
+            table.insert(parts, {
+                numeric = true,
+                value = significant,
+                length = #significant,
+                rawLength = #digits,
+            })
+            position = digitEnd + 1
+        else
+            local chunkEnd = digitStart and (digitStart - 1) or #text
+            local chunk = string.sub(text, position, chunkEnd)
+            table.insert(parts, { numeric = false, value = russianCollationKey(chunk) })
+            position = chunkEnd + 1
+        end
+    end
+    return parts
+end
+
+local function compareNaturalKeys(a, b)
+    local count = math.min(#a, #b)
+    for index = 1, count do
+        local left, right = a[index], b[index]
+        if left.numeric ~= right.numeric then
+            return left.numeric and -1 or 1
+        end
+        if left.numeric then
+            if left.length ~= right.length then return left.length < right.length and -1 or 1 end
+            if left.value ~= right.value then return left.value < right.value and -1 or 1 end
+            if left.rawLength ~= right.rawLength then return left.rawLength < right.rawLength and -1 or 1 end
+        elseif left.value ~= right.value then
+            return left.value < right.value and -1 or 1
+        end
+    end
+    if #a ~= #b then return #a < #b and -1 or 1 end
+    return 0
 end
 
 local function makeDescriptor(item)
@@ -50,6 +127,7 @@ local function makeDescriptor(item)
     if not w or not h or w < 1 or h < 1 then return nil end
     local compatKey, stackInfo = GridContainer.getStackInfo(item)
     local md = item.getModData and item:getModData() or nil
+    local displayName = itemDisplayName(item)
     return {
         id = id,
         itemObj = item,
@@ -61,7 +139,8 @@ local function makeDescriptor(item)
         longSide = math.max(w, h),
         shortSide = math.min(w, h),
         currentRotated = md and md.gridRot and true or false,
-        sortName = normalizedName(item),
+        sortName = foldCase(displayName),
+        sortNameKey = naturalSortKey(displayName),
         sortType = itemFullType(item),
     }
 end
@@ -97,6 +176,8 @@ local function longFirst(a, b)
 end
 
 local function nameFirst(a, b)
+    local nameOrder = compareNaturalKeys(a.sortNameKey, b.sortNameKey)
+    if nameOrder ~= 0 then return nameOrder < 0 end
     if a.sortName ~= b.sortName then return a.sortName < b.sortName end
     if a.sortType ~= b.sortType then return a.sortType < b.sortType end
     local ak, bk = tostring(a.compatKey or ""), tostring(b.compatKey or "")
