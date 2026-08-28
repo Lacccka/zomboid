@@ -32,6 +32,15 @@ local ok, err = LCCQF.FactionRegistry.Register({
         minScore = 2,
         maxSites = 1,
         wantsIndoor = true,
+
+        -- Expensive live-world requirements are checked only after the cheap
+        -- metadata scorer has reserved a candidate. A failed reservation is
+        -- abandoned and the allocator is free to try the next building.
+        wantsBeds = true,
+        wantsWater = true,
+        minStorageContainers = 1,
+        minFreeSpawnPoints = 3,
+
         preferredZones = {
             TownZone = 5,
             TrailerPark = 2,
