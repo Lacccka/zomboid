@@ -105,18 +105,28 @@ function Index.ObserveRoom(room)
     x, y, w, h = math.floor(x), math.floor(y), math.floor(w), math.floor(h)
     local anchorX = x + math.floor(w / 2)
     local anchorY = y + math.floor(h / 2)
+
+    -- getCell():getRoomList() can expose a room/building definition before any square
+    -- from that room is currently streamed in. Such metadata is useful later, but it is
+    -- not a loaded-world candidate yet. Never fall back to the BuildingDef centre: doing
+    -- so produced candidates that the validator immediately had to DEFER as unloaded.
     local sampleSquare = freeSquareFromRoom(room)
-    local sampleX, sampleY, sampleZ
-    if sampleSquare then
-        pcall(function()
-            sampleX = sampleSquare:getX()
-            sampleY = sampleSquare:getY()
-            sampleZ = sampleSquare:getZ()
-        end)
+    if not sampleSquare then
+        return nil, "room has no loaded sample square"
     end
-    sampleX = math.floor(tonumber(sampleX) or anchorX)
-    sampleY = math.floor(tonumber(sampleY) or anchorY)
-    sampleZ = math.floor(tonumber(sampleZ) or 0)
+
+    local sampleX, sampleY, sampleZ
+    pcall(function()
+        sampleX = sampleSquare:getX()
+        sampleY = sampleSquare:getY()
+        sampleZ = sampleSquare:getZ()
+    end)
+    if tonumber(sampleX) == nil or tonumber(sampleY) == nil or tonumber(sampleZ) == nil then
+        return nil, "loaded sample coordinates unavailable"
+    end
+    sampleX = math.floor(tonumber(sampleX))
+    sampleY = math.floor(tonumber(sampleY))
+    sampleZ = math.floor(tonumber(sampleZ))
 
     local key = "building:" .. tostring(x) .. ":" .. tostring(y)
         .. ":" .. tostring(w) .. ":" .. tostring(h)
