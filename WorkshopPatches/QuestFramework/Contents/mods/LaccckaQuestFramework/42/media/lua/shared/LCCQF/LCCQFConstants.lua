@@ -29,6 +29,7 @@ Constants.FACTION_SITE_MODDATA_KEY = "LCCQF_FactionSites"
 Constants.FACTION_SITE_MAX_CANDIDATES = 128
 Constants.FACTION_SITE_MAX_ROOMS_PER_PASS = 256
 Constants.FACTION_SITE_DIAGNOSTIC_TOP_N = 5
+Constants.FACTION_SITE_RESOURCE_SCAN_MAX_TILES = 4096
 Constants.CHARACTER_ID_MODDATA_KEY = "lccqCharacterId"
 
 Constants.COMMAND = {
@@ -50,6 +51,8 @@ Constants.COMMAND = {
     REQUEST_FACTIONS = "RequestFactions",
     FACTIONS = "Factions",
     KNOWN_FACTION_UPSERT = "KnownFactionUpsert",
+    REQUEST_FACTION_SITES_DEBUG = "RequestFactionSitesDebug",
+    FACTION_SITES_DEBUG = "FactionSitesDebug",
     DIALOGUE_STATE = "DialogueState",
     DIALOGUE_CLOSED = "DialogueClosed",
     STATUS = "Status",
