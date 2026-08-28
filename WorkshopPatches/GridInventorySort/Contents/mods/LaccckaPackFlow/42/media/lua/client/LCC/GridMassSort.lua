@@ -12,7 +12,7 @@ GridMassSort.SCOPE_PLAYER = "player"
 GridMassSort.SCOPE_EXTERNAL = "external"
 GridMassSort.active = {}
 
-local MOVE_TIMEOUT_MS = 45000
+local MOVE_TIMEOUT_MS = 20000
 local SETTLE_MS = 150
 
 local function nowMs()
@@ -67,43 +67,73 @@ local function pageForScope(scope, playerNum)
     return nil
 end
 
-local function collectScopeGrids(scope, playerNum, requireIdle)
+local function findGridUi(pane, container)
+    if not pane or not pane.gridContainerUis or not container then return nil end
+    for _, gridUi in ipairs(pane.gridContainerUis) do
+        if gridUi and not gridUi.isOverflow and gridUi.inventoryContainer == container then
+            return gridUi
+        end
+    end
+    return nil
+end
+
+-- The official page.backpacks list is the source of truth for the accessible
+-- container strip. GridInventory may be configured to render only the active
+-- grid, so relying on gridContainerUis would silently omit reachable containers.
+local function collectScopeRecords(scope, playerNum)
     local player = getPlayerByNum(playerNum)
     local page = pageForScope(scope, playerNum)
     local pane = page and page.inventoryPane or nil
-    if not player or not pane or not pane.gridContainerUis then return {} end
+    if not player or not page or not pane then return {}, "unavailable" end
 
-    local seen, out = {}, {}
-    for index, gridUi in ipairs(pane.gridContainerUis) do
-        local container = gridUi and not gridUi.isOverflow and gridUi.inventoryContainer or nil
-        if container and not seen[container]
-            and not (container.getType and container:getType() == "floor")
+    local seen, candidates = {}, {}
+    local function addCandidate(container)
+        if not container or seen[container] then return end
+        seen[container] = true
+        table.insert(candidates, container)
+    end
+
+    if scope == GridMassSort.SCOPE_PLAYER and player.getInventory then
+        addCandidate(player:getInventory())
+    end
+    for _, button in ipairs(page.backpacks or {}) do
+        if button and button.inventory then addCandidate(button.inventory) end
+    end
+    if #candidates == 0 and pane.inventory then addCandidate(pane.inventory) end
+
+    local records = {}
+    for index, container in ipairs(candidates) do
+        if not (container.getType and container:getType() == "floor")
             and not isCorpseContainer(container) then
             local owned = isPlayerContainer(container, player)
             local inScope = (scope == GridMassSort.SCOPE_PLAYER and owned)
                 or (scope == GridMassSort.SCOPE_EXTERNAL and not owned)
             if inScope then
-                local can, reason = GridAutoSort.canSort(gridUi)
-                if can or (not requireIdle and reason == "busy") then
-                    seen[container] = true
-                    table.insert(out, {
+                local gridUi = findGridUi(pane, container)
+                local can, reason = GridAutoSort.canSortContainer(container, playerNum, gridUi)
+                if can then
+                    table.insert(records, {
                         index = index,
                         gridUi = gridUi,
                         container = container,
                     })
+                elseif reason == "busy" then
+                    return {}, "busy"
                 end
+                -- search/nested/locked containers are intentionally skipped;
+                -- bulk sorting must never reveal unknown loot or bypass the
+                -- current nested-bag multiplayer safety restriction.
             end
         end
     end
-    return out
+    return records, nil
 end
 
 local function isRelocatable(item)
     if not item then return false end
     if item.isFavorite and item:isFavorite() then return false end
-    -- Never physically move a bag/container during a bulk pass. Its ref and
-    -- child inventory can otherwise change while later queued moves still refer
-    -- to that tree. The bag itself is still positioned by the per-grid sorter.
+    -- Moving the containing bag itself would invalidate refs for queued child
+    -- moves. The bag still participates in the final coordinate sort.
     if item.getInventory then
         local ok, inventory = pcall(function() return item:getInventory() end)
         if ok and inventory then return false end
@@ -118,8 +148,7 @@ local function stackUnits(item)
 end
 
 local function buildMovePlan(records)
-    local groups = {}
-    local groupList = {}
+    local groups, groupList = {}, {}
 
     for _, record in ipairs(records) do
         for _, item in ipairs(GridSortState.collectItems(record.container)) do
@@ -158,10 +187,9 @@ local function buildMovePlan(records)
                 return a.record.index < b.record.index
             end)
 
-            -- Move smaller fragments toward the containers that already hold the
-            -- largest amount of this exact item type. Alternatives are limited to
-            -- earlier/larger buckets, so the pass converges instead of shuffling
-            -- duplicates back and forth when the primary destination is full.
+            -- Smaller fragments flow only toward earlier/larger buckets. If the
+            -- primary bucket is full, a secondary earlier bucket may accept the
+            -- item; we never bounce it toward a smaller source bucket.
             for sourceIndex = #buckets, 2, -1 do
                 local source = buckets[sourceIndex]
                 local destinations = {}
@@ -177,9 +205,7 @@ local function buildMovePlan(records)
                     table.insert(plan, {
                         item = item,
                         itemId = item:getID(),
-                        source = source.record.container,
                         destinations = destinations,
-                        groupKey = group.key,
                     })
                 end
             end
@@ -209,7 +235,7 @@ end
 local function chooseDestination(state, move)
     local item = move.item
     local source = item and item.getContainer and item:getContainer() or nil
-    if not source then return nil, nil end
+    if not source or not state.containerSet[source] then return nil, nil end
 
     for _, destination in ipairs(move.destinations or {}) do
         if state.containerSet[destination] and canTransfer(state.player, item, source, destination) then
@@ -225,7 +251,6 @@ local function queueMove(state, move, source, destination)
     ISTimedActionQueue.add(action)
     state.waitingMove = {
         move = move,
-        source = source,
         destination = destination,
         startedAt = nowMs(),
     }
@@ -266,9 +291,7 @@ local function tickTransfers(state)
         local move = state.moves[state.moveIndex]
         state.moveIndex = state.moveIndex + 1
         local source, destination = chooseDestination(state, move)
-        if source and destination and queueMove(state, move, source, destination) then
-            return
-        end
+        if source and destination and queueMove(state, move, source, destination) then return end
     end
 
     state.phase = "sort"
@@ -292,7 +315,8 @@ local function tickSort(state)
         return
     end
 
-    local ok, reason = GridAutoSort.sort(record.gridUi)
+    local ok, reason = GridAutoSort.sortContainer(
+        record.container, state.playerNum, record.gridUi)
     if ok then
         if reason == "pending" then
             state.sortWaiting = record
@@ -341,7 +365,8 @@ end
 function GridMassSort.canStart(scope, playerNum)
     playerNum = playerNum or 0
     if GridMassSort.isBusy(playerNum) then return false, "busy" end
-    local records = collectScopeGrids(scope, playerNum, true)
+    local records, blocked = collectScopeRecords(scope, playerNum)
+    if blocked then return false, blocked end
     if #records == 0 then return false, "unavailable" end
 
     local total = 0
