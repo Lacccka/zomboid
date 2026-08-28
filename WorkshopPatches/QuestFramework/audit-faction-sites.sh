@@ -73,7 +73,18 @@ require_pattern 'Candidates\.DiscoverLoadedBuildings' "$allocator" "allocator do
 require_pattern 'Validator\.Validate' "$allocator" "allocator skips non-destructive safety validation"
 require_pattern 'Sites\.ReserveCandidate' "$allocator" "allocator does not persist reservation"
 require_pattern 'Events\.EveryOneMinute' "$allocator" "allocator is not globally throttled"
+require_pattern 'isClient and isClient\(\)' "$allocator" "allocator lacks direct MP-client authority guard"
+require_pattern 'isServer and isServer\(\)' "$allocator" "allocator client guard does not preserve server authority"
 require_pattern 'LCCQF/FactionWorld/zz_LCCQFFactionSiteAllocator' "$bootstrap" "site allocator not bootstrapped"
+require_pattern 'isClient and isClient\(\)' "$bootstrap" "faction server bootstrap lacks MP-client authority guard"
+require_pattern 'isServer and isServer\(\)' "$bootstrap" "faction bootstrap client guard does not preserve server authority"
+
+allocator_guard_line="$(rg -n 'isClient and isClient\(\)' "$allocator" | head -n1 | cut -d: -f1)"
+allocator_require_line="$(rg -n '^require ' "$allocator" | head -n1 | cut -d: -f1)"
+bootstrap_guard_line="$(rg -n 'isClient and isClient\(\)' "$bootstrap" | head -n1 | cut -d: -f1)"
+bootstrap_require_line="$(rg -n '^require ' "$bootstrap" | head -n1 | cut -d: -f1)"
+[[ "$allocator_guard_line" -lt "$allocator_require_line" ]] || fail "allocator client guard must execute before server-domain requires"
+[[ "$bootstrap_guard_line" -lt "$bootstrap_require_line" ]] || fail "faction bootstrap client guard must execute before server-domain requires"
 
 faction_world_files=("$site_registry" "$candidates" "$validator" "$allocator")
 if rg -n 'BanditServer|BanditCustom|BanditBrain|Bandits2|Bandit\.Spawner' "${faction_world_files[@]}"; then
@@ -103,4 +114,4 @@ if command -v lua >/dev/null 2>&1; then
     lua -e "assert(loadfile([[$bootstrap]]))"
 fi
 
-echo "QuestFramework faction site audit: PASS (persistent dry-run sites + bounded autonomous candidate scoring + non-destructive reservation)"
+echo "QuestFramework faction site audit: PASS (server-authoritative persistent dry-run sites + bounded autonomous candidate scoring + non-destructive reservation)"
