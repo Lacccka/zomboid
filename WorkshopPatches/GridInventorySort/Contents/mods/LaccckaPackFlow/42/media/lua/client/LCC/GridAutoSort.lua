@@ -17,6 +17,33 @@ local function itemId(item)
     return item and item.getID and item:getID() or nil
 end
 
+local function itemDisplayName(item)
+    if not item then return "" end
+    local value = nil
+    if item.getDisplayName then value = item:getDisplayName() end
+    if (value == nil or value == "") and item.getName then value = item:getName() end
+    if value == nil then value = "" end
+    return tostring(value)
+end
+
+local function itemFullType(item)
+    if not item then return "" end
+    if item.getFullType then
+        local value = item:getFullType()
+        if value ~= nil then return tostring(value) end
+    end
+    local moduleName = item.getModule and item:getModule() or ""
+    local typeName = item.getType and item:getType() or ""
+    return tostring(moduleName) .. "." .. tostring(typeName)
+end
+
+local function normalizedName(item)
+    -- string.lower() handles the ASCII portion of localized names and leaves
+    -- other UTF-8 bytes deterministic. The visible display name remains the
+    -- primary key; full type and item id make ties stable across clients.
+    return string.lower(itemDisplayName(item))
+end
+
 local function makeDescriptor(item)
     local id = itemId(item)
     if id == nil then return nil end
@@ -36,6 +63,8 @@ local function makeDescriptor(item)
         longSide = math.max(w, h),
         shortSide = math.min(w, h),
         currentRotated = md and md.gridRot and true or false,
+        sortName = normalizedName(item),
+        sortType = itemFullType(item),
     }
 end
 
@@ -68,6 +97,19 @@ end
 local function longFirst(a, b)
     if a.longSide ~= b.longSide then return a.longSide > b.longSide end
     if a.area ~= b.area then return a.area > b.area end
+    if a.shortSide ~= b.shortSide then return a.shortSide > b.shortSide end
+    return compareId(a, b)
+end
+
+local function nameFirst(a, b)
+    if a.sortName ~= b.sortName then return a.sortName < b.sortName end
+    if a.sortType ~= b.sortType then return a.sortType < b.sortType end
+    local ak, bk = tostring(a.compatKey or ""), tostring(b.compatKey or "")
+    if ak ~= bk then return ak < bk end
+    -- Exact/similar items stay adjacent, while larger members of the same name
+    -- group are placed first to keep stack and packing behaviour reliable.
+    if a.area ~= b.area then return a.area > b.area end
+    if a.longSide ~= b.longSide then return a.longSide > b.longSide end
     if a.shortSide ~= b.shortSide then return a.shortSide > b.shortSide end
     return compareId(a, b)
 end
@@ -205,12 +247,19 @@ end
 local function computePacked(descriptors, width, height)
     if lowerBoundArea(descriptors) > width * height then return nil end
 
-    -- Keep auto-sort intentionally boring and bounded. One deterministic pass is
-    -- enough for large inventories; a second geometric ordering is tried only
-    -- for smaller sets. No beam, page solver or repeated profile matrix.
+    -- Visible item name is now the canonical ordering. Preserve that ordering
+    -- whenever it can be represented by the grid. Geometry-only passes are a
+    -- safety fallback for pathological Tetris layouts where strict alphabetical
+    -- insertion would otherwise make a container unsortable despite enough area.
+    local named = packGreedy(descriptors, width, height, nameFirst)
+    if named then return named end
+
     local best = packGreedy(descriptors, width, height, areaFirst)
     if #descriptors <= 50 then
         best = better(best, packGreedy(descriptors, width, height, longFirst))
+    end
+    if best then
+        print("[LCC GridSort] alphabetical pass could not fit; geometric fallback used")
     end
     return best
 end
