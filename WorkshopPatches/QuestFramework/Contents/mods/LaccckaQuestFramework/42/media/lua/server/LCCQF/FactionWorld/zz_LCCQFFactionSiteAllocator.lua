@@ -1,3 +1,10 @@
+-- Defense in depth: faction-site discovery/reservation is authoritative server state.
+-- This module may be required directly in the future, so do not rely only on the outer
+-- server bootstrap to keep MP clients from installing allocator event handlers.
+if isClient and isClient() and not (isServer and isServer()) then
+    return false
+end
+
 require "LCCQF/Content/LCCQFFactionDefinitions"
 require "LCCQF/FactionWorld/LCCQFFactionSiteRegistry"
 require "LCCQF/FactionWorld/LCCQFFactionSiteCandidateIndex"
