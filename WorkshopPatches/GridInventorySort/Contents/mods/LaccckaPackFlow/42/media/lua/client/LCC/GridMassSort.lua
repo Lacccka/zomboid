@@ -102,8 +102,26 @@ local function collectScopeRecords(scope, playerNum)
     end
 
     if scope == GridMassSort.SCOPE_PLAYER and player.getInventory then
-        addCandidate(player:getInventory())
+        local root = player:getInventory()
+        addCandidate(root)
+
+        -- Vanilla's player-side backpack strip primarily lists equipped
+        -- containers. Add every direct container item carried in the player's
+        -- root inventory as well, so an unequipped bag is part of player mass
+        -- sort. Deeper nested containers remain excluded by the existing MP
+        -- nested-bag guard in GridAutoSort.
+        local items = root and root.getItems and root:getItems() or nil
+        if items then
+            for i = 0, items:size() - 1 do
+                local item = items:get(i)
+                if item and item.getInventory then
+                    local ok, child = pcall(function() return item:getInventory() end)
+                    if ok and child then addCandidate(child) end
+                end
+            end
+        end
     end
+
     for _, button in ipairs(page.backpacks or {}) do
         if button and button.inventory then addCandidate(button.inventory) end
     end
