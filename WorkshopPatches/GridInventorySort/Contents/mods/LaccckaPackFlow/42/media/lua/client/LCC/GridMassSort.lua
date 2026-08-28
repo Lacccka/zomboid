@@ -1,4 +1,4 @@
-require "TimedActions/ISInventoryTransferUtil"
+require "TimedActions/ISInventoryTransferAction"
 require "TimedActions/ISTimedActionQueue"
 
 local GridContainer = require("DataModel/GridContainer")
@@ -12,7 +12,9 @@ GridMassSort.SCOPE_PLAYER = "player"
 GridMassSort.SCOPE_EXTERNAL = "external"
 GridMassSort.active = {}
 
-local nextOperationId = 0
+-- Vanilla owns the duration of ISInventoryTransferAction. PackFlow must never
+-- cancel a legitimate transfer merely because it takes longer than expected.
+local SETTLE_MS = 150
 
 local function nowMs()
     return getTimestampMs and getTimestampMs() or (getTimeInMillis and getTimeInMillis() or 0)
@@ -23,23 +25,10 @@ local function getPlayerByNum(playerNum)
     return getPlayer and getPlayer() or nil
 end
 
-local function timedQueue(player)
-    if not player or not ISTimedActionQueue then return nil end
-    return ISTimedActionQueue.queues and ISTimedActionQueue.queues[player] or nil
-end
-
 local function hasTimedActions(player)
-    local queue = timedQueue(player)
+    if not player or not ISTimedActionQueue then return false end
+    local queue = ISTimedActionQueue.queues and ISTimedActionQueue.queues[player] or nil
     return queue and queue.queue and #queue.queue > 0 or false
-end
-
-local function hasForeignTimedAction(player, ownAction)
-    local queue = timedQueue(player)
-    if not queue or not queue.queue then return false end
-    for _, action in ipairs(queue.queue) do
-        if action ~= ownAction then return true end
-    end
-    return false
 end
 
 local function itemFullType(item)
@@ -116,9 +105,6 @@ local function hasScopeCandidate(scope, playerNum)
     return false
 end
 
--- The official page.backpacks list is the source of truth for the accessible
--- container strip. GridInventory may render only the active grid, so relying on
--- gridContainerUis would silently omit reachable containers.
 local function collectScopeRecords(scope, playerNum)
     local player = getPlayerByNum(playerNum)
     local page = pageForScope(scope, playerNum)
@@ -136,9 +122,6 @@ local function collectScopeRecords(scope, playerNum)
         local root = player:getInventory()
         addCandidate(root)
 
-        -- Vanilla's player-side strip primarily lists equipped containers. Add
-        -- direct carried container items too; deeper nested bags remain excluded
-        -- by GridAutoSort's MP nested-container guard.
         local items = root and root.getItems and root:getItems() or nil
         if items then
             for i = 0, items:size() - 1 do
@@ -175,8 +158,6 @@ local function collectScopeRecords(scope, playerNum)
                 elseif reason == "busy" then
                     return {}, "busy"
                 end
-                -- Nested/locked containers are intentionally skipped. Search
-                -- visibility is not a gate: hidden loot remains hidden by item ID.
             end
         end
     end
@@ -187,21 +168,8 @@ local function isRelocatable(item)
     if not item then return false end
     if item.isFavorite and item:isFavorite() then return false end
 
-    -- Corpse transfer has specialized vanilla actions/semantics and grouping
-    -- corpse objects by fullType is not useful duplicate consolidation.
-    if item.getType then
-        local t = tostring(item:getType() or "")
-        if t == "CorpseMale" or t == "CorpseFemale" or t == "CorpseAnimal" then
-            return false
-        end
-    end
-    if item.isHumanCorpse then
-        local ok, result = pcall(function() return item:isHumanCorpse() end)
-        if ok and result then return false end
-    end
-
-    -- Moving the containing bag itself would invalidate queued child-container
-    -- references. The bag still participates in the final coordinate sort.
+    -- Moving a containing bag would invalidate child-container references. The
+    -- bag itself still participates in the final coordinate sort.
     if item.getInventory then
         local ok, inventory = pcall(function() return item:getInventory() end)
         if ok and inventory then return false end
@@ -255,8 +223,6 @@ local function buildMovePlan(records)
                 return a.record.index < b.record.index
             end)
 
-            -- Movement is monotonic: smaller/later fragments only flow toward
-            -- earlier/larger buckets, never back toward a smaller source bucket.
             for sourceIndex = #buckets, 2, -1 do
                 local source = buckets[sourceIndex]
                 local destinations = {}
@@ -281,6 +247,37 @@ local function buildMovePlan(records)
     return plan
 end
 
+local function canTransfer(player, item, source, destination)
+    if not player or not item or not source or not destination or source == destination then return false end
+    if item.getContainer and item:getContainer() ~= source then return false end
+    if source.isRemoveItemAllowed then
+        local ok, allowed = pcall(function() return source:isRemoveItemAllowed(item) end)
+        if not ok or not allowed then return false end
+    end
+    if destination.isItemAllowed then
+        local ok, allowed = pcall(function() return destination:isItemAllowed(item) end)
+        if not ok or not allowed then return false end
+    end
+    if destination.hasRoomFor then
+        local ok, room = pcall(function() return destination:hasRoomFor(player, item) end)
+        if not ok or not room then return false end
+    end
+    return true
+end
+
+local function chooseDestination(state, move)
+    local item = move.item
+    local source = item and item.getContainer and item:getContainer() or nil
+    if not source or not state.containerSet[source] then return nil, nil end
+
+    for _, destination in ipairs(move.destinations or {}) do
+        if state.containerSet[destination] and canTransfer(state.player, item, source, destination) then
+            return source, destination
+        end
+    end
+    return source, nil
+end
+
 local function containerFindById(container, itemId)
     if not container or itemId == nil or not container.getItems then return nil end
     if container.getItemWithID then
@@ -298,201 +295,95 @@ local function containerFindById(container, itemId)
     return nil
 end
 
-local function resolveMoveItem(state, move)
-    if not state or not move or move.itemId == nil then return nil, nil end
-
-    -- Never trust a saved Lua InventoryItem reference after an MP transaction:
-    -- B42 may detach/replace it. Resolve the current object by stable item ID.
-    for _, record in ipairs(state.records or {}) do
-        local item = containerFindById(record.container, move.itemId)
-        if item then
-            move.item = item
-            return item, record.container
-        end
+local function containerContainsMove(container, move)
+    if not container or not move then return false end
+    local item = move.item
+    if item and container.contains then
+        local ok, result = pcall(function() return container:contains(item) end)
+        if ok and result then return true end
     end
-    return nil, nil
-end
-
-local function externalContainerStillAccessible(state, container)
-    local page = getPlayerLoot and getPlayerLoot(state.playerNum) or nil
-    if not page then return false end
-    for _, button in ipairs(page.backpacks or {}) do
-        if button and button.inventory == container then return true end
-    end
-    local pane = page.inventoryPane
-    return pane and pane.inventory == container or false
-end
-
-local function containerStillInScope(state, container)
-    if not state or not container or not state.containerSet[container] then return false end
-    if state.scope == GridMassSort.SCOPE_PLAYER then
-        return isPlayerContainer(container, state.player)
-    end
-    return externalContainerStillAccessible(state, container)
-end
-
-local function canTransfer(state, item, source, destination)
-    if not state or not state.player or not item or not source or not destination or source == destination then
-        return false
-    end
-    if not containerStillInScope(state, source) or not containerStillInScope(state, destination) then
-        return false
-    end
-    if item.getContainer and item:getContainer() ~= source then return false end
-    if source.isRemoveItemAllowed then
-        local ok, allowed = pcall(function() return source:isRemoveItemAllowed(item) end)
-        if not ok or not allowed then return false end
-    end
-    if destination.isItemAllowed then
-        local ok, allowed = pcall(function() return destination:isItemAllowed(item) end)
-        if not ok or not allowed then return false end
-    end
-    if destination.hasRoomFor then
-        local ok, room = pcall(function() return destination:hasRoomFor(state.player, item) end)
-        if not ok or not room then return false end
-    end
-    return true
-end
-
-local function chooseDestination(state, move)
-    local item, source = resolveMoveItem(state, move)
-    if not item or not source then return nil, nil, "missing" end
-    if not containerStillInScope(state, source) then return source, nil, "scope-changed" end
-
-    for _, destination in ipairs(move.destinations or {}) do
-        if containerStillInScope(state, destination)
-            and canTransfer(state, item, source, destination) then
-            return source, destination, nil
-        end
-    end
-    return source, nil, "no-destination"
-end
-
-local function abortOperation(state, reason)
-    if not state then return end
-    if GridMassSort.active[state.playerNum] == state then
-        GridMassSort.active[state.playerNum] = nil
-    end
-    print("[LCC GridSort] mass " .. tostring(state.scope)
-        .. " sort aborted: " .. tostring(reason or "unknown"))
-end
-
--- Vanilla invokes this only from ISInventoryTransferAction:perform(), after the
--- MP transaction completed normally. stop()/reject/cancel paths do not invoke it.
--- The callback only marks state; OnTick advances after vanilla removes the action
--- from its queue, so PackFlow never races the current action's teardown.
-local function onTransferComplete(playerNum, operationId, itemId)
-    local state = GridMassSort.active[playerNum]
-    if not state or state.operationId ~= operationId then return end
-    local waiting = state.waitingMove
-    if not waiting or not waiting.move or waiting.move.itemId ~= itemId then return end
-    waiting.completed = true
+    if item and item.getContainer and item:getContainer() == container then return true end
+    return containerFindById(container, move.itemId) ~= nil
 end
 
 local function queueMove(state, move, source, destination)
-    local item = move and move.item or nil
-    if not item then return false, "missing" end
-
-    local action = ISInventoryTransferUtil.newInventoryTransferAction(
-        state.player, item, source, destination, nil)
-    if not action then return false, "unavailable" end
-
-    -- PackFlow deliberately requires a completion callback. Vanilla's transfer
-    -- action refuses to merge actions carrying callbacks, which keeps each
-    -- consolidation move isolated and gives us an authoritative completion edge.
-    if not action.setOnComplete then return false, "unsupported-action" end
-    action:setOnComplete(onTransferComplete,
-        state.playerNum, state.operationId, move.itemId)
-
+    -- Intentionally use the same plain vanilla action path as the visually good
+    -- 0.7.3 build. Do not attach callbacks and do not override maxTime/update.
+    local action = ISInventoryTransferAction:new(state.player, move.item, source, destination, nil)
+    if not action then return false end
     local queue = ISTimedActionQueue.add(action)
-    if not queue then return false, "queue-rejected" end
-
+    if not queue then return false end
     state.waitingMove = {
         move = move,
         action = action,
         source = source,
         destination = destination,
-        completed = false,
     }
-    return true, nil
+    return true
 end
 
 local function finish(state)
-    if GridMassSort.active[state.playerNum] == state then
-        GridMassSort.active[state.playerNum] = nil
-    end
+    GridMassSort.active[state.playerNum] = nil
     print("[LCC GridSort] mass " .. tostring(state.scope)
         .. " sort complete: " .. tostring(state.transferred) .. " transfers, "
-        .. tostring(state.skippedMoves or 0) .. " skipped, "
+        .. tostring(state.unconfirmedTransfers or 0) .. " unconfirmed, "
         .. tostring(state.sortedContainers) .. " containers sorted")
+end
+
+local function confirmTransfer(state, waiting, replacementItem)
+    if replacementItem then waiting.move.item = replacementItem end
+    state.transferred = state.transferred + 1
+    state.waitingMove = nil
+    state.settleUntil = nowMs() + SETTLE_MS
 end
 
 local function tickTransfers(state)
     local waiting = state.waitingMove
     if waiting then
-        local ownQueued = waiting.action and ISTimedActionQueue.hasAction
+        local move = waiting.move
+        local destinationItem = containerFindById(waiting.destination, move and move.itemId or nil)
+        if destinationItem or containerContainsMove(waiting.destination, move) then
+            confirmTransfer(state, waiting, destinationItem)
+            return
+        end
+
+        local stillQueued = waiting.action and ISTimedActionQueue.hasAction
             and ISTimedActionQueue.hasAction(waiting.action)
-
-        -- If the user queued another timed action while PackFlow's transfer is
-        -- active, stop orchestration immediately but leave vanilla's queue alone.
-        -- The current transfer and the user's action retain normal vanilla rules.
-        if hasForeignTimedAction(state.player, waiting.action) then
-            abortOperation(state, "interrupted by another timed action")
+        if stillQueued then
+            -- The action remains entirely vanilla-owned for however long B42 says
+            -- this particular physical transfer should take.
             return
         end
 
-        if waiting.completed then
-            -- setOnComplete runs just before ISBaseTimedAction.perform removes the
-            -- action from ISTimedActionQueue. Wait until teardown is finished.
-            if ownQueued then return end
-            state.transferred = state.transferred + 1
-            state.waitingMove = nil
+        -- In MP the old Lua InventoryItem reference can be detached/replaced when
+        -- the transaction commits. Absence of the stable item ID from the source
+        -- after vanilla removed the action is a successful-move signal.
+        local sourceItem = containerFindById(waiting.source, move and move.itemId or nil)
+        if not sourceItem and not containerContainsMove(waiting.source, move) then
+            confirmTransfer(state, waiting, destinationItem)
             return
         end
 
-        if ownQueued then
-            -- No PackFlow wall-clock timeout: B42's item transaction owns the
-            -- transfer duration and its animation/progress completely.
-            return
-        end
-
-        -- The action disappeared without onComplete => vanilla stop/reject/cancel.
-        -- Fail closed and never clear/cancel the player's action queue ourselves.
-        abortOperation(state, "vanilla transfer rejected or cancelled for item "
-            .. tostring(waiting.move and waiting.move.itemId))
+        state.unconfirmedTransfers = (state.unconfirmedTransfers or 0) + 1
+        print("[LCC GridSort] mass transfer rejected/cancelled for item "
+            .. tostring(move and move.itemId))
+        state.waitingMove = nil
+        state.settleUntil = nowMs() + SETTLE_MS
         return
     end
 
-    if hasTimedActions(state.player) then
-        abortOperation(state, "interrupted by another timed action")
-        return
-    end
+    if state.settleUntil and nowMs() < state.settleUntil then return end
+    state.settleUntil = nil
+
+    -- Match the old behavior: never enqueue a PackFlow transfer behind an action
+    -- already started by the player; simply wait until vanilla is idle.
+    if hasTimedActions(state.player) then return end
 
     while state.moveIndex <= #state.moves do
         local move = state.moves[state.moveIndex]
         state.moveIndex = state.moveIndex + 1
-
-        local source, destination, reason = chooseDestination(state, move)
-        if reason == "scope-changed" then
-            abortOperation(state, "container scope changed during consolidation")
-            return
-        end
-
-        if source and destination then
-            local queued, queueReason = queueMove(state, move, source, destination)
-            if queued then return end
-            if queueReason == "unsupported-action" then
-                -- A specialized vanilla action without transfer completion
-                -- semantics is outside PackFlow's consolidation contract.
-                state.skippedMoves = state.skippedMoves + 1
-            else
-                abortOperation(state, "could not queue vanilla transfer: "
-                    .. tostring(queueReason))
-                return
-            end
-        else
-            state.skippedMoves = state.skippedMoves + 1
-        end
+        local source, destination = chooseDestination(state, move)
+        if source and destination and queueMove(state, move, source, destination) then return end
     end
 
     state.phase = "sort"
@@ -502,22 +393,11 @@ local function tickTransfers(state)
 end
 
 local function tickSort(state)
-    -- A user action invalidates the mass operation's original snapshot. Do not
-    -- wait and later resume with stale assumptions.
-    if hasTimedActions(state.player) then
-        abortOperation(state, "interrupted before coordinate sort")
-        return
-    end
+    if hasTimedActions(state.player) then return end
 
     local record = state.records[state.sortIndex]
     if not record then
         finish(state)
-        return
-    end
-
-    if state.scope == GridMassSort.SCOPE_EXTERNAL
-        and not containerStillInScope(state, record.container) then
-        abortOperation(state, "container scope changed before coordinate sort")
         return
     end
 
@@ -561,12 +441,9 @@ local function tickSort(state)
 end
 
 local function abortUnexpected(state, err)
-    -- Never cancel or clear vanilla timed actions here. If PackFlow itself
-    -- faults, drop only our orchestration state; an already-started vanilla
-    -- transfer is allowed to complete using the game's normal transaction path.
-    if state and GridMassSort.active[state.playerNum] == state then
-        GridMassSort.active[state.playerNum] = nil
-    end
+    -- Fail closed at the PackFlow orchestration layer only. Never cancel the
+    -- current transfer and never clear the player's vanilla timed-action queue.
+    if state then GridMassSort.active[state.playerNum] = nil end
     print("[LCC GridSort] mass " .. tostring(state and state.scope or "unknown")
         .. " sort aborted after unexpected error: " .. tostring(err))
 end
@@ -592,8 +469,6 @@ function GridMassSort.isBusy(playerNum)
     return GridMassSort.active[playerNum or 0] ~= nil
 end
 
--- Lightweight footer-state check. It intentionally does not build GridContainer
--- models or enumerate item contents; full validation happens only on click.
 function GridMassSort.canStart(scope, playerNum)
     playerNum = playerNum or 0
     if GridMassSort.isBusy(playerNum) then return false, "busy" end
@@ -632,10 +507,8 @@ function GridMassSort.start(scope, playerNum)
     local containerSet = {}
     for _, record in ipairs(records) do containerSet[record.container] = true end
 
-    nextOperationId = nextOperationId + 1
     local moves = buildMovePlan(records)
     GridMassSort.active[playerNum] = {
-        operationId = nextOperationId,
         playerNum = playerNum,
         player = player,
         scope = scope,
@@ -645,14 +518,15 @@ function GridMassSort.start(scope, playerNum)
         moveIndex = 1,
         phase = "transfer",
         transferred = 0,
-        skippedMoves = 0,
+        unconfirmedTransfers = 0,
         sortedContainers = 0,
         waitingMove = nil,
+        settleUntil = nil,
     }
 
     print("[LCC GridSort] mass " .. tostring(scope) .. " sort started: "
         .. tostring(#records) .. " containers, " .. tostring(#moves)
-        .. " duplicate consolidation candidates; transfer=vanilla-callback")
+        .. " duplicate consolidation candidates; transfer=vanilla-plain")
     return true, "started"
 end
 
