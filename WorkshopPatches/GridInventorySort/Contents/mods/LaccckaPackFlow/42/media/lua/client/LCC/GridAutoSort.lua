@@ -131,16 +131,13 @@ end
 
 local function findBestPlacement(grid, d, bottom, occupiedCells)
     local best = nil
-
     local function consider(rotated)
         local ew = rotated and d.originalH or d.originalW
         local eh = rotated and d.originalW or d.originalH
         if ew > grid.width or eh > grid.height then return end
-
         for y = 1, grid.height - eh + 1 do
             for x = 1, grid.width - ew + 1 do
-                if grid:canPlaceItem(d.id, x, y, ew, eh, nil,
-                    d.compatKey, rotated, d.stackInfo) then
+                if grid:canPlaceItem(d.id, x, y, ew, eh, nil, d.compatKey, rotated, d.stackInfo) then
                     local occupant = grid.cells[x][y]
                     local isStack = d.compatKey ~= nil and occupant ~= nil
                     local added = isStack and 0 or ew * eh
@@ -148,25 +145,15 @@ local function findBestPlacement(grid, d, bottom, occupiedCells)
                     local holes = math.max(0, newBottom * grid.width - (occupiedCells + added))
                     local contact = isStack and 99 or perimeterContact(grid, x, y, ew, eh)
                     local rotationPenalty = rotated == d.currentRotated and 0 or 1
-                    local score = newBottom * 1000000
-                        + holes * 1000
-                        - contact * 20
-                        + y * 10 + x
-                        + rotationPenalty
+                    local score = newBottom * 1000000 + holes * 1000 - contact * 20 + y * 10 + x + rotationPenalty
                     if isStack then score = score - 100000 end
-
                     if not best or score < best.score then
-                        best = {
-                            tx = x, ty = y, ew = ew, eh = eh,
-                            rotated = rotated, score = score,
-                            added = added, newBottom = newBottom,
-                        }
+                        best = { tx = x, ty = y, ew = ew, eh = eh, rotated = rotated, score = score, added = added, newBottom = newBottom }
                     end
                 end
             end
         end
     end
-
     consider(false)
     if d.originalW ~= d.originalH then consider(true) end
     return best
@@ -177,31 +164,16 @@ local function packGreedy(descriptors, width, height, sorter)
     local grid = GridCore.new(width, height)
     local targets = {}
     local bottom, occupiedCells, rotations = 0, 0, 0
-
     for _, d in ipairs(ordered) do
         local p = findBestPlacement(grid, d, bottom, occupiedCells)
         if not p then return nil end
-        if not grid:insertItem(d.id, p.tx, p.ty, p.ew, p.eh, p.rotated,
-            d.itemObj, d.compatKey, d.stackInfo) then
-            return nil
-        end
+        if not grid:insertItem(d.id, p.tx, p.ty, p.ew, p.eh, p.rotated, d.itemObj, d.compatKey, d.stackInfo) then return nil end
         bottom = p.newBottom
         occupiedCells = occupiedCells + p.added
         if p.rotated then rotations = rotations + 1 end
-        table.insert(targets, {
-            d = d,
-            tx = p.tx, ty = p.ty,
-            ew = p.ew, eh = p.eh,
-            rotated = p.rotated,
-        })
+        table.insert(targets, { d = d, tx = p.tx, ty = p.ty, ew = p.ew, eh = p.eh, rotated = p.rotated })
     end
-
-    return {
-        targets = targets,
-        usedRows = bottom,
-        holes = math.max(0, bottom * width - occupiedCells),
-        rotations = rotations,
-    }
+    return { targets = targets, usedRows = bottom, holes = math.max(0, bottom * width - occupiedCells), rotations = rotations }
 end
 
 local function lowerBoundArea(descriptors)
@@ -213,18 +185,13 @@ local function lowerBoundArea(descriptors)
         if d.compatKey and limit and limit > 1 then
             local key = tostring(d.compatKey) .. ":" .. tostring(d.area)
             local g = groups[key]
-            if not g then
-                g = { units = 0, limit = limit, area = d.area }
-                groups[key] = g
-            end
+            if not g then g = { units = 0, limit = limit, area = d.area } groups[key] = g end
             g.units = g.units + (units or 1)
         else
             area = area + d.area
         end
     end
-    for _, g in pairs(groups) do
-        area = area + math.ceil(g.units / math.max(1, g.limit)) * g.area
-    end
+    for _, g in pairs(groups) do area = area + math.ceil(g.units / math.max(1, g.limit)) * g.area end
     return area
 end
 
@@ -239,32 +206,21 @@ end
 
 local function computePacked(descriptors, width, height)
     if lowerBoundArea(descriptors) > width * height then return nil end
-
     local named = packGreedy(descriptors, width, height, nameFirst)
     if named then return named end
-
     local best = packGreedy(descriptors, width, height, areaFirst)
-    if #descriptors <= 50 then
-        best = better(best, packGreedy(descriptors, width, height, longFirst))
-    end
-    if best then
-        print("[LCC GridSort] alphabetical pass could not fit; geometric fallback used")
-    end
+    if #descriptors <= 50 then best = better(best, packGreedy(descriptors, width, height, longFirst)) end
+    if best then print("[LCC GridSort] alphabetical pass could not fit; geometric fallback used") end
     return best
 end
 
 local function hasPendingWork(container, model)
-    if GridInventory_GlobalDrag and GridInventory_GlobalDrag.itemsData
-        and #GridInventory_GlobalDrag.itemsData > 0 then return true end
+    if GridInventory_GlobalDrag and GridInventory_GlobalDrag.itemsData and #GridInventory_GlobalDrag.itemsData > 0 then return true end
     if ISMouseDrag and ISMouseDrag.dragging then return true end
-
     for _, grid in ipairs((model and model.grids) or {}) do
-        for id in pairs(grid.items or {}) do
-            if GridInventory_InTransit and GridInventory_InTransit[id] then return true end
-        end
+        for id in pairs(grid.items or {}) do if GridInventory_InTransit and GridInventory_InTransit[id] then return true end end
         for _ in pairs(grid.ghostItems or {}) do return true end
     end
-
     if container and container.getItems and GridInventory_InTransit then
         local items = container:getItems()
         for i = 0, items:size() - 1 do
@@ -286,10 +242,13 @@ end
 
 local function needsSearch(container, playerNum, gridUi)
     if gridUi and gridUi.needsSearch and gridUi:needsSearch() then return true end
+    local player = getSpecificPlayer and getSpecificPlayer(playerNum or 0) or nil
+    if player and container.isInCharacterInventory then
+        local ok, owned = pcall(function() return container:isInCharacterInventory(player) end)
+        if ok and owned then return false end
+    end
     if okSearch and GridInventory_Search and GridInventory_Search.needsSearch then
-        local ok, result = pcall(function()
-            return GridInventory_Search.needsSearch(playerNum or 0, container)
-        end)
+        local ok, result = pcall(function() return GridInventory_Search.needsSearch(playerNum or 0, container) end)
         if ok and result then return true end
     end
     return false
@@ -304,10 +263,8 @@ function GridAutoSort.canSortContainer(container, playerNum, gridUi)
     if isClient and isClient() and isNestedBagContainer(container) then return false, "nested" end
     if GridSortNetwork.isPending(container) then return false, "busy" end
     if needsSearch(container, playerNum, gridUi) then return false, "search" end
-
     local model = GridContainer.getOrCreate(container, playerNum or 0)
     if hasPendingWork(container, model) then return false, "busy" end
-
     local okBag, BagDrop = pcall(require, "System/GridInventory_BagDrop")
     if okBag and BagDrop and BagDrop.isNestedLocked then
         local player = getSpecificPlayer(playerNum or 0)
@@ -324,77 +281,48 @@ end
 function GridAutoSort.computeTargetsForContainer(container, playerNum, gridUi)
     local can, reason = GridAutoSort.canSortContainer(container, playerNum, gridUi)
     if not can then return nil, reason end
-
     local startedAt = nowMs()
     local descriptors, model = collectDescriptors(container, playerNum or 0)
     if #descriptors < 2 then return nil, "nothing" end
     if hasPendingWork(container, model) then return nil, "busy" end
-
     local width, height = GridContainer.getGridSize(container)
     local packed = computePacked(descriptors, width, height)
     local elapsed = nowMs() - startedAt
     GridAutoSort.lastSolveMs = elapsed
     if elapsed >= SLOW_SOLVE_WARN_MS then
-        print("[LCC GridSort] slow solve: " .. tostring(elapsed)
-            .. "ms for " .. tostring(#descriptors) .. " items in "
-            .. tostring(width) .. "x" .. tostring(height))
+        print("[LCC GridSort] slow solve: " .. tostring(elapsed) .. "ms for " .. tostring(#descriptors) .. " items in " .. tostring(width) .. "x" .. tostring(height))
     end
     if not packed then return nil, "no-space" end
-
     local targets = {}
     for _, t in ipairs(packed.targets) do
-        table.insert(targets, {
-            item = {
-                id = t.d.id,
-                itemObj = t.d.itemObj,
-                originalW = t.d.originalW,
-                originalH = t.d.originalH,
-                rotated = t.rotated,
-                compatKey = t.d.compatKey,
-                stackInfo = t.d.stackInfo,
-            },
-            tx = t.tx, ty = t.ty, ew = t.ew, eh = t.eh,
-        })
+        table.insert(targets, { item = { id = t.d.id, itemObj = t.d.itemObj, originalW = t.d.originalW, originalH = t.d.originalH, rotated = t.rotated, compatKey = t.d.compatKey, stackInfo = t.d.stackInfo }, tx = t.tx, ty = t.ty, ew = t.ew, eh = t.eh })
     end
     return targets, nil
 end
 
 function GridAutoSort.computeTargets(gridUi)
     if not gridUi or not gridUi.inventoryContainer then return nil, "unavailable" end
-    return GridAutoSort.computeTargetsForContainer(
-        gridUi.inventoryContainer, gridUi.playerNum or 0, gridUi)
+    return GridAutoSort.computeTargetsForContainer(gridUi.inventoryContainer, gridUi.playerNum or 0, gridUi)
 end
 
 local function targetDiffers(t, signature)
     local item = t.item and t.item.itemObj
     local md = item and item.getModData and item:getModData() or nil
     if not md then return true end
-    return tonumber(md.gridX) ~= t.tx
-        or tonumber(md.gridY) ~= t.ty
-        or (md.gridRot and true or false) ~= (t.item.rotated and true or false)
-        or md.gridContainer ~= signature
-        or md.gridManual ~= true
-        or md.gridPage ~= nil
+    return tonumber(md.gridX) ~= t.tx or tonumber(md.gridY) ~= t.ty or (md.gridRot and true or false) ~= (t.item.rotated and true or false) or md.gridContainer ~= signature or md.gridManual ~= true or md.gridPage ~= nil
 end
 
 function GridAutoSort.sortContainer(container, playerNum, gridUi)
     local targets, reason = GridAutoSort.computeTargetsForContainer(container, playerNum, gridUi)
     if not targets then return false, reason end
-
     local signature = GridContainer.containerSignature(container)
     local changed = false
-    for _, t in ipairs(targets) do
-        if targetDiffers(t, signature) then changed = true break end
-    end
+    for _, t in ipairs(targets) do if targetDiffers(t, signature) then changed = true break end end
     if not changed then return true, "already-sorted" end
-
     if isClient and isClient() then
-        if not GridSortNetwork.sendSort(container, targets, signature) then
-            return false, "unavailable"
-        end
+        if not GridSortNetwork.sendSort(container, targets, signature) then return false, "unavailable" end
         return true, "pending"
     end
-
     for _, t in ipairs(targets) do
         local item = t.item.itemObj
         local md = item and item.getModData and item:getModData() or nil
