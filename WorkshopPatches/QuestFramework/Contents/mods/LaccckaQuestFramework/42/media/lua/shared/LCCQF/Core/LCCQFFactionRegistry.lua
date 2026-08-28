@@ -78,10 +78,12 @@ local function validateSiteProfile(definition)
         return false, "invalid siteProfile.kind"
     end
 
+    -- Only expose fields implemented by the current dry-run allocator. Resource
+    -- preferences and SafeHouse-distance scoring will be added when their 42.20.4
+    -- runtime probes are implemented, rather than silently accepting inert settings.
     local numericNonNegative = {
         "minRooms",
         "minDistanceFromPlayers",
-        "minDistanceFromPlayerSafehouses",
         "minDistanceFromOtherFactionSites",
         "minScore",
         "maxSites",
@@ -101,9 +103,18 @@ local function validateSiteProfile(definition)
         return false, "siteProfile.maxSites must be a positive integer"
     end
 
-    for _, flagName in ipairs({ "wantsIndoor", "wantsWater", "wantsBeds", "wantsRoadAccess" }) do
-        if profile[flagName] ~= nil and type(profile[flagName]) ~= "boolean" then
-            return false, "siteProfile." .. flagName .. " must be boolean"
+    if profile.wantsIndoor ~= nil and type(profile.wantsIndoor) ~= "boolean" then
+        return false, "siteProfile.wantsIndoor must be boolean"
+    end
+
+    for unsupportedName in pairs({
+        minDistanceFromPlayerSafehouses = true,
+        wantsWater = true,
+        wantsBeds = true,
+        wantsRoadAccess = true,
+    }) do
+        if profile[unsupportedName] ~= nil then
+            return false, "siteProfile." .. unsupportedName .. " is not implemented yet"
         end
     end
 
