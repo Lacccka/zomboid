@@ -23,6 +23,33 @@ local ok, err = LCCQF.FactionRegistry.Register({
             textKey = "IGUI_LCCQF_Faction_CheckpointSurvivors_Fact_Identified_Text",
         },
     },
+    siteProfile = {
+        enabled = true,
+        kind = "settlement",
+        minRooms = 3,
+        minDistanceFromPlayers = 80,
+        minDistanceFromPlayerSafehouses = 120,
+        minDistanceFromOtherFactionSites = 180,
+        minScore = 2,
+        maxSites = 1,
+        wantsIndoor = true,
+        wantsWater = true,
+        wantsBeds = true,
+        wantsRoadAccess = true,
+        preferredZones = {
+            TownZone = 5,
+            TrailerPark = 2,
+            Ranch = 3,
+            Farm = 2,
+            FarmLand = 1,
+            LootZone = 1,
+        },
+        avoidedZones = {
+            Forest = 2,
+            DeepForest = 4,
+            Vegitation = 2,
+        },
+    },
 })
 
 if not ok and err ~= "duplicate factionId" then
