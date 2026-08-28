@@ -51,8 +51,11 @@ local function playersTooClose(candidate, minimumDistance)
 
     local size = 0
     pcall(function() size = players:size() end)
-    for i = 0, math.max(0, size - 1) do
-        local player = players:get(i)
+    if size <= 0 then return false end
+
+    for i = 0, size - 1 do
+        local player
+        pcall(function() player = players:get(i) end)
         if player then
             local alive = true
             pcall(function() alive = not player:isDead() end)
@@ -105,30 +108,39 @@ local function collectFreeRoomSquares(buildingDef, wantsIndoor, needed)
     if not rooms then return {}, "room definitions unavailable" end
 
     local result = {}
-    local size = rooms:size()
+    local size = 0
+    pcall(function() size = rooms:size() end)
+    if size <= 0 then return result end
+
+    -- We intentionally inspect every room definition in the candidate building before
+    -- accepting it. This makes SafeHouse overlap fail closed instead of stopping after
+    -- the first few convenient spawn squares. No world object is changed by this scan.
     for i = 0, size - 1 do
-        local roomDef = rooms:get(i)
+        local roomDef
+        pcall(function() roomDef = rooms:get(i) end)
         local square
         pcall(function() square = roomDef and roomDef:getFreeSquare() end)
         if square then
+            if isSafeHouseSquare(square) then
+                return nil, "candidate overlaps a player SafeHouse"
+            end
+
             local outside = false
             pcall(function() outside = square:isOutside() and true or false end)
             if not wantsIndoor or not outside then
-                if isSafeHouseSquare(square) then
-                    return nil, "candidate overlaps a player SafeHouse"
+                if #result < needed then
+                    local x, y, z
+                    pcall(function()
+                        x = square:getX()
+                        y = square:getY()
+                        z = square:getZ()
+                    end)
+                    result[#result + 1] = {
+                        x = math.floor(tonumber(x) or 0),
+                        y = math.floor(tonumber(y) or 0),
+                        z = math.floor(tonumber(z) or 0),
+                    }
                 end
-                local x, y, z
-                pcall(function()
-                    x = square:getX()
-                    y = square:getY()
-                    z = square:getZ()
-                end)
-                result[#result + 1] = {
-                    x = math.floor(tonumber(x) or 0),
-                    y = math.floor(tonumber(y) or 0),
-                    z = math.floor(tonumber(z) or 0),
-                }
-                if #result >= needed then break end
             end
         end
     end
