@@ -1,11 +1,10 @@
-require "TimedActions/ISInventoryTransferAction"
 require "TimedActions/ISTimedActionQueue"
 
 local GridContainer = require("DataModel/GridContainer")
 local GridSortState = require("LCC/GridSortState")
 local GridSortNetwork = require("LCC/GridSortNetwork")
 local GridAutoSort = require("LCC/GridAutoSort")
-local GridMassTransferVisualAction = require("LCC/GridMassTransferVisualAction")
+local LCCMassInventoryTransferAction = require("LCC/GridMassInventoryTransferAction")
 
 local GridMassSort = {}
 
@@ -13,11 +12,10 @@ GridMassSort.SCOPE_PLAYER = "player"
 GridMassSort.SCOPE_EXTERNAL = "external"
 GridMassSort.active = {}
 
--- The real B42 MP ISInventoryTransferAction is server-authoritative and may be
--- force-completed immediately when the ItemTransaction ACK arrives. PackFlow
--- therefore performs the physical Loot/TransferItemOnSelf action first, then
--- queues the untouched vanilla MP transfer. This short settle is only for UI /
--- container refresh after the authoritative transfer has left the queue.
+-- The real inventory mutation remains the ordinary B42 MP ItemTransaction.
+-- PackFlow's scoped subclass only prevents a very fast successful transaction
+-- from cutting the existing Loot/TransferItemOnSelf animation below a small
+-- visible floor. This settle is only for UI/container refresh afterwards.
 local SETTLE_MS = 150
 
 local function nowMs()
@@ -337,38 +335,26 @@ local function containerContainsMove(container, move)
 end
 
 local function queueMove(state, move, source, destination)
-    -- B42 MP completes ISInventoryTransferAction on ItemTransaction ACK and its
-    -- forceComplete() explicitly stops the Loot animation. Preserve the server-
-    -- authoritative transfer untouched, but run a local physical action first.
-    -- The visual action never mutates ItemContainer membership.
-    local visualAction = GridMassTransferVisualAction:new(
-        state.player, move.item, source, destination)
-    local transferAction = ISInventoryTransferAction:new(
+    -- One action only. It is a scoped subclass of the vanilla transfer action:
+    -- normal ItemTransaction starts immediately, normal server timing remains
+    -- authoritative, and only an early successful forceComplete is held until
+    -- the existing Loot animation has been visible for the configured floor.
+    local action = LCCMassInventoryTransferAction:new(
         state.player, move.item, source, destination, nil)
-    if not visualAction or not transferAction then return false end
+    if not action then return false end
 
-    local queue = ISTimedActionQueue.add(visualAction)
+    local queue = ISTimedActionQueue.add(action)
     if not queue then return false end
-
-    local transferQueue = ISTimedActionQueue.add(transferAction)
-    if not transferQueue then
-        -- queueMove only runs while the player queue is idle. Stop our visual
-        -- action so its normal stop() resets/removes the unstarted tail without
-        -- ever touching an unrelated player action.
-        visualAction:forceStop()
-        return false
-    end
 
     print("[LCC GridSort] mass transfer queued item=" .. tostring(move.itemId)
         .. " type=" .. tostring(itemFullType(move.item))
-        .. " physicalTicks=" .. tostring(visualAction.maxTime)
+        .. " visualFloorMs=" .. tostring(LCCMassInventoryTransferAction.MIN_VISUAL_MS)
         .. " source=" .. containerLabel(source)
         .. " destination=" .. containerLabel(destination))
 
     state.waitingMove = {
         move = move,
-        visualAction = visualAction,
-        action = transferAction,
+        action = action,
         source = source,
         destination = destination,
     }
@@ -395,22 +381,23 @@ local function tickTransfers(state)
     if waiting then
         local move = waiting.move
         local destinationItem = containerFindById(waiting.destination, move and move.itemId or nil)
+
+        -- Do not start the next move merely because the server has already
+        -- changed ItemContainer membership. The PackFlow action may still be
+        -- intentionally finishing its visual floor. Queue membership is the
+        -- lifecycle authority; itemId is used only after the action leaves it.
+        local stillQueued = waiting.action and ISTimedActionQueue.hasAction
+            and ISTimedActionQueue.hasAction(waiting.action)
+        if stillQueued then return end
+
         if destinationItem or containerContainsMove(waiting.destination, move) then
             confirmTransfer(state, waiting, destinationItem)
             return
         end
 
-        -- transferAction is intentionally queued behind visualAction. As long as
-        -- the real transfer remains in the vanilla queue, either the physical
-        -- pre-phase is still playing or the authoritative MP transaction is in
-        -- flight; both are valid states and require no timeout/polling hack.
-        local stillQueued = waiting.action and ISTimedActionQueue.hasAction
-            and ISTimedActionQueue.hasAction(waiting.action)
-        if stillQueued then return end
-
         -- In MP the old Lua InventoryItem reference can be detached/replaced when
         -- the transaction commits. Absence of the stable item ID from the source
-        -- after vanilla removed the action is a successful-move signal.
+        -- after vanilla removed the action is therefore also a success signal.
         local sourceItem = containerFindById(waiting.source, move and move.itemId or nil)
         if not sourceItem and not containerContainsMove(waiting.source, move) then
             confirmTransfer(state, waiting, destinationItem)
@@ -580,7 +567,7 @@ function GridMassSort.start(scope, playerNum)
 
     print("[LCC GridSort] mass " .. tostring(scope) .. " sort started: "
         .. tostring(#records) .. " containers, " .. tostring(#moves)
-        .. " duplicate consolidation candidates; transfer=visual-prephase+vanilla-mp-v1")
+        .. " duplicate consolidation candidates; transfer=vanilla-mp+visual-floor-v1")
     return true, "started"
 end
 
