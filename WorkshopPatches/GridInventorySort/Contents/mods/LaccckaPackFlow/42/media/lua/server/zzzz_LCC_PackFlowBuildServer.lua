@@ -1,3 +1,3 @@
 -- PackFlow runtime fingerprint for dedicated/server logs. Dependency-free on
 -- purpose: if this line is absent, the deployed PackFlow copy is not this build.
-print("[LCC PackFlow] build=0.7.8 runtime=server natural-sort=plain-v2 search-gate=off mass-transfer=vanilla-callback+paced-v2-prestart")
+print("[LCC PackFlow] build=0.7.9 runtime=server natural-sort=plain-v2 search-gate=off mass-transfer=vanilla-plain+item-id")
