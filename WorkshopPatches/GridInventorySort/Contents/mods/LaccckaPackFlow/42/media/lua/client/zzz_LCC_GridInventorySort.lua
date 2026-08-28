@@ -14,6 +14,12 @@ if not okSort or not GridAutoSort then
     return
 end
 
+local okMass, GridMassSort = pcall(require, "LCC/GridMassSort")
+if not okMass or not GridMassSort then
+    print("[LCC GridSort] mass-sort layer unavailable; single-container sorting remains enabled")
+    GridMassSort = nil
+end
+
 local function text(key, fallback)
     if getTextOrNull then
         local value = getTextOrNull(key)
@@ -37,11 +43,18 @@ local REASON_TOOLTIP = {
 local function tooltipForReason(reason)
     local entry = REASON_TOOLTIP[reason]
     if entry then return text(entry[1], entry[2]) end
-    return text("UI_LCC_GridSort_Tooltip", "Auto-sort this container.")
+    return text("UI_LCC_GridSort_Tooltip", "Auto-sort this container by item name.")
 end
 
 local function getPage(handler)
     return handler and (handler.inventoryWindow or handler.lootWindow) or nil
+end
+
+local function getHandlerPlayerNum(handler)
+    local page = getPage(handler)
+    if page and page.player ~= nil then return page.player end
+    local grid = handler and handler.container and getActiveGrid and getActiveGrid(handler) or nil
+    return grid and grid.playerNum or 0
 end
 
 local function getActiveGrid(handler)
@@ -65,6 +78,13 @@ end
 local function setButtonEnabled(button, enabled)
     if not button then return end
     if button.setEnable then button:setEnable(enabled) else button.enable = enabled end
+end
+
+local function normalizeButtonSize(button)
+    if not button then return end
+    if button.setTitle then button:setTitle("") end
+    local h = button.getHeight and button:getHeight() or button.height or 0
+    if h > 0 then button:setWidth(math.max(24, h)) end
 end
 
 local function decorateSortButton(button)
@@ -111,12 +131,59 @@ local function decorateSortButton(button)
     end
 end
 
+local function decorateMassSortButton(button, scope)
+    if not button or button._lccGridMassSortIconInstalled then return end
+    button._lccGridMassSortIconInstalled = true
+    button.internal = scope == "player" and "LCC_GRID_MASS_PLAYER_SORT" or "LCC_GRID_MASS_EXTERNAL_SORT"
+
+    local originalPrerender = button.prerender
+    button.prerender = function(self)
+        if originalPrerender then originalPrerender(self) end
+
+        local w = self.getWidth and self:getWidth() or self.width or 0
+        local h = self.getHeight and self:getHeight() or self.height or 0
+        if w <= 0 or h <= 0 then return end
+
+        local size = math.min(w, h)
+        local ox = math.floor((w - size) / 2)
+        local oy = math.floor((h - size) / 2)
+        local enabled = self.enable ~= false
+        local alpha = enabled and 0.90 or 0.35
+        if enabled and self.mouseOver then alpha = 1.0 end
+        local r, g, b = 0.92, 0.92, 0.92
+
+        -- Two container outlines plus a joining arrow: deliberately distinct
+        -- from the single-container A/Z-like sort glyph.
+        local boxW = math.max(6, math.floor(size * 0.26))
+        local boxH = math.max(7, math.floor(size * 0.32))
+        local leftX = ox + math.floor(size * 0.13)
+        local rightX = ox + size - math.floor(size * 0.13) - boxW
+        local boxY = oy + math.floor((size - boxH) / 2)
+
+        self:drawRectBorder(leftX, boxY, boxW, boxH, alpha, r, g, b)
+        self:drawRectBorder(rightX, boxY, boxW, boxH, alpha, r, g, b)
+        self:drawRect(leftX + 2, boxY + 3, math.max(2, boxW - 4), 2, alpha, r, g, b)
+        self:drawRect(rightX + 2, boxY + 3, math.max(2, boxW - 4), 2, alpha, r, g, b)
+
+        local midY = boxY + math.floor(boxH / 2)
+        local startX = leftX + boxW + 2
+        local endX = rightX - 2
+        if endX > startX then
+            self:drawRect(startX, midY, endX - startX, 2, alpha, r, g, b)
+            self:drawRect(endX - 3, midY - 3, 4, 2, alpha, r, g, b)
+            self:drawRect(endX - 3, midY + 3, 4, 2, alpha, r, g, b)
+        end
+    end
+end
+
 local function normalizeSortButton(button)
-    if not button then return end
-    if button.setTitle then button:setTitle("") end
-    local h = button.getHeight and button:getHeight() or button.height or 0
-    if h > 0 then button:setWidth(math.max(24, h)) end
+    normalizeButtonSize(button)
     decorateSortButton(button)
+end
+
+local function normalizeMassSortButton(button, scope)
+    normalizeButtonSize(button)
+    decorateMassSortButton(button, scope)
 end
 
 local function refreshHandlerState(handler)
@@ -130,6 +197,10 @@ local function refreshHandlerState(handler)
     local grid = getActiveGrid(handler)
     local canSort, reason = false, "unavailable"
     if grid then canSort, reason = GridAutoSort.canSort(grid) end
+    local playerNum = getHandlerPlayerNum(handler)
+    if GridMassSort and GridMassSort.isBusy(playerNum) then
+        canSort, reason = false, "busy"
+    end
 
     setButtonEnabled(button, canSort)
 
@@ -139,7 +210,7 @@ local function refreshHandlerState(handler)
         handler._lccStatusReason = nil
         handler._lccStatusUntil = nil
         button:setTooltip(canSort
-            and text("UI_LCC_GridSort_Tooltip", "Auto-sort this container.")
+            and text("UI_LCC_GridSort_Tooltip", "Auto-sort this container by item name.")
             or tooltipForReason(reason))
     end
 end
@@ -167,12 +238,20 @@ local function handlerPerform(handler)
         return
     end
 
+    local playerNum = getHandlerPlayerNum(handler)
+    if GridMassSort and GridMassSort.isBusy(playerNum) then
+        handler._lccStatusReason = "busy"
+        handler._lccStatusUntil = (getTimeInMillis and getTimeInMillis() or 0) + 2500
+        refreshHandlerState(handler)
+        return
+    end
+
     local ok, reason = GridAutoSort.sort(grid)
     if ok then
         handler._lccStatusReason = nil
         handler._lccStatusUntil = nil
         if reason == "sorted" then
-            print("[LCC GridSort] sorted " .. tostring(grid.inventoryContainer:getType()))
+            print("[LCC GridSort] sorted " .. tostring(grid.inventoryContainer:getType()) .. " by name")
         end
     else
         handler._lccStatusReason = reason
@@ -180,6 +259,54 @@ local function handlerPerform(handler)
         print("[LCC GridSort] sort skipped: " .. tostring(reason))
     end
     refreshHandlerState(handler)
+end
+
+local function massTooltip(scope)
+    if scope == "player" then
+        return text("UI_LCC_GridSort_MassPlayer_Tooltip",
+            "Consolidate duplicate items across your inventory and carried containers, then sort every eligible container by name.")
+    end
+    return text("UI_LCC_GridSort_MassExternal_Tooltip",
+        "Consolidate duplicate items across reachable external containers, then sort every eligible container by name.")
+end
+
+local function refreshMassHandlerState(handler)
+    local button = handler and handler.control
+    if not button then return end
+
+    if not GridMassSort then
+        setButtonEnabled(button, false)
+        button:setTooltip(tooltipForReason("unavailable"))
+        return
+    end
+
+    local playerNum = getHandlerPlayerNum(handler)
+    local can, reason = GridMassSort.canStart(handler.massScope, playerNum)
+    setButtonEnabled(button, can)
+    button:setTooltip(can and massTooltip(handler.massScope) or tooltipForReason(reason))
+end
+
+local function massHandlerShouldBeVisible(handler)
+    if not getPage(handler) then return false end
+    refreshMassHandlerState(handler)
+    return true
+end
+
+local function massHandlerGetControl(handler)
+    local button = handler:getButtonControl("")
+    normalizeMassSortButton(button, handler.massScope)
+    refreshMassHandlerState(handler)
+    return button
+end
+
+local function massHandlerPerform(handler)
+    if not GridMassSort then return end
+    local playerNum = getHandlerPlayerNum(handler)
+    local ok, reason = GridMassSort.start(handler.massScope, playerNum)
+    if not ok then
+        print("[LCC GridSort] mass sort skipped: " .. tostring(reason))
+    end
+    refreshMassHandlerState(handler)
 end
 
 LCC_InventorySortHandler = ISInventoryWindowControlHandler:derive("LCC_InventorySortHandler")
@@ -193,6 +320,28 @@ function LCC_LootSortHandler:shouldBeVisible() return handlerShouldBeVisible(sel
 function LCC_LootSortHandler:getControl() return handlerGetControl(self) end
 function LCC_LootSortHandler:perform() handlerPerform(self) end
 function LCC_LootSortHandler:new() return ISLootWindowObjectControlHandler.new(self) end
+
+LCC_InventoryMassSortHandler = ISInventoryWindowControlHandler:derive("LCC_InventoryMassSortHandler")
+LCC_InventoryMassSortHandler.massScope = "player"
+function LCC_InventoryMassSortHandler:shouldBeVisible() return massHandlerShouldBeVisible(self) end
+function LCC_InventoryMassSortHandler:getControl() return massHandlerGetControl(self) end
+function LCC_InventoryMassSortHandler:perform() massHandlerPerform(self) end
+function LCC_InventoryMassSortHandler:new()
+    local o = ISInventoryWindowControlHandler.new(self)
+    o.massScope = "player"
+    return o
+end
+
+LCC_LootMassSortHandler = ISLootWindowObjectControlHandler:derive("LCC_LootMassSortHandler")
+LCC_LootMassSortHandler.massScope = "external"
+function LCC_LootMassSortHandler:shouldBeVisible() return massHandlerShouldBeVisible(self) end
+function LCC_LootMassSortHandler:getControl() return massHandlerGetControl(self) end
+function LCC_LootMassSortHandler:perform() massHandlerPerform(self) end
+function LCC_LootMassSortHandler:new()
+    local o = ISLootWindowObjectControlHandler.new(self)
+    o.massScope = "external"
+    return o
+end
 
 local function moveLootHandlerBeforeRightGroup(handlerClass)
     local list = ISLootWindowContainerControls_HandlerList
@@ -211,7 +360,10 @@ local function moveLootHandlerBeforeRightGroup(handlerClass)
 end
 
 ISInventoryWindowContainerControls.AddHandler(LCC_InventorySortHandler)
+ISInventoryWindowContainerControls.AddHandler(LCC_InventoryMassSortHandler)
 ISLootWindowContainerControls.AddHandler(LCC_LootSortHandler)
+ISLootWindowContainerControls.AddHandler(LCC_LootMassSortHandler)
 moveLootHandlerBeforeRightGroup(LCC_LootSortHandler)
+moveLootHandlerBeforeRightGroup(LCC_LootMassSortHandler)
 
-print("[LCC GridSort] native footer handlers registered")
+print("[LCC GridSort] native single and scoped mass-sort footer handlers registered")
