@@ -31,6 +31,7 @@ jobs:
           bash -n WorkshopPatches/QuestFramework/audit-faction-relationships.sh
           bash -n WorkshopPatches/QuestFramework/audit-branching.sh
           bash -n WorkshopPatches/QuestFramework/audit-rpg-hub-cross-navigation.sh
+          bash -n WorkshopPatches/QuestFramework/audit-faction-sites.sh
 
       - name: Verify Quest Framework contracts
         run: bash WorkshopPatches/QuestFramework/audit.sh
@@ -49,3 +50,6 @@ jobs:
 
       - name: Verify RPG Hub cross-navigation contracts
         run: bash WorkshopPatches/QuestFramework/audit-rpg-hub-cross-navigation.sh
+
+      - name: Verify autonomous faction site contracts
+        run: bash WorkshopPatches/QuestFramework/audit-faction-sites.sh
