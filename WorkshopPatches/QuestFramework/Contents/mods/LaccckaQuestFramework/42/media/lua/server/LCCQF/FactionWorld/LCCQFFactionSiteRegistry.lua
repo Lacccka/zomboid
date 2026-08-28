@@ -54,15 +54,11 @@ local function ensureStore()
     return store
 end
 
-local function transmit()
-    if ModData and ModData.transmit then
-        pcall(function() ModData.transmit(C.FACTION_SITE_MODDATA_KEY) end)
-    end
-end
-
+-- Faction-site ModData is persistent server world state, not a gameplay replication
+-- surface. Do not ModData.transmit() it to every client. Privileged diagnostics use
+-- LCCQFFactionSiteDebugServer, while gameplay knowledge uses sanitized projections.
 local function touch(store)
     store.revision = math.max(0, math.floor(tonumber(store.revision) or 0)) + 1
-    transmit()
 end
 
 local function copyTable(input)
@@ -81,6 +77,7 @@ local function sanitizeCandidate(candidate)
         candidateKey = tostring(candidate.candidateKey),
         kind = tostring(candidate.kind or "building"),
         anchor = copyTable(candidate.anchor) or {},
+        sample = copyTable(candidate.sample) or {},
         bounds = copyTable(candidate.bounds) or {},
         buildingFingerprint = tostring(candidate.buildingFingerprint or candidate.candidateKey),
         roomCount = math.max(0, math.floor(tonumber(candidate.roomCount) or 0)),
@@ -120,6 +117,17 @@ end
 function Sites.GetStoreRevision()
     local store = ensureStore()
     return store and math.max(0, math.floor(tonumber(store.revision) or 0)) or 0
+end
+
+function Sites.MarkDirty(siteId, reason)
+    local site = Sites.GetSite(siteId)
+    if not site then return false, "site not found" end
+    local store = ensureStore()
+    if not store then return false, "global ModData unavailable" end
+    site.updatedWorldHours = worldHours()
+    if reason ~= nil then site.lastUpdateReason = tostring(reason) end
+    touch(store)
+    return true, site
 end
 
 function Sites.GetSite(siteId)
@@ -230,6 +238,7 @@ function Sites.ReserveCandidate(factionId, candidate, source)
         candidateKey = snapshot.candidateKey,
         kind = snapshot.kind,
         anchor = snapshot.anchor,
+        sample = snapshot.sample,
         bounds = snapshot.bounds,
         buildingFingerprint = snapshot.buildingFingerprint,
         roomCount = snapshot.roomCount,
