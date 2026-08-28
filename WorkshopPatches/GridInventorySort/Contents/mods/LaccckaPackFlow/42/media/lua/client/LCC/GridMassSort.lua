@@ -24,6 +24,14 @@ local function getPlayerByNum(playerNum)
     return getPlayer and getPlayer() or nil
 end
 
+local function hasTimedActions(player)
+    if not player or not ISTimedActionQueue or not ISTimedActionQueue.getTimedActionQueue then
+        return false
+    end
+    local queue = ISTimedActionQueue.getTimedActionQueue(player)
+    return queue and queue.queue and #queue.queue > 0 or false
+end
+
 local function itemFullType(item)
     if not item then return "" end
     if item.getFullType then
@@ -248,11 +256,14 @@ end
 local function queueMove(state, move, source, destination)
     local action = ISInventoryTransferAction:new(state.player, move.item, source, destination, nil)
     if not action then return false end
-    ISTimedActionQueue.add(action)
+    local queue = ISTimedActionQueue.add(action)
+    if not queue then return false end
     state.waitingMove = {
         move = move,
+        action = action,
         destination = destination,
         startedAt = nowMs(),
+        finishedAt = nil,
     }
     return true
 end
@@ -262,6 +273,17 @@ local function finish(state)
     print("[LCC GridSort] mass " .. tostring(state.scope)
         .. " sort complete: " .. tostring(state.transferred) .. " transfers, "
         .. tostring(state.sortedContainers) .. " containers sorted")
+end
+
+local function cancelStalledTransfer(state, waiting)
+    if waiting and waiting.action and waiting.action.forceCancel then
+        pcall(function() waiting.action:forceCancel() end)
+    end
+    -- canStart requires an empty queue and PackFlow queues only one transfer at
+    -- a time. Clearing here prevents a timed-out transfer from firing later.
+    if ISTimedActionQueue and ISTimedActionQueue.clear then
+        pcall(function() ISTimedActionQueue.clear(state.player) end)
+    end
 end
 
 local function tickTransfers(state)
@@ -275,17 +297,39 @@ local function tickTransfers(state)
             state.settleUntil = nowMs() + SETTLE_MS
             return
         end
+
+        local stillQueued = waiting.action and ISTimedActionQueue.hasAction
+            and ISTimedActionQueue.hasAction(waiting.action)
+        if not stillQueued then
+            -- Give the local ItemContainer one short settle window after the
+            -- action leaves the queue before declaring a rejected/cancelled move.
+            waiting.finishedAt = waiting.finishedAt or nowMs()
+            if nowMs() - waiting.finishedAt < SETTLE_MS then return end
+            print("[LCC GridSort] mass transfer ended without destination for item "
+                .. tostring(waiting.move and waiting.move.itemId))
+            state.waitingMove = nil
+            state.settleUntil = nowMs() + SETTLE_MS
+            return
+        end
+
         if nowMs() - waiting.startedAt < MOVE_TIMEOUT_MS then return end
 
         print("[LCC GridSort] mass transfer timed out for item "
-            .. tostring(waiting.move and waiting.move.itemId))
+            .. tostring(waiting.move and waiting.move.itemId)
+            .. "; cancelling remaining consolidation transfers")
+        cancelStalledTransfer(state, waiting)
         state.waitingMove = nil
+        state.moveIndex = #state.moves + 1
         state.settleUntil = nowMs() + SETTLE_MS
         return
     end
 
     if state.settleUntil and nowMs() < state.settleUntil then return end
     state.settleUntil = nil
+
+    -- If the player started another timed action while PackFlow was running,
+    -- do not enqueue behind it. Resume only after the vanilla queue is idle.
+    if hasTimedActions(state.player) then return end
 
     while state.moveIndex <= #state.moves do
         local move = state.moves[state.moveIndex]
@@ -301,6 +345,9 @@ local function tickTransfers(state)
 end
 
 local function tickSort(state)
+    -- Coordinate sorting must not race vanilla inventory timed actions either.
+    if hasTimedActions(state.player) then return end
+
     local record = state.records[state.sortIndex]
     if not record then
         finish(state)
@@ -365,6 +412,11 @@ end
 function GridMassSort.canStart(scope, playerNum)
     playerNum = playerNum or 0
     if GridMassSort.isBusy(playerNum) then return false, "busy" end
+
+    local player = getPlayerByNum(playerNum)
+    if not player then return false, "unavailable" end
+    if hasTimedActions(player) then return false, "busy" end
+
     local records, blocked = collectScopeRecords(scope, playerNum)
     if blocked then return false, blocked end
     if #records == 0 then return false, "unavailable" end
