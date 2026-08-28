@@ -165,9 +165,9 @@ local function collectScopeRecords(scope, playerNum)
                 elseif reason == "busy" then
                     return {}, "busy"
                 end
-                -- search/nested/locked containers are intentionally skipped;
-                -- bulk sorting must never reveal unknown loot or bypass the
-                -- current nested-bag multiplayer safety restriction.
+                -- Nested/locked containers are intentionally skipped. Search
+                -- visibility is not a gate: GridInventory tracks hidden loot by
+                -- item ID, so coordinate sorting does not reveal unknown items.
             end
         end
     end
@@ -430,15 +430,30 @@ local function tickSort(state)
     state.sortRetrySince = nil
 end
 
+local function abortUnexpected(state, err)
+    if state and state.waitingMove then
+        cancelStalledTransfer(state, state.waitingMove)
+        state.waitingMove = nil
+    end
+    if state then GridMassSort.active[state.playerNum] = nil end
+    print("[LCC GridSort] mass " .. tostring(state and state.scope or "unknown")
+        .. " sort aborted after unexpected error: " .. tostring(err))
+end
+
+local function tickState(state)
+    if state.phase == "transfer" then
+        tickTransfers(state)
+    elseif state.phase == "sort" then
+        tickSort(state)
+    else
+        finish(state)
+    end
+end
+
 local function onTick()
     for _, state in pairs(GridMassSort.active) do
-        if state.phase == "transfer" then
-            tickTransfers(state)
-        elseif state.phase == "sort" then
-            tickSort(state)
-        else
-            finish(state)
-        end
+        local ok, err = pcall(tickState, state)
+        if not ok then abortUnexpected(state, err) end
     end
 end
 
