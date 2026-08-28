@@ -174,7 +174,7 @@ function GridMassSort.start(scope, playerNum)
         traces[playerNum] = {
             playerNum = playerNum,
             scope = scope,
-            previous = before,
+            lastKnown = before,
             startedAt = nowMs(),
             finishedAt = nil,
             changes = 0,
@@ -190,9 +190,12 @@ local function traceTick(trace)
     local current = snapshot(trace.scope, trace.playerNum)
     local elapsed = nowMs() - trace.startedAt
 
-    for id, previous in pairs(trace.previous) do
-        local nextEntry = current[id]
-        if nextEntry and nextEntry.container ~= previous.container then
+    -- Compare each currently visible physical item to its last known container.
+    -- Do NOT discard lastKnown entries when an ID disappears for a replication
+    -- frame: MP can expose source-removal before destination-addition.
+    for id, nextEntry in pairs(current) do
+        local previous = trace.lastKnown[id]
+        if previous and nextEntry.container ~= previous.container then
             trace.changes = trace.changes + 1
             print("[LCC GridSort][physical-trace] item=" .. tostring(id)
                 .. " type=" .. tostring(previous.fullType)
@@ -201,9 +204,8 @@ local function traceTick(trace)
                 .. " to={" .. tostring(nextEntry.label) .. "}"
                 .. " busy=" .. tostring(GridMassSort.isBusy(trace.playerNum)))
         end
+        trace.lastKnown[id] = nextEntry
     end
-
-    trace.previous = current
 
     if GridMassSort.isBusy(trace.playerNum) then
         trace.finishedAt = nil
