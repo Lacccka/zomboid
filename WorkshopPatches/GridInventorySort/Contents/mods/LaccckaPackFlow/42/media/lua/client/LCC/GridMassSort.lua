@@ -25,10 +25,8 @@ local function getPlayerByNum(playerNum)
 end
 
 local function hasTimedActions(player)
-    if not player or not ISTimedActionQueue or not ISTimedActionQueue.getTimedActionQueue then
-        return false
-    end
-    local queue = ISTimedActionQueue.getTimedActionQueue(player)
+    if not player or not ISTimedActionQueue then return false end
+    local queue = ISTimedActionQueue.queues and ISTimedActionQueue.queues[player] or nil
     return queue and queue.queue and #queue.queue > 0 or false
 end
 
@@ -83,6 +81,27 @@ local function findGridUi(pane, container)
         end
     end
     return nil
+end
+
+local function hasScopeCandidate(scope, playerNum)
+    local player = getPlayerByNum(playerNum)
+    local page = pageForScope(scope, playerNum)
+    if not player or not page then return false end
+
+    if scope == GridMassSort.SCOPE_PLAYER then
+        return player.getInventory and player:getInventory() ~= nil or false
+    end
+
+    for _, button in ipairs(page.backpacks or {}) do
+        local container = button and button.inventory or nil
+        if container
+            and not (container.getType and container:getType() == "floor")
+            and not isCorpseContainer(container)
+            and not isPlayerContainer(container, player) then
+            return true
+        end
+    end
+    return false
 end
 
 -- The official page.backpacks list is the source of truth for the accessible
@@ -297,7 +316,7 @@ local function cancelStalledTransfer(state, waiting)
     if waiting and waiting.action and waiting.action.forceCancel then
         pcall(function() waiting.action:forceCancel() end)
     end
-    -- canStart requires an empty queue and PackFlow queues only one transfer at
+    -- start() requires an empty queue and PackFlow queues only one transfer at
     -- a time. Clearing here prevents a timed-out transfer from firing later.
     if ISTimedActionQueue and ISTimedActionQueue.clear then
         pcall(function() ISTimedActionQueue.clear(state.player) end)
@@ -427,6 +446,8 @@ function GridMassSort.isBusy(playerNum)
     return GridMassSort.active[playerNum or 0] ~= nil
 end
 
+-- Lightweight footer-state check. It intentionally does not build GridContainer
+-- models or enumerate item contents; the full validation happens only on click.
 function GridMassSort.canStart(scope, playerNum)
     playerNum = playerNum or 0
     if GridMassSort.isBusy(playerNum) then return false, "busy" end
@@ -434,6 +455,13 @@ function GridMassSort.canStart(scope, playerNum)
     local player = getPlayerByNum(playerNum)
     if not player then return false, "unavailable" end
     if hasTimedActions(player) then return false, "busy" end
+    if not hasScopeCandidate(scope, playerNum) then return false, "unavailable" end
+    return true, nil
+end
+
+local function validateStart(scope, playerNum)
+    local can, reason = GridMassSort.canStart(scope, playerNum)
+    if not can then return false, reason end
 
     local records, blocked = collectScopeRecords(scope, playerNum)
     if blocked then return false, blocked end
@@ -449,7 +477,7 @@ end
 
 function GridMassSort.start(scope, playerNum)
     playerNum = playerNum or 0
-    local can, reason, records = GridMassSort.canStart(scope, playerNum)
+    local can, reason, records = validateStart(scope, playerNum)
     if not can then return false, reason end
 
     local player = getPlayerByNum(playerNum)
