@@ -56,6 +56,64 @@ local function validateRanks(definition)
     return true
 end
 
+local function validateZoneWeights(weights, fieldName)
+    if weights == nil then return true end
+    if type(weights) ~= "table" then return false, fieldName .. " must be a table" end
+    for zoneType, weight in pairs(weights) do
+        if not isIdentifier(zoneType) or tonumber(weight) == nil then
+            return false, "invalid " .. fieldName .. " entry"
+        end
+    end
+    return true
+end
+
+local function validateSiteProfile(definition)
+    local profile = definition.siteProfile
+    if profile == nil then return true end
+    if type(profile) ~= "table" then return false, "siteProfile must be a table" end
+    if profile.enabled ~= nil and type(profile.enabled) ~= "boolean" then
+        return false, "siteProfile.enabled must be boolean"
+    end
+    if profile.kind ~= nil and not isIdentifier(profile.kind) then
+        return false, "invalid siteProfile.kind"
+    end
+
+    local numericNonNegative = {
+        "minRooms",
+        "minDistanceFromPlayers",
+        "minDistanceFromPlayerSafehouses",
+        "minDistanceFromOtherFactionSites",
+        "minScore",
+        "maxSites",
+    }
+    for _, fieldName in ipairs(numericNonNegative) do
+        local value = profile[fieldName]
+        if value ~= nil and (tonumber(value) == nil or tonumber(value) < 0) then
+            return false, "invalid siteProfile." .. fieldName
+        end
+    end
+    if profile.minRooms ~= nil and math.floor(tonumber(profile.minRooms)) ~= tonumber(profile.minRooms) then
+        return false, "siteProfile.minRooms must be an integer"
+    end
+    if profile.maxSites ~= nil and (tonumber(profile.maxSites) < 1
+        or math.floor(tonumber(profile.maxSites)) ~= tonumber(profile.maxSites))
+    then
+        return false, "siteProfile.maxSites must be a positive integer"
+    end
+
+    for _, flagName in ipairs({ "wantsIndoor", "wantsWater", "wantsBeds", "wantsRoadAccess" }) do
+        if profile[flagName] ~= nil and type(profile[flagName]) ~= "boolean" then
+            return false, "siteProfile." .. flagName .. " must be boolean"
+        end
+    end
+
+    local preferredOk, preferredErr = validateZoneWeights(profile.preferredZones, "siteProfile.preferredZones")
+    if not preferredOk then return false, preferredErr end
+    local avoidedOk, avoidedErr = validateZoneWeights(profile.avoidedZones, "siteProfile.avoidedZones")
+    if not avoidedOk then return false, avoidedErr end
+    return true
+end
+
 function Registry.Register(definition)
     if type(definition) ~= "table" then return false, "definition must be a table" end
     if not isIdentifier(definition.factionId) then return false, "invalid factionId" end
@@ -67,6 +125,8 @@ function Registry.Register(definition)
     if not factsOk then return false, factsErr end
     local ranksOk, ranksErr = validateRanks(definition)
     if not ranksOk then return false, ranksErr end
+    local siteOk, siteErr = validateSiteProfile(definition)
+    if not siteOk then return false, siteErr end
 
     definitions[definition.factionId] = definition
     return true
