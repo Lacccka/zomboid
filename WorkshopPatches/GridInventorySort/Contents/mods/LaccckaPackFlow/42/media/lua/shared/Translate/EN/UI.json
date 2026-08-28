@@ -1,6 +1,8 @@
 {
     "UI_LCC_GridSort_Button": "SORT",
-    "UI_LCC_GridSort_Tooltip": "Auto-sort this container.",
+    "UI_LCC_GridSort_Tooltip": "Auto-sort this container by item name.",
+    "UI_LCC_GridSort_MassPlayer_Tooltip": "Consolidate duplicate items across your inventory and carried containers, then sort every eligible container by name.",
+    "UI_LCC_GridSort_MassExternal_Tooltip": "Consolidate duplicate items across reachable external containers, then sort every eligible container by name.",
     "UI_LCC_GridSort_Floor": "Auto-sort is disabled on the floor.",
     "UI_LCC_GridSort_Corpse": "Corpse auto-sort is disabled in this version.",
     "UI_LCC_GridSort_Nested": "Nested bags are temporarily not auto-sorted in multiplayer.",
