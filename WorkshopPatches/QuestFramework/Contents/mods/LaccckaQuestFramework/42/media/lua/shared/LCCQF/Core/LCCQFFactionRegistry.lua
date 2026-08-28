@@ -78,15 +78,14 @@ local function validateSiteProfile(definition)
         return false, "invalid siteProfile.kind"
     end
 
-    -- Only expose fields implemented by the current dry-run allocator. Resource
-    -- preferences and SafeHouse-distance scoring will be added when their 42.20.4
-    -- runtime probes are implemented, rather than silently accepting inert settings.
     local numericNonNegative = {
         "minRooms",
         "minDistanceFromPlayers",
         "minDistanceFromOtherFactionSites",
         "minScore",
         "maxSites",
+        "minStorageContainers",
+        "minFreeSpawnPoints",
     }
     for _, fieldName in ipairs(numericNonNegative) do
         local value = profile[fieldName]
@@ -94,23 +93,27 @@ local function validateSiteProfile(definition)
             return false, "invalid siteProfile." .. fieldName
         end
     end
-    if profile.minRooms ~= nil and math.floor(tonumber(profile.minRooms)) ~= tonumber(profile.minRooms) then
-        return false, "siteProfile.minRooms must be an integer"
+
+    for _, integerName in ipairs({ "minRooms", "maxSites", "minStorageContainers", "minFreeSpawnPoints" }) do
+        local value = profile[integerName]
+        if value ~= nil and math.floor(tonumber(value)) ~= tonumber(value) then
+            return false, "siteProfile." .. integerName .. " must be an integer"
+        end
     end
-    if profile.maxSites ~= nil and (tonumber(profile.maxSites) < 1
-        or math.floor(tonumber(profile.maxSites)) ~= tonumber(profile.maxSites))
-    then
+    if profile.maxSites ~= nil and tonumber(profile.maxSites) < 1 then
         return false, "siteProfile.maxSites must be a positive integer"
     end
 
-    if profile.wantsIndoor ~= nil and type(profile.wantsIndoor) ~= "boolean" then
-        return false, "siteProfile.wantsIndoor must be boolean"
+    for _, flagName in ipairs({ "wantsIndoor", "wantsWater", "wantsBeds" }) do
+        if profile[flagName] ~= nil and type(profile[flagName]) ~= "boolean" then
+            return false, "siteProfile." .. flagName .. " must be boolean"
+        end
     end
 
+    -- These policies remain deliberately unavailable until their B42.20.4 runtime
+    -- probes exist. Do not accept inert content settings that look authoritative.
     for unsupportedName in pairs({
         minDistanceFromPlayerSafehouses = true,
-        wantsWater = true,
-        wantsBeds = true,
         wantsRoadAccess = true,
     }) do
         if profile[unsupportedName] ~= nil then
