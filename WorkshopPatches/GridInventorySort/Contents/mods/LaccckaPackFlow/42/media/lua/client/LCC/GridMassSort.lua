@@ -5,6 +5,7 @@ local GridContainer = require("DataModel/GridContainer")
 local GridSortState = require("LCC/GridSortState")
 local GridSortNetwork = require("LCC/GridSortNetwork")
 local GridAutoSort = require("LCC/GridAutoSort")
+local GridMassTransferVisualAction = require("LCC/GridMassTransferVisualAction")
 
 local GridMassSort = {}
 
@@ -12,8 +13,11 @@ GridMassSort.SCOPE_PLAYER = "player"
 GridMassSort.SCOPE_EXTERNAL = "external"
 GridMassSort.active = {}
 
--- Vanilla owns the duration of ISInventoryTransferAction. PackFlow must never
--- cancel a legitimate transfer merely because it takes longer than expected.
+-- The real B42 MP ISInventoryTransferAction is server-authoritative and may be
+-- force-completed immediately when the ItemTransaction ACK arrives. PackFlow
+-- therefore performs the physical Loot/TransferItemOnSelf action first, then
+-- queues the untouched vanilla MP transfer. This short settle is only for UI /
+-- container refresh after the authoritative transfer has left the queue.
 local SETTLE_MS = 150
 
 local function nowMs()
@@ -47,6 +51,32 @@ local function itemName(item)
     local value = item.getDisplayName and item:getDisplayName() or nil
     if (value == nil or value == "") and item.getName then value = item:getName() end
     return string.lower(tostring(value or itemFullType(item)))
+end
+
+local function containerLabel(container)
+    if not container then return "nil" end
+    local ctype = container.getType and container:getType() or "?"
+    local parent = container.getParent and container:getParent() or nil
+    if container.getVehiclePart and container:getVehiclePart() then
+        local part = container:getVehiclePart()
+        local vehicle = part and part:getVehicle() or nil
+        return "vehicle:" .. tostring(vehicle and vehicle:getId() or "?")
+            .. ":" .. tostring(part and part:getId() or ctype)
+    end
+    if parent and parent.getSquare then
+        local square = parent:getSquare()
+        if square then
+            return tostring(ctype) .. "@"
+                .. tostring(square:getX()) .. ","
+                .. tostring(square:getY()) .. ","
+                .. tostring(square:getZ())
+        end
+    end
+    local containingItem = container.getContainingItem and container:getContainingItem() or nil
+    if containingItem and containingItem.getID then
+        return tostring(ctype) .. "#item:" .. tostring(containingItem:getID())
+    end
+    return tostring(ctype)
 end
 
 local function isCorpseContainer(container)
@@ -307,15 +337,38 @@ local function containerContainsMove(container, move)
 end
 
 local function queueMove(state, move, source, destination)
-    -- Intentionally use the same plain vanilla action path as the visually good
-    -- 0.7.3 build. Do not attach callbacks and do not override maxTime/update.
-    local action = ISInventoryTransferAction:new(state.player, move.item, source, destination, nil)
-    if not action then return false end
-    local queue = ISTimedActionQueue.add(action)
+    -- B42 MP completes ISInventoryTransferAction on ItemTransaction ACK and its
+    -- forceComplete() explicitly stops the Loot animation. Preserve the server-
+    -- authoritative transfer untouched, but run a local physical action first.
+    -- The visual action never mutates ItemContainer membership.
+    local visualAction = GridMassTransferVisualAction:new(
+        state.player, move.item, source, destination)
+    local transferAction = ISInventoryTransferAction:new(
+        state.player, move.item, source, destination, nil)
+    if not visualAction or not transferAction then return false end
+
+    local queue = ISTimedActionQueue.add(visualAction)
     if not queue then return false end
+
+    local transferQueue = ISTimedActionQueue.add(transferAction)
+    if not transferQueue then
+        -- queueMove only runs while the player queue is idle. Stop our visual
+        -- action so its normal stop() resets/removes the unstarted tail without
+        -- ever touching an unrelated player action.
+        visualAction:forceStop()
+        return false
+    end
+
+    print("[LCC GridSort] mass transfer queued item=" .. tostring(move.itemId)
+        .. " type=" .. tostring(itemFullType(move.item))
+        .. " physicalTicks=" .. tostring(visualAction.maxTime)
+        .. " source=" .. containerLabel(source)
+        .. " destination=" .. containerLabel(destination))
+
     state.waitingMove = {
         move = move,
-        action = action,
+        visualAction = visualAction,
+        action = transferAction,
         source = source,
         destination = destination,
     }
@@ -347,13 +400,13 @@ local function tickTransfers(state)
             return
         end
 
+        -- transferAction is intentionally queued behind visualAction. As long as
+        -- the real transfer remains in the vanilla queue, either the physical
+        -- pre-phase is still playing or the authoritative MP transaction is in
+        -- flight; both are valid states and require no timeout/polling hack.
         local stillQueued = waiting.action and ISTimedActionQueue.hasAction
             and ISTimedActionQueue.hasAction(waiting.action)
-        if stillQueued then
-            -- The action remains entirely vanilla-owned for however long B42 says
-            -- this particular physical transfer should take.
-            return
-        end
+        if stillQueued then return end
 
         -- In MP the old Lua InventoryItem reference can be detached/replaced when
         -- the transaction commits. Absence of the stable item ID from the source
@@ -365,8 +418,10 @@ local function tickTransfers(state)
         end
 
         state.unconfirmedTransfers = (state.unconfirmedTransfers or 0) + 1
-        print("[LCC GridSort] mass transfer rejected/cancelled for item "
-            .. tostring(move and move.itemId))
+        print("[LCC GridSort] mass transfer rejected/cancelled item="
+            .. tostring(move and move.itemId)
+            .. " source=" .. containerLabel(waiting.source)
+            .. " destination=" .. containerLabel(waiting.destination))
         state.waitingMove = nil
         state.settleUntil = nowMs() + SETTLE_MS
         return
@@ -375,8 +430,7 @@ local function tickTransfers(state)
     if state.settleUntil and nowMs() < state.settleUntil then return end
     state.settleUntil = nil
 
-    -- Match the old behavior: never enqueue a PackFlow transfer behind an action
-    -- already started by the player; simply wait until vanilla is idle.
+    -- Never enqueue PackFlow work behind an action already started by the player.
     if hasTimedActions(state.player) then return end
 
     while state.moveIndex <= #state.moves do
@@ -526,7 +580,7 @@ function GridMassSort.start(scope, playerNum)
 
     print("[LCC GridSort] mass " .. tostring(scope) .. " sort started: "
         .. tostring(#records) .. " containers, " .. tostring(#moves)
-        .. " duplicate consolidation candidates; transfer=vanilla-plain")
+        .. " duplicate consolidation candidates; transfer=visual-prephase+vanilla-mp-v1")
     return true, "started"
 end
 
