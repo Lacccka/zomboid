@@ -4,7 +4,6 @@ local ItemFootprint = require("Algorithm/ItemFootprint")
 local GridClientNetwork = require("Network/GridClientNetwork")
 local GridSortState = require("LCC/GridSortState")
 local GridSortNetwork = require("LCC/GridSortNetwork")
-local okSearch, GridInventory_Search = pcall(require, "System/GridInventory_Search")
 
 local GridAutoSort = {}
 
@@ -57,10 +56,30 @@ local function itemFullType(item)
     return tostring(moduleName) .. "." .. tostring(typeName)
 end
 
+-- Kahlua's pattern engine can misinterpret non-ASCII pattern bytes. Russian
+-- normalization must therefore use literal substring replacement, never gsub
+-- with a Cyrillic pattern.
+local function replacePlain(text, needle, replacement)
+    if needle == "" then return text end
+    local parts = {}
+    local position = 1
+    while true do
+        local first, last = string.find(text, needle, position, true)
+        if not first then
+            table.insert(parts, string.sub(text, position))
+            break
+        end
+        table.insert(parts, string.sub(text, position, first - 1))
+        table.insert(parts, replacement)
+        position = last + 1
+    end
+    return table.concat(parts)
+end
+
 local function foldCase(value)
     local text = string.lower(tostring(value or ""))
     for _, pair in ipairs(RUSSIAN_CASE_PAIRS) do
-        text = string.gsub(text, pair[1], pair[2])
+        text = replacePlain(text, pair[1], pair[2])
     end
     return text
 end
@@ -68,7 +87,7 @@ end
 local function russianCollationKey(value)
     local key = value
     for _, pair in ipairs(RUSSIAN_COLLATION) do
-        key = string.gsub(key, pair[1], pair[2])
+        key = replacePlain(key, pair[1], pair[2])
     end
     return key
 end
@@ -321,20 +340,6 @@ local function isNestedBagContainer(container)
     return parentContainer:getContainingItem() ~= nil
 end
 
-local function needsSearch(container, playerNum, gridUi)
-    if gridUi and gridUi.needsSearch and gridUi:needsSearch() then return true end
-    local player = getSpecificPlayer and getSpecificPlayer(playerNum or 0) or nil
-    if player and container.isInCharacterInventory then
-        local ok, owned = pcall(function() return container:isInCharacterInventory(player) end)
-        if ok and owned then return false end
-    end
-    if okSearch and GridInventory_Search and GridInventory_Search.needsSearch then
-        local ok, result = pcall(function() return GridInventory_Search.needsSearch(playerNum or 0, container) end)
-        if ok and result then return true end
-    end
-    return false
-end
-
 function GridAutoSort.canSortContainer(container, playerNum, gridUi)
     if not container then return false, "unavailable" end
     if gridUi and gridUi.isOverflow then return false, "unavailable" end
@@ -343,7 +348,9 @@ function GridAutoSort.canSortContainer(container, playerNum, gridUi)
     if parent and instanceof and instanceof(parent, "IsoDeadBody") then return false, "corpse" end
     if isClient and isClient() and isNestedBagContainer(container) then return false, "nested" end
     if GridSortNetwork.isPending(container) then return false, "busy" end
-    if needsSearch(container, playerNum, gridUi) then return false, "search" end
+    -- GridInventory search/reveal state is intentionally NOT an availability
+    -- gate. Hidden loot is tracked per item ID and remains hidden after a grid
+    -- coordinate reorder, so sorting does not need to force or bypass search.
     local model = GridContainer.getOrCreate(container, playerNum or 0)
     if hasPendingWork(container, model) then return false, "busy" end
     local okBag, BagDrop = pcall(require, "System/GridInventory_BagDrop")
