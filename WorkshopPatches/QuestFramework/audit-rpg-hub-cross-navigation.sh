@@ -32,7 +32,7 @@ require_pattern 'function CharacterKnowledge\.AddViewDecorator' "$knowledge" "kn
 require_pattern 'function CharacterKnowledge\.RemoveViewDecorator' "$knowledge" "known person view decorator removal API missing"
 require_pattern 'pcall\(decorator' "$knowledge" "view decorators are not isolated"
 require_pattern 'CharacterFactionKnowledge\.IsKnown\(player, factionId\)' "$faction_bridge" "NPC faction link is not gated by per-life faction discovery"
-require_pattern 'view\.faction = {' "$faction_bridge" "sanitized NPC faction projection missing"
+require_pattern 'view\.faction = \{' "$faction_bridge" "sanitized NPC faction projection missing"
 require_pattern 'KNOWN_PERSON_UPSERT' "$faction_bridge" "new faction discovery does not refresh known person projections"
 
 require_pattern 'KnownFactions\.Get\(factionId\)' "$person_faction" "person-to-faction link is not gated by known faction client state"
