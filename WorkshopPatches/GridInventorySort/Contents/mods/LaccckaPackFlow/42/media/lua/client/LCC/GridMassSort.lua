@@ -12,7 +12,10 @@ GridMassSort.SCOPE_PLAYER = "player"
 GridMassSort.SCOPE_EXTERNAL = "external"
 GridMassSort.active = {}
 
-local MOVE_TIMEOUT_MS = 20000
+-- Vanilla owns the duration of ISInventoryTransferAction. PackFlow must never
+-- cancel a legitimate transfer merely because a heavy item or character state
+-- makes the timed action take longer than an arbitrary wall-clock timeout.
+local POST_ACTION_CONFIRM_MS = 5000
 local SETTLE_MS = 150
 
 local function nowMs()
@@ -290,6 +293,15 @@ local function chooseDestination(state, move)
     return source, nil
 end
 
+local function containerContains(container, item)
+    if not container or not item then return false end
+    if container.contains then
+        local ok, result = pcall(function() return container:contains(item) end)
+        if ok and result then return true end
+    end
+    return item.getContainer and item:getContainer() == container or false
+end
+
 local function queueMove(state, move, source, destination)
     local action = ISInventoryTransferAction:new(state.player, move.item, source, destination, nil)
     if not action then return false end
@@ -298,8 +310,9 @@ local function queueMove(state, move, source, destination)
     state.waitingMove = {
         move = move,
         action = action,
+        source = source,
         destination = destination,
-        startedAt = nowMs(),
+        queuedAt = nowMs(),
         finishedAt = nil,
     }
     return true
@@ -309,6 +322,7 @@ local function finish(state)
     GridMassSort.active[state.playerNum] = nil
     print("[LCC GridSort] mass " .. tostring(state.scope)
         .. " sort complete: " .. tostring(state.transferred) .. " transfers, "
+        .. tostring(state.unconfirmedTransfers or 0) .. " unconfirmed, "
         .. tostring(state.sortedContainers) .. " containers sorted")
 end
 
@@ -316,47 +330,57 @@ local function cancelStalledTransfer(state, waiting)
     if waiting and waiting.action and waiting.action.forceCancel then
         pcall(function() waiting.action:forceCancel() end)
     end
-    -- start() requires an empty queue and PackFlow queues only one transfer at
-    -- a time. Clearing here prevents a timed-out transfer from firing later.
+    -- PackFlow queues only one transfer at a time. Clearing here is reserved for
+    -- unexpected failures; normal transfer duration and completion are owned by
+    -- vanilla's ISTimedActionQueue.
     if ISTimedActionQueue and ISTimedActionQueue.clear then
         pcall(function() ISTimedActionQueue.clear(state.player) end)
     end
+end
+
+local function confirmTransfer(state, waiting)
+    state.transferred = state.transferred + 1
+    state.waitingMove = nil
+    state.settleUntil = nowMs() + SETTLE_MS
 end
 
 local function tickTransfers(state)
     local waiting = state.waitingMove
     if waiting then
         local item = waiting.move and waiting.move.item or nil
-        local current = item and item.getContainer and item:getContainer() or nil
-        if current == waiting.destination then
-            state.transferred = state.transferred + 1
-            state.waitingMove = nil
-            state.settleUntil = nowMs() + SETTLE_MS
+        if containerContains(waiting.destination, item) then
+            confirmTransfer(state, waiting)
             return
         end
 
         local stillQueued = waiting.action and ISTimedActionQueue.hasAction
             and ISTimedActionQueue.hasAction(waiting.action)
-        if not stillQueued then
-            -- Give the local ItemContainer one short settle window after the
-            -- action leaves the queue before declaring a rejected/cancelled move.
-            waiting.finishedAt = waiting.finishedAt or nowMs()
-            if nowMs() - waiting.finishedAt < SETTLE_MS then return end
-            print("[LCC GridSort] mass transfer ended without destination for item "
-                .. tostring(waiting.move and waiting.move.itemId))
-            state.waitingMove = nil
-            state.settleUntil = nowMs() + SETTLE_MS
+        if stillQueued then
+            -- A transfer can legitimately take a long time. Weight, wounds,
+            -- moodles, temperature and other vanilla modifiers all affect the
+            -- timed-action duration. Never apply a PackFlow wall-clock timeout
+            -- while vanilla still owns the live action.
             return
         end
 
-        if nowMs() - waiting.startedAt < MOVE_TIMEOUT_MS then return end
+        -- The action has left vanilla's queue. In MP, ItemContainer state can
+        -- trail transaction completion, so allow a separate confirmation window
+        -- before classifying the transfer as rejected/cancelled.
+        waiting.finishedAt = waiting.finishedAt or nowMs()
+        if nowMs() - waiting.finishedAt < POST_ACTION_CONFIRM_MS then return end
 
-        print("[LCC GridSort] mass transfer timed out for item "
-            .. tostring(waiting.move and waiting.move.itemId)
-            .. "; cancelling remaining consolidation transfers")
-        cancelStalledTransfer(state, waiting)
+        local sourceStillHasItem = containerContains(waiting.source, item)
+        local current = item and item.getContainer and item:getContainer() or nil
+        state.unconfirmedTransfers = (state.unconfirmedTransfers or 0) + 1
+        if sourceStillHasItem then
+            print("[LCC GridSort] mass transfer rejected/cancelled for item "
+                .. tostring(waiting.move and waiting.move.itemId))
+        else
+            print("[LCC GridSort] mass transfer completed but destination was not confirmed for item "
+                .. tostring(waiting.move and waiting.move.itemId)
+                .. "; current=" .. tostring(current))
+        end
         state.waitingMove = nil
-        state.moveIndex = #state.moves + 1
         state.settleUntil = nowMs() + SETTLE_MS
         return
     end
@@ -512,6 +536,7 @@ function GridMassSort.start(scope, playerNum)
         moveIndex = 1,
         phase = "transfer",
         transferred = 0,
+        unconfirmedTransfers = 0,
         sortedContainers = 0,
         waitingMove = nil,
         settleUntil = nil,
