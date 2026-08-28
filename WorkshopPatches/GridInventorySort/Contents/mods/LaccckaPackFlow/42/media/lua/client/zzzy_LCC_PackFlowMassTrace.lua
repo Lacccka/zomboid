@@ -12,6 +12,7 @@ GridMassSort._lccPhysicalTraceInstalled = true
 
 local traces = {}
 local TRACE_SETTLE_MS = 2000
+local TRACE_SAMPLE_MS = 100
 
 local function nowMs()
     return getTimestampMs and getTimestampMs()
@@ -171,11 +172,13 @@ function GridMassSort.start(scope, playerNum)
     if ok then
         local itemCount = 0
         for _ in pairs(before) do itemCount = itemCount + 1 end
+        local startedAt = nowMs()
         traces[playerNum] = {
             playerNum = playerNum,
             scope = scope,
             lastKnown = before,
-            startedAt = nowMs(),
+            startedAt = startedAt,
+            nextSampleAt = startedAt,
             finishedAt = nil,
             changes = 0,
         }
@@ -186,9 +189,9 @@ function GridMassSort.start(scope, playerNum)
     return ok, reason
 end
 
-local function traceTick(trace)
+local function traceTick(trace, sampleTime)
     local current = snapshot(trace.scope, trace.playerNum)
-    local elapsed = nowMs() - trace.startedAt
+    local elapsed = sampleTime - trace.startedAt
 
     -- Compare each currently visible physical item to its last known container.
     -- Do NOT discard lastKnown entries when an ID disappears for a replication
@@ -212,8 +215,8 @@ local function traceTick(trace)
         return false
     end
 
-    trace.finishedAt = trace.finishedAt or nowMs()
-    if nowMs() - trace.finishedAt < TRACE_SETTLE_MS then return false end
+    trace.finishedAt = trace.finishedAt or sampleTime
+    if sampleTime - trace.finishedAt < TRACE_SETTLE_MS then return false end
 
     print("[LCC GridSort][physical-trace] end scope=" .. tostring(trace.scope)
         .. " physicalChanges=" .. tostring(trace.changes))
@@ -221,13 +224,17 @@ local function traceTick(trace)
 end
 
 local function onTick()
+    local sampleTime = nowMs()
     for playerNum, trace in pairs(traces) do
-        local ok, done = pcall(traceTick, trace)
-        if not ok then
-            print("[LCC GridSort][physical-trace] disabled after error: " .. tostring(done))
-            traces[playerNum] = nil
-        elseif done then
-            traces[playerNum] = nil
+        if sampleTime >= (trace.nextSampleAt or 0) then
+            trace.nextSampleAt = sampleTime + TRACE_SAMPLE_MS
+            local ok, done = pcall(traceTick, trace, sampleTime)
+            if not ok then
+                print("[LCC GridSort][physical-trace] disabled after error: " .. tostring(done))
+                traces[playerNum] = nil
+            elseif done then
+                traces[playerNum] = nil
+            end
         end
     end
 end
