@@ -15,7 +15,6 @@ GridMassSort.active = {}
 -- Vanilla owns the duration of ISInventoryTransferAction. PackFlow must never
 -- cancel a legitimate transfer merely because a heavy item or character state
 -- makes the timed action take longer than an arbitrary wall-clock timeout.
-local POST_ACTION_CONFIRM_MS = 5000
 local SETTLE_MS = 150
 
 local function nowMs()
@@ -293,13 +292,28 @@ local function chooseDestination(state, move)
     return source, nil
 end
 
-local function containerContains(container, item)
-    if not container or not item then return false end
-    if container.contains then
+local function containerFindById(container, itemId)
+    if not container or itemId == nil or not container.getItems then return nil end
+    local items = container:getItems()
+    if not items then return nil end
+    for i = 0, items:size() - 1 do
+        local candidate = items:get(i)
+        if candidate and candidate.getID and candidate:getID() == itemId then
+            return candidate
+        end
+    end
+    return nil
+end
+
+local function containerContainsMove(container, move)
+    if not container or not move then return false end
+    local item = move.item
+    if item and container.contains then
         local ok, result = pcall(function() return container:contains(item) end)
         if ok and result then return true end
     end
-    return item.getContainer and item:getContainer() == container or false
+    if item and item.getContainer and item:getContainer() == container then return true end
+    return containerFindById(container, move.itemId) ~= nil
 end
 
 local function queueMove(state, move, source, destination)
@@ -312,8 +326,6 @@ local function queueMove(state, move, source, destination)
         action = action,
         source = source,
         destination = destination,
-        queuedAt = nowMs(),
-        finishedAt = nil,
     }
     return true
 end
@@ -338,7 +350,8 @@ local function cancelStalledTransfer(state, waiting)
     end
 end
 
-local function confirmTransfer(state, waiting)
+local function confirmTransfer(state, waiting, replacementItem)
+    if replacementItem then waiting.move.item = replacementItem end
     state.transferred = state.transferred + 1
     state.waitingMove = nil
     state.settleUntil = nowMs() + SETTLE_MS
@@ -347,39 +360,34 @@ end
 local function tickTransfers(state)
     local waiting = state.waitingMove
     if waiting then
-        local item = waiting.move and waiting.move.item or nil
-        if containerContains(waiting.destination, item) then
-            confirmTransfer(state, waiting)
+        local move = waiting.move
+        local destinationItem = containerFindById(waiting.destination, move and move.itemId or nil)
+        if destinationItem or containerContainsMove(waiting.destination, move) then
+            confirmTransfer(state, waiting, destinationItem)
             return
         end
 
         local stillQueued = waiting.action and ISTimedActionQueue.hasAction
             and ISTimedActionQueue.hasAction(waiting.action)
         if stillQueued then
-            -- A transfer can legitimately take a long time. Weight, wounds,
-            -- moodles, temperature and other vanilla modifiers all affect the
-            -- timed-action duration. Never apply a PackFlow wall-clock timeout
-            -- while vanilla still owns the live action.
+            -- Vanilla owns the complete transfer duration. Heavy items and
+            -- character modifiers may keep this action alive for a long time.
             return
         end
 
-        -- The action has left vanilla's queue. In MP, ItemContainer state can
-        -- trail transaction completion, so allow a separate confirmation window
-        -- before classifying the transfer as rejected/cancelled.
-        waiting.finishedAt = waiting.finishedAt or nowMs()
-        if nowMs() - waiting.finishedAt < POST_ACTION_CONFIRM_MS then return end
-
-        local sourceStillHasItem = containerContains(waiting.source, item)
-        local current = item and item.getContainer and item:getContainer() or nil
-        state.unconfirmedTransfers = (state.unconfirmedTransfers or 0) + 1
-        if sourceStillHasItem then
-            print("[LCC GridSort] mass transfer rejected/cancelled for item "
-                .. tostring(waiting.move and waiting.move.itemId))
-        else
-            print("[LCC GridSort] mass transfer completed but destination was not confirmed for item "
-                .. tostring(waiting.move and waiting.move.itemId)
-                .. "; current=" .. tostring(current))
+        -- MP may detach/replace the original Lua InventoryItem object when the
+        -- server commits the transaction. Once vanilla removes the action from
+        -- its queue, absence of the same item ID from the source is therefore a
+        -- successful transfer signal even when move.item:getContainer() is nil.
+        local sourceItem = containerFindById(waiting.source, move and move.itemId or nil)
+        if not sourceItem and not containerContainsMove(waiting.source, move) then
+            confirmTransfer(state, waiting, destinationItem)
+            return
         end
+
+        state.unconfirmedTransfers = (state.unconfirmedTransfers or 0) + 1
+        print("[LCC GridSort] mass transfer rejected/cancelled for item "
+            .. tostring(move and move.itemId))
         state.waitingMove = nil
         state.settleUntil = nowMs() + SETTLE_MS
         return
