@@ -35,6 +35,13 @@ LOG_FLUSH_INTERVAL_MS = 150
 MAX_GUI_LOG_LINES = 5000
 MAX_LOG_BATCH = 1000
 
+# Commands in this set may contain credentials. They are still sent to the
+# server unchanged, but their arguments are not echoed into the GUI journal.
+SENSITIVE_SERVER_COMMANDS = {
+    "adduser",
+    "changepwd",
+}
+
 
 def is_subpath(path: Path, root: Path) -> bool:
     """Return True only when path is a child of root (not root itself)."""
@@ -105,13 +112,21 @@ def decode_server_line(raw_line: bytes) -> str:
     return raw_line.decode("utf-8", errors="replace").rstrip("\r\n")
 
 
+def format_server_command_for_log(command: str) -> str:
+    """Hide arguments for console commands that commonly contain passwords."""
+    command_name = command.split(maxsplit=1)[0].casefold()
+    if command_name in SENSITIVE_SERVER_COMMANDS:
+        return f"{command_name} <аргументы скрыты>"
+    return command
+
+
 class ServerToolsApp(tk.Tk):
     def __init__(self):
         super().__init__()
 
         self.title("Lacccka B42.20 Server Tools")
-        self.geometry("980x650")
-        self.minsize(880, 580)
+        self.geometry("980x710")
+        self.minsize(880, 640)
 
         self.status_var = tk.StringVar(value="Ожидание")
         self.progress_var = tk.DoubleVar(value=0)
@@ -119,6 +134,7 @@ class ServerToolsApp(tk.Tk):
         self.server_process = None
         self.server_pause_released = False
         self.server_java_exit_code = None
+        self.server_stdin_lock = threading.Lock()
 
         # Remember per-mod checkbox state while the application is open. New
         # mods are selected by default, while manually disabled mods stay off
@@ -193,6 +209,27 @@ class ServerToolsApp(tk.Tk):
             width=24,
         )
         self.stop_server_button.pack(side="left", padx=(8, 0))
+
+        console_frame = ttk.LabelFrame(main, text="Server Console", padding=10)
+        console_frame.pack(fill="x", pady=(0, 10))
+
+        self.server_command_var = tk.StringVar()
+        self.server_command_entry = ttk.Entry(
+            console_frame,
+            textvariable=self.server_command_var,
+            state="disabled",
+        )
+        self.server_command_entry.pack(side="left", fill="x", expand=True)
+        self.server_command_entry.bind("<Return>", self.send_server_command)
+
+        self.send_server_command_button = ttk.Button(
+            console_frame,
+            text="Отправить",
+            command=self.send_server_command,
+            width=16,
+            state="disabled",
+        )
+        self.send_server_command_button.pack(side="left", padx=(8, 0))
 
         logs_frame = ttk.LabelFrame(main, text="Логи", padding=10)
         logs_frame.pack(fill="x", pady=(0, 10))
@@ -693,6 +730,13 @@ class ServerToolsApp(tk.Tk):
             state="normal" if running else "disabled"
         )
 
+        console_state = "normal" if running else "disabled"
+        self.server_command_entry.configure(state=console_state)
+        self.send_server_command_button.configure(state=console_state)
+
+        if not running:
+            self.server_command_var.set("")
+
     def start_server(self):
         if self.server_is_running():
             messagebox.showinfo(
@@ -740,6 +784,7 @@ class ServerToolsApp(tk.Tk):
             self.set_status("Сервер запускается...")
             self.log(f"[SERVER] PID launcher: {self.server_process.pid}")
             self.update_server_buttons()
+            self.server_command_entry.focus_set()
 
             threading.Thread(
                 target=self.read_server_output,
@@ -764,6 +809,52 @@ class ServerToolsApp(tk.Tk):
                 str(exc),
             )
 
+    def write_server_command(self, command):
+        """Write one complete command line to the dedicated server stdin."""
+        command = command.strip()
+        if not command:
+            return
+
+        process = self.server_process
+        if process is None or process.poll() is not None:
+            raise RuntimeError("Сервер не запущен.")
+        if process.stdin is None:
+            raise RuntimeError("stdin сервера недоступен.")
+
+        payload = (command + "\n").encode("utf-8")
+
+        with self.server_stdin_lock:
+            process.stdin.write(payload)
+            process.stdin.flush()
+
+    def send_server_command(self, _event=None):
+        """Send the command currently typed into the GUI console field."""
+        command = self.server_command_var.get().strip()
+        if not command:
+            return "break"
+
+        try:
+            self.write_server_command(command)
+            self.log(f"[SERVER CMD] > {format_server_command_for_log(command)}")
+            self.server_command_var.set("")
+            self.server_command_entry.focus_set()
+
+            if command.casefold() == "quit":
+                self.set_status("Остановка сервера...")
+                self.stop_server_button.configure(state="disabled")
+
+        except Exception as exc:
+            self.log(f"[SERVER CMD ERROR] {exc}")
+            self.set_status("Ошибка команды сервера")
+            self.update_server_buttons()
+
+            messagebox.showerror(
+                "Ошибка команды сервера",
+                str(exc),
+            )
+
+        return "break"
+
     def read_server_output(self, process):
         if process.stdout is None:
             return
@@ -787,8 +878,9 @@ class ServerToolsApp(tk.Tk):
                         self.server_pause_released = True
                         try:
                             if process.stdin is not None:
-                                process.stdin.write(b"\n")
-                                process.stdin.flush()
+                                with self.server_stdin_lock:
+                                    process.stdin.write(b"\n")
+                                    process.stdin.flush()
                         except (BrokenPipeError, OSError):
                             pass
 
@@ -859,14 +951,8 @@ class ServerToolsApp(tk.Tk):
             )
             return
 
-        process = self.server_process
-
         try:
-            if process.stdin is None:
-                raise RuntimeError("stdin сервера недоступен.")
-
-            process.stdin.write(b"quit\n")
-            process.stdin.flush()
+            self.write_server_command("quit")
 
             self.set_status("Остановка сервера...")
             self.stop_server_button.configure(state="disabled")
