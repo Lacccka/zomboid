@@ -140,12 +140,9 @@ local function profileMatches(brain, definition)
 end
 
 local function chooseBrain(definition, record)
-    local exact = collect(function(brain)
-        return brain.lccqNpcId == definition.npcId
-    end)
-    if #exact == 1 then return exact[1], "exact" end
-    if #exact > 1 then return nil, "ambiguous-exact:" .. tostring(#exact) end
-
+    -- Persistent logical identity owns the binding. If duplicate physical brains carry
+    -- the same lccqNpcId, the last persisted runtimeId is the deterministic tie-breaker.
+    -- This prevents a manual recovery spawn from making the next server start ambiguous.
     if record and record.runtimeId ~= nil then
         local runtimeId = tostring(record.runtimeId)
         local byRuntime = collect(function(brain)
@@ -155,6 +152,12 @@ local function chooseBrain(definition, record)
         if #byRuntime == 1 then return byRuntime[1], "record-runtime" end
         if #byRuntime > 1 then return nil, "ambiguous-runtime:" .. tostring(#byRuntime) end
     end
+
+    local exact = collect(function(brain)
+        return brain.lccqNpcId == definition.npcId
+    end)
+    if #exact == 1 then return exact[1], "exact" end
+    if #exact > 1 then return nil, "ambiguous-exact:" .. tostring(#exact) end
 
     -- One-time migration for the existing test world only. Future authored NPCs
     -- may share visual/profile templates, so profile-only ownership must never
@@ -268,7 +271,9 @@ local function recoverPersistentIdentities(source)
                 local ok, reason = recoverDefinition(definition)
                 if ok then
                     recovered = recovered + 1
-                elseif reason == "not-found" then
+                elseif reason ~= "dead" and reason ~= "unsupported" then
+                    -- Ambiguity is unresolved too. Treating only not-found as unresolved
+                    -- incorrectly shut down the startup retry window after ambiguous-exact.
                     unresolved = unresolved + 1
                 end
             end
