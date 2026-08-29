@@ -2,3 +2,4 @@
 updater.spec
 updater.exe
 /CollectedLogs
+/scripts/build
