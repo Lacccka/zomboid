@@ -55,7 +55,7 @@ local function ensureStore()
 end
 
 -- Faction-site ModData is persistent server world state, not a gameplay replication
--- surface. Do not ModData.transmit() it to every client. Privileged diagnostics use
+-- surface. Never broadcast the private store to every client. Privileged diagnostics use
 -- LCCQFFactionSiteDebugServer, while gameplay knowledge uses sanitized projections.
 local function touch(store)
     store.revision = math.max(0, math.floor(tonumber(store.revision) or 0)) + 1
