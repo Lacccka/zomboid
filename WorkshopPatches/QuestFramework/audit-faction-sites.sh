@@ -12,7 +12,12 @@ candidates="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteCandidateIndex.l
 validator="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteSafetyValidator.lua"
 scanner="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteResourceScanner.lua"
 validation_service="$lua_root/server/LCCQF/FactionWorld/zz_LCCQFFactionSiteValidationService.lua"
+population="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSitePopulation.lua"
+materializer_registry="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteMaterializerRegistry.lua"
+materialization_service="$lua_root/server/LCCQF/FactionWorld/zz_LCCQFFactionSiteMaterializationService.lua"
 allocator="$lua_root/server/LCCQF/FactionWorld/zz_LCCQFFactionSiteAllocator.lua"
+bandits_profiles="$lua_root/server/LCCQF/Runtime/LCCQFBanditsFactionProfiles.lua"
+bandits_materializer="$lua_root/server/LCCQF/Runtime/LCCQFBanditsFactionSiteMaterializer.lua"
 debug_server="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteDebugServer.lua"
 debug_client="$lua_root/client/LCCQF/Faction/LCCQFFactionSiteDebugClient.lua"
 server_bootstrap="$lua_root/server/zz_LCCQFFactionBootstrap.lua"
@@ -30,7 +35,13 @@ require_pattern() {
     rg -q "$pattern" "$file" || fail "$message"
 }
 
-for required in "$constants" "$registry_def" "$faction_defs" "$site_registry" "$candidates" "$validator" "$scanner" "$validation_service" "$allocator" "$debug_server" "$debug_client" "$server_bootstrap" "$client_bootstrap"; do
+required_files=(
+    "$constants" "$registry_def" "$faction_defs" "$site_registry" "$candidates"
+    "$validator" "$scanner" "$validation_service" "$population" "$materializer_registry"
+    "$materialization_service" "$allocator" "$bandits_profiles" "$bandits_materializer"
+    "$debug_server" "$debug_client" "$server_bootstrap" "$client_bootstrap"
+)
+for required in "${required_files[@]}"; do
     [[ -f "$required" ]] || fail "missing $required"
 done
 
@@ -49,6 +60,10 @@ require_pattern 'minStorageContainers' "$registry_def" "implemented storage requ
 require_pattern 'minFreeSpawnPoints' "$registry_def" "implemented spawn capacity requirement is not validated"
 require_pattern 'wantsRoadAccess' "$registry_def" "unsupported road-access policy guard missing"
 require_pattern 'is not implemented yet' "$registry_def" "unsupported site profile fields are silently accepted"
+require_pattern 'validatePopulationProfile' "$registry_def" "faction population profile validation missing"
+require_pattern 'populationProfile\.initialPopulation' "$registry_def" "initial faction population validation missing"
+require_pattern 'populationProfile\.maxPopulation' "$registry_def" "maximum faction population validation missing"
+require_pattern 'populationProfile role count' "$registry_def" "faction population roles are not validated"
 
 require_pattern 'siteProfile = \{' "$faction_defs" "authored faction site profile missing"
 require_pattern 'preferredZones' "$faction_defs" "authored zone preferences missing"
@@ -58,8 +73,15 @@ require_pattern 'wantsBeds = true' "$faction_defs" "checkpoint settlement bed re
 require_pattern 'wantsWater = true' "$faction_defs" "checkpoint settlement water requirement missing"
 require_pattern 'minStorageContainers' "$faction_defs" "checkpoint settlement storage requirement missing"
 require_pattern 'minFreeSpawnPoints' "$faction_defs" "checkpoint settlement spawn capacity requirement missing"
+require_pattern 'populationProfile = \{' "$faction_defs" "authored faction population profile missing"
+require_pattern 'materializer = "Bandits"' "$faction_defs" "checkpoint faction materializer intent missing"
+require_pattern 'providerProfile = "checkpoint_survivors_v1"' "$faction_defs" "symbolic Bandits provider profile missing"
+require_pattern 'initialPopulation = 3' "$faction_defs" "checkpoint initial population missing"
 if rg -n 'baseX|baseY|baseZ|fixedX|fixedY|fixedZ' "$faction_defs"; then
     fail "faction content contains fixed base coordinate fields"
+fi
+if rg -n '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' "$faction_defs"; then
+    fail "faction content leaks raw provider UUIDs"
 fi
 
 require_pattern 'ModData\.getOrCreate\(C\.FACTION_SITE_MODDATA_KEY\)' "$site_registry" "persistent faction site store missing"
@@ -67,7 +89,11 @@ require_pattern 'siteIdsByFaction' "$site_registry" "faction-to-multiple-sites p
 require_pattern 'reservationsByCandidateKey' "$site_registry" "candidate reservation index missing"
 require_pattern 'state = "RESERVED"' "$site_registry" "reservation state missing"
 require_pattern 'function Sites\.Transition' "$site_registry" "site state transition API missing"
+require_pattern 'function Sites\.MarkDirty' "$site_registry" "persistent population dirty-mark API missing"
 require_pattern 'DistanceToNearestOtherFactionSite' "$site_registry" "site separation query missing"
+if rg -n 'ModData\.transmit|transmit\(C\.FACTION_SITE_MODDATA_KEY' "$site_registry"; then
+    fail "private faction site ModData is broadcast to gameplay clients"
+fi
 
 require_pattern 'getCell and getCell\(\)' "$candidates" "loaded-world-only discovery missing"
 require_pattern 'getRoomList' "$candidates" "loaded room discovery missing"
@@ -85,6 +111,9 @@ require_pattern 'getOnlinePlayers' "$validator" "active player proximity validat
 require_pattern 'getFreeSquare' "$validator" "free room square validation missing"
 require_pattern 'building fingerprint changed' "$validator" "live building fingerprint reconciliation missing"
 require_pattern 'candidate overlaps a player SafeHouse' "$validator" "whole-building SafeHouse rejection missing"
+require_pattern 'function Validator\.ValidateMaterializationSite' "$validator" "pre-spawn site safety revalidation missing"
+require_pattern 'function Validator\.ValidateMaterializationPoint' "$validator" "pre-spawn square safety revalidation missing"
+require_pattern 'spawn point is no longer free' "$validator" "materializer does not recheck occupancy"
 
 require_pattern 'FACTION_SITE_RESOURCE_SCAN_MAX_TILES' "$scanner" "resource scanner is not bounded"
 require_pattern 'room:getSquares' "$scanner" "resource scanner does not use live loaded room squares"
@@ -106,7 +135,47 @@ require_pattern '"ABANDONED"' "$validation_service" "failed resource sites are n
 require_pattern '"VALIDATING"' "$validation_service" "accepted resource sites do not advance state"
 require_pattern 'Candidates\.NoteRejection' "$validation_service" "resource failures do not feed candidate rejection history"
 
-require_pattern 'dryRun=true materialization=false' "$allocator" "allocator is not explicitly dry-run"
+require_pattern 'function Population\.EnsurePlan' "$population" "logical faction population planning missing"
+require_pattern 'lccqf_npc_' "$population" "stable framework NPC identity generation missing"
+require_pattern 'lccqf_squad_' "$population" "stable framework squad identity generation missing"
+require_pattern 'state = "PLANNED"' "$population" "logical planned population state missing"
+require_pattern 'state = "MATERIALIZED"' "$population" "logical materialized population state missing"
+require_pattern 'function Population\.BindRuntime' "$population" "logical-to-runtime population binding missing"
+require_pattern 'function Population\.MarkMissing' "$population" "population missing-state API missing"
+require_pattern 'function Population\.MarkDead' "$population" "population death-state API missing"
+require_pattern 'Sites\.MarkDirty' "$population" "population persistence does not dirty server site store"
+
+require_pattern 'function Registry\.Register' "$materializer_registry" "materializer adapter registry missing"
+require_pattern 'type\(adapter\.Materialize\)' "$materializer_registry" "materializer interface validation missing"
+require_pattern 'Materializers\.Get\(profile\.materializer\)' "$materialization_service" "materialization service is not provider-neutral"
+require_pattern 'Safety\.ValidateMaterializationSite' "$materialization_service" "materialization skips live safety gate"
+require_pattern 'Population\.EnsurePlan' "$materialization_service" "materialization skips logical population plan"
+require_pattern 'Population\.IsInitialPopulationMaterialized' "$materialization_service" "site activation is not tied to full initial population"
+require_pattern '"ACTIVE"' "$materialization_service" "materialized site never becomes active"
+require_pattern 'site.state == "VALIDATING"' "$materialization_service" "materialization consumes wrong site state"
+
+require_pattern 'BanditCustom\.ClanCreate' "$bandits_profiles" "adapter-owned provider clan creation missing"
+require_pattern 'BanditCustom\.Create' "$bandits_profiles" "adapter-owned provider member creation missing"
+require_pattern 'spawn\.friendly = true' "$bandits_profiles" "faction provider clan is not friendly"
+require_pattern 'spawn\.spawnChance = 0' "$bandits_profiles" "private provider clan can leak into Bandits random scheduler"
+require_pattern 'ListProviderIds' "$bandits_profiles" "deterministic retry provider pool missing"
+
+require_pattern 'BanditServer\.Spawner\.Clan' "$bandits_materializer" "initial faction population does not use Bandits Clan API"
+require_pattern 'spawnPoints = points' "$bandits_materializer" "Bandits faction spawn is not pinned to validated site points"
+require_pattern 'BanditServer\.Spawner\.Individual' "$bandits_materializer" "partial materialization retry path missing"
+require_pattern 'lccqNpcId' "$bandits_materializer" "framework NPC ownership tag missing"
+require_pattern 'lccqFactionId' "$bandits_materializer" "framework faction ownership tag missing"
+require_pattern 'lccqSiteId' "$bandits_materializer" "framework site ownership tag missing"
+require_pattern 'lccqSquadId' "$bandits_materializer" "framework squad ownership tag missing"
+require_pattern 'lccqRoleId' "$bandits_materializer" "framework role ownership tag missing"
+require_pattern 'brain\.master = nil' "$bandits_materializer" "autonomous faction brain keeps arbitrary technical player master"
+require_pattern 'Population\.BindRuntime' "$bandits_materializer" "Bandits runtime is not bound back to logical population"
+require_pattern 'Registry\.Register\("Bandits"' "$bandits_materializer" "Bandits materializer not registered behind adapter boundary"
+if rg -n 'Spawner\.Type|spawnHouse' "$bandits_materializer"; then
+    fail "faction materializer uses destructive/implicit Bandits spawn path"
+fi
+
+require_pattern 'dryRun=true materialization=false' "$allocator" "allocator must remain location-only and non-mutating"
 require_pattern 'Candidates\.DiscoverLoadedBuildings' "$allocator" "allocator does not use bounded loaded candidate discovery"
 require_pattern 'Validator\.Validate' "$allocator" "allocator skips non-destructive safety validation"
 require_pattern 'Sites\.ReserveCandidate' "$allocator" "allocator does not persist reservation"
@@ -118,14 +187,19 @@ require_pattern 'REQUEST_FACTION_SITES_DEBUG' "$debug_server" "debug server requ
 require_pattern 'isPrivileged' "$debug_server" "debug snapshot is not privilege gated"
 require_pattern 'sendServerCommand' "$debug_server" "debug snapshot response missing"
 require_pattern 'Sites\.ListSites' "$debug_server" "debug snapshot is not sourced from server registry"
+require_pattern 'population = sanitizePopulation' "$debug_server" "admin debug snapshot omits logical population ownership"
 require_pattern 'REQUEST_FACTION_SITES_DEBUG' "$debug_client" "admin debug client cannot request server sites"
 require_pattern 'FACTION_SITES_DEBUG' "$debug_client" "admin debug client cannot consume server snapshot"
 require_pattern 'ISWorldMap' "$debug_client" "admin faction-site map visualization missing"
 require_pattern 'setUserDefined\(true\)' "$debug_client" "debug marker compatibility flag missing"
 require_pattern 'Show faction sites on map' "$debug_client" "admin context action missing"
+require_pattern 'population=' "$debug_client" "admin map diagnostics omit population counts"
+require_pattern 'member npcId=' "$debug_client" "admin diagnostics cannot distinguish framework faction NPCs"
 
 require_pattern 'LCCQF/FactionWorld/zz_LCCQFFactionSiteAllocator' "$server_bootstrap" "site allocator not bootstrapped"
 require_pattern 'LCCQF/FactionWorld/zz_LCCQFFactionSiteValidationService' "$server_bootstrap" "site validation not bootstrapped"
+require_pattern 'LCCQF/Runtime/LCCQFBanditsFactionSiteMaterializer' "$server_bootstrap" "Bandits materializer adapter not bootstrapped"
+require_pattern 'LCCQF/FactionWorld/zz_LCCQFFactionSiteMaterializationService' "$server_bootstrap" "site materialization coordinator not bootstrapped"
 require_pattern 'LCCQF/FactionWorld/LCCQFFactionSiteDebugServer' "$server_bootstrap" "privileged debug server not bootstrapped"
 require_pattern 'isClient and isClient\(\)' "$server_bootstrap" "faction server bootstrap lacks MP-client authority guard"
 require_pattern 'isServer and isServer\(\)' "$server_bootstrap" "faction bootstrap client guard does not preserve server authority"
@@ -138,17 +212,20 @@ bootstrap_require_line="$(rg -n '^require ' "$server_bootstrap" | head -n1 | cut
 [[ "$allocator_guard_line" -lt "$allocator_require_line" ]] || fail "allocator client guard must execute before server-domain requires"
 [[ "$bootstrap_guard_line" -lt "$bootstrap_require_line" ]] || fail "faction bootstrap client guard must execute before server-domain requires"
 
-core_world_files=("$site_registry" "$candidates" "$validator" "$scanner" "$validation_service" "$allocator")
+core_world_files=(
+    "$site_registry" "$candidates" "$validator" "$scanner" "$validation_service"
+    "$population" "$materializer_registry" "$materialization_service" "$allocator"
+)
 if rg -n 'BanditServer|BanditCustom|BanditBrain|Bandits2|Bandit\.Spawner' "${core_world_files[@]}"; then
-    fail "faction world allocation/validation layer leaks Bandits runtime dependency"
+    fail "provider-neutral faction world core leaks Bandits runtime dependency"
 fi
 if rg -n 'sendClientCommand|sendServerCommand|OnClientCommand' "${core_world_files[@]}"; then
-    fail "faction world core exposes unnecessary client/network authority"
+    fail "provider-neutral faction world core exposes unnecessary client/network authority"
 fi
-if rg -n 'removeFromWorld|removeFromSquare|RemoveZombie|clearZombies|ClearZombies|setSquare|AddZombie' "${core_world_files[@]}"; then
-    fail "faction site allocation/validation contains destructive world mutation"
+if rg -n 'removeFromWorld|removeFromSquare|RemoveZombie|clearZombies|ClearZombies|setSquare|AddZombie' "${core_world_files[@]}" "$bandits_materializer"; then
+    fail "faction site allocation/materialization contains destructive cleanup"
 fi
-if rg -n 'loadstring|loadstream' "${core_world_files[@]}" "$registry_def" "$faction_defs" "$debug_server" "$debug_client"; then
+if rg -n 'loadstring|loadstream' "${core_world_files[@]}" "$registry_def" "$faction_defs" "$bandits_profiles" "$bandits_materializer" "$debug_server" "$debug_client"; then
     fail "Build 42.20.4 removed dynamic code execution API is present"
 fi
 if rg -n 'TEST_FACTION_ID|checkpoint_survivors|CheckpointSurvivors' "${core_world_files[@]}"; then
@@ -156,9 +233,9 @@ if rg -n 'TEST_FACTION_ID|checkpoint_survivors|CheckpointSurvivors' "${core_worl
 fi
 
 if command -v lua >/dev/null 2>&1; then
-    for lua_file in "$constants" "$registry_def" "$faction_defs" "$site_registry" "$candidates" "$validator" "$scanner" "$validation_service" "$allocator" "$debug_server" "$debug_client" "$server_bootstrap" "$client_bootstrap"; do
+    for lua_file in "${required_files[@]}"; do
         lua -e "assert(loadfile([[$lua_file]]))"
     done
 fi
 
-echo "QuestFramework faction site audit: PASS (server-authoritative autonomous reservation + bounded live resource validation + privileged map diagnostics)"
+echo "QuestFramework faction site audit: PASS (autonomous site allocation + live resource validation + persistent logical population + Bandits adapter ownership + privileged diagnostics)"
