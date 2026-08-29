@@ -128,6 +128,57 @@ local function validateSiteProfile(definition)
     return true
 end
 
+local function validatePopulationProfile(definition)
+    local profile = definition.populationProfile
+    if profile == nil then return true end
+    if type(profile) ~= "table" then return false, "populationProfile must be a table" end
+    if profile.enabled ~= nil and type(profile.enabled) ~= "boolean" then
+        return false, "populationProfile.enabled must be boolean"
+    end
+    if profile.enabled == false then return true end
+
+    for _, fieldName in ipairs({ "materializer", "providerProfile", "program" }) do
+        if not isIdentifier(profile[fieldName]) then
+            return false, "invalid populationProfile." .. fieldName
+        end
+    end
+
+    local initialPopulation = tonumber(profile.initialPopulation)
+    local maxPopulation = tonumber(profile.maxPopulation)
+    if not initialPopulation or initialPopulation < 1 or initialPopulation > 64
+        or math.floor(initialPopulation) ~= initialPopulation
+    then
+        return false, "populationProfile.initialPopulation must be an integer from 1 to 64"
+    end
+    if not maxPopulation or maxPopulation < initialPopulation or maxPopulation > 64
+        or math.floor(maxPopulation) ~= maxPopulation
+    then
+        return false, "populationProfile.maxPopulation must be an integer from initialPopulation to 64"
+    end
+
+    if profile.roles ~= nil and type(profile.roles) ~= "table" then
+        return false, "populationProfile.roles must be a table"
+    end
+    local seenRoles = {}
+    local authoredRoleCount = 0
+    for _, role in ipairs(type(profile.roles) == "table" and profile.roles or {}) do
+        if type(role) ~= "table" or not isIdentifier(role.roleId) then
+            return false, "invalid populationProfile role"
+        end
+        if seenRoles[role.roleId] then return false, "duplicate populationProfile role" end
+        seenRoles[role.roleId] = true
+        local count = tonumber(role.count)
+        if not count or count < 1 or math.floor(count) ~= count then
+            return false, "populationProfile role count must be a positive integer"
+        end
+        authoredRoleCount = authoredRoleCount + count
+    end
+    if authoredRoleCount > initialPopulation then
+        return false, "populationProfile role counts exceed initialPopulation"
+    end
+    return true
+end
+
 function Registry.Register(definition)
     if type(definition) ~= "table" then return false, "definition must be a table" end
     if not isIdentifier(definition.factionId) then return false, "invalid factionId" end
@@ -141,6 +192,8 @@ function Registry.Register(definition)
     if not ranksOk then return false, ranksErr end
     local siteOk, siteErr = validateSiteProfile(definition)
     if not siteOk then return false, siteErr end
+    local populationOk, populationErr = validatePopulationProfile(definition)
+    if not populationOk then return false, populationErr end
 
     definitions[definition.factionId] = definition
     return true
