@@ -1,5 +1,5 @@
--- Provider-neutral logical population owned by LCCQF. Physical runtimes (Bandits2 or
--- future providers) bind to these members, but never define their identity.
+-- Provider-neutral logical population owned by LCCQF. Physical runtime adapters bind
+-- to these members, but never define their identity.
 if isClient and isClient() and not (isServer and isServer()) then
     return {}
 end
