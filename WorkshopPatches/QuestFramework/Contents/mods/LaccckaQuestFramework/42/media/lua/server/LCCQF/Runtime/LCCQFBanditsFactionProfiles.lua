@@ -59,6 +59,9 @@ local function ensureBandit(definition, memberDefinition)
     if not bandit then bandit = BanditCustom.Create(memberDefinition.bid) end
     if not bandit then return nil, "BanditCustom profile creation failed" end
 
+    -- Bandits2 currently reads general.cid for Clan() and top-level cid for
+    -- Individual(). Keep both provider details local to this adapter-owned profile.
+    bandit.cid = definition.cid
     bandit.general = bandit.general or {}
     bandit.general.cid = definition.cid
     bandit.general.name = memberDefinition.name
@@ -82,6 +85,14 @@ end
 
 function Profiles.Get(profileId)
     return DEFINITIONS[profileId]
+end
+
+function Profiles.ListProviderIds(profileId)
+    local definition = Profiles.Get(profileId)
+    local out = {}
+    if not definition then return out end
+    for _, member in ipairs(definition.members) do out[#out + 1] = member.bid end
+    return out
 end
 
 function Profiles.Ensure(profileId)
@@ -110,6 +121,7 @@ function Profiles.Ensure(profileId)
         providerProfile = profileId,
         cid = definition.cid,
         profileCount = count,
+        providerIds = Profiles.ListProviderIds(profileId),
     }
 end
 
