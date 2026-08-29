@@ -39,6 +39,21 @@ local function logOnce(site, outcome, detail)
         .. " detail=" .. tostring(detail or "none"))
 end
 
+local function formatSafetyDetail(detail, metadata)
+    local result = tostring(detail or "none")
+    if type(metadata) ~= "table" then return result end
+
+    local playerDistance = tonumber(metadata.playerDistance)
+    local minimumDistance = tonumber(metadata.minimumDistance)
+    if playerDistance ~= nil then
+        result = result .. " playerDistance=" .. string.format("%.2f", playerDistance)
+    end
+    if minimumDistance ~= nil then
+        result = result .. " minimumDistance=" .. string.format("%.2f", minimumDistance)
+    end
+    return result
+end
+
 local function processSite(site)
     local definition = Factions.Get(site.factionId)
     if not definition then
@@ -62,12 +77,12 @@ local function processSite(site)
         return Sites.Transition(site.siteId, "ACTIVE", "initial faction population materialized")
     end
 
-    local safetyOutcome, safetyDetail = Safety.ValidateMaterializationSite(definition, site)
+    local safetyOutcome, safetyDetail, safetyMetadata = Safety.ValidateMaterializationSite(definition, site)
     if safetyOutcome == "DEFER" then
-        logOnce(site, "DEFER", safetyDetail)
+        logOnce(site, "DEFER", formatSafetyDetail(safetyDetail, safetyMetadata))
         return false, "deferred"
     elseif safetyOutcome ~= "PASS" then
-        logOnce(site, "REJECT", safetyDetail)
+        logOnce(site, "REJECT", formatSafetyDetail(safetyDetail, safetyMetadata))
         return Sites.Transition(site.siteId, "ABANDONED", safetyDetail)
     end
     local spawnPoints = safetyDetail
@@ -122,12 +137,11 @@ local function onServerStarted()
 end
 
 local function onEveryOneMinute()
-    local ok, activated, deferred = Service.RunOnce()
+    local ok, activated = Service.RunOnce()
     if not ok then
         log("materialization pass failed")
-    elseif (activated or 0) > 0 or (deferred or 0) > 0 then
-        log("pass activated=" .. tostring(activated or 0)
-            .. " deferred=" .. tostring(deferred or 0))
+    elseif (activated or 0) > 0 then
+        log("pass activated=" .. tostring(activated or 0))
     end
 end
 
