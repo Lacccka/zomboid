@@ -94,9 +94,23 @@ local function resourceSummary(site)
         .. " spawn=" .. tostring(counts.freeSpawnPoints or 0)
 end
 
+local function populationSummary(site)
+    local population = site.population
+    if type(population) ~= "table" then return "population=unplanned" end
+    return "population=" .. tostring(population.materialized or 0)
+        .. "/" .. tostring(population.targetPopulation or 0)
+        .. " squad=" .. tostring(population.squadId or "none")
+end
+
 local function markerLabel(site)
+    local population = site.population
+    local populationLabel = ""
+    if type(population) == "table" then
+        populationLabel = " " .. tostring(population.materialized or 0)
+            .. "/" .. tostring(population.targetPopulation or 0)
+    end
     return MARKER_PREFIX .. tostring(site.siteId or "site")
-        .. " " .. tostring(site.state or "UNKNOWN")
+        .. " " .. tostring(site.state or "UNKNOWN") .. populationLabel
 end
 
 local function addMarker(symbols, site)
@@ -171,7 +185,19 @@ function DebugClient.Rebuild()
             .. " rooms=" .. tostring(site.roomCount)
             .. " score=" .. string.format("%.2f", tonumber(site.score) or 0)
             .. " " .. resourceSummary(site)
+            .. " " .. populationSummary(site)
             .. " reason=" .. tostring(site.lastReason or "none"))
+
+        local population = site.population
+        if type(population) == "table" and type(population.members) == "table" then
+            for _, member in ipairs(population.members) do
+                log("member npcId=" .. tostring(member.npcId)
+                    .. " roleId=" .. tostring(member.roleId)
+                    .. " state=" .. tostring(member.state)
+                    .. " runtimeId=" .. tostring(member.runtimeId or "none")
+                    .. " providerId=" .. tostring(member.providerId or "none"))
+            end
+        end
     end
     log("markers rebuilt revision=" .. tostring(revision) .. " count=" .. tostring(count))
     return true
