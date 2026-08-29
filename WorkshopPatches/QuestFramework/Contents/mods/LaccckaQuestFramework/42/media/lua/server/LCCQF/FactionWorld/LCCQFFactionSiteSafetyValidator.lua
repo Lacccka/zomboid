@@ -104,7 +104,7 @@ end
 
 local function collectFreeRoomSquares(buildingDef, wantsIndoor, needed)
     local rooms
-    pcall(function() rooms = buildingDef:getRooms() end)
+    pcall(function() rooms = buildingDef and buildingDef:getRooms() end)
     if not rooms then return {}, "room definitions unavailable" end
 
     local result = {}
@@ -145,6 +145,58 @@ local function collectFreeRoomSquares(buildingDef, wantsIndoor, needed)
         end
     end
     return result
+end
+
+function Validator.PlayersTooClose(siteOrCandidate, minimumDistance)
+    if type(siteOrCandidate) ~= "table" then return false end
+    return playersTooClose(siteOrCandidate, minimumDistance)
+end
+
+function Validator.ValidateMaterializationPoint(point, wantsIndoor)
+    local square = squareAt(point)
+    if not square then return false, "spawn point is not currently loaded" end
+    if isSafeHouseSquare(square) then return false, "spawn point is inside a player SafeHouse" end
+
+    local free = false
+    pcall(function() free = square:isFree(false) == true end)
+    if not free then return false, "spawn point is no longer free" end
+
+    if wantsIndoor == true then
+        local outside = true
+        local room
+        pcall(function()
+            outside = square:isOutside() == true
+            room = square:getRoom()
+        end)
+        if outside or not room then return false, "spawn point is no longer a valid indoor square" end
+    end
+    return true, {
+        x = square:getX(),
+        y = square:getY(),
+        z = square:getZ(),
+    }
+end
+
+function Validator.ValidateMaterializationSite(definition, site)
+    if type(definition) ~= "table" or type(site) ~= "table" then
+        return "REJECT", "invalid materialization safety input"
+    end
+    local profile = definition.siteProfile or {}
+    local tooClose = playersTooClose(site, profile.minDistanceFromPlayers)
+    if tooClose then return "DEFER", "active player too close to faction site" end
+
+    local points = site.derived and site.derived.points and site.derived.points.spawn
+    if type(points) ~= "table" or #points == 0 then
+        return "REJECT", "site has no validated spawn points"
+    end
+
+    local valid = {}
+    for _, point in ipairs(points) do
+        local ok, resolved = Validator.ValidateMaterializationPoint(point, profile.wantsIndoor == true)
+        if ok then valid[#valid + 1] = resolved end
+    end
+    if #valid == 0 then return "DEFER", "validated spawn points are not currently usable" end
+    return "PASS", valid
 end
 
 function Validator.Validate(definition, candidate)
