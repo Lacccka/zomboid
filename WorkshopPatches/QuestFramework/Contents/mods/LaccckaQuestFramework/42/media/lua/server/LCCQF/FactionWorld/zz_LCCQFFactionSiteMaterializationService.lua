@@ -1,0 +1,141 @@
+-- Server-authoritative coordinator between logical faction sites/population and a
+-- registered physical runtime adapter. This module is provider-neutral.
+if isClient and isClient() and not (isServer and isServer()) then
+    return {}
+end
+
+require "LCCQF/LCCQFConstants"
+require "LCCQF/Content/LCCQFFactionDefinitions"
+require "LCCQF/FactionWorld/LCCQFFactionSiteRegistry"
+require "LCCQF/FactionWorld/LCCQFFactionSitePopulation"
+require "LCCQF/FactionWorld/LCCQFFactionSiteSafetyValidator"
+require "LCCQF/FactionWorld/LCCQFFactionSiteMaterializerRegistry"
+
+LCCQF = LCCQF or {}
+
+local C = LCCQF.Constants
+local Factions = LCCQF.FactionRegistry
+local Sites = LCCQF.FactionSiteRegistry
+local Population = LCCQF.FactionSitePopulation
+local Safety = LCCQF.FactionSiteSafetyValidator
+local Materializers = LCCQF.FactionSiteMaterializerRegistry
+local Service = LCCQF.FactionSiteMaterializationService or {}
+local lastOutcome = Service.lastOutcome or {}
+
+local function log(message)
+    print(C.LOG_PREFIX .. "[FACTION:SITE:MATERIALIZATION] " .. tostring(message))
+end
+
+local function logOnce(site, outcome, detail)
+    local signature = tostring(outcome) .. "|" .. tostring(detail or "none")
+        .. "|" .. tostring(Population.CountMaterialized(site))
+    if lastOutcome[site.siteId] == signature then return end
+    lastOutcome[site.siteId] = signature
+    log("siteId=" .. tostring(site.siteId)
+        .. " factionId=" .. tostring(site.factionId)
+        .. " state=" .. tostring(site.state)
+        .. " outcome=" .. tostring(outcome)
+        .. " materialized=" .. tostring(Population.CountMaterialized(site))
+        .. " detail=" .. tostring(detail or "none"))
+end
+
+local function processSite(site)
+    local definition = Factions.Get(site.factionId)
+    if not definition then
+        logOnce(site, "REJECT", "unknown faction")
+        return Sites.Transition(site.siteId, "ABANDONED", "materialization references unknown faction")
+    end
+
+    local profile = definition.populationProfile
+    if type(profile) ~= "table" or profile.enabled == false then
+        logOnce(site, "DEFER", "population disabled")
+        return false, "population disabled"
+    end
+
+    local plan, planError = Population.EnsurePlan(site, profile)
+    if not plan then
+        logOnce(site, "REJECT", planError)
+        return Sites.Transition(site.siteId, "ABANDONED", planError)
+    end
+    if Population.IsInitialPopulationMaterialized(site) then
+        logOnce(site, "PASS", "initial population already materialized")
+        return Sites.Transition(site.siteId, "ACTIVE", "initial faction population materialized")
+    end
+
+    local safetyOutcome, safetyDetail = Safety.ValidateMaterializationSite(definition, site)
+    if safetyOutcome == "DEFER" then
+        logOnce(site, "DEFER", safetyDetail)
+        return false, "deferred"
+    elseif safetyOutcome ~= "PASS" then
+        logOnce(site, "REJECT", safetyDetail)
+        return Sites.Transition(site.siteId, "ABANDONED", safetyDetail)
+    end
+    local spawnPoints = safetyDetail
+
+    local adapter = Materializers.Get(profile.materializer)
+    if not adapter then
+        logOnce(site, "DEFER", "materializer unavailable: " .. tostring(profile.materializer))
+        return false, "deferred"
+    end
+
+    local ok, result = adapter.Materialize({
+        site = site,
+        definition = definition,
+        population = plan,
+        spawnPoints = spawnPoints,
+    })
+    if not ok then
+        logOnce(site, "DEFER", result)
+        return false, "deferred"
+    end
+
+    if Population.IsInitialPopulationMaterialized(site) then
+        logOnce(site, "PASS", "initial faction population materialized")
+        return Sites.Transition(site.siteId, "ACTIVE", "initial faction population materialized")
+    end
+
+    logOnce(site, "PARTIAL", "provider bound " .. tostring(result or 0) .. " member(s)")
+    return false, "partial"
+end
+
+function Service.RunOnce()
+    local activated = 0
+    local deferred = 0
+    for _, site in ipairs(Sites.ListSites()) do
+        if site.state == "VALIDATING" then
+            local ok, result = processSite(site)
+            if ok then
+                activated = activated + 1
+            elseif result == "deferred" or result == "partial" then
+                deferred = deferred + 1
+            end
+        end
+    end
+    return true, activated, deferred
+end
+
+local function onServerStarted()
+    local ok, activated, deferred = Service.RunOnce()
+    log("initial pass ok=" .. tostring(ok)
+        .. " activated=" .. tostring(activated or 0)
+        .. " deferred=" .. tostring(deferred or 0))
+end
+
+local function onEveryOneMinute()
+    local ok, activated, deferred = Service.RunOnce()
+    if not ok then
+        log("materialization pass failed")
+    elseif (activated or 0) > 0 or (deferred or 0) > 0 then
+        log("pass activated=" .. tostring(activated or 0)
+            .. " deferred=" .. tostring(deferred or 0))
+    end
+end
+
+if isServer and isServer() then
+    if Events.OnServerStarted then Events.OnServerStarted.Add(onServerStarted) end
+    if Events.EveryOneMinute then Events.EveryOneMinute.Add(onEveryOneMinute) end
+end
+
+Service.lastOutcome = lastOutcome
+LCCQF.FactionSiteMaterializationService = Service
+return Service
