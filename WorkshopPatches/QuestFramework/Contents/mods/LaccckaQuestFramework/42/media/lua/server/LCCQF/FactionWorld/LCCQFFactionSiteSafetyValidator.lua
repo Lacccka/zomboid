@@ -65,8 +65,11 @@ local function playersTooClose(candidate, minimumDistance)
                     px = player:getX()
                     py = player:getY()
                 end)
-                if px and py and distanceToBounds(px, py, candidate.bounds) < minimumDistance then
-                    return true, player
+                if px and py then
+                    local distance = distanceToBounds(px, py, candidate.bounds)
+                    if distance < minimumDistance then
+                        return true, player, distance
+                    end
                 end
             end
         end
@@ -182,8 +185,13 @@ function Validator.ValidateMaterializationSite(definition, site)
         return "REJECT", "invalid materialization safety input"
     end
     local profile = definition.siteProfile or {}
-    local tooClose = playersTooClose(site, profile.minDistanceFromPlayers)
-    if tooClose then return "DEFER", "active player too close to faction site" end
+    local tooClose, _, playerDistance = playersTooClose(site, profile.minDistanceFromPlayers)
+    if tooClose then
+        return "DEFER", "active player too close to faction site", {
+            playerDistance = tonumber(playerDistance),
+            minimumDistance = math.max(0, tonumber(profile.minDistanceFromPlayers) or 0),
+        }
+    end
 
     local points = site.derived and site.derived.points and site.derived.points.spawn
     if type(points) ~= "table" or #points == 0 then
