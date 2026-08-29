@@ -1,5 +1,5 @@
 -- Provider-neutral registry. Faction world services depend on this interface, while
--- concrete providers (Bandits2 today, another runtime later) register themselves.
+-- concrete physical runtimes register themselves behind the adapter boundary.
 if isClient and isClient() and not (isServer and isServer()) then
     return {}
 end
