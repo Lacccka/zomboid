@@ -52,6 +52,35 @@ local function copyCounts(input)
     return out
 end
 
+local function sanitizePopulation(population)
+    if type(population) ~= "table" then return nil end
+    local members = {}
+    local materialized = 0
+    local target = math.max(0, math.floor(tonumber(population.targetPopulation) or 0))
+    for index = 1, math.min(target, type(population.members) == "table" and #population.members or 0) do
+        local member = population.members[index]
+        if type(member) == "table" then
+            if member.state == "MATERIALIZED" and member.runtimeId ~= nil then materialized = materialized + 1 end
+            members[#members + 1] = {
+                npcId = tostring(member.npcId or ""),
+                roleId = tostring(member.roleId or "member"),
+                state = tostring(member.state or "UNKNOWN"),
+                runtimeId = member.runtimeId and tostring(member.runtimeId) or nil,
+                providerId = member.providerId and tostring(member.providerId) or nil,
+            }
+        end
+    end
+    return {
+        squadId = tostring(population.squadId or ""),
+        materializer = tostring(population.materializer or ""),
+        providerProfile = tostring(population.providerProfile or ""),
+        targetPopulation = target,
+        maxPopulation = math.max(target, math.floor(tonumber(population.maxPopulation) or target)),
+        materialized = materialized,
+        members = members,
+    }
+end
+
 local function sanitizeSite(site)
     local derived = type(site.derived) == "table" and site.derived or nil
     return {
@@ -73,6 +102,7 @@ local function sanitizeSite(site)
             scannedWorldHours = tonumber(derived.scannedWorldHours) or 0,
             counts = copyCounts(derived.counts),
         } or nil,
+        population = sanitizePopulation(site.population),
     }
 end
 
