@@ -55,6 +55,21 @@ local ok, err = LCCQF.FactionRegistry.Register({
             Vegitation = 2,
         },
     },
+
+    -- Provider-neutral population intent. Raw Bandits clan/profile IDs deliberately
+    -- live in the Bandits adapter, not in faction content or persistence.
+    populationProfile = {
+        enabled = true,
+        initialPopulation = 3,
+        maxPopulation = 5,
+        materializer = "Bandits",
+        providerProfile = "checkpoint_survivors_v1",
+        program = "Defend",
+        roles = {
+            { roleId = "leader", count = 1 },
+            { roleId = "guard", count = 2 },
+        },
+    },
 })
 
 if not ok and err ~= "duplicate factionId" then
