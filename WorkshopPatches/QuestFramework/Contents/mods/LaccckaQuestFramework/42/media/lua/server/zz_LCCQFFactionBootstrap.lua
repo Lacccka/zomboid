@@ -10,8 +10,10 @@ require "LCCQF/Faction/zz_LCCQFFactionDiscoveryBridge"
 require "LCCQF/Faction/zz_LCCQFFactionRelationshipBridge"
 require "LCCQF/FactionWorld/zz_LCCQFFactionSiteAllocator"
 require "LCCQF/FactionWorld/zz_LCCQFFactionSiteValidationService"
+require "LCCQF/Runtime/LCCQFBanditsFactionSiteMaterializer"
+require "LCCQF/FactionWorld/zz_LCCQFFactionSiteMaterializationService"
 require "LCCQF/FactionWorld/LCCQFFactionSiteDebugServer"
 
-print("[LCCQF][SERVER] faction bootstrap loaded discovery=true relationships=true siteAllocator=dry-run siteValidation=resources debug=privileged")
+print("[LCCQF][SERVER] faction bootstrap loaded discovery=true relationships=true siteAllocator=location-only siteValidation=resources population=logical materializer=Bandits debug=privileged")
 
 return true
