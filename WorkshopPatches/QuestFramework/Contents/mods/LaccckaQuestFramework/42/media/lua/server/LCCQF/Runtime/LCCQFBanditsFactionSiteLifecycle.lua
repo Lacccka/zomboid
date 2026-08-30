@@ -216,37 +216,20 @@ local function siteLoaded(site, cell)
     return false
 end
 
-local function liveRuntimeIds(site)
+local function liveRuntimeIds(site, scanPadding)
     local live = {}
     local cell = getCell and getCell() or nil
     if not cell then return live, false end
     local loaded = siteLoaded(site, cell)
-
-    local zombieList
-    pcall(function()
-        if cell.getZombieList then zombieList = cell:getZombieList() end
-    end)
-    if zombieList then
-        local size = 0
-        pcall(function() size = zombieList:size() end)
-        for index = 0, size - 1 do
-            local zombie
-            pcall(function() zombie = zombieList:get(index) end)
-            if zombie and not zombie:isDead() then
-                local brain = BanditBrain.Get(zombie)
-                if brain and ownedBrain(brain, site.siteId) then
-                    live[tostring(brain.id)] = true
-                end
-            end
-        end
-        return live, loaded
-    end
-
     if type(site.bounds) ~= "table" then return live, loaded end
-    local x1 = math.floor(tonumber(site.bounds.x) or 0)
-    local y1 = math.floor(tonumber(site.bounds.y) or 0)
-    local x2 = math.floor(tonumber(site.bounds.x2) or (x1 + (tonumber(site.bounds.w) or 1) - 1))
-    local y2 = math.floor(tonumber(site.bounds.y2) or (y1 + (tonumber(site.bounds.h) or 1) - 1))
+
+    local padding = math.max(0, math.floor(tonumber(scanPadding) or 0))
+    local x1 = math.floor(tonumber(site.bounds.x) or 0) - padding
+    local y1 = math.floor(tonumber(site.bounds.y) or 0) - padding
+    local x2 = math.floor(tonumber(site.bounds.x2)
+        or ((tonumber(site.bounds.x) or 0) + (tonumber(site.bounds.w) or 1) - 1)) + padding
+    local y2 = math.floor(tonumber(site.bounds.y2)
+        or ((tonumber(site.bounds.y) or 0) + (tonumber(site.bounds.h) or 1) - 1)) + padding
     local zLevels = {}
     local points = site.derived and site.derived.points and site.derived.points.spawn
     for _, point in ipairs(type(points) == "table" and points or {}) do
@@ -296,7 +279,7 @@ function Adapter.Reconcile(context)
     local plan, planError = Population.EnsurePlan(site, profile)
     if not plan then return false, planError end
     local byNpcId = collectBrains(site.siteId)
-    local live, loaded = liveRuntimeIds(site)
+    local live, loaded = liveRuntimeIds(site, profile.returnRadius)
     local stats = {
         loaded = loaded,
         materialized = 0,
@@ -413,7 +396,7 @@ function Adapter.Rematerialize(context)
         local providerId = member.providerId
         if providerId == nil then
             local ids = Profiles.ListProviderIds(profile.providerProfile)
-            providerId = ids[((index - 1) % #ids) + 1]
+            if #ids > 0 then providerId = ids[((index - 1) % #ids) + 1] end
         end
         if not point or not providerId then break end
 
@@ -498,5 +481,5 @@ if isServer and isServer() and Events.OnZombieDead then
     Events.OnZombieDead.Add(onZombieDead)
 end
 
-log("extended materializer lifecycle=reconcile+rematerialize+death guardProgram=LCCQFFactionGuard")
+log("extended materializer lifecycle=reconcile+rematerialize+death boundedRuntimeScan=true guardProgram=LCCQFFactionGuard")
 return Adapter
