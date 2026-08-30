@@ -1,8 +1,8 @@
 require "LCCQF/LCCQFConstants"
-require "LCCQF/Content/LCCQFDialogueContent"
+require "LCCQF/Dialogue/LCCQFDialogueRegistry"
 
 local C = LCCQF.Constants
-local DialogueContent = LCCQF.DialogueContent
+local DialogueContent = LCCQF.DialogueRegistry
 local DialogueSession = LCCQF.DialogueSession or {}
 local sessions = {}
 
@@ -22,7 +22,6 @@ end
 local function isChoiceAvailable(player, session, choice, hooks)
     if choice.condition == nil then return true end
     if not hooks or type(hooks.IsChoiceAvailable) ~= "function" then return false end
-
     local ok, allowed = pcall(hooks.IsChoiceAvailable, player, session, choice)
     return ok and allowed == true
 end
@@ -30,18 +29,13 @@ end
 local function makeView(player, session, hooks)
     local node = getNode(session)
     if not node then return nil end
-
     local choices = {}
     for _, choice in ipairs(node.choices or {}) do
         if isChoiceAvailable(player, session, choice, hooks) then
-            choices[#choices + 1] = {
-                choiceId = choice.id,
-                textKey = choice.textKey,
-            }
+            choices[#choices + 1] = { choiceId = choice.id, textKey = choice.textKey }
             if #choices >= C.MAX_DIALOGUE_CHOICES then break end
         end
     end
-
     return {
         sessionId = session.id,
         npcId = session.npcId,
@@ -59,18 +53,11 @@ function DialogueSession.Open(player, handle, definition, hooks)
     if not playerKey or not handle or not dialogue or not dialogue.nodes or not dialogue.nodes[dialogue.start] then
         return nil, "dialogue content unavailable"
     end
-
     local now = getTimestampMs()
     local session = {
-        id = tostring(getRandomUUID()),
-        playerKey = playerKey,
-        npcId = definition.npcId,
-        runtimeId = tostring(handle.runtimeId),
-        npcNameKey = definition.displayNameKey,
-        dialogueId = definition.dialogueId,
-        nodeId = dialogue.start,
-        openedMs = now,
-        touchedMs = now,
+        id = tostring(getRandomUUID()), playerKey = playerKey, npcId = definition.npcId,
+        runtimeId = tostring(handle.runtimeId), npcNameKey = definition.displayNameKey,
+        dialogueId = definition.dialogueId, nodeId = dialogue.start, openedMs = now, touchedMs = now,
     }
     sessions[playerKey] = session
     return makeView(player, session, hooks)
@@ -86,44 +73,31 @@ end
 function DialogueSession.Choose(player, sessionId, choiceId, hooks)
     local session = DialogueSession.Get(player, sessionId)
     if not session then return nil, "unknown session" end
-
     local node = getNode(session)
-    if not node then
-        sessions[session.playerKey] = nil
-        return nil, "invalid dialogue node"
-    end
+    if not node then sessions[session.playerKey] = nil return nil, "invalid dialogue node" end
 
-    local selected = nil
+    local selected
     for _, choice in ipairs(node.choices or {}) do
-        if tostring(choice.id) == tostring(choiceId)
-            and isChoiceAvailable(player, session, choice, hooks)
-        then
-            selected = choice
-            break
+        if tostring(choice.id) == tostring(choiceId) and isChoiceAvailable(player, session, choice, hooks) then
+            selected = choice break
         end
     end
     if not selected then return nil, "choice not allowed for current node" end
 
     if selected.action ~= nil then
-        if not hooks or type(hooks.ExecuteAction) ~= "function" then
-            return nil, "dialogue action handler unavailable"
-        end
+        if not hooks or type(hooks.ExecuteAction) ~= "function" then return nil, "dialogue action handler unavailable" end
         local ok, actionResult, actionErr = pcall(hooks.ExecuteAction, player, session, selected)
         if not ok then return nil, "dialogue action failed" end
         if actionResult ~= true then return nil, actionErr or "dialogue action rejected" end
     end
 
-    if selected.close then
-        sessions[session.playerKey] = nil
-        return { closed = true, sessionId = session.id }
-    end
+    if selected.close then sessions[session.playerKey] = nil return { closed = true, sessionId = session.id } end
 
     local dialogue = DialogueContent.Get(session.dialogueId)
     if not selected.next or not dialogue.nodes[selected.next] then
         sessions[session.playerKey] = nil
         return nil, "choice target missing"
     end
-
     session.nodeId = selected.next
     session.touchedMs = getTimestampMs()
     return makeView(player, session, hooks)
@@ -138,32 +112,20 @@ end
 
 function DialogueSession.InvalidateRuntime(runtimeId)
     if runtimeId == nil then return 0 end
-    local key = tostring(runtimeId)
-    local closed = 0
-
+    local key, closed = tostring(runtimeId), 0
     for playerKey, session in pairs(sessions) do
-        if tostring(session.runtimeId) == key then
-            sessions[playerKey] = nil
-            closed = closed + 1
-        end
+        if tostring(session.runtimeId) == key then sessions[playerKey] = nil closed = closed + 1 end
     end
-
     return closed
 end
 
 local function expireSessions()
     local now = getTimestampMs()
     for playerKey, session in pairs(sessions) do
-        if now - session.touchedMs >= C.SESSION_TIMEOUT_MS then
-            sessions[playerKey] = nil
-        end
+        if now - session.touchedMs >= C.SESSION_TIMEOUT_MS then sessions[playerKey] = nil end
     end
 end
 
-if isServer and isServer() then
-    Events.EveryOneMinute.Add(expireSessions)
-end
-
+if isServer and isServer() then Events.EveryOneMinute.Add(expireSessions) end
 LCCQF.DialogueSession = DialogueSession
-
 return DialogueSession
