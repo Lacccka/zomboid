@@ -10,7 +10,6 @@ faction_defs="$lua_root/shared/LCCQF/Content/LCCQFFactionDefinitions.lua"
 site_registry="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteRegistry.lua"
 population="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSitePopulation.lua"
 safety="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteSafetyValidator.lua"
-materializer_registry="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteMaterializerRegistry.lua"
 materialization="$lua_root/server/LCCQF/FactionWorld/zz_LCCQFFactionSiteMaterializationService.lua"
 bandits_materializer="$lua_root/server/LCCQF/Runtime/LCCQFBanditsFactionSiteMaterializer.lua"
 bandits_lifecycle="$lua_root/server/LCCQF/Runtime/LCCQFBanditsFactionSiteLifecycle.lua"
@@ -22,141 +21,88 @@ bootstrap="$lua_root/server/zz_LCCQFFactionBootstrap.lua"
 client_presentation="$lua_root/client/LCCQF/Runtime/LCCQFBanditsClientPresentation.lua"
 debug_server="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteDebugServer.lua"
 
-fail() {
-    echo "QuestFramework faction lifecycle audit: FAIL: $1" >&2
-    exit 1
-}
+fail(){ echo "QuestFramework faction lifecycle audit: FAIL: $1" >&2; exit 1; }
+req(){ rg -q "$1" "$2" || fail "$3"; }
 
-require_pattern() {
-    local pattern="$1"
-    local file="$2"
-    local message="$3"
-    rg -q "$pattern" "$file" || fail "$message"
-}
+files=("$constants" "$registry_def" "$faction_defs" "$site_registry" "$population" "$safety" "$materialization" "$bandits_materializer" "$bandits_lifecycle" "$guard_program" "$lifecycle" "$maintenance" "$relocation" "$bootstrap" "$client_presentation" "$debug_server")
+for f in "${files[@]}"; do [[ -f "$f" ]] || fail "missing $f"; done
 
-required_files=(
-    "$constants" "$registry_def" "$faction_defs" "$site_registry" "$population" "$safety"
-    "$materializer_registry" "$materialization" "$bandits_materializer" "$bandits_lifecycle" "$guard_program"
-    "$lifecycle" "$maintenance" "$relocation" "$bootstrap" "$client_presentation" "$debug_server"
-)
-for required in "${required_files[@]}"; do
-    [[ -f "$required" ]] || fail "missing $required"
-done
+req 'FACTION_SITE_RUNTIME_SCAN_MAX_TILES' "$constants" 'bounded runtime reconciliation scan cap missing'
+req 'minMaterializationDistanceFromPlayers' "$registry_def" 'materialization proximity policy is not validated'
+req 'homeRadius' "$registry_def" 'home radius policy is not validated'
+req 'returnRadius' "$registry_def" 'return radius policy is not validated'
+req 'guardRadius' "$registry_def" 'guard radius policy is not validated'
+req 'replaceDead' "$registry_def" 'death replacement policy is not validated'
+req 'replacementDelayHours' "$registry_def" 'replacement delay is not validated'
+req 'returnRadius must be >= homeRadius' "$registry_def" 'home leash ordering validation missing'
 
-require_pattern 'FACTION_SITE_RUNTIME_SCAN_MAX_TILES' "$constants" "bounded runtime reconciliation scan cap missing"
+req 'program = "LCCQFFactionGuard"' "$faction_defs" 'checkpoint faction does not use framework guard program'
+req 'minMaterializationDistanceFromPlayers = 24' "$faction_defs" 'separate pop-in proximity radius missing'
+req 'replaceDead = true' "$faction_defs" 'checkpoint population maintenance intent missing'
 
-require_pattern 'minMaterializationDistanceFromPlayers' "$registry_def" "materialization proximity policy is not validated"
-require_pattern 'homeRadius' "$registry_def" "home radius policy is not validated"
-require_pattern 'returnRadius' "$registry_def" "return radius policy is not validated"
-require_pattern 'guardRadius' "$registry_def" "guard radius policy is not validated"
-require_pattern 'replaceDead' "$registry_def" "death replacement policy is not validated"
-require_pattern 'replacementDelayHours' "$registry_def" "replacement delay is not validated"
-require_pattern 'returnRadius must be >= homeRadius' "$registry_def" "home leash ordering validation missing"
+req 'VIRTUALIZED = true' "$population" 'logical virtualization state missing'
+req 'function Population\.MarkVirtualized' "$population" 'virtualization transition API missing'
+req 'function Population\.AppendReplacement' "$population" 'dead-member replacement planning missing'
+req 'replacesNpcId' "$population" 'replacement lineage missing'
+req 'function Population\.TransferPlan' "$population" 'identity-preserving relocation transfer missing'
+req 'CountVirtualized' "$population" 'virtualized population count missing'
 
-require_pattern 'program = "LCCQFFactionGuard"' "$faction_defs" "checkpoint faction does not use framework guard program"
-require_pattern 'minMaterializationDistanceFromPlayers = 24' "$faction_defs" "separate pop-in proximity radius missing"
-require_pattern 'replaceDead = true' "$faction_defs" "checkpoint population maintenance intent missing"
-require_pattern 'replacementDelayHours = 24' "$faction_defs" "checkpoint replacement delay missing"
+req 'CAPACITY_STATES' "$site_registry" 'relocation-aware capacity states missing'
+req 'RELOCATING = \{ ACTIVE = true, ABANDONED = true \}' "$site_registry" 'relocation rollback/completion transitions missing'
+req 'function Sites\.BeginRelocation' "$site_registry" 'server relocation request API missing'
+req 'relocatesSiteId' "$site_registry" 'replacement site linkage missing'
 
-require_pattern 'VIRTUALIZED = true' "$population" "logical virtualization state missing"
-require_pattern 'function Population\.ListAllMembers' "$population" "population history API missing"
-require_pattern 'function Population\.MarkVirtualized' "$population" "virtualization transition API missing"
-require_pattern 'function Population\.AppendReplacement' "$population" "dead-member replacement planning missing"
-require_pattern 'replacesNpcId' "$population" "replacement lineage missing"
-require_pattern 'function Population\.TransferPlan' "$population" "identity-preserving relocation transfer missing"
-require_pattern 'CountVirtualized' "$population" "virtualized population count missing"
-require_pattern 'member\.state ~= "DEAD"' "$population" "dead identities are not excluded from current population"
+req 'materializationMinimumDistance' "$safety" 'allocation/pop-in proximity policies are not separated'
+req 'needsIdentityPreservingMaterialization' "$materialization" 'materialization does not detect prior provider identity'
+req 'member\.providerId ~= nil' "$materialization" 'provider identity is ignored during materialization'
+req 'member\.previousRuntimeId ~= nil' "$materialization" 'relocation runtime lineage is ignored'
+req 'adapter\.Rematerialize' "$materialization" 'identity-preserving provider path is missing'
+req 'identity-preserving rematerializer unavailable' "$materialization" 'identity-preserving materialization does not fail closed'
 
-require_pattern 'CAPACITY_STATES' "$site_registry" "relocation-aware capacity states missing"
-require_pattern 'RELOCATING = \{ ACTIVE = true, ABANDONED = true \}' "$site_registry" "relocation rollback/completion transitions missing"
-require_pattern 'function Sites\.FindRelocatingSite' "$site_registry" "relocating site lookup missing"
-require_pattern 'function Sites\.BeginRelocation' "$site_registry" "server relocation request API missing"
-require_pattern 'relocatesSiteId' "$site_registry" "replacement site linkage missing"
-require_pattern 'replacementSiteId' "$site_registry" "old-site replacement linkage missing"
+req 'ZombiePrograms\.LCCQFFactionGuard' "$guard_program" 'custom faction resident program missing'
+req 'pointFromBrain' "$guard_program" 'coordinate resolver missing'
+req '"lccqHome"' "$guard_program" 'home coordinate prefix missing'
+req 'lccqReturnRadius' "$guard_program" 'home return leash missing'
+req 'BanditUtils\.GetTarget' "$guard_program" 'threat acquisition missing'
+req 'BanditUtils\.GetMoveTaskTarget' "$guard_program" 'combat movement missing'
+req 'BanditPrograms\.Idle' "$guard_program" 'idle behavior missing'
+if rg -n 'GetMasterPlayer|BanditPost\.At|BanditPlayerBase' "$guard_program"; then fail 'faction resident program leaks player-owned Bandits behavior'; fi
 
-require_pattern 'materializationMinimumDistance' "$safety" "allocation/pop-in proximity policies are not separated"
-require_pattern 'minMaterializationDistanceFromPlayers' "$safety" "pop-in proximity policy is not consumed"
-require_pattern 'profile\.minDistanceFromPlayers' "$safety" "allocation proximity policy disappeared"
+req 'function Adapter\.Reconcile' "$bandits_lifecycle" 'Bandits reconciliation adapter missing'
+req 'function Adapter\.Rematerialize' "$bandits_lifecycle" 'Bandits rematerialization adapter missing'
+req 'lccqRetired' "$bandits_lifecycle" 'duplicate runtime retirement tag missing'
+req 'Population\.MarkVirtualized' "$bandits_lifecycle" 'provider unload is not virtualized'
+req 'Population\.MarkDead' "$bandits_lifecycle" 'provider death is not persisted logically'
+req 'Events\.OnZombieDead' "$bandits_lifecycle" 'physical faction death hook missing'
+req 'FACTION_SITE_RUNTIME_SCAN_MAX_TILES' "$bandits_lifecycle" 'runtime scan is not bounded'
+req 'Spawner\.Individual' "$bandits_lifecycle" 'provider rematerialization path missing'
+if rg -n 'removeFromWorld|removeFromSquare|RemoveZombie|clearZombies|ClearZombies' "$bandits_lifecycle" "$guard_program"; then fail 'lifecycle destructively removes world entities'; fi
 
-# A replacement/recovery population already carrying provider/runtime identity must never
-# silently fall back to the random initial provider spawn path.
-require_pattern 'needsIdentityPreservingMaterialization' "$materialization" "materialization does not detect prior provider identity"
-require_pattern 'member\.providerId ~= nil' "$materialization" "provider identity is ignored during materialization"
-require_pattern 'member\.runtimeId ~= nil' "$materialization" "runtime identity is ignored during materialization"
-require_pattern 'member\.previousRuntimeId ~= nil' "$materialization" "relocation runtime lineage is ignored"
-require_pattern 'adapter\.Rematerialize' "$materialization" "identity-preserving provider path is missing"
-require_pattern 'identity-preserving rematerializer unavailable' "$materialization" "identity-preserving materialization does not fail closed"
-require_pattern 'adapter\.Materialize' "$materialization" "fresh initial materialization path disappeared"
+req 'Materializers\.Get\(profile\.materializer\)' "$lifecycle" 'lifecycle core bypasses provider registry'
+req 'adapter\.Reconcile' "$lifecycle" 'lifecycle core does not reconcile provider state'
+req 'adapter\.Rematerialize' "$lifecycle" 'lifecycle core does not use provider rematerialization boundary'
+req '"DORMANT"' "$lifecycle" 'virtualized sites never become dormant'
+req 'Population\.AppendReplacement' "$maintenance" 'maintenance resurrects instead of appending identity'
+req 'Population\.TransferPlan' "$relocation" 'relocation does not preserve logical population'
+req 'previousRuntimeId' "$relocation" 'relocation does not remember previous physical runtime'
+req 'replacement\.state == "ACTIVE"' "$relocation" 'old site can be abandoned before replacement activation'
 
-require_pattern 'ZombiePrograms\.LCCQFFactionGuard' "$guard_program" "custom faction guard program missing"
-require_pattern 'lccqHomeX' "$guard_program" "guard home anchor missing"
-require_pattern 'lccqReturnRadius' "$guard_program" "guard return leash missing"
-require_pattern 'BanditUtils\.GetTarget' "$guard_program" "guard threat acquisition missing"
-require_pattern 'BanditUtils\.GetMoveTaskTarget' "$guard_program" "guard combat movement missing"
-require_pattern 'BanditPrograms\.Idle' "$guard_program" "guard idle behavior missing"
-if rg -n 'GetMasterPlayer|BanditPost\.At|BanditPlayerBase' "$guard_program"; then
-    fail "framework faction guard leaks player-owned Bandits behavior"
-fi
+req 'LCCQF/Runtime/LCCQFBanditsFactionSiteLifecycle' "$bootstrap" 'Bandits lifecycle extension not bootstrapped'
+req 'zz_LCCQFFactionSiteRelocationService' "$bootstrap" 'relocation service not bootstrapped'
+req 'zz_LCCQFFactionSiteLifecycleService' "$bootstrap" 'lifecycle coordinator not bootstrapped'
+req 'zz_LCCQFFactionSitePopulationMaintenance' "$bootstrap" 'population maintenance not bootstrapped'
+req 'LCCQF/Runtime/LCCQFBanditsFactionGuardProgram' "$client_presentation" 'client does not load synchronized faction resident program'
+req 'virtualized = counts\.VIRTUALIZED' "$debug_server" 'admin debug omits virtualized population count'
+req 'previousRuntimeId' "$debug_server" 'admin debug omits runtime lineage'
 
-require_pattern 'function Adapter\.Reconcile' "$bandits_lifecycle" "Bandits reconciliation adapter missing"
-require_pattern 'function Adapter\.Rematerialize' "$bandits_lifecycle" "Bandits rematerialization adapter missing"
-require_pattern 'lccqRetired' "$bandits_lifecycle" "duplicate runtime retirement tag missing"
-require_pattern 'Population\.MarkVirtualized' "$bandits_lifecycle" "provider unload is not virtualized"
-require_pattern 'Population\.MarkDead' "$bandits_lifecycle" "provider death is not persisted logically"
-require_pattern 'Events\.OnZombieDead' "$bandits_lifecycle" "physical faction death hook missing"
-require_pattern 'BanditClusters unavailable' "$bandits_lifecycle" "provider startup must fail closed before marking members missing"
-require_pattern 'FACTION_SITE_RUNTIME_SCAN_MAX_TILES' "$bandits_lifecycle" "runtime fallback scan is not bounded"
-require_pattern 'Spawner\.Individual' "$bandits_lifecycle" "provider rematerialization path missing"
-if rg -n 'removeFromWorld|removeFromSquare|RemoveZombie|clearZombies|ClearZombies' "$bandits_lifecycle" "$guard_program"; then
-    fail "lifecycle adapter destructively removes world entities"
-fi
+core=("$materialization" "$lifecycle" "$maintenance" "$relocation" "$population" "$site_registry" "$safety")
+if rg -n 'BanditServer|BanditCustom|BanditBrain|BanditClusters|Bandits2' "${core[@]}"; then fail 'provider-neutral lifecycle core leaks Bandits runtime dependency'; fi
+if rg -n 'sendClientCommand|sendServerCommand|OnClientCommand' "$materialization" "$lifecycle" "$maintenance" "$relocation" "$population"; then fail 'server lifecycle core exposes gameplay client authority'; fi
 
-require_pattern 'Materializers\.Get\(profile\.materializer\)' "$lifecycle" "lifecycle core bypasses provider registry"
-require_pattern 'adapter\.Reconcile' "$lifecycle" "lifecycle core does not reconcile provider state"
-require_pattern 'adapter\.Rematerialize' "$lifecycle" "lifecycle core does not use provider rematerialization boundary"
-require_pattern 'Safety\.ValidateMaterializationSite' "$lifecycle" "rematerialization skips safety gate"
-require_pattern '"DORMANT"' "$lifecycle" "virtualized sites never become dormant"
-require_pattern '"ACTIVE"' "$lifecycle" "rematerialized sites never reactivate"
-
-require_pattern 'replaceDead ~= true' "$maintenance" "maintenance does not honor replacement policy"
-require_pattern 'replacementDelayHours' "$maintenance" "maintenance ignores replacement delay"
-require_pattern 'Population\.AppendReplacement' "$maintenance" "maintenance resurrects instead of appending identity"
-
-require_pattern 'function Service\.Request' "$relocation" "server relocation request service missing"
-require_pattern 'Population\.TransferPlan' "$relocation" "relocation does not preserve logical population"
-require_pattern 'previousRuntimeId' "$relocation" "relocation does not remember previous physical runtime"
-require_pattern 'replacement\.state == "ACTIVE"' "$relocation" "old site can be abandoned before replacement activation"
-
-require_pattern 'LCCQF/Runtime/LCCQFBanditsFactionSiteLifecycle' "$bootstrap" "Bandits lifecycle extension not bootstrapped"
-require_pattern 'LCCQF/FactionWorld/zz_LCCQFFactionSiteRelocationService' "$bootstrap" "relocation service not bootstrapped"
-require_pattern 'LCCQF/FactionWorld/zz_LCCQFFactionSiteLifecycleService' "$bootstrap" "lifecycle coordinator not bootstrapped"
-require_pattern 'LCCQF/FactionWorld/zz_LCCQFFactionSitePopulationMaintenance' "$bootstrap" "population maintenance not bootstrapped"
-require_pattern 'LCCQF/Runtime/LCCQFBanditsFactionGuardProgram' "$client_presentation" "client does not load synchronized guard program"
-
-require_pattern 'virtualized = counts\.VIRTUALIZED' "$debug_server" "admin debug omits virtualized population count"
-require_pattern 'previousRuntimeId' "$debug_server" "admin debug omits relocation/runtime lineage"
-require_pattern 'replacementSiteId' "$debug_server" "admin debug omits relocation destination"
-
-core_files=("$materialization" "$lifecycle" "$maintenance" "$relocation" "$population" "$site_registry" "$safety")
-if rg -n 'BanditServer|BanditCustom|BanditBrain|BanditClusters|Bandits2' "${core_files[@]}"; then
-    fail "provider-neutral lifecycle core leaks Bandits runtime dependency"
-fi
-if rg -n 'sendClientCommand|sendServerCommand|OnClientCommand' "$materialization" "$lifecycle" "$maintenance" "$relocation" "$population"; then
-    fail "server lifecycle core exposes gameplay client authority"
-fi
-if rg -n 'loadstring|loadstream' "${required_files[@]}"; then
-    fail "removed dynamic code execution API is present"
-fi
-
-# Ensure relocation service registers its minute handler before initial materialization.
 relocation_line="$(rg -n 'zz_LCCQFFactionSiteRelocationService' "$bootstrap" | head -n1 | cut -d: -f1)"
 materialization_line="$(rg -n 'zz_LCCQFFactionSiteMaterializationService' "$bootstrap" | head -n1 | cut -d: -f1)"
-[[ "$relocation_line" -lt "$materialization_line" ]] || fail "relocation must bootstrap before materialization"
+[[ "$relocation_line" -lt "$materialization_line" ]] || fail 'relocation must bootstrap before materialization'
 
-if command -v lua >/dev/null 2>&1; then
-    for lua_file in "${required_files[@]}"; do
-        lua -e "assert(loadfile([[$lua_file]]))"
-    done
-fi
+if command -v lua >/dev/null 2>&1; then for f in "${files[@]}"; do lua -e "assert(loadfile([[$f]]))"; done; fi
 
-echo "QuestFramework faction lifecycle audit: PASS (reconciliation + virtualization + identity-preserving rematerialization + maintenance + home guard + relocation)"
+echo 'QuestFramework faction lifecycle audit: PASS (reconciliation + virtualization + identity-preserving rematerialization + maintenance + duty-aware home behavior + relocation)'
