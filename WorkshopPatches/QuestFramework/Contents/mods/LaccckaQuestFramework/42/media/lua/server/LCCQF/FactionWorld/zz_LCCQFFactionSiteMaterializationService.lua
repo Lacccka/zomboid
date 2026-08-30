@@ -54,6 +54,33 @@ local function formatSafetyDetail(detail, metadata)
     return result
 end
 
+local function needsIdentityPreservingMaterialization(site)
+    for _, member in ipairs(Population.GetUnmaterialized(site)) do
+        if member.providerId ~= nil or member.runtimeId ~= nil or member.previousRuntimeId ~= nil then
+            return true
+        end
+    end
+    return false
+end
+
+local function invokeMaterializer(adapter, context)
+    local preserveIdentity = needsIdentityPreservingMaterialization(context.site)
+    if preserveIdentity then
+        if type(adapter.Rematerialize) ~= "function" then
+            return false, "identity-preserving rematerializer unavailable", "identity-preserving"
+        end
+        context.reason = context.reason or "identity-preserving-materialization"
+        local ok, result = adapter.Rematerialize(context)
+        return ok, result, "identity-preserving"
+    end
+
+    if type(adapter.Materialize) ~= "function" then
+        return false, "initial materializer unavailable", "initial"
+    end
+    local ok, result = adapter.Materialize(context)
+    return ok, result, "initial"
+end
+
 local function processSite(site)
     local definition = Factions.Get(site.factionId)
     if not definition then
@@ -93,23 +120,23 @@ local function processSite(site)
         return false, "deferred"
     end
 
-    local ok, result = adapter.Materialize({
+    local ok, result, mode = invokeMaterializer(adapter, {
         site = site,
         definition = definition,
         population = plan,
         spawnPoints = spawnPoints,
     })
     if not ok then
-        logOnce(site, "DEFER", result)
+        logOnce(site, "DEFER", tostring(mode) .. ": " .. tostring(result))
         return false, "deferred"
     end
 
     if Population.IsInitialPopulationMaterialized(site) then
-        logOnce(site, "PASS", "initial faction population materialized")
+        logOnce(site, "PASS", tostring(mode) .. " population materialized")
         return Sites.Transition(site.siteId, "ACTIVE", "initial faction population materialized")
     end
 
-    logOnce(site, "PARTIAL", "provider bound " .. tostring(result or 0) .. " member(s)")
+    logOnce(site, "PARTIAL", tostring(mode) .. " provider bound " .. tostring(result or 0) .. " member(s)")
     return false, "partial"
 end
 

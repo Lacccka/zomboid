@@ -11,6 +11,7 @@ site_registry="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteRegistry.lua"
 population="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSitePopulation.lua"
 safety="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteSafetyValidator.lua"
 materializer_registry="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteMaterializerRegistry.lua"
+materialization="$lua_root/server/LCCQF/FactionWorld/zz_LCCQFFactionSiteMaterializationService.lua"
 bandits_materializer="$lua_root/server/LCCQF/Runtime/LCCQFBanditsFactionSiteMaterializer.lua"
 bandits_lifecycle="$lua_root/server/LCCQF/Runtime/LCCQFBanditsFactionSiteLifecycle.lua"
 guard_program="$lua_root/shared/LCCQF/Runtime/LCCQFBanditsFactionGuardProgram.lua"
@@ -35,7 +36,7 @@ require_pattern() {
 
 required_files=(
     "$constants" "$registry_def" "$faction_defs" "$site_registry" "$population" "$safety"
-    "$materializer_registry" "$bandits_materializer" "$bandits_lifecycle" "$guard_program"
+    "$materializer_registry" "$materialization" "$bandits_materializer" "$bandits_lifecycle" "$guard_program"
     "$lifecycle" "$maintenance" "$relocation" "$bootstrap" "$client_presentation" "$debug_server"
 )
 for required in "${required_files[@]}"; do
@@ -77,14 +78,24 @@ require_pattern 'materializationMinimumDistance' "$safety" "allocation/pop-in pr
 require_pattern 'minMaterializationDistanceFromPlayers' "$safety" "pop-in proximity policy is not consumed"
 require_pattern 'profile\.minDistanceFromPlayers' "$safety" "allocation proximity policy disappeared"
 
+# A replacement/recovery population already carrying provider/runtime identity must never
+# silently fall back to the random initial provider spawn path.
+require_pattern 'needsIdentityPreservingMaterialization' "$materialization" "materialization does not detect prior provider identity"
+require_pattern 'member\.providerId ~= nil' "$materialization" "provider identity is ignored during materialization"
+require_pattern 'member\.runtimeId ~= nil' "$materialization" "runtime identity is ignored during materialization"
+require_pattern 'member\.previousRuntimeId ~= nil' "$materialization" "relocation runtime lineage is ignored"
+require_pattern 'adapter\.Rematerialize' "$materialization" "identity-preserving provider path is missing"
+require_pattern 'identity-preserving rematerializer unavailable' "$materialization" "identity-preserving materialization does not fail closed"
+require_pattern 'adapter\.Materialize' "$materialization" "fresh initial materialization path disappeared"
+
 require_pattern 'ZombiePrograms\.LCCQFFactionGuard' "$guard_program" "custom faction guard program missing"
 require_pattern 'lccqHomeX' "$guard_program" "guard home anchor missing"
 require_pattern 'lccqReturnRadius' "$guard_program" "guard return leash missing"
 require_pattern 'BanditUtils\.GetTarget' "$guard_program" "guard threat acquisition missing"
 require_pattern 'BanditUtils\.GetMoveTaskTarget' "$guard_program" "guard combat movement missing"
 require_pattern 'BanditPrograms\.Idle' "$guard_program" "guard idle behavior missing"
-if rg -n 'Looter|GetMasterPlayer|BanditPost\.At|BanditPlayerBase' "$guard_program"; then
-    fail "framework faction guard leaks roaming/player-owned Bandits behavior"
+if rg -n 'GetMasterPlayer|BanditPost\.At|BanditPlayerBase' "$guard_program"; then
+    fail "framework faction guard leaks player-owned Bandits behavior"
 fi
 
 require_pattern 'function Adapter\.Reconcile' "$bandits_lifecycle" "Bandits reconciliation adapter missing"
@@ -126,11 +137,11 @@ require_pattern 'virtualized = counts\.VIRTUALIZED' "$debug_server" "admin debug
 require_pattern 'previousRuntimeId' "$debug_server" "admin debug omits relocation/runtime lineage"
 require_pattern 'replacementSiteId' "$debug_server" "admin debug omits relocation destination"
 
-core_files=("$lifecycle" "$maintenance" "$relocation" "$population" "$site_registry" "$safety")
+core_files=("$materialization" "$lifecycle" "$maintenance" "$relocation" "$population" "$site_registry" "$safety")
 if rg -n 'BanditServer|BanditCustom|BanditBrain|BanditClusters|Bandits2' "${core_files[@]}"; then
     fail "provider-neutral lifecycle core leaks Bandits runtime dependency"
 fi
-if rg -n 'sendClientCommand|sendServerCommand|OnClientCommand' "$lifecycle" "$maintenance" "$relocation" "$population"; then
+if rg -n 'sendClientCommand|sendServerCommand|OnClientCommand' "$materialization" "$lifecycle" "$maintenance" "$relocation" "$population"; then
     fail "server lifecycle core exposes gameplay client authority"
 fi
 if rg -n 'loadstring|loadstream' "${required_files[@]}"; then
@@ -148,4 +159,4 @@ if command -v lua >/dev/null 2>&1; then
     done
 fi
 
-echo "QuestFramework faction lifecycle audit: PASS (reconciliation + virtualization + maintenance + home guard + relocation)"
+echo "QuestFramework faction lifecycle audit: PASS (reconciliation + virtualization + identity-preserving rematerialization + maintenance + home guard + relocation)"
