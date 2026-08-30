@@ -1,4 +1,7 @@
 require "LCCQF/Core/LCCQFNPCRuntime"
+-- Bandits AI programs execute from shared Lua. Clients must know the custom faction
+-- guard program before a synchronized brain references it.
+require "LCCQF/Runtime/LCCQFBanditsFactionGuardProgram"
 
 local ok, BanditZombieModule = pcall(require, "BanditZombie")
 if not ok then
@@ -21,5 +24,5 @@ function resolver.Resolve(npcId, runtimeId, definition)
 end
 
 LCCQF.NPCRuntime.RegisterClientResolver("Bandits", resolver)
-print("[LCCQF][PRESENTATION:CLIENT] Bandits live portrait resolver registered")
+print("[LCCQF][PRESENTATION:CLIENT] Bandits live portrait resolver registered factionGuardProgram=true")
 return true

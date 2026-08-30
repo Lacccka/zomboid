@@ -64,7 +64,24 @@ local ok, err = LCCQF.FactionRegistry.Register({
         maxPopulation = 5,
         materializer = "Bandits",
         providerProfile = "checkpoint_survivors_v1",
-        program = "Defend",
+        program = "LCCQFFactionGuard",
+
+        -- Site allocation keeps players 80 tiles away from a newly claimed base, while
+        -- physical pop-in/recovery uses a smaller independent safety radius. Keeping the
+        -- two policies separate avoids a loaded-chunk/proximity deadlock.
+        minMaterializationDistanceFromPlayers = 24,
+
+        -- Server-owned home/guard intent. The Bandits adapter maps this generic policy
+        -- to runtime brain tags/program state; faction core never calls Bandits APIs.
+        homeRadius = 10,
+        returnRadius = 24,
+        guardRadius = 18,
+
+        -- Logical deaths remain historical identities. Population maintenance may plan
+        -- a new npcId after this delay instead of resurrecting the dead identity.
+        replaceDead = true,
+        replacementDelayHours = 24,
+
         roles = {
             { roleId = "leader", count = 1 },
             { roleId = "guard", count = 2 },

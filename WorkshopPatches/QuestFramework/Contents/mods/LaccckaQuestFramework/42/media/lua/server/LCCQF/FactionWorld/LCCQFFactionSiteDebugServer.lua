@@ -55,28 +55,42 @@ end
 local function sanitizePopulation(population)
     if type(population) ~= "table" then return nil end
     local members = {}
-    local materialized = 0
+    local counts = { MATERIALIZED = 0, VIRTUALIZED = 0, PLANNED = 0, MISSING = 0, DEAD = 0 }
     local target = math.max(0, math.floor(tonumber(population.targetPopulation) or 0))
-    for index = 1, math.min(target, type(population.members) == "table" and #population.members or 0) do
-        local member = population.members[index]
+    local currentRemaining = target
+
+    for _, member in ipairs(type(population.members) == "table" and population.members or {}) do
         if type(member) == "table" then
-            if member.state == "MATERIALIZED" and member.runtimeId ~= nil then materialized = materialized + 1 end
+            local state = tostring(member.state or "UNKNOWN")
+            if counts[state] ~= nil then counts[state] = counts[state] + 1 end
+            local current = state ~= "DEAD" and currentRemaining > 0
+            if current then currentRemaining = currentRemaining - 1 end
             members[#members + 1] = {
                 npcId = tostring(member.npcId or ""),
                 roleId = tostring(member.roleId or "member"),
-                state = tostring(member.state or "UNKNOWN"),
+                state = state,
+                current = current,
                 runtimeId = member.runtimeId and tostring(member.runtimeId) or nil,
+                previousRuntimeId = member.previousRuntimeId and tostring(member.previousRuntimeId) or nil,
                 providerId = member.providerId and tostring(member.providerId) or nil,
+                replacesNpcId = member.replacesNpcId and tostring(member.replacesNpcId) or nil,
+                replacementNpcId = member.replacementNpcId and tostring(member.replacementNpcId) or nil,
             }
         end
     end
+
     return {
+        schemaVersion = math.max(0, math.floor(tonumber(population.schemaVersion) or 0)),
         squadId = tostring(population.squadId or ""),
         materializer = tostring(population.materializer or ""),
         providerProfile = tostring(population.providerProfile or ""),
         targetPopulation = target,
         maxPopulation = math.max(target, math.floor(tonumber(population.maxPopulation) or target)),
-        materialized = materialized,
+        materialized = counts.MATERIALIZED,
+        virtualized = counts.VIRTUALIZED,
+        planned = counts.PLANNED,
+        missing = counts.MISSING,
+        dead = counts.DEAD,
         members = members,
     }
 end
@@ -95,6 +109,9 @@ local function sanitizeSite(site)
         score = tonumber(site.score) or 0,
         lastReason = site.lastReason and tostring(site.lastReason) or nil,
         validationRevision = math.max(0, tonumber(site.validationRevision) or 0),
+        relocatesSiteId = site.relocatesSiteId and tostring(site.relocatesSiteId) or nil,
+        replacementSiteId = site.replacementSiteId and tostring(site.replacementSiteId) or nil,
+        relocationReason = site.relocationReason and tostring(site.relocationReason) or nil,
         resources = derived and {
             complete = derived.complete == true,
             safeHouseOverlap = derived.safeHouseOverlap == true,

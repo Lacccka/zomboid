@@ -32,6 +32,13 @@ jobs:
           bash -n WorkshopPatches/QuestFramework/audit-branching.sh
           bash -n WorkshopPatches/QuestFramework/audit-rpg-hub-cross-navigation.sh
           bash -n WorkshopPatches/QuestFramework/audit-faction-sites.sh
+          bash -n WorkshopPatches/QuestFramework/audit-faction-lifecycle.sh
+
+      - name: Validate all Quest Framework Lua syntax
+        run: |
+          while IFS= read -r -d '' file; do
+            lua5.4 -e "assert(loadfile([[$file]]))"
+          done < <(find WorkshopPatches/QuestFramework/Contents/mods/LaccckaQuestFramework/42/media/lua -type f -name '*.lua' -print0)
 
       - name: Verify Quest Framework contracts
         run: bash WorkshopPatches/QuestFramework/audit.sh
@@ -53,3 +60,6 @@ jobs:
 
       - name: Verify autonomous faction site contracts
         run: bash WorkshopPatches/QuestFramework/audit-faction-sites.sh
+
+      - name: Verify faction lifecycle contracts
+        run: bash WorkshopPatches/QuestFramework/audit-faction-lifecycle.sh

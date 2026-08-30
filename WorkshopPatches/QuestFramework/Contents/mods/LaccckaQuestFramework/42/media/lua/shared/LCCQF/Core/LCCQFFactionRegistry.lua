@@ -110,8 +110,6 @@ local function validateSiteProfile(definition)
         end
     end
 
-    -- These policies remain deliberately unavailable until their B42.20.4 runtime
-    -- probes exist. Do not accept inert content settings that look authoritative.
     for unsupportedName in pairs({
         minDistanceFromPlayerSafehouses = true,
         wantsRoadAccess = true,
@@ -154,6 +152,30 @@ local function validatePopulationProfile(definition)
         or math.floor(maxPopulation) ~= maxPopulation
     then
         return false, "populationProfile.maxPopulation must be an integer from initialPopulation to 64"
+    end
+
+    for _, fieldName in ipairs({
+        "minMaterializationDistanceFromPlayers",
+        "homeRadius",
+        "returnRadius",
+        "guardRadius",
+        "replacementDelayHours",
+    }) do
+        local value = profile[fieldName]
+        if value ~= nil and (tonumber(value) == nil or tonumber(value) < 0) then
+            return false, "invalid populationProfile." .. fieldName
+        end
+    end
+    if profile.replaceDead ~= nil and type(profile.replaceDead) ~= "boolean" then
+        return false, "populationProfile.replaceDead must be boolean"
+    end
+    if profile.homeRadius ~= nil and profile.returnRadius ~= nil
+        and tonumber(profile.returnRadius) < tonumber(profile.homeRadius)
+    then
+        return false, "populationProfile.returnRadius must be >= homeRadius"
+    end
+    if profile.guardRadius ~= nil and tonumber(profile.guardRadius) < 1 then
+        return false, "populationProfile.guardRadius must be positive"
     end
 
     if profile.roles ~= nil and type(profile.roles) ~= "table" then

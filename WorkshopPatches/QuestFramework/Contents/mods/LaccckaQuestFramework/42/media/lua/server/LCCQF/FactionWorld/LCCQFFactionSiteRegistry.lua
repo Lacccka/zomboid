@@ -15,12 +15,21 @@ local LIVE_STATES = {
     RELOCATING = true,
 }
 
+-- RELOCATING is intentionally excluded: maxSites limits settled destinations, while
+-- an old site may coexist transiently with one replacement reservation.
+local CAPACITY_STATES = {
+    RESERVED = true,
+    VALIDATING = true,
+    ACTIVE = true,
+    DORMANT = true,
+}
+
 local TRANSITIONS = {
     RESERVED = { VALIDATING = true, ABANDONED = true },
     VALIDATING = { ACTIVE = true, RESERVED = true, ABANDONED = true },
     ACTIVE = { DORMANT = true, RELOCATING = true, ABANDONED = true },
     DORMANT = { ACTIVE = true, RELOCATING = true, ABANDONED = true },
-    RELOCATING = { ABANDONED = true },
+    RELOCATING = { ACTIVE = true, ABANDONED = true },
     ABANDONED = {},
 }
 
@@ -55,8 +64,7 @@ local function ensureStore()
 end
 
 -- Faction-site ModData is persistent server world state, not a gameplay replication
--- surface. Never broadcast the private store to every client. Privileged diagnostics use
--- LCCQFFactionSiteDebugServer, while gameplay knowledge uses sanitized projections.
+-- surface. Privileged diagnostics expose only sanitized projections.
 local function touch(store)
     store.revision = math.max(0, math.floor(tonumber(store.revision) or 0)) + 1
 end
@@ -164,9 +172,20 @@ function Sites.ListFactionSites(factionId, liveOnly)
     return out
 end
 
+function Sites.FindRelocatingSite(factionId)
+    for _, site in ipairs(Sites.ListFactionSites(factionId, true)) do
+        if site.state == "RELOCATING" then return site end
+    end
+    return nil
+end
+
 function Sites.HasCapacity(factionId, maxSites)
     local limit = math.max(1, math.floor(tonumber(maxSites) or 1))
-    return #Sites.ListFactionSites(factionId, true) < limit
+    local count = 0
+    for _, site in ipairs(Sites.ListFactionSites(factionId, true)) do
+        if CAPACITY_STATES[site.state] then count = count + 1 end
+    end
+    return count < limit
 end
 
 function Sites.IsCandidateReserved(candidateKey)
@@ -249,6 +268,14 @@ function Sites.ReserveCandidate(factionId, candidate, source)
         validationRevision = 0,
     }
 
+    local relocating = Sites.FindRelocatingSite(factionId)
+    if relocating and not relocating.replacementSiteId then
+        site.relocatesSiteId = relocating.siteId
+        relocating.replacementSiteId = siteId
+        relocating.updatedWorldHours = now
+        relocating.lastUpdateReason = "replacement site reserved"
+    end
+
     store.sitesById[siteId] = site
     store.reservationsByCandidateKey[site.candidateKey] = siteId
     appendFactionSite(store, factionId, siteId)
@@ -259,7 +286,8 @@ function Sites.ReserveCandidate(factionId, candidate, source)
         .. " candidate=" .. tostring(site.candidateKey)
         .. " zone=" .. tostring(site.zoneType)
         .. " rooms=" .. tostring(site.roomCount)
-        .. " score=" .. string.format("%.2f", tonumber(site.score) or 0))
+        .. " score=" .. string.format("%.2f", tonumber(site.score) or 0)
+        .. " relocatesSiteId=" .. tostring(site.relocatesSiteId or "none"))
     return true, site
 end
 
@@ -286,6 +314,17 @@ function Sites.Transition(siteId, nextState, reason)
         .. " " .. tostring(previousState) .. "->" .. tostring(nextState)
         .. " reason=" .. tostring(reason or "none"))
     return true, site
+end
+
+function Sites.BeginRelocation(siteId, reason)
+    local site = Sites.GetSite(siteId)
+    if not site then return false, "site not found" end
+    if site.state ~= "ACTIVE" and site.state ~= "DORMANT" then
+        return false, "site is not relocatable"
+    end
+    site.relocationRequestedWorldHours = worldHours()
+    site.relocationReason = tostring(reason or "server relocation request")
+    return Sites.Transition(siteId, "RELOCATING", site.relocationReason)
 end
 
 LCCQF.FactionSiteRegistry = Sites

@@ -115,9 +115,8 @@ local function collectFreeRoomSquares(buildingDef, wantsIndoor, needed)
     pcall(function() size = rooms:size() end)
     if size <= 0 then return result end
 
-    -- We intentionally inspect every room definition in the candidate building before
-    -- accepting it. This makes SafeHouse overlap fail closed instead of stopping after
-    -- the first few convenient spawn squares. No world object is changed by this scan.
+    -- Inspect every room definition before accepting the building. SafeHouse overlap
+    -- fails closed; this scan never changes world objects.
     for i = 0, size - 1 do
         local roomDef
         pcall(function() roomDef = rooms:get(i) end)
@@ -148,6 +147,15 @@ local function collectFreeRoomSquares(buildingDef, wantsIndoor, needed)
         end
     end
     return result
+end
+
+local function materializationMinimumDistance(definition)
+    local populationProfile = type(definition.populationProfile) == "table" and definition.populationProfile or {}
+    if populationProfile.minMaterializationDistanceFromPlayers ~= nil then
+        return math.max(0, tonumber(populationProfile.minMaterializationDistanceFromPlayers) or 0)
+    end
+    local siteProfile = type(definition.siteProfile) == "table" and definition.siteProfile or {}
+    return math.max(0, tonumber(siteProfile.minDistanceFromPlayers) or 0)
 end
 
 function Validator.PlayersTooClose(siteOrCandidate, minimumDistance)
@@ -184,12 +192,13 @@ function Validator.ValidateMaterializationSite(definition, site)
     if type(definition) ~= "table" or type(site) ~= "table" then
         return "REJECT", "invalid materialization safety input"
     end
-    local profile = definition.siteProfile or {}
-    local tooClose, _, playerDistance = playersTooClose(site, profile.minDistanceFromPlayers)
+    local siteProfile = definition.siteProfile or {}
+    local minimumDistance = materializationMinimumDistance(definition)
+    local tooClose, _, playerDistance = playersTooClose(site, minimumDistance)
     if tooClose then
         return "DEFER", "active player too close to faction site", {
             playerDistance = tonumber(playerDistance),
-            minimumDistance = math.max(0, tonumber(profile.minDistanceFromPlayers) or 0),
+            minimumDistance = minimumDistance,
         }
     end
 
@@ -200,7 +209,7 @@ function Validator.ValidateMaterializationSite(definition, site)
 
     local valid = {}
     for _, point in ipairs(points) do
-        local ok, resolved = Validator.ValidateMaterializationPoint(point, profile.wantsIndoor == true)
+        local ok, resolved = Validator.ValidateMaterializationPoint(point, siteProfile.wantsIndoor == true)
         if ok then valid[#valid + 1] = resolved end
     end
     if #valid == 0 then return "DEFER", "validated spawn points are not currently usable" end
