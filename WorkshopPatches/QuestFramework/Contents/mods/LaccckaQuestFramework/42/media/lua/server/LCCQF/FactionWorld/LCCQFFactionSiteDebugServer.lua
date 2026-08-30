@@ -52,6 +52,19 @@ local function copyCounts(input)
     return out
 end
 
+local function sanitizeAssignment(assignment)
+    if type(assignment) ~= "table" then return nil end
+    return {
+        revision = math.max(0, math.floor(tonumber(assignment.revision) or 0)),
+        siteId = tostring(assignment.siteId or ""),
+        jobId = tostring(assignment.jobId or ""),
+        dutyMode = tostring(assignment.dutyMode or ""),
+        targetKind = tostring(assignment.targetKind or ""),
+        target = copyPoint(assignment.target),
+        scheduleKey = tostring(assignment.scheduleKey or ""),
+    }
+end
+
 local function sanitizePopulation(population)
     if type(population) ~= "table" then return nil end
     local members = {}
@@ -75,6 +88,7 @@ local function sanitizePopulation(population)
                 providerId = member.providerId and tostring(member.providerId) or nil,
                 replacesNpcId = member.replacesNpcId and tostring(member.replacesNpcId) or nil,
                 replacementNpcId = member.replacementNpcId and tostring(member.replacementNpcId) or nil,
+                assignment = sanitizeAssignment(member.assignment),
             }
         end
     end
@@ -92,6 +106,49 @@ local function sanitizePopulation(population)
         missing = counts.MISSING,
         dead = counts.DEAD,
         members = members,
+    }
+end
+
+local function sanitizeOperations(operations)
+    if type(operations) ~= "table" then return nil end
+    local capabilities = type(operations.capabilities) == "table" and operations.capabilities or {}
+    local needs = type(operations.needs) == "table" and operations.needs or {}
+    local roleCounts = {}
+    for roleId, count in pairs(type(capabilities.roleCounts) == "table" and capabilities.roleCounts or {}) do
+        roleCounts[tostring(roleId)] = math.max(0, math.floor(tonumber(count) or 0))
+    end
+    local signals = {}
+    for _, signal in pairs(type(operations.signals) == "table" and operations.signals or {}) do
+        if type(signal) == "table" then
+            signals[#signals + 1] = {
+                signalId = tostring(signal.signalId or ""),
+                kind = tostring(signal.kind or ""),
+                status = tostring(signal.status or "UNKNOWN"),
+                value = tonumber(signal.value) or 0,
+                revision = math.max(0, math.floor(tonumber(signal.revision) or 0)),
+            }
+        end
+    end
+    table.sort(signals, function(a, b) return a.signalId < b.signalId end)
+    return {
+        schemaVersion = math.max(0, math.floor(tonumber(operations.schemaVersion) or 0)),
+        revision = math.max(0, math.floor(tonumber(operations.revision) or 0)),
+        capabilities = {
+            livingPopulation = math.max(0, math.floor(tonumber(capabilities.livingPopulation) or 0)),
+            beds = math.max(0, math.floor(tonumber(capabilities.beds) or 0)),
+            waterSources = math.max(0, math.floor(tonumber(capabilities.waterSources) or 0)),
+            storageContainers = math.max(0, math.floor(tonumber(capabilities.storageContainers) or 0)),
+            foodAccessContainers = math.max(0, math.floor(tonumber(capabilities.foodAccessContainers) or 0)),
+            freeSpawnPoints = math.max(0, math.floor(tonumber(capabilities.freeSpawnPoints) or 0)),
+            roleCounts = roleCounts,
+        },
+        needs = {
+            housingDeficit = math.max(0, math.floor(tonumber(needs.housingDeficit) or 0)),
+            waterSourceMissing = needs.waterSourceMissing == true,
+            storageMissing = needs.storageMissing == true,
+            foodAccessMissing = needs.foodAccessMissing == true,
+        },
+        signals = signals,
     }
 end
 
@@ -120,14 +177,13 @@ local function sanitizeSite(site)
             counts = copyCounts(derived.counts),
         } or nil,
         population = sanitizePopulation(site.population),
+        operations = sanitizeOperations(site.operations),
     }
 end
 
 local function buildSnapshot()
     local out = {}
-    for _, site in ipairs(Sites.ListSites()) do
-        out[#out + 1] = sanitizeSite(site)
-    end
+    for _, site in ipairs(Sites.ListSites()) do out[#out + 1] = sanitizeSite(site) end
     return out
 end
 

@@ -1,7 +1,39 @@
 require "LCCQF/LCCQFConstants"
 require "LCCQF/Core/LCCQFFactionRegistry"
+require "LCCQF/Content/LCCQFFactionJobDefinitions"
 
 local C = LCCQF.Constants
+
+local operationsProfile = {
+    enabled = true,
+    roles = {
+        leader = {
+            schedule = {
+                { jobId = "command", startHour = 6, endHour = 22, targetKind = "home" },
+                { jobId = "rest", startHour = 22, endHour = 6, targetKind = "bed" },
+            },
+        },
+        guard = {
+            -- Deterministic rotation: with two guards and activeCount=1 the active
+            -- assignment alternates every 12 in-game hours. No RNG/runtime ID is used.
+            rotation = {
+                jobId = "guard",
+                offJobId = "rest",
+                shiftHours = 12,
+                activeCount = 1,
+                targetKind = "home",
+                offTargetKind = "bed",
+            },
+        },
+    },
+}
+
+local operationsOk, operationsError = LCCQF.FactionJobRegistry.ValidateOperationsProfile(operationsProfile)
+if not operationsOk then
+    print(C.LOG_PREFIX .. "[FACTION:JOBS] invalid checkpoint operations profile error="
+        .. tostring(operationsError))
+    operationsProfile.enabled = false
+end
 
 local ok, err = LCCQF.FactionRegistry.Register({
     factionId = C.TEST_FACTION_ID,
@@ -87,6 +119,10 @@ local ok, err = LCCQF.FactionRegistry.Register({
             { roleId = "guard", count = 2 },
         },
     },
+
+    -- Server-owned duty scheduling. Assignments are persistent logical data attached to
+    -- npcId records; the Bandits brain receives only a runtime projection.
+    operationsProfile = operationsProfile,
 })
 
 if not ok and err ~= "duplicate factionId" then

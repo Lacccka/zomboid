@@ -34,6 +34,7 @@ jobs:
           bash -n WorkshopPatches/QuestFramework/audit-faction-sites.sh
           bash -n WorkshopPatches/QuestFramework/audit-faction-lifecycle.sh
           bash -n WorkshopPatches/QuestFramework/audit-faction-health.sh
+          bash -n WorkshopPatches/QuestFramework/audit-faction-operations.sh
 
       - name: Validate all Quest Framework Lua syntax
         run: |
@@ -67,3 +68,6 @@ jobs:
 
       - name: Verify faction site health contracts
         run: bash WorkshopPatches/QuestFramework/audit-faction-health.sh
+
+      - name: Verify faction operations contracts
+        run: bash WorkshopPatches/QuestFramework/audit-faction-operations.sh
