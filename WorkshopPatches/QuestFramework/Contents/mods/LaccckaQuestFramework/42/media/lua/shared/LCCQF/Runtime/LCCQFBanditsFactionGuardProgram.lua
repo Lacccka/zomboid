@@ -50,7 +50,7 @@ ZombiePrograms.LCCQFFactionGuard.Main = function(bandit)
     local homeDistance = BanditUtils.DistTo(bx, by, home.x, home.y)
 
     -- Home leash wins over combat pursuit. The NPC may fight around the site, but it
-    -- must not turn into a roaming Bandit/Looter after leaving the building.
+    -- must stay site-bound instead of switching to a different roaming program.
     if math.abs(bz - home.z) >= 0.5 or homeDistance > home.returnRadius then
         Bandit.SetSleeping(bandit, false)
         Bandit.ForceStationary(bandit, false)

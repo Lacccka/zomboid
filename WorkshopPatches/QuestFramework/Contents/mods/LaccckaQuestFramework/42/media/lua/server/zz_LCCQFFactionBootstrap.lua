@@ -18,8 +18,9 @@ require "LCCQF/FactionWorld/zz_LCCQFFactionSiteRelocationService"
 require "LCCQF/FactionWorld/zz_LCCQFFactionSiteMaterializationService"
 require "LCCQF/FactionWorld/zz_LCCQFFactionSiteLifecycleService"
 require "LCCQF/FactionWorld/zz_LCCQFFactionSitePopulationMaintenance"
+require "LCCQF/FactionWorld/zz_LCCQFFactionSiteHealthService"
 require "LCCQF/FactionWorld/LCCQFFactionSiteDebugServer"
 
-print("[LCCQF][SERVER] faction bootstrap loaded discovery=true relationships=true siteAllocator=location-only siteValidation=resources population=logical lifecycle=reconcile+virtualize+rematerialize maintenance=replacements relocation=identity-preserving materializer=Bandits guard=home debug=privileged")
+print("[LCCQF][SERVER] faction bootstrap loaded discovery=true relationships=true siteAllocator=location-only siteValidation=resources population=logical lifecycle=reconcile+virtualize+rematerialize maintenance=replacements relocation=identity-preserving health=loaded-world materializer=Bandits guard=home debug=privileged")
 
 return true
