@@ -10,6 +10,7 @@ require "LCCQF/World/LCCQFWorldContainerResolver"
 require "LCCQF/Content/LCCQFFactionDefinitions"
 require "LCCQF/FactionWorld/LCCQFFactionSiteRegistry"
 require "LCCQF/FactionWorld/LCCQFFactionSiteStock"
+require "LCCQF/FactionWorld/LCCQFFactionSiteEconomy"
 require "LCCQF/FactionWorld/LCCQFFactionSiteOperations"
 
 LCCQF = LCCQF or {}
@@ -20,6 +21,7 @@ local Resolver = LCCQF.WorldContainerResolver
 local Factions = LCCQF.FactionRegistry
 local Sites = LCCQF.FactionSiteRegistry
 local Stock = LCCQF.FactionSiteStock
+local Economy = LCCQF.FactionSiteEconomy
 local Operations = LCCQF.FactionSiteOperations
 local Observer = LCCQF.SettlementTransferServerObserver or {}
 local pending = Observer.pending or {}
@@ -262,26 +264,49 @@ end
 
 local function refreshDirtySite(siteId, row)
     local site = Sites.GetSite(siteId)
-    local refreshOk, refreshResult = false, "site unavailable"
+    local pipelineOk, detail = false, "site unavailable"
     if site then
-        refreshOk, refreshResult = Stock.Refresh(site)
-        if refreshOk then
+        local stockOk, stockResult = Stock.Refresh(site)
+        if stockOk then
             local definition = Factions.Get(site.factionId)
-            if definition then Operations.UpdateSite(site, definition) end
+            if not definition then
+                detail = "faction definition unavailable"
+            else
+                local economyOk, economyResult = Economy.Refresh(site, definition)
+                if not economyOk then
+                    detail = "economy refresh failed: " .. tostring(economyResult)
+                else
+                    local operationsOk, operationsResult = Operations.UpdateSite(site, definition)
+                    if not operationsOk then
+                        detail = "operations refresh failed: " .. tostring(operationsResult)
+                    else
+                        pipelineOk = true
+                        detail = "stock=" .. tostring(stockResult)
+                            .. " economy=" .. tostring(economyResult)
+                            .. " operations=" .. tostring(operationsResult)
+                    end
+                end
+            end
+        else
+            detail = "stock refresh failed: " .. tostring(stockResult)
         end
     end
 
     for _, event in ipairs(row.events or {}) do
-        event.stockRefreshOk = refreshOk == true
-        event.stockRefreshDetail = tostring(refreshResult)
+        -- Kept under the existing field name for protocol compatibility: true now means
+        -- the full server chain stock -> economy -> operations completed successfully.
+        event.stockRefreshOk = pipelineOk == true
+        event.stockRefreshDetail = tostring(detail)
         event.stockRevision = site and site.stock and tonumber(site.stock.revision) or nil
+        event.economyRevision = site and site.economy and tonumber(site.economy.revision) or nil
+        event.operationsRevision = site and site.operations and tonumber(site.operations.revision) or nil
         emit(event)
     end
 
     log("siteId=" .. tostring(siteId)
         .. " confirmedTransfers=" .. tostring(#(row.events or {}))
-        .. " stockRefresh=" .. tostring(refreshOk)
-        .. " detail=" .. tostring(refreshResult))
+        .. " refreshPipeline=" .. tostring(pipelineOk)
+        .. " detail=" .. tostring(detail))
     dirtySites[siteId] = nil
 end
 
