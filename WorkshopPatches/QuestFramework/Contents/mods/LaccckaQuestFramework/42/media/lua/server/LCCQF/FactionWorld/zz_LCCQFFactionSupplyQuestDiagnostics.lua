@@ -57,15 +57,15 @@ local function offerForSignal(site, signal)
     local offers = site and site.operations and site.operations.questOffers or nil
     local wantedSignalId = tostring(signal and signal.signalId or "")
     local wantedEpoch = integer(signal and signal.openEpoch)
-    local best = nil
     for _, offer in pairs(type(offers) == "table" and offers or {}) do
-        if type(offer) == "table" and tostring(offer.signalId or "") == wantedSignalId then
-            local epoch = integer(offer.openEpoch)
-            if epoch == wantedEpoch then return offer end
-            if not best or epoch > integer(best.openEpoch) then best = offer end
+        if type(offer) == "table"
+            and tostring(offer.signalId or "") == wantedSignalId
+            and integer(offer.openEpoch) == wantedEpoch
+        then
+            return offer
         end
     end
-    return best
+    return nil
 end
 
 local function giverProjection(site, offer)
