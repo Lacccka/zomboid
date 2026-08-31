@@ -34,6 +34,7 @@ jobs:
           bash -n WorkshopPatches/QuestFramework/audit-faction-health.sh
           bash -n WorkshopPatches/QuestFramework/audit-faction-operations.sh
           bash -n WorkshopPatches/QuestFramework/audit-faction-npcs.sh
+          bash -n WorkshopPatches/QuestFramework/audit-faction-stock.sh
       - name: Validate all Quest Framework Lua syntax
         run: |
           while IFS= read -r -d '' file; do
@@ -61,3 +62,5 @@ jobs:
         run: bash WorkshopPatches/QuestFramework/audit-faction-operations.sh
       - name: Verify generated faction NPC contracts
         run: bash WorkshopPatches/QuestFramework/audit-faction-npcs.sh
+      - name: Verify settlement stock contracts
+        run: bash WorkshopPatches/QuestFramework/audit-faction-stock.sh
