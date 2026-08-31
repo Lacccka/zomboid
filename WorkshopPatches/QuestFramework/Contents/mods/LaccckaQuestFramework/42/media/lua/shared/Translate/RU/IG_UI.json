@@ -14,6 +14,18 @@
     "IGUI_LCCQF_Faction_CheckpointSurvivors_Fact_Identified_Title": "Группа у блокпоста",
     "IGUI_LCCQF_Faction_CheckpointSurvivors_Fact_Identified_Text": "Вы узнали, что Алексей связан с группой выживших, действующей в районе старого блокпоста.",
 
+    "IGUI_LCCQF_Dialog_FactionResident_Start": "Ты находишься в нашем поселении. Если что-то нужно — говори прямо.",
+    "IGUI_LCCQF_Choice_FactionResident_Settlement": "Расскажи об этом поселении.",
+    "IGUI_LCCQF_Choice_FactionResident_Work": "Есть работа, которую нужно сделать?",
+    "IGUI_LCCQF_Dialog_FactionResident_Settlement": "Это место нужно удержать живым. Кровати, вода, хранилища, еда и люди важнее самих стен.",
+    "IGUI_LCCQF_Dialog_FactionResident_Work": "Работа зависит от реальных нужд поселения. Если чего-то не хватает, мы об этом скажем.",
+    "IGUI_LCCQF_Choice_FactionResident_SupplyNeed": "Каких припасов вам не хватает?",
+    "IGUI_LCCQF_Choice_FactionResident_SupplyInProgress": "Насчёт припасов, которые я приношу...",
+    "IGUI_LCCQF_Dialog_FactionResident_SupplyOffer": "Наши запасы ниже необходимого резерва. Складывай полезную еду прямо в контейнеры поселения — группа засчитает только то, что действительно попадёт в хранилище.",
+    "IGUI_LCCQF_Choice_FactionResident_AcceptSupply": "Я принесу припасы.",
+    "IGUI_LCCQF_Dialog_FactionResident_SupplyAccepted": "Хорошо. Используй именно хранилища поселения. Задание учитывает только припасы, которые реально попадут в наши контейнеры.",
+    "IGUI_LCCQF_Dialog_FactionResident_SupplyActive": "Продолжай пополнять запасы поселения. Задание закроется только после подтверждённого вклада и фактического устранения дефицита.",
+
     "IGUI_LCCQF_Prompt_Talk": "Поговорить",
     "IGUI_LCCQF_Context_SpawnTestNPC": "Создать тестового NPC",
     "IGUI_LCCQF_Status_UnknownNPCFromServer": "Сервер прислал неизвестного NPC.",
@@ -85,6 +97,10 @@
     "IGUI_LCCQF_Quest_BranchIndependent_Title": "Своя дорога",
     "IGUI_LCCQF_Quest_BranchIndependent_Description": "Вы решили продолжать работать с выжившими блокпоста, не отказываясь от самостоятельности. Поговорите с Алексеем ещё раз, чтобы закрепить условия.",
     "IGUI_LCCQF_Quest_BranchIndependent_Objective": "Подтвердить условия у Алексея",
+
+    "IGUI_LCCQF_Quest_SettlementSupply_Title": "Припасы для поселения",
+    "IGUI_LCCQF_Quest_SettlementSupply_Description": "Запасы фракционного поселения опустились ниже необходимого резерва. Доставляйте полезные припасы прямо в реальные хранилища поселения, пока дефицит не будет устранён.",
+    "IGUI_LCCQF_Quest_SettlementSupply_Objective": "Пополнить запасы поселения и устранить дефицит",
 
     "IGUI_LCCQF_QuestEvent_Accepted": "Задание принято.",
     "IGUI_LCCQF_QuestEvent_ObjectiveComplete": "Этап задания выполнен.",
