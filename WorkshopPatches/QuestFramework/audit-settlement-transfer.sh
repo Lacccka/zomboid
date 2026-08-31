@@ -57,10 +57,30 @@ rg -q 'categories = itemCategories\(item\)' "$SERVER" \
     || fail "confirmed transfer event lacks server-observed categories"
 rg -q 'function Registry\.Classify\(item\)' "$CATEGORIES" \
     || fail "canonical supply classifier missing"
-rg -q 'Stock.Refresh\(site\)' "$SERVER" \
+
+rg -q 'require "LCCQF/FactionWorld/LCCQFFactionSiteEconomy"' "$SERVER" \
+    || fail "confirmed delivery chain does not load settlement economy"
+rg -q 'Stock\.Refresh\(site\)' "$SERVER" \
     || fail "confirmed delivery does not refresh observed stock"
-rg -q 'Operations.UpdateSite\(site, definition\)' "$SERVER" \
+rg -q 'Economy\.Refresh\(site, definition\)' "$SERVER" \
+    || fail "confirmed delivery does not refresh quantity-aware economy"
+rg -q 'Operations\.UpdateSite\(site, definition\)' "$SERVER" \
     || fail "confirmed delivery does not refresh settlement needs"
+rg -q 'event\.stockRefreshOk = pipelineOk == true' "$SERVER" \
+    || fail "confirmed transfer can escape before full stock/economy/operations refresh"
+rg -q 'event\.economyRevision' "$SERVER" \
+    || fail "confirmed event omits economy revision evidence"
+rg -q 'event\.operationsRevision' "$SERVER" \
+    || fail "confirmed event omits operations revision evidence"
+
+stock_line=$(rg -n 'Stock\.Refresh\(site\)' "$SERVER" | head -n1 | cut -d: -f1)
+economy_line=$(rg -n 'Economy\.Refresh\(site, definition\)' "$SERVER" | head -n1 | cut -d: -f1)
+operations_line=$(rg -n 'Operations\.UpdateSite\(site, definition\)' "$SERVER" | head -n1 | cut -d: -f1)
+emit_line=$(rg -n 'emit\(event\)' "$SERVER" | tail -n1 | cut -d: -f1)
+[[ -n "$stock_line" && -n "$economy_line" && -n "$operations_line" && -n "$emit_line" \
+   && "$stock_line" -lt "$economy_line" && "$economy_line" -lt "$operations_line" \
+   && "$operations_line" -lt "$emit_line" ]] \
+    || fail "confirmed transfer ordering must be stock -> economy -> operations -> emit"
 
 if rg -q 'item:IsFood\(\)' "$SERVER"; then
     fail "transfer observer must not reimplement category-specific item predicates"
