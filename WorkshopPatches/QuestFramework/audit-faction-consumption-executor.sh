@@ -41,12 +41,15 @@ rg -q 'collectLiveItemIds' "$EXECUTOR" \
 rg -q 'liveIds\[tonumber\(descriptor\.itemId\)\]' "$EXECUTOR" \
     || fail "reconciliation does not prove exact item IDs disappeared"
 
-rg -q 'GameServer ~= nil and GameServer\.sendRemoveItemFromContainer ~= nil' "$EXECUTOR" \
-    || fail "executor does not fail closed when the server container sync API is unavailable"
+rg -q 'return sendRemoveItemFromContainer ~= nil' "$EXECUTOR" \
+    || fail "executor does not fail closed when the Lua container sync API is unavailable"
 rg -q 'container:Remove\(item\)' "$EXECUTOR" \
     || fail "executor does not perform authoritative ItemContainer removal"
-rg -q 'GameServer\.sendRemoveItemFromContainer\(container, item\)' "$EXECUTOR" \
-    || fail "executor does not broadcast authoritative world-container removal"
+rg -q 'sendRemoveItemFromContainer\(container, item\)' "$EXECUTOR" \
+    || fail "executor does not use the Build 42 LuaManager removal sync wrapper"
+if rg -q 'GameServer\.sendRemoveItemFromContainer' "$EXECUTOR"; then
+    fail "executor bypasses the official LuaManager container removal wrapper"
+fi
 
 rg -q 'state = "PREPARED"' "$EXECUTOR" \
     || fail "executor has no persisted PREPARED transaction state"
