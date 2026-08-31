@@ -13,11 +13,20 @@ local function register(definition)
 end
 
 -- B42-backed classifier: food is detected through InventoryItem:IsFood().
--- Additional medicine/ammunition/water categories must be added only after their
--- concrete B42 item semantics are verified; do not infer them from display names.
+-- Food intentionally remains whole-item quantity for the current runtime-accepted
+-- consumption path. Future portion/nutrition semantics must opt into a different
+-- measureKind and a compatible physical executor instead of silently changing this.
 register({
     categoryId = "food",
     match = { kind = "food" },
+    quantity = {
+        unitKind = "ITEM",
+        measureKind = "ITEM",
+        precision = 0,
+        splittable = false,
+    },
 })
 
+-- Additional medicine/ammunition/water categories must be added only after their
+-- concrete B42 item/tag/fluid semantics are verified; do not infer them from names.
 return Registry
