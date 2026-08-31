@@ -4,6 +4,7 @@ require "LCCQF/Quest/Objectives/LCCQFObjectiveFetch"
 require "LCCQF/Quest/Objectives/LCCQFObjectiveDeliver"
 require "LCCQF/Quest/Objectives/LCCQFObjectiveKill"
 require "LCCQF/Quest/Objectives/LCCQFObjectiveClearArea"
+require "LCCQF/Quest/Objectives/LCCQFObjectiveSettlementSupply"
 
 LCCQF = LCCQF or {}
 
@@ -16,6 +17,7 @@ local handlers = {
     Deliver = LCCQF.QuestObjectives.Deliver,
     Kill = LCCQF.QuestObjectives.Kill,
     ClearArea = LCCQF.QuestObjectives.ClearArea,
+    SettlementSupply = LCCQF.QuestObjectives.SettlementSupply,
 }
 
 local function createObjective(spec, context)
