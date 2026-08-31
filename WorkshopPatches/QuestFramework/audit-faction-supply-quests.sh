@@ -39,11 +39,18 @@ rg -q 'originalEpisodeClosed' "$OBJECTIVE" \
     || fail "objective completion does not require need episode closure"
 rg -q 'EvaluateSettlementTransfer' "$OBJECTIVE" \
     || fail "objective cannot consume confirmed transfer events"
-rg -q 'categories\[objective\.category\].*true' "$OBJECTIVE" \
-    || fail "objective does not verify server-observed supply category"
+rg -q 'local function eventQuantity\(objective, event\)' "$OBJECTIVE" \
+    || fail "objective does not read server-observed measured supply quantity"
+rg -q 'normalizeQuantity\(objective.category, categories\[objective.category\]\)' "$OBJECTIVE" \
+    || fail "objective does not normalize server-observed category quantity"
+rg -q 'if eventQuantity\(objective, event\) <= 0 then return false end' "$OBJECTIVE" \
+    || fail "objective category verification is not quantity-aware"
 rg -q 'normalizedEpoch\(signal\.openEpoch\) == normalizedEpoch\(objective\.openEpoch\)' "$OBJECTIVE" \
     || fail "objective transfer credit is not scoped to one openEpoch"
 
+if rg -q 'categories\[objective\.category\].*true' "$OBJECTIVE"; then
+    fail "objective still treats measured supply categories as booleans"
+fi
 if rg -q 'ModData\.(get|getOrCreate|transmit)' "$BRIDGE" "$OBJECTIVE"; then
     fail "dynamic supply quests must reuse existing site/quest persistence, not create parallel ModData"
 fi
