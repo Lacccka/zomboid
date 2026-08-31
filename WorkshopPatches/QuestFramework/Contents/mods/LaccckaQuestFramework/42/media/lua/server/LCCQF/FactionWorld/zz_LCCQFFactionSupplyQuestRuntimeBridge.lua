@@ -8,6 +8,7 @@ require "LCCQF/Quest/LCCQFQuestService"
 require "LCCQF/Quest/Objectives/LCCQFObjectiveSettlementSupply"
 require "LCCQF/Quest/zz_LCCQFFactionSupplyQuestServiceExtension"
 require "LCCQF/FactionWorld/LCCQFSettlementTransferObserver"
+require "LCCQF/FactionWorld/LCCQFSettlementTransferCharacterIdentity"
 require "LCCQF/FactionWorld/zz_LCCQFFactionSupplyQuestBridge"
 
 LCCQF = LCCQF or {}
@@ -16,6 +17,7 @@ local C = LCCQF.Constants
 local QuestService = LCCQF.QuestService
 local Objective = LCCQF.QuestObjectives.SettlementSupply
 local Observer = LCCQF.SettlementTransferServerObserver
+local TransferIdentity = LCCQF.SettlementTransferCharacterIdentity
 local SupplyBridge = LCCQF.FactionSupplyQuestBridge
 local Runtime = LCCQF.FactionSupplyQuestRuntimeBridge or {}
 
@@ -51,6 +53,14 @@ local function onConfirmedTransfer(event)
         return
     end
 
+    local characterId, identityError = TransferIdentity.ConsumeConfirmedTransfer(event, player)
+    if not characterId then
+        log("confirmed transfer rejected player=" .. tostring(event.playerUsername)
+            .. " itemId=" .. tostring(event.itemId)
+            .. " reason=" .. tostring(identityError or "character-identity-mismatch"))
+        return
+    end
+
     -- Operations were refreshed before the observer emitted this event. Update the
     -- persistent offer lifecycle before evaluating the objective so dialogue state and
     -- quest state see the same need revision.
@@ -61,6 +71,7 @@ local function onConfirmedTransfer(event)
     Objective.DiscardQueuedTransfers(player)
 
     log("applied player=" .. tostring(event.playerUsername)
+        .. " characterId=" .. tostring(characterId)
         .. " siteId=" .. tostring(event.siteId)
         .. " itemId=" .. tostring(event.itemId)
         .. " fullType=" .. tostring(event.fullType)
@@ -70,9 +81,10 @@ end
 function Runtime.Install()
     if Runtime.installed == true then return true end
     if not Observer or type(Observer.AddListener) ~= "function" then return false end
+    if not TransferIdentity or type(TransferIdentity.ConsumeConfirmedTransfer) ~= "function" then return false end
     if not Observer.AddListener(onConfirmedTransfer) then return false end
     Runtime.installed = true
-    log("confirmed transfer listener installed")
+    log("confirmed transfer listener installed perLifeIdentity=true")
     return true
 end
 
