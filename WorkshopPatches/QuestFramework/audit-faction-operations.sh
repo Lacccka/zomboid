@@ -9,7 +9,7 @@ job_defs="$lua_root/shared/LCCQF/Content/LCCQFFactionJobDefinitions.lua"
 faction_defs="$lua_root/shared/LCCQF/Content/LCCQFFactionDefinitions.lua"
 operations="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteOperations.lua"
 operations_service="$lua_root/server/LCCQF/FactionWorld/zz_LCCQFFactionSiteOperationsService.lua"
-stock="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteStock.lua"
+economy="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteEconomy.lua"
 projection="$lua_root/server/LCCQF/Runtime/LCCQFBanditsFactionOperationsProjection.lua"
 projection_service="$lua_root/server/LCCQF/FactionWorld/zz_LCCQFFactionSiteOperationsProjectionService.lua"
 guard_program="$lua_root/shared/LCCQF/Runtime/LCCQFBanditsFactionGuardProgram.lua"
@@ -29,7 +29,7 @@ require_pattern() {
 }
 
 required_files=(
-    "$job_registry" "$job_defs" "$faction_defs" "$operations" "$operations_service" "$stock"
+    "$job_registry" "$job_defs" "$faction_defs" "$operations" "$operations_service" "$economy"
     "$projection" "$projection_service" "$guard_program" "$bootstrap" "$debug_server"
 )
 for required in "${required_files[@]}"; do [[ -f "$required" ]] || fail "missing $required"; done
@@ -60,16 +60,31 @@ require_pattern 'scheduleKey' "$operations" "assignment schedule identity missin
 require_pattern 'housingDeficit' "$operations" "housing need missing"
 require_pattern 'waterSourceMissing' "$operations" "water need missing"
 require_pattern 'foodAccessMissing' "$operations" "food-access need missing"
-require_pattern 'buildSupplyNeeds' "$operations" "stock-backed supply need model missing"
-require_pattern 'Stock\.GetCategoryQuantity' "$operations" "operations does not consume observed stock categories"
+require_pattern 'require "LCCQF/FactionWorld/LCCQFFactionSiteEconomy"' "$operations" \
+    "operations does not depend on the canonical economy projection"
+require_pattern 'Economy\.ListSupplies\(site\)' "$operations" \
+    "operations re-computes supply policy instead of consuming economy rows"
+require_pattern 'unitKind = row\.unitKind' "$operations" "supply needs lose unit kind"
+require_pattern 'precision = row\.precision' "$operations" "supply needs lose quantity precision"
+require_pattern 'splittable = row\.splittable == true' "$operations" "supply needs lose split semantics"
+require_pattern 'local deficit = math\.max\(0, tonumber\(need\.deficit\) or 0\)' "$operations" \
+    "supply signal floors measured deficits"
+require_pattern 'signal\.unitKind = need\.unitKind' "$operations" "supply signal loses unit kind"
+require_pattern 'signal\.precision = need\.precision' "$operations" "supply signal loses precision"
+require_pattern 'signal\.economyRevision = need\.economyRevision' "$operations" \
+    "supply signal is not tied to economy revision"
 require_pattern ':need:supply:' "$operations" "stable supply signal IDs missing"
 require_pattern 'kind = "supply"' "$operations" "supply signal classification missing"
 require_pattern 'status = shouldOpen and "OPEN" or "RESOLVED"' "$operations" "infrastructure signal lifecycle missing"
 require_pattern 'GetOpenSignals' "$operations" "open signal query missing"
 
-# Operations may observe stock but must never mutate physical inventory.
+if rg -q 'Stock\.GetCategoryQuantity|minimumPerResident.*reserve|math\.ceil\(\(livingPopulation' "$operations"; then
+    fail "operations duplicates stock/reserve policy authority instead of projecting economy"
+fi
+
+# Operations may observe logical economy state but must never mutate physical inventory.
 if rg -n 'ConsumeItem|AddItem|AddItems|RemoveItem|RemoveOneOf|RemoveAll' "$operations"; then
-    fail "operations mutates physical stock instead of consuming read-only snapshots"
+    fail "operations mutates physical stock"
 fi
 
 require_pattern 'definition\.operationsProfile' "$operations_service" "operations service ignores faction content"
@@ -91,15 +106,18 @@ require_pattern 'dutyMode == "command"' "$guard_program" "command physical mode 
 require_pattern 'home\.returnRadius' "$guard_program" "home leash disappeared"
 
 require_pattern 'zz_LCCQFFactionSiteStockService' "$bootstrap" "stock service not bootstrapped"
+require_pattern 'zz_LCCQFFactionSiteEconomyService' "$bootstrap" "economy service not bootstrapped"
 require_pattern 'zz_LCCQFFactionSiteOperationsService' "$bootstrap" "logical operations service not bootstrapped"
 require_pattern 'LCCQFBanditsFactionOperationsProjection' "$bootstrap" "Bandits operations projection not bootstrapped"
 require_pattern 'zz_LCCQFFactionSiteOperationsProjectionService' "$bootstrap" "operations projection service not bootstrapped"
 
 stock_line="$(rg -n 'zz_LCCQFFactionSiteStockService' "$bootstrap" | head -n1 | cut -d: -f1)"
+economy_line="$(rg -n 'zz_LCCQFFactionSiteEconomyService' "$bootstrap" | head -n1 | cut -d: -f1)"
 operations_line="$(rg -n 'zz_LCCQFFactionSiteOperationsService' "$bootstrap" | head -n1 | cut -d: -f1)"
 materialization_line="$(rg -n 'zz_LCCQFFactionSiteMaterializationService' "$bootstrap" | head -n1 | cut -d: -f1)"
 projection_line="$(rg -n 'zz_LCCQFFactionSiteOperationsProjectionService' "$bootstrap" | head -n1 | cut -d: -f1)"
-[[ "$stock_line" -lt "$operations_line" ]] || fail "stock observation must run before operations need evaluation"
+[[ "$stock_line" -lt "$economy_line" && "$economy_line" -lt "$operations_line" ]] \
+    || fail "stock -> economy -> operations ordering is not preserved"
 [[ "$operations_line" -lt "$materialization_line" ]] || fail "logical assignments must exist before first physical spawn"
 [[ "$projection_line" -gt "$materialization_line" ]] || fail "physical operations projection must run after first spawn"
 
@@ -122,4 +140,4 @@ if command -v lua >/dev/null 2>&1; then
     for lua_file in "${required_files[@]}"; do lua -e "assert(loadfile([[$lua_file]]))"; done
 fi
 
-echo "QuestFramework faction operations audit: PASS (server jobs + deterministic schedules + infrastructure needs + stock-backed supply signals + provider projection)"
+echo "QuestFramework faction operations audit: PASS (server jobs + deterministic schedules + infrastructure needs + quantity-aware economy-backed supply signals + provider projection)"
