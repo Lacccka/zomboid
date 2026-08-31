@@ -37,6 +37,22 @@ rg -q 'measureKind == "CUSTOM".*measureFn' "$REGISTRY" \
 rg -q 'local amount = measure\(definition, item\)' "$REGISTRY" \
     || fail "classification still assumes one item equals one category unit"
 
+# Build 42 item tags are registry objects, not string predicates. The shared matcher
+# must resolve ResourceLocation -> ItemTag and call InventoryItem:hasTag(ItemTag).
+rg -q 'match\.kind == "itemTagAny" or match\.kind == "itemTagAll"' "$REGISTRY" \
+    || fail "namespaced B42 item-tag match kinds missing"
+rg -q 'ResourceLocation\.of\(tagId\)' "$REGISTRY" \
+    || fail "item tags are not resolved through B42 ResourceLocation"
+rg -q 'ItemTag\.get\(location\)' "$REGISTRY" \
+    || fail "item tag resolver bypasses the B42 item-tag registry"
+rg -q 'item:hasTag\(tag\)' "$REGISTRY" \
+    || fail "item-tag match does not use InventoryItem:hasTag(ItemTag)"
+rg -q 'if not okTag or not tag then return nil end' "$REGISTRY" \
+    || fail "unknown registry tags do not fail closed"
+if rg -q 'ItemTag\.register|item:hasTag\(["'"']' "$REGISTRY"; then
+    fail "category matching must not register unknown tags or pass raw strings to hasTag"
+fi
+
 rg -q 'unitKind = "ITEM"' "$DEFINITIONS" \
     || fail "food quantity unit is not explicitly declared"
 rg -q 'measureKind = "ITEM"' "$DEFINITIONS" \
