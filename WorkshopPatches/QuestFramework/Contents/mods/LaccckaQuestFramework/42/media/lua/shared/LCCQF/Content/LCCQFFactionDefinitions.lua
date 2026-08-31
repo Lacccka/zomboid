@@ -27,13 +27,14 @@ local operationsProfile = {
         },
     },
 
-    -- Settlement policy, not fabricated inventory. The stock scanner supplies actual
-    -- observed category counts; operations only decides what reserve this faction wants.
+    -- Settlement reserve/consumption policy. The stock scanner supplies actual observed
+    -- category counts; economy derives reserve pressure and consumption planning from it.
     supplies = {
         food = {
             category = "food",
             minimumPerResident = 2,
             reserve = 2,
+            consumptionPerResidentPerDay = 1,
         },
     },
 }
@@ -130,8 +131,8 @@ local ok, err = LCCQF.FactionRegistry.Register({
         },
     },
 
-    -- Server-owned duty scheduling and stock-backed settlement policy. Assignments are
-    -- persistent logical data attached to npcId records; stock remains a separate world snapshot.
+    -- Server-owned duty scheduling plus settlement reserve/consumption policy. Assignments
+    -- are persistent logical data attached to npcId records; physical stock remains separate.
     operationsProfile = operationsProfile,
 })
 
