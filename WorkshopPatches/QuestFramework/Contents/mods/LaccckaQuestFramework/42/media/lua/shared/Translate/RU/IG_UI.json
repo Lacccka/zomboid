@@ -112,6 +112,7 @@
     "IGUI_LCCQF_QuestEvent_Accepted": "Задание принято.",
     "IGUI_LCCQF_QuestEvent_ObjectiveComplete": "Этап задания выполнен.",
     "IGUI_LCCQF_QuestEvent_Completed": "Задание выполнено.",
+    "IGUI_LCCQF_QuestEvent_Failed": "Задание провалено: текущую цель больше невозможно выполнить.",
 
     "IGUI_LCCQF_Hub_Title": "RPG Hub",
     "IGUI_LCCQF_Hub_Tab_KnownPeople": "Известные люди",
@@ -162,6 +163,7 @@
     "IGUI_LCCQF_Hub_Portrait_Unavailable": "Портрет недоступен, пока NPC не загружен в мире",
     "IGUI_LCCQF_Hub_ActiveQuests": "Активные задания",
     "IGUI_LCCQF_Hub_CompletedQuests": "Выполненные задания",
+    "IGUI_LCCQF_Hub_QuestHistory": "История заданий",
     "IGUI_LCCQF_Hub_Quest_Giver": "Квестодатель",
     "IGUI_LCCQF_Hub_QuestList": "Задания",
     "IGUI_LCCQF_Hub_Status": "Статус",

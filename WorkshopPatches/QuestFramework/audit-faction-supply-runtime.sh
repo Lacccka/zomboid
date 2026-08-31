@@ -8,13 +8,14 @@ SERVICE="$MOD/server/LCCQF/Quest/zz_LCCQFFactionSupplyQuestServiceExtension.lua"
 DIALOGUE="$MOD/server/LCCQF/Dialogue/zz_LCCQFFactionResidentSupplyDialogue.lua"
 RUNTIME="$MOD/server/LCCQF/FactionWorld/zz_LCCQFFactionSupplyQuestRuntimeBridge.lua"
 BRIDGE="$MOD/server/LCCQF/FactionWorld/zz_LCCQFFactionSupplyQuestBridge.lua"
+QUEST_SERVICE="$MOD/server/LCCQF/Quest/LCCQFQuestService.lua"
 
 fail() {
     echo "[faction-supply-runtime-audit] ERROR: $*" >&2
     exit 1
 }
 
-for file in "$OBJECTIVE" "$SERVICE" "$DIALOGUE" "$RUNTIME" "$BRIDGE"; do
+for file in "$OBJECTIVE" "$SERVICE" "$DIALOGUE" "$RUNTIME" "$BRIDGE" "$QUEST_SERVICE"; do
     [[ -f "$file" ]] || fail "missing runtime file: $file"
 done
 
@@ -61,6 +62,14 @@ rg -q 'consumeMatchingTransfer' "$OBJECTIVE" \
     || fail "objective does not consume server-confirmed transfer events"
 rg -q 'DiscardQueuedTransfers' "$OBJECTIVE" \
     || fail "ephemeral transfer queue cleanup missing"
+rg -q 'normalizedEpoch\(signal.openEpoch\) == normalizedEpoch\(objective.openEpoch\)' "$OBJECTIVE" \
+    || fail "confirmed transfer credit is not bound to the accepted supply openEpoch"
+rg -q 'local failed = closed and not complete' "$OBJECTIVE" \
+    || fail "closed supply episode without minimum contribution does not fail the old quest"
+rg -q 'return complete, changed, reason, failed' "$OBJECTIVE" \
+    || fail "SettlementSupply does not surface the terminal failure result"
+rg -q 'local complete, changed, reason, failed = handler.EvaluateTick' "$QUEST_SERVICE" \
+    || fail "QuestService does not consume objective failure results"
 
 rg -q 'Observer.AddListener\(onConfirmedTransfer\)' "$RUNTIME" \
     || fail "runtime bridge is not attached to confirmed server transfers"

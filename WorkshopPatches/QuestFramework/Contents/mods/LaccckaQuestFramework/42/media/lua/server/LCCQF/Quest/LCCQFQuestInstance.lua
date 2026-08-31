@@ -29,7 +29,7 @@ local function createObjective(spec, context)
 end
 
 local function isValidInstanceState(state)
-    return state == "active" or state == "completed"
+    return state == "active" or state == "completed" or state == "failed"
 end
 
 local function validatePersistedObjective(objective, spec)
@@ -62,6 +62,8 @@ function QuestInstance.Create(definition, ownerCharacterId, context)
         createdMs = now,
         updatedMs = now,
         completedMs = nil,
+        failedMs = nil,
+        failureReason = nil,
         objectives = {},
     }
 
@@ -100,7 +102,7 @@ function QuestInstance.Restore(raw, definition, ownerCharacterId)
         if raw.state == "completed" or index < currentIndex then
             objective.state = "completed"
         elseif index == currentIndex then
-            objective.state = "active"
+            objective.state = raw.state == "failed" and "failed" or "active"
         else
             objective.state = "pending"
         end
@@ -115,6 +117,11 @@ function QuestInstance.Restore(raw, definition, ownerCharacterId)
     raw.descriptionKey = definition.descriptionKey
     raw.currentObjectiveIndex = currentIndex
     raw.objectives = objectives
+    if raw.state ~= "completed" then raw.completedMs = nil end
+    if raw.state ~= "failed" then
+        raw.failedMs = nil
+        raw.failureReason = nil
+    end
     return raw
 end
 
@@ -147,6 +154,22 @@ function QuestInstance.CompleteCurrentObjective(instance, reason)
     return true, true
 end
 
+function QuestInstance.Fail(instance, reason)
+    local objective = QuestInstance.GetCurrentObjective(instance)
+    if not objective then return false end
+
+    local now = getTimestampMs()
+    local failureReason = tostring(reason or "failed")
+    objective.state = "failed"
+    objective.failedMs = now
+    objective.failureReason = failureReason
+    instance.state = "failed"
+    instance.failedMs = now
+    instance.failureReason = failureReason
+    instance.updatedMs = now
+    return true
+end
+
 local function makeObjectiveView(objective)
     local handler = objective and handlers[objective.type] or nil
     local progress, required
@@ -177,9 +200,9 @@ function QuestInstance.MakeView(instance)
         objectives[index] = makeObjectiveView(objective)
     end
 
-    local current = QuestInstance.GetCurrentObjective(instance)
+    local current = instance.objectives and instance.objectives[instance.currentObjectiveIndex] or nil
     local marker = nil
-    if current then
+    if instance.state == "active" and current then
         local handler = handlers[current.type]
         if handler and handler.MakeMarkerView then
             marker = handler.MakeMarkerView(current)
@@ -197,6 +220,7 @@ function QuestInstance.MakeView(instance)
         descriptionKey = instance.descriptionKey,
         state = instance.state,
         currentObjectiveId = current and current.id or nil,
+        failureReason = instance.state == "failed" and instance.failureReason or nil,
         objectives = objectives,
         marker = marker,
     }

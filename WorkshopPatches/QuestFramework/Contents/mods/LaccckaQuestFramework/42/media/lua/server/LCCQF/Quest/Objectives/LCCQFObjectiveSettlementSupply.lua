@@ -97,7 +97,15 @@ local function eventMatches(objective, event)
     if type(objective) ~= "table" or type(event) ~= "table" then return false end
     if tostring(event.siteId or "") ~= tostring(objective.siteId or "") then return false end
     local categories = type(event.categories) == "table" and event.categories or {}
-    return categories[objective.category] == true
+    if categories[objective.category] ~= true then return false end
+
+    -- Transfer credit belongs to one supply-need episode only. The observer refreshes
+    -- authoritative stock/operations before queueing the event, so a transfer that closes
+    -- this episode still sees the same openEpoch with RESOLVED status. A later episode has
+    -- a higher openEpoch and must never complete an older accepted quest.
+    local _, signal = signalForObjective(objective)
+    return type(signal) == "table"
+        and normalizedEpoch(signal.openEpoch) == normalizedEpoch(objective.openEpoch)
 end
 
 function SettlementSupply.QueueConfirmedTransfer(player, event)
@@ -150,7 +158,10 @@ function SettlementSupply.EvaluateSettlementTransfer(player, objective, event)
     end
     local complete = contributed >= minimumContribution(objective.minimumContribution)
         and originalEpisodeClosed(objective, signal)
-    return complete, true, complete and "settlement_supply_delivered" or "settlement_supply_contribution"
+    local failed = not complete and originalEpisodeClosed(objective, signal)
+    return complete, true,
+        complete and "settlement_supply_delivered" or "settlement_supply_contribution",
+        failed
 end
 
 function SettlementSupply.EvaluateTick(player, objective)
@@ -171,10 +182,19 @@ function SettlementSupply.EvaluateTick(player, objective)
         if tonumber(objective.target) ~= target then objective.target = target changed = true end
     end
 
-    local complete = math.max(0, math.floor(tonumber(objective.contributed) or 0))
-            >= minimumContribution(objective.minimumContribution)
-        and originalEpisodeClosed(objective, signal)
-    return complete, changed, complete and "settlement_supply_resolved" or (event and "settlement_supply_contribution" or nil)
+    local contributed = math.max(0, math.floor(tonumber(objective.contributed) or 0))
+    local closed = originalEpisodeClosed(objective, signal)
+    local complete = contributed >= minimumContribution(objective.minimumContribution) and closed
+    local failed = closed and not complete
+    local reason = nil
+    if complete then
+        reason = "settlement_supply_resolved"
+    elseif failed then
+        reason = "settlement_supply_episode_closed"
+    elseif event then
+        reason = "settlement_supply_contribution"
+    end
+    return complete, changed, reason, failed
 end
 
 function SettlementSupply.MakeProgressView(objective)

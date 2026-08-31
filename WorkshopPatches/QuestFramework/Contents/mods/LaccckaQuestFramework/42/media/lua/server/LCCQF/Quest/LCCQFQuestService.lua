@@ -97,9 +97,30 @@ local function completeCurrentObjective(player, instance, reason)
     return true
 end
 
-local function applyHandlerResult(player, instance, objective, complete, changed, reason, source)
+local function failInstance(player, instance, reason)
+    local objective = QuestInstance.GetCurrentObjective(instance)
+    if not objective then return false end
+    if not QuestInstance.Fail(instance, reason) then return false end
+
+    QuestPersistence.Touch(instance.ownerCharacterId)
+    emitUpsert(player, instance)
+    emitEvent(player, instance, "IGUI_LCCQF_QuestEvent_Failed", objective)
+
+    log("quest failed player=" .. tostring(player:getUsername())
+        .. " characterId=" .. tostring(instance.ownerCharacterId)
+        .. " questId=" .. tostring(instance.questId)
+        .. " instanceId=" .. tostring(instance.id)
+        .. " objectiveId=" .. tostring(objective.id)
+        .. " reason=" .. tostring(reason))
+    return true
+end
+
+local function applyHandlerResult(player, instance, objective, complete, changed, reason, failed, source)
     if complete == true then
         return completeCurrentObjective(player, instance, reason or source or "objective") and 1 or 0
+    end
+    if failed == true then
+        return failInstance(player, instance, reason or source or "objective-failed") and 1 or 0
     end
     if changed == true then
         touchProgress(player, instance, objective, source)
@@ -347,7 +368,7 @@ function QuestService.Accept(player, questId, context)
     local previous = QuestService.GetInstanceForQuest(player, questId)
     if previous then
         if previous.state == "active" then return nil, "quest already active" end
-        if definition.repeatable ~= true then return nil, "quest already completed" end
+        if definition.repeatable ~= true then return nil, "quest already resolved" end
     end
 
     local branch = definition.branch
@@ -380,6 +401,15 @@ function QuestService.Accept(player, questId, context)
         .. " branchGroup=" .. tostring(branch and branch.groupId or "none")
         .. " branchOption=" .. tostring(branch and branch.optionId or "none"))
     return instance
+end
+
+function QuestService.Fail(player, questId, reason)
+    if not player or type(questId) ~= "string" or questId == "" then return false, "invalid quest" end
+    local instance = QuestService.GetInstanceForQuest(player, questId)
+    if not instance then return false, "quest unavailable" end
+    if instance.state ~= "active" then return false, "quest is not active" end
+    if not failInstance(player, instance, reason or "quest-failed") then return false, "quest failure rejected" end
+    return true
 end
 
 function QuestService.ExecuteAction(player, action, context)
@@ -472,9 +502,9 @@ function QuestService.NotifyTalkToNPC(player, npcId)
             local objective = QuestInstance.GetCurrentObjective(instance)
             local handler = objective and QuestInstance.GetHandler(objective.type) or nil
             if handler and handler.EvaluateTalk then
-                local complete, changed, reason = handler.EvaluateTalk(player, objective, npcId)
+                local complete, changed, reason, failed = handler.EvaluateTalk(player, objective, npcId)
                 completed = completed + applyHandlerResult(
-                    player, instance, objective, complete, changed, reason, "talk"
+                    player, instance, objective, complete, changed, reason, failed, "talk"
                 )
             end
         end
@@ -496,9 +526,9 @@ function QuestService.NotifyZombieDead(zombie)
             local objective = QuestInstance.GetCurrentObjective(instance)
             local handler = objective and QuestInstance.GetHandler(objective.type) or nil
             if handler and handler.EvaluateZombieDeath then
-                local complete, changed, reason = handler.EvaluateZombieDeath(player, objective, zombie)
+                local complete, changed, reason, failed = handler.EvaluateZombieDeath(player, objective, zombie)
                 completed = completed + applyHandlerResult(
-                    player, instance, objective, complete, changed, reason, "zombie-death"
+                    player, instance, objective, complete, changed, reason, failed, "zombie-death"
                 )
             end
         end
@@ -522,9 +552,9 @@ function QuestService.UpdatePlayer(player)
             local objective = QuestInstance.GetCurrentObjective(instance)
             local handler = objective and QuestInstance.GetHandler(objective.type) or nil
             if handler and handler.EvaluateTick then
-                local complete, changed, reason = handler.EvaluateTick(player, objective)
+                local complete, changed, reason, failed = handler.EvaluateTick(player, objective)
                 completed = completed + applyHandlerResult(
-                    player, instance, objective, complete, changed, reason, "tick"
+                    player, instance, objective, complete, changed, reason, failed, "tick"
                 )
             end
         end
