@@ -29,7 +29,16 @@ require "LCCQF/FactionWorld/zz_LCCQFFactionSiteOperationsProjectionService"
 require "LCCQF/Runtime/LCCQFBanditsFactionNPCProjection"
 require "LCCQF/FactionWorld/zz_LCCQFFactionSitePopulationMaintenance"
 require "LCCQF/FactionWorld/zz_LCCQFFactionSiteHealthService"
+
+-- Supply-quest modules are loaded explicitly instead of relying on server Lua traversal order.
+-- The historical restore pass registers definitions for every persisted site (including
+-- RELOCATING/ABANDONED) before any connected character can normalize saved quest instances.
+require "LCCQF/FactionWorld/zz_LCCQFFactionSupplyQuestBridge"
+require "LCCQF/FactionWorld/zz_LCCQFFactionSupplyQuestHistoricalRestore"
+require "LCCQF/FactionWorld/zz_LCCQFFactionSupplyQuestRuntimeBridge"
+require "LCCQF/FactionWorld/zz_LCCQFFactionSupplyQuestDiagnostics"
+
 require "LCCQF/FactionWorld/LCCQFFactionSiteDebugServer"
 
-print("[LCCQF][SERVER] faction bootstrap loaded discovery=true relationships=true siteAllocator=location-only siteValidation=resources population=logical lifecycle=reconcile+virtualize+rematerialize maintenance=replacements relocation=identity-preserving health=loaded-world stock=exact-read-only operations=jobs+schedules+needs+signals generatedNPCs=public-projection materializer=Bandits guard=duty-aware debug=privileged")
+print("[LCCQF][SERVER] faction bootstrap loaded discovery=true relationships=true siteAllocator=location-only siteValidation=resources population=logical lifecycle=reconcile+virtualize+rematerialize maintenance=replacements relocation=identity-preserving health=loaded-world stock=exact-read-only operations=jobs+schedules+needs+signals generatedNPCs=public-projection supplyQuests=restart-safe+per-life-transfer materializer=Bandits guard=duty-aware debug=privileged")
 return true
