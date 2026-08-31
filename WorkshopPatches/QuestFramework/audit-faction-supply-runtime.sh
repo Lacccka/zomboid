@@ -7,6 +7,7 @@ OBJECTIVE="$MOD/server/LCCQF/Quest/Objectives/LCCQFObjectiveSettlementSupply.lua
 SERVICE="$MOD/server/LCCQF/Quest/zz_LCCQFFactionSupplyQuestServiceExtension.lua"
 DIALOGUE="$MOD/server/LCCQF/Dialogue/zz_LCCQFFactionResidentSupplyDialogue.lua"
 RUNTIME="$MOD/server/LCCQF/FactionWorld/zz_LCCQFFactionSupplyQuestRuntimeBridge.lua"
+IDENTITY="$MOD/server/LCCQF/FactionWorld/LCCQFSettlementTransferCharacterIdentity.lua"
 BRIDGE="$MOD/server/LCCQF/FactionWorld/zz_LCCQFFactionSupplyQuestBridge.lua"
 QUEST_SERVICE="$MOD/server/LCCQF/Quest/LCCQFQuestService.lua"
 
@@ -15,7 +16,7 @@ fail() {
     exit 1
 }
 
-for file in "$OBJECTIVE" "$SERVICE" "$DIALOGUE" "$RUNTIME" "$BRIDGE" "$QUEST_SERVICE"; do
+for file in "$OBJECTIVE" "$SERVICE" "$DIALOGUE" "$RUNTIME" "$IDENTITY" "$BRIDGE" "$QUEST_SERVICE"; do
     [[ -f "$file" ]] || fail "missing runtime file: $file"
 done
 
@@ -73,6 +74,10 @@ rg -q 'local complete, changed, reason, failed = handler.EvaluateTick' "$QUEST_S
 
 rg -q 'Observer.AddListener\(onConfirmedTransfer\)' "$RUNTIME" \
     || fail "runtime bridge is not attached to confirmed server transfers"
+rg -q 'TransferIdentity.ConsumeConfirmedTransfer\(event, player\)' "$RUNTIME" \
+    || fail "runtime bridge does not bind confirmed transfer credit to per-life character identity"
+rg -q 'if not characterId then' "$RUNTIME" \
+    || fail "runtime bridge does not fail closed on transfer character identity mismatch"
 rg -q 'SupplyBridge.RunOnce\(\)' "$RUNTIME" \
     || fail "runtime bridge does not synchronize offer lifecycle"
 rg -q 'Objective.QueueConfirmedTransfer\(player, event\)' "$RUNTIME" \
@@ -81,6 +86,11 @@ rg -q 'QuestService.UpdatePlayer\(player\)' "$RUNTIME" \
     || fail "runtime bridge bypasses normal QuestService tick/application path"
 rg -q 'Objective.DiscardQueuedTransfers\(player\)' "$RUNTIME" \
     || fail "runtime bridge can leave stale transfer credits"
+
+identity_line=$(rg -n 'TransferIdentity.ConsumeConfirmedTransfer\(event, player\)' "$RUNTIME" | head -n1 | cut -d: -f1)
+queue_line=$(rg -n 'Objective.QueueConfirmedTransfer\(player, event\)' "$RUNTIME" | head -n1 | cut -d: -f1)
+[[ -n "$identity_line" && -n "$queue_line" && "$identity_line" -lt "$queue_line" ]] \
+    || fail "quest contribution is queued before per-life identity validation"
 
 if rg -q 'sendClientCommand|OnClientCommand' "$RUNTIME" "$SERVICE" "$BRIDGE"; then
     fail "quest runtime integration must not trust a new client command surface"
