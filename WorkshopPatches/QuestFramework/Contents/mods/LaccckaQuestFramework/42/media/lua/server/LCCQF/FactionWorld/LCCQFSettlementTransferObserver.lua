@@ -5,6 +5,7 @@
 if isClient and isClient() and not (isServer and isServer()) then return {} end
 
 require "LCCQF/LCCQFConstants"
+require "LCCQF/Content/LCCQFSupplyCategoryDefinitions"
 require "LCCQF/World/LCCQFWorldContainerResolver"
 require "LCCQF/Content/LCCQFFactionDefinitions"
 require "LCCQF/FactionWorld/LCCQFFactionSiteRegistry"
@@ -14,6 +15,7 @@ require "LCCQF/FactionWorld/LCCQFFactionSiteOperations"
 LCCQF = LCCQF or {}
 
 local C = LCCQF.Constants
+local Categories = LCCQF.SupplyCategoryRegistry
 local Resolver = LCCQF.WorldContainerResolver
 local Factions = LCCQF.FactionRegistry
 local Sites = LCCQF.FactionSiteRegistry
@@ -129,12 +131,8 @@ local function itemFullType(item)
 end
 
 local function itemCategories(item)
-    local categories = {}
-    if item and item.IsFood then
-        local ok, value = pcall(function() return item:IsFood() end)
-        if ok and value == true then categories.food = true end
-    end
-    return categories
+    if Categories and Categories.Classify then return Categories.Classify(item) end
+    return {}
 end
 
 local function nestedInventory(item)
