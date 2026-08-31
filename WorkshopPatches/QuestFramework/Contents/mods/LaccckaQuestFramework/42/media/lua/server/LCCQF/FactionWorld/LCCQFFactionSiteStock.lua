@@ -81,9 +81,9 @@ local function findLoadedBuilding(site)
     return nil, "settlement building is not currently loaded"
 end
 
-local function addQuantity(target, fullType, amount)
-    if type(fullType) ~= "string" or fullType == "" then return end
-    target[fullType] = math.max(0, math.floor(tonumber(target[fullType]) or 0))
+local function addQuantity(target, key, amount)
+    if type(key) ~= "string" or key == "" then return end
+    target[key] = math.max(0, math.floor(tonumber(target[key]) or 0))
         + math.max(0, math.floor(tonumber(amount) or 0))
 end
 
@@ -93,8 +93,18 @@ local function itemFullType(item)
     return ok and type(value) == "string" and value ~= "" and value or nil
 end
 
+local function itemCategories(item)
+    local categories = {}
+    if item and item.IsFood then
+        local ok, food = pcall(function() return item:IsFood() end)
+        if ok and food == true then categories.food = 1 end
+    end
+    return categories
+end
+
 local function scanContainer(container, itemBudget)
     local quantities = {}
+    local categories = {}
     local counted = 0
     local exhausted = false
     local items
@@ -111,9 +121,12 @@ local function scanContainer(container, itemBudget)
         if fullType then
             addQuantity(quantities, fullType, 1)
             counted = counted + 1
+            for category, amount in pairs(itemCategories(item)) do
+                addQuantity(categories, category, amount)
+            end
         end
     end
-    return quantities, counted, exhausted
+    return quantities, categories, counted, exhausted
 end
 
 local function listObjects(square, methodName)
@@ -130,23 +143,25 @@ local function scanObjectList(objects, seenObjects, snapshot, budgets)
         if object and not seenObjects[object] then
             seenObjects[object] = true
             for _, entry in ipairs(Resolver.ListObjectContainers(object)) do
-                if budgets.containers.remaining <= 0 then
-                    return true
-                end
+                if budgets.containers.remaining <= 0 then return true end
                 budgets.containers.remaining = budgets.containers.remaining - 1
 
-                local quantities, itemCount, itemExhausted = scanContainer(entry.container, budgets.items)
+                local quantities, categories, itemCount, itemExhausted = scanContainer(entry.container, budgets.items)
                 local row = {
                     locator = entry.locator,
                     locatorKey = Resolver.LocatorKey(entry.locator),
                     itemCount = itemCount,
                     quantitiesByFullType = quantities,
+                    categories = categories,
                 }
                 snapshot.containers[#snapshot.containers + 1] = row
                 snapshot.containerCount = snapshot.containerCount + 1
                 snapshot.itemCount = snapshot.itemCount + itemCount
                 for fullType, amount in pairs(quantities) do
                     addQuantity(snapshot.quantitiesByFullType, fullType, amount)
+                end
+                for category, amount in pairs(categories) do
+                    addQuantity(snapshot.categories, category, amount)
                 end
                 if itemExhausted then return true end
             end
@@ -181,6 +196,7 @@ local function scanBuilding(site, building)
         containerCount = 0,
         itemCount = 0,
         quantitiesByFullType = {},
+        categories = {},
         containers = {},
     }
     local seenSquares = {}
@@ -240,13 +256,13 @@ end
 
 local function sortedQuantitySignature(quantities)
     local keys = {}
-    for fullType in pairs(type(quantities) == "table" and quantities or {}) do
-        keys[#keys + 1] = tostring(fullType)
+    for key in pairs(type(quantities) == "table" and quantities or {}) do
+        keys[#keys + 1] = tostring(key)
     end
     table.sort(keys)
     local parts = {}
-    for _, fullType in ipairs(keys) do
-        parts[#parts + 1] = fullType .. "=" .. tostring(math.floor(tonumber(quantities[fullType]) or 0))
+    for _, key in ipairs(keys) do
+        parts[#parts + 1] = key .. "=" .. tostring(math.floor(tonumber(quantities[key]) or 0))
     end
     return table.concat(parts, ",")
 end
@@ -257,11 +273,13 @@ local function contentSignature(snapshot)
         tostring(snapshot.containerCount or 0),
         tostring(snapshot.itemCount or 0),
         sortedQuantitySignature(snapshot.quantitiesByFullType),
+        sortedQuantitySignature(snapshot.categories),
     }
     for _, row in ipairs(snapshot.containers or {}) do
         parts[#parts + 1] = tostring(row.locatorKey or "")
             .. "#" .. tostring(row.itemCount or 0)
             .. "#" .. sortedQuantitySignature(row.quantitiesByFullType)
+            .. "#" .. sortedQuantitySignature(row.categories)
     end
     return table.concat(parts, "|")
 end
@@ -275,6 +293,7 @@ function Stock.Scan(site)
         .. " tiles=" .. tostring(snapshot.tilesVisited)
         .. " containers=" .. tostring(snapshot.containerCount)
         .. " items=" .. tostring(snapshot.itemCount)
+        .. " food=" .. tostring(snapshot.categories.food or 0)
         .. " complete=" .. tostring(snapshot.complete)
         .. (snapshot.incompleteReason and " reason=" .. tostring(snapshot.incompleteReason) or ""))
     return snapshot
@@ -294,9 +313,7 @@ function Stock.ApplySnapshot(site, snapshot)
     snapshot.revision = changed and (revision + 1) or revision
     snapshot.verifiedWorldHours = snapshot.scannedWorldHours
     site.stock = snapshot
-    if changed then
-        Sites.MarkDirty(site.siteId, "settlement stock snapshot changed")
-    end
+    if changed then Sites.MarkDirty(site.siteId, "settlement stock snapshot changed") end
     return true, changed
 end
 
@@ -312,17 +329,19 @@ function Stock.GetQuantity(siteOrId, fullType)
     return math.max(0, math.floor(tonumber(quantities and quantities[fullType]) or 0))
 end
 
+function Stock.GetCategoryQuantity(siteOrId, category)
+    local site = type(siteOrId) == "table" and siteOrId or Sites.GetSite(siteOrId)
+    local categories = site and site.stock and site.stock.categories or nil
+    return math.max(0, math.floor(tonumber(categories and categories[category]) or 0))
+end
+
 function Stock.FindContainersForItem(siteOrId, fullType)
     local site = type(siteOrId) == "table" and siteOrId or Sites.GetSite(siteOrId)
     local out = {}
     for _, row in ipairs(site and site.stock and site.stock.containers or {}) do
         local amount = math.max(0, math.floor(tonumber(row.quantitiesByFullType and row.quantitiesByFullType[fullType]) or 0))
         if amount > 0 then
-            out[#out + 1] = {
-                locator = row.locator,
-                locatorKey = row.locatorKey,
-                amount = amount,
-            }
+            out[#out + 1] = { locator = row.locator, locatorKey = row.locatorKey, amount = amount }
         end
     end
     return out

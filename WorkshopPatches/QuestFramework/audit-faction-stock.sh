@@ -46,8 +46,11 @@ require_pattern 'spriteName' "$resolver" "world object sprite identity missing"
 require_pattern 'function Stock\.Scan' "$stock" "settlement stock scan missing"
 require_pattern 'function Stock\.ApplySnapshot' "$stock" "stock snapshot reconciliation missing"
 require_pattern 'function Stock\.GetQuantity' "$stock" "stock quantity query missing"
+require_pattern 'function Stock\.GetCategoryQuantity' "$stock" "stock category query missing"
 require_pattern 'function Stock\.FindContainersForItem' "$stock" "stock locator query missing"
 require_pattern 'quantitiesByFullType' "$stock" "full-type stock aggregation missing"
+require_pattern 'categories = \{\}' "$stock" "stock category aggregation missing"
+require_pattern 'item:IsFood\(\)' "$stock" "actual food-item classification missing"
 require_pattern 'snapshot\.complete ~= true' "$stock" "incomplete scans do not fail closed"
 require_pattern 'container budget exhausted' "$stock" "container budget failure state missing"
 require_pattern 'item budget exhausted' "$stock" "item budget failure state missing"
@@ -64,12 +67,10 @@ if rg -n 'AddItem|AddItems|RemoveItem|RemoveOneOf|RemoveAll|clear\(|Clear\(' "$r
     fail "read-only stock layer mutates inventory"
 fi
 
-# No client authority or gameplay replication surface may be introduced here.
 if rg -n 'sendClientCommand|sendServerCommand|OnClientCommand' "$resolver" "$stock" "$service"; then
     fail "stock layer exposes client/network authority"
 fi
 
-# Provider independence: settlement stock is world-container state, never Bandits state.
 if rg -n 'BanditServer|BanditBrain|BanditClusters|Bandits2' "$resolver" "$stock" "$service"; then
     fail "stock layer leaks Bandits provider dependency"
 fi
@@ -80,4 +81,4 @@ if command -v lua >/dev/null 2>&1; then
     lua -e "assert(loadfile([[$service]]))"
 fi
 
-echo "QuestFramework faction stock audit: PASS (exact B42 container locators + bounded read-only settlement snapshots + fail-closed reconciliation)"
+echo "QuestFramework faction stock audit: PASS (exact B42 container locators + bounded read-only settlement snapshots + observed item categories + fail-closed reconciliation)"

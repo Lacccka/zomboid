@@ -9,6 +9,7 @@ job_defs="$lua_root/shared/LCCQF/Content/LCCQFFactionJobDefinitions.lua"
 faction_defs="$lua_root/shared/LCCQF/Content/LCCQFFactionDefinitions.lua"
 operations="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteOperations.lua"
 operations_service="$lua_root/server/LCCQF/FactionWorld/zz_LCCQFFactionSiteOperationsService.lua"
+stock="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteStock.lua"
 projection="$lua_root/server/LCCQF/Runtime/LCCQFBanditsFactionOperationsProjection.lua"
 projection_service="$lua_root/server/LCCQF/FactionWorld/zz_LCCQFFactionSiteOperationsProjectionService.lua"
 guard_program="$lua_root/shared/LCCQF/Runtime/LCCQFBanditsFactionGuardProgram.lua"
@@ -28,7 +29,7 @@ require_pattern() {
 }
 
 required_files=(
-    "$job_registry" "$job_defs" "$faction_defs" "$operations" "$operations_service"
+    "$job_registry" "$job_defs" "$faction_defs" "$operations" "$operations_service" "$stock"
     "$projection" "$projection_service" "$guard_program" "$bootstrap" "$debug_server"
 )
 for required in "${required_files[@]}"; do [[ -f "$required" ]] || fail "missing $required"; done
@@ -37,6 +38,8 @@ require_pattern 'function Registry\.ValidateOperationsProfile' "$job_registry" "
 require_pattern 'exactly one schedule or rotation' "$job_registry" "schedule/rotation exclusivity validation missing"
 require_pattern 'Registry\.IsRegistered\(entry\.jobId\)' "$job_registry" "schedule jobs are not registry validated"
 require_pattern 'rotation\.activeCount' "$job_registry" "rotation active count validation missing"
+require_pattern 'profile\.supplies' "$job_registry" "supply policy validation missing"
+require_pattern 'minimumPerResident' "$job_registry" "per-resident supply threshold validation missing"
 
 for job in guard command rest work; do
     require_pattern "jobId = \"$job\"" "$job_defs" "missing built-in $job job"
@@ -47,6 +50,8 @@ require_pattern 'jobId = "command"' "$faction_defs" "leader command schedule mis
 require_pattern 'jobId = "rest"' "$faction_defs" "rest schedule missing"
 require_pattern 'shiftHours = 12' "$faction_defs" "guard rotation missing"
 require_pattern 'activeCount = 1' "$faction_defs" "guard coverage intent missing"
+require_pattern 'category = "food"' "$faction_defs" "checkpoint food reserve policy missing"
+require_pattern 'minimumPerResident = 2' "$faction_defs" "checkpoint per-resident food policy missing"
 
 require_pattern 'function Operations\.ResolveTarget' "$operations" "site target resolver missing"
 require_pattern 'function Operations\.UpdateSite' "$operations" "operations update API missing"
@@ -55,13 +60,16 @@ require_pattern 'scheduleKey' "$operations" "assignment schedule identity missin
 require_pattern 'housingDeficit' "$operations" "housing need missing"
 require_pattern 'waterSourceMissing' "$operations" "water need missing"
 require_pattern 'foodAccessMissing' "$operations" "food-access need missing"
-require_pattern ':need:' "$operations" "stable site need signal IDs missing"
-require_pattern 'status = shouldOpen and "OPEN" or "RESOLVED"' "$operations" "need signal lifecycle missing"
+require_pattern 'buildSupplyNeeds' "$operations" "stock-backed supply need model missing"
+require_pattern 'Stock\.GetCategoryQuantity' "$operations" "operations does not consume observed stock categories"
+require_pattern ':need:supply:' "$operations" "stable supply signal IDs missing"
+require_pattern 'kind = "supply"' "$operations" "supply signal classification missing"
+require_pattern 'status = shouldOpen and "OPEN" or "RESOLVED"' "$operations" "infrastructure signal lifecycle missing"
 require_pattern 'GetOpenSignals' "$operations" "open signal query missing"
 
-# Infrastructure observations are capabilities, not fabricated stock counts.
-if rg -n 'foodStock|waterStock|ammoStock|medicineStock|inventoryStock|ConsumeItem|AddItem' "$operations"; then
-    fail "operations fabricates or mutates physical stock before inventory reconciliation exists"
+# Operations may observe stock but must never mutate physical inventory.
+if rg -n 'ConsumeItem|AddItem|AddItems|RemoveItem|RemoveOneOf|RemoveAll' "$operations"; then
+    fail "operations mutates physical stock instead of consuming read-only snapshots"
 fi
 
 require_pattern 'definition\.operationsProfile' "$operations_service" "operations service ignores faction content"
@@ -82,13 +90,16 @@ require_pattern 'dutyMode == "rest" or dutyMode == "work"' "$guard_program" "res
 require_pattern 'dutyMode == "command"' "$guard_program" "command physical mode missing"
 require_pattern 'home\.returnRadius' "$guard_program" "home leash disappeared"
 
+require_pattern 'zz_LCCQFFactionSiteStockService' "$bootstrap" "stock service not bootstrapped"
 require_pattern 'zz_LCCQFFactionSiteOperationsService' "$bootstrap" "logical operations service not bootstrapped"
 require_pattern 'LCCQFBanditsFactionOperationsProjection' "$bootstrap" "Bandits operations projection not bootstrapped"
 require_pattern 'zz_LCCQFFactionSiteOperationsProjectionService' "$bootstrap" "operations projection service not bootstrapped"
 
+stock_line="$(rg -n 'zz_LCCQFFactionSiteStockService' "$bootstrap" | head -n1 | cut -d: -f1)"
 operations_line="$(rg -n 'zz_LCCQFFactionSiteOperationsService' "$bootstrap" | head -n1 | cut -d: -f1)"
 materialization_line="$(rg -n 'zz_LCCQFFactionSiteMaterializationService' "$bootstrap" | head -n1 | cut -d: -f1)"
 projection_line="$(rg -n 'zz_LCCQFFactionSiteOperationsProjectionService' "$bootstrap" | head -n1 | cut -d: -f1)"
+[[ "$stock_line" -lt "$operations_line" ]] || fail "stock observation must run before operations need evaluation"
 [[ "$operations_line" -lt "$materialization_line" ]] || fail "logical assignments must exist before first physical spawn"
 [[ "$projection_line" -gt "$materialization_line" ]] || fail "physical operations projection must run after first spawn"
 
@@ -111,4 +122,4 @@ if command -v lua >/dev/null 2>&1; then
     for lua_file in "${required_files[@]}"; do lua -e "assert(loadfile([[$lua_file]]))"; done
 fi
 
-echo "QuestFramework faction operations audit: PASS (server jobs + deterministic schedules + capabilities/needs + stable signals + provider projection)"
+echo "QuestFramework faction operations audit: PASS (server jobs + deterministic schedules + infrastructure needs + stock-backed supply signals + provider projection)"

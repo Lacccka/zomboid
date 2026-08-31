@@ -1,21 +1,20 @@
 -- Server-owned faction site jobs, schedules, infrastructure capabilities and needs.
--- This layer stores plain logical data only. It never treats container counts as stock
--- quantities and never mutates world inventory; physical providers receive projections.
-if isClient and isClient() and not (isServer and isServer()) then
-    return {}
-end
+-- This layer stores plain logical data only. Physical stock is consumed as a read-only
+-- snapshot; inventory mutation belongs to a separate transactional layer.
+if isClient and isClient() and not (isServer and isServer()) then return {} end
 
 require "LCCQF/LCCQFConstants"
 require "LCCQF/Core/LCCQFFactionJobRegistry"
 require "LCCQF/FactionWorld/LCCQFFactionSiteRegistry"
 require "LCCQF/FactionWorld/LCCQFFactionSitePopulation"
+require "LCCQF/FactionWorld/LCCQFFactionSiteStock"
 
 LCCQF = LCCQF or {}
 
-local C = LCCQF.Constants
 local Jobs = LCCQF.FactionJobRegistry
 local Sites = LCCQF.FactionSiteRegistry
 local Population = LCCQF.FactionSitePopulation
+local Stock = LCCQF.FactionSiteStock
 local Operations = LCCQF.FactionSiteOperations or {}
 
 local function worldHours()
@@ -177,12 +176,37 @@ local function buildCapabilities(site)
     }
 end
 
-local function buildNeeds(capabilities)
+local function buildSupplyNeeds(site, profile, livingPopulation)
+    local out = {}
+    local stock = type(site.stock) == "table" and site.stock or nil
+    if not stock or stock.complete ~= true then return out end
+
+    for supplyId, spec in pairs(type(profile.supplies) == "table" and profile.supplies or {}) do
+        local category = tostring(spec.category or supplyId)
+        local perResident = math.max(0, tonumber(spec.minimumPerResident) or 0)
+        local reserve = math.max(0, tonumber(spec.reserve) or 0)
+        local target = math.max(0, math.ceil((livingPopulation * perResident) + reserve))
+        local available = Stock.GetCategoryQuantity(site, category)
+        out[supplyId] = {
+            supplyId = supplyId,
+            category = category,
+            available = available,
+            target = target,
+            deficit = math.max(0, target - available),
+            stockRevision = math.max(0, math.floor(tonumber(stock.revision) or 0)),
+            verifiedWorldHours = tonumber(stock.verifiedWorldHours) or 0,
+        }
+    end
+    return out
+end
+
+local function buildNeeds(site, capabilities, profile)
     return {
         housingDeficit = math.max(0, capabilities.livingPopulation - capabilities.beds),
         waterSourceMissing = capabilities.waterSources < 1,
         storageMissing = capabilities.storageContainers < 1,
         foodAccessMissing = capabilities.foodAccessContainers < 1,
+        supplies = buildSupplyNeeds(site, profile, capabilities.livingPopulation),
     }
 end
 
@@ -197,20 +221,29 @@ local function scalarTableEqual(a, b)
     return true
 end
 
-local function roleCountsEqual(a, b)
+local function nestedScalarMapEqual(a, b)
     a = type(a) == "table" and a or {}
     b = type(b) == "table" and b or {}
-    for key, value in pairs(a) do if b[key] ~= value then return false end end
-    for key, value in pairs(b) do if a[key] ~= value then return false end end
+    for key, value in pairs(a) do
+        if type(value) ~= "table" or type(b[key]) ~= "table" or not scalarTableEqual(value, b[key]) then
+            return false
+        end
+    end
+    for key in pairs(b) do if a[key] == nil then return false end end
     return true
 end
 
 local function capabilityEqual(a, b)
     return scalarTableEqual(a, b)
-        and roleCountsEqual(a and a.roleCounts, b and b.roleCounts)
+        and nestedScalarMapEqual({ roles = a and a.roleCounts or {} }, { roles = b and b.roleCounts or {} })
 end
 
-local SIGNALS = {
+local function needsEqual(a, b)
+    return scalarTableEqual(a, b)
+        and nestedScalarMapEqual(a and a.supplies, b and b.supplies)
+end
+
+local INFRA_SIGNALS = {
     { key = "housing", field = "housingDeficit", numeric = true },
     { key = "water", field = "waterSourceMissing" },
     { key = "storage", field = "storageMissing" },
@@ -223,10 +256,9 @@ local function signalValue(spec, needs)
     return value == true and 1 or 0
 end
 
-local function updateSignals(site, operations, needs, nowHours)
-    operations.signals = type(operations.signals) == "table" and operations.signals or {}
+local function updateInfrastructureSignals(site, operations, needs, nowHours)
     local changed = false
-    for _, spec in ipairs(SIGNALS) do
+    for _, spec in ipairs(INFRA_SIGNALS) do
         local signalId = tostring(site.siteId) .. ":need:" .. spec.key
         local value = signalValue(spec, needs)
         local shouldOpen = value > 0
@@ -251,6 +283,62 @@ local function updateSignals(site, operations, needs, nowHours)
             changed = true
         end
     end
+    return changed
+end
+
+local function updateSupplySignals(site, operations, needs, nowHours)
+    local changed = false
+    local activeIds = {}
+    for supplyId, need in pairs(type(needs.supplies) == "table" and needs.supplies or {}) do
+        local signalId = tostring(site.siteId) .. ":need:supply:" .. tostring(supplyId)
+        activeIds[signalId] = true
+        local deficit = math.max(0, math.floor(tonumber(need.deficit) or 0))
+        local shouldOpen = deficit > 0
+        local nextStatus = shouldOpen and "OPEN" or "RESOLVED"
+        local signal = operations.signals[signalId]
+        local differs = type(signal) ~= "table"
+            or signal.status ~= nextStatus
+            or tonumber(signal.value) ~= deficit
+            or tonumber(signal.available) ~= tonumber(need.available)
+            or tonumber(signal.target) ~= tonumber(need.target)
+        if type(signal) ~= "table" then
+            signal = { signalId = signalId, kind = "supply", supplyId = supplyId, revision = 0 }
+            operations.signals[signalId] = signal
+        end
+        if differs then
+            signal.status = nextStatus
+            signal.category = need.category
+            signal.value = deficit
+            signal.available = need.available
+            signal.target = need.target
+            signal.stockRevision = need.stockRevision
+            signal.verifiedWorldHours = need.verifiedWorldHours
+            signal.revision = math.max(0, math.floor(tonumber(signal.revision) or 0)) + 1
+            signal.changedWorldHours = nowHours
+            if shouldOpen then signal.raisedWorldHours = nowHours else signal.resolvedWorldHours = nowHours end
+            changed = true
+        end
+    end
+
+    for signalId, signal in pairs(operations.signals) do
+        if type(signal) == "table" and signal.kind == "supply" and not activeIds[signalId]
+            and signal.status ~= "RESOLVED"
+        then
+            signal.status = "RESOLVED"
+            signal.value = 0
+            signal.revision = math.max(0, math.floor(tonumber(signal.revision) or 0)) + 1
+            signal.changedWorldHours = nowHours
+            signal.resolvedWorldHours = nowHours
+            changed = true
+        end
+    end
+    return changed
+end
+
+local function updateSignals(site, operations, needs, nowHours)
+    operations.signals = type(operations.signals) == "table" and operations.signals or {}
+    local changed = updateInfrastructureSignals(site, operations, needs, nowHours)
+    if updateSupplySignals(site, operations, needs, nowHours) then changed = true end
     return changed
 end
 
@@ -282,12 +370,12 @@ function Operations.UpdateSite(site, definition)
     local changed = false
 
     local capabilities = buildCapabilities(site)
-    local needs = buildNeeds(capabilities)
+    local needs = buildNeeds(site, capabilities, profile)
     if not capabilityEqual(operations.capabilities, capabilities) then
         operations.capabilities = capabilities
         changed = true
     end
-    if not scalarTableEqual(operations.needs, needs) then
+    if not needsEqual(operations.needs, needs) then
         operations.needs = needs
         changed = true
     end

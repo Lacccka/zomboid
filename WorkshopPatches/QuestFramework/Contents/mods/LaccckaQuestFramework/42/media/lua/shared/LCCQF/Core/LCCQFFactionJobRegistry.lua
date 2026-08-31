@@ -107,6 +107,22 @@ function Registry.ValidateOperationsProfile(profile)
             end
         end
     end
+
+    if profile.supplies ~= nil then
+        if type(profile.supplies) ~= "table" then
+            return false, "operationsProfile.supplies must be a table"
+        end
+        for supplyId, supply in pairs(profile.supplies) do
+            if not validId(supplyId) or type(supply) ~= "table" or not validId(supply.category) then
+                return false, "operationsProfile supply definition is invalid"
+            end
+            local perResident = tonumber(supply.minimumPerResident) or 0
+            local reserve = tonumber(supply.reserve) or 0
+            if perResident < 0 or reserve < 0 then
+                return false, "operationsProfile supply thresholds must be non-negative"
+            end
+        end
+    end
     return true
 end
 

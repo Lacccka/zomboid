@@ -26,6 +26,16 @@ local operationsProfile = {
             },
         },
     },
+
+    -- Settlement policy, not fabricated inventory. The stock scanner supplies actual
+    -- observed category counts; operations only decides what reserve this faction wants.
+    supplies = {
+        food = {
+            category = "food",
+            minimumPerResident = 2,
+            reserve = 2,
+        },
+    },
 }
 
 local operationsOk, operationsError = LCCQF.FactionJobRegistry.ValidateOperationsProfile(operationsProfile)
@@ -120,8 +130,8 @@ local ok, err = LCCQF.FactionRegistry.Register({
         },
     },
 
-    -- Server-owned duty scheduling. Assignments are persistent logical data attached to
-    -- npcId records; the Bandits brain receives only a runtime projection.
+    -- Server-owned duty scheduling and stock-backed settlement policy. Assignments are
+    -- persistent logical data attached to npcId records; stock remains a separate world snapshot.
     operationsProfile = operationsProfile,
 })
 
