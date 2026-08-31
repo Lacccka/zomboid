@@ -57,6 +57,19 @@ local function ensureOffers(site)
     return operations.questOffers
 end
 
+local function currentMember(site, npcId)
+    if type(site) ~= "table" or type(npcId) ~= "string" or npcId == "" then return nil end
+    for _, member in ipairs(Population.ListMembers(site)) do
+        if tostring(member.npcId or "") == npcId then return member end
+    end
+    return nil
+end
+
+local function materializedMember(site, npcId)
+    local member = currentMember(site, npcId)
+    return member and member.state == "MATERIALIZED" and member or nil
+end
+
 local function livingGiver(site)
     local fallback = nil
     for _, member in ipairs(Population.ListMembers(site)) do
@@ -282,13 +295,32 @@ function Bridge.GetOfferByQuestId(questId)
     return nil
 end
 
+-- Historical giver identity remains immutable, but a currently materialized resident of
+-- the same site may represent an open offer when the historical giver is not materialized.
+-- This is a server-only delegation rule; it never changes quest identity or persistence.
+function Bridge.CanNpcHandleOffer(offer, npcId)
+    if type(offer) ~= "table" or type(npcId) ~= "string" or npcId == "" then return false end
+    local site = Sites.GetSite(offer.siteId)
+    if not site then return false end
+
+    local presenter = materializedMember(site, npcId)
+    if not presenter then return false end
+    if tostring(offer.giverNpcId or "") == npcId then return true end
+
+    local historicalGiver = materializedMember(site, tostring(offer.giverNpcId or ""))
+    return historicalGiver == nil
+end
+
 function Bridge.GetOpenOfferForNpc(npcId)
     if type(npcId) ~= "string" or npcId == "" then return nil end
     local matches = {}
     for _, site in ipairs(Sites.ListSites()) do
         local offers = site.operations and site.operations.questOffers or {}
         for _, offer in pairs(type(offers) == "table" and offers or {}) do
-            if type(offer) == "table" and offer.status == "OPEN" and offer.giverNpcId == npcId then
+            if type(offer) == "table"
+                and offer.status == "OPEN"
+                and Bridge.CanNpcHandleOffer(offer, npcId)
+            then
                 matches[#matches + 1] = offer
             end
         end

@@ -7,13 +7,14 @@ OBJECTIVE="$MOD/server/LCCQF/Quest/Objectives/LCCQFObjectiveSettlementSupply.lua
 SERVICE="$MOD/server/LCCQF/Quest/zz_LCCQFFactionSupplyQuestServiceExtension.lua"
 DIALOGUE="$MOD/server/LCCQF/Dialogue/zz_LCCQFFactionResidentSupplyDialogue.lua"
 RUNTIME="$MOD/server/LCCQF/FactionWorld/zz_LCCQFFactionSupplyQuestRuntimeBridge.lua"
+BRIDGE="$MOD/server/LCCQF/FactionWorld/zz_LCCQFFactionSupplyQuestBridge.lua"
 
 fail() {
     echo "[faction-supply-runtime-audit] ERROR: $*" >&2
     exit 1
 }
 
-for file in "$OBJECTIVE" "$SERVICE" "$DIALOGUE" "$RUNTIME"; do
+for file in "$OBJECTIVE" "$SERVICE" "$DIALOGUE" "$RUNTIME" "$BRIDGE"; do
     [[ -f "$file" ]] || fail "missing runtime file: $file"
 done
 
@@ -25,8 +26,25 @@ rg -q 'action.kind == "factionSupplyQuestAccept"' "$SERVICE" \
     || fail "dynamic accept action missing"
 rg -q 'SupplyBridge.IsOfferOpen\(offer.questId\)' "$SERVICE" \
     || fail "accept action does not revalidate current OPEN offer"
-rg -q 'QuestService.Accept\(player, offer.questId, context\)' "$SERVICE" \
-    || fail "dynamic quest bypasses common QuestService.Accept"
+rg -q 'SupplyBridge.CanNpcHandleOffer\(offer, npcId\)' "$SERVICE" \
+    || fail "accept action does not revalidate presenter delegation"
+rg -q 'acceptContext.giverNpcId = offer.giverNpcId' "$SERVICE" \
+    || fail "delegated acceptance does not restore canonical historical giver"
+rg -q 'out.dialogueNpcId = dialogueNpcId' "$SERVICE" \
+    || fail "delegated acceptance loses the actual dialogue NPC identity"
+rg -q 'QuestService.Accept\(player, offer.questId, acceptContext\)' "$SERVICE" \
+    || fail "dynamic quest bypasses common QuestService.Accept canonical-giver validation"
+
+rg -q 'function Bridge.CanNpcHandleOffer\(offer, npcId\)' "$BRIDGE" \
+    || fail "supply bridge has no presenter delegation policy"
+rg -q 'local presenter = materializedMember\(site, npcId\)' "$BRIDGE" \
+    || fail "delegated presenter is not constrained to a materialized logical site member"
+rg -q 'local historicalGiver = materializedMember\(site, tostring\(offer.giverNpcId or ""\)\)' "$BRIDGE" \
+    || fail "delegation does not check whether the canonical giver remains materialized"
+rg -q 'return historicalGiver == nil' "$BRIDGE" \
+    || fail "delegation must fail closed while the canonical giver is materialized"
+rg -q 'Bridge.CanNpcHandleOffer\(offer, npcId\)' "$BRIDGE" \
+    || fail "open-offer lookup does not use the delegation policy"
 
 rg -q 'condition = \{ kind = "factionSupplyQuestAvailable" \}' "$DIALOGUE" \
     || fail "resident dialogue does not expose server-filtered offer"
@@ -55,7 +73,7 @@ rg -q 'QuestService.UpdatePlayer\(player\)' "$RUNTIME" \
 rg -q 'Objective.DiscardQueuedTransfers\(player\)' "$RUNTIME" \
     || fail "runtime bridge can leave stale transfer credits"
 
-if rg -q 'sendClientCommand|OnClientCommand' "$RUNTIME" "$SERVICE"; then
+if rg -q 'sendClientCommand|OnClientCommand' "$RUNTIME" "$SERVICE" "$BRIDGE"; then
     fail "quest runtime integration must not trust a new client command surface"
 fi
 
