@@ -22,6 +22,9 @@ require "LCCQF/FactionWorld/zz_LCCQFFactionSiteStockService"
 require "LCCQF/FactionWorld/zz_LCCQFFactionSiteEconomyService"
 require "LCCQF/FactionWorld/zz_LCCQFFactionSiteConsumptionService"
 require "LCCQF/FactionWorld/zz_LCCQFFactionSiteConsumptionExecutorService"
+-- Acceptance diagnostics are read-only and register after execution, so their signature
+-- exposes the post-transaction state without influencing stock/economy authority.
+require "LCCQF/FactionWorld/zz_LCCQFFactionSiteConsumptionDiagnostics"
 -- Operations assignment runs before physical materialization. The projection service
 -- runs afterwards, so newly spawned provider actors receive already-persisted duty.
 require "LCCQF/FactionWorld/zz_LCCQFFactionSiteOperationsService"
@@ -44,5 +47,5 @@ require "LCCQF/FactionWorld/zz_LCCQFFactionSupplyQuestDiagnostics"
 
 require "LCCQF/FactionWorld/LCCQFFactionSiteDebugServer"
 
-print("[LCCQF][SERVER] faction bootstrap loaded discovery=true relationships=true siteAllocator=location-only siteValidation=resources population=logical lifecycle=reconcile+virtualize+rematerialize maintenance=replacements relocation=identity-preserving health=loaded-world stock=exact-read-only economy=observed-policy consumption=logical-demand+transactional-world-removal operations=jobs+schedules+needs+signals generatedNPCs=public-projection supplyQuests=restart-safe+per-life-transfer materializer=Bandits guard=duty-aware debug=privileged")
+print("[LCCQF][SERVER] faction bootstrap loaded discovery=true relationships=true siteAllocator=location-only siteValidation=resources population=logical lifecycle=reconcile+virtualize+rematerialize maintenance=replacements relocation=identity-preserving health=loaded-world stock=exact-read-only economy=observed-policy consumption=logical-demand+transactional-world-removal+diagnostics operations=jobs+schedules+needs+signals generatedNPCs=public-projection supplyQuests=restart-safe+per-life-transfer materializer=Bandits guard=duty-aware debug=privileged")
 return true
