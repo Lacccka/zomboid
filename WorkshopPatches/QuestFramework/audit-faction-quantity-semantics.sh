@@ -49,8 +49,11 @@ rg -q 'item:hasTag\(tag\)' "$REGISTRY" \
     || fail "item-tag match does not use InventoryItem:hasTag(ItemTag)"
 rg -q 'if not okTag or not tag then return nil end' "$REGISTRY" \
     || fail "unknown registry tags do not fail closed"
-if rg -q 'ItemTag\.register|item:hasTag\(["'"']' "$REGISTRY"; then
-    fail "category matching must not register unknown tags or pass raw strings to hasTag"
+if rg -q 'ItemTag\.register' "$REGISTRY"; then
+    fail "category matching must not register unknown item tags"
+fi
+if rg -q 'item:hasTag\("' "$REGISTRY" || rg -q "item:hasTag\\('" "$REGISTRY"; then
+    fail "category matching must not pass raw strings to InventoryItem:hasTag"
 fi
 
 rg -q 'unitKind = "ITEM"' "$DEFINITIONS" \
