@@ -67,3 +67,29 @@
 ## Общий принцип для LaccckaQuestFramework
 
 Клиент обнаруживает NPC и показывает UI, но сервер повторно разрешает NPC по постоянному ID, проверяет расстояние/доступ/текущий node/session, исполняет transition, обновляет durable state и выдаёт награду идемпотентно. Клиент получает только проекцию состояния и presentation-команды. Ни один найденный мод не закрывает все эти требования одновременно; полезная архитектура складывается из нескольких reference implementations.
+
+## Внешний research synthesis — 2026-09-01
+
+После дополнительного прохода по актуальным Build 42 NPC/RPG/economy/settlement-модам, форумам Indie Stone и community feedback выводы были сведены в отдельный архитектурный документ:
+
+- [`docs/design/quest-framework-external-research-roadmap-2026-09-01.md`](../design/quest-framework-external-research-roadmap-2026-09-01.md)
+
+Главное изменение ближайшего roadmap: **до фиксации общего economy ledger необходимо ввести `QuantitySemantics` и B42 tag/resource-aware matching**, чтобы экономика не закрепилась на неверном универсальном правиле `1 InventoryItem = 1 unit`.
+
+Также в roadmap формально добавлены:
+
+- inventory custody / resource reservations;
+- settlement `SiteArea` / storage roles;
+- `WorldEvent` + Storylet layer;
+- event-based NPC memory and rumours;
+- logical Squad state above provider brains;
+- WorldEventDirector / convoys / raids / distress / rescue encounters;
+- faction radio/comms;
+- party quest server-side canonical random state;
+- content revisions/migrations;
+- network/spatial interest management;
+- generalized AccessPolicy above current SafeHouse exclusion;
+- knowledge/intelligence map;
+- surrender/prisoner/disarm as future logical NPC states.
+
+Эти пункты являются архитектурными направлениями `LaccckaQuestFramework`, а не утверждением, что соответствующий внешний мод является безопасным implementation reference. Для внешних модов без локального source-аудита заимствуются только проверяемые концепции.
