@@ -68,7 +68,7 @@ local function mark(site, reason)
 end
 
 local function networkApiAvailable()
-    return GameServer ~= nil and GameServer.sendRemoveItemFromContainer ~= nil
+    return sendRemoveItemFromContainer ~= nil
 end
 
 local function listItems(container)
@@ -216,8 +216,11 @@ local function mutateTransaction(site, tx)
                     descriptor.state = "REMOVED"
                     descriptor.removedWorldHours = worldHours()
                     removed = removed + 1
+                    -- Build 42 LuaManager exposes sendRemoveItemFromContainer globally;
+                    -- on a dedicated server it delegates to GameServer and sends the
+                    -- RemoveInventoryItemFromContainer packet to relevant clients.
                     local okSync, syncError = pcall(function()
-                        GameServer.sendRemoveItemFromContainer(container, item)
+                        sendRemoveItemFromContainer(container, item)
                     end)
                     descriptor.networkSynced = okSync == true
                     if not okSync then
@@ -317,7 +320,7 @@ function Executor.ExecuteSupply(site, supplyId)
         return false, "invalid consumption execution input"
     end
     if not networkApiAvailable() then
-        return false, "GameServer container removal sync API unavailable"
+        return false, "Lua container removal sync API unavailable"
     end
 
     local row = rowFor(site, supplyId)
