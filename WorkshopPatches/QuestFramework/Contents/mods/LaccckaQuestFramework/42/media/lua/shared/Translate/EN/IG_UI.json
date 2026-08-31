@@ -14,6 +14,13 @@
     "IGUI_LCCQF_Faction_CheckpointSurvivors_Fact_Identified_Title": "Checkpoint group",
     "IGUI_LCCQF_Faction_CheckpointSurvivors_Fact_Identified_Text": "You learned that Alexey is connected to a survivor group operating around the old checkpoint.",
 
+    "IGUI_LCCQF_FactionNPC_Leader": "Leader",
+    "IGUI_LCCQF_FactionNPC_Guard": "Guard",
+    "IGUI_LCCQF_FactionNPC_Trader": "Trader",
+    "IGUI_LCCQF_FactionNPC_Medic": "Medic",
+    "IGUI_LCCQF_FactionNPC_Worker": "Worker",
+    "IGUI_LCCQF_FactionNPC_Member": "Resident",
+
     "IGUI_LCCQF_Dialog_FactionResident_Start": "You are inside our settlement. If you need something, say it plainly.",
     "IGUI_LCCQF_Choice_FactionResident_Settlement": "Tell me about this settlement.",
     "IGUI_LCCQF_Choice_FactionResident_Work": "Is there work that needs doing?",

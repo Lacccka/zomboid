@@ -14,6 +14,13 @@
     "IGUI_LCCQF_Faction_CheckpointSurvivors_Fact_Identified_Title": "Группа у блокпоста",
     "IGUI_LCCQF_Faction_CheckpointSurvivors_Fact_Identified_Text": "Вы узнали, что Алексей связан с группой выживших, действующей в районе старого блокпоста.",
 
+    "IGUI_LCCQF_FactionNPC_Leader": "Лидер",
+    "IGUI_LCCQF_FactionNPC_Guard": "Охранник",
+    "IGUI_LCCQF_FactionNPC_Trader": "Торговец",
+    "IGUI_LCCQF_FactionNPC_Medic": "Медик",
+    "IGUI_LCCQF_FactionNPC_Worker": "Работник",
+    "IGUI_LCCQF_FactionNPC_Member": "Житель",
+
     "IGUI_LCCQF_Dialog_FactionResident_Start": "Ты находишься в нашем поселении. Если что-то нужно — говори прямо.",
     "IGUI_LCCQF_Choice_FactionResident_Settlement": "Расскажи об этом поселении.",
     "IGUI_LCCQF_Choice_FactionResident_Work": "Есть работа, которую нужно сделать?",
