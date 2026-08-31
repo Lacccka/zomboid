@@ -14,6 +14,7 @@ LCCQF = LCCQF or {}
 
 local C = LCCQF.Constants
 local Factions = LCCQF.FactionRegistry
+local Categories = LCCQF.SupplyCategoryRegistry
 local Sites = LCCQF.FactionSiteRegistry
 local Plan = LCCQF.FactionSiteConsumptionPlan
 local Executor = LCCQF.FactionSiteConsumptionExecutor
@@ -43,16 +44,26 @@ local function processSite(site)
         local pending = Plan.GetPending(site, row.supplyId)
         if pending > 0 or type(row.execution) == "table" then
             attempted = attempted + 1
-            local ok, result = Executor.ExecuteSupply(site, row.supplyId)
-            if ok then
-                local consumed = math.max(0, math.floor(tonumber(result) or 0))
-                applied = applied + consumed
-                logOutcome(site, row.supplyId,
-                    "outcome=PASS applied=" .. tostring(consumed)
-                    .. " pending=" .. tostring(Plan.GetPending(site, row.supplyId)))
-            else
+            local category = tostring(row.category or "")
+            if not Categories or not Categories.SupportsWholeItemConsumption
+                or Categories.SupportsWholeItemConsumption(category) ~= true
+            then
                 deferred = deferred + 1
-                logOutcome(site, row.supplyId, "outcome=DEFER detail=" .. tostring(result))
+                logOutcome(site, row.supplyId,
+                    "outcome=DEFER detail=quantity-specific physical executor required"
+                    .. " category=" .. category)
+            else
+                local ok, result = Executor.ExecuteSupply(site, row.supplyId)
+                if ok then
+                    local consumed = math.max(0, math.floor(tonumber(result) or 0))
+                    applied = applied + consumed
+                    logOutcome(site, row.supplyId,
+                        "outcome=PASS applied=" .. tostring(consumed)
+                        .. " pending=" .. tostring(Plan.GetPending(site, row.supplyId)))
+                else
+                    deferred = deferred + 1
+                    logOutcome(site, row.supplyId, "outcome=DEFER detail=" .. tostring(result))
+                end
             end
         end
     end
