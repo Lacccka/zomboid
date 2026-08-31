@@ -35,13 +35,30 @@ local function reservePolicy(definition)
         and operations.supplies or {}
 end
 
-local function normalizeMetric(value)
+local function normalizeRevision(value)
     return math.max(0, math.floor(tonumber(value) or 0))
 end
 
-local function statusFor(available, target)
-    available = normalizeMetric(available)
-    target = normalizeMetric(target)
+local function normalizeQuantity(categoryId, value)
+    local number = math.max(0, tonumber(value) or 0)
+    if Categories and Categories.NormalizeQuantity then
+        return Categories.NormalizeQuantity(categoryId, number)
+    end
+    return number
+end
+
+local function targetQuantity(categoryId, value)
+    local raw = math.max(0, tonumber(value) or 0)
+    local semantics = Categories.GetQuantitySemantics and Categories.GetQuantitySemantics(categoryId) or nil
+    if semantics and semantics.measureKind == "ITEM" and semantics.precision == 0 and semantics.splittable ~= true then
+        return math.max(0, math.ceil(raw))
+    end
+    return normalizeQuantity(categoryId, raw)
+end
+
+local function statusFor(categoryId, available, target)
+    available = normalizeQuantity(categoryId, available)
+    target = normalizeQuantity(categoryId, target)
     if target <= 0 then return "UNTRACKED" end
     if available <= 0 then return "CRITICAL" end
     if available < target then return "LOW" end
@@ -49,9 +66,9 @@ local function statusFor(available, target)
     return "ADEQUATE"
 end
 
-local function coverageRatio(available, target)
-    available = normalizeMetric(available)
-    target = normalizeMetric(target)
+local function coverageRatio(categoryId, available, target)
+    available = normalizeQuantity(categoryId, available)
+    target = normalizeQuantity(categoryId, target)
     if target <= 0 then return 1 end
     return available / target
 end
@@ -92,30 +109,36 @@ local function buildSnapshot(site, definition)
         if not Categories.IsRegistered(categoryId) then
             return nil, "unregistered supply category: " .. categoryId
         end
+        local semantics = Categories.GetQuantitySemantics(categoryId)
+        if not semantics then return nil, "quantity semantics unavailable: " .. categoryId end
+
         local perResident = math.max(0, tonumber(policy.minimumPerResident) or 0)
         local reserve = math.max(0, tonumber(policy.reserve) or 0)
-        local target = math.max(0, math.ceil((population * perResident) + reserve))
-        local available = Stock.GetCategoryQuantity(site, categoryId)
-        local deficit = math.max(0, target - available)
-        local surplus = math.max(0, available - target)
+        local target = targetQuantity(categoryId, (population * perResident) + reserve)
+        local available = normalizeQuantity(categoryId, Stock.GetCategoryQuantity(site, categoryId))
+        local deficit = normalizeQuantity(categoryId, math.max(0, target - available))
+        local surplus = normalizeQuantity(categoryId, math.max(0, available - target))
         rows[supplyId] = {
             supplyId = tostring(supplyId),
             category = categoryId,
-            available = normalizeMetric(available),
-            target = normalizeMetric(target),
-            deficit = normalizeMetric(deficit),
-            surplus = normalizeMetric(surplus),
-            coverage = coverageRatio(available, target),
-            status = statusFor(available, target),
+            unitKind = semantics.unitKind,
+            precision = semantics.precision,
+            splittable = semantics.splittable == true,
+            available = available,
+            target = target,
+            deficit = deficit,
+            surplus = surplus,
+            coverage = coverageRatio(categoryId, available, target),
+            status = statusFor(categoryId, available, target),
             minimumPerResident = perResident,
             reserve = reserve,
         }
     end
 
     return {
-        schemaVersion = 1,
+        schemaVersion = 2,
         livingPopulation = population,
-        sourceStockRevision = normalizeMetric(stock.revision),
+        sourceStockRevision = normalizeRevision(stock.revision),
         sourceStockWorldHours = tonumber(stock.verifiedWorldHours) or tonumber(stock.scannedWorldHours) or 0,
         categories = rows,
     }
@@ -125,13 +148,13 @@ function Economy.Ensure(site)
     if type(site) ~= "table" then return nil end
     if type(site.economy) ~= "table" then
         site.economy = {
-            schemaVersion = 1,
+            schemaVersion = 2,
             revision = 0,
             categories = {},
         }
     end
-    site.economy.schemaVersion = 1
-    site.economy.revision = normalizeMetric(site.economy.revision)
+    site.economy.schemaVersion = 2
+    site.economy.revision = normalizeRevision(site.economy.revision)
     site.economy.categories = type(site.economy.categories) == "table" and site.economy.categories or {}
     return site.economy
 end
@@ -144,8 +167,8 @@ function Economy.Refresh(site, definition)
     if not nextSnapshot then return false, err end
 
     local economy = Economy.Ensure(site)
-    local changed = normalizeMetric(economy.livingPopulation) ~= nextSnapshot.livingPopulation
-        or normalizeMetric(economy.sourceStockRevision) ~= nextSnapshot.sourceStockRevision
+    local changed = normalizeRevision(economy.livingPopulation) ~= nextSnapshot.livingPopulation
+        or normalizeRevision(economy.sourceStockRevision) ~= nextSnapshot.sourceStockRevision
         or not categoryMapEqual(economy.categories, nextSnapshot.categories)
 
     if changed then
@@ -153,7 +176,7 @@ function Economy.Refresh(site, definition)
         economy.sourceStockRevision = nextSnapshot.sourceStockRevision
         economy.sourceStockWorldHours = nextSnapshot.sourceStockWorldHours
         economy.categories = nextSnapshot.categories
-        economy.revision = normalizeMetric(economy.revision) + 1
+        economy.revision = normalizeRevision(economy.revision) + 1
         economy.changedWorldHours = worldHours()
         Sites.MarkDirty(site.siteId, "settlement economy snapshot changed")
     end
