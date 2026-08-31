@@ -39,7 +39,7 @@ rg -q 'originalEpisodeClosed' "$OBJECTIVE" \
     || fail "objective completion does not require need episode closure"
 rg -q 'EvaluateSettlementTransfer' "$OBJECTIVE" \
     || fail "objective cannot consume confirmed transfer events"
-rg -q 'categories\[objective\.category\] ~= true' "$OBJECTIVE" \
+rg -q 'categories\[objective\.category\] == true' "$OBJECTIVE" \
     || fail "objective does not verify server-observed supply category"
 
 if rg -q 'ModData\.(get|getOrCreate|transmit)' "$BRIDGE" "$OBJECTIVE"; then
