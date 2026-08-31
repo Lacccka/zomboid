@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="WorkshopPatches/QuestFramework"
 MOD="$ROOT/Contents/mods/LaccckaQuestFramework/42/media/lua"
 CONSTANTS="$MOD/shared/LCCQF/LCCQFConstants.lua"
+CATEGORIES="$MOD/shared/LCCQF/Core/LCCQFSupplyCategoryRegistry.lua"
 CLIENT="$MOD/client/LCCQF/FactionWorld/LCCQFSettlementTransferObserver.lua"
 SERVER="$MOD/server/LCCQF/FactionWorld/LCCQFSettlementTransferObserver.lua"
 
@@ -14,6 +15,7 @@ fail() {
 
 [[ -f "$CLIENT" ]] || fail "client transfer observer missing"
 [[ -f "$SERVER" ]] || fail "server transfer observer missing"
+[[ -f "$CATEGORIES" ]] || fail "supply category registry missing"
 
 rg -q 'REPORT_SETTLEMENT_TRANSFER_INTENT = "ReportSettlementTransferIntent"' "$CONSTANTS" \
     || fail "transfer intent command missing"
@@ -47,15 +49,22 @@ rg -q 'findDirectItem\(container, entry.itemId\)' "$SERVER" \
     || fail "server same-item destination reconciliation missing"
 rg -q 'if findOwnedItem\(player, entry.itemId\) then return false end' "$SERVER" \
     || fail "server ownership disappearance confirmation missing"
-rg -q 'item:IsFood\(\)' "$SERVER" \
-    || fail "server-confirmed event does not classify real delivered food"
+rg -q 'require "LCCQF/Content/LCCQFSupplyCategoryDefinitions"' "$SERVER" \
+    || fail "server observer does not load canonical supply categories"
+rg -q 'Categories\.Classify\(item\)' "$SERVER" \
+    || fail "server-confirmed event bypasses measured supply category semantics"
 rg -q 'categories = itemCategories\(item\)' "$SERVER" \
     || fail "confirmed transfer event lacks server-observed categories"
+rg -q 'function Registry\.Classify\(item\)' "$CATEGORIES" \
+    || fail "canonical supply classifier missing"
 rg -q 'Stock.Refresh\(site\)' "$SERVER" \
     || fail "confirmed delivery does not refresh observed stock"
 rg -q 'Operations.UpdateSite\(site, definition\)' "$SERVER" \
     || fail "confirmed delivery does not refresh settlement needs"
 
+if rg -q 'item:IsFood\(\)' "$SERVER"; then
+    fail "transfer observer must not reimplement category-specific item predicates"
+fi
 if rg -q '(AddItem|Remove)\(' "$SERVER"; then
     fail "server observer must not create, clone, or remove inventory items"
 fi
