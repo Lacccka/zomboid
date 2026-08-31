@@ -38,6 +38,7 @@ jobs:
           bash -n WorkshopPatches/QuestFramework/audit-settlement-transfer.sh
           bash -n WorkshopPatches/QuestFramework/audit-faction-supply-quests.sh
           bash -n WorkshopPatches/QuestFramework/audit-faction-supply-runtime.sh
+          bash -n WorkshopPatches/QuestFramework/audit-faction-supply-diagnostics.sh
       - name: Validate all Quest Framework Lua syntax
         run: |
           while IFS= read -r -d '' file; do
@@ -73,3 +74,5 @@ jobs:
         run: bash WorkshopPatches/QuestFramework/audit-faction-supply-quests.sh
       - name: Verify dynamic supply quest runtime contracts
         run: bash WorkshopPatches/QuestFramework/audit-faction-supply-runtime.sh
+      - name: Verify supply quest acceptance diagnostics
+        run: bash WorkshopPatches/QuestFramework/audit-faction-supply-diagnostics.sh
