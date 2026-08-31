@@ -4,12 +4,14 @@
 if isClient and isClient() and not (isServer and isServer()) then return {} end
 
 require "LCCQF/LCCQFConstants"
+require "LCCQF/Content/LCCQFSupplyCategoryDefinitions"
 require "LCCQF/World/LCCQFWorldContainerResolver"
 require "LCCQF/FactionWorld/LCCQFFactionSiteRegistry"
 
 LCCQF = LCCQF or {}
 
 local C = LCCQF.Constants
+local Categories = LCCQF.SupplyCategoryRegistry
 local Resolver = LCCQF.WorldContainerResolver
 local Sites = LCCQF.FactionSiteRegistry
 local Stock = LCCQF.FactionSiteStock or {}
@@ -94,12 +96,10 @@ local function itemFullType(item)
 end
 
 local function itemCategories(item)
-    local categories = {}
-    if item and item.IsFood then
-        local ok, food = pcall(function() return item:IsFood() end)
-        if ok and food == true then categories.food = 1 end
+    if Categories and Categories.Classify then
+        return Categories.Classify(item)
     end
-    return categories
+    return {}
 end
 
 local function scanContainer(container, itemBudget)
