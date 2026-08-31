@@ -89,6 +89,14 @@ local function matches(definition, item)
     return false
 end
 
+-- Shared category predicate used by physical stock observation, transactional
+-- consumption and future trader/economy systems. Callers never reimplement the
+-- semantic meaning of a category such as food/medicine/ammunition.
+function Registry.Matches(categoryId, item)
+    local definition = Registry.Get(categoryId)
+    return definition ~= nil and matches(definition, item) or false
+end
+
 function Registry.Classify(item)
     local out = {}
     for categoryId, definition in pairs(definitions) do
