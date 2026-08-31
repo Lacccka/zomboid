@@ -5,6 +5,7 @@ LCCQF = LCCQF or {}
 local C = LCCQF.Constants
 local Registry = LCCQF.SupplyCategoryRegistry or {}
 local definitions = Registry.definitions or {}
+local tagCache = Registry.tagCache or {}
 
 local UNIT_KINDS = {
     ITEM = true,
@@ -24,6 +25,17 @@ local function validId(value)
     return type(value) == "string" and value ~= "" and #value <= C.MAX_IDENTIFIER_LENGTH
 end
 
+local function validResourceId(value)
+    if type(value) ~= "string" or value == "" or #value > C.MAX_IDENTIFIER_LENGTH * 3 then return false end
+    if string.find(value, "%s") then return false end
+    local namespace, path = string.match(value, "^([^:]+):(.+)$")
+    if namespace then
+        return string.match(namespace, "^[%w_.%-]+$") ~= nil
+            and string.match(path, "^[%w_./%-]+$") ~= nil
+    end
+    return string.match(value, "^[%w_./%-]+$") ~= nil
+end
+
 local function finiteNumber(value)
     local number = tonumber(value)
     if number == nil or number ~= number or number == math.huge or number == -math.huge then return nil end
@@ -36,9 +48,20 @@ local function itemFullType(item)
     return ok and type(value) == "string" and value ~= "" and value or nil
 end
 
+local function validateTagList(tags)
+    if type(tags) ~= "table" or #tags < 1 then return false, "item tag match requires tags" end
+    for _, tagId in ipairs(tags) do
+        if not validResourceId(tagId) then return false, "invalid item tag resource id" end
+    end
+    return true
+end
+
 local function validateMatch(match)
     if type(match) ~= "table" or not validId(match.kind) then return false, "invalid category match" end
     if match.kind == "food" then return true end
+    if match.kind == "itemTagAny" or match.kind == "itemTagAll" then
+        return validateTagList(match.tags)
+    end
     if match.kind == "fullTypeSet" then
         if type(match.fullTypes) ~= "table" then return false, "fullTypeSet requires fullTypes" end
         local count = 0
@@ -100,6 +123,28 @@ local function normalizeMeasuredValue(quantity, value)
     return math.max(0, math.floor((number * scale) + 0.5) / scale)
 end
 
+local function resolveItemTag(tagId)
+    local cached = tagCache[tagId]
+    if cached ~= nil then return cached end
+    if not ResourceLocation or not ResourceLocation.of or not ItemTag or not ItemTag.get then return nil end
+
+    local okLocation, location = pcall(function() return ResourceLocation.of(tagId) end)
+    if not okLocation or not location then return nil end
+    local okTag, tag = pcall(function() return ItemTag.get(location) end)
+    if not okTag or not tag then return nil end
+    tagCache[tagId] = tag
+    Registry.tagCache = tagCache
+    return tag
+end
+
+local function itemHasResolvedTag(item, tagId)
+    if not item or not item.hasTag then return false end
+    local tag = resolveItemTag(tagId)
+    if not tag then return false end
+    local ok, value = pcall(function() return item:hasTag(tag) end)
+    return ok and value == true
+end
+
 function Registry.Register(definition)
     if type(definition) ~= "table" then return false, "category definition must be a table" end
     if not validId(definition.categoryId) then return false, "invalid categoryId" end
@@ -133,6 +178,20 @@ local function matches(definition, item)
         if not item or not item.IsFood then return false end
         local ok, value = pcall(function() return item:IsFood() end)
         return ok and value == true
+    end
+
+    if match.kind == "itemTagAny" then
+        for _, tagId in ipairs(match.tags or {}) do
+            if itemHasResolvedTag(item, tagId) then return true end
+        end
+        return false
+    end
+
+    if match.kind == "itemTagAll" then
+        for _, tagId in ipairs(match.tags or {}) do
+            if not itemHasResolvedTag(item, tagId) then return false end
+        end
+        return #(match.tags or {}) > 0
     end
 
     local fullType = itemFullType(item)
@@ -221,5 +280,6 @@ function Registry.List()
 end
 
 Registry.definitions = definitions
+Registry.tagCache = tagCache
 LCCQF.SupplyCategoryRegistry = Registry
 return Registry
