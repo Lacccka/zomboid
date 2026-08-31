@@ -5,6 +5,8 @@ project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 lua_root="$project_root/Contents/mods/LaccckaQuestFramework/42/media/lua"
 
 constants="$lua_root/shared/LCCQF/LCCQFConstants.lua"
+categories="$lua_root/shared/LCCQF/Core/LCCQFSupplyCategoryRegistry.lua"
+category_defs="$lua_root/shared/LCCQF/Content/LCCQFSupplyCategoryDefinitions.lua"
 resolver="$lua_root/server/LCCQF/World/LCCQFWorldContainerResolver.lua"
 stock="$lua_root/server/LCCQF/FactionWorld/LCCQFFactionSiteStock.lua"
 service="$lua_root/server/LCCQF/FactionWorld/zz_LCCQFFactionSiteStockService.lua"
@@ -22,7 +24,7 @@ require_pattern() {
     rg -q "$pattern" "$file" || fail "$message"
 }
 
-for required in "$constants" "$resolver" "$stock" "$service" "$bootstrap"; do
+for required in "$constants" "$categories" "$category_defs" "$resolver" "$stock" "$service" "$bootstrap"; do
     [[ -f "$required" ]] || fail "missing $required"
 done
 
@@ -50,7 +52,10 @@ require_pattern 'function Stock\.GetCategoryQuantity' "$stock" "stock category q
 require_pattern 'function Stock\.FindContainersForItem' "$stock" "stock locator query missing"
 require_pattern 'quantitiesByFullType' "$stock" "full-type stock aggregation missing"
 require_pattern 'categories = \{\}' "$stock" "stock category aggregation missing"
-require_pattern 'item:IsFood\(\)' "$stock" "actual food-item classification missing"
+require_pattern 'Categories\.Classify\(item\)' "$stock" "stock scanner bypasses shared supply categories"
+require_pattern 'match\.kind == "food"' "$categories" "food category implementation missing"
+require_pattern 'item:IsFood\(\)' "$categories" "actual B42 food-item predicate missing"
+require_pattern 'categoryId = "food"' "$category_defs" "food category is not registered as content"
 require_pattern 'snapshot\.complete ~= true' "$stock" "incomplete scans do not fail closed"
 require_pattern 'container budget exhausted' "$stock" "container budget failure state missing"
 require_pattern 'item budget exhausted' "$stock" "item budget failure state missing"
@@ -62,7 +67,7 @@ require_pattern 'FACTION_SITE_STOCK_REFRESH_WORLD_HOURS' "$service" "stock servi
 require_pattern 'Events\.EveryOneMinute' "$service" "stock refresh coordinator missing"
 require_pattern 'zz_LCCQFFactionSiteStockService' "$bootstrap" "stock service not bootstrapped"
 
-# The stock layer is observational. Item mutation belongs to a later transactional layer.
+# The stock layer is observational. Item mutation belongs to the transactional executor.
 if rg -n 'AddItem|AddItems|RemoveItem|RemoveOneOf|RemoveAll|clear\(|Clear\(' "$resolver" "$stock" "$service"; then
     fail "read-only stock layer mutates inventory"
 fi
@@ -81,4 +86,4 @@ if command -v lua >/dev/null 2>&1; then
     lua -e "assert(loadfile([[$service]]))"
 fi
 
-echo "QuestFramework faction stock audit: PASS (exact B42 container locators + bounded read-only settlement snapshots + observed item categories + fail-closed reconciliation)"
+echo "QuestFramework faction stock audit: PASS (exact B42 container locators + bounded read-only settlement snapshots + shared observed item categories + fail-closed reconciliation)"
