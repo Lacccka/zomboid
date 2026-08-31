@@ -15,10 +15,11 @@ require "LCCQF/FactionWorld/LCCQFFactionNPCBridge"
 -- Relocation runs before materialization so a validated replacement can inherit the
 -- old logical population before provider spawn begins.
 require "LCCQF/FactionWorld/zz_LCCQFFactionSiteRelocationService"
--- Physical world observation is read-only. Economy then normalizes verified stock into
--- policy metrics before operations converts those metrics into needs/signals/jobs.
+-- Physical world observation is read-only. Economy normalizes verified stock into
+-- policy metrics, then logical consumption accrues demand without mutating containers.
 require "LCCQF/FactionWorld/zz_LCCQFFactionSiteStockService"
 require "LCCQF/FactionWorld/zz_LCCQFFactionSiteEconomyService"
+require "LCCQF/FactionWorld/zz_LCCQFFactionSiteConsumptionService"
 -- Operations assignment runs before physical materialization. The projection service
 -- runs afterwards, so newly spawned provider actors receive already-persisted duty.
 require "LCCQF/FactionWorld/zz_LCCQFFactionSiteOperationsService"
@@ -41,5 +42,5 @@ require "LCCQF/FactionWorld/zz_LCCQFFactionSupplyQuestDiagnostics"
 
 require "LCCQF/FactionWorld/LCCQFFactionSiteDebugServer"
 
-print("[LCCQF][SERVER] faction bootstrap loaded discovery=true relationships=true siteAllocator=location-only siteValidation=resources population=logical lifecycle=reconcile+virtualize+rematerialize maintenance=replacements relocation=identity-preserving health=loaded-world stock=exact-read-only economy=observed-policy operations=jobs+schedules+needs+signals generatedNPCs=public-projection supplyQuests=restart-safe+per-life-transfer materializer=Bandits guard=duty-aware debug=privileged")
+print("[LCCQF][SERVER] faction bootstrap loaded discovery=true relationships=true siteAllocator=location-only siteValidation=resources population=logical lifecycle=reconcile+virtualize+rematerialize maintenance=replacements relocation=identity-preserving health=loaded-world stock=exact-read-only economy=observed-policy consumption=logical-demand operations=jobs+schedules+needs+signals generatedNPCs=public-projection supplyQuests=restart-safe+per-life-transfer materializer=Bandits guard=duty-aware debug=privileged")
 return true
