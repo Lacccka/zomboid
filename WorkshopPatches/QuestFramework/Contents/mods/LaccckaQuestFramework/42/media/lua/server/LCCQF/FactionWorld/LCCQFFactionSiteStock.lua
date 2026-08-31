@@ -83,10 +83,19 @@ local function findLoadedBuilding(site)
     return nil, "settlement building is not currently loaded"
 end
 
-local function addQuantity(target, key, amount)
+local function addItemCount(target, key, amount)
     if type(key) ~= "string" or key == "" then return end
     target[key] = math.max(0, math.floor(tonumber(target[key]) or 0))
         + math.max(0, math.floor(tonumber(amount) or 0))
+end
+
+local function addMeasuredQuantity(target, key, amount)
+    if type(key) ~= "string" or key == "" then return end
+    local current = tonumber(target[key]) or 0
+    local delta = tonumber(amount) or 0
+    if current ~= current or current == math.huge or current == -math.huge then current = 0 end
+    if delta ~= delta or delta == math.huge or delta == -math.huge or delta <= 0 then return end
+    target[key] = math.max(0, current + delta)
 end
 
 local function itemFullType(item)
@@ -119,10 +128,10 @@ local function scanContainer(container, itemBudget)
         local item = items:get(index)
         local fullType = itemFullType(item)
         if fullType then
-            addQuantity(quantities, fullType, 1)
+            addItemCount(quantities, fullType, 1)
             counted = counted + 1
             for category, amount in pairs(itemCategories(item)) do
-                addQuantity(categories, category, amount)
+                addMeasuredQuantity(categories, category, amount)
             end
         end
     end
@@ -158,10 +167,10 @@ local function scanObjectList(objects, seenObjects, snapshot, budgets)
                 snapshot.containerCount = snapshot.containerCount + 1
                 snapshot.itemCount = snapshot.itemCount + itemCount
                 for fullType, amount in pairs(quantities) do
-                    addQuantity(snapshot.quantitiesByFullType, fullType, amount)
+                    addItemCount(snapshot.quantitiesByFullType, fullType, amount)
                 end
                 for category, amount in pairs(categories) do
-                    addQuantity(snapshot.categories, category, amount)
+                    addMeasuredQuantity(snapshot.categories, category, amount)
                 end
                 if itemExhausted then return true end
             end
@@ -186,7 +195,7 @@ local function scanBuilding(site, building)
         items = { remaining = itemLimit },
     }
     local snapshot = {
-        schemaVersion = 1,
+        schemaVersion = 2,
         scannedWorldHours = worldHours(),
         complete = true,
         tilesVisited = 0,
@@ -262,7 +271,8 @@ local function sortedQuantitySignature(quantities)
     table.sort(keys)
     local parts = {}
     for _, key in ipairs(keys) do
-        parts[#parts + 1] = key .. "=" .. tostring(math.floor(tonumber(quantities[key]) or 0))
+        local value = tonumber(quantities[key]) or 0
+        parts[#parts + 1] = key .. "=" .. string.format("%.6f", value)
     end
     return table.concat(parts, ",")
 end
@@ -270,6 +280,7 @@ end
 local function contentSignature(snapshot)
     if type(snapshot) ~= "table" then return "" end
     local parts = {
+        tostring(snapshot.schemaVersion or 1),
         tostring(snapshot.containerCount or 0),
         tostring(snapshot.itemCount or 0),
         sortedQuantitySignature(snapshot.quantitiesByFullType),
@@ -332,7 +343,11 @@ end
 function Stock.GetCategoryQuantity(siteOrId, category)
     local site = type(siteOrId) == "table" and siteOrId or Sites.GetSite(siteOrId)
     local categories = site and site.stock and site.stock.categories or nil
-    return math.max(0, math.floor(tonumber(categories and categories[category]) or 0))
+    local value = math.max(0, tonumber(categories and categories[category]) or 0)
+    if Categories and Categories.NormalizeQuantity then
+        return Categories.NormalizeQuantity(category, value)
+    end
+    return value
 end
 
 function Stock.FindContainersForItem(siteOrId, fullType)
