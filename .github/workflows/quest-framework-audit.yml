@@ -36,6 +36,7 @@ jobs:
           bash -n WorkshopPatches/QuestFramework/audit-faction-npcs.sh
           bash -n WorkshopPatches/QuestFramework/audit-faction-stock.sh
           bash -n WorkshopPatches/QuestFramework/audit-faction-economy.sh
+          bash -n WorkshopPatches/QuestFramework/audit-faction-quantity-semantics.sh
           bash -n WorkshopPatches/QuestFramework/audit-faction-consumption.sh
           bash -n WorkshopPatches/QuestFramework/audit-faction-consumption-executor.sh
           bash -n WorkshopPatches/QuestFramework/audit-settlement-transfer.sh
@@ -84,6 +85,8 @@ jobs:
         run: bash WorkshopPatches/QuestFramework/audit-faction-stock.sh
       - name: Verify settlement economy contracts
         run: bash WorkshopPatches/QuestFramework/audit-faction-economy.sh
+      - name: Verify settlement quantity semantics
+        run: bash WorkshopPatches/QuestFramework/audit-faction-quantity-semantics.sh
       - name: Verify settlement consumption planning contracts
         run: bash WorkshopPatches/QuestFramework/audit-faction-consumption.sh
       - name: Verify transactional settlement consumption contracts
