@@ -1,20 +1,20 @@
 -- Server-owned faction site jobs, schedules, infrastructure capabilities and needs.
--- This layer stores plain logical data only. Physical stock is consumed as a read-only
--- snapshot; inventory mutation belongs to a separate transactional layer.
+-- This layer stores plain logical data only. Supply needs are projected from the
+-- quantity-aware economy snapshot; inventory mutation belongs to transactional layers.
 if isClient and isClient() and not (isServer and isServer()) then return {} end
 
 require "LCCQF/LCCQFConstants"
 require "LCCQF/Core/LCCQFFactionJobRegistry"
 require "LCCQF/FactionWorld/LCCQFFactionSiteRegistry"
 require "LCCQF/FactionWorld/LCCQFFactionSitePopulation"
-require "LCCQF/FactionWorld/LCCQFFactionSiteStock"
+require "LCCQF/FactionWorld/LCCQFFactionSiteEconomy"
 
 LCCQF = LCCQF or {}
 
 local Jobs = LCCQF.FactionJobRegistry
 local Sites = LCCQF.FactionSiteRegistry
 local Population = LCCQF.FactionSitePopulation
-local Stock = LCCQF.FactionSiteStock
+local Economy = LCCQF.FactionSiteEconomy
 local Operations = LCCQF.FactionSiteOperations or {}
 
 local function worldHours()
@@ -176,36 +176,37 @@ local function buildCapabilities(site)
     }
 end
 
-local function buildSupplyNeeds(site, profile, livingPopulation)
+local function buildSupplyNeeds(site)
     local out = {}
-    local stock = type(site.stock) == "table" and site.stock or nil
-    if not stock or stock.complete ~= true then return out end
+    local economy = type(site.economy) == "table" and site.economy or nil
+    if not economy or type(economy.categories) ~= "table" then return out end
 
-    for supplyId, spec in pairs(type(profile.supplies) == "table" and profile.supplies or {}) do
-        local category = tostring(spec.category or supplyId)
-        local perResident = math.max(0, tonumber(spec.minimumPerResident) or 0)
-        local reserve = math.max(0, tonumber(spec.reserve) or 0)
-        local target = math.max(0, math.ceil((livingPopulation * perResident) + reserve))
-        local available = Stock.GetCategoryQuantity(site, category)
-        out[supplyId] = {
-            supplyId = supplyId,
-            category = category,
-            available = available,
-            target = target,
-            deficit = math.max(0, target - available),
-            stockRevision = math.max(0, math.floor(tonumber(stock.revision) or 0)),
+    for _, row in ipairs(Economy.ListSupplies(site)) do
+        out[row.supplyId] = {
+            supplyId = row.supplyId,
+            category = row.category,
+            unitKind = row.unitKind,
+            precision = row.precision,
+            splittable = row.splittable == true,
+            available = math.max(0, tonumber(row.available) or 0),
+            target = math.max(0, tonumber(row.target) or 0),
+            deficit = math.max(0, tonumber(row.deficit) or 0),
+            surplus = math.max(0, tonumber(row.surplus) or 0),
+            status = row.status,
+            economyRevision = math.max(0, math.floor(tonumber(economy.revision) or 0)),
+            stockRevision = math.max(0, math.floor(tonumber(economy.sourceStockRevision) or 0)),
         }
     end
     return out
 end
 
-local function buildNeeds(site, capabilities, profile)
+local function buildNeeds(site, capabilities)
     return {
         housingDeficit = math.max(0, capabilities.livingPopulation - capabilities.beds),
         waterSourceMissing = capabilities.waterSources < 1,
         storageMissing = capabilities.storageContainers < 1,
         foodAccessMissing = capabilities.foodAccessContainers < 1,
-        supplies = buildSupplyNeeds(site, profile, capabilities.livingPopulation),
+        supplies = buildSupplyNeeds(site),
     }
 end
 
@@ -304,7 +305,7 @@ local function updateSupplySignals(site, operations, needs, nowHours)
     for supplyId, need in pairs(type(needs.supplies) == "table" and needs.supplies or {}) do
         local signalId = tostring(site.siteId) .. ":need:supply:" .. tostring(supplyId)
         activeIds[signalId] = true
-        local deficit = math.max(0, math.floor(tonumber(need.deficit) or 0))
+        local deficit = math.max(0, tonumber(need.deficit) or 0)
         local shouldOpen = deficit > 0
         local nextStatus = shouldOpen and "OPEN" or "RESOLVED"
         local signal = operations.signals[signalId]
@@ -313,6 +314,9 @@ local function updateSupplySignals(site, operations, needs, nowHours)
             or tonumber(signal.value) ~= deficit
             or tonumber(signal.available) ~= tonumber(need.available)
             or tonumber(signal.target) ~= tonumber(need.target)
+            or tostring(signal.unitKind or "") ~= tostring(need.unitKind or "")
+            or tonumber(signal.precision) ~= tonumber(need.precision)
+            or (signal.splittable == true) ~= (need.splittable == true)
         if type(signal) ~= "table" then
             signal = {
                 signalId = signalId,
@@ -328,10 +332,14 @@ local function updateSupplySignals(site, operations, needs, nowHours)
             signal.openEpoch = nextOpenEpoch(signal, shouldOpen)
             signal.status = nextStatus
             signal.category = need.category
+            signal.unitKind = need.unitKind
+            signal.precision = need.precision
+            signal.splittable = need.splittable == true
             signal.value = deficit
             signal.available = need.available
             signal.target = need.target
             signal.stockRevision = need.stockRevision
+            signal.economyRevision = need.economyRevision
             signal.revision = math.max(0, math.floor(tonumber(signal.revision) or 0)) + 1
             signal.changedWorldHours = nowHours
             if shouldOpen then signal.raisedWorldHours = nowHours else signal.resolvedWorldHours = nowHours end
@@ -392,7 +400,7 @@ function Operations.UpdateSite(site, definition)
     local changed = false
 
     local capabilities = buildCapabilities(site)
-    local needs = buildNeeds(site, capabilities, profile)
+    local needs = buildNeeds(site, capabilities)
     if not capabilityEqual(operations.capabilities, capabilities) then
         operations.capabilities = capabilities
         changed = true
