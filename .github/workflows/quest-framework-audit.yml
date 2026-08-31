@@ -40,6 +40,7 @@ jobs:
           bash -n WorkshopPatches/QuestFramework/audit-faction-supply-runtime.sh
           bash -n WorkshopPatches/QuestFramework/audit-faction-supply-diagnostics.sh
           bash -n WorkshopPatches/QuestFramework/audit-lccqf-requires.sh
+          bash -n WorkshopPatches/QuestFramework/audit-lccqf-translations.sh
       - name: Validate all Quest Framework Lua syntax
         run: |
           while IFS= read -r -d '' file; do
@@ -47,6 +48,8 @@ jobs:
           done < <(find WorkshopPatches/QuestFramework/Contents/mods/LaccckaQuestFramework/42/media/lua -type f -name '*.lua' -print0)
       - name: Verify internal LCCQF require targets
         run: bash WorkshopPatches/QuestFramework/audit-lccqf-requires.sh
+      - name: Verify literal Quest Framework translations
+        run: bash WorkshopPatches/QuestFramework/audit-lccqf-translations.sh
       - name: Verify Quest Framework contracts
         run: bash WorkshopPatches/QuestFramework/audit.sh
       - name: Verify NPC relationship contracts
