@@ -1,7 +1,7 @@
 -- Persistent logical consumption planning for faction settlements.
 -- This module accrues demand from population and faction policy, but deliberately does
--- not mutate physical ItemContainer state. A later transactional executor must prove
--- exact loaded-world removal before acknowledging pending units as consumed.
+-- not mutate physical ItemContainer state. A transactional executor must prove exact
+-- loaded-world removal before acknowledging pending units as consumed.
 if isClient and isClient() and not (isServer and isServer()) then return {} end
 
 require "LCCQF/LCCQFConstants"
@@ -154,24 +154,37 @@ function Plan.List(siteOrId)
     return out
 end
 
--- Future physical executors must call this only after exact world-container mutation and
--- post-mutation reconciliation succeed. Token storage intentionally remains out of this
--- planning layer until the executor contract exists.
-function Plan.AcknowledgeApplied(siteOrId, supplyId, quantity)
+-- Called only after the physical executor proves exact world-container mutation and
+-- post-mutation reconciliation. transactionId makes crash/retry acknowledgement
+-- idempotent: a recovered MUTATED transaction can never decrement pending demand twice.
+function Plan.AcknowledgeApplied(siteOrId, supplyId, quantity, transactionId)
     local site = type(siteOrId) == "table" and siteOrId or Sites.GetSite(siteOrId)
     local row = site and site.economy and site.economy.consumption
         and site.economy.consumption.rows and site.economy.consumption.rows[supplyId] or nil
     local amount = normalizeUnits(quantity)
-    if not row or amount < 1 or amount > normalizeUnits(row.pendingUnits) then
+    local txId = transactionId ~= nil and tostring(transactionId) or nil
+    if txId == "" then txId = nil end
+    if not row or amount < 1 then
         return false, "invalid consumption acknowledgement"
     end
+    if txId and row.lastAcknowledgedTransactionId == txId then
+        return true, "duplicate"
+    end
+    if amount > normalizeUnits(row.pendingUnits) then
+        return false, "consumption acknowledgement exceeds pending demand"
+    end
+
     row.pendingUnits = normalizeUnits(row.pendingUnits) - amount
     row.appliedTotal = normalizeUnits(row.appliedTotal) + amount
     row.lastAppliedWorldHours = worldHours()
+    if txId then
+        row.lastAcknowledgedTransactionId = txId
+        row.lastAcknowledgedUnits = amount
+    end
     site.economy.consumption.revision = normalizeUnits(site.economy.consumption.revision) + 1
     site.economy.revision = normalizeUnits(site.economy.revision) + 1
     Sites.MarkDirty(site.siteId, "settlement consumption acknowledged")
-    return true
+    return true, "applied"
 end
 
 LCCQF.FactionSiteConsumptionPlan = Plan
