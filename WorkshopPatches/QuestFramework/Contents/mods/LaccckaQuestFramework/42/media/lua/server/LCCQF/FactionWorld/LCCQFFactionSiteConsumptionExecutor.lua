@@ -34,7 +34,7 @@ local function itemId(item)
     if not item or not item.getID then return nil end
     local ok, value = pcall(function() return item:getID() end)
     value = ok and tonumber(value) or nil
-    if value == nil then return nil end
+    if value == nil or value < 0 then return nil end
     return math.floor(value)
 end
 
@@ -79,10 +79,15 @@ local function listItems(container)
     return items
 end
 
+local function listSize(items)
+    if not items or not items.size then return 0 end
+    local ok, size = pcall(function() return items:size() end)
+    return ok and math.max(0, math.floor(tonumber(size) or 0)) or 0
+end
+
 local function findItemById(container, wantedId)
     local items = listItems(container)
-    local size = items and items.size and items:size() or 0
-    for index = 0, size - 1 do
+    for index = 0, listSize(items) - 1 do
         local item = items:get(index)
         if itemId(item) == wantedId then return item end
     end
@@ -115,15 +120,15 @@ local function collectLiveItemIds(site)
     local rows = site and site.stock and site.stock.containers or {}
     for _, snapshotRow in ipairs(rows) do
         local _, container = Resolver.Resolve(snapshotRow.locator)
-        if container then
-            local items = listItems(container)
-            local size = items and items.size and items:size() or 0
-            for index = 0, size - 1 do
-                if visited >= limit then return nil, "item-id reconciliation budget exhausted" end
-                visited = visited + 1
-                local id = itemId(items:get(index))
-                if id ~= nil then ids[id] = true end
-            end
+        if not container then
+            return nil, "post-refresh container locator no longer resolves: " .. tostring(snapshotRow.locatorKey)
+        end
+        local items = listItems(container)
+        for index = 0, listSize(items) - 1 do
+            if visited >= limit then return nil, "item-id reconciliation budget exhausted" end
+            visited = visited + 1
+            local id = itemId(items:get(index))
+            if id ~= nil then ids[id] = true end
         end
     end
     return ids, nil
@@ -158,8 +163,7 @@ local function selectItems(site, category, requested)
             local _, container = Resolver.Resolve(snapshotRow.locator)
             if container then
                 local items = listItems(container)
-                local size = items and items.size and items:size() or 0
-                for index = 0, size - 1 do
+                for index = 0, listSize(items) - 1 do
                     if #selected >= requested then break end
                     local item = items:get(index)
                     local id = itemId(item)
