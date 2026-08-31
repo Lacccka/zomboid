@@ -28,7 +28,7 @@ rg -q 'SupplyBridge.IsOfferOpen\(offer.questId\)' "$SERVICE" \
     || fail "accept action does not revalidate current OPEN offer"
 rg -q 'SupplyBridge.CanNpcHandleOffer\(offer, npcId\)' "$SERVICE" \
     || fail "accept action does not revalidate presenter delegation"
-rg -q 'acceptContext.giverNpcId = offer.giverNpcId' "$SERVICE" \
+rg -q 'out.giverNpcId = offer.giverNpcId' "$SERVICE" \
     || fail "delegated acceptance does not restore canonical historical giver"
 rg -q 'out.dialogueNpcId = dialogueNpcId' "$SERVICE" \
     || fail "delegated acceptance loses the actual dialogue NPC identity"
