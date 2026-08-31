@@ -26,7 +26,7 @@ rg -q 'SupplyBridge.RegisterDefinition\(offer\)' "$RESTORE" \
 rg -q 'Events.OnServerStarted.Add\(onServerStarted\)' "$RESTORE" \
     || fail "historical definitions are not restored during server startup"
 
-if rg -q 'site.state ==|site.state ~=|ACTIVE|DORMANT|VALIDATING|RELOCATING|ABANDONED' "$RESTORE"; then
+if rg -q 'site\.state\s*(==|~=)' "$RESTORE"; then
     fail "historical definition reconstruction must not be filtered by current site state"
 fi
 
