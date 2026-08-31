@@ -1,6 +1,6 @@
 -- Client-side observer for vanilla inventory transfers into settlement containers.
--- The client reports only a pre-transaction intent. The server decides whether the
--- destination belongs to a faction site and confirms the same item ID after vanilla MP sync.
+-- The client reports only pre-transaction item intents. The server decides whether the
+-- destination belongs to a faction site and confirms the same item IDs after vanilla MP sync.
 require "LCCQF/LCCQFConstants"
 require "TimedActions/ISInventoryTransferAction"
 
@@ -165,11 +165,11 @@ local function itemId(item)
     return math.floor(value)
 end
 
-local function reportIntent(action)
-    if not action or not action.character or not action.item then return end
+local function reportItemIntent(action, item)
+    if not action or not action.character or not item then return end
     if not sourceOwnedByCharacter(action.srcContainer, action.character) then return end
 
-    local id = itemId(action.item)
+    local id = itemId(item)
     local locator = buildLocator(action.destContainer)
     if not id or not locator or type(sendClientCommand) ~= "function" then return end
 
@@ -187,22 +187,43 @@ local function reportIntent(action)
     })
 end
 
+local function reportQueuedIntents(action)
+    if not action or type(action.queueList) ~= "table" then return end
+    for _, group in ipairs(action.queueList) do
+        for _, item in ipairs(type(group) == "table" and group.items or {}) do
+            reportItemIntent(action, item)
+        end
+    end
+end
+
 function Observer.Install()
     if Observer.installed == true then return true end
-    if not ISInventoryTransferAction or type(ISInventoryTransferAction.start) ~= "function" then
+    if not ISInventoryTransferAction
+        or type(ISInventoryTransferAction.new) ~= "function"
+        or type(ISInventoryTransferAction.checkQueueList) ~= "function"
+    then
         return false
     end
 
-    local originalStart = ISInventoryTransferAction.start
-    Observer.originalStart = originalStart
+    local originalNew = ISInventoryTransferAction.new
+    local originalCheckQueueList = ISInventoryTransferAction.checkQueueList
+    Observer.originalNew = originalNew
+    Observer.originalCheckQueueList = originalCheckQueueList
 
-    function ISInventoryTransferAction:start()
-        reportIntent(self)
-        return originalStart(self)
+    function ISInventoryTransferAction:new(character, item, srcContainer, destContainer, time)
+        local action = originalNew(self, character, item, srcContainer, destContainer, time)
+        reportItemIntent(action, item)
+        return action
+    end
+
+    function ISInventoryTransferAction:checkQueueList()
+        local result = originalCheckQueueList(self)
+        reportQueuedIntents(self)
+        return result
     end
 
     Observer.installed = true
-    log("vanilla transfer intent hook installed")
+    log("vanilla transfer intent hooks installed")
     return true
 end
 

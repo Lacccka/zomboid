@@ -128,6 +128,15 @@ local function itemFullType(item)
     return ok and type(value) == "string" and value ~= "" and value or nil
 end
 
+local function itemCategories(item)
+    local categories = {}
+    if item and item.IsFood then
+        local ok, value = pcall(function() return item:IsFood() end)
+        if ok and value == true then categories.food = true end
+    end
+    return categories
+end
+
 local function nestedInventory(item)
     if not item or not item.getInventory then return nil end
     local ok, value = pcall(function() return item:getInventory() end)
@@ -227,6 +236,7 @@ local function eventPayload(entry, site, item)
         factionId = site.factionId,
         itemId = entry.itemId,
         fullType = itemFullType(item) or entry.fullType,
+        categories = itemCategories(item),
         locatorKey = entry.locatorKey,
         playerUsername = entry.playerUsername,
         playerOnlineId = entry.playerOnlineId,

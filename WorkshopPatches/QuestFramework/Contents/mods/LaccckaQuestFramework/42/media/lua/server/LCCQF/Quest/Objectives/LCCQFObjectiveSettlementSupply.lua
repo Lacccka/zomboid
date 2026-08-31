@@ -1,6 +1,6 @@
 -- Server-owned objective for an autonomous settlement supply episode.
--- Progress is credited only by confirmed settlement transfer events. Completion also
--- requires the original need episode to have closed in authoritative site operations.
+-- Confirmed vanilla transfers enter only through an ephemeral server queue. QuestService
+-- consumes them through its normal EvaluateTick/applyHandlerResult persistence path.
 if isClient and isClient() and not (isServer and isServer()) then return {} end
 
 require "LCCQF/FactionWorld/LCCQFFactionSiteRegistry"
@@ -9,7 +9,8 @@ LCCQF = LCCQF or {}
 LCCQF.QuestObjectives = LCCQF.QuestObjectives or {}
 
 local Sites = LCCQF.FactionSiteRegistry
-local SettlementSupply = {}
+local SettlementSupply = LCCQF.QuestObjectives.SettlementSupply or {}
+local transferQueues = SettlementSupply.transferQueues or {}
 
 local function validString(value, maximum)
     return type(value) == "string" and value ~= "" and #value <= (maximum or 192)
@@ -23,6 +24,19 @@ end
 
 local function minimumContribution(value)
     return math.max(1, math.min(1000, math.floor(tonumber(value) or 1)))
+end
+
+local function playerKey(player)
+    if not player then return nil end
+    if player.getOnlineID then
+        local ok, value = pcall(function() return player:getOnlineID() end)
+        if ok and value ~= nil then return "id:" .. tostring(value) end
+    end
+    if player.getUsername then
+        local ok, value = pcall(function() return player:getUsername() end)
+        if ok and value ~= nil then return "user:" .. tostring(value) end
+    end
+    return nil
 end
 
 function SettlementSupply.Create(spec)
@@ -79,14 +93,54 @@ local function originalEpisodeClosed(objective, signal)
     return currentEpoch == wantedEpoch and signal.status == "RESOLVED"
 end
 
+local function eventMatches(objective, event)
+    if type(objective) ~= "table" or type(event) ~= "table" then return false end
+    if tostring(event.siteId or "") ~= tostring(objective.siteId or "") then return false end
+    local categories = type(event.categories) == "table" and event.categories or {}
+    return categories[objective.category] == true
+end
+
+function SettlementSupply.QueueConfirmedTransfer(player, event)
+    local key = playerKey(player)
+    if not key or type(event) ~= "table" or event.stockRefreshOk ~= true then return false end
+    local queue = transferQueues[key]
+    if type(queue) ~= "table" then
+        queue = {}
+        transferQueues[key] = queue
+    end
+    if #queue >= 128 then table.remove(queue, 1) end
+    queue[#queue + 1] = event
+    SettlementSupply.transferQueues = transferQueues
+    return true
+end
+
+function SettlementSupply.DiscardQueuedTransfers(player)
+    local key = playerKey(player)
+    if not key then return false end
+    local existed = transferQueues[key] ~= nil
+    transferQueues[key] = nil
+    SettlementSupply.transferQueues = transferQueues
+    return existed
+end
+
+local function consumeMatchingTransfer(player, objective)
+    local key = playerKey(player)
+    local queue = key and transferQueues[key] or nil
+    if type(queue) ~= "table" then return nil end
+    for index, event in ipairs(queue) do
+        if eventMatches(objective, event) then
+            table.remove(queue, index)
+            if #queue == 0 then transferQueues[key] = nil end
+            return event
+        end
+    end
+    return nil
+end
+
 function SettlementSupply.EvaluateSettlementTransfer(player, objective, event)
-    if not player or not objective or objective.state ~= "active" or type(event) ~= "table" then
+    if not player or not objective or objective.state ~= "active" or not eventMatches(objective, event) then
         return false, false
     end
-    if tostring(event.siteId or "") ~= tostring(objective.siteId) then return false, false end
-    local categories = type(event.categories) == "table" and event.categories or {}
-    if categories[objective.category] ~= true then return false, false end
-
     local contributed = math.max(0, math.floor(tonumber(objective.contributed) or 0)) + 1
     objective.contributed = contributed
     local site, signal = signalForObjective(objective)
@@ -94,7 +148,6 @@ function SettlementSupply.EvaluateSettlementTransfer(player, objective, event)
         objective.lastAvailable = math.max(0, math.floor(tonumber(signal.available) or 0))
         objective.target = math.max(0, math.floor(tonumber(signal.target) or 0))
     end
-
     local complete = contributed >= minimumContribution(objective.minimumContribution)
         and originalEpisodeClosed(objective, signal)
     return complete, true, complete and "settlement_supply_delivered" or "settlement_supply_contribution"
@@ -102,18 +155,26 @@ end
 
 function SettlementSupply.EvaluateTick(player, objective)
     if not player or not objective or objective.state ~= "active" then return false, false end
-    local _, signal = signalForObjective(objective)
+
     local changed = false
+    local event = consumeMatchingTransfer(player, objective)
+    if event then
+        objective.contributed = math.max(0, math.floor(tonumber(objective.contributed) or 0)) + 1
+        changed = true
+    end
+
+    local _, signal = signalForObjective(objective)
     if signal then
         local available = math.max(0, math.floor(tonumber(signal.available) or 0))
         local target = math.max(0, math.floor(tonumber(signal.target) or 0))
         if tonumber(objective.lastAvailable) ~= available then objective.lastAvailable = available changed = true end
         if tonumber(objective.target) ~= target then objective.target = target changed = true end
     end
+
     local complete = math.max(0, math.floor(tonumber(objective.contributed) or 0))
             >= minimumContribution(objective.minimumContribution)
         and originalEpisodeClosed(objective, signal)
-    return complete, changed, complete and "settlement_supply_resolved" or nil
+    return complete, changed, complete and "settlement_supply_resolved" or (event and "settlement_supply_contribution" or nil)
 end
 
 function SettlementSupply.MakeProgressView(objective)
@@ -121,5 +182,6 @@ function SettlementSupply.MakeProgressView(objective)
         minimumContribution(objective and objective.minimumContribution)
 end
 
+SettlementSupply.transferQueues = transferQueues
 LCCQF.QuestObjectives.SettlementSupply = SettlementSupply
 return SettlementSupply

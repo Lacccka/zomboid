@@ -24,12 +24,16 @@ rg -q 'FACTION_SITE_TRANSFER_REFRESH_DEBOUNCE_MS' "$CONSTANTS" \
 
 rg -q 'require "TimedActions/ISInventoryTransferAction"' "$CLIENT" \
     || fail "client must hook vanilla inventory transfer action"
-rg -q 'function ISInventoryTransferAction:start\(\)' "$CLIENT" \
-    || fail "client pre-transaction start hook missing"
-rg -q 'reportIntent\(self\)' "$CLIENT" \
-    || fail "client does not report pre-transaction intent"
-rg -q 'return originalStart\(self\)' "$CLIENT" \
-    || fail "client does not delegate to vanilla transfer"
+rg -q 'function ISInventoryTransferAction:new\(' "$CLIENT" \
+    || fail "client early per-item intent hook missing"
+rg -q 'function ISInventoryTransferAction:checkQueueList\(\)' "$CLIENT" \
+    || fail "client batch pre-transaction hook missing"
+rg -q 'reportItemIntent\(action, item\)' "$CLIENT" \
+    || fail "client does not report exact item intent"
+rg -q 'reportQueuedIntents\(self\)' "$CLIENT" \
+    || fail "client does not report all batched item IDs"
+rg -q 'originalCheckQueueList\(self\)' "$CLIENT" \
+    || fail "client does not delegate vanilla queue batching"
 
 rg -q 'findOwnedItem\(player, itemIdValue\)' "$SERVER" \
     || fail "server pre-transfer ownership verification missing"
@@ -43,6 +47,10 @@ rg -q 'findDirectItem\(container, entry.itemId\)' "$SERVER" \
     || fail "server same-item destination reconciliation missing"
 rg -q 'if findOwnedItem\(player, entry.itemId\) then return false end' "$SERVER" \
     || fail "server ownership disappearance confirmation missing"
+rg -q 'item:IsFood\(\)' "$SERVER" \
+    || fail "server-confirmed event does not classify real delivered food"
+rg -q 'categories = itemCategories\(item\)' "$SERVER" \
+    || fail "confirmed transfer event lacks server-observed categories"
 rg -q 'Stock.Refresh\(site\)' "$SERVER" \
     || fail "confirmed delivery does not refresh observed stock"
 rg -q 'Operations.UpdateSite\(site, definition\)' "$SERVER" \
