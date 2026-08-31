@@ -39,6 +39,7 @@ jobs:
           bash -n WorkshopPatches/QuestFramework/audit-settlement-transfer-character-identity.sh
           bash -n WorkshopPatches/QuestFramework/audit-faction-supply-quests.sh
           bash -n WorkshopPatches/QuestFramework/audit-faction-supply-runtime.sh
+          bash -n WorkshopPatches/QuestFramework/audit-faction-supply-restart.sh
           bash -n WorkshopPatches/QuestFramework/audit-faction-supply-diagnostics.sh
           bash -n WorkshopPatches/QuestFramework/audit-quest-failure-lifecycle.sh
           bash -n WorkshopPatches/QuestFramework/audit-lccqf-requires.sh
@@ -86,5 +87,7 @@ jobs:
         run: bash WorkshopPatches/QuestFramework/audit-faction-supply-quests.sh
       - name: Verify dynamic supply quest runtime contracts
         run: bash WorkshopPatches/QuestFramework/audit-faction-supply-runtime.sh
+      - name: Verify restart-safe dynamic supply quest contracts
+        run: bash WorkshopPatches/QuestFramework/audit-faction-supply-restart.sh
       - name: Verify supply quest acceptance diagnostics
         run: bash WorkshopPatches/QuestFramework/audit-faction-supply-diagnostics.sh
