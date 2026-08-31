@@ -194,7 +194,6 @@ local function buildSupplyNeeds(site, profile, livingPopulation)
             target = target,
             deficit = math.max(0, target - available),
             stockRevision = math.max(0, math.floor(tonumber(stock.revision) or 0)),
-            verifiedWorldHours = tonumber(stock.verifiedWorldHours) or 0,
         }
     end
     return out
@@ -256,6 +255,14 @@ local function signalValue(spec, needs)
     return value == true and 1 or 0
 end
 
+local function nextOpenEpoch(signal, shouldOpen)
+    local current = math.max(0, math.floor(tonumber(signal and signal.openEpoch) or 0))
+    local wasOpen = signal and signal.status == "OPEN" or false
+    if shouldOpen and not wasOpen then return current + 1 end
+    if shouldOpen and current < 1 then return 1 end
+    return current
+end
+
 local function updateInfrastructureSignals(site, operations, needs, nowHours)
     local changed = false
     for _, spec in ipairs(INFRA_SIGNALS) do
@@ -270,16 +277,21 @@ local function updateInfrastructureSignals(site, operations, needs, nowHours)
                 status = shouldOpen and "OPEN" or "RESOLVED",
                 value = value,
                 revision = 1,
+                openEpoch = shouldOpen and 1 or 0,
             }
             if shouldOpen then signal.raisedWorldHours = nowHours else signal.resolvedWorldHours = nowHours end
             operations.signals[signalId] = signal
             changed = true
         elseif signal.status ~= (shouldOpen and "OPEN" or "RESOLVED") or tonumber(signal.value) ~= value then
+            signal.openEpoch = nextOpenEpoch(signal, shouldOpen)
             signal.status = shouldOpen and "OPEN" or "RESOLVED"
             signal.value = value
             signal.revision = math.max(0, math.floor(tonumber(signal.revision) or 0)) + 1
             signal.changedWorldHours = nowHours
             if shouldOpen then signal.raisedWorldHours = nowHours else signal.resolvedWorldHours = nowHours end
+            changed = true
+        elseif shouldOpen and tonumber(signal.openEpoch) == nil then
+            signal.openEpoch = 1
             changed = true
         end
     end
@@ -302,20 +314,30 @@ local function updateSupplySignals(site, operations, needs, nowHours)
             or tonumber(signal.available) ~= tonumber(need.available)
             or tonumber(signal.target) ~= tonumber(need.target)
         if type(signal) ~= "table" then
-            signal = { signalId = signalId, kind = "supply", supplyId = supplyId, revision = 0 }
+            signal = {
+                signalId = signalId,
+                kind = "supply",
+                supplyId = supplyId,
+                revision = 0,
+                openEpoch = 0,
+                status = "RESOLVED",
+            }
             operations.signals[signalId] = signal
         end
         if differs then
+            signal.openEpoch = nextOpenEpoch(signal, shouldOpen)
             signal.status = nextStatus
             signal.category = need.category
             signal.value = deficit
             signal.available = need.available
             signal.target = need.target
             signal.stockRevision = need.stockRevision
-            signal.verifiedWorldHours = need.verifiedWorldHours
             signal.revision = math.max(0, math.floor(tonumber(signal.revision) or 0)) + 1
             signal.changedWorldHours = nowHours
             if shouldOpen then signal.raisedWorldHours = nowHours else signal.resolvedWorldHours = nowHours end
+            changed = true
+        elseif shouldOpen and tonumber(signal.openEpoch) == nil then
+            signal.openEpoch = 1
             changed = true
         end
     end
