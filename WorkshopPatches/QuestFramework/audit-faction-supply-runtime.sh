@@ -55,6 +55,8 @@ rg -q 'action = \{ kind = "factionSupplyQuestAccept" \}' "$DIALOGUE" \
 rg -q 'condition = \{ kind = "factionSupplyQuestActive" \}' "$DIALOGUE" \
     || fail "resident dialogue has no active supply quest topic"
 
+rg -q 'require "LCCQF/Content/LCCQFSupplyCategoryDefinitions"' "$OBJECTIVE" \
+    || fail "SettlementSupply does not load canonical quantity semantics"
 rg -q 'QueueConfirmedTransfer' "$OBJECTIVE" \
     || fail "confirmed transfer queue missing"
 rg -q 'event.stockRefreshOk ~= true' "$OBJECTIVE" \
@@ -63,6 +65,14 @@ rg -q 'consumeMatchingTransfer' "$OBJECTIVE" \
     || fail "objective does not consume server-confirmed transfer events"
 rg -q 'DiscardQueuedTransfers' "$OBJECTIVE" \
     || fail "ephemeral transfer queue cleanup missing"
+rg -q 'local function eventQuantity\(objective, event\)' "$OBJECTIVE" \
+    || fail "SettlementSupply still treats categories as booleans"
+rg -q 'normalizeQuantity\(objective.category, categories\[objective.category\]\)' "$OBJECTIVE" \
+    || fail "confirmed contribution does not use measured category quantity"
+rg -q 'if eventQuantity\(objective, event\) <= 0 then return false end' "$OBJECTIVE" \
+    || fail "SettlementSupply does not accept positive measured category quantities"
+rg -q 'objective.contributed = normalizeQuantity' "$OBJECTIVE" \
+    || fail "SettlementSupply contribution accumulation is not quantity-aware"
 rg -q 'normalizedEpoch\(signal.openEpoch\) == normalizedEpoch\(objective.openEpoch\)' "$OBJECTIVE" \
     || fail "confirmed transfer credit is not bound to the accepted supply openEpoch"
 rg -q 'local failed = closed and not complete' "$OBJECTIVE" \
@@ -71,6 +81,9 @@ rg -q 'return complete, changed, reason, failed' "$OBJECTIVE" \
     || fail "SettlementSupply does not surface the terminal failure result"
 rg -q 'local complete, changed, reason, failed = handler.EvaluateTick' "$QUEST_SERVICE" \
     || fail "QuestService does not consume objective failure results"
+if rg -q 'categories\[objective.category\] ~= true|contributed\).*\+ 1' "$OBJECTIVE"; then
+    fail "SettlementSupply still contains boolean/per-item contribution semantics"
+fi
 
 rg -q 'Observer.AddListener\(onConfirmedTransfer\)' "$RUNTIME" \
     || fail "runtime bridge is not attached to confirmed server transfers"
