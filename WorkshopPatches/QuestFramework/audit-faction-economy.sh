@@ -22,6 +22,8 @@ rg -q 'function Registry.Register\(definition\)' "$REGISTRY" \
     || fail "supply category registry has no registration API"
 rg -q 'function Registry.Classify\(item\)' "$REGISTRY" \
     || fail "supply category registry has no classifier API"
+rg -q 'function Registry.Measure\(categoryId, item\)' "$REGISTRY" \
+    || fail "supply category registry has no quantity measurement API"
 rg -q 'item:IsFood\(\)' "$REGISTRY" \
     || fail "food classifier is not backed by the B42 item API"
 rg -q 'categoryId = "food"' "$DEFINITIONS" \
@@ -31,14 +33,18 @@ rg -q 'sourceStockRevision' "$ECONOMY" \
     || fail "economy snapshot is not tied to a verified stock revision"
 rg -q 'livingPopulation' "$ECONOMY" \
     || fail "economy snapshot does not account for logical population"
-rg -q 'deficit = normalizeMetric' "$ECONOMY" \
-    || fail "economy snapshot has no deficit metric"
-rg -q 'surplus = normalizeMetric' "$ECONOMY" \
-    || fail "economy snapshot has no surplus metric"
-rg -q 'coverage = coverageRatio' "$ECONOMY" \
-    || fail "economy snapshot has no coverage metric"
-rg -q 'status = statusFor' "$ECONOMY" \
-    || fail "economy snapshot has no scarcity status"
+rg -q 'deficit = normalizeQuantity\(categoryId' "$ECONOMY" \
+    || fail "economy snapshot has no quantity-aware deficit metric"
+rg -q 'surplus = normalizeQuantity\(categoryId' "$ECONOMY" \
+    || fail "economy snapshot has no quantity-aware surplus metric"
+rg -q 'coverage = coverageRatio\(categoryId' "$ECONOMY" \
+    || fail "economy snapshot has no quantity-aware coverage metric"
+rg -q 'status = statusFor\(categoryId' "$ECONOMY" \
+    || fail "economy snapshot has no quantity-aware scarcity status"
+rg -q 'unitKind = semantics\.unitKind' "$ECONOMY" \
+    || fail "economy row does not expose category unit semantics"
+rg -q 'precision = semantics\.precision' "$ECONOMY" \
+    || fail "economy row does not expose category precision"
 rg -q 'Categories.IsRegistered\(categoryId\)' "$ECONOMY" \
     || fail "economy policy can reference unregistered supply categories"
 rg -q 'Sites.MarkDirty\(site.siteId, "settlement economy snapshot changed"\)' "$ECONOMY" \
