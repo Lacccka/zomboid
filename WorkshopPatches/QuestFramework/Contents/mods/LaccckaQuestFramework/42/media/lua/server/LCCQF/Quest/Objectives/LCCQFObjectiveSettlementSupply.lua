@@ -3,11 +3,13 @@
 -- consumes them through its normal EvaluateTick/applyHandlerResult persistence path.
 if isClient and isClient() and not (isServer and isServer()) then return {} end
 
+require "LCCQF/Content/LCCQFSupplyCategoryDefinitions"
 require "LCCQF/FactionWorld/LCCQFFactionSiteRegistry"
 
 LCCQF = LCCQF or {}
 LCCQF.QuestObjectives = LCCQF.QuestObjectives or {}
 
+local Categories = LCCQF.SupplyCategoryRegistry
 local Sites = LCCQF.FactionSiteRegistry
 local SettlementSupply = LCCQF.QuestObjectives.SettlementSupply or {}
 local transferQueues = SettlementSupply.transferQueues or {}
@@ -22,8 +24,35 @@ local function normalizedEpoch(value)
     return math.floor(number)
 end
 
-local function minimumContribution(value)
-    return math.max(1, math.min(1000, math.floor(tonumber(value) or 1)))
+local function quantitySemantics(category)
+    if not Categories or not Categories.GetQuantitySemantics then return nil end
+    return Categories.GetQuantitySemantics(category)
+end
+
+local function normalizeQuantity(category, value)
+    local number = tonumber(value)
+    if number == nil or number ~= number or number == math.huge or number == -math.huge or number <= 0 then
+        return 0
+    end
+    if Categories and Categories.NormalizeQuantity then
+        return Categories.NormalizeQuantity(category, number)
+    end
+    return math.max(0, number)
+end
+
+local function quantityQuantum(category)
+    local semantics = quantitySemantics(category)
+    local precision = semantics and math.max(0, math.floor(tonumber(semantics.precision) or 0)) or 0
+    if precision <= 0 then return 1 end
+    return 1 / (10 ^ precision)
+end
+
+local function minimumContribution(value, category)
+    local raw = tonumber(value)
+    if raw == nil or raw ~= raw or raw == math.huge or raw == -math.huge then raw = 1 end
+    raw = math.max(quantityQuantum(category), math.min(100000, raw))
+    local normalized = normalizeQuantity(category, raw)
+    return normalized > 0 and normalized or quantityQuantum(category)
 end
 
 local function playerKey(player)
@@ -46,10 +75,12 @@ function SettlementSupply.Create(spec)
         or not validString(spec.category, 96)
         or not validString(spec.signalId, 384)
         or not normalizedEpoch(spec.openEpoch)
+        or not Categories.IsRegistered(spec.category)
     then
         return nil, "invalid SettlementSupply objective"
     end
 
+    local semantics = quantitySemantics(spec.category) or {}
     return {
         id = spec.id,
         type = "SettlementSupply",
@@ -58,12 +89,14 @@ function SettlementSupply.Create(spec)
         siteId = spec.siteId,
         supplyId = spec.supplyId,
         category = spec.category,
+        unitKind = semantics.unitKind,
+        precision = semantics.precision,
         signalId = spec.signalId,
         openEpoch = normalizedEpoch(spec.openEpoch),
-        minimumContribution = minimumContribution(spec.minimumContribution),
+        minimumContribution = minimumContribution(spec.minimumContribution, spec.category),
         contributed = 0,
-        lastAvailable = math.max(0, math.floor(tonumber(spec.available) or 0)),
-        target = math.max(0, math.floor(tonumber(spec.target) or 0)),
+        lastAvailable = normalizeQuantity(spec.category, spec.available),
+        target = normalizeQuantity(spec.category, spec.target),
     }
 end
 
@@ -93,11 +126,16 @@ local function originalEpisodeClosed(objective, signal)
     return currentEpoch == wantedEpoch and signal.status == "RESOLVED"
 end
 
+local function eventQuantity(objective, event)
+    if type(objective) ~= "table" or type(event) ~= "table" then return 0 end
+    local categories = type(event.categories) == "table" and event.categories or {}
+    return normalizeQuantity(objective.category, categories[objective.category])
+end
+
 local function eventMatches(objective, event)
     if type(objective) ~= "table" or type(event) ~= "table" then return false end
     if tostring(event.siteId or "") ~= tostring(objective.siteId or "") then return false end
-    local categories = type(event.categories) == "table" and event.categories or {}
-    if categories[objective.category] ~= true then return false end
+    if eventQuantity(objective, event) <= 0 then return false end
 
     -- Transfer credit belongs to one supply-need episode only. The observer refreshes
     -- authoritative stock/operations before queueing the event, so a transfer that closes
@@ -145,21 +183,38 @@ local function consumeMatchingTransfer(player, objective)
     return nil
 end
 
+local function applyContribution(objective, event)
+    local amount = eventQuantity(objective, event)
+    if amount <= 0 then return false end
+    objective.contributed = normalizeQuantity(
+        objective.category,
+        (tonumber(objective.contributed) or 0) + amount
+    )
+    return true
+end
+
+local function refreshSignalProgress(objective, signal)
+    if type(signal) ~= "table" then return false end
+    local changed = false
+    local available = normalizeQuantity(objective.category, signal.available)
+    local target = normalizeQuantity(objective.category, signal.target)
+    if tonumber(objective.lastAvailable) ~= available then objective.lastAvailable = available changed = true end
+    if tonumber(objective.target) ~= target then objective.target = target changed = true end
+    return changed
+end
+
 function SettlementSupply.EvaluateSettlementTransfer(player, objective, event)
     if not player or not objective or objective.state ~= "active" or not eventMatches(objective, event) then
         return false, false
     end
-    local contributed = math.max(0, math.floor(tonumber(objective.contributed) or 0)) + 1
-    objective.contributed = contributed
-    local site, signal = signalForObjective(objective)
-    if site and signal then
-        objective.lastAvailable = math.max(0, math.floor(tonumber(signal.available) or 0))
-        objective.target = math.max(0, math.floor(tonumber(signal.target) or 0))
-    end
-    local complete = contributed >= minimumContribution(objective.minimumContribution)
-        and originalEpisodeClosed(objective, signal)
+    local changed = applyContribution(objective, event)
+    local _, signal = signalForObjective(objective)
+    if refreshSignalProgress(objective, signal) then changed = true end
+    local contributed = normalizeQuantity(objective.category, objective.contributed)
+    local required = minimumContribution(objective.minimumContribution, objective.category)
+    local complete = contributed >= required and originalEpisodeClosed(objective, signal)
     local failed = not complete and originalEpisodeClosed(objective, signal)
-    return complete, true,
+    return complete, changed,
         complete and "settlement_supply_delivered" or "settlement_supply_contribution",
         failed
 end
@@ -169,22 +224,15 @@ function SettlementSupply.EvaluateTick(player, objective)
 
     local changed = false
     local event = consumeMatchingTransfer(player, objective)
-    if event then
-        objective.contributed = math.max(0, math.floor(tonumber(objective.contributed) or 0)) + 1
-        changed = true
-    end
+    if event and applyContribution(objective, event) then changed = true end
 
     local _, signal = signalForObjective(objective)
-    if signal then
-        local available = math.max(0, math.floor(tonumber(signal.available) or 0))
-        local target = math.max(0, math.floor(tonumber(signal.target) or 0))
-        if tonumber(objective.lastAvailable) ~= available then objective.lastAvailable = available changed = true end
-        if tonumber(objective.target) ~= target then objective.target = target changed = true end
-    end
+    if refreshSignalProgress(objective, signal) then changed = true end
 
-    local contributed = math.max(0, math.floor(tonumber(objective.contributed) or 0))
+    local contributed = normalizeQuantity(objective.category, objective.contributed)
+    local required = minimumContribution(objective.minimumContribution, objective.category)
     local closed = originalEpisodeClosed(objective, signal)
-    local complete = contributed >= minimumContribution(objective.minimumContribution) and closed
+    local complete = contributed >= required and closed
     local failed = closed and not complete
     local reason = nil
     if complete then
@@ -198,8 +246,9 @@ function SettlementSupply.EvaluateTick(player, objective)
 end
 
 function SettlementSupply.MakeProgressView(objective)
-    return math.max(0, math.floor(tonumber(objective and objective.contributed) or 0)),
-        minimumContribution(objective and objective.minimumContribution)
+    if type(objective) ~= "table" then return 0, 1 end
+    return normalizeQuantity(objective.category, objective.contributed),
+        minimumContribution(objective.minimumContribution, objective.category)
 end
 
 SettlementSupply.transferQueues = transferQueues
