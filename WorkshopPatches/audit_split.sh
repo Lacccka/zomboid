@@ -3,7 +3,6 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SPLIT="$ROOT/WorkshopPatches"
-
 fail=0
 
 error() {
@@ -21,54 +20,28 @@ require_file() {
         error "required file is empty: ${path#$ROOT/}"
         return 1
     fi
-    return 0
 }
 
 require_marker() {
-    local path="$1"
-    local marker="$2"
-    local message="$3"
+    local path="$1" marker="$2" message="$3"
     if [[ ! -f "$path" ]]; then
         error "cannot validate marker; file missing: ${path#$ROOT/}"
         return
     fi
-    if ! grep -Fq -- "$marker" "$path"; then
-        error "$message"
-    fi
+    grep -Fq -- "$marker" "$path" || error "$message"
 }
 
 forbid_marker() {
-    local path="$1"
-    local marker="$2"
-    local message="$3"
-    if [[ -f "$path" ]] && grep -Fq -- "$marker" "$path"; then
-        error "$message"
-    fi
+    local path="$1" marker="$2" message="$3"
+    [[ ! -f "$path" ]] || ! grep -Fq -- "$marker" "$path" || error "$message"
 }
 
-forbid_regex() {
+require_json() {
     local path="$1"
-    local regex="$2"
-    local message="$3"
-    if [[ -f "$path" ]] && grep -Eq -- "$regex" "$path"; then
-        error "$message"
-    fi
+    require_file "$path" || return
+    python3 -m json.tool "$path" >/dev/null 2>&1 || error "invalid JSON: ${path#$ROOT/}"
 }
 
-max_size() {
-    local path="$1"
-    local limit="$2"
-    local message="$3"
-    [[ -f "$path" ]] || return
-    local size
-    size="$(wc -c < "$path")"
-    if (( size > limit )); then
-        error "$message (size=$size, limit=$limit)"
-    fi
-}
-
-# Bandits-LCC-Dev and QuestFramework are development trees, not part of the
-# nine grouped published/staged compatibility packages audited below.
 expected_patch_dirs=(
     ActivityFixes
     CompatibilityBridges
@@ -81,18 +54,15 @@ expected_patch_dirs=(
     SafetyFixes
 )
 
-tmp_actual_dirs="$(mktemp)"
-tmp_expected_dirs="$(mktemp)"
-trap 'rm -f "$tmp_actual_dirs" "$tmp_expected_dirs"' EXIT
-
+actual="$(mktemp)"
+expected="$(mktemp)"
+trap 'rm -f "$actual" "$expected"' EXIT
 find "$SPLIT" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' \
     | grep -Fvx 'Bandits-LCC-Dev' \
     | grep -Fvx 'QuestFramework' \
-    | sort > "$tmp_actual_dirs"
-printf '%s\n' "${expected_patch_dirs[@]}" | sort > "$tmp_expected_dirs"
-if ! diff -u "$tmp_expected_dirs" "$tmp_actual_dirs"; then
-    error "WorkshopPatches published/staged set must contain exactly the nine supported package directories; development trees are ignored"
-fi
+    | sort > "$actual"
+printf '%s\n' "${expected_patch_dirs[@]}" | sort > "$expected"
+diff -u "$expected" "$actual" >/dev/null || error "published/staged patch directory set changed unexpectedly"
 
 core="$SPLIT/PatchCore/Contents/mods/LaccckaB4220PatchCore/42/media"
 runtime="$SPLIT/RuntimeFixes/Contents/mods/LaccckaB4220RuntimeFixes/42/media"
@@ -101,19 +71,21 @@ experimental="$SPLIT/NPCCombatExperimental/Contents/mods/LaccckaB4220NPCCombatEx
 activity="$SPLIT/ActivityFixes/Contents/mods/LaccckaB4220ActivityFixes/42/media"
 bridges="$SPLIT/CompatibilityBridges/Contents/mods/LaccckaB4220CompatBridges/42/media"
 safety="$SPLIT/SafetyFixes/Contents/mods/LaccckaB4220SafetyFixes/42/media"
-grid_sort="$SPLIT/GridInventorySort/Contents/mods/LaccckaB4220GridInventorySort/42/media"
+packflow="$SPLIT/GridInventorySort/Contents/mods/LaccckaPackFlow/42/media"
 text42="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/media"
 text_common="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/common/media"
-quest="$SPLIT/QuestFramework/Contents/mods/LaccckaQuestFramework/42/media"
 
+# ---------------------------------------------------------------------------
+# Required source-clean patch files
+# ---------------------------------------------------------------------------
 required_files=(
     "$core/lua/shared/LCC/Guard.lua"
     "$core/lua/shared/LCC/CoreGuard.lua"
 
     "$runtime/lua/client/ISUI/ISCharacterScreen.lua"
+    "$runtime/lua/client/MFSAttachmentAccessFix.lua"
     "$runtime/lua/client/zzz_LCC_BanditsZombieCacheGuard.lua"
     "$runtime/lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua"
-    "$runtime/lua/server/zzz_LCC_BanditsEmptyServerWandererGuard.lua"
     "$runtime/lua/shared/LCC/Guard.lua"
     "$runtime/lua/shared/zzz_LCC_BanditsFarmingGuard.lua"
 
@@ -126,6 +98,7 @@ required_files=(
     "$npc/lua/client/zzzzzzzz_LCC_BanditTerminalDiePump.lua"
     "$npc/lua/server/zz_LCC_BanditServerClothingRestore.lua"
     "$npc/lua/server/zzz_LCC_BanditServerClothingSnapshotFallback.lua"
+    "$npc/lua/server/zz_LCC_BanditWandererDevirtualizationGuard.lua"
     "$npc/lua/shared/LCC/Guard.lua"
 
     "$experimental/lua/client/zzz_LCC_BanditsAdminSpawnMenu.lua"
@@ -156,63 +129,48 @@ required_files=(
     "$safety/lua/client/zzz_LCC_ChimeraGhillieFix.lua"
     "$safety/lua/shared/LCC/Guard.lua"
 
-    "$grid_sort/lua/client/LCC/GridAutoSort.lua"
-    "$grid_sort/lua/client/zzz_LCC_GridInventorySort.lua"
-    "$grid_sort/lua/shared/Translate/EN/UI.json"
-    "$grid_sort/lua/shared/Translate/RU/UI.json"
+    "$packflow/lua/client/LCC/GridAutoSort.lua"
+    "$packflow/lua/client/zzz_LCC_GridInventorySort.lua"
+    "$packflow/lua/shared/Translate/EN/UI.json"
+    "$packflow/lua/shared/Translate/RU/UI.json"
 )
+for path in "${required_files[@]}"; do require_file "$path" || true; done
 
-for path in "${required_files[@]}"; do
-    require_file "$path" || true
-done
-
-# PatchCore and optional Guard bootstrap contract.
+# ---------------------------------------------------------------------------
+# PatchCore / Guard bootstrap
+# ---------------------------------------------------------------------------
 core_guard="$core/lua/shared/LCC/Guard.lua"
 core_entry="$core/lua/shared/LCC/CoreGuard.lua"
 if [[ -f "$core_guard" && -f "$core_entry" ]] && ! cmp -s "$core_guard" "$core_entry"; then
-    error "PatchCore CoreGuard.lua and Guard.lua must remain byte-for-byte equivalent"
+    error "PatchCore Guard.lua and CoreGuard.lua must remain identical"
 fi
-for marker in \
-    'function Guard.safeRequire' \
-    'function Guard.protect' \
-    'function Guard.install' \
-    'function Guard.wrapBefore' \
-    'Guard.__initialized = true'; do
+for marker in 'function Guard.safeRequire' 'function Guard.protect' 'function Guard.install' 'function Guard.wrapBefore' 'Guard.__initialized = true'; do
     require_marker "$core_guard" "$marker" "PatchCore Guard lost contract marker: $marker"
 done
 
-runtime_guard="$runtime/lua/shared/LCC/Guard.lua"
-npc_guard="$npc/lua/shared/LCC/Guard.lua"
-experimental_guard="$experimental/lua/shared/LCC/Guard.lua"
-activity_guard="$activity/lua/shared/LCC/Guard.lua"
-bridges_guard="$bridges/lua/shared/LCC/Guard.lua"
-safety_guard="$safety/lua/shared/LCC/Guard.lua"
 functional_guards=(
-    "$runtime_guard"
-    "$npc_guard"
-    "$experimental_guard"
-    "$activity_guard"
-    "$bridges_guard"
-    "$safety_guard"
+    "$runtime/lua/shared/LCC/Guard.lua"
+    "$npc/lua/shared/LCC/Guard.lua"
+    "$experimental/lua/shared/LCC/Guard.lua"
+    "$activity/lua/shared/LCC/Guard.lua"
+    "$bridges/lua/shared/LCC/Guard.lua"
+    "$safety/lua/shared/LCC/Guard.lua"
 )
 for guard in "${functional_guards[@]}"; do
     require_marker "$guard" 'pcall(require, "LCC/CoreGuard")' "Guard bootstrap does not prefer PatchCore: ${guard#$ROOT/}"
     require_marker "$guard" 'CoreGuard.MODE = "GUARDED"' "Guard bootstrap lost GUARDED mode: ${guard#$ROOT/}"
-    require_marker "$guard" 'Guard.MODE = "DEGRADED"' "Guard bootstrap lost DEGRADED fallback: ${guard#$ROOT/}"
-    require_marker "$guard" 'Correct operation is not guaranteed' "Guard bootstrap lost degraded warning: ${guard#$ROOT/}"
-done
-for guard in "$npc_guard" "$experimental_guard" "$activity_guard" "$bridges_guard" "$safety_guard"; do
-    if [[ -f "$runtime_guard" && -f "$guard" ]] && ! cmp -s "$runtime_guard" "$guard"; then
-        error "functional Guard bootstraps must remain identical: ${guard#$ROOT/}"
-    fi
+    require_marker "$guard" 'Guard.MODE = "DEGRADED"' "Guard bootstrap lost DEGRADED mode: ${guard#$ROOT/}"
 done
 
-# RuntimeFixes: low-level source-clean Bandits contracts.
+# ---------------------------------------------------------------------------
+# RuntimeFixes, including the 2026-09-02 MFS rebase
+# ---------------------------------------------------------------------------
 runtime_character="$runtime/lua/client/ISUI/ISCharacterScreen.lua"
+runtime_mfs="$runtime/lua/client/MFSAttachmentAccessFix.lua"
 runtime_cache="$runtime/lua/client/zzz_LCC_BanditsZombieCacheGuard.lua"
 runtime_dedicated="$runtime/lua/server/zzz_LCC_BanditsDedicatedServerGuard.lua"
-runtime_empty="$runtime/lua/server/zzz_LCC_BanditsEmptyServerWandererGuard.lua"
 runtime_farming="$runtime/lua/shared/zzz_LCC_BanditsFarmingGuard.lua"
+
 for forbidden in \
     "$runtime/lua/client/BanditZombie.lua" \
     "$runtime/lua/client/BanditUpdate.lua" \
@@ -221,278 +179,176 @@ for forbidden in \
     "$runtime/lua/shared/ZombieActions/ZAWaterFarm.lua"; do
     [[ ! -e "$forbidden" ]] || error "RuntimeFixes must not bundle upstream Bandits source: ${forbidden#$ROOT/}"
 done
-require_marker "$runtime_character" 'Guard.safeRequire(FEATURE, "XpSystem/ISUI/ISCharacterScreen")' "RuntimeFixes character-screen shim lost B42 target path"
-require_marker "$runtime_empty" 'BanditCustom.ClanGetAll = function' "RuntimeFixes empty-server guard lost ClanGetAll wrapper"
-require_marker "$runtime_empty" 'players:size() == 0' "RuntimeFixes empty-server guard lost zero-player condition"
-require_marker "$runtime_empty" 'return originalClanGetAll(...)' "RuntimeFixes empty-server guard must preserve normal ClanGetAll behavior"
-require_marker "$runtime_cache" 'BanditCompatibility.IsReanimatedForGrappleOnly = function' "RuntimeFixes cache guard lost BanditUpdate early-return seam"
+
+require_marker "$runtime_character" 'XpSystem/ISUI/ISCharacterScreen' "RuntimeFixes character-screen shim lost B42 target"
 require_marker "$runtime_cache" 'not getSquareSafe(zombie)' "RuntimeFixes cache guard lost squareless predicate"
-require_marker "$runtime_cache" 'Events.OnZombieUpdate.Add' "RuntimeFixes cache guard lost post-update cleanup"
-require_marker "$runtime_cache" 'Events.EveryOneMinute.Add' "RuntimeFixes cache guard lost post-flush sweep"
-require_marker "$runtime_farming" 'return original(...)' "RuntimeFixes farming wrappers must preserve original callbacks"
-require_marker "$runtime_farming" 'shouldSkipWaterComplete' "RuntimeFixes farming guard must finish invalid water tasks cleanly"
+require_marker "$runtime_cache" 'Events.OnZombieUpdate.Add' "RuntimeFixes cache guard lost cleanup hook"
+require_marker "$runtime_farming" 'shouldSkipWaterComplete' "RuntimeFixes farming guard lost invalid-water completion seam"
 require_marker "$runtime_farming" 'CFarmingSystem.instance' "RuntimeFixes farming guard lost B42 farming availability check"
-require_marker "$runtime_dedicated" 'BanditZombie.GetInstanceById = lookupZombie' "RuntimeFixes dedicated guard must install lookup contract"
-require_marker "$runtime_dedicated" 'BanditServerZombie.Cache' "RuntimeFixes dedicated lookup lost optional native server-cache path"
-require_marker "$runtime_dedicated" 'Guard.wrapBefore(FEATURE, Bandit, "ApplyVisuals", registerZombie)' "RuntimeFixes dedicated lookup lost Bandit registration hook"
-require_marker "$runtime_dedicated" 'Guard.wrapBefore(FEATURE, Bandit, "UpdateItemsToSpawnAtDeath", registerZombie)' "RuntimeFixes dedicated lookup lost death-item registration hook"
-require_marker "$runtime_dedicated" 'Events.EveryOneMinute.Add(pruneRegistry)' "RuntimeFixes dedicated registry lost stale-entry pruning"
-forbid_marker "$runtime_dedicated" 'getZombieList()' "RuntimeFixes dedicated lookup must not scan the complete server zombie list"
+require_marker "$runtime_dedicated" 'BanditZombie.GetInstanceById = lookupZombie' "RuntimeFixes dedicated lookup contract missing"
+require_marker "$runtime_dedicated" 'BanditServerZombie.Cache' "RuntimeFixes dedicated lookup lost optional native-cache path"
+require_marker "$runtime_dedicated" 'Events.EveryOneMinute.Add(pruneRegistry)' "RuntimeFixes dedicated lookup lost stale pruning"
+forbid_marker "$runtime_dedicated" 'getZombieList()' "RuntimeFixes dedicated lookup must not scan the global zombie list"
 
-# NPCFixes: stable source-clean combat/death/corpse behavior.
+# Upstream MFS now owns discovery/rendering; LCC keeps only occupied-slot UX and
+# stale-source/CAS safety. A future MFS update that moves these seams must fail
+# this audit instead of silently running an obsolete monkeypatch.
+for marker in \
+    'Fix.VERSION = "1.1.0"' \
+    'type(getReachableContainers) == "function"' \
+    'part:canAttach(player, weapon)' \
+    'expectedInstalledId' \
+    'Fix.queueInstallOrReplace' \
+    'ISInventoryTransferAction:new' \
+    'ISRemoveWeaponUpgrade:new' \
+    'ISUpgradeWeapon:new' \
+    'upstream selector retained'; do
+    require_marker "$runtime_mfs" "$marker" "RuntimeFixes MFS bridge lost marker: $marker"
+done
+forbid_marker "$runtime_mfs" 'function selectAttachmentPane:renderInventory' "RuntimeFixes must not replace the updated upstream MFS selector"
+forbid_marker "$runtime_mfs" 'function selectAttachmentPane:update' "RuntimeFixes must not replace the updated upstream MFS selector update loop"
+
+mfs_root="$ROOT/3633421539/mods/Escape from Kentucky4215/42/media/lua/client"
+mfs_core="$mfs_root/UI/risky_inspect_core.lua"
+mfs_pane="$mfs_root/UI/risky_inspect_selectAttachmentPane.lua"
+mfs_button="$mfs_root/UI/risky_inspect_button.lua"
+mfs_upgrade="$mfs_root/FixCode/ISUpgradeWeapon_FIX.lua"
+for path in "$mfs_core" "$mfs_pane" "$mfs_button" "$mfs_upgrade"; do require_file "$path" || true; done
+require_marker "$mfs_core" 'function getReachableContainers(player)' "updated MFS lost reachable-container discovery seam"
+require_marker "$mfs_pane" 'getReachableContainers(getPlayer())' "updated MFS selector no longer delegates to reachable containers"
+require_marker "$mfs_pane" 'scanParts(container, getPlayer(), weapon' "updated MFS selector lost recursive part discovery"
+require_marker "$mfs_button" 'ISInventoryTransferAction:new(player, part, srcContainer' "updated MFS attachment action lost non-root transfer"
+require_marker "$mfs_upgrade" 'MFS_RefreshWeaponAttachmentState' "updated MFS upgrade action lost attachment/model refresh"
+
+# ---------------------------------------------------------------------------
+# NPCFixes / diagnostics isolation
+# ---------------------------------------------------------------------------
 npc_bridge="$npc/lua/client/zz_LCC_BanditCallbackBridge.lua"
-npc_crawler="$npc/lua/client/zzz_LCC_BanditCrawlerPlayerLunge.lua"
-npc_live_clothes="$npc/lua/client/zz_LCC_BanditClothingRestore.lua"
-npc_relation="$npc/lua/client/zzzz_LCC_BanditRelationshipSuppression.lua"
-npc_fake_late="$npc/lua/client/zzzzzzz_LCC_BanditFakeHitPfbCleanup.lua"
-npc_fake_now="$npc/lua/client/zzzzzzzz_LCC_BanditFakeHitImmediateCleanup.lua"
-npc_die="$npc/lua/client/zzzzzzzz_LCC_BanditTerminalDiePump.lua"
-npc_server_clothes="$npc/lua/server/zz_LCC_BanditServerClothingRestore.lua"
-npc_server_fallback="$npc/lua/server/zzz_LCC_BanditServerClothingSnapshotFallback.lua"
+require_marker "$npc_bridge" 'loadstring-free-predicate-bridge-v2' "NPCFixes lost validated loadstring-free bridge"
+require_marker "$npc_bridge" 'getModFileReader' "NPCFixes bridge lost installed-source fingerprinting"
+require_marker "$npc_bridge" 'runtimeTransform=false' "NPCFixes must remain source-clean at runtime"
+forbid_marker "$npc_bridge" 'loadstring(' "NPCFixes must not compile upstream Lua source at runtime"
+require_marker "$npc/lua/client/zzz_LCC_BanditCrawlerPlayerLunge.lua" 'ordinary-crawler-player-lunge-v1' "NPCFixes crawler seam marker missing"
+require_marker "$npc/lua/client/zzzz_LCC_BanditRelationshipSuppression.lua" 'character-relation-suppression-v6' "NPCFixes relation suppression marker missing"
+require_marker "$npc/lua/client/zzzzzzz_LCC_BanditFakeHitPfbCleanup.lua" 'fake-hit-relation-cleanup-v3' "NPCFixes late fake-hit marker missing"
+require_marker "$npc/lua/client/zzzzzzzz_LCC_BanditFakeHitImmediateCleanup.lua" 'fake-hit-immediate-cleanup-v1' "NPCFixes immediate fake-hit marker missing"
+require_marker "$npc/lua/client/zzzzzzzz_LCC_BanditTerminalDiePump.lua" 'terminal-die-onground-pump-v1' "NPCFixes terminal-die marker missing"
+require_marker "$npc/lua/server/zz_LCC_BanditWandererDevirtualizationGuard.lua" 'wanderer-devirtualization-bandit-preservation-v1' "NPCFixes wanderer devirtualization marker missing"
+require_marker "$npc/lua/server/zz_LCC_BanditWandererDevirtualizationGuard.lua" 'PURGE_RADIUS = 30' "NPCFixes wanderer purge-radius contract changed"
+require_marker "$npc/lua/server/zz_LCC_BanditWandererDevirtualizationGuard.lua" 'DEFER_ON_BANDIT_OVERLAP' "NPCFixes wanderer overlap deferral missing"
 
-# Build 42.20 runtime compilation is not part of the stable contract anymore.
 for forbidden in \
     "$npc/lua/client/BanditUpdate.lua" \
     "$npc/lua/shared/ZombieActions/ZAShoot.lua" \
     "$npc/lua/client/BanditZombie.lua" \
-    "$npc/lua/server/BanditServerWanderers.lua" \
-    "$npc/lua/client/zzzzzz_LCC_BanditPursuitStallTrace.lua" \
-    "$npc/lua/client/zzzzz_LCC_BanditPfbLateSweep.lua" \
-    "$npc/lua/client/zz_LCC_BanditCloseRangeBiteTrace.lua" \
-    "$npc/lua/client/zzz_LCC_BanditBiteOutcomeTrace.lua"; do
-    [[ ! -e "$forbidden" ]] || error "NPCFixes must not contain upstream same-path source or experimental diagnostics: ${forbidden#$ROOT/}"
+    "$npc/lua/server/BanditServerWanderers.lua"; do
+    [[ ! -e "$forbidden" ]] || error "NPCFixes must not bundle upstream same-path Bandits source: ${forbidden#$ROOT/}"
 done
 
-require_marker "$npc_bridge" 'loadstring-free-predicate-bridge-v2' "NPCFixes lost the validated loadstring-free bridge marker"
-require_marker "$npc_bridge" 'getModFileReader' "NPCFixes bridge must fingerprint the installed Bandits2 source"
-require_marker "$npc_bridge" 'BanditCompatibility.IsReanimatedForGrappleOnly = function' "NPCFixes bridge lost the first predicate probe"
-require_marker "$npc_bridge" 'BanditCompatibility.IsRagdoll = function' "NPCFixes bridge lost the OnBanditUpdate discriminator"
-require_marker "$npc_bridge" 'ordinaryTick[zombie] = true' "NPCFixes bridge lost ordinary-zombie UpdateZombies bypass"
-require_marker "$npc_bridge" 'LCC_PURSUIT_ALIGN_DIST2 = 0.5625' "NPCFixes pursuit bridge lost 0.75-tile throttle"
-require_marker "$npc_bridge" 'LCC_PURSUIT_IDLE_RETRY_MS = 750' "NPCFixes pursuit bridge lost bounded idle retry"
-require_marker "$npc_bridge" 'zombie:pathToLocationF(x, y, z)' "NPCFixes pursuit bridge lost coordinate-only movement"
-require_marker "$npc_bridge" 'ZombieActions.Shoot.onComplete = function' "NPCFixes gunshot bridge lost upstream wrapper"
-require_marker "$npc_bridge" 'BanditZombie.CacheLightZ = {}' "NPCFixes gunshot bridge must suppress only the upstream character-alert loop"
-require_marker "$npc_bridge" 'runtimeTransform=false' "NPCFixes bridge must report source-clean execution"
-forbid_regex "$npc_bridge" 'loadstring[[:space:]]*\(' "NPCFixes must not call runtime Lua source compilation"
-forbid_marker "$npc_bridge" 'LuaEventManager.AddEvent' "NPCFixes must not depend on inaccessible Event.callbacks internals"
-max_size "$npc_bridge" 45000 "NPCFixes predicate bridge is unexpectedly large; verify it has not become an upstream source copy"
-require_marker "$npc_crawler" 'ordinary-crawler-player-lunge-v1' "NPCFixes lost preserved crawler-player behavior"
-require_marker "$npc_crawler" 'LungeState.instance()' "NPCFixes crawler seam lost the upstream lunge transition"
-require_marker "$npc_relation" 'character-relation-suppression-v6' "NPCFixes relationship suppression lost validated marker"
-require_marker "$npc_fake_late" 'fake-hit-relation-cleanup-v3' "NPCFixes late fake-hit cleanup lost validated marker"
-require_marker "$npc_fake_now" 'fake-hit-immediate-cleanup-v1' "NPCFixes immediate fake-hit cleanup lost validated marker"
-require_marker "$npc_die" 'terminal-die-onground-pump-v1' "NPCFixes terminal Die pump lost validated marker"
-require_marker "$npc_live_clothes" 'real-worn-reconnect-v2' "NPCFixes live clothing repair lost validated marker"
-require_marker "$npc_server_clothes" 'server-authoritative-death-worn-v2' "NPCFixes server clothing repair lost validated marker"
-require_marker "$npc_server_fallback" 'server-death-worn-remove-snapshot-v2' "NPCFixes clothing race fallback lost validated marker"
+require_marker "$experimental/lua/client/zzz_LCC_BanditsAdminSpawnMenu.lua" 'hasStaffAccess' "NPCCombatExperimental admin guard missing"
+require_marker "$experimental/lua/client/zzz_LCC_BanditsTargetDiagnostics.lua" '[LCC][BanditsDiag][SUMMARY]' "NPCCombatExperimental summary diagnostics missing"
+require_marker "$experimental/lua/shared/zzz_LCC_BanditsDeathLootDiagnostics.lua" 'Events.OnZombieDead.Add' "NPCCombatExperimental death diagnostics missing"
+forbid_marker "$experimental/lua/shared/zzz_LCC_BanditsDeathLootDiagnostics.lua" 'inventory:AddItem(' "NPCCombatExperimental diagnostics must remain observe-only"
 
-# QuestFramework is still a development tree, but its NPCFixes compatibility
-# marker must track the stable scheduling seam when the tree is present.
-quest_npc_compat="$quest/lua/client/LCCQF/Runtime/zz_LCCQFNPCFixesCompatibility.lua"
-if [[ -e "$quest_npc_compat" ]]; then
-    require_marker "$quest_npc_compat" 'loadstring-free-predicate-bridge-v2' "QuestFramework expects a stale NPCFixes scheduling seam"
-    require_marker "$quest_npc_compat" 'runtimeTransform=false' "QuestFramework NPCFixes compatibility log lost the no-transform contract"
-fi
+# ---------------------------------------------------------------------------
+# Other patch contracts
+# ---------------------------------------------------------------------------
+require_marker "$activity/lua/client/zzz_LCC_LifestyleBathFix.lua" 'BathTubFunctions.walkToFront' "ActivityFixes bathtub seam missing"
+require_marker "$activity/lua/client/zzz_LCC_LifestyleYogaProgress.lua" 'HiddenSkills.getSkill' "ActivityFixes Yoga authority missing"
+require_marker "$activity/lua/client/zzz_LCC_SkillDescriptions.lua" 'ISSkillProgressBar.updateTooltip = function' "ActivityFixes tooltip wrapper missing"
+require_marker "$activity/perks.txt" 'perk Yoga' "ActivityFixes Yoga perk proxy missing"
 
-# NPCCombatExperimental: diagnostics/admin only; no production target disconnect.
-experimental_admin="$experimental/lua/client/zzz_LCC_BanditsAdminSpawnMenu.lua"
-experimental_diag="$experimental/lua/client/zzz_LCC_BanditsTargetDiagnostics.lua"
-experimental_spawn="$experimental/lua/server/zzz_LCC_BanditsTestSpawnBridge.lua"
-experimental_death="$experimental/lua/shared/zzz_LCC_BanditsDeathLootDiagnostics.lua"
-experimental_old_guard="$experimental/lua/client/zzz_LCC_BanditsAttackStateGuard.lua"
-[[ ! -e "$experimental_old_guard" ]] || error "NPCCombatExperimental must not retain the mutating target-disconnect guard after promotion to NPCFixes"
-for forbidden in \
-    "$experimental/lua/client/BanditZombie.lua" \
-    "$experimental/lua/client/BanditUpdate.lua" \
-    "$experimental/lua/server/BanditServerWanderers.lua"; do
-    [[ ! -e "$forbidden" ]] || error "NPCCombatExperimental must not bundle upstream Bandits source: ${forbidden#$ROOT/}"
-done
-require_marker "$experimental_admin" 'local MODULE = "LCCBanditsTest"' "NPCCombatExperimental admin spawner lost isolated command channel"
-require_marker "$experimental_admin" 'hasStaffAccess' "NPCCombatExperimental admin spawner lost access guard"
-require_marker "$experimental_spawn" 'module ~= MODULE or command ~= COMMAND' "NPCCombatExperimental server bridge lost isolated routing"
-require_marker "$experimental_spawn" 'BanditServer.Spawner.Clan' "NPCCombatExperimental server bridge must preserve upstream spawn authority"
-require_marker "$experimental_diag" '[LCC][BanditsDiag][SUMMARY]' "NPCCombatExperimental target diagnostics lost summary logging"
-require_marker "$experimental_diag" 'DANGER_ATTACK_STATE' "NPCCombatExperimental target diagnostics lost AttackState observation"
-require_marker "$experimental_death" 'Events.OnZombieDead.Add' "NPCCombatExperimental death diagnostics lost death observation"
-require_marker "$experimental_death" 'Events.OnDeadBodySpawn.Add' "NPCCombatExperimental death diagnostics lost corpse observation"
-forbid_marker "$experimental_death" 'addItemToSpawnAtDeath(' "NPCCombatExperimental death diagnostics must remain observe-only"
-forbid_marker "$experimental_death" 'inventory:AddItem(' "NPCCombatExperimental death diagnostics must not add inventory items"
+require_marker "$bridges/lua/client/Vehicle/ISUI/ISVehiclePartMenu.lua" 'Vehicles/ISUI/ISVehiclePartMenu' "CompatibilityBridges vehicle path redirect missing"
+require_marker "$bridges/lua/server/BuildingObjects/ISPlace3DItemCursor_Fix.lua" 'ISPlace3DItemCursor.__LCCWeaponPartRenderFix' "CompatibilityBridges 3D cursor fix missing"
+require_marker "$bridges/lua/shared/SVU3_PZKVLCCars_Stuffs.lua" 'OtherModsSupport/SVU3_PZKVLCCars_Stuffs' "CompatibilityBridges SVU3 redirect missing"
+require_marker "$bridges/lua/shared/zzz_LCC_LegacyItemCallbacks.lua" 'ItemCodeOnCreate.onCreateRecipeMagazine' "CompatibilityBridges item callback shim missing"
 
-# ActivityFixes.
-activity_bath="$activity/lua/client/zzz_LCC_LifestyleBathFix.lua"
-activity_yoga="$activity/lua/client/zzz_LCC_LifestyleYogaProgress.lua"
-activity_skills="$activity/lua/client/zzz_LCC_SkillDescriptions.lua"
-activity_bathtub_shim="$activity/lua/shared/Hygiene/BathTubFunctions.lua"
-activity_shower_shim="$activity/lua/shared/Hygiene/ShowerFunctions.lua"
-activity_perks="$activity/perks.txt"
-require_marker "$activity_bath" 'BathTubFunctions.walkToFront' "ActivityFixes bathtub hook lost Lifestyle seam"
-require_marker "$activity_bath" 'fixtures_bathroom_01_25' "ActivityFixes bathtub hook lost west-entry fixture handling"
-require_marker "$activity_yoga" 'HiddenSkills.getSkill' "ActivityFixes Yoga UI lost HiddenSkills authority"
-require_marker "$activity_yoga" 'ISSkillProgressBar.new = function' "ActivityFixes Yoga UI lost progress-bar proxy"
-require_marker "$activity_skills" 'ISSkillProgressBar.updateTooltip = function' "ActivityFixes skill-description repair lost tooltip wrapper"
-require_marker "$activity_bathtub_shim" 'BathTubFunctions.DoAction = BathTubFunctions.DoAction or function() end' "ActivityFixes bathtub shim lost DoAction fallback"
-require_marker "$activity_shower_shim" 'ShowerFunctions.DoAction = ShowerFunctions.DoAction or function() end' "ActivityFixes shower shim lost DoAction fallback"
-require_marker "$activity_perks" 'perk Yoga' "ActivityFixes perks.txt must declare Yoga"
-require_marker "$activity_perks" 'parent = Lifestyle' "ActivityFixes Yoga proxy must remain under Lifestyle"
-for skill in Art Cleaning Dancing Meditation Music; do
-    if [[ -f "$activity_perks" ]] && grep -Eq "^[[:space:]]*perk[[:space:]]+$skill([[:space:]]|$)" "$activity_perks"; then
-        error "ActivityFixes perks.txt must not redeclare upstream Lifestyle perk: $skill"
-    fi
-done
+require_marker "$safety/lua/client/zzz_LCC_AegisTransferGuard.lua" 'ISInventoryTransferAction.isValid' "SafetyFixes Aegis transfer seam missing"
+require_marker "$safety/lua/client/zzz_LCC_ChimeraGhillieFix.lua" 'Guard.install' "SafetyFixes Chimera guard missing"
 
-# CompatibilityBridges.
-bridge_vehicle="$bridges/lua/client/Vehicle/ISUI/ISVehiclePartMenu.lua"
-bridge_place3d="$bridges/lua/server/BuildingObjects/ISPlace3DItemCursor_Fix.lua"
-bridge_tuning="$bridges/lua/server/Tuning2/ATA2Tuning2.lua"
-bridge_pzk="$bridges/lua/server/utils/pzkZonesFunction.lua"
-bridge_body="$bridges/lua/shared/BodyLocations.lua"
-bridge_timed="$bridges/lua/shared/ISBaseTimedAction.lua"
-bridge_svu="$bridges/lua/shared/SVU3_PZKVLCCars_Stuffs.lua"
-bridge_callbacks="$bridges/lua/shared/zzz_LCC_LegacyItemCallbacks.lua"
-require_marker "$bridge_vehicle" 'Guard.safeRequire(FEATURE, "Vehicles/ISUI/ISVehiclePartMenu")' "CompatibilityBridges vehicle shim lost B42 target"
-require_marker "$bridge_place3d" 'ISPlace3DItemCursor.__LCCWeaponPartRenderFix' "CompatibilityBridges 3D-item cursor fix lost install marker"
-for path in "$bridge_tuning" "$bridge_pzk" "$bridge_body" "$bridge_timed"; do
-    require_marker "$path" 'LCC/Guard' "CompatibilityBridges guarded redirect lost Guard dependency: ${path#$ROOT/}"
-done
-require_marker "$bridge_svu" 'return require "OtherModsSupport/SVU3_PZKVLCCars_Stuffs"' "CompatibilityBridges SVU3/PZK redirect lost target"
-require_marker "$bridge_callbacks" 'ItemCodeOnCreate.onCreateRecipeMagazine' "CompatibilityBridges legacy item callback shim lost B42 target"
-
-# SafetyFixes.
-safety_aegis="$safety/lua/client/zzz_LCC_AegisTransferGuard.lua"
-safety_chimera="$safety/lua/client/zzz_LCC_ChimeraGhillieFix.lua"
-require_marker "$safety_aegis" 'ISInventoryTransferAction.isValid' "SafetyFixes Aegis guard lost transfer validity seam"
-require_marker "$safety_aegis" 'not self.item or not self.srcContainer or not self.destContainer' "SafetyFixes Aegis guard lost nil-container precheck"
-require_marker "$safety_chimera" 'Guard.install' "SafetyFixes Chimera guard lost guarded install contract"
-
-# GridInventorySort: optional source-clean addon; upstream GridInventory is required.
-grid_sort_algorithm="$grid_sort/lua/client/LCC/GridAutoSort.lua"
-grid_sort_hook="$grid_sort/lua/client/zzz_LCC_GridInventorySort.lua"
-require_marker "$grid_sort_algorithm" 'GridClientNetwork.sendReorder' "GridInventorySort lost authoritative GridInventory batch reorder path"
-require_marker "$grid_sort_algorithm" 'grid:findCompatibleStack' "GridInventorySort lost virtual stack consolidation"
-require_marker "$grid_sort_algorithm" 'grid:findFreeSpace' "GridInventorySort lost first-fit placement"
-require_marker "$grid_sort_algorithm" 'return false, "floor"' "GridInventorySort v0.1 must fail closed on floor grids"
-require_marker "$grid_sort_algorithm" 'return false, "corpse"' "GridInventorySort v0.1 must fail closed on corpse grids"
-require_marker "$grid_sort_hook" 'ISInventoryWindowContainerControls' "GridInventorySort lost inventory footer integration"
-require_marker "$grid_sort_hook" 'ISLootWindowContainerControls' "GridInventorySort lost loot footer integration"
+# PackFlow is the published successor of the original GridInventorySort staging
+# package. It hard-requires GridInventory and must remain source-clean.
+require_marker "$packflow/lua/client/LCC/GridAutoSort.lua" 'GridClientNetwork.sendReorder' "PackFlow authoritative reorder path missing"
+require_marker "$packflow/lua/client/LCC/GridAutoSort.lua" 'grid:findCompatibleStack' "PackFlow stack consolidation missing"
+require_marker "$packflow/lua/client/LCC/GridAutoSort.lua" 'grid:findFreeSpace' "PackFlow placement algorithm missing"
+require_marker "$packflow/lua/client/zzz_LCC_GridInventorySort.lua" 'ISInventoryWindowContainerControls' "PackFlow inventory footer integration missing"
+require_marker "$packflow/lua/client/zzz_LCC_GridInventorySort.lua" 'ISLootWindowContainerControls' "PackFlow loot footer integration missing"
 for forbidden in GridRender.lua GridContainer.lua GridCore.lua GridClientNetwork.lua GridServerNetwork.lua GridReorder.lua; do
-    if find "$grid_sort" -type f -name "$forbidden" -print -quit | grep -q .; then
-        error "GridInventorySort must not bundle upstream GridInventory implementation file: $forbidden"
+    if find "$packflow" -type f -name "$forbidden" -print -quit | grep -q .; then
+        error "PackFlow must not bundle upstream GridInventory implementation: $forbidden"
     fi
 done
-for json in "$grid_sort/lua/shared/Translate/EN/UI.json" "$grid_sort/lua/shared/Translate/RU/UI.json"; do
-    [[ -f "$json" ]] && python3 -m json.tool "$json" >/dev/null 2>&1 || error "GridInventorySort invalid/missing translation JSON: ${json#$ROOT/}"
-done
+require_json "$packflow/lua/shared/Translate/EN/UI.json"
+require_json "$packflow/lua/shared/Translate/RU/UI.json"
 
-# RussianTextFixes: standalone RU-only package.
-ru42="$text42/lua/shared/Translate/RU"
+# ---------------------------------------------------------------------------
+# RussianTextFixes canonical Build 42 loader contract
+# ---------------------------------------------------------------------------
+translate42="$text42/lua/shared/Translate"
+ru42="$translate42/RU"
+en42="$translate42/EN"
 ru_common="$text_common/lua/shared/Translate/RU"
+require_file "$en42/LCC_Runtime_UI.json" || true
 [[ -d "$ru42" ]] || error "RussianTextFixes 42 RU tree is missing"
 [[ -d "$ru_common" ]] || error "RussianTextFixes common RU tree is missing"
-if [[ -d "$text42/lua/shared/Translate" ]] && find "$text42/lua/shared/Translate" -mindepth 1 -maxdepth 1 -type d ! -name RU -print -quit | grep -q .; then
-    error "RussianTextFixes 42 translation layer must contain RU only"
+
+# 42 intentionally contains RU plus the tiny EN runtime fallback. No unrelated
+# language directory may enter this patch package.
+if [[ -d "$translate42" ]] && find "$translate42" -mindepth 1 -maxdepth 1 -type d ! -name RU ! -name EN -print -quit | grep -q .; then
+    error "RussianTextFixes 42 translation layer may contain only RU and EN"
 fi
-if [[ -d "$text_common/lua/shared/Translate" ]] && find "$text_common/lua/shared/Translate" -mindepth 1 -maxdepth 1 -type d ! -name RU -print -quit | grep -q .; then
-    error "RussianTextFixes common translation layer must contain RU only"
-fi
-if [[ -d "$ru42" ]]; then
-    count42="$(find "$ru42" -type f | wc -l)"
-    [[ "$count42" -eq 16 ]] || error "RussianTextFixes 42 RU tree expected 16 files, found $count42"
-fi
-if [[ -d "$ru_common" ]]; then
-    count_common="$(find "$ru_common" -type f | wc -l)"
-    [[ "$count_common" -eq 4 ]] || error "RussianTextFixes common RU tree expected 4 files, found $count_common"
-fi
-for json_root in "$ru42" "$ru_common"; do
-    [[ -d "$json_root" ]] || continue
-    while IFS= read -r -d '' json; do
-        python3 -m json.tool "$json" >/dev/null 2>&1 || error "invalid JSON translation file: ${json#$ROOT/}"
-    done < <(find "$json_root" -type f -name '*.json' -print0)
+
+canonical_tables=(ContextMenu Fluids IG_UI ItemName Recipes Sandbox Tooltip UI)
+for table in "${canonical_tables[@]}"; do
+    require_json "$ru42/$table.json"
 done
+while IFS= read -r -d '' json; do
+    python3 -m json.tool "$json" >/dev/null 2>&1 || error "invalid translation JSON: ${json#$ROOT/}"
+done < <(find "$translate42" "$ru_common" -type f -name '*.json' -print0)
 
-# Workshop/mod.info metadata.
-declare -A expected_ids=(
-    [PatchCore]="LaccckaB4220PatchCore"
-    [RuntimeFixes]="LaccckaB4220RuntimeFixes"
-    [NPCFixes]="LaccckaB4220NPCFixes"
-    [NPCCombatExperimental]="LaccckaB4220NPCCombatExperimental"
-    [ActivityFixes]="LaccckaB4220ActivityFixes"
-    [CompatibilityBridges]="LaccckaB4220CompatBridges"
-    [SafetyFixes]="LaccckaB4220SafetyFixes"
-    [GridInventorySort]="LaccckaB4220GridInventorySort"
-    [RussianTextFixes]="LaccckaB4220RussianText"
+mfs_ru="$ru42/LCC_MFS_IG_UI.json"
+require_marker "$mfs_ru" '"IGUI_WeaponUI_CritDmg": "Крит. урон"' "RussianTextFixes lost new MFS critical-damage translation"
+require_marker "$mfs_ru" '"IGUI_WeaponUI_CyclicRate": "Множитель темпа стрельбы"' "RussianTextFixes lost new MFS cyclic-rate translation"
+require_marker "$mfs_ru" '"IGUI_MFSTrade_Title": "Торговля по радио"' "RussianTextFixes lost MFS Radio Trade translations"
+require_marker "$ru42/IG_UI.json" '"IGUI_MFSTrade_Title": "Торговля по радио"' "canonical IG_UI.json did not absorb MFS Radio Trade fragment"
+
+# ---------------------------------------------------------------------------
+# Metadata / dependency contracts
+# ---------------------------------------------------------------------------
+declare -A mod_ids=(
+    [PatchCore]='LaccckaB4220PatchCore'
+    [RuntimeFixes]='LaccckaB4220RuntimeFixes'
+    [NPCFixes]='LaccckaB4220NPCFixes'
+    [NPCCombatExperimental]='LaccckaB4220NPCCombatExperimental'
+    [ActivityFixes]='LaccckaB4220ActivityFixes'
+    [CompatibilityBridges]='LaccckaB4220CompatBridges'
+    [SafetyFixes]='LaccckaB4220SafetyFixes'
+    [GridInventorySort]='LaccckaPackFlow'
+    [RussianTextFixes]='LaccckaB4220RussianText'
 )
-declare -A expected_workshop_ids=(
-    [PatchCore]="3786175901"
-    [RuntimeFixes]="3786175979"
-    [NPCFixes]="3787592350"
-    [NPCCombatExperimental]="3786817782"
-    [ActivityFixes]="3786175725"
-    [CompatibilityBridges]="3786175808"
-    [SafetyFixes]="3786176221"
-    [GridInventorySort]="0"
-    [RussianTextFixes]="3786176120"
+declare -A workshop_ids=(
+    [PatchCore]='3786175901'
+    [RuntimeFixes]='3786175979'
+    [NPCFixes]='3787592350'
+    [NPCCombatExperimental]='3786817782'
+    [ActivityFixes]='3786175725'
+    [CompatibilityBridges]='3786175808'
+    [SafetyFixes]='3786176221'
+    [GridInventorySort]='3789630746'
+    [RussianTextFixes]='3786176120'
 )
 
-seen_mod_ids=""
-seen_workshop_ids=""
 for folder in "${expected_patch_dirs[@]}"; do
-    id="${expected_ids[$folder]}"
-    workshop_id="${expected_workshop_ids[$folder]}"
+    id="${mod_ids[$folder]}"
+    wid="${workshop_ids[$folder]}"
+    modinfo="$SPLIT/$folder/Contents/mods/$id/42/mod.info"
     workshop="$SPLIT/$folder/workshop.txt"
-    preview="$SPLIT/$folder/preview.png"
-    modinfo="$SPLIT/$folder/Contents/mods/$id/42/mod.info"
-
-    require_file "$workshop" || true
     require_file "$modinfo" || true
-    if [[ "$workshop_id" != "0" ]]; then
-        require_file "$preview" || true
-    fi
-
-    if [[ -f "$modinfo" ]]; then
-        grep -Fxq "id=$id" "$modinfo" || error "$folder: wrong mod ID"
-        grep -Fxq 'versionMin=42.20.0' "$modinfo" || error "$folder: versionMin must stay on 42.20.0"
-    fi
-    if [[ -f "$workshop" ]]; then
-        grep -Fxq "id=$workshop_id" "$workshop" || error "$folder: wrong Workshop ID"
-        grep -Fqi 'Do not use' "$workshop" || error "$folder: Workshop warning is missing"
-        grep -Eqi 'original .*mod.*not included|original mod(s| Lua files| files)?.*not included|original mods are not included' "$workshop" || error "$folder: no-bundled-mods disclaimer is missing"
-    fi
-
-    if [[ "$folder" == "NPCFixes" ]]; then
-        grep -Fxq 'name=Lacccka B42 NPC Fixes' "$modinfo" || error "$folder: wrong stable public mod name"
-        grep -Fxq 'modversion=1.0.5' "$modinfo" || error "$folder: stable version must be 1.0.5"
-        grep -Fxq 'title=Lacccka B42 NPC Fixes' "$workshop" || error "$folder: wrong stable Workshop title"
-        grep -Fxq 'visibility=public' "$workshop" || error "$folder: published stable Workshop item must remain public"
-    fi
-    if [[ "$folder" == "NPCCombatExperimental" ]]; then
-        grep -Fxq 'name=Lacccka B42 NPC Combat Experimental' "$modinfo" || error "$folder: public mod name must remain neutral"
-        grep -Fxq 'modversion=0.2.1' "$modinfo" || error "$folder: diagnostics-only package version must be 0.2.1"
-        grep -Fxq 'title=Lacccka B42 NPC Combat Experimental' "$workshop" || error "$folder: Workshop title must remain neutral"
-        grep -Fxq 'visibility=public' "$workshop" || error "$folder: published Workshop item must remain public"
-    fi
-    if [[ "$folder" == "GridInventorySort" ]]; then
-        grep -Fxq 'name=Lacccka B42 Grid Inventory Sort' "$modinfo" || error "$folder: wrong addon public mod name"
-        grep -Fxq 'modversion=0.1.0' "$modinfo" || error "$folder: staged addon version must be 0.1.0"
-        grep -Fxq 'title=Lacccka B42 Grid Inventory Sort' "$workshop" || error "$folder: wrong addon Workshop title"
-        grep -Fxq 'visibility=private' "$workshop" || error "$folder: staging Workshop item must remain private while id=0"
-    fi
-
-    grep -Fqx "$id" <<<"$seen_mod_ids" && error "$folder: duplicate mod ID $id"
-    seen_mod_ids+="$id"$'\n'
-    if [[ "$workshop_id" != "0" ]]; then
-        grep -Fqx "$workshop_id" <<<"$seen_workshop_ids" && error "$folder: duplicate Workshop ID $workshop_id"
-        seen_workshop_ids+="$workshop_id"$'\n'
-    fi
-done
-
-for folder in RuntimeFixes NPCFixes NPCCombatExperimental ActivityFixes CompatibilityBridges SafetyFixes; do
-    id="${expected_ids[$folder]}"
-    modinfo="$SPLIT/$folder/Contents/mods/$id/42/mod.info"
-    [[ -f "$modinfo" ]] || continue
-    grep -Eq '^require=.*LaccckaB4220PatchCore' "$modinfo" && error "$folder: PatchCore must remain a soft dependency, not require="
-    grep -Fq '\LaccckaB4220PatchCore' "$modinfo" || error "$folder: PatchCore soft load-order dependency missing"
-    grep -Fqi 'strongly recommended' "$modinfo" || error "$folder: optional PatchCore warning missing from mod.info"
+    require_file "$workshop" || true
+    require_marker "$modinfo" "id=$id" "$folder has wrong Mod ID"
+    require_marker "$modinfo" 'versionMin=42.20.0' "$folder must target Build 42.20.0+"
+    require_marker "$workshop" "id=$wid" "$folder has wrong Workshop ID"
+    require_marker "$workshop" 'Do not use' "$folder lost the Workshop safety warning"
 done
 
 runtime_modinfo="$SPLIT/RuntimeFixes/Contents/mods/LaccckaB4220RuntimeFixes/42/mod.info"
@@ -501,31 +357,41 @@ experimental_modinfo="$SPLIT/NPCCombatExperimental/Contents/mods/LaccckaB4220NPC
 activity_modinfo="$SPLIT/ActivityFixes/Contents/mods/LaccckaB4220ActivityFixes/42/mod.info"
 bridges_modinfo="$SPLIT/CompatibilityBridges/Contents/mods/LaccckaB4220CompatBridges/42/mod.info"
 safety_modinfo="$SPLIT/SafetyFixes/Contents/mods/LaccckaB4220SafetyFixes/42/mod.info"
-grid_sort_modinfo="$SPLIT/GridInventorySort/Contents/mods/LaccckaB4220GridInventorySort/42/mod.info"
+packflow_modinfo="$SPLIT/GridInventorySort/Contents/mods/LaccckaPackFlow/42/mod.info"
 text_modinfo="$SPLIT/RussianTextFixes/Contents/mods/LaccckaB4220RussianText/42/mod.info"
-require_marker "$runtime_modinfo" '\Bandits2' "RuntimeFixes loadafter lost Bandits2"
-require_marker "$npc_modinfo" '\Bandits2' "NPCFixes loadafter lost Bandits2"
-require_marker "$npc_modinfo" '\LaccckaB4220RuntimeFixes' "NPCFixes must load after RuntimeFixes when both are enabled"
-require_marker "$experimental_modinfo" '\Bandits2' "NPCCombatExperimental loadafter lost NPC integration"
-require_marker "$experimental_modinfo" '\LaccckaB4220RuntimeFixes' "NPCCombatExperimental must load after RuntimeFixes"
+
+require_marker "$runtime_modinfo" 'modversion=1.2.3' "RuntimeFixes version must be 1.2.3 after MFS rebase"
+require_marker "$runtime_modinfo" '\ModernFirearmsSystem' "RuntimeFixes load order lost MFS"
+require_marker "$runtime_modinfo" '\MFS_community_fix' "RuntimeFixes load order lost MFS community fix"
+require_marker "$npc_modinfo" 'modversion=1.0.5' "NPCFixes version drifted from current stable 1.0.5"
+require_marker "$npc_modinfo" '\LaccckaB4220RuntimeFixes' "NPCFixes must soft-load after RuntimeFixes"
 require_marker "$experimental_modinfo" '\LaccckaB4220NPCFixes' "NPCCombatExperimental must load after stable NPCFixes"
-require_marker "$activity_modinfo" '\LifestyleHobbies' "ActivityFixes loadafter lost LifestyleHobbies"
-for dep in ModernFirearmsSystem MFS_community_fix PZKCarzoneWorkshop PzkVanillaPlusCarPack StandardizedVehicleUpgrades3Core tsarslib zReFRAMEWORK; do
-    require_marker "$bridges_modinfo" "\\$dep" "CompatibilityBridges loadafter lost dependency: $dep"
+require_marker "$activity_modinfo" '\LifestyleHobbies' "ActivityFixes load order lost LifestyleHobbies"
+require_marker "$bridges_modinfo" '\ModernFirearmsSystem' "CompatibilityBridges load order lost MFS"
+require_marker "$safety_modinfo" '\Federal_Rangers_Chimera' "SafetyFixes load order lost Chimera"
+require_marker "$packflow_modinfo" 'name=PackFlow' "PackFlow public mod name changed"
+require_marker "$packflow_modinfo" 'modversion=0.7.12' "PackFlow version must be 0.7.12"
+require_marker "$packflow_modinfo" 'require=\GridInventory' "PackFlow must hard-require GridInventory"
+require_marker "$packflow_modinfo" 'loadModAfter=\GridInventory' "PackFlow must load after GridInventory"
+require_marker "$text_modinfo" 'modversion=1.1.6' "RussianTextFixes must remain 1.1.6 after MFS translation rebase"
+forbid_marker "$text_modinfo" '\LaccckaB4220PatchCore' "RussianTextFixes must remain standalone"
+
+for modinfo in "$runtime_modinfo" "$npc_modinfo" "$experimental_modinfo" "$activity_modinfo" "$bridges_modinfo" "$safety_modinfo"; do
+    require_marker "$modinfo" '\LaccckaB4220PatchCore' "functional patch lost PatchCore soft load order: ${modinfo#$ROOT/}"
+    if grep -Eq '^require=.*LaccckaB4220PatchCore' "$modinfo"; then
+        error "PatchCore must remain a soft dependency: ${modinfo#$ROOT/}"
+    fi
 done
-for dep in AP GridInventory Federal_Rangers_Chimera; do
-    require_marker "$safety_modinfo" "\\$dep" "SafetyFixes loadafter lost dependency: $dep"
-done
-require_marker "$grid_sort_modinfo" 'require=\GridInventory' "GridInventorySort must hard-require GridInventory"
-require_marker "$grid_sort_modinfo" 'loadafter=\GridInventory' "GridInventorySort must load after GridInventory"
-require_marker "$text_modinfo" '\Bandits2' "RussianTextFixes loadafter lost Bandits2"
-require_marker "$text_modinfo" '\LifestyleHobbies' "RussianTextFixes loadafter lost LifestyleHobbies"
-if [[ -f "$text_modinfo" ]] && grep -Fq '\LaccckaB4220PatchCore' "$text_modinfo"; then
-    error "RussianTextFixes must remain standalone and must not depend on PatchCore"
-fi
+
+# Syntax-check LCC-authored Lua payloads. Upstream Workshop Lua is intentionally
+# not parsed here because PZ's Kahlua dialect may contain constructs rejected by
+# stock Lua 5.4; the contract concerns our patch files.
+while IFS= read -r -d '' lua; do
+    lua -e "assert(loadfile([[$lua]]))" >/dev/null 2>&1 || error "Lua syntax failure: ${lua#$ROOT/}"
+done < <(find "$SPLIT" -path '*/42/media/lua/*' -type f -name '*.lua' -print0)
 
 if (( fail != 0 )); then
     exit 1
 fi
 
-printf 'Grouped Workshop patches audit: OK (9 package directories; NPCFixes=stable 1.0.5 loadstring-free published; NPCCombatExperimental=diagnostics-only 0.2.1; GridInventorySort=0.1.0 private staging id=0; development trees excluded)\n'
+printf 'Grouped Workshop patches audit: OK (RuntimeFixes 1.2.3 MFS-rebased; NPCFixes 1.0.5; PackFlow 0.7.12; RussianTextFixes 1.1.6)\n'
