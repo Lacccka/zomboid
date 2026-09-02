@@ -35,6 +35,17 @@ local REJECT_KEYS = {
     used = "UI_AegisPlayer_BoostUsed",
 }
 
+-- the same field takes both code kinds, the prefix decides where it goes
+local KIT_REJECT_KEYS = {
+    nokey = "UI_AegisPlayer_BoostOff",
+    format = "UI_AegisPlayer_BoostBadFormat",
+    sig = "UI_AegisPlayer_BoostBadCode",
+    expired = "UI_AegisPlayer_BoostCodeExpired",
+    used = "UI_AegisPlayer_KitCodeUsed",
+    nokit = "UI_AegisPlayer_KitCodeNoKit",
+    held = "UI_AegisPlayer_KitCodeHeld",
+}
+
 local function modeLine(kit)
     if kit.mode == "once" then return getText("UI_Aegis_KitModeOnce") end
     if kit.mode == "month" then return getText("UI_Aegis_KitModeMonth") end
@@ -170,7 +181,11 @@ function AegisPlayerPageKits:onRedeem()
     self.boostPending = true
     self.boostPendingAt = getTimestampMs()
     self.boostMsg = nil
-    sendClientCommand(p, MODULE, "boostRedeem", { code = code })
+    if code:upper():sub(1, 6) == "AEGK1." then
+        sendClientCommand(p, MODULE, "kitCodeRedeem", { code = code })
+    else
+        sendClientCommand(p, MODULE, "boostRedeem", { code = code })
+    end
 end
 
 function AegisPlayerPageKits:onRedeemReply(args)
@@ -184,6 +199,22 @@ function AegisPlayerPageKits:onRedeemReply(args)
         AegisPlayerWindow.toast(getText("UI_AegisPlayer_BoostOk"))
     else
         self.boostMsg = { key = REJECT_KEYS[args.reason] or "UI_AegisPlayer_BoostError", tone = "danger" }
+    end
+end
+
+function AegisPlayerPageKits:onKitCodeReply(args)
+    self.boostPending = false
+    if type(args) ~= "table" then return end
+    if args.ok == true then
+        local kit = tostring(args.kit or "")
+        self.boostMsg = { key = "UI_AegisPlayer_KitCodeOk", par = kit, tone = "ok" }
+        if self.boostEntry then self.boostEntry:setText("") end
+        AegisPlayerWindow.toast(getText("UI_AegisPlayer_KitCodeOk", kit))
+        -- the unlocked kit only shows up once the list comes back
+        local p = getPlayer()
+        if p then sendClientCommand(p, AegisShared.MODULE, "kitList", { player = true }) end
+    else
+        self.boostMsg = { key = KIT_REJECT_KEYS[args.reason] or "UI_AegisPlayer_BoostError", tone = "danger" }
     end
 end
 
@@ -208,7 +239,7 @@ function AegisPlayerPageKits:drawBoost()
     end
     Aegis.roundFrame(self, x, y, w, BOOST_H - 12, 10, 1, c.line, c.card)
     Aegis.icon(self, "crown", x + 12, y + 9, 14, 1, c.accentHi)
-    Aegis.text(self, getText("UI_AegisPlayer_BoostTitle"), x + 34, y + 7, UIFont.Medium, c.text)
+    Aegis.text(self, getText("UI_AegisPlayer_CodeTitle"), x + 34, y + 7, UIFont.Medium, c.text)
 
     local line, tone
     if self.boostUntil and self.boostUntil > AegisShared.realTime() then
@@ -224,7 +255,9 @@ function AegisPlayerPageKits:drawBoost()
     Aegis.text(self, Aegis.fitText(line, UIFont.Small, w - 24), x + 12, y + 28, UIFont.Small, tone)
 
     if self.boostMsg then
-        local msg = getText(self.boostMsg.key)
+        local msg = self.boostMsg.par ~= nil
+            and getText(self.boostMsg.key, self.boostMsg.par)
+            or getText(self.boostMsg.key)
         Aegis.text(self, Aegis.fitText(msg, UIFont.Small, w - 24), x + 12, y + 76, UIFont.Small,
             self.boostMsg.tone == "ok" and c.ok or c.danger)
     end
@@ -471,6 +504,8 @@ Events.OnServerCommand.Add(function(module, command, args)
         page:onBoostInfo(args)
     elseif module == MODULE and command == "boostRedeem" then
         page:onRedeemReply(args)
+    elseif module == MODULE and command == "kitCodeResult" then
+        page:onKitCodeReply(args)
     end
 end)
 

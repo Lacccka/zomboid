@@ -1,3 +1,4 @@
+require "PPO_Num"
 require "PPO_SupplementDefinitions"
 require "PPO_UtilityDefinitions"
 require "PPO_SupplementState"
@@ -9,13 +10,7 @@ PPO.ConsumeAuthority = PPO.ConsumeAuthority or {}
 local Authority = PPO.ConsumeAuthority
 local COURSE_DIRECTION = { anabolic = "Strength", cardio = "Fitness" }
 
-local function finiteOr(value, fallback)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return fallback
-    end
-    return value
-end
+local Num = PPO.Num
 
 function Authority.new()
     return { installed = false, depth = 0, originals = {} }
@@ -39,7 +34,7 @@ end
 function Authority.commit(manager, character, kind, credit)
     if manager == nil or character == nil then return false end
     if not Authority.authoritative() then return false end
-    local amount = finiteOr(credit, 0)
+    local amount = Num.finite(credit, 0)
     if amount <= 0 then return false end
 
     local direction = COURSE_DIRECTION[kind]
@@ -52,7 +47,7 @@ function Authority.commit(manager, character, kind, credit)
             if course.level > course.peak then course.peak = course.level end
             local state = PPO.ExerciseState.get(character)
             if state ~= nil then
-                course.lastDoseMinute = finiteOr(state.activeMinutes, 0)
+                course.lastDoseMinute = Num.finite(state.activeMinutes, 0)
             end
             committed = true
         elseif kind == "protein" or kind == "creatine" then
@@ -73,8 +68,8 @@ end
 
 function Authority.foodDelta(pre, post)
     if type(pre) ~= "table" or type(post) ~= "table" then return 0 end
-    local before = finiteOr(pre.fraction, nil)
-    local after = finiteOr(post.fraction, nil)
+    local before = Num.finite(pre.fraction, nil)
+    local after = Num.finite(post.fraction, nil)
     if before == nil or after == nil then return 0 end
     if before <= 0 then return 0 end
     if after < 0 then after = 0 end
@@ -200,8 +195,8 @@ end
 
 function Authority.fluidDelta(pre, post, fluidName)
     if type(pre) ~= "table" or type(post) ~= "table" then return 0 end
-    local before = finiteOr(pre[fluidName], nil)
-    local after = finiteOr(post[fluidName], nil)
+    local before = Num.finite(pre[fluidName], nil)
+    local after = Num.finite(post[fluidName], nil)
     if before == nil or after == nil or before <= 0 then return 0 end
     local delta = before - after
     if delta <= 0 then return 0 end
@@ -290,8 +285,8 @@ end
 -- one dose was left. Every other unreadable post state is a refusal.
 function Authority.drainableDelta(pre, post)
     if type(pre) ~= "table" or type(post) ~= "table" then return 0 end
-    local useDelta = finiteOr(pre.useDelta, 0)
-    local before = finiteOr(pre.uses, nil)
+    local useDelta = Num.finite(pre.useDelta, 0)
+    local before = Num.finite(pre.uses, nil)
     if useDelta <= 0 or before == nil or before <= 0 then return 0 end
 
     if post.present == false then
@@ -299,7 +294,7 @@ function Authority.drainableDelta(pre, post)
         return before * useDelta
     end
 
-    local after = finiteOr(post.uses, nil)
+    local after = Num.finite(post.uses, nil)
     if after == nil then return 0 end
     local delta = (before - after) * useDelta
     if delta <= 0 then return 0 end
@@ -307,30 +302,21 @@ function Authority.drainableDelta(pre, post)
     return delta
 end
 
+-- Identity-first like food, so it rides the shared body. The one thing it adds
+-- is what an unreadable post state means here: `Use()` removes the pack from
+-- its container on the last dose, so a snapshot that cannot be taken is the
+-- vanished-item case rather than a refusal, and `drainableDelta` is the one that
+-- decides whether that counts.
 function Authority.observeDrainable(manager, action, original)
-    local item = action and action.item or nil
     local character = action and action.character or nil
-    local nested = manager ~= nil and manager.depth > 0
-    local kind = nil
-    local pre = nil
-    if not nested and item ~= nil and character ~= nil then
-        kind = identity(item, drainableKind)
-        if kind ~= nil then pre = drainableSnapshot(item, character) end
-    end
-
-    if manager ~= nil then manager.depth = manager.depth + 1 end
-    local ok, result = pcall(original)
-    if manager ~= nil then manager.depth = manager.depth - 1 end
-    if not ok then error(result, 0) end
-
-    if kind ~= nil and pre ~= nil then
-        local post = drainableSnapshot(item, character)
-        if post == nil then post = { present = false } end
-        local credit = drainableAmount(
-            kind, Authority.drainableDelta(pre, post))
-        if credit > 0 then Authority.commit(manager, character, kind, credit) end
-    end
-    return result
+    return observe(manager, action, original, {
+        kind = function(item) return identity(item, drainableKind) end,
+        snapshot = function(item) return drainableSnapshot(item, character) end,
+        credit = function(kind, pre, post)
+            if post == nil then post = { present = false } end
+            return drainableAmount(kind, Authority.drainableDelta(pre, post))
+        end,
+    })
 end
 
 local SEAMS = {

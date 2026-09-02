@@ -1,7 +1,10 @@
+require "PPO_Num"
+
 PPO = PPO or {}
 PPO.LootDefinitions = PPO.LootDefinitions or {}
 
 local Definitions = PPO.LootDefinitions
+local Num = PPO.Num
 local MODULE = "PhysicalProgressionOverhaul."
 
 -- The vanilla rarity ladder, read from ItemPickerJava.doSandboxSettings and the
@@ -330,16 +333,11 @@ Definitions.locations = {
     },
 }
 
-local function finite(value)
-    return type(value) == "number" and value == value
-        and value ~= math.huge and value ~= -math.huge
-end
-
 -- Garbage and an out-of-range index both fall to Normal, the same contract
 -- `bounded` gives every other option. Step 1 resolves to 0, which callers read
 -- as a refusal rather than as a multiplier.
 function Definitions.ladderMultiplier(step)
-    if not finite(step) then return LADDER[DEFAULT_STEP] end
+    if not Num.isFinite(step) then return LADDER[DEFAULT_STEP] end
     local multiplier = LADDER[step]
     if multiplier == nil then return LADDER[DEFAULT_STEP] end
     return multiplier
@@ -348,7 +346,7 @@ end
 -- nil means "do not insert". A vanilla modifier of zero already makes
 -- getActualSpawnChance return zero, so an entry would only grow the table.
 function Definitions.compensation(vanillaModifier)
-    if not finite(vanillaModifier) or vanillaModifier <= 0 then return nil end
+    if not Num.isFinite(vanillaModifier) or vanillaModifier <= 0 then return nil end
     local factor = REFERENCE_MODIFIER / vanillaModifier
     if factor > MAX_COMPENSATION then return MAX_COMPENSATION end
     return factor
@@ -358,7 +356,7 @@ end
 -- leave the item out of the table entirely. There is no second "weight zero"
 -- path.
 function Definitions.insertedWeight(baseWeight, step, vanillaModifier)
-    if not finite(baseWeight) or baseWeight <= 0 then return nil end
+    if not Num.isFinite(baseWeight) or baseWeight <= 0 then return nil end
     local ladder = Definitions.ladderMultiplier(step)
     if ladder <= 0 then return nil end
     local factor = Definitions.compensation(vanillaModifier)

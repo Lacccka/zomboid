@@ -194,8 +194,17 @@ end
 -- another entry resets it (onSelect)
 function AegisPageLogs:layoutText()
     local lineH = Aegis.fontH(UIFont.Small) + 4
-    local n = self.lines and #self.lines or 0
-    self.textPanel:setHeight(math.max(10, n * lineH + 8))
+    -- long entries ran past the right edge and their tail was unreadable,
+    -- so every stored line wraps to the panel width here
+    local w = math.max(40, self.textPanel.width - 8)
+    local out = {}
+    for _, line in ipairs(self.lines or {}) do
+        for _, part in ipairs(Aegis.wrapText(line, UIFont.Small, w, 24)) do
+            out[#out + 1] = part
+        end
+    end
+    self.displayLines = out
+    self.textPanel:setHeight(math.max(10, #out * lineH + 8))
     self.scroll:setScrollHeight(self.textPanel.height)
 end
 
@@ -235,11 +244,11 @@ end
 
 function AegisPageLogs.renderText(panel)
     local page = panel.owner
-    if not page.lines then return end
+    if not page.displayLines then return end
     local c = Aegis.col
     local lineH = Aegis.fontH(UIFont.Small) + 4
     local y = 4
-    for _, line in ipairs(page.lines) do
+    for _, line in ipairs(page.displayLines) do
         Aegis.text(panel, line, 4, y, UIFont.Small, c.text)
         y = y + lineH
     end

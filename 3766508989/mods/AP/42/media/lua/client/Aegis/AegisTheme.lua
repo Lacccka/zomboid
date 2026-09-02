@@ -2,7 +2,7 @@
 require "ISUI/ISPanel"
 
 Aegis = Aegis or {}
-Aegis.version = "2.5.1"
+Aegis.version = "2.6"
 
 -- admin night vision: client-local climate overrides lift the darkness for
 -- THIS admin only (scenario override path, never broadcast). Off restores

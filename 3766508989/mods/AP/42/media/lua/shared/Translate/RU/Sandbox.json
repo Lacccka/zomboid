@@ -1,5 +1,5 @@
 {
-    "Sandbox_AegisEvents": "События Aegis",
+    "Sandbox_AegisEvents": "Aegis",
     "Sandbox_AegisSiegeWaves": "Осада: волны",
     "Sandbox_AegisSiegeWaves_tooltip": "Сколько волн орды отправляет осада.",
     "Sandbox_AegisSiegeCount": "Осада: зомби в волне",
@@ -58,6 +58,8 @@
     "Sandbox_AegisPlayerClaims_tooltip": "Позволяет игрокам занимать зону у своего убежища в рамках бюджета роли. Выкл. блокирует любые заявки.",
     "Sandbox_AegisPlayerKits": "Наборы игроков включены",
     "Sandbox_AegisPlayerKits_tooltip": "Страница наборов в панели игрока, включая обмен бустера. Выкл. скрывает её для всех; редактор наборов работает дальше.",
+    "Sandbox_AegisKitCodeGates": "Discord-наборы в редакторе наборов",
+    "Sandbox_AegisKitCodeGates_tooltip": "Предлагает \"Бустер Discord\" и \"Только по коду набора\" при редактировании набора. Оба требуют своего бота Discord. Выключено убирает их из списка.",
     "Sandbox_AegisPlayerVehicles": "Запомненных транспортов на игрока",
     "Sandbox_AegisPlayerVehicles_tooltip": "Сколько транспорта игрок может держать на странице транспорта в зоне игрока. 0 отключает запоминание. Игнорируется там, где работает Knox Claim, у того мода свой лимит. Уже запомненный транспорт при уменьшении не теряется.",
     "Sandbox_AegisPlayerHealthInfection": "Показывать игрокам зомби-инфекцию",

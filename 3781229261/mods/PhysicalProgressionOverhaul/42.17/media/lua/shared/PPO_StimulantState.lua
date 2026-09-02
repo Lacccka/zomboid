@@ -1,3 +1,4 @@
+require "PPO_Num"
 require "PPO_WindowState"
 
 PPO = PPO or {}
@@ -5,13 +6,7 @@ PPO.StimulantState = PPO.StimulantState or {}
 
 local StimulantState = PPO.StimulantState
 
-local function finiteOr(value, fallback)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return fallback
-    end
-    return value
-end
+local Num = PPO.Num
 
 -- A constant, never a ramp: the strength of the effect does not depend on how
 -- much window is left, on how many servings were drunk, or on anything else.
@@ -23,7 +18,7 @@ end
 -- has.
 function StimulantState.strainShare(minutes, acceleration)
     if not PPO.WindowState.active(minutes) then return 0 end
-    return -math.max(0, finiteOr(acceleration, 0))
+    return -math.max(0, Num.finite(acceleration, 0))
 end
 
 return StimulantState

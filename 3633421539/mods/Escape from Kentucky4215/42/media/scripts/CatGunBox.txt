@@ -498,5 +498,22 @@ craftRecipe 5.56(30)
 		item 1 Base.68Drum_cat,
 		}
 	}
+ craftRecipe M240BeltBox(100)
+	{
+		
+		Time = 0,
+		AllowBatchCraft = False,
+		Tags = AnySurfaceCraft,
+        category = 现代枪械系统ModernFirearmsSystem,
+        
+		inputs
+		{
+                item 10 [part1_cat],
+		}
+		outputs
+		{
+		item 1 Base.M240BeltBox,
+		}
+	}
 
 }

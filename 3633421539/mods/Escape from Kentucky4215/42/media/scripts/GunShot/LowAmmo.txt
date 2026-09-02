@@ -8,24 +8,24 @@ module Base
         clip
         {
             file = media/sound/GunShot/low_ammo/wpn_low_ammo_01.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.05,
             volume = 0.42,
         }
         clip
         {
             file = media/sound/GunShot/low_ammo/wpn_low_ammo_02.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.05,
             volume = 0.42,
         }
         clip
         {
             file = media/sound/GunShot/low_ammo/wpn_low_ammo_03.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.05,
             volume = 0.42,
         }
@@ -39,24 +39,24 @@ module Base
         clip
         {
             file = media/sound/GunShot/low_ammo/wpn_low_ammo_01.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.05,
             volume = 0.7,
         }
         clip
         {
             file = media/sound/GunShot/low_ammo/wpn_low_ammo_02.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.05,
             volume = 0.7,
         }
         clip
         {
             file = media/sound/GunShot/low_ammo/wpn_low_ammo_03.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.05,
             volume = 0.7,
         }
@@ -70,24 +70,24 @@ module Base
         clip
         {
             file = media/sound/GunShot/low_ammo/wpn_low_ammo_01.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.05,
             volume = 1.2,
         }
         clip
         {
             file = media/sound/GunShot/low_ammo/wpn_low_ammo_02.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.05,
             volume = 1.2,
         }
         clip
         {
             file = media/sound/GunShot/low_ammo/wpn_low_ammo_03.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.05,
             volume = 1.2,
         }
@@ -101,24 +101,24 @@ module Base
         clip
         {
             file = media/sound/GunShot/low_ammo/wpn_low_ammo_01.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.05,
             volume = 2,
         }
         clip
         {
             file = media/sound/GunShot/low_ammo/wpn_low_ammo_02.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.05,
             volume = 2,
         }
         clip
         {
             file = media/sound/GunShot/low_ammo/wpn_low_ammo_03.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.05,
             volume = 2,
         }

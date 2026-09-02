@@ -1524,6 +1524,11 @@ function AegisPlayerPageVehicles:prerender()
         Aegis.textCentre(self, getText("UI_AegisPlayer_VehSelectHint"),
             rx + math.floor(rw / 2), pad + math.floor(self.previewH / 2) - 8, UIFont.Small, c.muted)
     else
+        -- the stage builds its model from the vehicle SCRIPT, the engine
+        -- offers no way to feed it the parts actually bolted on, so say so
+        -- rather than let upgrade mods look like a wrong picture
+        Aegis.textCentre(self, Aegis.fitText(getText("UI_AegisPlayer_VehStageType"), UIFont.Small, rw - 24),
+            rx + math.floor(rw / 2), pad + 14, UIFont.Small, c.muted)
         -- nothing told the player the stage can be turned at all
         local hint = getText("UI_AegisPlayer_VehStageHint")
         local hy = pad + self.previewH - 14 - math.floor((STAGE_HINT_H + Aegis.fontH(UIFont.Small)) / 2) + 2

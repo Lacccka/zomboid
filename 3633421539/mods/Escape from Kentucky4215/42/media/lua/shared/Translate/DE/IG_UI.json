@@ -86,5 +86,7 @@
     "IGUI_ItemCat_R_Scope": "Waffenzubehör - Rechtes Visier",
     "IGUI_ItemCat_L_Scope": "Waffenzubehör - Linkes Visier",
     "IGUI_ItemCat_Misc": "Waffenzubehör - Sonstiges",
-    "IGUI_ItemCat_Skin": "Waffenzubehör - Skin (nutzlos)"
+    "IGUI_ItemCat_Skin": "Waffenzubehör - Skin (nutzlos)",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

@@ -14,7 +14,7 @@ AegisHelpContent.DE = {
     help = {
         { title = "Erste Schritte", lines = {
             "Das goldene Panel sehen nur echte Admins des Servers; welche Seiten ein Admin nutzen darf, regelst du auf der Rollen-Seite.",
-            "\195\150ffnen: goldener Wappen-Knopf in der schwebenden Leiste oben, etwas links der Mitte, oder F7; die Taste belegst du unter Optionen im Reiter Mods um.",
+            "\195\150ffnen: goldener Wappen-Knopf in der schwebenden Leiste oben, etwas links der Mitte oder F7; die Taste belegst du unter Optionen im Reiter Mods um.",
             "Leiste versetzen: am Griff an jede Stelle ziehen; ein Klick auf den Griff klappt die Leiste ein und wieder aus.",
             "Fenster einrichten: am Kopf verschieben, unten rechts am Punkte-Dreieck die Gr\195\182\195\159e ziehen; Minus macht eine Mini-Leiste, das Plus darauf holt das Panel zur\195\188ck.",
             "Seitenleiste ordnen: Schloss unten \195\182ffnen, Eintr\195\164ge mit gedr\195\188ckter Maustaste ziehen, die goldene Linie zeigt die Einf\195\188gestelle, danach das Schloss schlie\195\159en.",
@@ -53,7 +53,7 @@ AegisHelpContent.DE = {
             "Fahrzeuge spawnen, gezielt platzieren und bis ins letzte Teil bearbeiten.",
             "Spawnen: Fahrzeug w\195\164hlen, Zu mir spawnen setzt es mit fester Ausrichtung auf deine Position; die Dreh-Kn\195\182pfe drehen nur die Vorschau-Ansicht.",
             "Ausgerichtet setzen: In der Welt platzieren w\195\164hlen, den Cursor in der Welt bewegen, das Mausrad dreht gradweise, R in 30-Grad-Schritten.",
-            "Bearbeiten: Rechtsklick aufs Fahrzeug und Fahrzeug bearbeiten, oder der Panel-Knopf f\195\188rs n\195\164chstgelegene; dann Tank, Batterie, jedes Teil, Farbe und Zustand.",
+            "Bearbeiten: Rechtsklick aufs Fahrzeug und Fahrzeug bearbeiten oder der Panel-Knopf f\195\188rs n\195\164chstgelegene; dann Tank, Batterie, jedes Teil, Farbe und Zustand.",
             "Schl\195\188ssel: der Schl\195\188ssel-Knopf erzeugt einen neuen und legt ihn ins Handschuhfach, ersatzweise in dein Inventar.",
             "Mitnehmen: sitzt du selbst im Fahrzeug, nimmt jeder Panel-Teleport es samt Anh\195\164nger und Ladung mit; niemand sonst darf an Bord sein, Fernholen gibt es nicht.",
         } },
@@ -62,7 +62,6 @@ AegisHelpContent.DE = {
             "Tageszeit setzen: die vier Presets oder der Regler stellen die Uhrzeit sofort f\195\188r alle; IG-Datum und IG-Uhrzeit stellen den kompletten Kalender um.",
             "Sturm starten: Gewitter, Tropensturm und Schneesturm setzen sofort sichtbar ein, die Dauer bestimmt der Regler; Sofort-Regen und Wetter stoppen wirken direkt.",
             "Eigenes Wetter: der Wetter-Designer mischt Wolken, Regen, Nebel und Wind, auf Wunsch mit Donner-Takt; Als Vorlage speichern merkt sich die Mischung.",
-            "L\195\164rm erzeugen: L\195\164rm machen nutzt den Radius-Regler (10 bis 500); Donnerschlag hier, Schuss und Feuerwerk ert\195\182nen mit festen Reichweiten an deiner Position.",
         } },
         { title = "Zonen", lines = {
             "Safehouses anlegen und \195\188ber die Vanilla-Grenzen hinaus formen; eine Zone z\195\164hlt immer als ein Ganzes, egal aus wie vielen Teilen.",
@@ -80,12 +79,16 @@ AegisHelpContent.DE = {
             "Tiere setzen: Art und Rasse w\195\164hlen, in der Vorschau drehen, dann in der Welt platzieren, genau wie bei Fahrzeugen.",
         } },
         { title = "Server", lines = {
-            "Neustarts, Weltsicherung, Versorgungsnetze, Event-Regie und die serverweiten Schalter an einem Ort.",
+            "Neustarts, Weltsicherung, Versorgungsnetze und die serverweiten Schalter an einem Ort.",
             "Neustart planen: die Minuten-Kn\195\182pfe starten einen Countdown mit Banner f\195\188r alle; Uhrzeit, Datum und Automatik setzen feste Zeitpunkte im gew\195\164hlten Takt.",
             "Wichtig: der Server kann sich nicht selbst beenden, zum Stichtag muss jemand mit Herunterfahren-Recht online sein; das Hochfahren regelt dein Hoster-Panel.",
-            "Event abfeuern: Event-Regie startet an deiner Position Unwetter-Show, Belagerung, Heli-Alarm, Luftlandung, Feuersturm oder Kriechender Hinterhalt.",
             "Sichern und Netze: Welt sichern speichert den Spielstand sofort; Stromnetz und Wassernetz schalten die Versorgung der ganzen Karte.",
             "Schalter und Ansage: Spielerbereich, Spieler-Claims und Spieler-Kits regeln, was Spieler d\195\188rfen; Ansage zeigt allen ein goldenes Banner samt Chat-Zeile.",
+        } },
+        { title = "Event-Studio", lines = {
+            "Eigene Events aus Bausteinen: Horden, Wetter, Ger\195\164usche, Ansagen und Pausen, gespeichert und jederzeit startbar.",
+            "Jedes Event wirkt an deiner Position beim Start, der Ank\195\188ndigungs-Regler warnt alle Spieler ein paar Sekunden vorher.",
+            "Die sechs alten Direktor-Events liegen als bearbeitbare Vorlagen bereit, der W\195\188rfel-Knopf startet ein zuf\195\164lliges Event.",
         } },
         { title = "Serveroptionen", lines = {
             "Alle Einstellungen der Server-INI als eigene Seite, nach Themen gruppiert; unter jedem Namen steht der Standardwert.",
@@ -191,7 +194,6 @@ AegisHelpContent.DE = {
             "Tageszeit, Datum, Wetter und Ereignis-Ger\195\164usche f\195\188r die ganze Welt. Presets und Regler wirken sofort f\195\188r alle Spieler.",
             "Gewitter, Tropensturm und Schneesturm bauen sich \195\188ber etwa eine Spielstunde auf. Sofort-Regen wirkt ohne Aufbauzeit, Wetter stoppen beendet alles.",
             "Der Wetter-Designer mischt eigenes Wetter und speichert es dauerhaft als Vorlage.",
-            "Ereignisse wie Donnerschlag oder Schuss ert\195\182nen an deiner Position, Zombies in der Umgebung reagieren darauf.",
         } },
         zones = { title = "Zonen", lines = {
             "Safehouses anlegen und \195\188ber die Vanilla-Grenzen hinaus erweitern. Eine Zone aus mehreren Teilen z\195\164hlt immer als ein Ganzes.",
@@ -206,10 +208,16 @@ AegisHelpContent.DE = {
             "Die Feinheiten der Belagerung, also Wellen, Anzahl und Distanz, stehen in der Sandbox unter Aegis Ereignisse.",
         } },
         server = { title = "Server", lines = {
-            "Neustarts planen, Welt sichern, Strom- und Wassernetz schalten, Ansagen senden, Event-Regie starten.",
+            "Neustarts planen, Welt sichern, Strom- und Wassernetz schalten, Ansagen senden.",
             "Der Server kann sich nicht selbst beenden: zum Stichtag muss ein berechtigter Spieler online sein, das Wiederhochfahren \195\188bernimmt dein Hoster-Panel.",
             "Die Funktions-Schalter bestimmen, was Spieler d\195\188rfen. Der Server setzt das durch, es ist nicht nur eine Anzeige.",
             "Server-Branding setzt den Namen im Kopf beider Panels, leer lassen bringt AEGIS zur\195\188ck.",
+        } },
+        events = { title = "Event-Studio", lines = {
+            "Baue eigene Events aus Schritten: Horden, Wetter, Ger\195\164usche, Ansagen und Pausen. Links die Liste, rechts der Editor.",
+            "Jedes Event zielt auf den Punkt, an dem du beim Start stehst.",
+            "Der Ank\195\188ndigungs-Regler warnt alle Spieler ein paar Sekunden vorher, ein Warten-Schritt legt Pausen zwischen die Schritte.",
+            "Die sechs alten Direktor-Events liegen als Vorlagen bereit, der W\195\188rfel-Knopf startet ein zuf\195\164lliges Event.",
         } },
         options = { title = "Serveroptionen", lines = {
             "Alle Einstellungen der Server-INI, nach Themen gruppiert und durchsuchbar. \195\156bernehmen wirkt sofort und schreibt zugleich in die INI.",
@@ -254,6 +262,38 @@ AegisHelpContent.DE = {
         } },
     },
     changelog = {
+        { version = "2.6", date = "August 2026", sections = {
+            { title = "Neu hinzugef\195\188gt", points = {
+                "Neues Event-Studio als eigene Seite: Admins bauen eigene Events aus Bausteinen wie Horden, Wetter, Ansagen und Pausen, speichern sie und feuern sie ab. Die sechs alten Direktor-Events liegen als bearbeitbare Vorlagen bereit, und ein W\195\188rfel-Knopf startet ein zuf\195\164lliges Event.",
+                "Die Spielerliste hat eine Suchleiste, jeder getippte Buchstabe engt die Liste auf Namen ein, die so beginnen.",
+                "Zonen haben einen Knopf zum Besitzerwechsel: die Zone wechselt samt aller Teile zu einem anderen Spieler, ohne neu gemalt zu werden.",
+                "Das Event-Studio hat einen eigenen Schalter in den Rollen. Rollen mit Server-Recht bekommen ihn beim ersten Start automatisch, es \195\164ndert sich nichts, bis jemand ihn abschaltet.",
+                "Die Welt-Seite hat eine Klima-Karte: Extremsommer und Schneewinter auf einen Klick, Temperatur und Schneefall einzeln festlegbar. Gilt f\195\188r alle Spieler, \195\188berlebt den Neustart, und ein Knopf gibt das Wetter dem Spiel zur\195\188ck.",
+                "Verpasste Notrufe gehen nicht mehr unter: das Panel-Symbol blinkt mit einem Ausrufezeichen, ein Klick darauf holt die offenen Rufe als Karten nach. Beantwortet oder geschlossen gilt f\195\188r alle Admins, offene Rufe \195\188berleben den Neustart und verfallen nach 24 Stunden.",
+            } },
+            { title = "Ge\195\164ndert", points = {
+                "Die Ereignisse-Karte der Welt-Seite ist ausgezogen: Donnerschlag, Schuss, Feuerwerk und L\195\164rm sind jetzt Bausteine im Event-Studio, die Zeit-Karte nutzt daf\195\188r die volle Breite.",
+            } },
+            { title = "Behoben", points = {
+                "Das Herkunfts-Feld der Fahrzeugliste zeigte nur Vanilla. Die Erkennung fragt jetzt ab, aus welcher Mod-Datei ein Fahrzeug geladen wurde, damit landen auch Pakete mit Eintrag im Modul Base unter ihrem eigenen Namen.",
+                "Ein Kit-Code lie\195\159 sich nach jedem Server-Neustart erneut abholen, der verbrauchte Gutschein wurde nie gespeichert. Eine Abholung ist jetzt wirklich eine.",
+                "Lange Zeilen in den Aufzeichnungen brechen jetzt um, vorher war ihr Ende schlicht nicht lesbar.",
+                "In der Suche der Sandbox-Seite griffen nach dem ersten Buchstaben die Spieltasten, das Tippfeld verlor den Fokus an die frisch gebaute Kategorie.",
+                "Nach dem Zur\195\188cksetzen der Tragkraft blieb ein Spieler im Mehrspieler bei 8 h\195\164ngen, bis er neu verband. Der Reset rechnet den Standardwert jetzt wie das Spiel selbst aus, und die Meldung nennt die Zahl, die wirklich gilt.",
+                "Eine gesetzte Tragkraft wurde alle paar Sekunden neu an den Spieler gefunkt, weil die Pr\195\188fung am falschen Wert hing.",
+            } },
+        } },
+        { version = "2.5.2", date = "August 2026", sections = {
+            { title = "Neu hinzugef\195\188gt", points = {
+                "Neben den Mengen-Kn\195\182pfen sitzt jetzt ein freies Feld f\195\188r eine eigene St\195\188ckzahl, auf der Gegenstandsseite und im Kit-Editor. Wer \195\188ber die Grenze tippt, sieht die Zahl sofort darauf springen.",
+                "Ein Schalter blendet die Discord-Kits im Kit-Editor aus. Wer keinen eigenen Bot betreibt, hat die Eintr\195\164ge damit aus der Liste.",
+                "Die Fahrzeugliste hat ein Auswahlfeld f\195\188r die Herkunft. Vanilla ist voreingestellt, jeder Mod steht einzeln darin und ausgebrannte Fahrzeuge sind ein eigener Eintrag.",
+            } },
+            { title = "Ge\195\164ndert", points = {
+                "Die Grenze beim Vergeben liegt jetzt bei 1000 St\195\188ck je Gegenstand statt bei 100, insgesamt 3000 je Vorgang.",
+                "Die Sandbox-Seite hei\195\159t jetzt nur noch \"Aegis\". Sie tr\195\164gt l\195\164ngst mehr als Ereignisse, gespeicherte Einstellungen bleiben unber\195\188hrt.",
+            } },
+        } },
         { version = "2.5.1", date = "August 2026", sections = {
             { title = "Neu hinzugef\195\188gt", points = {
                 "Ausgebrannte Fahrzeuge lassen sich jetzt spawnen. Sie stehen mit der Markierung \"Ausgebrannt\" in derselben Liste.",
@@ -291,10 +331,10 @@ AegisHelpContent.DE = {
         } },
         { version = "2.4.2", date = "August 2026", sections = {
             { title = "Behoben", points = {
-                "Einzelspieler: das goldene Symbol erscheint und F7 \195\182ffnet das Panel wie gewohnt. Beide warteten auf eine Rechte-Antwort des Servers, und im Einzelspieler gibt es keinen Server, der sie schicken k\195\182nnte. Wo niemand antworten kann, wird jetzt nicht mehr gewartet.",
+                "Einzelspieler: das goldene Symbol erscheint und F7 \195\182ffnet das Panel wie gewohnt. Beide warteten auf eine Rechte-Antwort des Servers und im Einzelspieler gibt es keinen Server, der sie schicken k\195\182nnte. Wo niemand antworten kann, wird jetzt nicht mehr gewartet.",
                 "Die neue Symbol-Leiste blieb bedienbar unter jedem sp\195\164ter ge\195\182ffneten Fenster begraben: lag zum Beispiel das Fraktions-Fenster von FactionsFramework dar\195\188ber, kamen Klicks und der Zieh-Griff nicht mehr durch. Die Leiste liegt jetzt immer obenauf, genau wie die Minimieren-Leiste des Panels es schon immer tut.",
                 "Die Themenliste der Hilfe schnitt beim Verkleinern des Fensters unten Eintr\195\164ge ab, ohne Hinweis und ohne Weg dorthin. Sie hat jetzt eine eigene ziehbare Bildlaufleiste, dazu bl\195\164ttert ein Klick auf die Bahn seitenweise und das Mausrad rollt wie \195\188berall.",
-                "Im Hilfe-Fenster konnte der Text unter die rechte Bildlaufleiste laufen, und die Leiste selbst klebte in der abgerundeten Fensterecke. Sie sitzt jetzt ein St\195\188ck weiter innen, und der Text endet hart davor, er kann sie nicht mehr erreichen.",
+                "Im Hilfe-Fenster konnte der Text unter die rechte Bildlaufleiste laufen und die Leiste selbst klebte in der abgerundeten Fensterecke. Sie sitzt jetzt ein St\195\188ck weiter innen und der Text endet hart davor, er kann sie nicht mehr erreichen.",
             } },
         } },
         { version = "2.4.1", date = "August 2026", sections = {
@@ -306,7 +346,7 @@ AegisHelpContent.DE = {
             { title = "Neu hinzugef\195\188gt", points = {
                 "Die Factions-Seite hat jetzt einen echten Freigabe-Knopf f\195\188r ein Safehouse (Hauptteil und alle weiteren Zusatzteile auf einmal, mit R\195\188ckfrage). Vorher gab es im goldenen Panel keinen einzigen Weg, ein Safehouse aufzul\195\182sen. L\195\164uft Knox Claim auf dem Server und geh\195\182rt das Grundst\195\188ck dort hin, wird es gleich mit freigegeben. Ohne das kam die Zone nach kurzer Zeit von selbst zur\195\188ck, weil Knox sie aus seinem eigenen Eintrag neu aufgebaut hat. Bleibt der Knox-Eintrag doch stehen, sagt die R\195\188ckmeldung das ausdr\195\188cklich, statt Erfolg zu melden.",
                 "Die Zonen-Liste ist jetzt nach Eigent\195\188mer zusammengeklappt, genau wie die Safehouse-Liste auf der Factions-Seite. Ein Klick auf den Namen f\195\164ltet dessen Grundst\195\188cke auf. Wer ein Dutzend Grundst\195\188cke besa\195\159, hat vorher alle anderen aus der Liste gedr\195\164ngt.",
-                "Der Bau-Pinsel hat jetzt \"Alle Kacheln\": ein Fenster mit Kachelbl\195\164ttern, links durchsuchbar, rechts als Vorschau-Raster. Beide Fenster haben eine ziehbare Bildlaufleiste, ein Klick auf die Bahn bl\195\164ttert eine Seite weiter. F\195\164hrst du mit der Maus \195\188ber eine Kachel, erscheint sie gro\195\159 daneben, samt ihrem Namen: im Raster ist eine Kachel nur 58 Pixel gro\195\159, und viele unterscheiden sich nur in einer Kleinigkeit. Bringt eine Kachel ein echtes 3D-Modell mit, siehst du in der Vorschau dieses Modell statt des flachen Bildes. Das betrifft nur wenige: in Vanilla sind es 45 Kacheln aus f\195\188nf Bl\195\164ttern, gr\195\182\195\159tenteils T\195\188ren und Tore. Mods k\195\182nnen eigene mitbringen, gepr\195\188ft wird die Kachel selbst und keine feste Liste. Ein Klick legt die Kachel zu deinen eigenen St\195\188cken und w\195\164hlt sie sofort aus. Die bisherige Palette bleibt als schneller Weg daneben stehen. Wichtig zur Erwartung: die vollst\195\164ndige Kachelliste des Spiels gibt die Engine nur im Debug-Modus heraus, im normalen Spiel ist sie leer. Das Fenster zeigt deshalb die Bl\195\164tter der Palette plus alles, was rund um dich wirklich in der Welt steht, und wird beim \195\150ffnen jedes Mal neu eingelesen. An einem anderen Ort stehen also andere Bl\195\164tter darin.",
+                "Der Bau-Pinsel hat jetzt \"Alle Kacheln\": ein Fenster mit Kachelbl\195\164ttern, links durchsuchbar, rechts als Vorschau-Raster. Beide Fenster haben eine ziehbare Bildlaufleiste, ein Klick auf die Bahn bl\195\164ttert eine Seite weiter. F\195\164hrst du mit der Maus \195\188ber eine Kachel, erscheint sie gro\195\159 daneben, samt ihrem Namen: im Raster ist eine Kachel nur 58 Pixel gro\195\159 und viele unterscheiden sich nur in einer Kleinigkeit. Bringt eine Kachel ein echtes 3D-Modell mit, siehst du in der Vorschau dieses Modell statt des flachen Bildes. Das betrifft nur wenige: in Vanilla sind es 45 Kacheln aus f\195\188nf Bl\195\164ttern, gr\195\182\195\159tenteils T\195\188ren und Tore. Mods k\195\182nnen eigene mitbringen, gepr\195\188ft wird die Kachel selbst und keine feste Liste. Ein Klick legt die Kachel zu deinen eigenen St\195\188cken und w\195\164hlt sie sofort aus. Die bisherige Palette bleibt als schneller Weg daneben stehen. Wichtig zur Erwartung: die vollst\195\164ndige Kachelliste des Spiels gibt die Engine nur im Debug-Modus heraus, im normalen Spiel ist sie leer. Das Fenster zeigt deshalb die Bl\195\164tter der Palette plus alles, was rund um dich wirklich in der Welt steht und beim \195\150ffnen jedes Mal neu eingelesen wird. An einem anderen Ort stehen also andere Bl\195\164tter darin.",
                 "Die Protokoll-Seite hat eine Tagesauswahl bekommen. Bei einem viel genutzten Bereich musste man vorher hunderte Eintr\195\164ge durchscrollen, um einen bestimmten Tag zu finden.",
                 "Neue Sandbox-Option: automatische Admin-Kr\195\164fte. Vanilla schaltet Gottmodus, Unsichtbarkeit und Geistmodus von selbst ein, sobald jemand Admin wird. Ausschalten l\195\164sst sie aus, bis du sie selbst aktivierst. Die volle Heilung bei derselben Bef\195\182rderung l\195\164sst sich nicht verhindern, die steckt in der Engine.",
                 "Neue Sandbox-Option: Statistik f\195\188r Admins mitz\195\164hlen. Ausschalten sorgt daf\195\188r, dass Kills, Tode, Strecke und bestes Leben f\195\188r Charaktere auf einer Admin-Stufe nicht mehr aufgezeichnet werden, damit Admin-Tests die Zahlen nicht verf\195\164lschen.",
@@ -316,13 +356,13 @@ AegisHelpContent.DE = {
             { title = "Behoben", points = {
                 "Der geplante Neustart hing an der Anwesenheit des planenden Admins: solange dieser online war, reagierte ausschlie\195\159lich sein eigener Client auf den Neustart-Befehl, jeder andere Admin mit vollem Neustart-Recht ging leer aus. Der Server sendet den Befehl jetzt an jeden berechtigten Admin gleichzeitig, unabh\195\164ngig davon wer ihn geplant hat.",
                 "Ein Spieler mit einer eigenen Rangrolle wie \"Priority\" konnte das goldene Symbol sehen und das Panel \195\182ffnen, blieb darin aber leer, weil der Server jeden Bereich korrekt verweigerte. Ursache war ein Namensfehler (die Vanilla-Stufe hei\195\159t \"priority\", nicht \"priorityuser\") zusammen mit einem Absicherungsweg, der bei unlesbarer Rollen-Liste im Zweifel Personal annahm. Das Symbol wartet jetzt auf die best\195\164tigte Antwort des Servers, bevor es erscheint, das schlie\195\159t jeden falsch beurteilten Rangnamen ein, nicht nur diesen einen.",
-                "GRO\195\159ER FUND, betrifft jeden Server: das Einr\195\164umen in Fahrzeug-Beh\195\164lter lief bei ALLEN Spielern \195\188ber einen Sonderweg, den nur Aegis-Beh\195\164lter mit zugewiesenem Stauraum h\195\164tten nehmen d\195\188rfen. Die Pr\195\188fung dahinter hielt jeden f\195\188r einen Admin, dessen Zugriffsstufe nicht leer war, und in Build 42 hat jeder normale Spieler die Stufe \"user\". Folgen: Kofferr\195\164ume mancher Fahrzeug-Mods lie\195\159en sich von normalen Spielern nicht mehr bef\195\188llen, und jeder Transfer in ein Fahrzeug nahm den langsamen Weg. Der Sonderweg greift jetzt nur noch dort, wo wirklich ein Aegis-Stauraum vergeben wurde.",
-                "Auf demselben Sonderweg war die Transferdauer neu erfunden statt von Vanilla \195\188bernommen: kleine Sachen wie T\195\188ten oder Geld brauchten rund eine Sekunde pro St\195\188ck statt so gut wie keine Zeit, und der Vorteil aus \"Geschickt\" fiel unter den Tisch. Die Dauer wird jetzt genau nach der Vanilla-Formel berechnet, Geschickt und Zwei linke H\195\164nde eingerechnet.",
-                "Der Sonderweg fasst Bewegungen in das eigene Inventar eines Charakters nicht mehr an. Das Nachladen einer Waffe schiebt jede einzelne Patrone als ganz normalen Inventar-Transfer, und wer eine zugewiesene Tragkraft hatte, dessen Inventar galt als Aegis-Beh\195\164lter, womit auch die Patronen auf dem Sonderweg landen konnten. Eine Patrone, die dabei nicht ankam, lie\195\159 die Waffe halb geladen zur\195\188ck, sodass man f\195\188r sechs Schuss mehr als sechs Nachlade-Bewegungen brauchte.",
-                "Bei manchen Fahrzeugen lie\195\159 sich trotz zugewiesenem Stauraum nichts einr\195\164umen, obwohl man direkt vor dem offenen Kofferraum stand. Der Server ma\195\159 die Entfernung zum Mittelpunkt des Fahrzeugs statt zum Kofferraum selbst, und bei einem langen Fahrzeug wie einem Milit\195\164r-Lkw liegt der Kofferraum mehrere Kacheln hinter dem Mittelpunkt. Die Pr\195\188fung nutzt jetzt denselben Bereich, den auch Vanilla selbst verwendet, um zu entscheiden ob ein Charakter ein Fahrzeugteil erreicht.",
+                "GRO\195\159ER FUND, betrifft jeden Server: das Einr\195\164umen in Fahrzeug-Beh\195\164lter lief bei ALLEN Spielern \195\188ber einen Sonderweg, den nur Aegis-Beh\195\164lter mit zugewiesenem Stauraum h\195\164tten nehmen d\195\188rfen. Die Pr\195\188fung dahinter hielt jeden mit zugewiesener Zugriffsstufe f\195\188r einen Admin. In Build 42 hat aber jeder normale Spieler die Stufe \"user\". Folgen: Kofferr\195\164ume mancher Fahrzeug-Mods lie\195\159en sich von normalen Spielern nicht mehr bef\195\188llen und jeder Transfer in ein Fahrzeug nahm den langsamen Weg. Der Sonderweg greift jetzt nur noch dort, wo wirklich ein Aegis-Stauraum vergeben wurde.",
+                "Auf demselben Sonderweg war die Transferdauer neu erfunden statt von Vanilla \195\188bernommen: kleine Sachen wie T\195\188ten oder Geld brauchten rund eine Sekunde pro St\195\188ck statt so gut wie keine Zeit und der Vorteil aus \"Geschickt\" fiel unter den Tisch. Die Dauer wird jetzt genau nach der Vanilla-Formel berechnet, Geschickt und Zwei linke H\195\164nde eingerechnet.",
+                "Der Sonderweg fasst Bewegungen in das eigene Inventar eines Charakters nicht mehr an. Das Nachladen einer Waffe schiebt jede einzelne Patrone als ganz normalen Inventar-Transfer und wer eine zugewiesene Tragkraft hatte, dessen Inventar galt als Aegis-Beh\195\164lter, womit auch die Patronen auf dem Sonderweg landen konnten. Eine Patrone, die dabei nicht ankam, lie\195\159 die Waffe halb geladen zur\195\188ck, sodass man f\195\188r sechs Schuss mehr als sechs Nachlade-Bewegungen brauchte.",
+                "Bei manchen Fahrzeugen lie\195\159 sich trotz zugewiesenem Stauraum nichts einr\195\164umen, obwohl man direkt vor dem offenen Kofferraum stand. Der Server ma\195\159 die Entfernung zum Mittelpunkt des Fahrzeugs statt zum Kofferraum selbst und bei einem langen Fahrzeug wie einem Milit\195\164r-Lkw liegt der Kofferraum mehrere Kacheln hinter dem Mittelpunkt. Die Pr\195\188fung nutzt jetzt denselben Bereich, den auch Vanilla selbst verwendet, um zu entscheiden ob ein Charakter ein Fahrzeugteil erreicht.",
                 "Auf demselben Sonderweg wurde jede Ablehnung \195\188berstimmt, auch die eines anderen Mods. L\195\132uft zum Beispiel Knox Claim mit auf dem Server und verweigert einem Spieler das Pl\195\188ndern eines beanspruchten Fahrzeugs, h\195\164tte ein zugewiesener Aegis-Stauraum diese Ablehnung ausgehebelt. Der Sonderweg greift jetzt nur noch ein, wenn wirklich Vanilla selbst abgelehnt hat.",
                 "Das Aegis-Symbol in der Werkzeugleiste rutschte bei manchen Mod-Zusammenstellungen an den unteren Bildschirmrand. Es hat sich an das unterste fremde Symbol geh\195\164ngt, das es in der Leiste finden konnte, auch wenn dieses in einer ganz anderen Gruppe weit darunter sa\195\159. Es sucht sich seinen Platz jetzt nur noch innerhalb der zusammenh\195\164ngenden Gruppe direkt \195\188ber sich, ein gro\195\159er Abstand gilt als Gruppenende. Wird dabei etwas \195\188bersprungen, steht das einmalig im Log.",
-                "Gottmodus, Unsichtbarkeit und Geistmodus gingen von selbst wieder an, obwohl die neue Sandbox-Option sie ausschalten sollte. Sie wirkte nur genau in dem Moment, in dem ein Stufenwechsel bemerkt wurde, und die Engine vergibt die drei nicht immer punktgenau dazu. Die Pr\195\188fung l\195\164uft jetzt bei jedem gezeichneten Bild statt nur alle paar Sekunden, ein sichtbares Aufblitzen bleibt aus. Was du selbst \195\188ber das Panel einschaltest, bleibt an: Aegis merkt sich deine Absicht und redet dir nicht hinein. Die Vollheilung bei der Bef\195\182rderung l\195\164sst sich davon unabh\195\164ngig nicht verhindern, sie h\195\164ngt am Gottmodus selbst und ist schon vorbei, bevor Aegis reagieren kann.",
+                "Gottmodus, Unsichtbarkeit und Geistmodus gingen von selbst wieder an, obwohl die neue Sandbox-Option sie ausschalten sollte. Sie wirkte nur genau in dem Moment, in dem ein Stufenwechsel bemerkt wurde. Die Engine vergibt die drei aber nicht immer punktgenau dazu. Die Pr\195\188fung l\195\164uft jetzt bei jedem gezeichneten Bild statt nur alle paar Sekunden, ein sichtbares Aufblitzen bleibt aus. Was du selbst \195\188ber das Panel einschaltest, bleibt an: Aegis merkt sich deine Absicht und redet dir nicht hinein. Die Vollheilung bei der Bef\195\182rderung l\195\164sst sich davon unabh\195\164ngig nicht verhindern, sie h\195\164ngt am Gottmodus selbst und ist schon vorbei, bevor Aegis reagieren kann.",
                 "Die Kill-Zahlen im Spielerbereich konnten weit \195\188ber jedes glaubhafte Ma\195\159 steigen (\195\188ber 4000 bei etwa 1000 wirklichen Kills). Direkt nach dem Anmelden meldet die Spielfigur auf dem Server kurz null Kills, der n\195\164chste Vergleich hielt die gesamte Lebensleistung f\195\188r einen frischen Zuwachs und rechnete sie noch einmal obendrauf, bei jeder Anmeldung erneut. Ein Sprung \195\188ber 150 Kills zwischen zwei Messungen gilt jetzt als Anmelde-Artefakt und wird nicht gutgeschrieben.",
                 "Auf der Sandbox-Seite lief der Text der Eingabefelder unter die Bildlaufleiste. Die Zeilen rechnen jetzt mit deren Breite.",
                 "Die Sandbox-Seite sprang beim Vergr\195\182\195\159ern oder Verkleinern des Fensters zur\195\188ck auf die erste Kategorie und verwarf dabei alle noch nicht \195\188bernommenen \195\132nderungen. Kategorie, Suchtext und die ge\195\164nderten Werte bleiben jetzt erhalten.",
@@ -336,7 +376,7 @@ AegisHelpContent.DE = {
             } },
             { title = "Behoben", points = {
                 "Prozentzeichen in den Texten auf 42.20.1 umgestellt. Der Hotfix vom 5. August hat die Behandlung des Zeichens in \195\156bersetzungsdateien ge\195\164ndert, ein dargestelltes Prozent muss jetzt doppelt geschrieben werden. Betraf vier Texte in allen 13 Sprachen, darunter \"Zustand: 95%\" auf der Gesundheitsseite und der Fortschritt beim Sichern.",
-                "Der geplante Neustart lief ab: der Zeitgeber z\195\164hlte herunter, am Ende stand nur \"Unknown command restart\" im Chat und der Server blieb oben. Der Takt, in dem der Server den Auftrag wiederholte, h\195\164ngt an der Spielzeit und lief auf kurzen Tagen etwa alle sieben Sekunden. Damit kam die Wiederholung immer der eigenen Absicherung zuvor, die nach acht Sekunden den Befehl h\195\164tte schicken sollen, der wirklich existiert. Der Server wartet jetzt echte Minuten zwischen zwei Versuchen, und ein zweiter Anlauf geht sofort auf den funktionierenden Befehl.",
+                "Der geplante Neustart lief ab: der Zeitgeber z\195\164hlte herunter, am Ende stand nur \"Unknown command restart\" im Chat und der Server blieb oben. Der Takt, in dem der Server den Auftrag wiederholte, h\195\164ngt an der Spielzeit und lief auf kurzen Tagen etwa alle sieben Sekunden. Damit kam die Wiederholung immer der eigenen Absicherung zuvor, die nach acht Sekunden den Befehl h\195\164tte schicken sollen, der wirklich existiert. Der Server wartet jetzt echte Minuten zwischen zwei Versuchen und ein zweiter Anlauf geht sofort auf den funktionierenden Befehl.",
             } },
         } },
         { version = "2.3.4", date = "August 2026", sections = {
@@ -345,14 +385,14 @@ AegisHelpContent.DE = {
                 "Auf Servern mit Knox Claim zeigt die Fahrzeuge-Seite im Spielerpanel jetzt deine dort eingetragenen Fahrzeuge, samt 3D-Vorschau. Entfernung, Navi und Zustandsbalken gibt es, sobald der Wagen in deiner N\195\164he geladen ist. Freigeben l\195\164uft weiter \195\188ber das Knox-Claim-Fenster, deshalb bleibt der Vergessen-Knopf f\195\188r diese Eintr\195\164ge aus.",
             } },
             { title = "Behoben", points = {
-                "Der automatische Neustart konnte verpuffen: der Server kann sich nicht selbst beenden und reicht den Befehl an einen berechtigten Admin-Client weiter, tat das aber genau EINMAL. War in dieser Sekunde niemand empfangsbereit, liefen alle Warnungen und nichts passierte (Community-Meldung). Jetzt klopft der Server jede Minute erneut, bis der Neustart wirklich greift, gibt nach zehn Minuten mit Protokolleintrag auf, und sowohl das Senden als auch das Ausf\195\188hren stehen ab jetzt im Protokoll.",
+                "Der automatische Neustart konnte verpuffen: der Server kann sich nicht selbst beenden und reicht den Befehl an einen berechtigten Admin-Client weiter, tat das aber genau EINMAL. War in dieser Sekunde niemand empfangsbereit, liefen alle Warnungen und nichts passierte (Community-Meldung). Jetzt klopft der Server jede Minute erneut, bis der Neustart wirklich greift, gibt nach zehn Minuten mit Protokolleintrag auf und sowohl das Senden als auch das Ausf\195\188hren stehen ab jetzt im Protokoll.",
                 "Gemerkte Fahrzeuge wurden nach einem Server-Neustart zu leeren H\195\188llen: keine Position, keine Balken, kein Navi. Der Bestand hing an der Fahrzeug-Nummer, die das Spiel nach jedem Neustart neu vergibt. Beim Merken wandert jetzt eine feste Kennung ans Fahrzeug, \195\188ber die Server und Panel es immer wiederfinden, die Nummer heilt sich dabei von selbst. Eintr\195\164ge aus fr\195\188heren Versionen ohne Kennung bleiben leider H\195\188llen, einmal Vergessen und neu Merken r\195\188stet sie um.",
-                "Die 3D-Vorschau im Spielerpanel wurde \195\188berarbeitet: sie startet bei jedem Fahrzeugwechsel frisch, blendet dabei ohne Zucken um, und das Fahrzeug sitzt tiefer und damit besser im Rahmen. Zoom und Verschieben mit Shift gelten f\195\188r das gerade gew\195\164hlte Fahrzeug und werden beim Wechsel zur\195\188ckgesetzt. Manche Mod-Fahrzeuge sind schief um ihren Modell-Ursprung gebaut und sitzen deshalb in JEDER Vorschau des Spiels schief, dagegen hilft nur das Verschieben von Hand.",
+                "Die 3D-Vorschau im Spielerpanel wurde \195\188berarbeitet: sie startet bei jedem Fahrzeugwechsel frisch, blendet dabei ohne Zucken um und das Fahrzeug sitzt tiefer und damit besser im Rahmen. Zoom und Verschieben mit Shift gelten f\195\188r das gerade gew\195\164hlte Fahrzeug und werden beim Wechsel zur\195\188ckgesetzt. Manche Mod-Fahrzeuge sind schief um ihren Modell-Ursprung gebaut und sitzen deshalb in JEDER Vorschau des Spiels schief, dagegen hilft nur das Verschieben von Hand.",
                 "Der Weg nach Hause auf der Safehouse-Seite ist jetzt golden und anklickbar: ein Klick richtet den Bildschirm-Pfeil aufs Zuhause, ein zweiter schaltet ihn ab.",
                 "Beim Wiederbeleben im Safehouse landete man neben dem Haus statt darin: das Spiel vertauscht bei der Berechnung des Punkts Breite und H\195\182he der Zone, bei l\195\164nglichen Zonen liegt er dadurch drau\195\159en. Aegis rechnet den Punkt jetzt selbst richtig.",
-                "Bei Fahrzeugen aus Knox Claim fehlten nach einem Neuanmelden Entfernung, Himmelsrichtung, die Zustandsbalken und die Einzelteil-Liste. Die Zuordnung lief \195\188ber die Netz-Nummer des Fahrzeugs, und die vergibt das Spiel nach jedem Neustart neu. Gesucht wird jetzt \195\188ber die Kennung am Fahrzeug selbst.",
+                "Bei Fahrzeugen aus Knox Claim fehlten nach einem Neuanmelden Entfernung, Himmelsrichtung, die Zustandsbalken und die Einzelteil-Liste. Die Zuordnung lief \195\188ber die Netz-Nummer des Fahrzeugs und die vergibt das Spiel nach jedem Neustart neu. Gesucht wird jetzt \195\188ber die Kennung am Fahrzeug selbst.",
                 "Aegis hat zweimal je Sekunde versucht, dem K\195\182rper-Inventar eine Kapazit\195\164t zu setzen, wenn eine Tragkraft zugewiesen war. Das f\195\188llte das Server-Protokoll mit Warnungen, ohne Wirkung. Der K\195\182rper wird jetzt nur noch \195\188ber den vorgesehenen Weg bedient.",
-                "Zugewiesener Stauraum wirkte f\195\188r normale Spieler nur bis 100, obwohl das Panel den vollen Wert zeigte (Community-Meldung). Bei Kisten fiel das kaum auf, weil deren Vorgabe darunter liegt, bei Arbeitsplatten und H\195\164ngeschr\195\164nken ging gar nichts mehr, denn die sitzen schon auf dieser Grenze. Das Spiel deckelt Welt-Beh\195\164lter beim Lesen hart, und die Pr\195\188fung beim Verschieben l\195\164uft an unserer Vorgabe vorbei. Bisher hatten nur Admins den Umweg \195\188ber den Server, jetzt nimmt ihn jeder, sobald der Beh\195\164lter einen zugewiesenen Stauraum hat. Der Server pr\195\188ft dabei weiterhin Reichweite, Gegenstand und genau diesen Wert.",
+                "Zugewiesener Stauraum wirkte f\195\188r normale Spieler nur bis 100, obwohl das Panel den vollen Wert zeigte (Community-Meldung). Bei Kisten fiel das kaum auf, weil deren Vorgabe darunter liegt, bei Arbeitsplatten und H\195\164ngeschr\195\164nken ging gar nichts mehr, denn die sitzen schon auf dieser Grenze. Das Spiel deckelt Welt-Beh\195\164lter beim Lesen hart und die Pr\195\188fung beim Verschieben l\195\164uft an unserer Vorgabe vorbei. Bisher hatten nur Admins den Umweg \195\188ber den Server, jetzt nimmt ihn jeder, sobald der Beh\195\164lter einen zugewiesenen Stauraum hat. Der Server pr\195\188ft dabei weiterhin Reichweite, Gegenstand und genau diesen Wert.",
                 "Neustart zu fester Uhrzeit und die Automatik-Verankerung rechneten in Weltzeit statt in deiner Ortszeit: wer 00:11 eintrug, bekam den Neustart um 02:11. Eingabe und Anzeige laufen jetzt \195\188ber deine lokale Uhr.",
                 "Hilfe und Changelog liefen beim Verkleinern des Fensters mit dem alten Zeilenumbruch weiter und der Text verschwand rechts unter der Bildlaufleiste. Der Umbruch pr\195\188ft jetzt vor jedem Zeichnen, ob er noch zur Fensterbreite passt.",
                 "Der Mod-Filter im Gegenst\195\164nde-Katalog ist jetzt immer sichtbar. Ohne installierte Item-Mods hat er sich versteckt und dabei ein Loch in der Filterzeile hinterlassen, das nach einem Fehler aussah. Jetzt steht dann eben nur Project Zomboid darin.",
@@ -364,14 +404,14 @@ AegisHelpContent.DE = {
         } },
         { version = "2.3.3", date = "August 2026", sections = {
             { title = "Neu hinzugef\195\188gt", points = {
-                "Gegenst\195\164nde nach Herkunfts-Mod filtern (Community-Wunsch): neben dem Kategorie-Filter w\195\164hlst du jetzt den Mod, und bei Mod-Gegenst\195\164nden steht klein hinter dem Namen, woher sie stammen. Auch die Suche findet Mod-Namen. Ohne Mods bleibt der Filter verborgen.",
+                "Gegenst\195\164nde nach Herkunfts-Mod filtern (Community-Wunsch): neben dem Kategorie-Filter w\195\164hlst du jetzt den Mod und bei Mod-Gegenst\195\164nden steht klein hinter dem Namen, woher sie stammen. Auch die Suche findet Mod-Namen. Ohne Mods bleibt der Filter verborgen.",
                 "Zusammenspiel mit Knox Claim: l\195\164uft dieser Mod auf dem Server, verwaltet er die Fahrzeuge. Aegis zieht dann seinen eigenen Knopf zum Merken eines Fahrzeugs im Spielerpanel zur\195\188ck, damit nicht zwei Listen nebeneinander laufen, von denen jede nur ihre H\195\164lfte kennt. Der Knopf zum Vergessen bleibt, damit alte Eintr\195\164ge verschwinden k\195\182nnen. Ohne Knox Claim \195\164ndert sich nichts.",
             } },
             { title = "Behoben", points = {
-                "RECHTE-L\195\156CKE: auf Servern mit eigenen Rang-Rollen (Kopftags wie \"Veteran\") galt jeder Traeger einer solchen Rolle als Serverpersonal und hatte damit das volle Panel, auch ohne Admin-Werkzeug und ohne zugewiesene Aegis-Rolle. Aegis hat jede benannte Zugangsstufe im Zweifel als Personal gewertet, und da eine Aegis-Rolle Rechte nur einschraenkt und nie vergibt, bedeutete das vollen Zugriff, serverseitig durchgesetzt. Jetzt zaehlt nur noch, wer nachweislich das Admin-Werkzeug traegt. Die vier Vanilla-Stufen Admin, Moderator, GM und Beobachter kommen weiterhin unabhaengig vom Rollen-Verzeichnis herein, und wenn das Verzeichnis gar nicht lesbar ist, bleibt der alte Notausgang, damit sich kein echter Admin aussperrt. Jede Entscheidung steht ab jetzt mit Begruendung im Server-Protokoll.",
-                "Die eingestellte Tragkraft hat auch die harte Aufheb-Grenze auf denselben Wert gezogen. Das Spiel kennt zwei Grenzen: ab der Tragkraft bist du \195\188berladen, erst an der harten Grenze (fest bei 50) verweigert es das Aufheben ganz. Wer eine kleine Tragkraft zugewiesen bekam, konnte am Limit gar nichts mehr aufheben, und der Wert kam nach dem Tod \195\188ber die gespeicherte Liste zur\195\188ck. Jetzt bleibt unterhalb von 50 das normale \195\156berladen erhalten, nur gr\195\182\195\159ere Werte heben die harte Grenze weiter an. Betroffene Charaktere werden beim n\195\164chsten Einstieg von selbst bereinigt.",
-                "Die Bed\195\188rfnis-Regler im Wertefenster wirken jetzt schon w\195\164hrend des Ziehens statt erst beim Loslassen. Der Wert wandert dabei viermal je Sekunde zum Server, ohne je Schritt eine Meldung auszul\195\182sen, und im Protokoll steht weiterhin nur der Wert, bei dem du losl\195\164sst.",
-                "Die Safehouse-Karte im Spielerpanel blieb leer, obwohl die Zone auf der Zonen-Seite des Adminpanels stand. Sie hat die Liste auf dem eigenen Rechner gelesen, und eine Zone, die auf dem Server entsteht, muss dort nicht auftauchen. Sie fragt jetzt den Server, so wie die Zonen-Seite es immer getan hat, und zieht bei offener Seite von selbst nach.",
+                "RECHTE-L\195\156CKE: auf Servern mit eigenen Rang-Rollen (Kopftags wie \"Veteran\") galt jeder Traeger einer solchen Rolle als Serverpersonal und hatte damit das volle Panel, auch ohne Admin-Werkzeug und ohne zugewiesene Aegis-Rolle. Aegis hat jede benannte Zugangsstufe im Zweifel als Personal gewertet und da eine Aegis-Rolle Rechte nur einschraenkt und nie vergibt, bedeutete das vollen Zugriff, serverseitig durchgesetzt. Jetzt zaehlt nur noch, wer nachweislich das Admin-Werkzeug traegt. Die vier Vanilla-Stufen Admin, Moderator, GM und Beobachter kommen weiterhin unabhaengig vom Rollen-Verzeichnis herein und wenn das Verzeichnis gar nicht lesbar ist, bleibt der alte Notausgang, damit sich kein echter Admin aussperrt. Jede Entscheidung steht ab jetzt mit Begruendung im Server-Protokoll.",
+                "Die eingestellte Tragkraft hat auch die harte Aufheb-Grenze auf denselben Wert gezogen. Das Spiel kennt zwei Grenzen: ab der Tragkraft bist du \195\188berladen, erst an der harten Grenze (fest bei 50) verweigert es das Aufheben ganz. Wer eine kleine Tragkraft zugewiesen bekam, konnte am Limit gar nichts mehr aufheben und der Wert kam nach dem Tod \195\188ber die gespeicherte Liste zur\195\188ck. Jetzt bleibt unterhalb von 50 das normale \195\156berladen erhalten, nur gr\195\182\195\159ere Werte heben die harte Grenze weiter an. Betroffene Charaktere werden beim n\195\164chsten Einstieg von selbst bereinigt.",
+                "Die Bed\195\188rfnis-Regler im Wertefenster wirken jetzt schon w\195\164hrend des Ziehens statt erst beim Loslassen. Der Wert wandert dabei viermal pro Sekunde zum Server, ohne bei jedem Schritt eine Meldung auszul\195\182sen. Im Protokoll steht weiterhin nur der Wert, bei dem du losl\195\164sst.",
+                "Die Safehouse-Karte im Spielerpanel blieb leer, obwohl die Zone auf der Zonen-Seite des Adminpanels stand. Sie hat die Liste auf dem eigenen Rechner gelesen und eine Zone, die auf dem Server entsteht, muss dort nicht auftauchen. Sie fragt jetzt den Server, so wie die Zonen-Seite es immer getan hat und zieht bei offener Seite von selbst nach.",
             } },
         } },
         { version = "2.3.2", date = "August 2026", sections = {
@@ -387,7 +427,7 @@ AegisHelpContent.DE = {
         } },
         { version = "2.3.1", date = "August 2026", sections = {
             { title = "Behoben", points = {
-                "Der goldene Knopf und der blaue Spieler-Knopf fehlten bei manchen Mod-Zusammenstellungen vollst\195\164ndig. Aegis setzt sich unter alle anderen Symbole der Ausr\195\188stungsleiste, hat dabei aber auch Fl\195\164chen mitgemessen, die gar keine Symbole sind, und rutschte so unter den Bildschirmrand. Jetzt z\195\164hlen nur noch symbolgro\195\159e Nachbarn, und der Knopf bleibt in jedem Fall sichtbar.",
+                "Der goldene Knopf und der blaue Spieler-Knopf fehlten bei manchen Mod-Zusammenstellungen vollst\195\164ndig. Aegis setzt sich unter alle anderen Symbole der Ausr\195\188stungsleiste, hat dabei aber auch Fl\195\164chen mitgemessen, die gar keine Symbole sind, und rutschte so unter den Bildschirmrand. Jetzt z\195\164hlen nur noch symbolgro\195\159e Nachbarn und der Knopf bleibt in jedem Fall sichtbar.",
                 "Ein Mod, der die Ausr\195\188stungsleiste komplett \195\188bernimmt, kann die Aegis-Kn\195\182pfe nicht mehr verschwinden lassen. Fehlen sie, werden sie nachgesetzt.",
                 "Fehler anderer Mods im Inventar werden nicht mehr f\195\164lschlich als Aegis-Fehler gemeldet. Aegis h\195\164ngt sich daf\195\188r nicht mehr in die Vanilla-Rucksackleiste ein.",
                 "Aegis schreibt keine Diagnosezeilen mehr ins Log, wenn eine Tasche zu voll ist.",
@@ -532,7 +572,6 @@ AegisHelpContent.EN = {
             "Start a storm: thunderstorm, tropical storm and blizzard hit visibly right away while the real weather builds underneath; the slider sets the duration.",
             "End or shortcut it: Stop weather ends everything at once, Instant rain needs no buildup.",
             "Mix your own: the weather designer blends clouds, rain, fog, wind and an optional thunder cadence; Save as preset keeps the mix under its own name.",
-            "Wake the dead: the noise slider (10 to 500) only sizes the Make noise button; Thunder strike here, gunshot and fireworks use fixed ranges at your position.",
         } },
         { title = "Zones", lines = {
             "Safehouse management beyond the vanilla limits; however many pieces a zone has, it counts as one whole.",
@@ -550,12 +589,16 @@ AegisHelpContent.EN = {
             "Spawn animals: pick species and breed, rotate the preview, then place in the world just like vehicles.",
         } },
         { title = "Server", lines = {
-            "Restarts, world switches, staged events, player gates and the announcement live on this page.",
+            "Restarts, world switches, player gates and the announcement live on this page.",
             "Schedule a restart: the minute buttons start a countdown all players see; time, date and the automatic mode plan fixed or repeating restarts.",
             "Keep someone with shutdown rights online at the deadline: the server hands the command over and retries for ten minutes; your host panel restarts after stop.",
             "Run the world: Save world stores the game at once, Power grid and Water grid switch the map, the player switches (area, claims, kits) are server enforced.",
-            "Stage a show at your position: Storm show, Siege, Heli alert, Airdrop, Firestorm or Crawler ambush, one click each.",
             "Speak to everyone: Announce shows a golden banner mid screen for all players plus an info line in chat; Server branding renames both panel headers.",
+        } },
+        { title = "Event studio", lines = {
+            "Your own events from building blocks: hordes, weather, sounds, announcements and pauses, saved and ready to fire.",
+            "Every event aims at the spot you stand on when you start it, the announce slider warns all players a few seconds ahead.",
+            "The six old director events come as editable templates, the dice button starts a random one.",
         } },
         { title = "Server options", lines = {
             "Every setting of the server INI on one searchable page, grouped by topic, the default under each name.",
@@ -661,7 +704,6 @@ AegisHelpContent.EN = {
             "Time of day, date, weather and event sounds for the whole world. Presets and sliders act immediately for every player.",
             "Thunderstorm, tropical storm and blizzard build up over roughly one game hour. Instant rain skips the buildup, stop weather ends everything.",
             "The weather designer mixes custom weather and stores it permanently as a preset.",
-            "Events like thunderclap or gunshot sound at your position, zombies around react to them.",
         } },
         zones = { title = "Zones", lines = {
             "Create safehouses and extend them beyond the vanilla limits. A zone made of several pieces always counts as one whole.",
@@ -676,10 +718,16 @@ AegisHelpContent.EN = {
             "The fine points of the siege, waves, count and distance, live in sandbox under Aegis Events.",
         } },
         server = { title = "Server", lines = {
-            "Schedule restarts, save the world, switch power and water grids, send announcements, start directing shows.",
+            "Schedule restarts, save the world, switch power and water grids, send announcements.",
             "The server cannot stop itself: someone authorized has to be online at the deadline, bringing it back up is the job of your host panel.",
             "The feature switches decide what players may do. The server enforces it, this is not just a display.",
             "Server branding sets the name in the header of both panels, leave it empty to get AEGIS back.",
+        } },
+        events = { title = "Event studio", lines = {
+            "Build your own events from steps: hordes, weather, sounds, announcements and pauses. The list sits on the left, the editor on the right.",
+            "Every event aims at the spot you stand on when you start it.",
+            "The announce slider warns all players a few seconds ahead, a wait step puts pauses between the steps.",
+            "The six old director events come as templates, the dice button starts a random one.",
         } },
         options = { title = "Server Options", lines = {
             "Every setting of the server INI, grouped by topic and searchable. Apply takes effect right away and writes to the INI at the same time.",
@@ -724,6 +772,38 @@ AegisHelpContent.EN = {
         } },
     },
     changelog = {
+        { version = "2.6", date = "August 2026", sections = {
+            { title = "New", points = {
+                "New event studio on its own page: admins build their own events from blocks like hordes, weather, announcements and pauses, save and fire them. The six old director events come as editable templates, and a dice button starts a random one.",
+                "The player list has a search bar, every typed letter narrows the list to names starting with it.",
+                "Zones have a change-owner button: the zone moves to another player with all its parts, no repainting needed.",
+                "The event studio has its own switch in the roles. Roles holding the server right receive it automatically on first start, nothing changes until someone turns it off.",
+                "The World page has a climate card: extreme summer and snowy winter in one click, temperature and snowfall pinnable on their own. Holds for every player, survives a restart, and one button gives the weather back to the game.",
+                "Missed distress calls no longer vanish: the panel icon blinks with an exclamation mark, one click brings the open calls back as cards. Answered or closed settles it for every admin, open calls survive a restart and expire after 24 hours.",
+            } },
+            { title = "Changed", points = {
+                "The events card left the world page: thunderclap, gunshot, firework and noise are building blocks in the event studio now, the time card uses the full width instead.",
+            } },
+            { title = "Fixed", points = {
+                "The source picker of the vehicle list only ever showed vanilla. Detection now asks which mod file a vehicle was loaded from, so packs that register inside the Base module land under their own name.",
+                "A kit code could be claimed again after every server restart, the spent voucher was never saved. One claim is one claim now.",
+                "Long lines in the records now wrap, their tail simply could not be read before.",
+                "Typing into the sandbox page search lost focus after the first letter and the game keys fired; the freshly built category stole it.",
+                "After a carry weight reset a multiplayer client stuck at 8 until relogging. The reset now derives the default the same way the game does, and the message names the figure that really applies.",
+                "A pinned carry weight was resent to the player every few seconds because the check watched the wrong value.",
+            } },
+        } },
+        { version = "2.5.2", date = "August 2026", sections = {
+            { title = "New", points = {
+                "Next to the quantity buttons there is now a free field for your own count, on the items page and in the kit editor. Type past the limit and the number snaps to it right away.",
+                "A switch hides the Discord kits in the kit editor. Without a bot of your own the entries stay out of the list.",
+                "The vehicle list has a source picker. Vanilla is preselected, every mod sits in it on its own, and burnt out vehicles are their own entry.",
+            } },
+            { title = "Changed", points = {
+                "The give limit is now 1000 per item instead of 100, with 3000 in one go.",
+                "The sandbox page is now simply called \"Aegis\". It has carried more than events for a long time; saved settings are untouched.",
+            } },
+        } },
         { version = "2.5.1", date = "August 2026", sections = {
             { title = "New", points = {
                 "Burnt out vehicles can be spawned now. They sit in the same list, marked as \"Burnt\".",
@@ -1059,6 +1139,21 @@ AegisHelpContent.PLAYER_DE = {
         } },
     },
     changelog = {
+        { version = "1.4.2", date = "August 2026", sections = {
+            { title = "Behoben", points = {
+                "Die Spielzeit z\195\164hlt jetzt wirklich: jede echte Minute auf dem Server wandert ins Buch, egal wie die Sitzung endet, und die Karte zeigt eine Nachkommastelle.",
+                "Die Gesamt-Karte blieb bei Spielern mit alten Leben auf 0.0. Leben von vor der Karte sind nicht mehr z\195\164hlbar, die Summe startet jetzt bei deiner Bestzeit und z\195\164hlt ab sofort jedes Leben mit.",
+                "Die Karte \"Gesamt (Spielwelt)\" zeigte im Mehrspieler 0.0, solange das laufende Leben nicht beim Server angekommen war. Der Wert kommt jetzt direkt von deinem Spiel mit.",
+                "Die Spielzeit wird jetzt fortgeschrieben statt bei jedem \195\150ffnen der Statistik aus alten Sitzungsdateien zusammengerechnet. Auf vollen Servern kostete das sp\195\188rbar Leistung.",
+            } },
+        } },
+        { version = "1.4.1", date = "August 2026", sections = {
+            { title = "Neu hinzugef\195\188gt", points = {
+                "Eine neue Karte zeigt deine gesammelte \195\156berlebenszeit \195\188ber alle Leben hinweg. Sie z\195\164hlt ab jetzt, alte Leben lassen sich nicht nachtragen.",
+                "Die Statistikkarten sagen jetzt, welche Uhr sie meinen. Bestzeit und Gesamt laufen in der Spielwelt, die Spielzeit z\195\164hlt echte Stunden.",
+                "Die Fahrzeugvorschau sagt jetzt, dass sie den Fahrzeugtyp zeigt. Verbaute Teile stellt sie nicht dar, das gibt die Anzeige des Spiels nicht her.",
+            } },
+        } },
         { version = "1.4", date = "August 2026", sections = {
             { title = "Neu hinzugef\195\188gt", points = {
                 "Ein kurzer Rundgang beim ersten \195\150ffnen: \195\156bersicht, Statistiken, Notruf und Kits.",
@@ -1076,14 +1171,14 @@ AegisHelpContent.PLAYER_DE = {
                 "Der Server kann die Statistik-Aufzeichnung f\195\188r Charaktere auf einer Admin-Stufe abschalten, damit Admin-Tests die Bestenlisten nicht verf\195\164lschen.",
             } },
             { title = "Behoben", points = {
-                "Die Fahrzeuge-Seite konnte den Server zum Absturz bringen. Beim Aufl\195\182sen eines gemerkten Fahrzeugs \195\188ber seine Kennung griff der Server auf eine Fahrzeug-Verwaltung zu, die in seltenen Momenten noch nicht bereit war, und das riss die ganze Anfrage ab. Die Seite blieb dann leer oder h\195\164ngen. Der Server pr\195\188ft das jetzt vorher ab.",
+                "Die Fahrzeuge-Seite konnte den Server zum Absturz bringen. Beim Aufl\195\182sen eines gemerkten Fahrzeugs \195\188ber seine Kennung griff der Server auf eine Fahrzeug-Verwaltung zu, die in seltenen Momenten noch nicht bereit war. Das riss die ganze Anfrage ab. Die Seite blieb dann leer oder h\195\164ngen. Der Server pr\195\188ft das jetzt vorher ab.",
                 "Nach dem Tod lief die Gesundheitsseite in eine Endlos-Fehlermeldung: sie suchte alle halbe Sekunde nach Verband und Desinfektion und fragte dabei eine Vanilla-Funktion, die ein offenes Inventarfenster voraussetzt. Beim toten Charakter gibt es das nicht, die Suche fiel also bis zum Wiedereinstieg dauernd auf die Nase. Die Seite l\195\164sst das Suchen beim toten Charakter jetzt einfach sein, zu verbinden gibt es da ohnehin nichts.",
                 "Die Zahl der get\195\182teten Zombies konnte viel zu hoch stehen. Jeder R\195\188ckgang des Spielz\195\164hlers galt als neues Leben und wurde noch einmal aufaddiert, auch wenn ein anderer Mod denselben Z\195\164hler mitten im Leben zur\195\188cksetzte. Ein R\195\188ckgang wird jetzt nur noch dann angerechnet, wenn wirklich ein Tod verzeichnet wurde. Bereits verf\195\164lschte Zahlen bleiben stehen, sie lassen sich nicht nachtr\195\164glich auseinanderrechnen.",
             } },
         } },
         { version = "1.2.1", date = "August 2026", sections = {
             { title = "Behoben", points = {
-                "Deine Safehouse-Karte blieb leer, obwohl du ein Grundst\195\188ck hattest. Sie hat die Zonen auf deinem eigenen Rechner nachgeschlagen, und eine Zone, die auf dem Server entsteht, muss dort nicht ankommen. Sie fragt jetzt den Server und zieht bei offener Seite von selbst nach.",
+                "Deine Safehouse-Karte blieb leer, obwohl du ein Grundst\195\188ck hattest. Sie hat die Zonen auf deinem eigenen Rechner nachgeschlagen und eine Zone, die auf dem Server entsteht, muss dort nicht ankommen. Sie fragt jetzt den Server und zieht bei offener Seite von selbst nach.",
                 "L\195\164uft auf dem Server der Mod Knox Claim, verwaltet der die Fahrzeuge. Der Knopf zum Merken eines Fahrzeugs verschwindet dann hier, damit du deine Wagen nicht an zwei Stellen pflegen musst. Der Knopf zum Vergessen bleibt, damit du alte Eintr\195\164ge loswirst.",
             } },
         } },
@@ -1221,6 +1316,21 @@ AegisHelpContent.PLAYER_EN = {
         } },
     },
     changelog = {
+        { version = "1.4.2", date = "August 2026", sections = {
+            { title = "Fixed", points = {
+                "Playtime really counts now: every real minute on the server lands in the book no matter how the session ends, and the card shows one decimal.",
+                "The total card stayed at 0.0 for players with old lives. Lives from before the card cannot be counted anymore, the sum now starts at your best run and adds every life from here on.",
+                "The \"Total (in-game)\" card showed 0.0 in multiplayer while the running life had not reached the server yet. The figure now travels along from your own game.",
+                "Playtime is kept as a running total now instead of being summed from old session files every time the statistics open. On full servers that cost real performance.",
+            } },
+        } },
+        { version = "1.4.1", date = "August 2026", sections = {
+            { title = "New", points = {
+                "A new card shows your survived time added up across all lives. It starts counting now, earlier lives cannot be filled in.",
+                "The statistics cards now say which clock they mean. Best run and total run on the in-game clock, playtime counts real hours.",
+                "The vehicle preview now says that it shows the vehicle type. It cannot show the parts fitted to your car, the game\'s viewer has no way to do that.",
+            } },
+        } },
         { version = "1.4", date = "August 2026", sections = {
             { title = "New", points = {
                 "A short tour on first open: overview, statistics, SOS and kits.",

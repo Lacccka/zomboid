@@ -1,4 +1,8 @@
 local function SoundChange(playerObj, weapon)
+    if MFS_SyncEquippedWeaponState then
+        MFS_SyncEquippedWeaponState(playerObj, weapon, true)
+        return
+    end
     if weapon == nil then
         if not playerObj then
             playerObj = getPlayer()
@@ -35,4 +39,3 @@ end
 Events.OnEquipPrimary.Add(SoundChange);
 
 Events.OnGameStart.Add(SoundChange)
-

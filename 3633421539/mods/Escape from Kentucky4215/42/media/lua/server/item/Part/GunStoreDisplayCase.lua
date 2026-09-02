@@ -158,6 +158,12 @@ table.insert(ProceduralDistributions["list"]["GunStoreDisplayCase"].items, "Gunp
 table.insert(ProceduralDistributions["list"]["GunStoreDisplayCase"].items, 1.5);
 table.insert(ProceduralDistributions["list"]["GunStoreDisplayCase"].items, "Gunpart.XM157_cat");
 table.insert(ProceduralDistributions["list"]["GunStoreDisplayCase"].items, 1.5);
+table.insert(ProceduralDistributions["list"]["GunStoreDisplayCase"].items, "Gunpart.lee_enfield_scope");
+table.insert(ProceduralDistributions["list"]["GunStoreDisplayCase"].items, 1.5);
+table.insert(ProceduralDistributions["list"]["GunStoreDisplayCase"].items, "Gunpart.MZ_M6D");
+table.insert(ProceduralDistributions["list"]["GunStoreDisplayCase"].items, 1.5);
+table.insert(ProceduralDistributions["list"]["GunStoreDisplayCase"].items, "Gunpart.MZ_LTHY");
+table.insert(ProceduralDistributions["list"]["GunStoreDisplayCase"].items, 1.5);
 
 -- Sling
 table.insert(ProceduralDistributions["list"]["GunStoreDisplayCase"].items, "Gunpart.Sling_cat");

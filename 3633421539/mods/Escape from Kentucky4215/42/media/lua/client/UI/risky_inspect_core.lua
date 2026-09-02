@@ -1,9 +1,85 @@
--- Core file, contains all the event listeners and windows handler
--- Orginal auther : risky 
--- Have access to rebuild
+
 
 require "ISUI/ISPanel"
 require "TimedActions/ISEquipWeaponAction"
+require "Gun_Vars/Weapon_Ability/AWCWF_Exact_RPM"
+require "Gun_Vars/AWCWF_Part_Stat_Set"
+
+function scanParts(container, player, weapon, slot, result, visited)
+    if not container or visited[tostring(container)] then return end
+    visited[tostring(container)] = true
+    local items = container:getItems()
+    if not items then return end
+    for index = 0, items:size() - 1 do
+        local item = items:get(index)
+        if item then
+            local isWeaponPart = instanceof(item, "WeaponPart")
+            if not isWeaponPart then
+                local okCategory, category = pcall(function() return item:getCategory() end)
+                isWeaponPart = okCategory and category == "WeaponPart"
+            end
+            if isWeaponPart and item:getPartType() == slot and not item:isBroken() then
+                local ok, allowed = pcall(function() return item:canAttach(player, weapon) end)
+                if ok and allowed then result[#result + 1] = item end
+            end
+            if instanceof(item, "InventoryContainer") then
+                scanParts(item:getInventory(), player, weapon, slot, result, visited)
+            end
+        end
+    end
+end
+-- Collect every ItemContainer the player can currently reach: their own
+-- inventory plus floor-dropped containers (backpacks/boxes) and built
+-- containers (crates, fridges, shelves, ...) on the player's square and the
+-- eight surrounding squares on the same floor. Used by the attachment pane so
+-- parts stored outside the player's backpack can be offered and installed.
+function getReachableContainers(player)
+    local containers = {}
+    local seen = {}
+    local function addContainer(container)
+        if container and not seen[tostring(container)] then
+            seen[tostring(container)] = true
+            containers[#containers + 1] = container
+        end
+    end
+
+    addContainer(player:getInventory())
+
+    local square = player:getCurrentSquare()
+    if not square then return containers end
+    local cx, cy, cz = square:getX(), square:getY(), square:getZ()
+
+    for dx = -1, 1 do
+        for dy = -1, 1 do
+            local gridSquare = getCell():getGridSquare(cx + dx, cy + dy, cz)
+            if gridSquare then
+                local objects = gridSquare:getObjects()
+                if objects then
+                    for i = 0, objects:size() - 1 do
+                        local obj = objects:get(i)
+                        if obj then
+                            local ok, container = pcall(function() return obj:getContainer() end)
+                            if ok then addContainer(container) end
+                        end
+                    end
+                end
+                local worldObjects = gridSquare:getWorldObjects()
+                if worldObjects then
+                    for i = 0, worldObjects:size() - 1 do
+                        local worldObject = worldObjects:get(i)
+                        if worldObject then
+                            local ok, item = pcall(function() return worldObject:getItem() end)
+                            if ok and item and instanceof(item, "InventoryContainer") then
+                                addContainer(item:getInventory())
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return containers
+end
 riskyInspectWindow = nil
 riskyShowPotentialAttachment = true
 riskyUI = ISPanel:derive("riskyUI")
@@ -19,7 +95,15 @@ function riskyUI:onOptionMouseDown(button)
     end
 end
 function riskyUI:close()
+    -- RC2-1: do not leave the final slider position waiting on the debounce
+    -- when the player explicitly closes the inspection window.
+    if MFS_FlushGunPos then
+        MFS_FlushGunPos(self.currentPrimaryItem, "inspect-close")
+    end
     self:setVisible(false)
+    if riskyTradeWindow then
+        riskyTradeWindow:close()
+    end
     -- AWCWF_Attach.Apply_Effect(getPlayer(), self.currentPrimaryItem)
     getPlayer():clearVariable("IsInspectOneHandedRanged")
     getPlayer():clearVariable("IsInspectTwoHandedRanged")
@@ -98,7 +182,10 @@ local function getAttacheMentCount(weapon)
         MaxRange = 0,
         RecoilDelay = 0,
         MaxSightRange = 0,
-        SoundModifier = 0
+        SoundModifier = 0,
+        CriticalChance = 0,
+        CritDmgMultiplier = 0,
+        CyclicRateMultiplier = 0
     }
     for i, v in ipairs(partlist) do
         if weapon:getWeaponPart(v) and v ~= "Clip" then
@@ -155,6 +242,14 @@ local function getAttacheMentCount(weapon)
                 if item:getMaxSightRange() then
                     ReturnList["MaxSightRange"] = ReturnList["MaxSightRange"] + item:getMaxSightRange()
                 end
+                if AWCWF_GetPartStatBonus then
+                    local statBonus = AWCWF_GetPartStatBonus(item)
+                    if statBonus then
+                        ReturnList["CriticalChance"] = ReturnList["CriticalChance"] + (statBonus.CriticalChance or 0)
+                        ReturnList["CritDmgMultiplier"] = ReturnList["CritDmgMultiplier"] + (statBonus.CritDmgMultiplier or 0)
+                        ReturnList["CyclicRateMultiplier"] = ReturnList["CyclicRateMultiplier"] + (statBonus.CyclicRateMultiplier or 0)
+                    end
+                end
             end
             if item:getPartType() == "Canon" then
                 if (string.find(item:getDisplayName(), getText("IGUI_Slience")) or
@@ -167,9 +262,40 @@ local function getAttacheMentCount(weapon)
     return ReturnList
 end
 
+local function formatStatNumber(value)
+    if value == nil then return "--" end
+    if math.abs(value - math.floor(value + 0.5)) < 0.0001 then
+        return tostring(math.floor(value + 0.5))
+    end
+    return string.format("%.2f", value)
+end
+
+local function getCurrentStatDisplay(weapon, statName)
+    if statName == "IGUI_WeaponUI_DamegeMax" then return formatStatNumber(weapon:getMaxDamage()) end
+    if statName == "IGUI_WeaponUI_DamegeMin" then return formatStatNumber(weapon:getMinDamage()) end
+    if statName == "IGUI_WeaponUI_RangeMax" then return formatStatNumber(weapon:getMaxRange()) end
+    if statName == "IGUI_WeaponUI_AngleMax" then return formatStatNumber(weapon:getMaxAngle()) end
+    if statName == "IGUI_WeaponUI_AngleMin" then return formatStatNumber(weapon:getMinAngle()) end
+    if statName == "IGUI_WeaponUI_CriticalChance" then return formatStatNumber(weapon:getCriticalChance()) .. "%" end
+    if statName == "IGUI_WeaponUI_CritDmg" then return formatStatNumber(weapon:getCriticalDamageMultiplier()) .. "x" end
+    if statName == "IGUI_WeaponUI_CyclicRate" then return formatStatNumber(weapon:getCyclicRateMultiplier()) .. "x" end
+    if statName == "IGUI_WeaponUI_AimingTime" then return formatStatNumber(weapon:getAimingTime()) end
+    if statName == "IGUI_WeaponUI_ReloadTime" then return formatStatNumber(weapon:getReloadTime()) end
+    if statName == "IGUI_WeaponUI_FireRate" then
+        local rpm = AWCWF_GetDisplayRPM and AWCWF_GetDisplayRPM(weapon) or
+            (AWCWF_GetConfiguredRPM and AWCWF_GetConfiguredRPM(weapon) or nil)
+        return rpm and (formatStatNumber(rpm) .. " RPM") or "--"
+    end
+    if statName == "IGUI_WeaponUI_MaxHitCount" then return formatStatNumber(weapon:getMaxHitCount()) end
+    if statName == "IGUI_WeaponUI_Sound" then return formatStatNumber(weapon:getSoundRadius()) end
+    if statName == "IGUI_WeaponUI_Weight" then return formatStatNumber(weapon:getWeight()) end
+    if statName == "IGUI_WeaponUI_ClipNow" then return formatStatNumber(weapon:getMaxAmmo()) end
+    return "--"
+end
+
 function riskyUI:prerender()
     ISPanel.prerender(self)
-    local BackGroundPanelTexture = getTexture("media/textures/UI/AWCWF_BackGround.png")
+    local BackGroundPanelTexture = getTexture("media/textures/UI/EFK_BackGround.png")
     self:drawTextureScaled(BackGroundPanelTexture, 0, 0, self.width, self.height, 1, 0.5, 0.5, 0.5)
     if getPlayer():getPrimaryHandItem() ~= nil and getPlayer():getPrimaryHandItem():IsWeapon() then
         local weapon = getPlayer():getPrimaryHandItem()
@@ -186,14 +312,8 @@ function riskyUI:prerender()
 
         self:drawText(conditionText, 75 + 32, 55, 1, 1, 1, 1, UIFont.Small)
         local repairText = ""
-        if weapon:getHaveBeenRepaired() == 1 then
-            repairText = getText('IGUI_RISKY_REPAIR_HEAVILY')
-        elseif weapon:getHaveBeenRepaired() > 1 and weapon:getHaveBeenRepaired() < 4 then
-            repairText = getText('IGUI_RISKY_REPAIR_SLIGHTLY')
-        else
-            repairText = getText('IGUI_RISKY_REPAIR_NONE')
-        end
-        self:drawText(weapon:getDisplayName(), 75 + 32, 35, 1, 1, 1, 1, UIFont.Medium)
+
+        self:drawText(weapon:getDisplayName(), 75 + 32, 35, 1, 1, 1, 1, UIFont.Small)
         self:drawText(repairText, 75 + 32, 70, 1, 1, 1, 1, UIFont.Small)
         if weapon:isRanged() then
             local OriginItem = instanceItem(weapon:getFullType())
@@ -202,38 +322,34 @@ function riskyUI:prerender()
                 Value = OriginItem:getMaxDamage(),
                 BonusType = "Damage",
                 BounsAdd = true,
-                MaxValue = 10,
-                MinValue = 0
-            }, {
-                Name = "IGUI_WeaponUI_DamegeMin",
-                Value = OriginItem:getMinDamage(),
-                MaxValue = 10,
+                MaxValue = 7,
                 MinValue = 0
             }, {
                 Name = "IGUI_WeaponUI_RangeMax",
                 Value = OriginItem:getMaxRange(),
                 BonusType = "MaxRange",
                 BounsAdd = true,
-                MaxValue = 100,
-                MinValue = 0
-            }, {
-                Name = "IGUI_WeaponUI_AngleMax",
-                Value = OriginItem:getMaxAngle(),
-                BonusType = "Angle",
-                BounsAdd = true,
-                MaxValue = 1,
-                MinValue = 0
-            }, {
-                Name = "IGUI_WeaponUI_AngleMin",
-                Value = OriginItem:getMinAngle(),
-                BonusType = "Angle",
-                BounsAdd = true,
-                MaxValue = 1,
+                MaxValue = 50,
                 MinValue = 0
             }, {
                 Name = "IGUI_WeaponUI_CriticalChance",
                 Value = OriginItem:getCriticalChance(),
-                -- BonusType = "Critical",
+                BonusType = "CriticalChance",
+                BounsAdd = true,
+                MaxValue = 100,
+                MinValue = 0
+            }, {
+                Name = "IGUI_WeaponUI_CritDmg",
+                Value = OriginItem:getCriticalDamageMultiplier(),
+                BonusType = "CritDmgMultiplier",
+                BounsAdd = true,
+                MaxValue = 5,
+                MinValue = 0
+            }, {
+                Name = "IGUI_WeaponUI_HitChance",
+                Value = AWCWF_GetCalibratedCyclic and AWCWF_GetCalibratedCyclic(weapon) or OriginItem:getCyclicRateMultiplier(),
+                BonusType = "HitChance",
+                BounsAdd = true,
                 MaxValue = 100,
                 MinValue = 0
             }, {
@@ -241,7 +357,7 @@ function riskyUI:prerender()
                 Value = OriginItem:getAimingTime(),
                 BonusType = "AimingTime",
                 BounsAdd = false,
-                MaxValue = 50,
+                MaxValue = 40,
                 MinValue = 0
             }, {
                 Name = "IGUI_WeaponUI_ReloadTime",
@@ -261,13 +377,11 @@ function riskyUI:prerender()
             }, {
                 Name = "IGUI_WeaponUI_MaxHitCount",
                 Value = OriginItem:getMaxHitCount(),
-                MaxValue = 10,
+                MaxValue = 7,
                 MinValue = 0
             }, {
                 Name = "IGUI_WeaponUI_Sound",
-                Value = OriginItem:getSoundRadius(),
-                BounsAdd = false,
-                BonusType = "SoundModifier",
+                Value = weapon:getSoundRadius(),
                 MaxValue = 200,
                 MinValue = 0
             }, {
@@ -275,7 +389,7 @@ function riskyUI:prerender()
                 Value = OriginItem:getWeight(),
                 BounsAdd = false,
                 BonusType = "WeightModifier",
-                MaxValue = 10,
+                MaxValue = 5,
                 MinValue = 0
             }, {
                 Name = "IGUI_WeaponUI_ClipNow",
@@ -286,8 +400,8 @@ function riskyUI:prerender()
             local indeX = 1000
             local indexY = 85
             self:drawText(getText("IGUI_WeaponUI_Data"), indeX + 60, indexY + 15, 1, 1, 0, 1, UIFont.Medium)
-            local lineHeight = getTextManager():MeasureStringY(UIFont.Medium, getText('IGUI_RISKY_ATTACHMENTS'))
-            self:drawRectStatic(indeX + 5, indexY, 200 + 25, lineHeight * 2, 0.2, 0.8, 0.8, 0.8, 1);
+            local lineHeight = getTextManager():MeasureStringY(UIFont.Medium, getText(''))
+            self:drawRectStatic(indeX + 5, indexY, 200 + 25, lineHeight * 2, 0.0, 0.8, 0.8, 0.8, 1);
             indexY = indexY + lineHeight
             -- 获得配件加成
             local AttachMentCount = getAttacheMentCount(weapon)
@@ -295,12 +409,12 @@ function riskyUI:prerender()
             for k, v in pairs(WeaponDataList) do
                 local text = getText(v.Name)
 
-                lineHeight = getTextManager():MeasureStringY(UIFont.Medium, getText('IGUI_RISKY_ATTACHMENTS'))
+                lineHeight = getTextManager():MeasureStringY(UIFont.Medium, getText(''))
                 if k % 2 == 1 then
                     -- indeX + 5
-                    self:drawRectStatic(indeX + 5, indexY + (k * lineHeight), 200 + 25, lineHeight +2, 0.2, 1, 1, 1, 1);
+                    self:drawRectStatic(indeX + 5, indexY + (k * lineHeight), 200 + 25, lineHeight +2, 0.0, 1, 1, 1, 1);
                 else
-                    self:drawRectStatic(indeX + 5, indexY + (k * lineHeight), 200 + 25, lineHeight +2, 0.2, 0.8, 0.8, 0.8, 1);
+                    self:drawRectStatic(indeX + 5, indexY + (k * lineHeight), 200 + 25, lineHeight +2, 0.0, 0.8, 0.8, 0.8, 1);
                 end
                 -- indeX + 20
                 self:drawText(text, indeX + 8, indexY + (k * lineHeight) +4 , 0.6, 1, 1, 1, UIFont.Small)
@@ -339,8 +453,14 @@ function riskyUI:prerender()
                         end
                     end
                 end
+
+                -- Numeric values use the current weapon instance, so installed parts are reflected.
+                -- Fire rate shows the calibrated category RPM expected in gameplay.
+                local numericText = getCurrentStatDisplay(weapon, v.Name)
+                self:drawTextRight(numericText, indeX + 222, indexY + (k * lineHeight) + 4,
+                    1, 1, 1, 1, UIFont.Small)
             end
-            self:drawText(getText('IGUI_RISKY_ATTACHMENTS'), 20 + 475, 50, 1, 1, 1, 1, UIFont.Medium)
+            self:drawText(getText(''), 20 + 475, 50, 1, 1, 1, 1, UIFont.Small)
 
             if weapon:getMagazineType() ~= nil then
                 local MagazineItem = instanceItem(weapon:getMagazineType());
@@ -348,6 +468,9 @@ function riskyUI:prerender()
                     local clip = MagazineItem:getDisplayName()
                     self:drawText(clip, 472 + 200, 416 + 144, 1, 1, 1, 1, UIFont.Small)
                     self:drawText(getText('IGUI_CLIP'), 472 + 200, 436 + 144, 1, 1, 1, 1, UIFont.Small)
+                    -- Current ammo / magazine capacity below the magazine-type button.
+                    self:drawText(tostring(weapon:getCurrentAmmoCount()) .. " / " ..
+                        tostring(weapon:getMaxAmmo()), 422 + 200, 416 + 144 + 45, 1, 1, 1, 1, UIFont.Small)
                 end
             end
             if AWCWF_WeaponAttackType[weapon:getType()] then
@@ -372,12 +495,46 @@ function riskyUI:prerender()
         self.scene:setX(0)
         self.scene:setWidth(self.width)
         self.scene:setHeight(self.height * 10 / 12)
-        --self.settingbutton:setX(64)
-        --self.settingbutton:setY(self.height * 13 / 16)
-        --self.settingbutton:setWidth(self.width * 1.5 / 20)
-        --self.settingbutton:setHeight(self.width * 1.5 / 20)
+        -- Keep the wrench immediately to the right of the ammunition controls.
+        if self.settingbutton then
+            self.settingbutton:setX(65)
+            self.settingbutton:setY(590)
+            self.settingbutton:setWidth(34)
+            self.settingbutton:setHeight(34)
+        end
+        if self.closebutton then
+            self.closebutton:setX(self.width - 28)
+            self.closebutton:setY(6)
+        end
     end
 end
+-- MFS community fix: guard world-model strings before handing them to UI3DScene.
+-- getpartmodeldel already rejected "nil"/"null"/Gun_Magazine_Ground, but getpartmodel
+-- only rejected "nil". A part resolving to e.g. "Gunpart.null" therefore reached
+-- createModel and threw NullPointerException: model script not found -- and was still
+-- written into scene.partlist, so the next cleanup pass threw a second NPE from
+-- removeModel. Reject known-bad strings, and let anything else fail quietly via pcall
+-- so a bad value from another mod's part can never poison scene.partlist.
+local reportedBadWorldModels = {}
+
+local function isUsableWorldModel(worldmodel)
+    if not worldmodel or worldmodel == "" then return false end
+    if string.find(worldmodel, "nil") then return false end
+    if string.find(worldmodel, "null") then return false end
+    if worldmodel == "Base.Gun_Magazine_Ground" then return false end
+    return true
+end
+
+local function reportBadWorldModel(slot, fullType, worldmodel, reason)
+    local key = tostring(fullType) .. "|" .. tostring(worldmodel)
+    if reportedBadWorldModels[key] then return end
+    reportedBadWorldModels[key] = true
+    print("[MFSInspect] skipped part slot=" .. tostring(slot)
+        .. " item=" .. tostring(fullType)
+        .. " worldModel=" .. tostring(worldmodel)
+        .. " reason=" .. tostring(reason))
+end
+
 local function getpartmodel(weapon, scene)
     for i, v in pairs(partlist) do
         local part = weapon:getWeaponPart(v)
@@ -385,10 +542,18 @@ local function getpartmodel(weapon, scene)
             local item = ScriptManager.instance:getItem(part:getFullType())
             if item then
                 local worldmodel = item:getWorldStaticModel()
-                if worldmodel and not string.find(worldmodel, "nil") then
-                    scene.javaObject:fromLua2("createModel", worldmodel, worldmodel)
-                    scene.partlist = scene.partlist or {}
-                    scene.partlist[worldmodel] = true
+                scene.partlist = scene.partlist or {}
+                if not isUsableWorldModel(worldmodel) then
+                    reportBadWorldModel(v, part:getFullType(), worldmodel, "invalid-world-model")
+                elseif not scene.partlist[worldmodel] then
+                    local ok, err = pcall(function()
+                        scene.javaObject:fromLua2("createModel", worldmodel, worldmodel)
+                    end)
+                    if ok then
+                        scene.partlist[worldmodel] = true
+                    else
+                        reportBadWorldModel(v, part:getFullType(), worldmodel, tostring(err))
+                    end
                 end
             end
         end
@@ -396,6 +561,7 @@ local function getpartmodel(weapon, scene)
 end
 local function getpartmodeldel(weapon, scene)
     local partlistnow = {}
+    scene.partlist = scene.partlist or {}
     for i, v in pairs(partlist) do
         if weapon:getWeaponPart(v) then
             local item = ScriptManager.instance:getItem(weapon:getWeaponPart(v):getFullType())
@@ -403,13 +569,24 @@ local function getpartmodeldel(weapon, scene)
                 local worldmodel = item:getWorldStaticModel()
                 -- scene.javaObject:fromLua1("removeModel", worldmodel, worldmodel)
 
-                if worldmodel and (not string.find(worldmodel, "nil") and not string.find(worldmodel, "null")) and
-                    worldmodel ~= "Base.Gun_Magazine_Ground" then
+                if not isUsableWorldModel(worldmodel) then
+                    reportBadWorldModel(v, weapon:getWeaponPart(v):getFullType(), worldmodel,
+                        "invalid-world-model")
+                else
                     if not scene.partlist[worldmodel] then
-                        scene.javaObject:fromLua2("createModel", worldmodel, worldmodel)
-                        scene.partlist[worldmodel] = true
+                        local ok, err = pcall(function()
+                            scene.javaObject:fromLua2("createModel", worldmodel, worldmodel)
+                        end)
+                        if ok then
+                            scene.partlist[worldmodel] = true
+                            partlistnow[worldmodel] = true
+                        else
+                            reportBadWorldModel(v, weapon:getWeaponPart(v):getFullType(), worldmodel,
+                                tostring(err))
+                        end
+                    else
+                        partlistnow[worldmodel] = true
                     end
-                    partlistnow[worldmodel] = true
                 end
             end
         end
@@ -418,12 +595,18 @@ local function getpartmodeldel(weapon, scene)
     for i, v in pairs(scene.partlist) do
         if not partlistnow[i] then
             scene.partlist[i] = nil
-            print(i)
-            scene.javaObject:fromLua1("removeModel", i)
+            -- pcall: a scene object that was never successfully created would otherwise
+            -- throw NullPointerException from UI3DScene.getSceneObjectById.
+            local ok, err = pcall(function()
+                scene.javaObject:fromLua1("removeModel", i)
+            end)
+            if not ok then
+                reportBadWorldModel("cleanup", "n/a", i, tostring(err))
+            end
         end
     end
 end
---[[ function riskyUI:settingbutton()
+function riskyUI:openSettingPanel()
     if riskyUI_slider and riskyUI_slider.instance then
         riskyUI_slider.instance:close()
         riskyUI_slider.instance = nil
@@ -431,9 +614,10 @@ end
     local width = self.width / 3
     self.settingpanel = riskyUI_slider:new(self.x - width, self.y, width, self.height, self)
     self.settingpanel:initialise()
+    riskyUI_slider.instance = self.settingpanel
     self.settingpanel:addToUIManager()
 end
-function riskyUI:settingbuttona()
+function riskyUI:reopenSettingPanel()
     if riskyUI_slider and riskyUI_slider.instance then
         riskyUI_slider.instance:close()
         riskyUI_slider.instance = nil
@@ -441,8 +625,9 @@ function riskyUI:settingbuttona()
     local width = self.width / 3
     self.settingpanel = riskyUI_slider:new(self.x - width, self.y, width, self.height, self)
     self.settingpanel:initialise()
+    riskyUI_slider.instance = self.settingpanel
     self.settingpanel:addToUIManager()
-end ]]
+end
 function riskyUI:createChildren()
     ISPanel.createChildren(self)
     self.scene = Carshopscenetk:new(self.width / 10, self.height / 8, self.width * 8 / 10, self.height * 6 / 8)
@@ -464,57 +649,36 @@ function riskyUI:createChildren()
     local weapon = getPlayer():getPrimaryHandItem()
     local sprite = weapon:getWeaponSprite()
     if sprite and sprite ~= "nil" and not string.find(sprite, "_0") then
-        local model = ScriptManager.instance:getItem(weapon:getFullType()):getModuleName() .. "." .. sprite
+        local inspectionSprite = (AWCWF_InspectionModelMap and AWCWF_InspectionModelMap[sprite]) or sprite
+        local model = ScriptManager.instance:getItem(weapon:getFullType()):getModuleName() .. "." .. inspectionSprite
         self.scene.javaObject:fromLua2("createModel", "Gunmodel", model)
     end
     getpartmodel(weapon, self.scene)
-    -- self.settingbutton = ISButton:new(64, self.height * 15 / 16, 64, 64, "", self, self.settingbutton);
-    -- self.settingbutton.anchorTop = false
-    -- self.settingbutton.anchorBottom = false
-    -- self.settingbutton:initialise();
-    -- self.settingbutton:instantiate();
-    -- self.settingbutton.borderColor = {
-    --     r = 1,
-    --     g = 1,
-    --     b = 1,
-    --     a = 0
-    -- };
-    --self:addChild(self.settingbutton);
-    -- local itemseed = ScriptManager.instance:getItem("Wrench")
-    -- local icon = itemseed:getIcon()
-    -- local itemtexture = getTexture("media/textures/Item_" .. icon .. ".png")
-    -- self.settingbutton:setImage(itemtexture)
-    local image = getTexture("media/textures/UI/AWCWF_Close.png")
-    if image then
-        self.closeButton = ISButton:new(698 + 300 + 300 - 60 - image:getWidth(), 10 + image:getHeight(),
-            image:getWidth(), image:getHeight(), "", self, self.onOptionMouseDown);
-        self.closeButton.internal = "close";
-        self.closeButton:initialise();
-        self.closeButton:instantiate();
-        self.closeButton.borderColor = {
-            r = 1,
-            g = 1,
-            b = 1,
-            a = 0
-        }
-        self:addChild(self.closeButton);
-        self.closeButton:setImage(getTexture("media/textures/UI/AWCWF_Close.png"))
+    self.settingbutton = ISButton:new(1000 + 10, 585, 75, 75, "", self, self.openSettingPanel);
+    self.settingbutton.anchorTop = false
+    self.settingbutton.anchorBottom = false
+    self.settingbutton:initialise();
+    self.settingbutton:instantiate();
+    self.settingbutton.borderColor = {
+        r = 1,
+        g = 1,
+        b = 1,
+        a = 0
+    };
+    self:addChild(self.settingbutton);
+    local itemseed = ScriptManager.instance:getItem("Base.Wrench") or ScriptManager.instance:getItem("Wrench")
+    local icon = itemseed and itemseed:getIcon()
+    local itemtexture = icon and getTexture("media/textures/Item_" .. icon .. ".png")
+    if itemtexture then self.settingbutton:setImage(itemtexture) end
 
-        self.rotateButton = ISButton:new(698 + 300 + 300 - 60 - image:getWidth() - 10 - image:getWidth(),
-            10 + image:getHeight(), image:getWidth(), image:getHeight(), "", self, self.onOptionMouseDown);
-        self.rotateButton.internal = "Rotate";
-        self.rotateButton:initialise();
-        self.rotateButton:instantiate();
-        self.rotateButton.borderColor = {
-            r = 1,
-            g = 1,
-            b = 1,
-            a = 0
-        }
-        self:addChild(self.rotateButton);
-        self.rotateButton:setImage(getTexture("media/textures/UI/AWCWF_Rotate.png"))
-
-    end
+    -- Vanilla-style close button (same "X" icon as the base game UI).
+    self.closebutton = ISButton:new(self.width - 30, 10, 22, 22, "", self, self.onOptionMouseDown)
+    self.closebutton.internal = "close"
+    self.closebutton:initialise()
+    self.closebutton:instantiate()
+    self.closebutton.borderColor = { r = 1, g = 1, b = 1, a = 0 }
+    self.closebutton:setImage(getTexture("media/textures/UI/EFK_Close.png"))
+    self:addChild(self.closebutton)
 end
 
 function riskyUI:renderInventory()
@@ -523,7 +687,7 @@ function riskyUI:renderInventory()
     if self.settingpanel then
         self.settingpanel:close()
         self.settingpanel = nil
-        self:settingbuttona()
+        self:reopenSettingPanel()
     end
     -----------------------------------------------------------
     -- self.scene = nil
@@ -533,9 +697,8 @@ function riskyUI:renderInventory()
     else
         self:addChild(self.scene)
         getpartmodeldel(weapon, self.scene)
-        --self:addChild(self.settingbutton)
-        self:addChild(self.closeButton)
-        self:addChild(self.rotateButton)
+        if self.settingbutton then self:addChild(self.settingbutton) end
+        if self.closebutton then self:addChild(self.closebutton) end
     end
     if weapon:getSwingAnim() == "Handgun" and not AWCWF_WeaponSkin[weapon:getType()] then
         local vector = self.scene.javaObject:fromLua1("getObjectRotation", "Gunmodel")
@@ -562,6 +725,21 @@ function riskyUI:renderInventory()
                     if attachment0 and not string.find(worldmodel, "nil") and worldmodel ~= "Base.Gun_Magazine_Ground" then
                         local offset = attachment0:getOffset()
                         local list = {offset:x(), offset:y(), offset:z()}
+
+                        -- RC2-1 follow-up: GunPos stores inspection-scene coordinates.
+                        -- For handguns the held-model attachment uses the opposite Z sign,
+                        -- so rebuilding the scene from attachment0 inverted the preview each
+                        -- time the UI reopened. Prefer the raw saved position when available;
+                        -- retain the model-script offset as the fallback for untouched parts.
+                        local part = weapon:getWeaponPart(ur)
+                        local gunPos = weapon:getModData().GunPos
+                        local saved = part and type(gunPos) == "table" and gunPos[part:getFullType()] or nil
+                        if type(saved) == "table" and type(saved.x) == "number"
+                            and type(saved.y) == "number" and type(saved.z) == "number" then
+                            list[1] = saved.x
+                            list[2] = saved.y
+                            list[3] = saved.z
+                        end
                         local vector = self.scene.javaObject:fromLua4("setObjectPosition", worldmodel, list[1], list[2],
                             list[3])
                     end
@@ -574,15 +752,6 @@ function riskyUI:renderInventory()
             weapon:setWeaponSprite(oi .. "_0")
         end
     end
-    -- Close button
-    local closeButton = ISButton:new(3, 0, 15, 15, "", self, self.onOptionMouseDown)
-    closeButton.internal = "close";
-    closeButton:initialise();
-    closeButton.borderColor.a = 0.0;
-    closeButton.backgroundColor.a = 0;
-    closeButton.backgroundColorMouseOver.a = 0;
-    closeButton:setImage(getTexture("media/ui/Dialog_Titlebar_CloseIcon.png"));
-    self:addChild(closeButton);
     if getPlayer():getPrimaryHandItem() ~= nil and getPlayer():getPrimaryHandItem():IsWeapon() then
 
         if (weapon:isRanged()) then
@@ -617,10 +786,26 @@ function riskyUI:renderInventory()
                     boxAmmoCount = boxAmmoCount + allContainers[i]:getInventory():getItemCount(weapon:getAmmoBox())
                 end
             end
-            local item = ammoButton:new(1000 + 10, 585, 75, 75, looseAmmo, looseAmmoCount)
+            -- Repair kit button: to the left of the loose ammo. Shows how many
+            -- Base.gongjvxiuli_cat are in the main backpack; clicking repairs the
+            -- held gun to full condition and consumes one.
+            local repairKitBtn = repairKitButton:new(1000 + 10 - 80, 585, 75, 75,
+                instanceItem("Base.gongjvxiuli_cat"), weapon)
+            repairKitBtn:bringToTop()
+            self:addChild(repairKitBtn)
+            local looseType = looseAmmo and looseAmmo:getFullType() or nil
+            local boxType = boxAmmo and boxAmmo:getFullType() or nil
+            local item = ammoButton:new(1000 + 10, 585, 75, 75, looseAmmo, looseAmmoCount, "loose", looseType, boxType)
             item:bringToTop()
             self:addChild(item)
-            item = ammoButton:new(1000 + 90, 585, 75, 75, boxAmmo, boxAmmoCount)
+            item = ammoButton:new(1000 + 90, 585, 75, 75, boxAmmo, boxAmmoCount, "box", looseType, boxType)
+            item:bringToTop()
+            self:addChild(item)
+            -- Trade button (walkie-talkie icon) to the right of the boxed ammo.
+            -- Greyed out without a radio; opens the trade UI when clicked.
+            item = tradeButton:new(1000 + 170, 585, 75, 75, function()
+                riskyTradeUI.open(self)
+            end)
             item:bringToTop()
             self:addChild(item)
             self.panelWidth = self.panelWidth + 130
@@ -629,6 +814,10 @@ function riskyUI:renderInventory()
             if weapon:getMagazineType() ~= nil then
                 local MagazineItem = instanceItem(weapon:getMagazineType());
                 if MagazineItem then
+                    -- Magazine toggle button to the left of the magazine-type button.
+                    local magazineBtn = magazineToggleButton:new(422 + 200 - 40, 416 + 144, 40, 40, weapon)
+                    magazineBtn:bringToTop()
+                    self:addChild(magazineBtn)
                     item = attachmentButton:new(422 + 200, 416 + 144, 40, 40, MagazineItem, weapon, "ClipType")
                     item:bringToTop()
                     self:addChild(item)
@@ -656,10 +845,7 @@ function riskyUI:renderInventory()
     self:setHeight(516 + 200)
 end
 
--- MFST fix: Re-add inspectOnKey on the redefined riskyUI class so that EFK's
--- risky_inspect_set.lua Check() finds it at OnGameStart and registers it with
--- Events.OnKeyPressed. Without this, pressing T has no effect when MFST is loaded
--- because this file replaces riskyUI after EFK's set.lua already patched the old one.
+
 riskyUI.inspectOnKey = function(_keyPressed)
     if _keyPressed == getCore():getKey("OpenWindownCat") then
         local weapon = getPlayer():getPrimaryHandItem()

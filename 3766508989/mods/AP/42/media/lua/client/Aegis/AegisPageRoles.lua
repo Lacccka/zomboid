@@ -23,6 +23,7 @@ local AREA_LABEL = {
     zones = "UI_Aegis_NavZones",
     horde = "UI_Aegis_NavHorde",
     server = "UI_Aegis_NavServer",
+    events = "UI_Aegis_NavStudio",
     options = "UI_Aegis_NavOptions",
     factions = "UI_Aegis_NavFactions",
     tools = "UI_Aegis_NavTools",

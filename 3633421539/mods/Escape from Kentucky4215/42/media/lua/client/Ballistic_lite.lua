@@ -80,26 +80,6 @@ local function fxmanager(weapon, player, renderer, gametime)
     end
 
 end
-local boomlist = {}
-local timermax = 0.3
-local function explosionfunc(sq)
-
-    table.insert(boomlist, {
-        square = sq,
-        x = sq:getX(),
-        y = sq:getY(),
-        z = sq:getZ(),
-        index = 1,
-
-        maxindex = 64,
-        texname = "boomA_",
-
-        timer = timermax,
-        radius = ZombRand(250, 350)
-
-    })
-
-end
 local function OnPostRender()
 
     local player = getPlayer()
@@ -109,25 +89,6 @@ local function OnPostRender()
 
     local renderer = getRenderer();
     local gametime = getGameTime():getMultiplier()
-    for i, v in pairs(boomlist) do
-        if v.index <= v.maxindex then
-            local radius = v.radius
-
-            local Texture = getTexture("media/textures/" .. v.texname .. tostring(v.index) .. ".png")
-            local x, y = ISCoordConversion.ToScreen(v.x, v.y, v.z)
-            renderer:renderPoly(Texture, x - radius, y - radius, x + radius, y - radius, x + radius, y + radius,
-                x - radius, y + radius, 1, 1, 1, 1)
-
-            v.timer = v.timer + gametime
-            if v.timer > timermax then
-                v.index = v.index + 1
-                v.timer = 0
-            end
-
-        else
-            boomlist[i] = nil
-        end
-    end
 
     local weaitem = player:getPrimaryHandItem()
     if player:isAiming() and instanceof(weaitem, "HandWeapon") and weaitem:getFullType() == weaponitemname then
@@ -141,18 +102,37 @@ end
 
 Events.OnPostRender.Add(OnPostRender)
 
+local function KillZombiesAtSquare(sq, range)
+    if not sq then
+        return
+    end
+    local player = getPlayer()
+    local cx, cy, cz = sq:getX(), sq:getY(), sq:getZ()
+    for dy = -range, range do
+        for dx = -range, range do
+            local s = getCell():getGridSquare(cx + dx, cy + dy, cz)
+            if s then
+                local zombies = s:getMovingObjects()
+                for i = 0, zombies:size() - 1 do
+                    local zombie = zombies:get(i)
+                    if instanceof(zombie, "IsoZombie") and not zombie:isDead() then
+                        if player then
+                            zombie:Kill(player)
+                        else
+                            zombie:setHealth(0)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
 local function OnWeaponSwingHitPoint()
     if iscanshoot then
-        IsoTrap.new(instanceItem("Base.Aerosolbomb2"), getCell(), iscanshoot):triggerExplosion(false)
-        -- local trap =  IsoTrap.new(instanceItem("Base.Aerosolbomb2"), getCell(), iscanshoot):setTimerBeforeExplosion(1)
-
+        KillZombiesAtSquare(iscanshoot, 3)
+        getSoundManager():PlayWorldSound("AerosolBombExplode", iscanshoot, 0, 4, 1.0, false)
     end
 end
 
 Events.OnWeaponSwingHitPoint.Add(OnWeaponSwingHitPoint)
-
-local function OnThrowableExplode(tile, sq)
-    explosionfunc(sq)
-end
-
-Events.OnThrowableExplode.Add(OnThrowableExplode)

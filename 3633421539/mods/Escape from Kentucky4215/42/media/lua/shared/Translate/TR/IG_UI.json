@@ -1620,5 +1620,7 @@
     "IGUI_UserPanel_ShowConnectionInfo": "Bağlantı Bilgisini Göster",
     "IGUI_UserPanel_ShowServerInfo": "Sunucu Bilgisini Göster",
     "IGUI_UserPanel_ShowPingInfo": "Sunucu Ping Bilgisini Göster",
-    "IGUI_FixItem": "Tamir Kiti Kullan"
+    "IGUI_FixItem": "Tamir Kiti Kullan",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

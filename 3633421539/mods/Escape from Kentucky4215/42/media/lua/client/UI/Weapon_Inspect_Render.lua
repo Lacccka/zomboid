@@ -398,7 +398,8 @@ function WeaponScene:new(x, y, width, height)
     }
     o.startRotate = false
     o.rotationX = -70
-    o.rotationY = 0
+    -- MFS patch: show the same side orientation used by the world model.
+    o.rotationY = 180
     o.rotationZ = 130
     o.recoilActive = false
     o.recoilFrame = 0

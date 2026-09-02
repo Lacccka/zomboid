@@ -25,8 +25,15 @@ function ISRemoveWeaponUpgrade:perform()
             self.weapon:setWeaponPart("Hide_Beam", nil)
         end
     end
+    if MFS_RefreshWeaponAttachmentState then
+        MFS_RefreshWeaponAttachmentState(self.character, self.weapon)
+    elseif MFS_SyncEquippedWeaponState then
+        MFS_SyncEquippedWeaponState(self.character, self.weapon, true)
+    end
 
-
+    if riskyInspectWindow and riskyInspectWindow:getIsVisible() then
+        riskyInspectWindow:renderInventory()
+    end
 end
 
 function ISRemoveWeaponUpgrade:complete()
@@ -44,6 +51,16 @@ function ISRemoveWeaponUpgrade:complete()
         self.weapon:getModData().LightBatteryReamin = nil
     end
     sendAddItemToContainer(self.character:getInventory(), part);
+    if MFS_RefreshWeaponAttachmentState then
+        MFS_RefreshWeaponAttachmentState(self.character, self.weapon)
+    elseif MFS_SyncEquippedWeaponState then
+        MFS_SyncEquippedWeaponState(self.character, self.weapon, true)
+    end
+
+    -- 拆卸配件后即时刷新检视 UI 的 3D 预览。
+    if riskyInspectWindow and riskyInspectWindow:getIsVisible() then
+        riskyInspectWindow:renderInventory()
+    end
     return true
 end
 

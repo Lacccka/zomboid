@@ -10,48 +10,48 @@ module Base
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_plr_mech_01.wav,
-            distanceMin = 1,
-            distanceMax = 20,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.55,
         }
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_plr_mech_02.wav,
-            distanceMin = 1,
-            distanceMax = 20,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.55,
         }
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_plr_mech_03.wav,
-            distanceMin = 1,
-            distanceMax = 20,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.55,
         }
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_plr_mech_04.wav,
-            distanceMin = 1,
-            distanceMax = 20,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.55,
         }
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_plr_mech_05.wav,
-            distanceMin = 1,
-            distanceMax = 20,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.55,
         }
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_plr_mech_06.wav,
-            distanceMin = 1,
-            distanceMax = 20,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.55,
         }
@@ -66,48 +66,48 @@ module Base
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_dist_01.wav,
-            distanceMin = 25,
-            distanceMax = 95,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_dist_02.wav,
-            distanceMin = 25,
-            distanceMax = 95,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_dist_03.wav,
-            distanceMin = 25,
-            distanceMax = 95,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_dist_04.wav,
-            distanceMin = 25,
-            distanceMax = 95,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_dist_05.wav,
-            distanceMin = 25,
-            distanceMax = 95,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_dist_06.wav,
-            distanceMin = 25,
-            distanceMax = 95,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
@@ -122,7 +122,7 @@ module Base
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_far_01.wav,
-            distanceMin = 60,
+            distanceMin = 0,
             distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
@@ -130,7 +130,7 @@ module Base
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_far_02.wav,
-            distanceMin = 60,
+            distanceMin = 0,
             distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
@@ -138,7 +138,7 @@ module Base
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_far_03.wav,
-            distanceMin = 60,
+            distanceMin = 0,
             distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
@@ -146,7 +146,7 @@ module Base
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_far_04.wav,
-            distanceMin = 60,
+            distanceMin = 0,
             distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
@@ -154,7 +154,7 @@ module Base
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_far_05.wav,
-            distanceMin = 60,
+            distanceMin = 0,
             distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
@@ -162,7 +162,7 @@ module Base
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_far_06.wav,
-            distanceMin = 60,
+            distanceMin = 0,
             distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
@@ -178,48 +178,48 @@ module Base
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_med_01.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_med_02.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_med_03.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_med_04.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_med_05.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/ISO/weap_uzulu_fire_npc_med_06.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }

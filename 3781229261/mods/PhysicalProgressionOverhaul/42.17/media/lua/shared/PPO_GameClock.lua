@@ -1,3 +1,5 @@
+require "PPO_Num"
+
 PPO = PPO or {}
 PPO.GameClock = PPO.GameClock or {}
 
@@ -16,13 +18,7 @@ local MILLISECONDS_PER_MINUTE = 60000
 local CEILING_FACTOR = 3
 local CEILING_FLOOR_MINUTES = 1
 
-local function finiteOr(value, fallback)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return fallback
-    end
-    return value
-end
+local Num = PPO.Num
 
 function GameClock.minutesPerDay()
     local ok, value = pcall(function()
@@ -30,7 +26,7 @@ function GameClock.minutesPerDay()
     end)
     if not ok then return DEFAULT_MINUTES_PER_DAY end
 
-    local minutes = finiteOr(value, 0)
+    local minutes = Num.finite(value, 0)
     if minutes <= 0 then return DEFAULT_MINUTES_PER_DAY end
     return minutes
 end
@@ -38,7 +34,7 @@ end
 -- One repetition costs periodMs of real time. Converting that into game minutes
 -- is the only place the day length enters the load model.
 function GameClock.gameMinutesPerRepeat(periodMs)
-    local period = math.max(0, finiteOr(periodMs, 0))
+    local period = math.max(0, Num.finite(periodMs, 0))
     return period / MILLISECONDS_PER_MINUTE
         * GAME_MINUTES_PER_DAY / GameClock.minutesPerDay()
 end

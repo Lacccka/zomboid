@@ -1,4 +1,4 @@
-require "client/ExplosionFX"
+require "ExplosionFX"
 
 -- Explosion FX for placed traps (own mines + vanilla PipeBomb/Aerosolbomb/FlameTrap
 -- sensor/remote variants), reusing the thrown-grenade animation. Native sensor/timer/

@@ -9,9 +9,7 @@ PPO.ReadinessEngine = PPO.ReadinessEngine or {}
 local ReadinessEngine = PPO.ReadinessEngine
 
 local function settings()
-    local ok, resolved = pcall(PPO.Config.getRecoverySettings)
-    if not ok or type(resolved) ~= "table" then return PPO.Config.Recovery end
-    return resolved
+    return PPO.Config.resolve("getRecoverySettings", PPO.Config.Recovery)
 end
 
 -- A missing or throwing seam returns nil, which ramps to zero penalty.

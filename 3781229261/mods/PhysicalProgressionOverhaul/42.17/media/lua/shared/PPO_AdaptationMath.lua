@@ -1,3 +1,4 @@
+require "PPO_Num"
 require "PPO_Config"
 
 PPO = PPO or {}
@@ -34,48 +35,36 @@ local COVERAGE_THRESHOLD_TOLERANCE = 0.000000001
 local GAIN_SCALE_MINIMUM = 0.25
 local GAIN_SCALE_MAXIMUM = 4
 
-local function finiteOr(value, fallback)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return fallback
-    end
-    return value
-end
-
-local function clamp(value, minimum, maximum)
-    if value < minimum then return minimum end
-    if value > maximum then return maximum end
-    return value
-end
+local Num = PPO.Num
 
 local function baseSessionCredit()
     local configured = PPO.Config ~= nil and PPO.Config.Adaptation ~= nil
         and PPO.Config.Adaptation.BaseSessionCredit or nil
-    return math.max(0, finiteOr(configured, 0.30))
+    return math.max(0, Num.finite(configured, 0.30))
 end
 
 function AdaptationMath.initialAdaptation(level)
-    local bounded = clamp(finiteOr(level, 0), 0, 10)
-    return clamp(BASELINE_MINIMUM + BASELINE_PER_LEVEL * bounded,
+    local bounded = Num.clamp(Num.finite(level, 0), 0, 10)
+    return Num.clamp(BASELINE_MINIMUM + BASELINE_PER_LEVEL * bounded,
         BASELINE_MINIMUM, BASELINE_MAXIMUM)
 end
 
 function AdaptationMath.reachedThreshold(amount, minimum, tolerance)
     local slack = math.max(0,
-        finiteOr(tolerance, COVERAGE_THRESHOLD_TOLERANCE))
-    return finiteOr(amount, 0) >= finiteOr(minimum, 0) - slack
+        Num.finite(tolerance, COVERAGE_THRESHOLD_TOLERANCE))
+    return Num.finite(amount, 0) >= Num.finite(minimum, 0) - slack
 end
 
 -- A direction below its minimum threshold does not qualify at all; once it
 -- qualifies it keeps at least the half-quality floor.
 local function boundedQualifiedQuality(value, minimum, full, tolerance)
-    local amount = math.max(0, finiteOr(value, 0))
-    local minimumValue = math.max(0.001, finiteOr(minimum, 1))
-    local fullValue = math.max(minimumValue, finiteOr(full, minimumValue))
+    local amount = math.max(0, Num.finite(value, 0))
+    local minimumValue = math.max(0.001, Num.finite(minimum, 1))
+    local fullValue = math.max(minimumValue, Num.finite(full, minimumValue))
     local slack = math.max(0,
-        finiteOr(tolerance, COVERAGE_THRESHOLD_TOLERANCE))
+        Num.finite(tolerance, COVERAGE_THRESHOLD_TOLERANCE))
     if amount < minimumValue - slack then return 0 end
-    return clamp(amount / fullValue, QUALITY_FLOOR, 1)
+    return Num.clamp(amount / fullValue, QUALITY_FLOOR, 1)
 end
 
 function AdaptationMath.durationQuality(minutes, minimum, full)
@@ -90,31 +79,31 @@ end
 -- three day lengths. This is an integrity gate, not a quality dial.
 function AdaptationMath.coverageQuality(coveredMinutes, elapsedMinutes,
         minimum, full)
-    local elapsed = math.max(0, finiteOr(elapsedMinutes, 0))
+    local elapsed = math.max(0, Num.finite(elapsedMinutes, 0))
     if elapsed <= 0 then return 0 end
 
-    local covered = math.max(0, finiteOr(coveredMinutes, 0))
+    local covered = math.max(0, Num.finite(coveredMinutes, 0))
     return boundedQualifiedQuality(
-        clamp(covered / elapsed, 0, 1), minimum, full,
+        Num.clamp(covered / elapsed, 0, 1), minimum, full,
         COVERAGE_THRESHOLD_TOLERANCE)
 end
 
 function AdaptationMath.regularityQuality(regularity)
     return REGULARITY_FLOOR + REGULARITY_RANGE
-        * clamp(finiteOr(regularity, 0) / REGULARITY_MAXIMUM, 0, 1)
+        * Num.clamp(Num.finite(regularity, 0) / REGULARITY_MAXIMUM, 0, 1)
 end
 
 function AdaptationMath.sessionQuality(duration, volume, regularity, load)
-    return clamp(finiteOr(duration, 0), 0, 1)
-        * clamp(finiteOr(volume, 0), 0, 1)
-        * clamp(finiteOr(regularity, REGULARITY_FLOOR), REGULARITY_FLOOR, 1)
-        * clamp(finiteOr(load, 0), 0, 1)
+    return Num.clamp(Num.finite(duration, 0), 0, 1)
+        * Num.clamp(Num.finite(volume, 0), 0, 1)
+        * Num.clamp(Num.finite(regularity, REGULARITY_FLOOR), REGULARITY_FLOOR, 1)
+        * Num.clamp(Num.finite(load, 0), 0, 1)
 end
 
 function AdaptationMath.creditEarned(baseCredit, quality, gainScale)
-    return math.max(0, finiteOr(baseCredit, 0))
-        * clamp(finiteOr(quality, 0), 0, 1)
-        * clamp(finiteOr(gainScale, 1), GAIN_SCALE_MINIMUM, GAIN_SCALE_MAXIMUM)
+    return math.max(0, Num.finite(baseCredit, 0))
+        * Num.clamp(Num.finite(quality, 0), 0, 1)
+        * Num.clamp(Num.finite(gainScale, 1), GAIN_SCALE_MINIMUM, GAIN_SCALE_MAXIMUM)
 end
 
 -- Credit converts only during loaded online minutes. Readiness and recovery
@@ -122,19 +111,19 @@ end
 -- never convert faster than the designed rate and never create credit.
 function AdaptationMath.convert(adaptation, credit, elapsedMinutes,
         conversionHours, readiness, recoverySupport)
-    local currentAdaptation = clamp(finiteOr(adaptation, 0), 0, 1)
-    local pool = math.max(0, finiteOr(credit, 0))
-    local elapsed = math.max(0, finiteOr(elapsedMinutes, 0))
-    local hours = math.max(0.001, finiteOr(conversionHours, 24))
-    local boundedReadiness = clamp(finiteOr(readiness, 1), 0, 1)
-    local boundedSupport = clamp(finiteOr(recoverySupport, 1), 0, 1)
+    local currentAdaptation = Num.clamp(Num.finite(adaptation, 0), 0, 1)
+    local pool = math.max(0, Num.finite(credit, 0))
+    local elapsed = math.max(0, Num.finite(elapsedMinutes, 0))
+    local hours = math.max(0.001, Num.finite(conversionHours, 24))
+    local boundedReadiness = Num.clamp(Num.finite(readiness, 1), 0, 1)
+    local boundedSupport = Num.clamp(Num.finite(recoverySupport, 1), 0, 1)
 
     local ratePerMinute = baseSessionCredit() / (hours * 60)
     local converted = math.min(pool,
         ratePerMinute * boundedReadiness * boundedSupport * elapsed)
 
     return {
-        adaptation = clamp(
+        adaptation = Num.clamp(
             currentAdaptation + converted * (1 - currentAdaptation), 0, 1),
         credit = math.max(0, pool - converted),
         converted = converted,
@@ -142,14 +131,14 @@ function AdaptationMath.convert(adaptation, credit, elapsedMinutes,
 end
 
 function AdaptationMath.decay(adaptation, elapsedMinutes, decayDays)
-    local currentAdaptation = clamp(finiteOr(adaptation, 0), 0, 1)
-    local elapsed = math.max(0, finiteOr(elapsedMinutes, 0))
-    local days = math.max(0.001, finiteOr(decayDays, 30))
-    return clamp(currentAdaptation - elapsed / (days * 24 * 60), 0, 1)
+    local currentAdaptation = Num.clamp(Num.finite(adaptation, 0), 0, 1)
+    local elapsed = math.max(0, Num.finite(elapsedMinutes, 0))
+    local days = math.max(0.001, Num.finite(decayDays, 30))
+    return Num.clamp(currentAdaptation - elapsed / (days * 24 * 60), 0, 1)
 end
 
 function AdaptationMath.overtrainingStage(dailyStimulus)
-    local load = math.max(0, finiteOr(dailyStimulus, 0))
+    local load = math.max(0, Num.finite(dailyStimulus, 0))
     if load < STAGE_FRESH_LIMIT then return "Fresh" end
     if load < STAGE_WARMED_LIMIT then return "Warmed" end
     if load <= STAGE_WORKED_LIMIT then return "Worked" end

@@ -1,7 +1,10 @@
+require "PPO_Directions"
+
 PPO = PPO or {}
 PPO.ExerciseDefinitions = PPO.ExerciseDefinitions or {}
 
 local ExerciseDefinitions = PPO.ExerciseDefinitions
+local DIRECTIONS = PPO.Directions.order()
 
 -- Load is the work a repetition costs, not the time it happened to take.
 -- Vanilla charges endurance per repetition and never per minute:
@@ -79,14 +82,30 @@ local function copyComponents(source)
     return result
 end
 
+-- The vanilla seven above are the whole of this file. An exercise another mod
+-- registers into `FitnessExercises.exercisesType` is described by that mod's
+-- own file under `shared/Compat`, and reaches this table only through the seam
+-- below -- asked at call time, so a compat file may register whenever it loads.
+--
+-- Nothing here knows which mods exist. `PPO.Compat` absent (a build with the
+-- compat tree stripped, or the core Kahlua pass) simply means the vanilla seven
+-- and nothing else, which is what an install without those mods should see.
+local function foreignSource(exerciseId)
+    if PPO.Compat == nil or PPO.Compat.exercise == nil then return nil end
+    local ok, source = pcall(PPO.Compat.exercise, exerciseId)
+    if not ok then return nil end
+    return source
+end
+
 function ExerciseDefinitions.get(exerciseId)
     local source = DEFINITIONS[exerciseId]
+    if source == nil then source = foreignSource(exerciseId) end
     if source == nil then return nil end
 
     local minutesPerRepeat = {}
     local loadPerRepeat = {}
     local minutes = minutesPerRepeatFor(source.heavy == true)
-    for _, component in ipairs({ "Strength", "Fitness" }) do
+    for _, component in ipairs(DIRECTIONS) do
         if source.spXp[component] ~= nil then
             minutesPerRepeat[component] = minutes
             loadPerRepeat[component] = minutes / MINUTES_PER_STIMULUS

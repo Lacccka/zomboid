@@ -1,3 +1,5 @@
+require "PPO_Directions"
+require "PPO_Num"
 require "PPO_Config"
 require "PPO_BonusMath"
 require "PPO_AdaptationMath"
@@ -18,32 +20,12 @@ PPO = PPO or {}
 PPO.AdaptationEngine = PPO.AdaptationEngine or {}
 
 local AdaptationEngine = PPO.AdaptationEngine
-local DIRECTIONS = { "Strength", "Fitness" }
+local DIRECTIONS = PPO.Directions.order()
 
-local function finiteOr(value, fallback)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return fallback
-    end
-    return value
-end
-
-local function clamp(value, minimum, maximum)
-    if value < minimum then return minimum end
-    if value > maximum then return maximum end
-    return value
-end
-
-local function positiveOr(value, fallback)
-    return math.max(0, finiteOr(value, fallback))
-end
+local Num = PPO.Num
 
 local function defaultRecovery(character, direction)
     return PPO.RecoveryContext.get(character, direction)
-end
-
-local function defaultSettings()
-    return PPO.Config.getAdaptationSettings()
 end
 
 local function defaultLevel(character, direction)
@@ -51,8 +33,10 @@ local function defaultLevel(character, direction)
         return character:getPerkLevel(Perks[direction])
     end)
     if not ok then return 0 end
-    return clamp(positiveOr(level, 0), 0, 10)
+    return Num.clamp(Num.positive(level, 0), 0, 10)
 end
+
+local INSTANCE_META = { __index = AdaptationEngine }
 
 -- The injection table is checked by type, not against `nil`: an unpassed
 -- parameter carries whatever the caller left on the stack, and reading fields
@@ -60,44 +44,20 @@ end
 function AdaptationEngine.new(options)
     local injected = {}
     if type(options) == "table" then injected = options end
-    local instance = {
+    -- Both call styles are supported so the server bootstrap can use method
+    -- syntax. Every function this exposes already takes the engine as its first
+    -- parameter, so `__index` says it once instead of five wrappers saying it
+    -- five times, each with a signature of its own to keep in step.
+    return setmetatable({
         recovery = injected.recovery or defaultRecovery,
-        settings = injected.settings or defaultSettings,
+        settings = injected.settings or PPO.Config.getAdaptationSettings,
         level = injected.level or defaultLevel,
         sessions = injected.sessions or PPO.TrainingSession.ensureDefault(),
         recoveryHours = injected.recoveryHours,
         effects = injected.effects or PPO.PhysicalEffects.new(),
         reports = injected.reports or PPO.StateReport.new(),
         applied = {},
-    }
-
-    -- Both call styles are supported so the server bootstrap can use method
-    -- syntax without a metatable in persisted-adjacent code.
-    instance.tickCharacter = function(self, character, elapsedMinutes)
-        return AdaptationEngine.tickCharacter(self, character, elapsedMinutes)
-    end
-    instance.multiplierInputs = function(self, character, direction)
-        return AdaptationEngine.multiplierInputs(self, character, direction)
-    end
-    instance.recordApplied = function(self, character, direction, multiplier, level)
-        return AdaptationEngine.recordApplied(
-            self, character, direction, multiplier, level)
-    end
-    instance.freezeCharacter = function(self, character)
-        return AdaptationEngine.freezeCharacter(self, character)
-    end
-    instance.discardCharacter = function(self, character)
-        return AdaptationEngine.discardCharacter(self, character)
-    end
-    return instance
-end
-
-local function resolveSettings(engine)
-    local ok, settings = pcall(engine.settings)
-    if not ok or type(settings) ~= "table" then
-        return PPO.Config.Adaptation
-    end
-    return settings
+    }, INSTANCE_META)
 end
 
 -- Returns the whole recovery table, bounded. An injected provider may report
@@ -123,17 +83,17 @@ local function resolveRecovery(engine, character, direction)
         loadFactor = PPO.RecoveryContext.bounded(recovery.loadFactor),
         sleepRequired = recovery.sleepRequired ~= false,
         toneFallback = math.max(0,
-            finiteOr(recovery.toneFallback, 0)),
+            Num.finite(recovery.toneFallback, 0)),
     }
 end
 
 local function recoveryHours(engine)
     if engine.recoveryHours ~= nil then
-        return math.max(0.001, finiteOr(engine.recoveryHours, 24))
+        return math.max(0.001, Num.finite(engine.recoveryHours, 24))
     end
     local ok, resolved = pcall(PPO.Config.getLoadSettings)
     if ok and type(resolved) == "table" then
-        return math.max(0.001, finiteOr(resolved.RecoveryHours, 24))
+        return math.max(0.001, Num.finite(resolved.RecoveryHours, 24))
     end
     return 24
 end
@@ -147,14 +107,14 @@ local function hasMeaningfulChange(engine, character, direction, multiplier,
     if previous.level ~= level then return true end
 
     local epsilon = math.max(0,
-        finiteOr(settings.MultiplierRefreshEpsilon, 0.01))
+        Num.finite(settings.MultiplierRefreshEpsilon, 0.01))
     return math.abs(multiplier - previous.multiplier) >= epsilon
 end
 
 function AdaptationEngine.recordApplied(engine, character, direction,
         multiplier, level)
     if engine == nil or character == nil then return false end
-    if direction ~= "Strength" and direction ~= "Fitness" then return false end
+    if not PPO.Directions.supported(direction) then return false end
 
     local record = engine.applied[character]
     if record == nil then
@@ -162,8 +122,8 @@ function AdaptationEngine.recordApplied(engine, character, direction,
         engine.applied[character] = record
     end
     record[direction] = {
-        multiplier = math.max(1, finiteOr(multiplier, 1)),
-        level = clamp(positiveOr(level, 0), 0, 10),
+        multiplier = math.max(1, Num.finite(multiplier, 1)),
+        level = Num.clamp(Num.positive(level, 0), 0, 10),
     }
     return true
 end
@@ -205,25 +165,25 @@ function AdaptationEngine.multiplierInputs(engine, character, direction)
     local courseLevel = 0
     local withdrawal = 0
     if component ~= nil then
-        adaptation = clamp(finiteOr(component.adaptation, 0), 0, 1)
+        adaptation = Num.clamp(Num.finite(component.adaptation, 0), 0, 1)
         if type(component.course) == "table" then
             -- The felt course, never the raw reservoir: accounting is instant,
             -- the effect is not. The reservoir rides along untouched by the
             -- formula, purely so the panel can show the gap between the two.
-            course = clamp(finiteOr(component.course.active, 0), 0, 1)
-            courseLevel = clamp(finiteOr(component.course.level, 0), 0, 1)
+            course = Num.clamp(Num.finite(component.course.active, 0), 0, 1)
+            courseLevel = Num.clamp(Num.finite(component.course.level, 0), 0, 1)
             -- The felt debt, mirroring `course.active` above: the charge is
             -- accounting and lands in one tick, the crash slopes in.
-            withdrawal = clamp(
-                finiteOr(component.course.withdrawalActive, 0), 0, 1)
+            withdrawal = Num.clamp(
+                Num.finite(component.course.withdrawalActive, 0), 0, 1)
         end
     end
 
     return {
         adaptation = adaptation,
-        protein = clamp(finiteOr(supplements and supplements.protein, 0), 0, 1),
-        creatine = clamp(
-            finiteOr(supplements and supplements.creatine, 0), 0, 1),
+        protein = Num.clamp(Num.finite(supplements and supplements.protein, 0), 0, 1),
+        creatine = Num.clamp(
+            Num.finite(supplements and supplements.creatine, 0), 0, 1),
         -- The multiplier's sleep term is the share curve, not the Readiness
         -- one. `readiness` below still carries the shallow curve, so a tired
         -- character loses the whole share while conversion only slows.
@@ -231,7 +191,7 @@ function AdaptationEngine.multiplierInputs(engine, character, direction)
         -- Same substitution for food and water: one-to-one into the share,
         -- while Readiness keeps the curve with the floor.
         fuelFactor = PPO.RecoveryContext.bounded(recovery.fuelShare),
-        toneFallback = math.max(0, finiteOr(recovery.toneFallback, 0)),
+        toneFallback = math.max(0, Num.finite(recovery.toneFallback, 0)),
         readiness = PPO.RecoveryContext.bounded(recovery.readiness),
         sleepRequired = recovery.sleepRequired ~= false,
         loadFactor = PPO.RecoveryContext.bounded(recovery.loadFactor),
@@ -370,8 +330,8 @@ function AdaptationEngine.tickCharacter(engine, character, elapsedMinutes)
     local state = PPO.ExerciseState.get(character)
     if state == nil then return nil end
 
-    local elapsed = positiveOr(elapsedMinutes, 0)
-    local settings = resolveSettings(engine)
+    local elapsed = Num.positive(elapsedMinutes, 0)
+    local settings = PPO.Config.resolve(engine.settings, PPO.Config.Adaptation)
 
     -- One lookup per tick, shared by recovery suspension and the warm-up.
     local training = nil
@@ -408,8 +368,8 @@ function AdaptationEngine.tickCharacter(engine, character, elapsedMinutes)
     -- describe the same numbers the writers just used.
     local utility = state.utility or {}
     result.windows = {
-        stimulant = math.max(0, finiteOr(utility.stimulantMinutes, 0)),
-        thermogenic = math.max(0, finiteOr(utility.thermogenicMinutes, 0)),
+        stimulant = math.max(0, Num.finite(utility.stimulantMinutes, 0)),
+        thermogenic = math.max(0, Num.finite(utility.thermogenicMinutes, 0)),
     }
     for _, direction in ipairs(DIRECTIONS) do
         local entry = {
@@ -464,7 +424,7 @@ function AdaptationEngine.tickCharacter(engine, character, elapsedMinutes)
             -- option back on from spending a countdown that never ran.
             if settings.DecayEnabled ~= false then
                 local graceUsed = math.min(
-                    positiveOr(component.adaptationGraceRemaining, 0), elapsed)
+                    Num.positive(component.adaptationGraceRemaining, 0), elapsed)
                 component.adaptationGraceRemaining = math.max(0,
                     component.adaptationGraceRemaining - graceUsed)
 

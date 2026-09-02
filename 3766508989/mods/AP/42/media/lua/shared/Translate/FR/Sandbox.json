@@ -1,5 +1,5 @@
 {
-    "Sandbox_AegisEvents": "Événements Aegis",
+    "Sandbox_AegisEvents": "Aegis",
     "Sandbox_AegisSiegeWaves": "Siège : vagues",
     "Sandbox_AegisSiegeWaves_tooltip": "Nombre de vagues de horde envoyées par le siège.",
     "Sandbox_AegisSiegeCount": "Siège : zombies par vague",
@@ -58,6 +58,8 @@
     "Sandbox_AegisPlayerClaims_tooltip": "Permet aux joueurs de revendiquer une zone à leur refuge selon le budget de leur role. Désactivé bloque toute revendication.",
     "Sandbox_AegisPlayerKits": "Kits joueur actifs",
     "Sandbox_AegisPlayerKits_tooltip": "La page des kits de l'espace joueur, échange booster compris. Désactivé la cache pour tous; l'éditeur de kits reste utilisable.",
+    "Sandbox_AegisKitCodeGates": "Kits Discord dans l'éditeur de kits",
+    "Sandbox_AegisKitCodeGates_tooltip": "Propose \"Booster Discord\" et \"Uniquement avec un code de kit\" lors de l'édition d'un kit. Les deux exigent ton propre bot Discord. Désactivé, ils sortent de la liste. Un kit qui en utilise un le garde.",
     "Sandbox_AegisPlayerVehicles": "Véhicules mémorisés par joueur",
     "Sandbox_AegisPlayerVehicles_tooltip": "Combien de véhicules un joueur peut garder sur la page véhicules de l'espace joueur. 0 désactive la mémorisation. Ignoré là où Knox Claim tourne, ce mod a sa propre limite. Les véhicules déjà mémorisés ne sont jamais perdus si vous baissez la valeur.",
     "Sandbox_AegisPlayerHealthInfection": "Montrer l'infection zombie aux joueurs",

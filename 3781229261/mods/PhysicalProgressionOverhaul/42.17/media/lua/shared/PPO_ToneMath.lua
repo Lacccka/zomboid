@@ -1,3 +1,4 @@
+require "PPO_Num"
 require "PPO_Config"
 
 PPO = PPO or {}
@@ -5,19 +6,7 @@ PPO.ToneMath = PPO.ToneMath or {}
 
 local ToneMath = PPO.ToneMath
 
-local function finiteOr(value, fallback)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return fallback
-    end
-    return value
-end
-
-local function clamp(value, minimum, maximum)
-    if value < minimum then return minimum end
-    if value > maximum then return maximum end
-    return value
-end
+local Num = PPO.Num
 
 local function settingsOr(settings)
     if type(settings) == "table" then return settings end
@@ -31,13 +20,13 @@ local STAGE_HIGH = 0.67
 -- Expressed-band gate in PPO.ToneEngine, so a player who trains hard enough to
 -- earn a tone is not also punished for the load that earned it.
 function ToneMath.quality(adaptation, execQuality)
-    local form = clamp(finiteOr(adaptation, 0), 0, 1)
-    local exec = clamp(finiteOr(execQuality, 0), 0, 1)
-    return clamp(form * exec, 0, 1)
+    local form = Num.clamp(Num.finite(adaptation, 0), 0, 1)
+    local exec = Num.clamp(Num.finite(execQuality, 0), 0, 1)
+    return Num.clamp(form * exec, 0, 1)
 end
 
 function ToneMath.stage(quality)
-    local resolved = clamp(finiteOr(quality, 0), 0, 1)
+    local resolved = Num.clamp(Num.finite(quality, 0), 0, 1)
     if resolved <= 0 then return 0 end
     if resolved >= STAGE_HIGH then return 3 end
     if resolved >= STAGE_MEDIUM then return 2 end
@@ -46,8 +35,8 @@ end
 
 function ToneMath.durationMinutes(quality, settings)
     local resolved = settingsOr(settings)
-    return clamp(finiteOr(quality, 0), 0, 1)
-        * math.max(0, finiteOr(resolved.MaxDurationHours, 24)) * 60
+    return Num.clamp(Num.finite(quality, 0), 0, 1)
+        * math.max(0, Num.finite(resolved.MaxDurationHours, 24)) * 60
 end
 
 -- The Sandbox option keeps its documented 0..15 range and stays the base; the
@@ -55,8 +44,8 @@ end
 -- configured ceiling would not be a drug.
 local function courseScaleOr(scale)
     if type(scale) ~= "number" then return 1 end
-    local resolved = finiteOr(scale, 1)
-    return clamp(resolved, 0, 2.5)
+    local resolved = Num.finite(scale, 1)
+    return Num.clamp(resolved, 0, 2.5)
 end
 
 -- Quantized by stage so the number in the tooltip and the number in the
@@ -77,7 +66,7 @@ function ToneMath.effectStrength(quality, settings, courseScale)
     if stage <= 0 then return 0 end
     local percent = stageValue(resolved.EnduranceStages, stage,
         DEFAULT_ENDURANCE_STAGES[stage])
-    return clamp(percent / 100, 0, 1) * courseScaleOr(courseScale)
+    return Num.clamp(percent / 100, 0, 1) * courseScaleOr(courseScale)
 end
 
 function ToneMath.carryBonus(quality, settings, courseScale)
@@ -105,8 +94,8 @@ end
 -- strongest characters more than the option promises, which is the defect this
 -- function exists to end.
 function ToneMath.carryBaseDelta(kilograms, weightMod)
-    local bonus = math.max(0, finiteOr(kilograms, 0))
-    local ladder = finiteOr(weightMod, 1)
+    local bonus = math.max(0, Num.finite(kilograms, 0))
+    local ladder = Num.finite(weightMod, 1)
     if ladder <= 0 then ladder = 1 end
     return math.max(0, math.floor(bonus / ladder + 0.5))
 end
@@ -114,7 +103,7 @@ end
 -- Used only when a physical seam is unavailable, so tone is never a no-op.
 function ToneMath.fallbackReadinessBonus(quality, settings)
     local resolved = settingsOr(settings)
-    local ceiling = clamp(
-        math.max(0, finiteOr(resolved.FallbackReadinessBonus, 0.05)), 0, 1)
-    return clamp(finiteOr(quality, 0), 0, 1) * ceiling
+    local ceiling = Num.clamp(
+        math.max(0, Num.finite(resolved.FallbackReadinessBonus, 0.05)), 0, 1)
+    return Num.clamp(Num.finite(quality, 0), 0, 1) * ceiling
 end

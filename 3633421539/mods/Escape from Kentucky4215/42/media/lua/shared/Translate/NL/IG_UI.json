@@ -1083,5 +1083,7 @@
     "IGUI_ClothingName_Soaked": "Doorweekt",
     "IGUI_Tutorial1_Bandage8": " <CENTRE> <SIZE:medium> Dikkere kleding en hoofdbescherming helpt tegen sneden en beten. <LINE> <LINE> Doe aan wat je het beste lijkt voor deze finale! <LINE> <LINE> <SIZE:large> Ga door de deur wanneer je klaar bent!",
     "IGUI_Tutorial1_Bandage7": " <CENTRE> <SIZE:medium> Twee stuks! <LINE> Drie als je jouw zus op de grond erbij telt! <LINE> <LINE> Je kunt maar beter extra verdediging krijgen tegen hun tanden! <LINE> <LINE> <SIZE:large> (Druk op Spatiebalk om door te gaan)",
-    "IGUI_FixItem": "Reparatieset Gebruiken"
+    "IGUI_FixItem": "Reparatieset Gebruiken",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

@@ -1,11 +1,11 @@
 require "Grenade_Tajectory_core"
 local AWCWF_Stool_Grenadelauncher = {
-    ["GP25_cat"] = {LaunchSound = "LauncherFire", AmmoType = "GrenadeAmmo", EmptyType = "Gunpart.GP25_cat_empty", LoadSound = "LauncherReload", LoadType = "Gunpart.GP25_cat", ExplosionRange = 10, ExplosionDamage = 3, ExplosionSound = "Explosion4"},
-    ["M203_cat"] = {LaunchSound = "LauncherFire", AmmoType = "GrenadeAmmo", EmptyType = "Gunpart.M203_cat_empty", LoadSound = "LauncherReload", LoadType = "Gunpart.M203_cat", ExplosionRange = 10, ExplosionDamage = 3, ExplosionSound = "Explosion4"},
-    ["M28_cat"] = {LaunchSound = "LauncherFire", AmmoType = "GrenadeAmmo", EmptyType = "Gunpart.M28_cat_empty", LoadSound = "LauncherReload", LoadType = "Gunpart.M28_cat", ExplosionRange = 10, ExplosionDamage = 3, ExplosionSound = "Explosion4"},
-    ["GP25_cat_empty"] = {LaunchSound = "LauncherFire", AmmoType = "GrenadeAmmo", EmptyType = false, LoadSound = "LauncherReload", LoadType = "Gunpart.GP25_cat", ExplosionRange = 10, ExplosionDamage = 3, ExplosionSound = "Explosion4"},
-    ["M203_cat_empty"] = {LaunchSound = "LauncherFire", AmmoType = "GrenadeAmmo", EmptyType = false, LoadSound = "LauncherReload", LoadType = "Gunpart.M203_cat", ExplosionRange = 10, ExplosionDamage = 3, ExplosionSound = "Explosion4"},
-    ["M28_cat_empty"] = {LaunchSound = "LauncherFire", AmmoType = "GrenadeAmmo", EmptyType = false, LoadSound = "LauncherReload", LoadType = "Gunpart.M28_cat", ExplosionRange = 10, ExplosionDamage = 3, ExplosionSound = "Explosion4"},
+    ["GP25_cat"] = {LaunchSound = "LauncherFire", AmmoType = "GrenadeAmmo", EmptyType = "Gunpart.GP25_cat_empty", LoadSound = "LauncherReload", LoadType = "Gunpart.GP25_cat", ExplosionRange = 3, ExplosionDamage = 3, ExplosionSound = "AerosolBombExplode"},
+    ["M203_cat"] = {LaunchSound = "LauncherFire", AmmoType = "GrenadeAmmo", EmptyType = "Gunpart.M203_cat_empty", LoadSound = "LauncherReload", LoadType = "Gunpart.M203_cat", ExplosionRange = 3, ExplosionDamage = 3, ExplosionSound = "AerosolBombExplode"},
+    ["M28_cat"] = {LaunchSound = "LauncherFire", AmmoType = "GrenadeAmmo", EmptyType = "Gunpart.M28_cat_empty", LoadSound = "LauncherReload", LoadType = "Gunpart.M28_cat", ExplosionRange = 3, ExplosionDamage = 3, ExplosionSound = "AerosolBombExplode"},
+    ["GP25_cat_empty"] = {LaunchSound = "LauncherFire", AmmoType = "GrenadeAmmo", EmptyType = false, LoadSound = "LauncherReload", LoadType = "Gunpart.GP25_cat", ExplosionRange = 3, ExplosionDamage = 3, ExplosionSound = "AerosolBombExplode"},
+    ["M203_cat_empty"] = {LaunchSound = "LauncherFire", AmmoType = "GrenadeAmmo", EmptyType = false, LoadSound = "LauncherReload", LoadType = "Gunpart.M203_cat", ExplosionRange = 3, ExplosionDamage = 3, ExplosionSound = "AerosolBombExplode"},
+    ["M28_cat_empty"] = {LaunchSound = "LauncherFire", AmmoType = "GrenadeAmmo", EmptyType = false, LoadSound = "LauncherReload", LoadType = "Gunpart.M28_cat", ExplosionRange = 3, ExplosionDamage = 3, ExplosionSound = "AerosolBombExplode"},
 }
 
 local HasEnterFireModeFlag = HasEnterFireModeFlag or false

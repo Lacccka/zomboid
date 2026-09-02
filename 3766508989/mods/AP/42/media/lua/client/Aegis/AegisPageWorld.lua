@@ -48,93 +48,73 @@ function AegisPageWorld:createChildren()
     self.setTimeBtn.style = "gold"
     self:addChild(self.setTimeBtn)
     y = y + 36
-    -- live line with IG date, time and season, text is built in prerender
-    self.timeRowY = y
-    y = y + 20
-    local dbw = math.floor((w - 12) / 2)
-    self.dateBtn = AegisButton:new(x, y, dbw, 30, getText("UI_Aegis_IgDate"), "pin", self, AegisPageWorld.onDate)
-    self:addChild(self.dateBtn)
-    self.clockBtn = AegisButton:new(x + dbw + 12, y, dbw, 30, getText("UI_Aegis_IgTime"), "clock", self, AegisPageWorld.onTimePick)
-    self:addChild(self.clockBtn)
-    self.timeBottom = y + 30 + 12
 
-    -- weather card, bottom left
-    local wy = self.timeBottom + 58
-    self.durSlider = AegisSlider:new(x, wy, w, 24, self, nil)
+    -- right half of the time card: the live line with IG date, time and
+    -- season on top, the two pickers under it. The sound and thunder
+    -- buttons that used to sit here live in the event studio now
+    local ex = pad + self.colW + 20 + 14
+    local ew = self.colW - 28
+    self.timeRowY = pad + 46
+    local dy = pad + 46 + 26
+    local dbw = math.floor((ew - 12) / 2)
+    self.dateBtn = AegisButton:new(ex, dy, dbw, 30, getText("UI_Aegis_IgDate"), "pin", self, AegisPageWorld.onDate)
+    self:addChild(self.dateBtn)
+    self.clockBtn = AegisButton:new(ex + dbw + 12, dy, dbw, 30, getText("UI_Aegis_IgTime"), "clock", self, AegisPageWorld.onTimePick)
+    self:addChild(self.clockBtn)
+    self.timeBottom = math.max(y, dy + 30) + 12
+
+    -- one weather card below both columns: timed storms, instant rain,
+    -- the designer and the climate pins live as groups inside it instead
+    -- of four separate cards
+    local dx = pad + 14
+    local dw = self.width - 2 * pad
+    local innerW = dw - 28
+    self.weatherCardY = self.timeBottom + 16
+    local gy = self.weatherCardY + 40
+
+    -- group: storms with a ramp-up, duration first
+    self.wDurY = gy
+    self.durSlider = AegisSlider:new(dx + 70, gy, 240, 24, self, nil)
     self.durSlider:setValues(4, 96, 4, "h")
     self.durSlider:setValue(24, true)
     self:addChild(self.durSlider)
-    wy = wy + 34
+    gy = gy + 32
     local weather = {
         { label = "UI_Aegis_Storm",    icon = "storm", stage = "STAGE_STORM",          transmit = "transmitTriggerStorm" },
         { label = "UI_Aegis_Tropical", icon = "rain",  stage = "STAGE_TROPICAL_STORM", transmit = "transmitTriggerTropical" },
         { label = "UI_Aegis_Blizzard", icon = "snow",  stage = "STAGE_BLIZZARD",       transmit = "transmitTriggerBlizzard" },
     }
+    local sbw = math.floor((innerW - 4 * 8) / 5)
+    local sbx = dx
     for _, def in ipairs(weather) do
-        local btn = AegisButton:new(x, wy, w, 34, getText(def.label), def.icon, self, function(page)
+        local btn = AegisButton:new(sbx, gy, sbw, 32, getText(def.label), def.icon, self, function(page)
             page:triggerWeather(def)
         end)
         self:addChild(btn)
-        wy = wy + 42
+        sbx = sbx + sbw + 8
     end
-    -- roulette and stop share one row, the time card above needs the
-    -- space and the page ends around 575 px
-    local hbw = math.floor((w - 12) / 2)
-    self.rouletteBtn = AegisButton:new(x, wy, hbw, 34, getText("UI_Aegis_Roulette"), "refresh", self, AegisPageWorld.onRoulette)
+    self.rouletteBtn = AegisButton:new(sbx, gy, sbw, 32, getText("UI_Aegis_Roulette"), "refresh", self, AegisPageWorld.onRoulette)
     self.rouletteBtn.tooltip = getText("UI_Aegis_RouletteTooltip")
     self:addChild(self.rouletteBtn)
-    self.stopBtn = AegisButton:new(x + hbw + 12, wy, hbw, 34, getText("UI_Aegis_StopWeather"), "ban", self, AegisPageWorld.onStopWeather)
+    sbx = sbx + sbw + 8
+    self.stopBtn = AegisButton:new(sbx, gy, innerW - (sbx - dx), 32, getText("UI_Aegis_StopWeather"), "ban", self, AegisPageWorld.onStopWeather)
     self:addChild(self.stopBtn)
-    self.weatherBottom = wy + 34 + 40
+    gy = gy + 40
 
-    -- events card, right column
-    local ex = pad + self.colW + 20 + 14
-    local ew = self.colW - 28
-    local ey = pad + 46
-    -- the helicopter lives as a configurable heli alert in the server-side
-    -- event director, a second button here would be redundant
-    local events = {
-        { label = "UI_Aegis_Thunder",  icon = "bolt",    fn = AegisPageWorld.onThunder },
-        { label = "UI_Aegis_Gunshot",  icon = "speaker", fn = AegisPageWorld.onGunshot },
-        { label = "UI_Aegis_Firework", icon = "storm",   fn = AegisPageWorld.onFirework, tooltip = "UI_Aegis_FireworkTooltip" },
-    }
-    for _, def in ipairs(events) do
-        local btn = AegisButton:new(ex, ey, ew, 36, getText(def.label), def.icon, self, def.fn)
-        if def.tooltip then btn.tooltip = getText(def.tooltip) end
-        self:addChild(btn)
-        ey = ey + 42
-    end
-    ey = ey + 6
-    self.noiseSlider = AegisSlider:new(ex, ey + 22, ew, 24, self, nil)
-    self.noiseSlider:setValues(10, 500, 10, "")
-    self.noiseSlider:setValue(120, true)
-    self:addChild(self.noiseSlider)
-    self.noiseBtn = AegisButton:new(ex, ey + 56, ew, 34, getText("UI_Aegis_Noise"), "speaker", self, AegisPageWorld.onNoise)
-    self:addChild(self.noiseBtn)
-    self.noiseY = ey
-    self.eventsBottom = ey + 56 + 34 + 20
-
-    -- instant rain via the climate admin override, kicks in without ramp-up
-    local ry = self.eventsBottom + 12 + 74 + 12
-    self.rainY = ry
-    self.rainSlider = AegisSlider:new(ex, ry + 36, ew, 24, self, nil)
+    -- group: instant rain, one row
+    self.wRainY = gy
+    self.rainSlider = AegisSlider:new(dx + 170, gy, 240, 24, self, nil)
     self.rainSlider:setValues(10, 100, 10, "%")
     self.rainSlider:setValue(80, true)
     self:addChild(self.rainSlider)
-    local rbw = math.floor((ew - 12) / 2)
-    self.rainOnBtn = AegisButton:new(ex, ry + 70, rbw, 32, getText("UI_Aegis_RainOn"), "rain", self, function(page) page:setRain(true) end)
+    self.rainOnBtn = AegisButton:new(dx + 170 + 252, gy - 2, 130, 28, getText("UI_Aegis_RainOn"), "rain", self, function(page) page:setRain(true) end)
     self.rainOnBtn.style = "gold"
     self:addChild(self.rainOnBtn)
-    self.rainOffBtn = AegisButton:new(ex + rbw + 12, ry + 70, rbw, 32, getText("UI_Aegis_RainOff"), "ban", self, function(page) page:setRain(false) end)
+    self.rainOffBtn = AegisButton:new(dx + 170 + 390, gy - 2, 130, 28, getText("UI_Aegis_RainOff"), "ban", self, function(page) page:setRain(false) end)
     self:addChild(self.rainOffBtn)
-    self.rainBottom = ry + 70 + 32 + 14
+    gy = gy + 40
 
-    -- weather designer, full width below both columns; compact three-row
-    -- layout because the page bottom sits close (~655 px inner height)
-    local dx = pad + 14
-    local dw = self.width - 2 * pad
-    local innerW = dw - 28
-    local dy = math.max(self.weatherBottom, self.rainBottom) + 6
+    local dy = gy
     self.designerY = dy
 
     -- preset row: anchored to the RIGHT edge so nothing falls off the
@@ -143,8 +123,8 @@ function AegisPageWorld:createChildren()
     -- the whole block grows by one row
     local comboW = 200
     local presetW = comboW + 8 + 150 + 8 + 110 + 8 + 110
-    local wrapped = pad + 250 + presetW > dx + innerW
-    local py = dy + 3
+    local wrapped = 190 + presetW > innerW
+    local py = dy + 1
     local px = dx + innerW - presetW
     if wrapped then
         py = dy + 30
@@ -207,17 +187,85 @@ function AegisPageWorld:createChildren()
     self.designerStopBtn = AegisButton:new(dx + innerW - 104, chipY, 104, 26, getText("UI_Aegis_WdStop"), "ban", self, AegisPageWorld.onDesignerStop)
     self:addChild(self.designerStopBtn)
     self.designerBottom = chipY + 26 + 6
+
+    -- group: climate pins; unlike everything above they hold for good,
+    -- survive a restart and reach every client
+    local cy = self.designerBottom + 16
+    self.climateY = cy
+    local cly = cy + 26
+    local halfW = math.floor((innerW - 12) / 2)
+    self.climateHeatBtn = AegisButton:new(dx, cly, halfW, 30, getText("UI_Aegis_ClimateHeat"), "sun", self, function(page)
+        page:climateSend(true, 35, false)
+    end)
+    self:addChild(self.climateHeatBtn)
+    self.climateWinterBtn = AegisButton:new(dx + halfW + 12, cly, halfW, 30, getText("UI_Aegis_ClimateWinter"), "snow", self, function(page)
+        page:climateSend(true, -12, true)
+    end)
+    self:addChild(self.climateWinterBtn)
+
+    cly = cly + 38
+    self.climateTempToggle = AegisToggle:new(dx, cly, math.floor(innerW * 0.30), 26, getText("UI_Aegis_ClimateTempPin"), "storm", self, nil)
+    self:addChild(self.climateTempToggle)
+    self.climateTempSlider = AegisSlider:new(dx + math.floor(innerW * 0.30) + 12, cly, math.floor(innerW * 0.26), 24, self, nil)
+    self.climateTempSlider:setValues(-50, 50, 1, "\194\176C")
+    self.climateTempSlider.valueW = 52
+    self.climateTempSlider:setValue(30, true)
+    self:addChild(self.climateTempSlider)
+    self.climateSnowToggle = AegisToggle:new(dx + math.floor(innerW * 0.62), cly, math.floor(innerW * 0.20), 26, getText("UI_Aegis_ClimateSnow"), "snow", self, nil)
+    self:addChild(self.climateSnowToggle)
+    self.climateApplyBtn = AegisButton:new(dx + innerW - 104, cly - 1, 104, 28, getText("UI_Aegis_WdApply"), "check", self, function(page)
+        page:climateSend(page.climateTempToggle.checked == true,
+            page.climateTempSlider.value,
+            page.climateSnowToggle.checked == true)
+    end)
+    self.climateApplyBtn.style = "gold"
+    self:addChild(self.climateApplyBtn)
+
+    cly = cly + 36
+    self.climateResetBtn = AegisButton:new(dx, cly, 220, 28, getText("UI_Aegis_ClimateReset"), "refresh", self, AegisPageWorld.onClimateReset)
+    self:addChild(self.climateResetBtn)
+    self.climateBottom = cly + 28 + 8
+    self.weatherCardBottom = self.climateBottom + 4
+
     -- the whole layout is fixed, the window puts the page into a scroll
     -- host when it cannot offer this much (see AegisWindow.switchPage)
-    self.designH = self.designerBottom + pad
+    self.designH = self.weatherCardBottom + pad
 
     self:refreshPresetCombo(nil)
+end
+
+-- one payload with everything, the server treats it as the whole truth
+function AegisPageWorld:climateSend(tempOn, temp, snowOn)
+    local p = getPlayer()
+    if not p then return end
+    sendClientCommand(p, AegisShared.MODULE, "climateSet", {
+        tempOn = tempOn, temp = math.floor(tonumber(temp) or 30), snowOn = snowOn,
+    })
+    Aegis.showToast(getText("UI_Aegis_ClimateSet"))
+end
+
+function AegisPageWorld.onClimateReset(self)
+    local p = getPlayer()
+    if not p then return end
+    sendClientCommand(p, AegisShared.MODULE, "climateReset", {})
+    Aegis.showToast(getText("UI_Aegis_ClimateCleared"))
+end
+
+-- mirror the pinned state into the controls, the broadcast keeps
+-- AegisClimateClient.state current on every machine
+function AegisPageWorld:climateRefresh()
+    local st = AegisClimateClient and AegisClimateClient.state
+    if not st then return end
+    if self.climateTempToggle then self.climateTempToggle:setChecked(st.tempOn == true) end
+    if self.climateTempSlider and st.tempOn then self.climateTempSlider:setValue(st.temp, true) end
+    if self.climateSnowToggle then self.climateSnowToggle:setChecked(st.snowOn == true) end
 end
 
 function AegisPageWorld:onShow()
     if isClient() then
         getClimateManager():transmitRequestAdminVars()
     end
+    self:climateRefresh()
 end
 
 function AegisPageWorld:setRain(on)
@@ -646,55 +694,9 @@ function AegisPageWorld.onPresetDelete(self)
     Aegis.showToast(preset.name)
 end
 
--- ------------------------------------------------------------------
--- Events
--- ------------------------------------------------------------------
-
--- thunderclap without a log line, the firework tick also calls this
-local function thunderClap()
-    local p = getPlayer()
-    -- vanilla server path, fires in-process in solo
-    sendClientCommand(p, "event", "thunder", { x = p:getX(), y = p:getY(), isAll = false })
-end
-
-function AegisPageWorld.onThunder(self)
-    thunderClap()
-    Aegis.logAction("world", "Thunder triggered")
-end
-
-function AegisPageWorld.onGunshot(self)
-    if isClient() then
-        SendCommandToServer("/gunshot")
-    else
-        -- same path as the server command, audible shot included
-        pcall(function() getAmbientStreamManager():doGunEvent() end)
-        local p = getPlayer()
-        addSound(p, p:getX(), p:getY(), p:getZ(), 250, 100)
-    end
-    Aegis.logAction("world", "Gunshot sound triggered")
-end
-
-function AegisPageWorld.onNoise(self)
-    local p = getPlayer()
-    addSound(p, p:getX(), p:getY(), p:getZ(), self.noiseSlider.value, 100)
-    Aegis.logAction("world", "Noise spawned (radius " .. self.noiseSlider.value .. ")")
-end
-
--- little celebration: five thunderclaps in rhythm, troll-worthy for wins/events
-function AegisPageWorld.onFirework(self)
-    self.fireworkLeft = 5
-    self.fireworkNext = 0
-    Aegis.logAction("world", "Thunder fireworks triggered")
-end
-
 function AegisPageWorld:update()
     ISPanel.update(self)
     designerTick()
-    if self.fireworkLeft and self.fireworkLeft > 0 and getTimestampMs() >= self.fireworkNext then
-        thunderClap()
-        self.fireworkLeft = self.fireworkLeft - 1
-        self.fireworkNext = getTimestampMs() + 450
-    end
 end
 
 -- ------------------------------------------------------------------
@@ -828,31 +830,40 @@ local function sectionCard(self, x, y, w, h, titleKey, icon)
 end
 
 function AegisPageWorld:prerender()
-    if not self.rainBottom then return end
+    if not self.weatherCardBottom then return end
     local c = Aegis.col
     local pad = 20
 
-    sectionCard(self, pad, pad, self.colW, self.timeBottom - pad, "UI_Aegis_Time", "clock")
+    sectionCard(self, pad, pad, self.width - 2 * pad, self.timeBottom - pad, "UI_Aegis_Time", "clock")
     -- refresh the IG clock once per second instead of per frame
     if not self.nextTimeAt or getTimestampMs() >= self.nextTimeAt then
         self.nextTimeAt = getTimestampMs() + 1000
         self.timeText = Aegis.fitText(igTimeText(), UIFont.Small, self.colW - 28)
     end
-    Aegis.text(self, self.timeText or "", pad + 14, self.timeRowY, UIFont.Small, c.text)
-    sectionCard(self, pad, self.timeBottom + 12, self.colW, self.weatherBottom - self.timeBottom - 12, "UI_Aegis_Weather", "storm")
-    Aegis.text(self, getText("UI_Aegis_Duration"), pad + 14, self.timeBottom + 44, UIFont.Small, c.muted)
-    Aegis.text(self, getText("UI_Aegis_StormHint"), pad + 14, self.stopBtn:getBottom() + 8, UIFont.Small, c.muted)
+    Aegis.text(self, self.timeText or "", pad + self.colW + 20 + 14, self.timeRowY, UIFont.Small, c.text)
 
-    local ex = pad + self.colW + 20
-    sectionCard(self, ex, pad, self.colW, self.eventsBottom - pad, "UI_Aegis_Events", "bolt")
-    Aegis.text(self, getText("UI_Aegis_NoiseRadius"), ex + 14, self.noiseY + 4, UIFont.Small, c.muted)
-
-    -- instant rain card
-    sectionCard(self, ex, self.rainY - 10, self.colW, self.rainBottom - self.rainY + 10, "UI_Aegis_InstantRain", "rain")
-    Aegis.text(self, getText("UI_Aegis_Intensity"), ex + 14, self.rainY + 20, UIFont.Small, c.muted)
-
-    -- weather designer card, full width below both columns
-    sectionCard(self, pad, self.designerY, self.width - 2 * pad, self.designerBottom - self.designerY, "UI_Aegis_WeatherDesigner", "storm")
+    -- the one weather card with its groups
+    local wx = pad + 14
+    local ww = self.width - 2 * pad - 28
+    sectionCard(self, pad, self.weatherCardY, self.width - 2 * pad, self.weatherCardBottom - self.weatherCardY, "UI_Aegis_Weather", "storm")
+    -- running weather lives in the title row instead of an own box
+    local wp = getClimateManager():getWeatherPeriod()
+    if wp and wp:isRunning() then
+        local barW = 140
+        Aegis.text(self, getText("UI_Aegis_WeatherRunning"), wx + ww - barW - 8 - Aegis.strW(UIFont.Small, getText("UI_Aegis_WeatherRunning")), self.weatherCardY + 12, UIFont.Small, c.text)
+        Aegis.roundRect(self, wx + ww - barW, self.weatherCardY + 17, barW, 6, 3, 1, c.line)
+        Aegis.roundRect(self, wx + ww - barW, self.weatherCardY + 17, math.max(6, barW * math.min(wp:getTotalProgress() or 0, 1)), 6, 3, 1, c.gold)
+    else
+        Aegis.textRight(self, getText("UI_Aegis_WeatherCalm"), wx + ww, self.weatherCardY + 12, UIFont.Small, c.muted)
+    end
+    Aegis.text(self, getText("UI_Aegis_Duration"), wx, self.wDurY + 4, UIFont.Small, c.muted)
+    Aegis.textRight(self, getText("UI_Aegis_StormHint"), wx + ww, self.wDurY + 4, UIFont.Small, c.muted)
+    Aegis.text(self, getText("UI_Aegis_InstantRain") .. "  \194\183  " .. getText("UI_Aegis_Intensity"), wx, self.wRainY + 4, UIFont.Small, c.muted)
+    Aegis.roundRect(self, wx, self.designerY - 8, ww, 1, 0, 0.6, c.line)
+    Aegis.text(self, getText("UI_Aegis_WeatherDesigner"), wx, self.designerY + 2, UIFont.Small, c.gold)
+    Aegis.roundRect(self, wx, self.climateY - 8, ww, 1, 0, 0.6, c.line)
+    Aegis.text(self, getText("UI_Aegis_Climate"), wx, self.climateY + 2, UIFont.Small, c.gold)
+    Aegis.textRight(self, getText("UI_Aegis_ClimateHint"), wx + ww, self.climateY + 2, UIFont.Small, c.muted)
     for _, cell in ipairs(self.designerCells) do
         Aegis.text(self, Aegis.fitText(getText(cell.label), UIFont.Small, 54), cell.x, self.designerSliderY + 4, UIFont.Small, c.muted)
     end
@@ -860,23 +871,6 @@ function AegisPageWorld:prerender()
         chip.style = (chip.chipValue == (self.thunderMinutes or 0)) and "gold" or "ghost"
     end
 
-    -- show running weather below the events
-    local sy = self.eventsBottom + 12
-    local sh = 74
-    Aegis.roundFrame(self, ex, sy, self.colW, sh, 10, 1, c.line, c.panel)
-    local running, progress = false, 0
-    local wp = getClimateManager():getWeatherPeriod()
-    if wp and wp:isRunning() then
-        running, progress = true, wp:getTotalProgress()
-    end
-    if running then
-        Aegis.text(self, getText("UI_Aegis_WeatherRunning"), ex + 14, sy + 12, UIFont.Small, c.text)
-        local barW = self.colW - 28
-        Aegis.roundRect(self, ex + 14, sy + 42, barW, 6, 3, 1, c.line)
-        Aegis.roundRect(self, ex + 14, sy + 42, math.max(6, barW * math.min(progress or 0, 1)), 6, 3, 1, c.gold)
-    else
-        Aegis.text(self, getText("UI_Aegis_WeatherCalm"), ex + 14, sy + 12, UIFont.Small, c.muted)
-    end
 end
 
 -- the server broadcasts the absolute date after every change: the engine's

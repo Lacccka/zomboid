@@ -1,3 +1,4 @@
+require "PPO_Directions"
 require "PPO_BonusMath"
 require "PPO_ExerciseState"
 
@@ -5,6 +6,7 @@ PPO = PPO or {}
 PPO.BonusAwarder = PPO.BonusAwarder or {}
 
 local Awarder = PPO.BonusAwarder
+local DIRECTIONS = PPO.Directions.order()
 
 function Awarder.new(issueXp)
     return {
@@ -74,7 +76,7 @@ function Awarder.award(awarder, character, token)
     end
 
     local awards = {}
-    for _, component in ipairs({ "Strength", "Fitness" }) do
+    for _, component in ipairs(DIRECTIONS) do
         -- A direction vanilla refuses costs nothing: no award, and no stimulus
         -- for work the game did not record.
         local accepted = Awarder.vanillaAccepts(character, Perks[component])

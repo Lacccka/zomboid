@@ -85,5 +85,7 @@
     "IGUI_ItemCat_L_Scope": "Accesorio de arma - Mira izquierda",
     "IGUI_ItemCat_Misc": "Accesorio de arma - Varios",
     "IGUI_ItemCat_Skin": "Accesorio de arma - Aspecto (inútil)",
-    "IGUI_FixItem": "Usar kit de reparación"
+    "IGUI_FixItem": "Usar kit de reparación",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

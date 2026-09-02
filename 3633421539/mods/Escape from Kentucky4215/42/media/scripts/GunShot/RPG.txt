@@ -10,48 +10,48 @@ module Base
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_plr_shot_01.wav,
-            distanceMin = 5,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.15,
             volume = 0.98,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_plr_shot_02.wav,
-            distanceMin = 5,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.15,
             volume = 0.98,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_plr_shot_03.wav,
-            distanceMin = 5,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.15,
             volume = 0.98,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_plr_shot_04.wav,
-            distanceMin = 5,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.15,
             volume = 0.98,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_plr_shot_05.wav,
-            distanceMin = 5,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.15,
             volume = 0.98,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_plr_shot_06.wav,
-            distanceMin = 5,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.15,
             volume = 0.98,
         }
@@ -66,72 +66,72 @@ module Base
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_dist_01.wav,
-            distanceMin = 25,
-            distanceMax = 90,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_dist_02.wav,
-            distanceMin = 25,
-            distanceMax = 90,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_dist_03.wav,
-            distanceMin = 25,
-            distanceMax = 90,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_dist_04.wav,
-            distanceMin = 25,
-            distanceMax = 90,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_dist_05.wav,
-            distanceMin = 25,
-            distanceMax = 90,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_dist_atmo_01.wav,
-            distanceMin = 25,
-            distanceMax = 90,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_dist_atmo_02.wav,
-            distanceMin = 25,
-            distanceMax = 90,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_dist_atmo_03.wav,
-            distanceMin = 25,
-            distanceMax = 90,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_dist_atmo_04.wav,
-            distanceMin = 25,
-            distanceMax = 90,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
@@ -146,72 +146,72 @@ module Base
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_far_01.wav,
-            distanceMin = 60,
-            distanceMax = 150,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_far_02.wav,
-            distanceMin = 60,
-            distanceMax = 150,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_far_03.wav,
-            distanceMin = 60,
-            distanceMax = 150,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_far_04.wav,
-            distanceMin = 60,
-            distanceMax = 150,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_far_05.wav,
-            distanceMin = 60,
-            distanceMax = 150,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_far_atmo_01.wav,
-            distanceMin = 60,
-            distanceMax = 150,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_far_atmo_02.wav,
-            distanceMin = 60,
-            distanceMax = 150,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_far_atmo_03.wav,
-            distanceMin = 60,
-            distanceMax = 150,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_far_atmo_04.wav,
-            distanceMin = 60,
-            distanceMax = 150,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
         }
@@ -226,80 +226,80 @@ module Base
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_med_01.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_med_02.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_med_03.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_med_04.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_med_05.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_med_06.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_med_atmo_01.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_med_atmo_02.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_med_atmo_03.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/RPG/weap_iw9_rpapa7_fire_npc_med_atmo_04.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }

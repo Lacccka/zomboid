@@ -51,7 +51,7 @@ module Base
         {
             item 1 [zReLabItems.LabTestTubeDirty;zReLabItems.LabFlaskDirty;zReLabItems.LabSyringeReusableUsed] mode:destroy flags[AllowFavorite;InheritFavorite] mappers[itemType],
             item 1 [*] mode:keep,
-            -fluid 0.5 [Water],
+            -fluid 0.1 [Water],
         }
         outputs
         {
@@ -64,63 +64,5 @@ module Base
             zReLabItems.LabSyringeReusable = zReLabItems.LabSyringeReusableUsed,
         }
     }
-	
-    craftRecipe zReLabChmSterilizeTestTube5
-    {
-        time = 25,
-        category = Chemistry,
-        NeedToBeLearn = true,
-		
-        Tags = InHandCraft;CanBeDoneFromFloor;CannotBeResearched,
-        timedAction = ScrubClothWithSoap,
-		
-        OnTest = RecipeCodeOnTest.hotFluidContainer,
-        Tooltip = Tooltip_needsToBeHot,
-		
-        inputs
-        {
-            item 5 [zReLabItems.LabTestTubeDirty;zReLabItems.LabFlaskDirty;zReLabItems.LabSyringeReusableUsed] mode:destroy flags[AllowFavorite;InheritFavorite] mappers[itemType],
-            item 1 [*] mode:keep,
-            -fluid 0.7 [Water],
-        }
-        outputs
-        {
-            item 5 mapper:itemType,
-        }
-        itemMapper itemType
-        {
-            zReLabItems.LabTestTube = zReLabItems.LabTestTubeDirty,
-            zReLabItems.LabFlask = zReLabItems.LabFlaskDirty,
-            zReLabItems.LabSyringeReusable = zReLabItems.LabSyringeReusableUsed,
-        }
-    }
-	
-    craftRecipe zReLabChmSterilizeTestTube10
-    {
-        time = 30,
-        category = Chemistry,
-        NeedToBeLearn = true,
-		
-        Tags = InHandCraft;CanBeDoneFromFloor;CannotBeResearched,
-        timedAction = ScrubClothWithSoap,
-		
-        OnTest = RecipeCodeOnTest.hotFluidContainer,
-        Tooltip = Tooltip_needsToBeHot,
-        inputs
-        {
-            item 10 [zReLabItems.LabTestTubeDirty;zReLabItems.LabFlaskDirty;zReLabItems.LabSyringeReusableUsed] mode:destroy flags[AllowFavorite;InheritFavorite] mappers[itemType],
-            item 1 [*] mode:keep,
-            -fluid 1.0 [Water],
-        }
-        outputs
-        {
-            item 10 mapper:itemType,
-        }
-        itemMapper itemType
-        {
-            zReLabItems.LabTestTube = zReLabItems.LabTestTubeDirty,
-            zReLabItems.LabFlask = zReLabItems.LabFlaskDirty,
-            zReLabItems.LabSyringeReusable = zReLabItems.LabSyringeReusableUsed,
-        }
-    }
+
 }

@@ -1,11 +1,12 @@
-require "PPO_Config"
+require "PPO_Directions"
+require "PPO_Num"
 require "PPO_MultiplierMath"
 
 PPO = PPO or {}
 PPO.TrainingPanelMath = PPO.TrainingPanelMath or {}
 
 local TrainingPanelMath = PPO.TrainingPanelMath
-local DIRECTIONS = { "Strength", "Fitness" }
+local DIRECTIONS = PPO.Directions.order()
 
 -- The shared reservoirs, in draw order. Form and tone are deliberately absent:
 -- both differ between directions, so printing them here would be a lie.
@@ -36,23 +37,7 @@ local SEGMENTS = {
     { color = "fuel", weight = "fuel", input = "fuel" },
 }
 
-local function bounded(value)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return 0
-    end
-    if value < 0 then return 0 end
-    if value > 1 then return 1 end
-    return value
-end
-
-local function finiteOr(value, fallback)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return fallback
-    end
-    return value
-end
+local Num = PPO.Num
 
 -- Widths come from the same call the server weighs with, so a rebalance moves
 -- the picture and the multiplier together. `shares` already renormalizes when
@@ -61,12 +46,12 @@ local function segmentsFor(inputs, sleepRequired)
     local weights = PPO.MultiplierMath.shares(sleepRequired)
     local segments = {}
     for _, definition in ipairs(SEGMENTS) do
-        local width = bounded(weights[definition.weight])
+        local width = Num.unit(weights[definition.weight])
         if width > 0 then
             table.insert(segments, {
                 color = definition.color,
                 width = width,
-                filled = bounded(inputs[definition.input]),
+                filled = Num.unit(inputs[definition.input]),
             })
         end
     end
@@ -79,7 +64,7 @@ end
 local function rowsFor(inputs)
     return {
         { color = "form", key = "IGUI_PPO_ShareForm",
-            value = bounded(inputs.adaptation) },
+            value = Num.unit(inputs.adaptation) },
     }
 end
 
@@ -89,18 +74,18 @@ local function windowsFor(source)
     for _, definition in ipairs(WINDOW_ROWS) do
         local entry = source[definition.input]
         if type(entry) ~= "table" then entry = {} end
-        local minutes = math.max(0, finiteOr(entry.minutesRemaining, 0))
-        local cap = math.max(0, finiteOr(entry.capMinutes, 0))
+        local minutes = math.max(0, Num.finite(entry.minutesRemaining, 0))
+        local cap = math.max(0, Num.finite(entry.capMinutes, 0))
         local fraction = 0
         -- A disabled window has a zero cap, and a bar is a proportion of
         -- something: with nothing to be a proportion of, it is empty.
-        if cap > 0 then fraction = bounded(minutes / cap) end
+        if cap > 0 then fraction = Num.unit(minutes / cap) end
         table.insert(rows, {
             color = definition.color,
             key = definition.key,
             value = fraction,
             timeKind = entry.timeKind or "None",
-            hoursRemaining = math.max(0, finiteOr(entry.hoursRemaining, 0)),
+            hoursRemaining = math.max(0, Num.finite(entry.hoursRemaining, 0)),
         })
     end
     return rows
@@ -109,19 +94,19 @@ end
 local function directionFor(name, entry)
     local inputs = entry.shares
     if type(inputs) ~= "table" then inputs = {} end
-    local ceiling = math.max(0, finiteOr(entry.capEffective, 0))
+    local ceiling = math.max(0, Num.finite(entry.capEffective, 0))
     return {
         name = name,
         hasMultiplier = ceiling > 1,
-        multiplier = math.max(1, finiteOr(entry.multiplier, 1)),
+        multiplier = math.max(1, Num.finite(entry.multiplier, 1)),
         ceiling = ceiling,
-        fill = bounded(entry.fill),
+        fill = Num.unit(entry.fill),
         segments = segmentsFor(inputs, entry.sleepRequired),
         rows = rowsFor(inputs),
         course = {
-            level = bounded(entry.courseLevel),
-            active = bounded(entry.course),
-            withdrawal = bounded(entry.withdrawal),
+            level = Num.unit(entry.courseLevel),
+            active = Num.unit(entry.course),
+            withdrawal = Num.unit(entry.withdrawal),
         },
     }
 end
@@ -144,7 +129,7 @@ function TrainingPanelMath.model(state)
             table.insert(shared, {
                 color = definition.color,
                 key = definition.key,
-                value = bounded(inputs[definition.input]),
+                value = Num.unit(inputs[definition.input]),
             })
         end
     end

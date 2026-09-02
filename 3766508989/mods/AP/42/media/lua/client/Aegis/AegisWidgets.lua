@@ -798,3 +798,40 @@ function AegisDatePicker:prerender()
     Aegis.roundFrame(self, cx, cy, self.cardW, self.cardH, 12, 1, c.line, c.bg)
     Aegis.text(self, self.title, cx + 16, cy + 14, UIFont.Medium, c.text)
 end
+
+-- ==================================================================
+-- AegisQtyBox: a number field whose text sits in the middle. The Java
+-- box has a "centered" field, but it is written in the constructor and
+-- read nowhere, so it is dead. The text is left aligned there and the
+-- only honest way to centre it is to move the box itself: measure what
+-- is typed and place the box so the text lands on the middle of the chip
+-- ==================================================================
+AegisQtyBox = ISTextEntryBox:derive("AegisQtyBox")
+
+function AegisQtyBox:new(x, y, w, h)
+    local o = ISTextEntryBox:new("", x, y, w, h)
+    setmetatable(o, self)
+    self.__index = self
+    o.font = UIFont.Small
+    o.centreX = x + math.floor(w / 2)
+    o.boxW = w
+    o.backgroundColor = { r = 0, g = 0, b = 0, a = 0 }
+    o.borderColor = { r = 0, g = 0, b = 0, a = 0 }
+    return o
+end
+
+function AegisQtyBox:instantiate()
+    ISTextEntryBox.instantiate(self)
+    -- unlike "centered" from the constructor this one really is read, it
+    -- sits in render(); without it the number clings to the upper edge
+    self.javaObject:setCentreVertically(true)
+end
+
+function AegisQtyBox:prerender()
+    local text = self:getInternalText() or ""
+    local tw = getTextManager():MeasureStringX(self.font, text)
+    -- an empty box shows only the cursor, so it gets centred as well
+    local want = self.centreX - math.floor(tw / 2) - 3
+    if self:getX() ~= want then self:setX(want) end
+    ISTextEntryBox.prerender(self)
+end

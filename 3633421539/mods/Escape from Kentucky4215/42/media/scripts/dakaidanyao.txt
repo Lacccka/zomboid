@@ -176,6 +176,22 @@ module Base
         }
     }
 
+    craftRecipe OpenCartonOf145
+    {
+        timedAction = OpenAmmoBox,
+        Time = 0,
+        category = Packing,
+        Tags = InHandCraft;CanBeDoneInDark,
+        inputs
+        {
+            item 1 [Base.145Carton],
+        }
+        outputs
+        {
+            item 10 Bullets145Box,
+        }
+    }
+
     craftRecipe OpenCartonOf86
     {
         timedAction = OpenAmmoBox,

@@ -9,7 +9,7 @@
 "Sandbox_AirdropWithBGM":"是否开启空投战斗音乐",
 "Sandbox_AirdropVolume":"空投音乐的音量大小",
 "Sandbox_ShieldCondition":"盾牌耐久度下降效率",
-
+"Sandbox_ModernFirearmsSystemSandboxGun_MSR7T_Rifle_Spawn": "原版 MSR7T 步枪生成几率",
   "Sandbox_ModernFirearmsSystemSandbox":"枪械伤害倍率调整 (范例:0.5=50%伤害)",
   "Sandbox_ModernFirearmsSystemSandbox_9mm":"9mm枪械伤害",
   "Sandbox_ModernFirearmsSystemSandbox_44":".44枪械伤害",

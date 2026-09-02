@@ -1,5 +1,5 @@
 {
-    "Sandbox_AegisEvents": "Aegis Events",
+    "Sandbox_AegisEvents": "Aegis",
     "Sandbox_AegisSiegeWaves": "Siege: waves",
     "Sandbox_AegisSiegeWaves_tooltip": "How many horde waves the siege sends out.",
     "Sandbox_AegisSiegeCount": "Siege: zombies per wave",
@@ -58,6 +58,8 @@
     "Sandbox_AegisPlayerClaims_tooltip": "Lets players claim a zone at their own safehouse within their role budget. Off blocks every claim regardless of roles.",
     "Sandbox_AegisPlayerKits": "Player kits active",
     "Sandbox_AegisPlayerKits_tooltip": "The kits page in the player area, booster redeeming included. Off hides it for everyone; the kit editor for admins keeps working.",
+    "Sandbox_AegisKitCodeGates": "Discord kits in the kit editor",
+    "Sandbox_AegisKitCodeGates_tooltip": "Offers \"Discord booster\" and \"Only with a kit code\" when editing a kit. Both need a Discord bot of your own; switch this off to keep them out of the list. A kit that already uses one keeps it.",
     "Sandbox_AegisPlayerVehicles": "Remembered vehicles per player",
     "Sandbox_AegisPlayerVehicles_tooltip": "How many vehicles a player may keep on the vehicles page of the player area. 0 turns remembering off. Ignored where Knox Claim runs, that mod brings its own limit. Vehicles already remembered are never dropped when you lower this.",
     "Sandbox_AegisPlayerHealthInfection": "Zombie infection shown to players",

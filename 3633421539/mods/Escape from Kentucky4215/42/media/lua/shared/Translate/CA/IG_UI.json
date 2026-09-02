@@ -1571,5 +1571,7 @@
     "IGUI_SearchMode_Tip_Seasons_Text": "Totes les coses trobades a la natura es veuran modificades pel mes i l'estació. El que hi trobaràs dependrà del moment de l'any!",
     "IGUI_SearchMode_Tip_SearchFocus_Title": "Enfocament de l'exploració",
     "IGUI_SearchMode_Tip_SearchFocus_Text": "Cercant alguna cosa especial? Usa l'enfocament de l'exploració per a augmentar la probabilitat de trobar la categoria seleccionada!",
-    "IGUI_FixItem": "Utilitzar Kit de Reparació"
+    "IGUI_FixItem": "Utilitzar Kit de Reparació",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

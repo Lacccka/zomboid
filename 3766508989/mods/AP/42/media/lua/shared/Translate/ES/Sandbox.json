@@ -1,5 +1,5 @@
 {
-    "Sandbox_AegisEvents": "Eventos de Aegis",
+    "Sandbox_AegisEvents": "Aegis",
     "Sandbox_AegisSiegeWaves": "Asedio: oleadas",
     "Sandbox_AegisSiegeWaves_tooltip": "Cuántas oleadas de horda envía el asedio.",
     "Sandbox_AegisSiegeCount": "Asedio: zombis por oleada",
@@ -58,6 +58,8 @@
     "Sandbox_AegisPlayerClaims_tooltip": "Permite a los jugadores reclamar una zona en su refugio dentro del presupuesto de su rol. Apagado bloquea todo reclamo.",
     "Sandbox_AegisPlayerKits": "Kits de jugador activos",
     "Sandbox_AegisPlayerKits_tooltip": "La página de kits del area de jugador, incluido el canje de booster. Apagado la oculta para todos; el editor de kits sigue funciónando.",
+    "Sandbox_AegisKitCodeGates": "Kits de Discord en el editor de kits",
+    "Sandbox_AegisKitCodeGates_tooltip": "Ofrece \"Impulsor de Discord\" y \"Solo con un código de kit\" al editar un kit. Ambas necesitan un bot de Discord propio. Desactivado las quita de la lista. Un kit que ya usa una la conserva.",
     "Sandbox_AegisPlayerVehicles": "Vehículos recordados por jugador",
     "Sandbox_AegisPlayerVehicles_tooltip": "Cuántos vehículos puede guardar un jugador en la página de vehículos del área de jugador. 0 desactiva el guardado. Se ignora donde funciona Knox Claim, ese mod trae su propio límite. Los vehículos ya guardados nunca se pierden al bajar el valor.",
     "Sandbox_AegisPlayerHealthInfection": "Mostrar la infección zombi a los jugadores",

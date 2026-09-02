@@ -1,10 +1,9 @@
+require "PPO_Directions"
 require "PPO_Config"
 require "PPO_MultiplierMath"
 require "PPO_BonusMath"
-require "PPO_AdaptationMath"
 require "PPO_ExerciseState"
 require "PPO_RecoveryContext"
-require "PPO_TrainingSession"
 require "PPO_AdaptationEngine"
 require "PPO_ExerciseAuthority"
 require "PPO_ConsumeAuthority"
@@ -26,12 +25,6 @@ ServerRuntime.DeadCharacters = ServerRuntime.DeadCharacters or {}
 ServerRuntime.LastTickMinute = ServerRuntime.LastTickMinute or {}
 ServerRuntime.AdaptationEngine = ServerRuntime.AdaptationEngine
     or PPO.AdaptationEngine.new(nil)
-
-local function directionFor(perk)
-    if perk == Perks.Strength then return "Strength" end
-    if perk == Perks.Fitness then return "Fitness" end
-    return nil
-end
 
 local function debugLog(message)
     if PPO.Config.Runtime.Debug then
@@ -68,7 +61,7 @@ end
 -- Outside exercise the multiplier reads persisted Adaptation and the bounded
 -- Readiness provider, never a config constant.
 local function applyPerkValue(character, perk, level)
-    local direction = directionFor(perk)
+    local direction = PPO.Directions.forPerk(perk)
     if direction == nil then return end
 
     local engine = ServerRuntime.AdaptationEngine
@@ -169,8 +162,11 @@ local function isDeadCharacter(character)
 end
 
 -- Death discards the incomplete session and runtime state for that character.
--- A new character is initialized independently; PPO state never transfers by
--- username, account or connection identity.
+-- A new character is initialized independently: the runtime maps are dropped
+-- here and the stored state is removed with them. That last part is not free on
+-- a dedicated server, where the holder is a global store keyed by the account
+-- name rather than the character -- without the discard below, the account's
+-- next character inherits the dead one's load, credit and adaptation.
 function ServerRuntime.onPlayerDeath(character)
     if character == nil then return end
 
@@ -182,6 +178,10 @@ function ServerRuntime.onPlayerDeath(character)
     ServerRuntime.OnlineCharacters[character] = nil
     ServerRuntime.PendingCharacters[character] = nil
     ServerRuntime.DeadCharacters[character] = true
+
+    -- Last on purpose. Everything above may read the state while it winds the
+    -- character down, and a read recreates the entry it just removed.
+    pcall(PPO.ExerciseState.discard, character)
 end
 
 -- A disconnect only freezes; it never finalizes a partial session.

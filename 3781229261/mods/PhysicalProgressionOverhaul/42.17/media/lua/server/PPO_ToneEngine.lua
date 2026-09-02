@@ -1,9 +1,13 @@
+require "PPO_Directions"
 require "PPO_Config"
 require "PPO_ToneMath"
 require "PPO_CourseCost"
-require "PPO_BonusMath"
 require "PPO_AdaptationMath"
 require "PPO_ExerciseState"
+-- Named without being referenced, and deliberately: PPO_RecoveryContext
+-- reaches back into PPO.ToneEngine through the global table rather than
+-- requiring it, precisely so this edge is the only one and the cycle stays
+-- open. Dropping this line is what would close it.
 require "PPO_RecoveryContext"
 
 PPO = PPO or {}
@@ -12,13 +16,7 @@ PPO.ToneEngine = PPO.ToneEngine or {}
 local ToneEngine = PPO.ToneEngine
 
 local function settings()
-    local ok, resolved = pcall(PPO.Config.getToneSettings)
-    if not ok or type(resolved) ~= "table" then return PPO.Config.Tone end
-    return resolved
-end
-
-local function supportedDirection(direction)
-    return direction == "Strength" or direction == "Fitness"
+    return PPO.Config.resolve("getToneSettings", PPO.Config.Tone)
 end
 
 -- Load is expressed once, here, as a stage gate. A session that ends outside the
@@ -29,7 +27,7 @@ local function inWorkedStage(component)
 end
 
 function ToneEngine.onSessionFinalized(character, direction, execQuality)
-    if character == nil or not supportedDirection(direction) then return nil end
+    if character == nil or not PPO.Directions.supported(direction) then return nil end
 
     local component = PPO.ExerciseState.getComponent(character, direction)
     if component == nil then return nil end
@@ -47,7 +45,7 @@ end
 
 -- Called only from the single active-minute engine tick.
 function ToneEngine.advance(character, direction, elapsedMinutes)
-    if character == nil or not supportedDirection(direction) then return nil end
+    if character == nil or not PPO.Directions.supported(direction) then return nil end
     return PPO.ExerciseState.advanceTone(character, direction, elapsedMinutes)
 end
 
@@ -62,7 +60,7 @@ end
 -- The fields are cleared directly: ExerciseState.setTone refreshes by the
 -- maximum of the current and the new value, so setTone(0, 0) would be a no-op.
 function ToneEngine.burnIfOvertrained(character, direction)
-    if character == nil or not supportedDirection(direction) then return false end
+    if character == nil or not PPO.Directions.supported(direction) then return false end
 
     local component = PPO.ExerciseState.getComponent(character, direction)
     if component == nil then return false end
@@ -103,14 +101,14 @@ local function activeQuality(character, direction)
 end
 
 function ToneEngine.effectStrength(character, direction)
-    if character == nil or not supportedDirection(direction) then return 0 end
+    if character == nil or not PPO.Directions.supported(direction) then return 0 end
     return PPO.ToneMath.effectStrength(
         activeQuality(character, direction), settings(),
         courseScale(character, direction))
 end
 
 function ToneEngine.stage(character, direction)
-    if character == nil or not supportedDirection(direction) then return 0 end
+    if character == nil or not PPO.Directions.supported(direction) then return 0 end
     return PPO.ToneMath.stage(activeQuality(character, direction))
 end
 
@@ -123,7 +121,7 @@ function ToneEngine.carryBonus(character, direction)
 end
 
 function ToneEngine.fallbackBonus(character, direction)
-    if character == nil or not supportedDirection(direction) then return 0 end
+    if character == nil or not PPO.Directions.supported(direction) then return 0 end
     return PPO.ToneMath.fallbackReadinessBonus(
         activeQuality(character, direction), settings())
 end

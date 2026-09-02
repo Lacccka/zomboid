@@ -11,5 +11,7 @@
     "Sandbox_ExplosivesOptions_DelayedFuseEnabled": "Opóźniony Zapłon po Lądowaniu",
     "Sandbox_ExplosivesOptions_DelayedFuseEnabled_tooltip": "Domyślnie wyłączone. Gdy włączone, własne granaty tego moda (Mk2, M26, M67, M84 Flashbang, M14 TH3) lądują uzbrojone i leżą kilka sekund przed wybuchem, zamiast detonować natychmiast po uderzeniu. Nie dotyczy min/Claymore (które i tak lądują jako ustawione pułapki) ani rzucanych przedmiotów vanilla.",
     "Sandbox_ExplosivesOptions_DelayedFuseSeconds": "Opóźnienie Zapłonu (sekundy)",
-    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "Ile sekund uzbrojony granat leży przed wybuchem, gdy 'Opóźniony Zapłon po Lądowaniu' jest włączony."
+    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "Ile sekund uzbrojony granat leży przed wybuchem, gdy 'Opóźniony Zapłon po Lądowaniu' jest włączony.",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled": "Włącz klawisz debugowego przywołania",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled_tooltip": "Domyślnie wyłączone. Gdy włączone, Shift + klawiatura numeryczna \"+\" (można zmienić w Opcjach Moda) przywołuje jeden granat ogłuszający bezpośrednio do ekwipunku, do szybkich testów toru lotu."
 }

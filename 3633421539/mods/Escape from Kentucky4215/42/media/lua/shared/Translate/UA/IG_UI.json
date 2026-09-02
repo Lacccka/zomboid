@@ -1579,5 +1579,7 @@
     "IGUI_SearchMode_Vision_Effect_Crouching": "Вплив присівши:",
     "IGUI_SearchMode_Tip_Tips_Tooltip_Title": "Поради по збиральництву",
     "IGUI_SearchMode_Tip_Tips_Tooltip_Text": "Натисніть, щоб показати/приховати підказки",
-    "IGUI_FixItem": "Використати Ремонтний Набір"
+    "IGUI_FixItem": "Використати Ремонтний Набір",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

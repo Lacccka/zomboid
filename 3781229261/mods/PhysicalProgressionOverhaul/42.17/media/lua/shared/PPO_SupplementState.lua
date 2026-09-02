@@ -1,31 +1,21 @@
+require "PPO_Num"
+
 PPO = PPO or {}
 PPO.SupplementState = PPO.SupplementState or {}
 
 local SupplementState = PPO.SupplementState
 
-local function finiteOr(value, fallback)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return fallback
-    end
-    return value
-end
-
-local function clamp(value, minimum, maximum)
-    if value < minimum then return minimum end
-    if value > maximum then return maximum end
-    return value
-end
+local Num = PPO.Num
 
 function SupplementState.normalize(value)
-    return clamp(finiteOr(value, 0), 0, 1)
+    return Num.clamp(Num.finite(value, 0), 0, 1)
 end
 
 function SupplementState.add(reservoir, credit)
     local current = SupplementState.normalize(reservoir)
-    local amount = finiteOr(credit, 0)
+    local amount = Num.finite(credit, 0)
     if amount <= 0 then return current end
-    return clamp(current + amount, 0, 1)
+    return Num.clamp(current + amount, 0, 1)
 end
 
 -- The decay rate is expressed as "one serving per window", so every reservoir
@@ -33,9 +23,9 @@ end
 function SupplementState.advance(reservoir, elapsedMinutes, servingCredit,
         servingHours)
     local current = SupplementState.normalize(reservoir)
-    local elapsed = math.max(0, finiteOr(elapsedMinutes, 0))
-    local credit = math.max(0, finiteOr(servingCredit, 0))
-    local hours = finiteOr(servingHours, 0)
+    local elapsed = math.max(0, Num.finite(elapsedMinutes, 0))
+    local credit = math.max(0, Num.finite(servingCredit, 0))
+    local hours = Num.finite(servingHours, 0)
     if elapsed <= 0 or credit <= 0 or hours <= 0 then return current end
     return math.max(0, current - elapsed * credit / (hours * 60))
 end
@@ -46,8 +36,8 @@ end
 function SupplementState.chase(current, target, elapsedMinutes, windowHours)
     local from = SupplementState.normalize(current)
     local to = SupplementState.normalize(target)
-    local elapsed = math.max(0, finiteOr(elapsedMinutes, 0))
-    local hours = finiteOr(windowHours, 0)
+    local elapsed = math.max(0, Num.finite(elapsedMinutes, 0))
+    local hours = Num.finite(windowHours, 0)
     if hours <= 0 then return to end
     if elapsed <= 0 then return from end
     local step = elapsed / (hours * 60)

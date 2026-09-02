@@ -170,5 +170,8 @@
     "Tooltip_weapon_RecoilDelay": "Recoil Delay",
     "Tooltip_weapon_SoundRadius": "Noise",
     "Tooltip_weapon_ClipSize": "Clip Size",
-    "Tooltip_weapon_PartType": "Part Type"
+    "Tooltip_weapon_PartType": "Part Type",
+    "Tooltip_weapon_Weight": "Weight",
+    "Tooltip_weapon_MinSightRange": "Min Sight Range",
+    "Tooltip_weapon_MaxSightRange": "Max Sight Range"
 }

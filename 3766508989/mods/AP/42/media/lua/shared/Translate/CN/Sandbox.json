@@ -1,5 +1,5 @@
 {
-    "Sandbox_AegisEvents": "Aegis 事件",
+    "Sandbox_AegisEvents": "Aegis",
     "Sandbox_AegisSiegeWaves": "围攻：波数",
     "Sandbox_AegisSiegeWaves_tooltip": "围攻发起的尸潮波数。",
     "Sandbox_AegisSiegeCount": "围攻：每波丧尸数量",
@@ -58,6 +58,8 @@
     "Sandbox_AegisPlayerClaims_tooltip": "允许玩家在角色额度内认领自己安全屋旁的区域。关闭后禁止一切认领。",
     "Sandbox_AegisPlayerKits": "玩家补给包已启用",
     "Sandbox_AegisPlayerKits_tooltip": "玩家面板中的补给包页面，含助力兑换。关闭后对所有人隐藏；管理员的补给包编辑器仍可使用。",
+    "Sandbox_AegisKitCodeGates": "套装编辑器中的 Discord 套装",
+    "Sandbox_AegisKitCodeGates_tooltip": "编辑套装时提供“Discord 助推”与“仅限套装兑换码”。两者都需要自建 Discord 机器人。关闭后不再列出。",
     "Sandbox_AegisPlayerVehicles": "每位玩家可记住的载具数",
     "Sandbox_AegisPlayerVehicles_tooltip": "玩家可在玩家区域载具页面保留多少载具。0 表示关闭记住功能。在运行 Knox Claim 的服务器上会被忽略，该模组自带上限。调低数值时已记住的载具不会丢失。",
     "Sandbox_AegisPlayerHealthInfection": "向玩家显示丧尸感染",

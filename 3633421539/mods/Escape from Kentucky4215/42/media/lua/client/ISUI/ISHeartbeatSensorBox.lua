@@ -154,6 +154,46 @@ function HeartbeatSensor:onOptionMouseDown(button, x, y)
     end
 end
 
+function HeartbeatSensor:onMouseDown(x, y)
+    -- Only the top-left quarter of the radar acts as a drag handle; clicks anywhere else
+    -- are left unconsumed so the mouse keeps interacting with the game world.
+    if x < 0 or x > self.width / 2 or y < 0 or y > self.height / 2 then
+        return false
+    end
+    self.moving = true
+    self.javaObject:setConsumeMouseEvents(true)
+    self:setCapture(true)
+    self:bringToTop()
+    return true
+end
+
+function HeartbeatSensor:onMouseMove(dx, dy)
+    if not self.moving then
+        return false
+    end
+    self:setX(self.x + dx)
+    self:setY(self.y + dy)
+    self:bringToTop()
+    return true
+end
+
+function HeartbeatSensor:onMouseMoveOutside(dx, dy)
+    return self:onMouseMove(dx, dy)
+end
+
+function HeartbeatSensor:onMouseUp(x, y)
+    if self.moving then
+        self.moving = false
+        self:setCapture(false)
+        self.javaObject:setConsumeMouseEvents(false)
+    end
+    return false
+end
+
+function HeartbeatSensor:onMouseUpOutside(x, y)
+    return self:onMouseUp(x, y)
+end
+
 function HeartbeatSensor:create()
     if getDebug() then
         self.close = ISButton:new(0, 0, btnCloseWid, btnCloseHgt, btnClose, self, self.onOptionMouseDown);
@@ -227,6 +267,7 @@ function HeartbeatSensor:new(x, y, width, height, player, scale, plus)
     o.anchorLeft = true
     o.ZombieList = {}
     o.moveWithMouse = true
+    o.wantMouseEvents = false
     o.backgroundColor = {
         r = 0,
         g = 0,

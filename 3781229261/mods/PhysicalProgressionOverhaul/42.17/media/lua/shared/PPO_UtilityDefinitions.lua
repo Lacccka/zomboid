@@ -1,7 +1,10 @@
+require "PPO_Num"
+
 PPO = PPO or {}
 PPO.UtilityDefinitions = PPO.UtilityDefinitions or {}
 
 local Definitions = PPO.UtilityDefinitions
+local Num = PPO.Num
 local MODULE = "PhysicalProgressionOverhaul."
 
 -- Class B utility content. Deliberately a separate table from
@@ -24,11 +27,6 @@ local DRAINABLE = {
     [MODULE .. "ThermogenicComplex"] = { kind = "thermogenic", unit = 0.20 },
 }
 
-local function positiveFinite(value)
-    return type(value) == "number" and value == value
-        and value ~= math.huge and value ~= -math.huge and value > 0
-end
-
 local function kindOf(rows, key)
     local row = type(key) == "string" and rows[key] or nil
     if row == nil then return nil end
@@ -38,7 +36,7 @@ end
 -- Servings, not credit: the stimulant has no reservoir to fill. One nominal
 -- unit is one serving, and a larger portion is proportionally more.
 local function servingsFrom(row, amount)
-    if row == nil or not positiveFinite(amount) then return 0 end
+    if row == nil or not Num.isPositive(amount) then return 0 end
     return amount / row.unit
 end
 

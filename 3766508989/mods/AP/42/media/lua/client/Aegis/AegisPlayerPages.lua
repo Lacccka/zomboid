@@ -256,7 +256,10 @@ function AegisPlayerPageStats:update()
     if self.statsWant and self.statsTries < TRY_MAX and now >= self.statsNext then
         self.statsTries = self.statsTries + 1
         self.statsNext = now + RETRY_MS
-        sendClientCommand(p, MODULE, "statsReq", {})
+        -- the running run travels along: the server copy of the character
+        -- only refreshes hoursSurvived on the next full player sync, so
+        -- reading it there shows 0.0 between deaths on a dedicated server
+        sendClientCommand(p, MODULE, "statsReq", { hours = p:getHoursSurvived() })
     end
     if self.topWant and self.topTries < TRY_MAX and now >= self.topNext then
         self.topTries = self.topTries + 1
@@ -275,6 +278,7 @@ function AegisPlayerPageStats:onStatsSync(args)
         distM = tonumber(args.distM) or 0,
         bestHours = tonumber(args.bestHours) or 0,
         bestKills = tonumber(args.bestKills) or 0,
+        totalHours = tonumber(args.totalHours) or 0,
         playtimeH = tonumber(args.playtimeH) or 0,
     }
 end
@@ -322,19 +326,20 @@ function AegisPlayerPageStats:prerender()
     local defs2 = {
         { label = "UI_AegisPlayer_StatBestHours", v = s and fmtKind("bestHours", s.bestHours) },
         { label = "UI_AegisPlayer_StatBestKills", v = s and tostring(s.bestKills) },
-        { label = "UI_AegisPlayer_StatPlaytime", v = s and (tostring(math.floor(s.playtimeH + 0.5)) .. " h") },
+        { label = "UI_AegisPlayer_StatTotalHours", v = s and fmtKind("bestHours", s.totalHours) },
+        { label = "UI_AegisPlayer_StatPlaytime", v = s and fmtKind("bestHours", s.playtimeH) },
     }
     local function drawRow(defs, y, cw)
         local x = pad
         for _, def in ipairs(defs) do
             Aegis.roundFrame(self, x, y, cw, 74, 10, 1, c.line, c.panel)
-            Aegis.text(self, getText(def.label), x + 14, y + 10, UIFont.Small, c.muted)
+            Aegis.text(self, Aegis.fitText(getText(def.label), UIFont.Small, cw - 24), x + 14, y + 10, UIFont.Small, c.muted)
             Aegis.text(self, def.v or "--", x + 14, y + 32, UIFont.Large, c.text)
             x = x + cw + gap
         end
     end
     drawRow(defs1, pad, math.floor((w - pad * 2 - gap * 3) / 4))
-    drawRow(defs2, pad + 86, math.floor((w - pad * 2 - gap * 2) / 3))
+    drawRow(defs2, pad + 86, math.floor((w - pad * 2 - gap * 3) / 4))
 
     -- top list card with the category chips
     local ty = self.topY

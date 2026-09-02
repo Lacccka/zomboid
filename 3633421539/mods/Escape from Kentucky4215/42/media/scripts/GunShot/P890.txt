@@ -10,48 +10,48 @@ module Base
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_plr_shot_01.wav,
-            distanceMin = 4,
-            distanceMax = 45,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.12,
             volume = 0.95,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_plr_shot_02.wav,
-            distanceMin = 4,
-            distanceMax = 45,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.12,
             volume = 0.95,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_plr_shot_03.wav,
-            distanceMin = 4,
-            distanceMax = 45,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.12,
             volume = 0.95,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_plr_shot_04.wav,
-            distanceMin = 4,
-            distanceMax = 45,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.12,
             volume = 0.95,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_plr_shot_05.wav,
-            distanceMin = 4,
-            distanceMax = 45,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.12,
             volume = 0.95,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_plr_shot_06.wav,
-            distanceMin = 4,
-            distanceMax = 45,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.12,
             volume = 0.95,
         }
@@ -65,48 +65,48 @@ module Base
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_plr_mech_01.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.5,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_plr_mech_02.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.5,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_plr_mech_03.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.5,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_plr_mech_04.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.5,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_plr_mech_05.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.5,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_plr_mech_06.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.5,
         }
@@ -121,48 +121,48 @@ module Base
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_dist_01.wav,
-            distanceMin = 20,
-            distanceMax = 80,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_dist_02.wav,
-            distanceMin = 20,
-            distanceMax = 80,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_dist_03.wav,
-            distanceMin = 20,
-            distanceMax = 80,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_dist_04.wav,
-            distanceMin = 20,
-            distanceMax = 80,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_dist_05.wav,
-            distanceMin = 20,
-            distanceMax = 80,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_dist_06.wav,
-            distanceMin = 20,
-            distanceMax = 80,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.6,
         }
@@ -177,48 +177,48 @@ module Base
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_far_01.wav,
-            distanceMin = 50,
-            distanceMax = 140,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.4,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_far_02.wav,
-            distanceMin = 50,
-            distanceMax = 140,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.4,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_far_03.wav,
-            distanceMin = 50,
-            distanceMax = 140,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.4,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_far_04.wav,
-            distanceMin = 50,
-            distanceMax = 140,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.4,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_far_05.wav,
-            distanceMin = 50,
-            distanceMax = 140,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.4,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_far_06.wav,
-            distanceMin = 50,
-            distanceMax = 140,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.4,
         }
@@ -232,64 +232,64 @@ module Base
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_sup_plr_shot_01.wav,
-            distanceMin = 2,
-            distanceMax = 30,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.18,
             volume = 0.7,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_sup_plr_shot_02.wav,
-            distanceMin = 2,
-            distanceMax = 30,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.18,
             volume = 0.7,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_sup_plr_shot_03.wav,
-            distanceMin = 2,
-            distanceMax = 30,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.18,
             volume = 0.7,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_sup_plr_shot_04.wav,
-            distanceMin = 2,
-            distanceMax = 30,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.18,
             volume = 0.7,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_sup_plr_shot_05.wav,
-            distanceMin = 2,
-            distanceMax = 30,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.18,
             volume = 0.7,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_sup_plr_shot_06.wav,
-            distanceMin = 2,
-            distanceMax = 30,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.18,
             volume = 0.7,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_sup_plr_shot_07.wav,
-            distanceMin = 2,
-            distanceMax = 30,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.18,
             volume = 0.7,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_sup_plr_shot_08.wav,
-            distanceMin = 2,
-            distanceMax = 30,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.18,
             volume = 0.7,
         }
@@ -304,48 +304,48 @@ module Base
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_med_01.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_med_02.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_med_03.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_med_04.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_med_05.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/P890/weap_papa220_fire_npc_med_06.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }

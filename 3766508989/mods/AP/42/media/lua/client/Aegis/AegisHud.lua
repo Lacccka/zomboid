@@ -22,6 +22,12 @@ require "Aegis/AegisModerationClient"
 AegisHud = AegisHud or {}
 
 function AegisHud.onButtonClick(equipped, button)
+    -- while missed distress calls wait, the first click fetches them as
+    -- cards instead of opening the panel; the next click opens as usual
+    if AegisSosAlert and (AegisSosAlert.pending or 0) > 0 and AegisSosAlert.requestPending then
+        AegisSosAlert.requestPending()
+        return
+    end
     AegisWindow.toggle()
 end
 
@@ -162,6 +168,14 @@ function AegisHudDock:prerender()
     Aegis.roundRect(self, 0, 0, self.width, DOCK_GRIP - 2, 6, self:isMouseOver() and 0.9 or 0.45, c.card)
     for i = -1, 1 do
         self:drawRect(math.floor(self.width / 2) + i * 6 - 1, 5, 2, 2, 1, c.goldDim.r, c.goldDim.g, c.goldDim.b)
+    end
+    -- blinking exclamation mark while distress calls wait unseen; sits on
+    -- the grip corner so it shows folded and unfolded alike
+    if AegisSosAlert and (AegisSosAlert.pending or 0) > 0
+            and self.aegisBtn and self.aegisBtn:isVisible() then
+        local a = 0.55 + 0.45 * math.abs(math.sin(getTimestampMs() / 280))
+        Aegis.roundRect(self, self.width - 18, 0, 16, 16, 8, a, c.danger)
+        self:drawTextCentre("!", self.width - 10, 0, 1, 1, 1, a, UIFont.Small)
     end
 end
 
@@ -309,10 +323,26 @@ Events.OnServerCommand.Add(function(module, command, args)
         if value >= 5 and value <= 1000 then
             local changed = carryPin ~= value
             carryPin = (value > 8) and value or nil
+            local applied = value
             pcall(function()
                 local p = getPlayer()
-                p:setMaxWeightBase(value)
-                p:setMaxWeight(value)
+                if carryPin then
+                    p:setMaxWeightBase(value)
+                    p:setMaxWeight(value)
+                else
+                    -- back to default. A hard 8 used to stick: on an MP
+                    -- client BodyDamage.Update returns before
+                    -- UpdateStrength for every living player, so nothing
+                    -- ever re-derives maxWeight until a relog or damage
+                    -- packet. Reproduce the engine formula instead; the
+                    -- injury reducers are skipped, the next real packet
+                    -- trues that up
+                    p:setMaxWeightBase(8)
+                    local mod = p:getWeightMod() or 1.0
+                    local delta = p:getMaxWeightDelta() or 1.0
+                    applied = math.floor(math.floor(8 * mod) * delta)
+                    p:setMaxWeight(applied)
+                end
                 -- the engine keeps TWO limits apart: maxWeight is the
                 -- encumbrance threshold, and the body container has its own
                 -- hard cap of 50 (constructor default, never changed by the
@@ -326,7 +356,9 @@ Events.OnServerCommand.Add(function(module, command, args)
                 p:getModData().aegisCapacity = (value > 50) and value or nil
             end)
             if changed then
-                Aegis.showToast(getText("UI_Aegis_CarryWeight") .. ": " .. tostring(value))
+                -- the toast names what the player really has now, after a
+                -- reset that is the derived figure, not the base 8
+                Aegis.showToast(getText("UI_Aegis_CarryWeight") .. ": " .. tostring(applied))
             end
         end
     elseif command == "spawnvehicle" then

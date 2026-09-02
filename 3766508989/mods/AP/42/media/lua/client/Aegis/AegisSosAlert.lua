@@ -13,6 +13,9 @@ require "Aegis/AegisWidgets"
 AegisSosAlert = AegisSosAlert or {}
 AegisSosAlert.calls = {}
 AegisSosAlert.host = nil
+-- open calls nobody has dealt with, fed by the server; the dock badge
+-- blinks while this is above zero
+AegisSosAlert.pending = 0
 
 local CARD_W = 420
 local CARD_H = 92
@@ -72,6 +75,8 @@ function AegisSosAlert.push(args)
         y = tonumber(args.y),
         z = tonumber(args.z) or 0,
         at = getTimestampMs(),
+        -- server side stamp of the call, the settle receipt keys on it
+        epoch = tonumber(args.at),
     })
     while #AegisSosAlert.calls > MAX_CARDS do
         table.remove(AegisSosAlert.calls)
@@ -79,9 +84,28 @@ function AegisSosAlert.push(args)
     syncHost()
 end
 
+-- tell the server this call is settled, the badge clears for every admin
+local function settle(call)
+    if not call.epoch then return end
+    local p = getPlayer()
+    if p then
+        sendClientCommand(p, "AegisPlayer", "sosSeen", { at = call.epoch })
+    end
+end
+
 function AegisSosAlert.dismiss(idx)
+    local call = AegisSosAlert.calls[idx]
+    if call then settle(call) end
     table.remove(AegisSosAlert.calls, idx)
     syncHost()
+end
+
+-- the dock badge was clicked: fetch the backlog as cards
+function AegisSosAlert.requestPending()
+    local p = getPlayer()
+    if not p then return end
+    AegisSosAlert.pending = 0
+    sendClientCommand(p, "AegisPlayer", "sosPendingReq", {})
 end
 
 function Host:update()

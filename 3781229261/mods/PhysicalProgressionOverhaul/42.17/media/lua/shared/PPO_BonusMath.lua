@@ -1,3 +1,5 @@
+require "PPO_Num"
+
 PPO = PPO or {}
 PPO.BonusMath = PPO.BonusMath or {}
 
@@ -12,24 +14,12 @@ local RETURN_POINTS = {
     { stimulus = 2, value = 0.00 },
 }
 
-local function finiteOr(value, fallback)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return fallback
-    end
-    return value
-end
-
-local function clamp(value, minimum, maximum)
-    if value < minimum then return minimum end
-    if value > maximum then return maximum end
-    return value
-end
+local Num = PPO.Num
 
 function BonusMath.bonusReturn(stimulus, decayEnabled)
     if decayEnabled == false then return 1 end
 
-    local load = math.max(0, finiteOr(stimulus, 0))
+    local load = math.max(0, Num.finite(stimulus, 0))
     if load >= RETURN_POINTS[#RETURN_POINTS].stimulus then return 0 end
 
     for index = 1, #RETURN_POINTS - 1 do
@@ -45,8 +35,8 @@ function BonusMath.bonusReturn(stimulus, decayEnabled)
 end
 
 function BonusMath.effectiveMultiplier(fullMultiplier, bonusReturn)
-    local full = math.max(1, finiteOr(fullMultiplier, 1))
-    local returned = clamp(finiteOr(bonusReturn, 0), 0, 1)
+    local full = math.max(1, Num.finite(fullMultiplier, 1))
+    local returned = Num.clamp(Num.finite(bonusReturn, 0), 0, 1)
     return 1 + ((full - 1) * returned)
 end
 
@@ -63,8 +53,8 @@ end
 -- floor the model cannot reclaim. That corner is a nearly spent direction and
 -- it is bounded; subtracting earned XP is not.
 function BonusMath.absorbed(effectiveMultiplier, vanillaFactor)
-    local multiplier = math.max(1, finiteOr(effectiveMultiplier, 1))
-    local factor = finiteOr(vanillaFactor, 1)
+    local multiplier = math.max(1, Num.finite(effectiveMultiplier, 1))
+    local factor = Num.finite(vanillaFactor, 1)
     if factor <= 0 then factor = 1 end
     return math.max(1, multiplier / factor)
 end
@@ -83,7 +73,7 @@ function BonusMath.rawBonus(rawVanillaXp, fullMultiplier, bonusReturn, capped,
         vanillaFactor)
     if capped then return 0 end
 
-    local raw = math.max(0, finiteOr(rawVanillaXp, 0))
+    local raw = math.max(0, Num.finite(rawVanillaXp, 0))
     local applied = BonusMath.absorbed(
         BonusMath.effectiveMultiplier(fullMultiplier, bonusReturn),
         vanillaFactor)

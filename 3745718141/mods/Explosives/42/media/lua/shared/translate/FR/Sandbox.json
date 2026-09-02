@@ -11,5 +11,7 @@
     "Sandbox_ExplosivesOptions_DelayedFuseEnabled": "Mèche Retardée à l'Atterrissage",
     "Sandbox_ExplosivesOptions_DelayedFuseEnabled_tooltip": "Désactivé par défaut. Lorsqu'activé, les grenades propres à ce mod (Mk2, M26, M67, M84 Flashbang, M14 TH3) atterrissent armées et restent au sol quelques secondes avant d'exploser, au lieu de détoner immédiatement à l'impact. N'affecte pas les mines/Claymore (qui atterrissent déjà comme des pièges posés) ni les objets à lancer vanilla.",
     "Sandbox_ExplosivesOptions_DelayedFuseSeconds": "Délai de Mèche (secondes)",
-    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "Combien de secondes une grenade atterrie reste armée avant d'exploser, lorsque 'Mèche Retardée à l'Atterrissage' est activé."
+    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "Combien de secondes une grenade atterrie reste armée avant d'exploser, lorsque 'Mèche Retardée à l'Atterrissage' est activé.",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled": "Activer la Touche de Génération de Débogage",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled_tooltip": "Désactivé par défaut. Si activé, Shift + Pavé numérique \"+\" (réassignable dans les Options du Mod) génère une seule grenade assourdissante directement dans votre inventaire pour tester rapidement les trajectoires."
 }

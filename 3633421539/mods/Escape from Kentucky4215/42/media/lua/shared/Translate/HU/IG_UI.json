@@ -1595,5 +1595,7 @@
     "IGUI_Hair_HatLongCurly": "Hosszú Göndör",
     "IGUI_Hair_HatLongBraided": "Hosszú Befont",
     "IGUI_ServerToolBox_AdminPanel": "Nyomd meg az ESC gombot az Admin részleg megnyitásához",
-    "IGUI_FixItem": "Javító Készlet Használata"
+    "IGUI_FixItem": "Javító Készlet Használata",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

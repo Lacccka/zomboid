@@ -37,20 +37,5 @@ item GrenadeAmmoClip
         WorldStaticModel = Bullets50Clip,
     }
 
-craftRecipe GrenadeAmmo
-    {
-        timedAction = OpenAmmoBox,
-        time = 0,
-        OnCreate = RecipeCodeOnCreate.minorCondition,
-        Tags = InHandCraft,
-        category = 现代枪械系统ModernFirearmsSystem,
-        inputs
-        {
-            item 1 [Base.Bullets9mmBox;Base.Bullets44Box;Base.Bullets45Box;Base.Bullets50Box;Base.58Box;Base.Bullets86Box;Base.223Box;Base.545Box;Base.556Box;Base.308Box] flags[AllowDestroyedItem],
-        }
-        outputs
-        {
-            item 1 Base.GrenadeAmmo,
-        }
-    }
+
 }

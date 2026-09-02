@@ -99,6 +99,7 @@ local function zReVAC2_ClientCalledFromServer(module, command, args)
 			 else -- 4
 				item:setName(getText("IGUI_CmpTestTubeWithInfectedBloodVpAp", args.ItemInfectionRate))
 			end
+			item:getModData().BloodCellsChance = args.ItemBloodCellsChance
 			item:setCustomName(true)
 			item:syncItemFields()
 		end

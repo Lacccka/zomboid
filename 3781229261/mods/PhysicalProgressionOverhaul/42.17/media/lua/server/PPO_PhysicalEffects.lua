@@ -1,101 +1,33 @@
+require "PPO_Num"
+require "PPO_CarrySeam"
 require "PPO_Config"
-require "PPO_ToneMath"
 
 PPO = PPO or {}
 PPO.PhysicalEffects = PPO.PhysicalEffects or {}
 
 local PhysicalEffects = PPO.PhysicalEffects
 
-local function finiteOr(value, fallback)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return fallback
-    end
-    return value
-end
-
-local function clamp(value, minimum, maximum)
-    if value < minimum then return minimum end
-    if value > maximum then return maximum end
-    return value
-end
+local Num = PPO.Num
+local CarrySeam = PPO.CarrySeam
 
 local function settings()
-    local ok, resolved = pcall(PPO.Config.getToneSettings)
-    if not ok or type(resolved) ~= "table" then return PPO.Config.Tone end
-    return resolved
+    return PPO.Config.resolve("getToneSettings", PPO.Config.Tone)
 end
 
-local function readCarryBase(character)
-    local ok, value = pcall(function()
-        return character:getMaxWeightBase()
-    end)
-    if not ok then return nil end
-    local resolved = finiteOr(value, nil)
-    if resolved == nil then return nil end
-    return math.floor(resolved)
-end
+-- The engine calls this instance with method syntax so an injected fake and the
+-- real thing are spelled the same way. Every function in this module already
+-- takes the instance as its first parameter, so one `__index` says exactly what
+-- nine hand-written wrappers used to say -- and cannot fall out of step with a
+-- signature the way a wrapper can.
+local INSTANCE_META = { __index = PhysicalEffects }
 
-local function writeCarryBase(character, value)
-    return pcall(function()
-        character:setMaxWeightBase(value)
-    end)
-end
-
--- The Strength ladder vanilla multiplies the carry base by. An unreadable one
--- means the bonus is written as plain base points, which is what the seam did
--- before the ladder was accounted for.
-local function readWeightMod(character)
-    local ok, value = pcall(function()
-        return character:getWeightMod()
-    end)
-    if not ok then return 1 end
-    return finiteOr(value, 1)
-end
-
--- Method wrappers mirror the AdaptationEngine.new pattern so the engine can
--- call an injected fake and the real instance through the same syntax.
 function PhysicalEffects.new()
-    local instance = {
+    return setmetatable({
         enduranceSamples = {},
         strainSamples = {},
         carryBases = {},
         disabled = {},
-    }
-    instance.applyStrengthTone = function(self, character, carryBonus)
-        return PhysicalEffects.applyStrengthTone(self, character, carryBonus)
-    end
-    instance.applyFitnessTone = function(self, character, strength, elapsed,
-            exercising, ceiling)
-        return PhysicalEffects.applyFitnessTone(
-            self, character, strength, elapsed, exercising, ceiling)
-    end
-    instance.floorStat = function(self, character, statName, value)
-        return PhysicalEffects.floorStat(self, character, statName, value)
-    end
-    instance.rateStat = function(self, character, statName, amount)
-        return PhysicalEffects.rateStat(self, character, statName, amount)
-    end
-    instance.capCalories = function(self, character, ceiling, descentPerMinute,
-            elapsedMinutes)
-        return PhysicalEffects.capCalories(self, character, ceiling,
-            descentPerMinute, elapsedMinutes)
-    end
-    instance.applyMuscleStrain = function(self, character, target, restoreShare,
-            maximumDrop)
-        return PhysicalEffects.applyMuscleStrain(self, character, target,
-            restoreShare, maximumDrop)
-    end
-    instance.cancelFutureStrain = function(self, character)
-        return PhysicalEffects.cancelFutureStrain(self, character)
-    end
-    instance.forget = function(self, character)
-        return PhysicalEffects.forget(self, character)
-    end
-    instance.available = function(self, character, seam)
-        return PhysicalEffects.available(self, character, seam)
-    end
-    return instance
+    }, INSTANCE_META)
 end
 
 local function markDisabled(instance, character, seam)
@@ -118,15 +50,7 @@ function PhysicalEffects.forget(instance, character)
     if instance == nil or character == nil then return false end
     local had = instance.enduranceSamples[character] ~= nil
 
-    local record = instance.carryBases[character]
-    if record ~= nil then
-        had = true
-        if record.applied ~= record.original
-                and readCarryBase(character) == record.applied then
-            writeCarryBase(character, record.original)
-        end
-        instance.carryBases[character] = nil
-    end
+    if CarrySeam.release(instance.carryBases, character) then had = true end
 
     -- Dropping the sample on release is what makes a returning player seed
     -- again rather than measure a drop against a baseline from a previous
@@ -164,7 +88,7 @@ local function statSyncFlags(statName)
         local ok, flags = pcall(
             SyncPlayerStatsPacket.getBitMaskForStat, CharacterStat[statName])
         if ok then
-            local resolved = finiteOr(flags, 0)
+            local resolved = Num.finite(flags, 0)
             if resolved > 0 then return resolved end
         end
     end
@@ -177,7 +101,7 @@ local function statValue(character, statName)
         return character:getStats():get(CharacterStat[statName])
     end)
     if not ok then return nil end
-    return finiteOr(value, nil)
+    return Num.finite(value, nil)
 end
 
 local function writeStat(character, statName, value)
@@ -210,7 +134,7 @@ function PhysicalEffects.floorStat(instance, character, statName, value)
         return false
     end
 
-    local floor = finiteOr(value, 0)
+    local floor = Num.finite(value, 0)
     if floor <= 0 then return true end
 
     local current = statValue(character, statName)
@@ -238,7 +162,7 @@ function PhysicalEffects.rateStat(instance, character, statName, amount)
         return false
     end
 
-    local delta = finiteOr(amount, 0)
+    local delta = Num.finite(amount, 0)
     if delta <= 0 then return true end
 
     local current = statValue(character, statName)
@@ -261,7 +185,7 @@ local function calorieValue(character)
         return nutrition:getCalories()
     end)
     if not ok then return nil end
-    return finiteOr(value, nil)
+    return Num.finite(value, nil)
 end
 
 -- Nutrition is the only vanilla field PPO writes that has no per-stat sync
@@ -291,9 +215,9 @@ function PhysicalEffects.capCalories(instance, character, ceiling,
         return false
     end
 
-    local target = finiteOr(ceiling, 0)
-    local rate = math.max(0, finiteOr(descentPerMinute, 0))
-    local elapsed = math.max(0, finiteOr(elapsedMinutes, 0))
+    local target = Num.finite(ceiling, 0)
+    local rate = math.max(0, Num.finite(descentPerMinute, 0))
+    local elapsed = math.max(0, Num.finite(elapsedMinutes, 0))
     if rate <= 0 or elapsed <= 0 then return true end
 
     local current = calorieValue(character)
@@ -329,7 +253,7 @@ local function painGated(character)
     local ok, resolved = pcall(function()
         return character:getMoodles():getMoodleLevel(MoodleType.PAIN)
     end)
-    if ok then level = finiteOr(resolved, 0) end
+    if ok then level = Num.finite(resolved, 0) end
     return level >= 2
 end
 
@@ -355,12 +279,12 @@ function PhysicalEffects.applyMuscleStrain(instance, character, target,
         return false
     end
 
-    local ceiling = math.max(0, finiteOr(target, 0))
+    local ceiling = math.max(0, Num.finite(target, 0))
     -- Signed: the debt brakes vanilla's clearing with a positive share, the
     -- pre-workout deepens it with a negative one, and the two compose into this
     -- single number before the call.
-    local share = clamp(finiteOr(restoreShare, 0), -1, 1)
-    local dropCeiling = math.max(0, finiteOr(maximumDrop, 0))
+    local share = Num.clamp(Num.finite(restoreShare, 0), -1, 1)
+    local dropCeiling = math.max(0, Num.finite(maximumDrop, 0))
 
     -- A character with neither a debt nor a stimulant is never written to. This
     -- is the contract that keeps the mod out of a vanilla system it has no
@@ -394,14 +318,14 @@ function PhysicalEffects.applyMuscleStrain(instance, character, target,
         for index = 0, count - 1 do
             local part = parts:get(index)
             if part ~= nil then
-                local current = finiteOr(part:getStiffness(), 0)
+                local current = Num.finite(part:getStiffness(), 0)
                 local value = current
 
                 -- Only the brake needs history. On first contact there is no
                 -- baseline, and measuring a drop against one invented here is
                 -- how a player who logs in mid-strain gets a phantom restore.
                 if not seeding then
-                    local previous = finiteOr(samples[index], current)
+                    local previous = Num.finite(samples[index], current)
                     local drop = previous - current
                     if drop > dropCeiling then drop = dropCeiling end
                     if drop > 0 then value = value + share * drop end
@@ -416,7 +340,7 @@ function PhysicalEffects.applyMuscleStrain(instance, character, target,
                 -- Re-read rather than trust the write: setStiffness clamps
                 -- to 0..100, and a sample above the clamp would read as a
                 -- phantom drop on the next tick.
-                samples[index] = finiteOr(part:getStiffness(), value)
+                samples[index] = Num.finite(part:getStiffness(), value)
             end
         end
     end)
@@ -454,7 +378,7 @@ function PhysicalEffects.cancelFutureStrain(instance, character)
         local fitness = character:getFitness()
         if fitness == nil then return end
         for _, group in ipairs(STIFFNESS_GROUPS) do
-            local timer = finiteOr(fitness:getCurrentExeStiffnessTimer(group), 0)
+            local timer = Num.finite(fitness:getCurrentExeStiffnessTimer(group), 0)
             if timer > 0 then fitness:removeStiffnessValue(group) end
         end
     end)
@@ -465,47 +389,21 @@ function PhysicalEffects.cancelFutureStrain(instance, character)
     return true
 end
 
--- PPO owns only the bonus it added. The original base is recorded on first
--- contact and restored on expiry, release and death; vanilla never persists this
--- field, so a crash cannot leave an inflated character behind.
+-- The protocol is PPO.CarrySeam's; what belongs to this module is the reaction
+-- to a refusal. Every one of them means the same thing here -- the seam is not
+-- ours to drive -- so the tone falls back to the Readiness bonus instead of
+-- being written into a field somebody else owns.
 function PhysicalEffects.applyStrengthTone(instance, character, carryBonus)
     if instance == nil or character == nil then return false end
     if not PhysicalEffects.available(instance, character, "carry") then
         return false
     end
 
-    local current = readCarryBase(character)
-    if current == nil then
-        markDisabled(instance, character, "carry")
-        return false
+    if CarrySeam.apply(instance.carryBases, character, carryBonus) then
+        return true
     end
-
-    local record = instance.carryBases[character]
-    if record == nil then
-        record = { original = current, applied = current }
-        instance.carryBases[character] = record
-    end
-
-    if current ~= record.applied then
-        markDisabled(instance, character, "carry")
-        return false
-    end
-
-    -- The bonus arrives in carried kilograms and the base is not carried
-    -- kilograms: vanilla multiplies it by the Strength ladder on every update.
-    -- The conversion is redone every tick because levelling Strength moves the
-    -- ladder under a tone that is already standing.
-    local bonus = math.max(0, math.floor(finiteOr(carryBonus, 0) + 0.5))
-    local target = record.original + PPO.ToneMath.carryBaseDelta(
-        bonus, readWeightMod(character))
-    if target == current then return true end
-
-    if not writeCarryBase(character, target) then
-        markDisabled(instance, character, "carry")
-        return false
-    end
-    record.applied = target
-    return true
+    markDisabled(instance, character, "carry")
+    return false
 end
 
 function PhysicalEffects.applyFitnessTone(instance, character, strength,
@@ -532,9 +430,9 @@ function PhysicalEffects.applyFitnessTone(instance, character, strength,
     -- Checked by type: an unpassed Kahlua parameter carries the caller's stack
     -- slot, and a leaked number here would pin endurance at an arbitrary value.
     local cap = 1
-    if type(ceiling) == "number" then cap = clamp(finiteOr(ceiling, 1), 0, 1) end
+    if type(ceiling) == "number" then cap = Num.clamp(Num.finite(ceiling, 1), 0, 1) end
 
-    local effect = clamp(finiteOr(strength, 0), 0, 1)
+    local effect = Num.clamp(Num.finite(strength, 0), 0, 1)
     local resolved = settings()
     local target = current
 
@@ -542,16 +440,16 @@ function PhysicalEffects.applyFitnessTone(instance, character, strength,
         if resolved.EnduranceRefundEnabled == true and previous ~= nil then
             local drop = previous - current
             local maximumDrop = math.max(0,
-                finiteOr(resolved.MaxPlausibleEnduranceDrop, 0.25))
+                Num.finite(resolved.MaxPlausibleEnduranceDrop, 0.25))
             if drop > 0 and drop <= maximumDrop then
                 target = math.min(previous, target + drop * effect)
             end
         end
 
-        local elapsed = math.max(0, finiteOr(elapsedMinutes, 0))
+        local elapsed = math.max(0, Num.finite(elapsedMinutes, 0))
         if elapsed > 0 then
             target = target + math.max(0,
-                finiteOr(resolved.EnduranceRecoveryPerMinute, 0.02))
+                Num.finite(resolved.EnduranceRecoveryPerMinute, 0.02))
                 * effect * elapsed
         end
     end
@@ -560,7 +458,7 @@ function PhysicalEffects.applyFitnessTone(instance, character, strength,
     -- raise endurance toward it but never through it. This is the only place
     -- PPO lowers endurance, which is why the write below is no longer gated on
     -- the target exceeding the current value.
-    target = clamp(math.min(target, cap), 0, 1)
+    target = Num.clamp(math.min(target, cap), 0, 1)
     if math.abs(target - current) < 0.0000001 then return true end
     if not writeEndurance(character, target) then
         markDisabled(instance, character, "endurance")

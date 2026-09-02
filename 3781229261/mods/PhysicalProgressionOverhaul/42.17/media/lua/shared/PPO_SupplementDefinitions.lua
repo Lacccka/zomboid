@@ -1,7 +1,10 @@
+require "PPO_Num"
+
 PPO = PPO or {}
 PPO.SupplementDefinitions = PPO.SupplementDefinitions or {}
 
 local Definitions = PPO.SupplementDefinitions
+local Num = PPO.Num
 local MODULE = "PhysicalProgressionOverhaul."
 
 Definitions.KINDS = { "protein", "creatine", "anabolic", "cardio" }
@@ -30,11 +33,6 @@ local DRAINABLE = {
     [MODULE .. "CardioPreparation"] = { kind = "cardio", unit = 0.50, credit = 0.22 },
 }
 
-local function positiveFinite(value)
-    return type(value) == "number" and value == value
-        and value ~= math.huge and value ~= -math.huge and value > 0
-end
-
 local function kindOf(rows, key)
     local row = type(key) == "string" and rows[key] or nil
     if row == nil then return nil end
@@ -42,7 +40,7 @@ local function kindOf(rows, key)
 end
 
 local function creditFrom(row, amount)
-    if row == nil or not positiveFinite(amount) then return 0 end
+    if row == nil or not Num.isPositive(amount) then return 0 end
     return amount * row.credit / row.unit
 end
 

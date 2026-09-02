@@ -14,6 +14,10 @@ table.insert(ProceduralDistributions["list"]["GunStoreCounter"].items, "Gunpart.
 table.insert(ProceduralDistributions["list"]["GunStoreCounter"].items, 1.5);
 table.insert(ProceduralDistributions["list"]["GunStoreCounter"].items, "Gunpart.QG_CCB");
 table.insert(ProceduralDistributions["list"]["GunStoreCounter"].items, 1.5);
+table.insert(ProceduralDistributions["list"]["GunStoreCounter"].items, "Gunpart.Flamethrower");
+table.insert(ProceduralDistributions["list"]["GunStoreCounter"].items, 10);
+table.insert(ProceduralDistributions["list"]["GunStoreCounter"].items, "Base.cat_AutoReload");
+table.insert(ProceduralDistributions["list"]["GunStoreCounter"].items, 4);
 
 -- Canon
 table.insert(ProceduralDistributions["list"]["GunStoreCounter"].items, "Gunpart.XY_Beowulf");

@@ -6,8 +6,8 @@ AegisShared.MODULE = "AegisAdmin"
 -- area permissions: one id per Aegis page, controls visibility and use
 AegisShared.AREAS = {
     "dashboard", "powers", "players", "items", "vehicles", "animals",
-    "world", "zones", "horde", "server", "options", "factions", "tools",
-    "kits", "sandbox", "logs", "roles",
+    "world", "zones", "horde", "server", "events", "options", "factions",
+    "tools", "kits", "sandbox", "logs", "roles",
 }
 
 -- Areas split off a wider one later on. A role saved before the split
@@ -16,10 +16,10 @@ AegisShared.AREAS = {
 -- touching it. The server hands the new area once to every role that
 -- holds the parent (migration in Aegis_Roles); naming the relationship
 -- here keeps both sides from drifting apart
-AegisShared.AREA_PARENT = { options = "server" }
+AegisShared.AREA_PARENT = { options = "server", events = "server" }
 -- bump this whenever AREA_PARENT gains an entry, the marker line in
 -- rollen.txt records which migrations already ran
-AegisShared.AREA_MIGRATION = 1
+AegisShared.AREA_MIGRATION = 2
 
 -- log areas below Aegis/Log/
 AegisShared.LOG_AREAS = {

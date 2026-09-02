@@ -1,5 +1,5 @@
 {
-    "Sandbox_AegisEvents": "เหตุการณ์ Aegis",
+    "Sandbox_AegisEvents": "Aegis",
     "Sandbox_AegisSiegeWaves": "การล้อม: จำนวนระลอก",
     "Sandbox_AegisSiegeWaves_tooltip": "จำนวนระลอกฝูงซอมบี้ที่การล้อมจะส่งออกมา",
     "Sandbox_AegisSiegeCount": "การล้อม: จำนวนซอมบี้ต่อระลอก",
@@ -58,6 +58,8 @@
     "Sandbox_AegisPlayerClaims_tooltip": "ให้ผู้เล่นอ้างสิทธิ์โซนที่เซฟเฮาส์ของตนตามงบของบทบาท ปิดแล้วห้ามอ้างสิทธิ์ทั้งหมด",
     "Sandbox_AegisPlayerKits": "เปิดชุดไอเทมผู้เล่น",
     "Sandbox_AegisPlayerKits_tooltip": "หน้าชุดไอเทมในแผงผู้เล่น รวมการแลกบูสเตอร์ ปิดแล้วซ่อนจากทุกคน ตัวแก้ไขชุดของแอดมินยังใช้ได้",
+    "Sandbox_AegisKitCodeGates": "ชุด Discord ในตัวแก้ไขชุด",
+    "Sandbox_AegisKitCodeGates_tooltip": "เสนอ \"Discord booster\" และ \"เฉพาะด้วยรหัสชุด\" ตอนแก้ไขชุด ทั้งสองต้องมีบอต Discord ของคุณเอง ปิดแล้วจะไม่แสดง",
     "Sandbox_AegisPlayerVehicles": "จำนวนยานพาหนะที่จำได้ต่อผู้เล่น",
     "Sandbox_AegisPlayerVehicles_tooltip": "ผู้เล่นเก็บยานพาหนะไว้ในหน้ายานพาหนะของโซนผู้เล่นได้กี่คัน ใส่ 0 เพื่อปิดการจำ จะถูกละเว้นเมื่อใช้ Knox Claim เพราะม็อดนั้นมีขีดจำกัดของตัวเอง ยานพาหนะที่จำไว้แล้วจะไม่หายเมื่อลดค่านี้",
     "Sandbox_AegisPlayerHealthInfection": "แสดงการติดเชื้อซอมบีให้ผู้เล่น",

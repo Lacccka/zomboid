@@ -137,6 +137,10 @@ local function sessionEnd(name, info)
     local line = "Left: " .. AegisShared.timestampReadable(now) .. " (duration " .. minutes .. " min)"
     if info.file then AegisStore.append(info.file, line) end
     if info.adminFile then AegisStore.append(info.adminFile, line) end
+    -- runtime lookup on purpose, a require back would recurse (see top)
+    if info.file and AegisPlayerStats and AegisPlayerStats.addPlaytime then
+        AegisPlayerStats.addPlaytime(name, minutes)
+    end
 end
 
 -- one activity line into the player's OWN session file. Deliberately not a

@@ -1,9 +1,11 @@
+require "PPO_Num"
 require "PPO_MoodleDefinitions"
 
 PPO = PPO or {}
 PPO.MoodlePresenter = PPO.MoodlePresenter or {}
 
 local Presenter = PPO.MoodlePresenter
+local Num = PPO.Num
 local Definitions = PPO.MoodleDefinitions
 
 local LOAD_STAGES = {
@@ -18,13 +20,8 @@ local TONE_STAGES = {
     [3] = { severity = 3, name = "Peak" },
 }
 
-local function finite(value)
-    return type(value) == "number" and value == value
-        and value ~= math.huge and value ~= -math.huge
-end
-
 function Presenter.hourForm(languageCode, hours)
-    local value = finite(hours) and math.max(0, math.floor(hours)) or 0
+    local value = Num.isFinite(hours) and math.max(0, math.floor(hours)) or 0
     if languageCode == "RU" or languageCode == "UA" then
         local lastTwo = value % 100
         local last = value % 10
@@ -44,7 +41,7 @@ local function timeFields(direction, languageCode)
         return "Moodles_PPO_Time_UnderHour", nil
     end
     if direction.toneTimeKind ~= "Hours"
-            or not finite(direction.toneHoursRemaining)
+            or not Num.isFinite(direction.toneHoursRemaining)
             or direction.toneHoursRemaining < 1 then
         return nil, nil
     end
@@ -75,7 +72,7 @@ end
 
 local function toneRecord(definition, direction, languageCode)
     local value = direction[definition.sourceField]
-    if not finite(value) then return nil end
+    if not Num.isFinite(value) then return nil end
     local stage = TONE_STAGES[value]
     if stage == nil then return nil end
     local prefix = "Moodles_PPO_" .. definition.id

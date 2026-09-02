@@ -963,6 +963,10 @@ function AegisPageZones:createChildren()
     self.newBtn = AegisButton:new(dx + 14, pad + 238, dw - 28, 38, getText("UI_Aegis_ZoneNew"), "home", self, AegisPageZones.onNew)
     self.newBtn.tooltip = getText("UI_Aegis_ZoneNewTooltip")
     self:addChild(self.newBtn)
+
+    self.chownBtn = AegisButton:new(dx + 14, pad + 292, dw - 28, 38, getText("UI_Aegis_ZoneChown"), "players", self, AegisPageZones.onChown)
+    self.chownBtn.tooltip = getText("UI_Aegis_ZoneChownTooltip")
+    self:addChild(self.chownBtn)
 end
 
 function AegisPageZones.request(self)
@@ -1243,6 +1247,7 @@ function AegisPageZones:updateButtons()
     local usable = e ~= nil and e.lockedBy == ""
     if self.editBtn then self.editBtn:setEnabled(usable) end
     if self.brushBtn then self.brushBtn:setEnabled(usable) end
+    if self.chownBtn then self.chownBtn:setEnabled(usable) end
 end
 
 -- outlines of the owner's other zones for the editor. Compared by anchor,
@@ -1300,6 +1305,12 @@ end
 
 function AegisPageZones.onNew(self)
     AegisZoneNew.show()
+end
+
+function AegisPageZones.onChown(self)
+    local e = self:selectedZone()
+    if not e then return end
+    AegisZoneOwner.show(e)
 end
 
 -- called by the owner picker, starts the editor without an existing zone
@@ -1424,6 +1435,17 @@ Events.OnServerCommand.Add(function(module, command, args)
         elseif args and args.reason == "locked" then
             -- a neighbour zone another admin holds open blocks the merge;
             -- without this branch it read as "zone gone"
+            Aegis.showToast(getText("UI_Aegis_ZoneLockedBy", tostring(args.admin or "?")))
+        elseif args and args.reason == "registry" then
+            Aegis.showToast(getText("UI_Aegis_ZoneRegistryLocked"))
+        elseif args then
+            Aegis.showToast(getText("UI_Aegis_ZoneGone"))
+        end
+        if page then page:request() end
+    elseif command == "shChown" then
+        if args and args.ok then
+            Aegis.showToast(getText("UI_Aegis_ZoneChownDone"))
+        elseif args and args.reason == "locked" then
             Aegis.showToast(getText("UI_Aegis_ZoneLockedBy", tostring(args.admin or "?")))
         elseif args and args.reason == "registry" then
             Aegis.showToast(getText("UI_Aegis_ZoneRegistryLocked"))
@@ -1808,6 +1830,101 @@ function AegisZoneNew:prerender()
 end
 
 function AegisZoneNew:onMouseDown(x, y)
+    -- swallow clicks on the dimmed background
+end
+
+-- ==================================================================
+-- Owner handover for an existing zone: same picker as the new-zone
+-- dialog, the server rewrites main and annexes in one go
+-- ==================================================================
+AegisZoneOwner = ISPanel:derive("AegisZoneOwner")
+AegisZoneOwner.instance = nil
+
+local OWN_W = 360
+local OWN_H = 170
+
+function AegisZoneOwner.show(entry)
+    if AegisZoneOwner.instance then
+        AegisZoneOwner.instance:closeSelf()
+    end
+    local sw, sh = getCore():getScreenWidth(), getCore():getScreenHeight()
+    local o = ISPanel:new(0, 0, sw, sh)
+    setmetatable(o, AegisZoneOwner)
+    AegisZoneOwner.__index = AegisZoneOwner
+    o.background = true
+    o.backgroundColor = { r = 0, g = 0, b = 0, a = 0.55 }
+    o.borderColor = { r = 0, g = 0, b = 0, a = 0 }
+    o.cardX = math.max(0, math.floor((sw - OWN_W) / 2))
+    o.cardY = math.max(0, math.floor((sh - OWN_H) / 2))
+    o.entry = entry
+    o:initialise()
+    o:addToUIManager()
+    o:setAlwaysOnTop(true)
+    AegisZoneOwner.instance = o
+    return o
+end
+
+function AegisZoneOwner:closeSelf()
+    self:removeFromUIManager()
+    if AegisZoneOwner.instance == self then
+        AegisZoneOwner.instance = nil
+    end
+end
+
+function AegisZoneOwner:createChildren()
+    local cx, cy = self.cardX, self.cardY
+
+    self.closeBtn = AegisButton:new(cx + OWN_W - 42, cy + 12, 30, 30, nil, "close", self, AegisZoneOwner.closeSelf)
+    self.closeBtn.radius = 15
+    self:addChild(self.closeBtn)
+
+    self.ownerCombo = ISComboBox:new(cx + 16, cy + 56, OWN_W - 32, 26, self, nil)
+    self.ownerCombo:initialise()
+    self:addChild(self.ownerCombo)
+    self.ownerCombo:clear()
+    for _, row in ipairs(Aegis.scoreboard or {}) do
+        self.ownerCombo:addOption(row.username)
+    end
+    local me = getPlayer() and getPlayer():getUsername()
+    if me then
+        local found = false
+        for _, opt in ipairs(self.ownerCombo.options) do
+            if opt == me then found = true end
+        end
+        if not found then self.ownerCombo:addOption(me) end
+    end
+    self.ownerCombo.selected = 1
+
+    self.applyBtn = AegisButton:new(cx + 16, cy + OWN_H - 52, OWN_W - 32, 36, getText("UI_Aegis_ZoneChown"), "players", self, AegisZoneOwner.onApply)
+    self.applyBtn.style = "gold"
+    self:addChild(self.applyBtn)
+end
+
+function AegisZoneOwner:onApply()
+    local owner = self.ownerCombo.options[self.ownerCombo.selected]
+    local p = getPlayer()
+    if not owner or not p then return end
+    sendClientCommand(p, AegisShared.MODULE, "shChown", {
+        x = self.entry.x, y = self.entry.y, owner = owner,
+    })
+    self:closeSelf()
+end
+
+function AegisZoneOwner:prerender()
+    ISPanel.prerender(self)
+    local c = Aegis.col
+    local cx, cy = self.cardX, self.cardY
+    Aegis.shadow(self, cx, cy, OWN_W, OWN_H, 26, 0.7)
+    Aegis.roundFrame(self, cx, cy, OWN_W, OWN_H, 12, 1, c.line, c.bg)
+    Aegis.icon(self, "players", cx + 18, cy + 16, 18, 1, c.gold)
+    Aegis.text(self, getText("UI_Aegis_ZoneChown"), cx + 46, cy + 14, UIFont.Medium, c.text)
+    Aegis.text(self, getText("UI_Aegis_ZoneNewOwner"), cx + 16, cy + 38, UIFont.Small, c.muted)
+    if #self.ownerCombo.options == 0 then
+        Aegis.text(self, getText("UI_Aegis_ZoneNewNobody"), cx + 16, cy + OWN_H - 90, UIFont.Small, c.danger)
+    end
+end
+
+function AegisZoneOwner:onMouseDown(x, y)
     -- swallow clicks on the dimmed background
 end
 

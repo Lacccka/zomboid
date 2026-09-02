@@ -19,8 +19,8 @@ local NOTES = AegisStore.ROOT .. "/Notes/"
 
 local MAX_REASON = 200
 local MAX_HISTORY = 2000
-local CART_PER_ENTRY = 100
-local CART_TOTAL = 500
+local CART_PER_ENTRY = 1000
+local CART_TOTAL = 3000
 local CART_MAX_ENTRIES = 200
 
 -- simple scatter hash as suffix against filename collisions: different

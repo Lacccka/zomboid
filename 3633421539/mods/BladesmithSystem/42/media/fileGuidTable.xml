@@ -1,6 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <fileGuidTable>
  <files>
+		<path>media/clothing/clothingItems/Avalon_cat.xml</path>
+		<guid>Avalon_cat</guid>
+	</files>
+ <files>
 		<path>media/clothing/clothingItems/YanlingSwordScabbard.xml</path>
 		<guid>YanlingSwordScabbard</guid>
 	</files>
@@ -13,8 +17,8 @@
 		<guid>MiaoSwordS</guid>
 	</files>
  <files>
-		<path>media/clothing/clothingItems/战术唐横刀鞘.xml</path>
-		<guid>战术唐横刀鞘</guid>
+		<path>media/clothing/clothingItems/TacticalTangCrossbladeScabbard.xml</path>
+		<guid>TacticalTangCrossbladeScabbard</guid>
 	</files>
  <files>
 		<path>media/clothing/clothingItems/miaodao_qiao.xml</path>
@@ -156,8 +160,8 @@
 		<guid>shoe_cat51</guid>
 	</files>
                <files>
-		<path>media/clothing/clothingItems/幻想骑士剑剑鞘.xml</path>
-		<guid>幻想骑士剑剑鞘</guid>
+		<path>media/clothing/clothingItems/FantasyKnightSwordScabbard.xml</path>
+		<guid>FantasyKnightSwordScabbard</guid>
 	</files>
                <files>
 		<path>media/clothing/clothingItems/pant_cat48.xml</path>
@@ -221,23 +225,23 @@
 	</files>
 	<files>
 		<path>media/clothing/clothingItems/MurasamaBladeScabbard.xml</path>
-		<guid>catKatana_</guid>
+		<guid>MurasamaBladeScabbard</guid>
 	</files>
 	<files>
-		<path>media/clothing/clothingItems/御林长刀鞘.xml</path>
-		<guid>御林长刀鞘</guid>
+		<path>media/clothing/clothingItems/YulinSwordS.xml</path>
+		<guid>YulinSwordS</guid>
 	</files>
 	<files>
-		<path>media/clothing/clothingItems/阎魔刀鞘.xml</path>
-		<guid>阎魔刀鞘</guid>
+		<path>media/clothing/clothingItems/YamatoScabbard.xml</path>
+		<guid>YamatoScabbard</guid>
 	</files>
 	<files>
-		<path>media/clothing/clothingItems/鬼丸国纲刀鞘.xml</path>
-		<guid>鬼丸国纲刀鞘</guid>
+		<path>media/clothing/clothingItems/OnimaruKunitusnaS.xml</path>
+		<guid>OnimaruKunitusnaS</guid>
 	</files>
 	<files>
-		<path>media/clothing/clothingItems/夜煌刀鞘.xml</path>
-		<guid>夜煌刀鞘</guid>
+		<path>media/clothing/clothingItems/NoctisScabbard.xml</path>
+		<guid>NoctisScabbard</guid>
 	</files>
 		<files>
 		<path>media/clothing/clothingItems/光剑腰带.xml</path>

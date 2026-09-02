@@ -1594,5 +1594,7 @@
     "IGUI_Hair_HatLong": "Hatt (langt hår)",
     "IGUI_Hair_HatLongBraided": "Hatt (Lange fletter)",
     "IGUI_Hair_HatLongCurly": "Hatt (krøllet)",
-    "IGUI_FixItem": "Bruk Reparasjonssett"
+    "IGUI_FixItem": "Bruk Reparasjonssett",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

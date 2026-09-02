@@ -275,9 +275,34 @@ function AegisPageVehicles.create(window, x, y, w, h)
     return o
 end
 
+local VANILLA_SRC = "@vanilla"
+
+-- every script object records the file each of its bodies came from as
+-- mod id and body pairs, entry one is the origin. Game files carry the
+-- reserved id pz-vanilla, so packs that register their vehicles inside
+-- module Base still resolve to their own mod
+local function sourceOf(script)
+    local bodies = script:getLoadedScriptBodies()
+    if bodies and bodies:size() > 0 then
+        local mod = bodies:get(0)
+        if mod and mod ~= "" and mod ~= "pz-vanilla" then return mod end
+    end
+    return VANILLA_SRC
+end
+
+local function sourceLabel(id)
+    if id == VANILLA_SRC then return "Project Zomboid" end
+    -- the source is the mod id, the workshop name wins when known
+    local info = getModInfoByID and (getModInfoByID(id) or getModInfoByID(string.lower(id))) or nil
+    local name = info and info:getName()
+    if name and name ~= "" then return name end
+    return id
+end
+
 function AegisPageVehicles:buildCache()
     if self.vehicles then return end
     self.vehicles = {}
+    self.sources, self.sourceNames = {}, {}
     local scripts = getScriptManager():getAllVehicleScripts()
     for i = 1, scripts:size() do
         local script = scripts:get(i - 1)
@@ -296,18 +321,42 @@ function AegisPageVehicles:buildCache()
             end
             display = display or raw
             local seats = script:getPassengerCount()
+            local src = sourceOf(script)
+            if not self.sourceNames[src] then
+                self.sourceNames[src] = sourceLabel(src)
+                table.insert(self.sources, src)
+            end
             table.insert(self.vehicles, {
                 full = script:getFullName(),
                 display = display,
                 script = script,
                 seats = seats,
                 wreck = wreck,
+                source = src,
+                sourceLabel = self.sourceNames[src],
                 trailer = string.lower(script:getFullName()):find("trailer", 1, true) ~= nil,
-                search = string.lower(display .. " " .. script:getFullName()),
+                search = string.lower(display .. " " .. script:getFullName() .. " " .. self.sourceNames[src]),
             })
         end
     end
     table.sort(self.vehicles, function(a, b) return a.display < b.display end)
+    table.sort(self.sources, function(a, b)
+        if a == VANILLA_SRC then return true end
+        if b == VANILLA_SRC then return false end
+        return self.sourceNames[a] < self.sourceNames[b]
+    end)
+end
+
+-- entry list of the source box: "all sources" on top, then vanilla and
+-- every mod, the wrecks as their own pick at the end; vanilla stays the
+-- preselected default
+function AegisPageVehicles:sourceEntries()
+    local out = { { key = "@all", label = getText("UI_Aegis_VehicleSourceAll") } }
+    for _, src in ipairs(self.sources or {}) do
+        table.insert(out, { key = src, label = self.sourceNames[src] })
+    end
+    table.insert(out, { key = "@wreck", label = getText("UI_Aegis_VehicleWreck") })
+    return out
 end
 
 local WEAR_H = 28
@@ -333,6 +382,16 @@ function AegisPageVehicles:createChildren()
     self.search.onTextChange = function() page:applyFilter() end
     self:addChild(self.search)
 
+    self.sourceCombo = ISComboBox:new(pad + 1, pad + 76, LIST_W - 2, 26, self, AegisPageVehicles.applyFilter)
+    self.sourceCombo:initialise()
+    self.sourceEntryList = self:sourceEntries()
+    for _, e in ipairs(self.sourceEntryList) do self.sourceCombo:addOption(e.label) end
+    self.sourceCombo.selected = 1
+    for i, e in ipairs(self.sourceEntryList) do
+        if e.key == VANILLA_SRC then self.sourceCombo.selected = i break end
+    end
+    self:addChild(self.sourceCombo)
+
     -- action row now holds Edit + Remove instead of Service + Remove
     local nbw = math.floor((LIST_W - 2 - 8) / 2)
     self.editBtn = AegisButton:new(pad + 1, self.height - pad - 37, nbw, 36, getText("UI_Aegis_EditVehicle"), "gear", self, AegisPageVehicles.onEditNear)
@@ -345,7 +404,7 @@ function AegisPageVehicles:createChildren()
     self.removeBtn:setEnabled(false)
     self:addChild(self.removeBtn)
 
-    self.list = ISScrollingListBox:new(pad + 1, pad + 82, LIST_W - 2, self.height - pad * 2 - 83 - 48)
+    self.list = ISScrollingListBox:new(pad + 1, pad + 114, LIST_W - 2, self.height - pad * 2 - 115 - 48)
     self.list:initialise()
     self.list:instantiate()
     self.list.itemheight = ROW_H
@@ -427,10 +486,17 @@ end
 
 function AegisPageVehicles:applyFilter()
     local needle = string.lower(self.search:getInternalText() or "")
+    local pick = self.sourceEntryList and self.sourceEntryList[self.sourceCombo and self.sourceCombo.selected or 1]
+    local want = pick and pick.key or "@all"
     self.list:clear()
     self.list.selected = -1
     for _, v in ipairs(self.vehicles) do
-        if needle == "" or string.find(v.search, needle, 1, true) then
+        -- wrecks stay out of the normal sources, they are their own pick
+        local okSource
+        if want == "@wreck" then okSource = v.wreck == true
+        elseif want == "@all" then okSource = not v.wreck
+        else okSource = (not v.wreck) and v.source == want end
+        if okSource and (needle == "" or string.find(v.search, needle, 1, true)) then
             self.list:addItem(v.display, v)
         end
     end

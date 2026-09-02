@@ -3,6 +3,7 @@ ABWeapon = {}
 ABWeapon.MurasamaBladeScabbard = ItemBodyLocation.register("cat:MurasamaBladeScabbard")
 ABWeapon.OnimaruKunitusnaS = ItemBodyLocation.register("cat:OnimaruKunitusnaS")
 ABWeapon.FantasyKnightSwordScabbard = ItemBodyLocation.register("cat:FantasyKnightSwordScabbard")
+ABWeapon.Avalon_cat = ItemBodyLocation.register("cat:Avalon_cat")
 ABWeapon.MiaoSwordS = ItemBodyLocation.register("cat:MiaoSwordS")
 ABWeapon.YamatoScabbard = ItemBodyLocation.register("cat:YamatoScabbard")
 ABWeapon.NoctisScabbard = ItemBodyLocation.register("cat:NoctisScabbard")

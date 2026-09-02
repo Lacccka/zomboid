@@ -1,5 +1,5 @@
 {
-    "Sandbox_AegisEvents": "Mga Aegis Event",
+    "Sandbox_AegisEvents": "Aegis",
     "Sandbox_AegisSiegeWaves": "Siege: mga wave",
     "Sandbox_AegisSiegeWaves_tooltip": "Ilang horde wave ang ipapadala ng siege.",
     "Sandbox_AegisSiegeCount": "Siege: zombie kada wave",
@@ -58,6 +58,8 @@
     "Sandbox_AegisPlayerClaims_tooltip": "Hinahayaan ang mga player na mag-claim ng zone sa sarili nilang safehouse ayon sa budget ng role. Kapag naka-off, walang makakapag-claim.",
     "Sandbox_AegisPlayerKits": "Aktibo ang mga kit",
     "Sandbox_AegisPlayerKits_tooltip": "Ang kits page sa player area kasama ang booster redeem. Kapag naka-off, nakatago ito sa lahat; gumagana pa rin ang kit editor.",
+    "Sandbox_AegisKitCodeGates": "Mga Discord kit sa kit editor",
+    "Sandbox_AegisKitCodeGates_tooltip": "Nag-aalok ng \"Discord booster\" at \"Sa kit code lamang\" kapag nag-e-edit ng kit. Kailangan ng sariling Discord bot ang dalawa. Kapag naka-off, hindi lalabas sa listahan. Mananatili ito sa kit na gumagamit na nito.",
     "Sandbox_AegisPlayerVehicles": "Naaalalang sasakyan bawat manlalaro",
     "Sandbox_AegisPlayerVehicles_tooltip": "Ilang sasakyan ang maiingatan ng manlalaro sa pahina ng sasakyan sa player area. 0 ang nagpapatay nito. Hindi ito ginagamit kapag tumatakbo ang Knox Claim, may sariling limitasyon ang mod na iyon. Hindi nawawala ang naunang naitala kapag binaba ang halaga.",
     "Sandbox_AegisPlayerHealthInfection": "Ipakita ang impeksiyon ng zombie sa mga manlalaro",

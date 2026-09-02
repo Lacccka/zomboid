@@ -105,7 +105,7 @@ function SendQueue.tick()
         if page then
             if page.dropPanels then
                 page:dropPanels()
-                pcall(function() page:selectGroup(page.activeIndex) end)
+                page:selectGroup(page.activeIndex)
             end
             if page.updateApply then page:updateApply() end
         end

@@ -85,5 +85,8 @@
     "IGUI_ItemCat_L_Scope": "무기 부착물 - 왼쪽 조준경",
     "IGUI_ItemCat_Misc": "무기 부착물 - 기타",
     "IGUI_ItemCat_Skin": "무기 부착물 - 외관 (쓸모없음)",
-    "IGUI_FixItem": "수리 키트 사용"
+    "IGUI_FixItem": "수리 키트 사용",
+    "IGUI_Recoilpad": "반동 패드",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

@@ -47,5 +47,7 @@
     "IGUI_perks_Lightfooted": "Let på tå",
     "IGUI_perks_Nimble": "Smidig",
     "IGUI_perks_Sneaking": "Snig/list",
-    "IGUI_FixItem": "Brug Reparationssæt"
+    "IGUI_FixItem": "Brug Reparationssæt",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

@@ -20,6 +20,8 @@ local MAX_COUNT = 100
 local MAX_ROWS = 200
 -- pseudo entry of the gate, mirrors AegisKits.BOOSTER_ROLE on the server
 local BOOSTER_ROLE = "@booster"
+-- second pseudo entry: reachable only with a redeemed kit code
+local CODE_ROLE = "@code"
 
 local function modeLine(kit)
     if kit.mode == "once" then return getText("UI_Aegis_KitModeOnce") end
@@ -235,13 +237,46 @@ function AegisPageKits:createChildren()
     self.qtyButtons = {}
     local qx = sx
     for _, q in ipairs({ 1, 5, 10 }) do
-        local btn = AegisButton:new(qx, qy, 42, 28, tostring(q), nil, self, function(p, b) p.qty = b.qtyValue end)
+        local btn = AegisButton:new(qx, qy, 42, 28, tostring(q), nil, self, function(p, b)
+            p.qty = b.qtyValue
+            if p.qtyEntry then p.qtyEntry:setText("") end
+        end)
         btn.qtyValue = q
         btn.radius = 14
         self:addChild(btn)
         table.insert(self.qtyButtons, btn)
         qx = qx + 48
     end
+
+    -- free entry for anything the three buttons do not cover
+    -- only when the column really has the room; a fixed width used to push
+    -- the field past the panel edge on a narrow window
+    local qw = sx + sw - qx
+    if qw >= 46 then
+        qw = math.min(52, qw)
+        self.qtyEntry = AegisQtyBox:new(qx, qy, qw, 28)
+        self.qtyEntry:initialise()
+        self.qtyEntry:instantiate()
+        self.qtyEntry:setOnlyNumbers(true)
+        self.qtyEntry:setHasFrame(false)
+        self.qtyEntry:setMaxTextLength(3)
+        self.qtyChip = { x = qx, y = qy, w = qw, h = 28 }
+        self.qtyEntry.onTextChange = function()
+            if page.qtyBusy then return end
+            local v = tonumber(page.qtyEntry:getInternalText() or "")
+            if not v then return end
+            v = math.floor(v)
+            local capped = math.max(1, math.min(MAX_COUNT, v))
+            if capped ~= v then
+                page.qtyBusy = true
+                page.qtyEntry:setText(tostring(capped))
+                page.qtyBusy = false
+            end
+            page.qty = capped
+        end
+        self:addChild(self.qtyEntry)
+    end
+
     self.addBtn = AegisButton:new(sx, by, sw, 32, getText("UI_Aegis_KitAdd"), "plus", self, AegisPageKits.onAddItem)
     self:addChild(self.addBtn)
 
@@ -414,10 +449,24 @@ function AegisPageKits:refreshRoles()
     local known = {}
     -- the booster gate rides in the same list as the real roles, they are
     -- or-linked on the server; it always exists, so it goes first
-    known[BOOSTER_ROLE] = true
-    self.roleList:addItem(BOOSTER_ROLE, {
-        name = BOOSTER_ROLE, label = getText("UI_Aegis_KitRoleBooster"), known = true,
-    })
+    -- both Discord gates need a bot of your own, so a server without one
+    -- can switch them off. A kit that already carries one keeps showing it,
+    -- otherwise the entry would vanish from a configured gate
+    local carries = {}
+    for _, name in ipairs(self.editor.roles or {}) do carries[name] = true end
+    local showDiscord = AegisShared.featureOn("KitCodeGates")
+    if showDiscord or carries[BOOSTER_ROLE] then
+        known[BOOSTER_ROLE] = true
+        self.roleList:addItem(BOOSTER_ROLE, {
+            name = BOOSTER_ROLE, label = getText("UI_Aegis_KitRoleBooster"), known = true,
+        })
+    end
+    if showDiscord or carries[CODE_ROLE] then
+        known[CODE_ROLE] = true
+        self.roleList:addItem(CODE_ROLE, {
+            name = CODE_ROLE, label = getText("UI_Aegis_KitRoleCode"), known = true,
+        })
+    end
     for _, name in ipairs(self.roleNames or {}) do
         known[name] = true
         self.roleList:addItem(name, { name = name, known = true })
@@ -714,6 +763,12 @@ function AegisPageKits:prerender()
         btn.style = btn.qtyValue == self.qty and "gold" or "ghost"
     end
     self.addBtn:setEnabled(self.searchList.items[self.searchList.selected] ~= nil)
+
+    -- last, the page frame above would paint over it
+    local chip = self.qtyChip
+    if chip then
+        Aegis.roundFrame(self, chip.x, chip.y, chip.w, chip.h, 14, 1, Aegis.col.line, Aegis.col.dark)
+    end
 end
 
 local function claimResetToast(args)

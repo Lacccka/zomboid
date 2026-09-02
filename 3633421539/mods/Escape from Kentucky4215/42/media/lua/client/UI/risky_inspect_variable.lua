@@ -28,8 +28,8 @@ attachmentInfo = {{
     y = 416 + 144
 }, {
     type = "Skin",
-    x = 472 + 200,
-    y = 466 + 144
+    x = 608 + 300,
+    y = 280 + 200 - 40
 }, {
     type = "Misc",
     x = 342 + 100,
@@ -92,8 +92,8 @@ attachmentButtonsInfo = {{
     method = "getGrip",
     type = "Grip"
 }, {
-    x = 422 + 200,
-    y = 466 + 144,
+    x = 558 + 300,
+    y = 280 + 200 - 40,
     method = "getSkin",
     type = "Skin"
 }, {

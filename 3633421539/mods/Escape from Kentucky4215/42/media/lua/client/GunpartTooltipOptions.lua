@@ -112,7 +112,7 @@ local function registerModOptions()
         getText("UI_GunpartTooltip_ShowMountList_tooltip")
     )
     tick2.onChangeApply = function(self, value)
-        GTO._showMountList = (value == true)
+        GTO._showMountList = (value == false)
     end
 
     _registered = true

@@ -33,7 +33,7 @@ module zReLabItems {
 		Weight = 0.5,
 		Icon = BkLaboratoryEquipment3,
 		NumberOfPages	= 20,
-		LearnedRecipes = zReLabFrnMakeTestTube;zReLabFrnMakeFlask;zReLabFrnMakeSyringeReusable;zReLabOthCreateCork;zReLabMedImprovisedCottonBalls;zReLabChmPourTestTubeOut;zReLabChmSterilizeTestTube;zReLabChmSterilizeTestTube5;zReLabChmSterilizeTestTube10,
+		LearnedRecipes = zReLabFrnMakeTestTube;zReLabFrnMakeFlask;zReLabFrnMakeSyringeReusable;zReLabOthCreateCork;zReLabMedImprovisedCottonBalls;zReLabChmPourTestTubeOut;zReLabChmSterilizeTestTube,
 		StaticModel = Book,
 		WorldStaticModel = BookLightBlue_Ground,
 		Tooltip = Tooltip_BkLaboratoryEquipment3,

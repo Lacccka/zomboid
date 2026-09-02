@@ -22,6 +22,12 @@ local PLAYER_MODULE = "AegisPlayer"
 local BOOSTER_ROLE = "@booster"
 AegisKits.BOOSTER_ROLE = BOOSTER_ROLE
 
+-- second pseudo entry: the kit opens ONLY through a redeemed kit code.
+-- It never matches on its own, the voucher is checked before the gate, so
+-- a kit carrying just this entry is invisible until somebody redeems one
+local CODE_ROLE = "@code"
+AegisKits.CODE_ROLE = CODE_ROLE
+
 local KITS_FILE = AegisStore.ROOT .. "/Player/kits.txt"
 local CLAIMS_FILE = AegisStore.ROOT .. "/Player/claims.txt"
 
@@ -274,10 +280,9 @@ end
 -- it: a role deleted meanwhile must not drop out of the gate on the next
 -- save, that would widen the kit back to everyone behind the admin's back
 local function roleAccepted(name, stored)
-    if name == BOOSTER_ROLE then return true end
-    if AegisRoles and AegisRoles.roleExists then
-        local ok, res = pcall(AegisRoles.roleExists, name)
-        if ok and res == true then return true end
+    if name == BOOSTER_ROLE or name == CODE_ROLE then return true end
+    if AegisRoles and AegisRoles.roleExists and AegisRoles.roleExists(name) == true then
+        return true
     end
     for _, r in ipairs(stored or {}) do
         if r == name then return true end
@@ -289,22 +294,19 @@ end
 local function isBooster(userName)
     if type(userName) ~= "string" or userName == "" then return false end
     if not (AegisBoost and AegisBoost.isBooster) then return false end
-    local ok, res = pcall(AegisBoost.isBooster, userName)
-    return ok and res == true
+    return AegisBoost.isBooster(userName) == true
 end
 
 -- true while the boost store failed to read completely; booster gated kits
 -- lock then instead of silently closing (a drop reads like a revoke)
 local function boostStoreDown()
     if not (AegisBoost and AegisBoost.available) then return false end
-    local ok, res = pcall(AegisBoost.available)
-    return not ok or res == false
+    return AegisBoost.available() == false
 end
 
 local function boostKeySet()
     if not (AegisBoost and AegisBoost.keySet) then return false end
-    local ok, res = pcall(AegisBoost.keySet)
-    return ok and res == true
+    return AegisBoost.keySet() == true
 end
 
 local function hasBoosterGate(kit)
@@ -319,10 +321,20 @@ end
 -- same name works again and so nobody is silently let in. @booster is
 -- checked against the boost store and counts like any other entry, so a
 -- kit gated to "Veteran" plus @booster opens for either
+-- filled by Aegis_KitCodes: a redeemed code is a voucher for exactly one
+-- claim of one kit and opens it no matter what the gate says
+function AegisKits.voucherFor(userName, kitId)
+    if not (AegisKitCodes and AegisKitCodes.hasVoucher) then return false end
+    return AegisKitCodes.hasVoucher(userName, kitId) == true
+end
+
 local function kitAllowedFor(kit, roleName, userName)
+    if kit and AegisKits.voucherFor(userName, kit.id) then return true, "code" end
     local list = kit and kit.roles
     if type(list) ~= "table" or #list == 0 then return true, "open" end
     for _, r in ipairs(list) do
+        -- @code is not handled here on purpose: it can never equal a role
+        -- name, so the loop passes it by and only the voucher above opens it
         if r == BOOSTER_ROLE then
             -- an unreadable boost store never opens the gate, the caller
             -- reports "unavailable" instead
@@ -339,6 +351,7 @@ end
 -- boost scope: no pp.kits, access exists only through the configured boost
 -- key. Exactly the booster gated kits open, everything else stays hidden
 local function kitVisibleFor(kit, roleName, userName, boostOnly)
+    if kit and AegisKits.voucherFor(userName, kit.id) then return true, "code" end
     if boostOnly then
         if not hasBoosterGate(kit) then return false end
         if not boostStoreDown() and isBooster(userName) then return true, "boost" end
@@ -351,8 +364,8 @@ end
 local function roleOf(name)
     if not isServer() then return nil end
     if not (AegisRoles and AegisRoles.assignedRole) then return nil end
-    local ok, r = pcall(AegisRoles.assignedRole, name)
-    if ok and type(r) == "string" and r ~= "" then return r end
+    local r = AegisRoles.assignedRole(name)
+    if type(r) == "string" and r ~= "" then return r end
     return nil
 end
 
@@ -468,7 +481,10 @@ function AegisKits.claim(player, kitId, boostOnly)
     end
     if player:isDead() then return false, "error" end
     local now = AegisShared.realTime()
-    local last = claims[name] and claims[name][kit.id]
+    -- a voucher is worth exactly one claim and ignores the kit's own rhythm,
+    -- otherwise a one time kit already taken would make the code worthless
+    local voucher = AegisKits.voucherFor(name, kit.id)
+    local last = (not voucher) and claims[name] and claims[name][kit.id] or nil
     if last then
         if kit.mode == "once" then return false, "once" end
         if kit.mode == "month" then
@@ -495,6 +511,9 @@ function AegisKits.claim(player, kitId, boostOnly)
         end
     end
     if granted == 0 then return false, "error" end
+    if voucher and AegisKitCodes and AegisKitCodes.useVoucher then
+        AegisKitCodes.useVoucher(name, kit.id)
+    end
     claims[name] = claims[name] or {}
     claims[name][kit.id] = now
     AegisStore.append(CLAIMS_FILE, "C|" .. name .. "|" .. kit.id .. "|" .. tostring(now))
@@ -640,8 +659,8 @@ local function panelKitScope(name)
     if not AegisShared.featureOn("PlayerKits") then return nil end
     if not isServer() then return "full" end
     if not (AegisRoles and AegisRoles.playerPanelFor) then return nil end
-    local ok, pp = pcall(AegisRoles.playerPanelFor, name)
-    if not ok or type(pp) ~= "table" then return nil end
+    local pp = AegisRoles.playerPanelFor(name)
+    if type(pp) ~= "table" then return nil end
     if pp.kits == true then return "full" end
     if boostKeySet() then return "boost" end
     return nil
@@ -689,8 +708,8 @@ end
 
 local function knownRoleNames()
     if not (AegisRoles and AegisRoles.roleNames) then return {} end
-    local ok, names = pcall(AegisRoles.roleNames)
-    if ok and type(names) == "table" then return names end
+    local names = AegisRoles.roleNames()
+    if type(names) == "table" then return names end
     return {}
 end
 

@@ -61,8 +61,7 @@ local function permitted(player, capName, area)
     -- for its areas; the vanilla capability gate stays only for the
     -- vanilla-admin fallthrough (the role object drops
     -- capabilities in some sessions and blocked the owner himself)
-    local rights = nil
-    pcall(function() rights = AegisRoles.effectiveRights(player) end)
+    local rights = AegisRoles.effectiveRights(player)
     if type(rights) == "table" then return true end
     if not allowed(player, capName) then
         print("[Aegis] denied capability " .. tostring(capName) .. " for " .. tostring(player and player:getUsername()))
@@ -76,6 +75,215 @@ end
 
 -- active horde lures: location, range, expiry, initiator as sound source
 local lures = {}
+
+-- pending firework volleys, drained by the tick watcher behind the ops
+local fireworks = {}
+
+local function weatherHours(t)
+    return math.max(1, tonumber(t and t.hours) or 24)
+end
+
+-- world actions without a permission gate: the Commands wrappers keep
+-- permission and client input checks and delegate here, server-side
+-- callers (schedulers, events) use these directly
+AegisWorldOps = AegisWorldOps or {}
+
+AegisWorldOps.horde = function(t)
+    if not t or not t.x or not t.y or not t.z then return end
+    local player = t.player
+    local count = t.count or 10
+    local radius = t.radius or 8
+    local crawler = t.crawler == true
+    local onFire = t.onFire == true
+    local sprinter = t.sprinter == true
+    local paratrooper = t.paratrooper == true
+    local heightOffset = t.heightOffset or 0
+    local px, py, pz = t.x, t.y, t.z
+    local dist = t.dist
+
+    local sx, sy = px, py
+    if dist and dist > 0 then
+        local a = ZombRand(360) * math.pi / 180
+        sx = math.max(0, math.floor(px + math.cos(a) * dist))
+        sy = math.max(0, math.floor(py + math.sin(a) * dist))
+        radius = math.max(radius, 4)
+    end
+
+    -- paratroopers spawn ON THE GROUND server side: the engine heightOffset
+    -- fall never reaches the clients in B42 MP (zombies hung
+    -- invisible until the old watchdog dropped them). The fall is a pure
+    -- client visual now: every client lifts its local copy and lets the
+    -- engine fall physics land it (paraFx broadcast below)
+    local spawned = 0
+    local paraIds = {}
+    for i = 1, count do
+        local x = ZombRand(sx - radius, sx + radius + 1)
+        local y = ZombRand(sy - radius, sy + radius + 1)
+        local zeds = addZombiesInOutfit(x, y, pz, 1, nil, 50, crawler and not sprinter,
+            false, false, false, false, false, 1, false, 0, false, onFire)
+        if zeds then
+            spawned = spawned + zeds:size()
+            if paratrooper then
+                for j = 0, zeds:size() - 1 do
+                    local zed = zeds:get(j)
+                    if isServer() then
+                        table.insert(paraIds, zed:getOnlineID())
+                    else
+                        -- solo runs in-process: lift directly, the engine
+                        -- fall physics land it (proven by the debug UI)
+                        zed:setZ(pz + heightOffset)
+                        zed:setbFalling(true)
+                    end
+                end
+            end
+            if sprinter then
+                for j = 0, zeds:size() - 1 do
+                    local zed = zeds:get(j)
+                    zed:setWalkType("sprint" .. tostring(ZombRand(2) + 1))
+                    zed:setSpeedTypeFromWalkType()
+                end
+            end
+        end
+    end
+
+    -- approach: the horde walks toward the ACTIVATION spot, not the admin.
+    -- The lure keeps pulsing there minute by minute (see lureWatch),
+    -- otherwise the horde loses its target as soon as it gets distracted
+    -- or the admin flees
+    local approach = dist and dist > 0
+    if approach then
+        addSound(player, px, py, pz, math.floor(dist) + 80, 100)
+        local minutes = math.max(1, math.min(30, math.floor(tonumber(t.lureMinutes) or 5)))
+        table.insert(lures, {
+            x = px, y = py, z = pz,
+            radius = math.floor(dist) + 80,
+            expiresAt = AegisShared.realTime() + minutes * 60,
+            players = player,
+        })
+    end
+
+    -- report the honest number: requested vs actually spawned shows right
+    -- away when a spawn point was outside the loaded area
+    -- the fall visual runs on EVERY client, not just the initiator
+    if isServer() and paratrooper and #paraIds > 0 then
+        sendServerCommand(AegisShared.MODULE, "paraFx", { ids = paraIds, ground = pz, height = heightOffset })
+    end
+
+    if player then
+        AegisLog.write("Actions", player:getUsername(), player:getUsername(),
+            string.format("Horde spawned: %d of %d zombies at %d,%d (radius %d)%s",
+                spawned, count, sx, sy, radius, approach and (", approach from " .. math.floor(dist) .. "m") or ""))
+        toClient(player, "hordeResult", { spawned = spawned, requested = count })
+    end
+end
+
+-- golden banner on every client, the same "banner" command the restart
+-- timer broadcasts on
+AegisWorldOps.announce = function(t)
+    local text = tostring(t and t.text or ""):sub(1, 200)
+    if text == "" then return end
+    if isServer() then
+        sendServerCommand(AegisShared.MODULE, "banner", { text = text })
+    else
+        triggerEvent("OnServerCommand", AegisShared.MODULE, "banner", { text = text })
+    end
+end
+
+-- same call the vanilla "event" module handler runs for a client clap
+-- (ClientCommands.lua); without coordinates it lands on the local player,
+-- headless callers must pass a spot
+AegisWorldOps.thunder = function(t)
+    local x = tonumber(t and t.x)
+    local y = tonumber(t and t.y)
+    if not x or not y then
+        local p = getPlayer()
+        if not p then return end
+        x, y = p:getX(), p:getY()
+    end
+    getClimateManager():getThunderStorm():triggerThunderEvent(x, y, true, true, true)
+end
+
+-- what the vanilla /gunshot command runs: the engine picks a spot near a
+-- random living player and raises the world sound itself
+AegisWorldOps.gunshot = function()
+    getAmbientStreamManager():doGunEvent()
+end
+
+-- five claps in rhythm like the client page celebration
+AegisWorldOps.firework = function(t)
+    table.insert(fireworks, { x = t and t.x, y = t and t.y, left = 5, nextAt = 0 })
+end
+
+AegisWorldOps.noise = function(t)
+    if not t or not t.x or not t.y or not t.z then return end
+    addSound(t.player, math.floor(t.x), math.floor(t.y), math.floor(t.z),
+        math.max(1, math.floor(tonumber(t.radius) or 100)), 100)
+end
+
+-- the same stage trigger the engine runs when a client transmits one; the
+-- server's climate packet carries the change to every player
+AegisWorldOps.storm = function(t)
+    getClimateManager():triggerCustomWeatherStage(WeatherPeriod.STAGE_STORM, weatherHours(t))
+end
+
+AegisWorldOps.tropical = function(t)
+    getClimateManager():triggerCustomWeatherStage(WeatherPeriod.STAGE_TROPICAL_STORM, weatherHours(t))
+end
+
+AegisWorldOps.blizzard = function(t)
+    getClimateManager():triggerCustomWeatherStage(WeatherPeriod.STAGE_BLIZZARD, weatherHours(t))
+end
+
+AegisWorldOps.stopWeather = function()
+    getClimateManager():stopWeatherAndThunder()
+end
+
+-- instant rain via the admin pin on precipitation plus a cloud pin. MP:
+-- cloud first, transmitServerStartRain pins the rain and broadcasts both
+-- pins in one packet (the /startrain path); solo applies directly
+AegisWorldOps.rainOn = function(t)
+    local v = math.max(0, math.min(100, tonumber(t and t.intensity) or 100)) / 100
+    local cm = getClimateManager()
+    local cloud = cm:getClimateFloat(ClimateManager.FLOAT_CLOUD_INTENSITY)
+    cloud:setEnableAdmin(true)
+    cloud:setAdminValue(math.max(0.6, v))
+    if isServer() then
+        cm:transmitServerStartRain(v)
+    else
+        local precip = cm:getClimateFloat(ClimateManager.FLOAT_PRECIPITATION_INTENSITY)
+        precip:setEnableAdmin(true)
+        precip:setAdminValue(v)
+    end
+end
+
+AegisWorldOps.rainOff = function()
+    local cm = getClimateManager()
+    cm:getClimateFloat(ClimateManager.FLOAT_CLOUD_INTENSITY):setEnableAdmin(false)
+    if isServer() then
+        cm:transmitServerStopRain()
+    else
+        cm:getClimateFloat(ClimateManager.FLOAT_PRECIPITATION_INTENSITY):setEnableAdmin(false)
+    end
+end
+
+-- clap cadence sits below one second: EveryOneMinute counts game time and
+-- the second clock is too coarse, the ms clock with a tick gate does it
+-- (same pattern as the carry sweep)
+local function fireworkTick()
+    if #fireworks == 0 then return end
+    local now = getTimestampMs()
+    for i = #fireworks, 1, -1 do
+        local f = fireworks[i]
+        if now >= f.nextAt then
+            AegisWorldOps.thunder({ x = f.x, y = f.y })
+            f.left = f.left - 1
+            f.nextAt = now + 450
+            if f.left <= 0 then table.remove(fireworks, i) end
+        end
+    end
+end
+
+Events.OnTick.Add(fireworkTick)
 
 local function findByUsername(name)
     local players = getOnlinePlayers()
@@ -199,7 +407,7 @@ Events.OnTick.Add(function()
         local p = getPlayer()
         if p then
             local value = carryWeights[p:getUsername() or ""]
-            if value and p:getMaxWeight() ~= value then carryApply(p, value) end
+            if value and p:getMaxWeightBase() ~= value then carryApply(p, value) end
         end
         return
     end
@@ -207,7 +415,7 @@ Events.OnTick.Add(function()
         local p = players:get(i)
         if p then
             local value = carryWeights[p:getUsername() or ""]
-            if value and p:getMaxWeight() ~= value then carryApply(p, value) end
+            if value and p:getMaxWeightBase() ~= value then carryApply(p, value) end
         end
     end
 end)
@@ -243,83 +451,21 @@ Commands.horde = function(player, args)
     -- (bytecode verified), cap kept low on purpose against bad client
     -- input, matching the slider (1 to 8)
     local heightOffset = paratrooper and math.min(8, math.max(1, tonumber(args.height) or 4)) or 0
-    local px = math.floor(tonumber(args.x) or player:getX())
-    local py = math.floor(tonumber(args.y) or player:getY())
-    local pz = math.floor(tonumber(args.z) or player:getZ())
-    local dist = tonumber(args.dist)
-
-    local sx, sy = px, py
-    if dist and dist > 0 then
-        local a = ZombRand(360) * math.pi / 180
-        sx = math.max(0, math.floor(px + math.cos(a) * dist))
-        sy = math.max(0, math.floor(py + math.sin(a) * dist))
-        radius = math.max(radius, 4)
-    end
-
-    -- paratroopers spawn ON THE GROUND server side: the engine heightOffset
-    -- fall never reaches the clients in B42 MP (zombies hung
-    -- invisible until the old watchdog dropped them). The fall is a pure
-    -- client visual now: every client lifts its local copy and lets the
-    -- engine fall physics land it (paraFx broadcast below)
-    local spawned = 0
-    local paraIds = {}
-    for i = 1, count do
-        local x = ZombRand(sx - radius, sx + radius + 1)
-        local y = ZombRand(sy - radius, sy + radius + 1)
-        local zeds = addZombiesInOutfit(x, y, pz, 1, nil, 50, crawler and not sprinter,
-            false, false, false, false, false, 1, false, 0, false, onFire)
-        if zeds then
-            spawned = spawned + zeds:size()
-            if paratrooper then
-                for j = 0, zeds:size() - 1 do
-                    local zed = zeds:get(j)
-                    if isServer() then
-                        table.insert(paraIds, zed:getOnlineID())
-                    else
-                        -- solo runs in-process: lift directly, the engine
-                        -- fall physics land it (proven by the debug UI)
-                        zed:setZ(pz + heightOffset)
-                        zed:setbFalling(true)
-                    end
-                end
-            end
-            if sprinter then
-                for j = 0, zeds:size() - 1 do
-                    local zed = zeds:get(j)
-                    zed:setWalkType("sprint" .. tostring(ZombRand(2) + 1))
-                    zed:setSpeedTypeFromWalkType()
-                end
-            end
-        end
-    end
-
-    -- approach: the horde walks toward the ACTIVATION spot, not the admin.
-    -- The lure keeps pulsing there minute by minute (see lureWatch),
-    -- otherwise the horde loses its target as soon as it gets distracted
-    -- or the admin flees
-    local approach = dist and dist > 0
-    if approach then
-        addSound(player, px, py, pz, math.floor(dist) + 80, 100)
-        local minutes = math.max(1, math.min(30, math.floor(tonumber(args.lureMinutes) or 5)))
-        table.insert(lures, {
-            x = px, y = py, z = pz,
-            radius = math.floor(dist) + 80,
-            expiresAt = AegisShared.realTime() + minutes * 60,
-            players = player,
-        })
-    end
-
-    -- report the honest number: requested vs actually spawned shows right
-    -- away when a spawn point was outside the loaded area
-    -- the fall visual runs on EVERY client, not just the initiator
-    if isServer() and paratrooper and #paraIds > 0 then
-        sendServerCommand(AegisShared.MODULE, "paraFx", { ids = paraIds, ground = pz, height = heightOffset })
-    end
-
-    AegisLog.write("Actions", player:getUsername(), player:getUsername(),
-        string.format("Horde spawned: %d of %d zombies at %d,%d (radius %d)%s",
-            spawned, count, sx, sy, radius, approach and (", approach from " .. math.floor(dist) .. "m") or ""))
-    toClient(player, "hordeResult", { spawned = spawned, requested = count })
+    AegisWorldOps.horde({
+        player = player,
+        count = count,
+        radius = radius,
+        crawler = crawler,
+        onFire = onFire,
+        sprinter = sprinter,
+        paratrooper = paratrooper,
+        heightOffset = heightOffset,
+        x = math.floor(tonumber(args.x) or player:getX()),
+        y = math.floor(tonumber(args.y) or player:getY()),
+        z = math.floor(tonumber(args.z) or player:getZ()),
+        dist = tonumber(args.dist),
+        lureMinutes = args.lureMinutes,
+    })
 end
 
 -- spawn vehicle at the chosen position with facing direction
@@ -369,10 +515,9 @@ Commands.spawnvehicle = function(player, args)
     -- log outside the spawn pcall: a logging error must not swallow the
     -- spawn result and needs to surface on its own
     if spawned then
-        local ok, err = pcall(AegisLog.write, "Actions", player:getUsername(), player:getUsername(),
+        AegisLog.write("Actions", player:getUsername(), player:getUsername(),
             string.format("Vehicle spawned: %s at %d,%d,%d, angle %d",
                 tostring(args.name or args.script), x, y, z, math.floor(angle)))
-        if not ok then print("[Aegis] Spawn log failed: " .. tostring(err)) end
     end
     reply(spawned, newId, x, y, z)
 end
@@ -782,8 +927,7 @@ end
 -- tools permission without the denial toast, for the two-lane check below
 local function toolsPermittedQuiet(player)
     if not AegisRoles.canArea(player, "tools") then return false end
-    local rights = nil
-    pcall(function() rights = AegisRoles.effectiveRights(player) end)
+    local rights = AegisRoles.effectiveRights(player)
     if type(rights) == "table" then return true end
     return allowed(player, "AddItem")
 end
@@ -1323,9 +1467,8 @@ local function vehicleMoveWatch()
         if finished then
             table.remove(pendingVehicleMoves, i)
             if moved then
-                local okLog, err = pcall(AegisLog.write, "Actions", m.player:getUsername(), m.player:getUsername(),
+                AegisLog.write("Actions", m.player:getUsername(), m.player:getUsername(),
                     string.format("Vehicle teleport (recreated) to %d,%d,%d%s", m.x, m.y, m.z, m.hasTrailer and " with trailer" or ""))
-                if not okLog then print("[Aegis] Vehicle teleport log failed: " .. tostring(err)) end
             else
                 print("[Aegis] vehicle teleport refused: " .. tostring(reason))
             end
@@ -1544,9 +1687,8 @@ Commands.spawnanimal = function(player, args)
         end
     end)
     if spawned then
-        local ok, err = pcall(AegisLog.write, "Actions", player:getUsername(), player:getUsername(),
+        AegisLog.write("Actions", player:getUsername(), player:getUsername(),
             string.format("Animal spawned: %s at %d,%d,%d", tostring(args.name or args.type), x, y, z))
-        if not ok then print("[Aegis] Spawn log failed: " .. tostring(err)) end
     end
     reply(spawned)
 end
@@ -1756,11 +1898,7 @@ Commands.announce = function(player, args)
     end
     local text = tostring(args and args.text or ""):sub(1, 200)
     if text == "" then return end
-    if isServer() then
-        sendServerCommand(AegisShared.MODULE, "banner", { text = text })
-    else
-        triggerEvent("OnServerCommand", AegisShared.MODULE, "banner", { text = text })
-    end
+    AegisWorldOps.announce({ text = text })
     AegisLog.write("Actions", player:getUsername(), player:getUsername(), "Announcement banner: " .. text)
 end
 

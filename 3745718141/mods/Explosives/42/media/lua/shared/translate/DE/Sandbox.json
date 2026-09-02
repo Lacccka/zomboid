@@ -11,5 +11,7 @@
     "Sandbox_ExplosivesOptions_DelayedFuseEnabled": "Verzögerte Zündung bei Landung",
     "Sandbox_ExplosivesOptions_DelayedFuseEnabled_tooltip": "Standardmäßig aus. Wenn aktiviert, landen die eigenen Granaten dieses Mods (Mk2, M26, M67, M84 Flashbang, M14 TH3) scharf am Boden und explodieren erst nach ein paar Sekunden, statt sofort beim Aufprall zu detonieren. Betrifft nicht Minen/Claymores (die bereits als platzierte Fallen landen) oder vanilla Wurfwaffen.",
     "Sandbox_ExplosivesOptions_DelayedFuseSeconds": "Zünderverzögerung (Sekunden)",
-    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "Wie viele Sekunden eine gelandete Granate scharf am Boden liegt, bevor sie explodiert, wenn 'Verzögerte Zündung bei Landung' aktiviert ist."
+    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "Wie viele Sekunden eine gelandete Granate scharf am Boden liegt, bevor sie explodiert, wenn 'Verzögerte Zündung bei Landung' aktiviert ist.",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled": "Debug-Spawn-Taste aktivieren",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled_tooltip": "Standardmäßig aus. Wenn aktiviert, erzeugt Shift + Nummernblock \"+\" (in den Mod-Optionen neu belegbar) eine einzelne Blendgranate direkt im Inventar für schnelle Flugbahn-Tests."
 }

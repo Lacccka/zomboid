@@ -31,7 +31,7 @@ local function zMathFloor(x)
         return int - 1
     end
 end
-local function FastWeightedRand() -- Рандомайзер с весом от 9 до 26 со склонением к 16
+local function FastWeightedRand() -- Рандомайзер с весом от 9 до 26 с склонением к 16
     local result = (ZombRand(9, 26) + ZombRand(9, 26) + 16) / 3
     if result < 9 then result = 9 end
     if result > 25 then result = 25 end
@@ -294,7 +294,7 @@ function zReVAC2_LabRecipes_ChmDoBloodTest(craftRecipeData, player)
 		inv:AddItem(testresult)
 		sendAddItemToContainer(inv, testresult)
 		
-		local infectionRate = LabRecipes_InfectionRate(player)
+		local infectionRate = LabRecipes_InfectionRate(player)*100
 		if isClient() or isServer() then -- мультиплеер
 			local args = { ZitemId = testresult:getID(), ZinfectionRate = zMathFloor(infectionRate) }
 			sendServerCommand(player, 'zReVACser', 'zReNameTestResultPos', args)
@@ -305,70 +305,70 @@ function zReVAC2_LabRecipes_ChmDoBloodTest(craftRecipeData, player)
 	end
 end
 
+
+--- ZRETESTUDO 
+-- 
+
+
 -- ВЗЯТЬ КРОВЬ ДЛЯ ДАЛЬНЕЙШЕЙ РАБОТЫ -- medical, handcraft
 -- 500ml = 100%hp | 300ml = 60%hp | 25ml = 5%hp but x DeltaHP = ~7% = 1 Syringe
 function LabRecipes_ChmTakeBloodForNextWork(craftRecipeData, player)
 	local result = craftRecipeData:getAllCreatedItems():get(0);
 	local iMod = result:getModData();
 	iMod.IsInfected = player:getBodyDamage():isInfected()
-	iMod.InfectionRate = LabRecipes_InfectionRate(player)
+	iMod.InfectionRate = LabRecipes_InfectionRate(player)*100
 	iMod.IsAntibodied = player:hasTrait(zReVAC2Traits.ZREVAC2_ANTIBODIES)
-	--syncItemModData(player, result)	-- don't need it
-	-- print("zReTEST IsInfected: " .. tostring(result:getModData().IsInfected))
-	-- print("zReTEST InfectionRate: " .. tostring(result:getModData().InfectionRate))
-	-- print("zReTEST IsAntibodied: " .. tostring(result:getModData().IsAntibodied))
 
 	player:getBodyDamage():ReduceGeneralHealth(researchReduceHealth)
 	if player:getBodyDamage():getOverallBodyHealth() < researchMinHealthNotification then
 		player:Say(getText("IGUI_zReVaccineLessHp"));
 	end
+	result:syncItemModData()
 end
 
--- АНАЛИЗИРОВАТЬ ШПРИЦ С КРОВЬЮ -- chemistry, spectrometer		-- /setaccesslevel "kERHUS" admin
+-- СДЕЛАТЬ ПОДРОБНЫЙ АНАЛИЗ КРОВИ -- chemistry, spectrometer		-- /setaccesslevel "kERHUS" admin
 function zReVAC2_LabRecipes_ChmDoBloodAnalysis(craftRecipeData, player)
-	local item = craftRecipeData:getAllConsumedItems():get(0);
-	local result = craftRecipeData:getAllCreatedItems():get(0);
-	local iMod = result:getModData();
-	iMod.IsInfected = item:getModData().IsInfected;
-	iMod.InfectionRate = item:getModData().InfectionRate;
-	iMod.IsAntibodied = item:getModData().IsAntibodied;
+	local item = craftRecipeData:getAllConsumedItems():get(0)
+	local result = craftRecipeData:getAllCreatedItems():get(0)
+	
+	local isInfected = item:getModData().IsInfected
+	local infectionRate = item:getModData().InfectionRate
+	local isAntibodied = item:getModData().IsAntibodied
 	
 	local ZtranslationKey 
 	local ZtranslationIncident
-	local zItemInfectionRate = zMathFloor(item:getModData().InfectionRate)
+	local zItemInfectionRate = zMathFloor(infectionRate)
+	local zItemBloodCellsChance
 	
-	if not iMod.IsInfected then
-		if not iMod.IsAntibodied then	-- не заражён, нет устойчивых антител
-			iMod.BloodCellsChance = -20;
-			ZtranslationKey = getText("IGUI_CmpTestTubeWithInfectedBloodVmAm")
-			ZtranslationIncident = 1
-		 else							-- не заражён, есть устойчивые антитела
-			iMod.BloodCellsChance = 25;
-			ZtranslationKey = getText("IGUI_CmpTestTubeWithInfectedBloodVmAp")
-			ZtranslationIncident = 2
-		end
-	 else
-	    if not iMod.IsAntibodied then	-- заражён, нет устойчивых антител
-			iMod.BloodCellsChance = 30;
-			ZtranslationKey = getText("IGUI_CmpTestTubeWithInfectedBloodVpAm", zItemInfectionRate)
-			ZtranslationIncident = 3
-		 else							-- заражён, есть устойчивые антитела
-			iMod.BloodCellsChance = 40;
+	if isInfected then
+	    if isAntibodied then	-- заражён, есть устойчивые антитела
+			zItemBloodCellsChance = 40;
 			ZtranslationKey = getText("IGUI_CmpTestTubeWithInfectedBloodVpAp", zItemInfectionRate)
 			ZtranslationIncident = 4
+		 else						-- заражён, нет устойчивых антител
+			zItemBloodCellsChance = 30;
+			ZtranslationKey = getText("IGUI_CmpTestTubeWithInfectedBloodVpAm", zItemInfectionRate)
+			ZtranslationIncident = 3				
+		end
+	 else
+		if isAntibodied then		-- не заражён, есть устойчивые антитела
+			zItemBloodCellsChance = 25;
+			ZtranslationKey = getText("IGUI_CmpTestTubeWithInfectedBloodVmAp")
+			ZtranslationIncident = 2
+		 else						-- не заражён, нет устойчивых антител
+			zItemBloodCellsChance = -20;
+			ZtranslationKey = getText("IGUI_CmpTestTubeWithInfectedBloodVmAm")
+			ZtranslationIncident = 1
 		end
 	end
 	
 	if isClient() or isServer() then -- мультиплеер
-		local args = { ZitemId = result:getID(), translationIncident = ZtranslationIncident, ItemInfectionRate = zItemInfectionRate }
+		local args = { ZitemId = result:getID(), translationIncident = ZtranslationIncident, ItemInfectionRate = zItemInfectionRate, ItemBloodCellsChance = zItemBloodCellsChance }
 		sendServerCommand(player, 'zReVACser', 'zReNameTestTube', args)
 	 else	-- сингл
 		result:setName(ZtranslationKey)
 		result:setCustomName(true)
 	end
-	
-    result:syncItemFields()
-	sendItemStats(result)
 end
 
 
@@ -403,7 +403,7 @@ function zReVAC2_LabRecipes_ChmGetAnAlbumin(craftRecipeData, player)
     end
 end
 
--- РАЗДЕЛИТЬ КРОВЬ НА КОМПОНЕНТЫ -- chemistry, centrifuge
+-- РАЗДЕЛИТЬ КРОВЬ НА КОМПОНЕНТЫ -- chemistry, centrifuge		-- /setaccesslevel "kERHUS" admin
 function zReVAC2_LabRecipes_ChmDivideBloodIntoComponents(craftRecipeData, player)
 	local result = craftRecipeData:getAllCreatedItems():get(0);
 	local result2 = craftRecipeData:getAllCreatedItems():get(1);
@@ -416,7 +416,7 @@ function zReVAC2_LabRecipes_ChmDivideBloodIntoComponents(craftRecipeData, player
 	local iModFrom1 = testTubeWBlood1:getModData().BloodCellsChance or -20
 	local iModFrom2 = testTubeWBlood2:getModData().BloodCellsChance or -20
 	local iModFrom3 = testTubeWBlood3:getModData().BloodCellsChance or -20
-	local zReBloodCellsChance = iModFrom1 + iModFrom2 + iModFrom3;
+	local zReBloodCellsChance = iModFrom1 + iModFrom2 + iModFrom3; 
 	local inv = player:getInventory()
 
 	if zReBloodCellsChance > ZombRand(100) then

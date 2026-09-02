@@ -87,5 +87,19 @@
     "IGUI_ItemCat_Skin": "Weapon attachment - Skin (useless)",
     "IGUI_FixItem": "Use Repair Kit",
     "IGUI_invpanel_Weight": "Weight",
-    "IGUI_invpanel_Condition": "Condition"
+    "IGUI_invpanel_Condition": "Condition",
+    "IGUI_Recoilpad": "Recoil pad",
+    "IGUI_CraftCategory_现代枪械系统ModernFirearmsSystem": "Modern Firearms System",
+    "IGUI_CraftingCategories_Ammunition": "Ammmunition",
+    "IGUI_NONE": "None",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate",
+    "IGUI_MFSTrade_Title": "Radio Trade",
+    "IGUI_MFSTrade_Money": "Money",
+    "IGUI_MFSTrade_Buy": "Buy",
+    "IGUI_MFSTrade_BuyHint": "sell to trader",
+    "IGUI_MFSTrade_Sell": "Sell",
+    "IGUI_MFSTrade_SellHint": "buy from trader",
+    "IGUI_MFSTrade_NeedRadio": "Need walkie-talkie",
+    "IGUI_MFSTrade_Refresh": "Refresh in"
 }

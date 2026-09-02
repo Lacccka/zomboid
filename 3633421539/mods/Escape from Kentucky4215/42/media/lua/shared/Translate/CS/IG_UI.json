@@ -1528,5 +1528,7 @@
     "IGUI_SearchMode_Debug_Overlay_Config_Radius_Interior": "Target Radius (Interior)",
     "IGUI_ItemCat_Entertainment": "Zábava",
     "IGUI_SearchMode_Debug_Overlay_Config_Gradient_Exterior": "Target Gradient Width (Exterior)",
-    "IGUI_FixItem": "Použít Opravnou Sadu"
+    "IGUI_FixItem": "Použít Opravnou Sadu",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

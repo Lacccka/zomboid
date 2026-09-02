@@ -11,5 +11,7 @@
     "Sandbox_ExplosivesOptions_DelayedFuseEnabled": "Mecha Retardada al Aterrizar",
     "Sandbox_ExplosivesOptions_DelayedFuseEnabled_tooltip": "Desactivado por defecto. Cuando está activado, las granadas propias de este mod (Mk2, M26, M67, M84 Flashbang, M14 TH3) aterrizan armadas y esperan unos segundos antes de explotar, en lugar de detonar inmediatamente al impacto. No afecta a las minas/Claymore (que ya caen como trampas colocadas) ni a los objetos arrojadizos vanilla.",
     "Sandbox_ExplosivesOptions_DelayedFuseSeconds": "Retardo de Mecha (segundos)",
-    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "Cuántos segundos permanece armada una granada aterrizada antes de explotar, cuando 'Mecha Retardada al Aterrizar' está activado."
+    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "Cuántos segundos permanece armada una granada aterrizada antes de explotar, cuando 'Mecha Retardada al Aterrizar' está activado.",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled": "Activar tecla de generación de depuración",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled_tooltip": "Desactivado por defecto. Si se activa, Shift + Numpad \"+\" (reasignable en las Opciones del Mod) genera una única granada cegadora directamente en tu inventario para pruebas rápidas de trayectoria."
 }

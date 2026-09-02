@@ -85,5 +85,7 @@
     "IGUI_ItemCat_L_Scope": "Модификация - Левый прицел",
     "IGUI_ItemCat_Misc": "Модификация - Разное",
     "IGUI_ItemCat_Skin": "Модификация - Окраска (бесполезно)",
-    "IGUI_FixItem": "Использовать ремонтный набор"
+    "IGUI_FixItem": "Использовать ремонтный набор",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

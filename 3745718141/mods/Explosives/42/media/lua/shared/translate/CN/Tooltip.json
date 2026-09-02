@@ -9,5 +9,6 @@
   "Tooltip_StrikerLever": "由废金属锻造的弹簧式击发杆。组装任何手榴弹都需要它——松开时正是它触发引信。",
   "Tooltip_Mk2FuzeAssembly": "为Mk2手榴弹壳手工制作的引信组件——底火、延时元件和线路,已准备好拧入弹壳。",
   "Tooltip_M26FuzeAssembly": "为M26手榴弹壳手工制作的引信组件——底火、延时元件和线路,已准备好拧入弹壳。",
-  "Tooltip_M67FuzeAssembly": "为M67手榴弹壳手工制作的引信组件——底火、延时元件和线路,已准备好拧入弹壳。"
+  "Tooltip_M67FuzeAssembly": "为M67手榴弹壳手工制作的引信组件——底火、延时元件和线路,已准备好拧入弹壳。",
+  "Tooltip_Explosives_DEBUG_SPAWN_KEY": "按住Shift并按下此按键,可直接在你的物品栏中生成一枚闪光弹,用于测试手雷的弹道/碰撞,而无需进入完整的调试模式。"
 }

@@ -1193,5 +1193,7 @@
     "IGUI_ContainerTitle_overhead": "Armario",
     "IGUI_ContainerTitle_logs": "Registros",
     "IGUI_ContainerTitle_dresser": "Cajon",
-    "IGUI_FixItem": "استخدام مجموعة الإصلاح"
+    "IGUI_FixItem": "استخدام مجموعة الإصلاح",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

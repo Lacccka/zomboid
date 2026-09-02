@@ -1,3 +1,4 @@
+require "PPO_Num"
 require "PPO_Config"
 
 PPO = PPO or {}
@@ -5,19 +6,7 @@ PPO.ReadinessMath = PPO.ReadinessMath or {}
 
 local ReadinessMath = PPO.ReadinessMath
 
-local function finiteOr(value, fallback)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return fallback
-    end
-    return value
-end
-
-local function clamp(value, minimum, maximum)
-    if value < minimum then return minimum end
-    if value > maximum then return maximum end
-    return value
-end
+local Num = PPO.Num
 
 local function settingsOr(settings)
     if type(settings) == "table" then return settings end
@@ -27,18 +16,18 @@ end
 -- An unreadable stat ramps to zero, so a missing seam can only remove a
 -- penalty and never invent one.
 function ReadinessMath.ramp(value, from, to)
-    local sample = finiteOr(value, nil)
+    local sample = Num.finite(value, nil)
     if sample == nil then return 0 end
-    local low = finiteOr(from, 0)
-    local high = finiteOr(to, 1)
+    local low = Num.finite(from, 0)
+    local high = Num.finite(to, 1)
     if high <= low then return 0 end
-    return clamp((sample - low) / (high - low), 0, 1)
+    return Num.clamp((sample - low) / (high - low), 0, 1)
 end
 
 -- Load always comes from the underlying recovery curve, never from the Sandbox
 -- XP override, so overtraining still costs Readiness with decay disabled.
 function ReadinessMath.loadFactor(loadReturn)
-    local sample = clamp(finiteOr(loadReturn, 1), 0, 1)
+    local sample = Num.clamp(Num.finite(loadReturn, 1), 0, 1)
     return 0.50 + 0.50 * sample
 end
 
@@ -58,7 +47,7 @@ end
 function ReadinessMath.sleepShare(fatigue, sleepRequired, settings)
     if sleepRequired ~= true then return 1 end
     local resolved = settingsOr(settings)
-    return clamp(1 - resolved.ShareFatiguePenalty * ReadinessMath.ramp(
+    return Num.clamp(1 - resolved.ShareFatiguePenalty * ReadinessMath.ramp(
         fatigue, resolved.FatigueRampStart, resolved.ShareFatigueRampEnd),
         0, 1)
 end
@@ -80,18 +69,18 @@ end
 -- the share is food, half is water, each spent exactly as fast as its stat
 -- empties -- so it takes no settings: there is nothing here to tune.
 function ReadinessMath.fuelShare(hunger, thirst)
-    local food = 1 - clamp(finiteOr(hunger, 0), 0, 1)
-    local water = 1 - clamp(finiteOr(thirst, 0), 0, 1)
-    return clamp(0.5 * food + 0.5 * water, 0, 1)
+    local food = 1 - Num.clamp(Num.finite(hunger, 0), 0, 1)
+    local water = 1 - Num.clamp(Num.finite(thirst, 0), 0, 1)
+    return Num.clamp(0.5 * food + 0.5 * water, 0, 1)
 end
 
 function ReadinessMath.readiness(loadFactor, sleepFactor, fuelFactor, settings)
     local resolved = settingsOr(settings)
-    local floor = clamp(finiteOr(resolved.ReadinessFloor, 0.50), 0, 1)
-    local product = clamp(finiteOr(loadFactor, 1), 0, 1)
-        * clamp(finiteOr(sleepFactor, 1), 0, 1)
-        * clamp(finiteOr(fuelFactor, 1), 0, 1)
-    return clamp(floor + (1 - floor) * product, 0, 1)
+    local floor = Num.clamp(Num.finite(resolved.ReadinessFloor, 0.50), 0, 1)
+    local product = Num.clamp(Num.finite(loadFactor, 1), 0, 1)
+        * Num.clamp(Num.finite(sleepFactor, 1), 0, 1)
+        * Num.clamp(Num.finite(fuelFactor, 1), 0, 1)
+    return Num.clamp(floor + (1 - floor) * product, 0, 1)
 end
 
 -- The ceiling is exactly one: a provider may slow conversion but can never
@@ -100,15 +89,15 @@ end
 -- divides by it. Nothing missing means nothing withheld, which is the same
 -- answer the ramp gives at the top of its range.
 local function normalized(value, penalty)
-    local limit = clamp(finiteOr(penalty, 0), 0, 1)
+    local limit = Num.clamp(Num.finite(penalty, 0), 0, 1)
     if limit <= 0 then return 1 end
-    return clamp((clamp(finiteOr(value, 1), 0, 1) - (1 - limit)) / limit, 0, 1)
+    return Num.clamp((Num.clamp(Num.finite(value, 1), 0, 1) - (1 - limit)) / limit, 0, 1)
 end
 
 function ReadinessMath.recoverySupport(sleepFactor, fuelFactor, settings)
     local resolved = settingsOr(settings)
-    local floor = clamp(finiteOr(resolved.RecoverySupportFloor, 0.60), 0, 1)
-    return clamp(
+    local floor = Num.clamp(Num.finite(resolved.RecoverySupportFloor, 0.60), 0, 1)
+    return Num.clamp(
         floor + (1 - floor)
             * normalized(sleepFactor, resolved.FatiguePenalty)
             * normalized(fuelFactor, resolved.FuelPenalty),

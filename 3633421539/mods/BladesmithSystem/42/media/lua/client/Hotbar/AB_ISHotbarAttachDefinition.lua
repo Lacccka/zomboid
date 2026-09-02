@@ -35,6 +35,16 @@ local FantasyKnightSwordScabbard = {
 }
 table.insert(ISHotbarAttachDefinition, FantasyKnightSwordScabbard);
 
+local Avalon_cat = {
+	type = "Avalon_cat",
+	name = "Avalon_cat",
+	animset = "belt left",
+	attachments = {
+		Avalon_cat = "Avalon_cat",
+	},
+}
+table.insert(ISHotbarAttachDefinition, Avalon_cat);
+
 local MiaoSwordS = {
 	type = "MiaoSwordS",
 	name = "MiaoSwordS",

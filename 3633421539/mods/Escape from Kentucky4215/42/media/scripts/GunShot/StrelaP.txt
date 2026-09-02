@@ -10,24 +10,24 @@ module Base
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_plr_shot_01.wav,
-            distanceMin = 5,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.15,
             volume = 0.98,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_plr_shot_02.wav,
-            distanceMin = 5,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.15,
             volume = 0.98,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_plr_shot_03.wav,
-            distanceMin = 5,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.15,
             volume = 0.98,
         }
@@ -41,24 +41,24 @@ module Base
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_plr_mech_01.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.55,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_plr_mech_02.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.55,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_plr_mech_03.wav,
-            distanceMin = 1,
-            distanceMax = 18,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.55,
         }
@@ -73,48 +73,48 @@ module Base
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_dist_atmo_ext_01.wav,
-            distanceMin = 25,
-            distanceMax = 90,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_dist_atmo_ext_02.wav,
-            distanceMin = 25,
-            distanceMax = 90,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_dist_atmo_ext_03.wav,
-            distanceMin = 25,
-            distanceMax = 90,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_dist_shot_01.wav,
-            distanceMin = 25,
-            distanceMax = 90,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_dist_shot_02.wav,
-            distanceMin = 25,
-            distanceMax = 90,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_dist_shot_03.wav,
-            distanceMin = 25,
-            distanceMax = 90,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
@@ -129,48 +129,48 @@ module Base
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_far_atmo_ext_01.wav,
-            distanceMin = 60,
-            distanceMax = 150,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_far_atmo_ext_02.wav,
-            distanceMin = 60,
-            distanceMax = 150,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_far_atmo_ext_03.wav,
-            distanceMin = 60,
-            distanceMax = 150,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_far_shot_01.wav,
-            distanceMin = 60,
-            distanceMax = 150,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_far_shot_02.wav,
-            distanceMin = 60,
-            distanceMax = 150,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_far_shot_03.wav,
-            distanceMin = 60,
-            distanceMax = 150,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
         }
@@ -185,48 +185,48 @@ module Base
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_med_atmo_ext_01.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_med_atmo_ext_02.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_med_atmo_ext_03.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_med_shot_01.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_med_shot_02.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/StrelaP/weap_kgolf_fire_npc_med_shot_03.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }

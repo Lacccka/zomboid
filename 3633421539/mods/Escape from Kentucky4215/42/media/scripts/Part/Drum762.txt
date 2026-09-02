@@ -58,8 +58,8 @@ module Gunpart {
             model Clip_ar_10_cat_Drum
             {
                 cullface = None,
-                mesh = 762Drum_cat,
-                texture = GunTexture/762Drum_cat,
+                mesh = Clip_ar_10_cat_Drum,
+                texture = GunTexture/M14Drum_cat,
             }
      
             item Clip_ARX200_cat_Drum
@@ -125,7 +125,7 @@ module Gunpart {
                 ItemType         = base:weaponpart,
                 DisplayCategory = WeaponPart,
                 DisplayName      = 弹匣,
-                Icon             = 9mmDrum_cat,
+                Icon             = Mag14,
                 Weight           = 0.4,
                 MountOn = M14_Albedo_Drum,
                 PartType         = Clip,
@@ -134,8 +134,8 @@ module Gunpart {
             model Clip_M14_Albedo_Drum
             {
                 cullface = None,
-                mesh = 762Drum_cat,
-                texture = GunTexture/762Drum_cat,
+                mesh = Clip_M14_Albedo_Drum,
+                texture = GunTexture/M14Drum_cat,
             }
      
             item Clip_mk47_cat_Drum

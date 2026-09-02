@@ -1,4 +1,4 @@
--- Server: restart timer with announcements, world backup, event directing
+-- Server: restart timer with announcements, world backup, branding
 require "Aegis/AegisWindow"
 require "ISUI/ISComboBox"
 
@@ -109,9 +109,7 @@ function AegisPageServer:createChildren()
     self.featY = self.saveBottom + 12
     local fy = self.featY + 34
     self.featToggles = {}
-    -- no switch for the event director: the combos are an admin tool, and
-    -- keeping admins away from them is what the role rights are for (user
-    -- decision). The three below change what PLAYERS can do
+    -- the three below change what PLAYERS can do
     local FEATURES = {
         { opt = "PlayerPanel", label = "UI_Aegis_FeatPanel", icon = "players", tip = "Sandbox_AegisPlayerPanel_tooltip" },
         { opt = "PlayerClaims", label = "UI_Aegis_FeatClaims", icon = "home", tip = "Sandbox_AegisPlayerClaims_tooltip" },
@@ -130,28 +128,10 @@ function AegisPageServer:createChildren()
     end
     self.featBottom = fy + 10
 
-    -- directing right: button combos built from existing pieces
+    -- announcement card, right column top
     local ex = pad + self.colW + 20 + 14
     local ew = self.colW - 28
-    local ey = pad + 72
-    local combos = {
-        { label = "UI_Aegis_EventStormShow", icon = "storm", tooltip = "UI_Aegis_EventStormShowTooltip", fn = AegisPageServer.onStormShow },
-        { label = "UI_Aegis_EventSiege", icon = "horde", tooltip = "UI_Aegis_EventSiegeTooltip", fn = AegisPageServer.onSiege },
-        { label = "UI_Aegis_EventHeli", icon = "heli", tooltip = "UI_Aegis_EventHeliTooltip", fn = AegisPageServer.onHeliAlarm },
-        { label = "UI_Aegis_EventAirdrop", icon = "heli", tooltip = "UI_Aegis_EventAirdropTooltip", fn = AegisPageServer.onAirdrop },
-        { label = "UI_Aegis_EventFirestorm", icon = "storm", tooltip = "UI_Aegis_EventFirestormTooltip", fn = AegisPageServer.onFirestorm },
-        { label = "UI_Aegis_EventAmbush", icon = "horde", tooltip = "UI_Aegis_EventAmbushTooltip", fn = AegisPageServer.onAmbush },
-    }
-    for _, def in ipairs(combos) do
-        local btn = AegisButton:new(ex, ey, ew, 38, getText(def.label), def.icon, self, def.fn)
-        btn.tooltip = getText(def.tooltip)
-        self:addChild(btn)
-        ey = ey + 46
-    end
-    self.directorBottom = ey + 8
-
-    -- announcement card, right column under the director
-    local ay = self.directorBottom + 12
+    local ay = pad
     self.announceY = ay
     self.announceEntry = ISTextEntryBox:new("", ex, ay + 40, ew, 28)
     self.announceEntry:initialise()
@@ -419,161 +399,6 @@ function AegisPageServer.onSave(self)
     end
 end
 
--- ---------- director combos, all knobs from the sandbox ----------
-
-local function eventValue(name, default)
-    local value = SandboxVars and SandboxVars.AegisEvents and SandboxVars.AegisEvents[name]
-    if value ~= nil then return value end
-    return default
-end
-
-function AegisPageServer.onStormShow(self)
-    local duration = tonumber(eventValue("StormHours", 8)) or 8
-    local cm = getClimateManager()
-    if isClient() then
-        cm:transmitTriggerStorm(duration)
-    else
-        cm:triggerCustomWeatherStage(WeatherPeriod.STAGE_STORM, duration)
-    end
-    pcall(function() AegisPageWorld.weatherKick("STAGE_STORM") end)
-    -- thunder volley via own tick in update
-    self.thunderLeft = tonumber(eventValue("StormThunder", 6)) or 6
-    self.thunderInterval = math.floor((tonumber(eventValue("StormThunderGap", 1.2)) or 1.2) * 1000)
-    self.thunderNextAt = getTimestampMs() + self.thunderInterval
-    Aegis.logAction("server", "Event triggered: storm show")
-    Aegis.showToast(getText("UI_Aegis_EventStormShow"))
-end
-
-function AegisPageServer.onSiege(self)
-    local p = getPlayer()
-    if not p then return end
-    local waves = tonumber(eventValue("SiegeWaves", 3)) or 3
-    local count = tonumber(eventValue("SiegeCount", 40)) or 40
-    local dist = tonumber(eventValue("SiegeDistance", 60)) or 60
-    local gap = tonumber(eventValue("SiegeGap", 12)) or 12
-    for i = 1, waves do
-        sendClientCommand(p, AegisShared.MODULE, "horde", {
-            x = math.floor(p:getX()), y = math.floor(p:getY()), z = math.floor(p:getZ()),
-            count = count,
-            radius = tonumber(eventValue("SiegeRadius", 10)) or 10,
-            dist = dist + (i - 1) * gap,
-            sprinter = eventValue("SiegeSprinters", false) == true,
-            crawler = eventValue("SiegeCrawlers", false) == true,
-            lureMinutes = tonumber(eventValue("SiegeLureMinutes", 5)) or 5,
-        })
-    end
-    if eventValue("SiegeGunshot", true) == true then
-        if isClient() then
-            SendCommandToServer("/gunshot")
-        else
-            pcall(function() getAmbientStreamManager():doGunEvent() end)
-        end
-    end
-    Aegis.logAction("server", "Event triggered: siege (" .. waves .. " horde waves)")
-    Aegis.showToast(getText("UI_Aegis_EventSiege"))
-end
-
-function AegisPageServer.onHeliAlarm(self)
-    local p = getPlayer()
-    if not p then return end
-    if isClient() then
-        SendCommandToServer("/chopper")
-    else
-        testHelicopter()
-    end
-    local count = tonumber(eventValue("HeliCount", 15)) or 15
-    if count > 0 then
-        sendClientCommand(p, AegisShared.MODULE, "horde", {
-            x = math.floor(p:getX()), y = math.floor(p:getY()), z = math.floor(p:getZ()),
-            count = count,
-            radius = tonumber(eventValue("HeliRadius", 8)) or 8,
-            dist = tonumber(eventValue("HeliDistance", 80)) or 80,
-        })
-    end
-    Aegis.logAction("server", "Event triggered: heli alert")
-    Aegis.showToast(getText("UI_Aegis_EventHeli"))
-end
-
-function AegisPageServer.onAirdrop(self)
-    local p = getPlayer()
-    if not p then return end
-    if isClient() then
-        SendCommandToServer("/chopper")
-    else
-        testHelicopter()
-    end
-    sendClientCommand(p, AegisShared.MODULE, "horde", {
-        x = math.floor(p:getX()), y = math.floor(p:getY()), z = math.floor(p:getZ()),
-        count = tonumber(eventValue("AirdropCount", 20)) or 20,
-        radius = tonumber(eventValue("AirdropRadius", 10)) or 10,
-        paratrooper = true,
-        height = tonumber(eventValue("AirdropHeight", 5)) or 5,
-    })
-    Aegis.logAction("server", "Event triggered: airdrop")
-    Aegis.showToast(getText("UI_Aegis_EventAirdrop"))
-end
-
-function AegisPageServer.onFirestorm(self)
-    local p = getPlayer()
-    if not p then return end
-    local duration = tonumber(eventValue("FirestormHours", 6)) or 6
-    local cm = getClimateManager()
-    if isClient() then
-        cm:transmitTriggerStorm(duration)
-    else
-        cm:triggerCustomWeatherStage(WeatherPeriod.STAGE_STORM, duration)
-    end
-    pcall(function() AegisPageWorld.weatherKick("STAGE_STORM") end)
-    self.thunderLeft = tonumber(eventValue("FirestormThunder", 4)) or 4
-    self.thunderInterval = 1200
-    self.thunderNextAt = getTimestampMs() + self.thunderInterval
-    -- each horde call picks its own random direction, several calls
-    -- means burning groups closing in from several sides
-    local waves = tonumber(eventValue("FirestormWaves", 3)) or 3
-    for _ = 1, waves do
-        sendClientCommand(p, AegisShared.MODULE, "horde", {
-            x = math.floor(p:getX()), y = math.floor(p:getY()), z = math.floor(p:getZ()),
-            count = tonumber(eventValue("FirestormCount", 15)) or 15,
-            radius = 8,
-            onFire = true,
-            dist = tonumber(eventValue("FirestormDistance", 50)) or 50,
-            lureMinutes = 5,
-        })
-    end
-    Aegis.logAction("server", "Event triggered: firestorm")
-    Aegis.showToast(getText("UI_Aegis_EventFirestorm"))
-end
-
-function AegisPageServer.onAmbush(self)
-    local p = getPlayer()
-    if not p then return end
-    if eventValue("AmbushRain", true) == true then
-        if isClient() then
-            SendCommandToServer("/startrain")
-        end
-    end
-    sendClientCommand(p, AegisShared.MODULE, "horde", {
-        x = math.floor(p:getX()), y = math.floor(p:getY()), z = math.floor(p:getZ()),
-        count = tonumber(eventValue("AmbushCount", 25)) or 25,
-        radius = tonumber(eventValue("AmbushRadius", 6)) or 6,
-        crawler = true,
-    })
-    Aegis.logAction("server", "Event triggered: crawler ambush")
-    Aegis.showToast(getText("UI_Aegis_EventAmbush"))
-end
-
-function AegisPageServer:update()
-    ISPanel.update(self)
-    if self.thunderLeft and self.thunderLeft > 0 and getTimestampMs() >= (self.thunderNextAt or 0) then
-        local p = getPlayer()
-        if p then
-            sendClientCommand(p, "event", "thunder", { x = p:getX(), y = p:getY(), isAll = false })
-        end
-        self.thunderLeft = self.thunderLeft - 1
-        self.thunderNextAt = getTimestampMs() + (self.thunderInterval or 1200)
-    end
-end
-
 function AegisPageServer:receiveStatus(remaining, intHours, intNext)
     self.remaining = tonumber(remaining) or -1
     self.statusSince = getTimestampMs()
@@ -598,7 +423,7 @@ function AegisPageServer:receiveStatus(remaining, intHours, intNext)
 end
 
 function AegisPageServer:prerender()
-    if not self.directorBottom then return end
+    if not self.announceY then return end
     local c = Aegis.col
     local pad = 20
     local x = pad + 14
@@ -644,11 +469,6 @@ function AegisPageServer:prerender()
     Aegis.text(self, getText("UI_Aegis_BrandTitle"), ex + 36, self.brandY + 10, UIFont.Medium, c.text)
     Aegis.text(self, Aegis.fitText(getText("UI_Aegis_BrandHint"), UIFont.Small, self.colW - 28),
         ex + 14, self.brandY + 36, UIFont.Small, c.muted)
-
-    Aegis.roundFrame(self, ex, pad, self.colW, self.directorBottom - pad, 10, 1, c.line, c.panel)
-    Aegis.icon(self, "bolt", ex + 14, pad + 12, 15, 1, c.gold)
-    Aegis.text(self, getText("UI_Aegis_Director"), ex + 36, pad + 10, UIFont.Medium, c.text)
-    Aegis.text(self, getText("UI_Aegis_DirectorHint"), ex + 14, pad + 40, UIFont.Small, c.muted)
 
     Aegis.roundFrame(self, ex, self.announceY, self.colW, self.announceBottom - self.announceY, 10, 1, c.line, c.panel)
     Aegis.icon(self, "speaker", ex + 14, self.announceY + 12, 15, 1, c.gold)

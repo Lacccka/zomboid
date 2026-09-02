@@ -1,9 +1,10 @@
+require "PPO_Directions"
+require "PPO_Num"
 require "PPO_Config"
 require "PPO_BonusMath"
 require "PPO_AdaptationMath"
 require "PPO_SupplementState"
 require "PPO_WindowState"
-require "PPO_StimulantState"
 require "PPO_CourseCost"
 
 PPO = PPO or {}
@@ -28,25 +29,9 @@ local DOSE_CREDIT = 0.22
 -- sustainable. A full hour costs 2.0 and carries 0.5 into the next day, so an
 -- hour a day reaches the overtraining line on the fourth day and a rest day
 -- becomes part of the cycle.
-local DIRECTIONS = { "Strength", "Fitness" }
+local DIRECTIONS = PPO.Directions.order()
 
-local function finiteOr(value, fallback)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return fallback
-    end
-    return value
-end
-
-local function clamp(value, minimum, maximum)
-    if value < minimum then return minimum end
-    if value > maximum then return maximum end
-    return value
-end
-
-local function positiveOr(value, fallback)
-    return math.max(0, finiteOr(value, fallback))
-end
+local Num = PPO.Num
 
 local function loadSettings()
     if PPO.Config == nil or PPO.Config.getLoadSettings == nil then
@@ -60,7 +45,7 @@ local function loadSettings()
 end
 
 local function wholeCount(value)
-    return math.max(0, math.floor(positiveOr(value, 0)))
+    return math.max(0, math.floor(Num.positive(value, 0)))
 end
 
 local function adaptationSettings()
@@ -78,7 +63,7 @@ local function componentLevel(character, direction)
         return character:getPerkLevel(Perks[direction])
     end)
     if not ok then return 0 end
-    return clamp(positiveOr(level, 0), 0, 10)
+    return Num.clamp(Num.positive(level, 0), 0, 10)
 end
 
 local function newSession(activeMinute)
@@ -148,7 +133,7 @@ local function normalizeCourse(source)
     if type(source) ~= "table" then return newCourse() end
     source.level = PPO.SupplementState.normalize(source.level)
     source.peak = PPO.SupplementState.normalize(source.peak)
-    source.lastDoseMinute = positiveOr(source.lastDoseMinute, 0)
+    source.lastDoseMinute = Num.positive(source.lastDoseMinute, 0)
     source.active = PPO.SupplementState.normalize(source.active)
     source.activePeak = PPO.SupplementState.normalize(source.activePeak)
     source.withdrawal = PPO.SupplementState.normalize(source.withdrawal)
@@ -157,7 +142,7 @@ local function normalizeCourse(source)
     -- inheriting a bottom it never fell to.
     source.withdrawalActive = PPO.SupplementState.normalize(
         source.withdrawalActive)
-    source.withdrawalFreeze = positiveOr(source.withdrawalFreeze, 0)
+    source.withdrawalFreeze = Num.positive(source.withdrawalFreeze, 0)
     return source
 end
 
@@ -167,9 +152,9 @@ end
 
 local function normalizeTone(source)
     if type(source) ~= "table" then return newTone() end
-    source.quality = clamp(positiveOr(source.quality, 0), 0, 1)
-    source.minutesRemaining = positiveOr(source.minutesRemaining, 0)
-    source.lastAppliedMinute = positiveOr(source.lastAppliedMinute, 0)
+    source.quality = Num.clamp(Num.positive(source.quality, 0), 0, 1)
+    source.minutesRemaining = Num.positive(source.minutesRemaining, 0)
+    source.lastAppliedMinute = Num.positive(source.lastAppliedMinute, 0)
     if source.minutesRemaining <= 0 then
         source.quality = 0
         source.minutesRemaining = 0
@@ -182,16 +167,16 @@ end
 local function normalizeSession(source, activeMinute)
     if type(source) ~= "table" then return newSession(activeMinute) end
 
-    source.coveredMinutes = positiveOr(source.coveredMinutes, 0)
+    source.coveredMinutes = Num.positive(source.coveredMinutes, 0)
     source.volume = nil
-    source.activeTrainingMinutes = positiveOr(source.activeTrainingMinutes, 0)
-    source.workMinutes = positiveOr(source.workMinutes, 0)
-    source.loadReturnSum = positiveOr(source.loadReturnSum, 0)
+    source.activeTrainingMinutes = Num.positive(source.activeTrainingMinutes, 0)
+    source.workMinutes = Num.positive(source.workMinutes, 0)
+    source.loadReturnSum = Num.positive(source.loadReturnSum, 0)
     source.acceptedRepeats = wholeCount(source.acceptedRepeats)
-    source.regularitySum = positiveOr(source.regularitySum, 0)
+    source.regularitySum = Num.positive(source.regularitySum, 0)
     source.regularitySamples = wholeCount(source.regularitySamples)
     source.lastAcceptedRepeatMinute =
-        positiveOr(source.lastAcceptedRepeatMinute, activeMinute)
+        Num.positive(source.lastAcceptedRepeatMinute, activeMinute)
     source.qualified = source.qualified == true
     source.awaitingFinalization = source.awaitingFinalization == true
     return source
@@ -207,7 +192,7 @@ local function newComponent(character, direction, activeMinute)
         lastQualifiedSessionMinute = activeMinute,
         lastSessionStartedMinute = activeMinute,
         lastSessionCompletedMinute = activeMinute,
-        adaptationGraceRemaining = positiveOr(
+        adaptationGraceRemaining = Num.positive(
             adaptationSettings().GraceHours, 72) * 60,
         session = newSession(activeMinute),
         tone = newTone(),
@@ -220,24 +205,24 @@ local function normalizeComponent(source, character, direction, activeMinutes)
         return newComponent(character, direction, activeMinutes)
     end
 
-    if finiteOr(source.adaptation, nil) == nil then
+    if Num.finite(source.adaptation, nil) == nil then
         source.adaptation = PPO.AdaptationMath.initialAdaptation(
             componentLevel(character, direction))
     end
-    source.adaptation = clamp(source.adaptation, 0, 1)
-    source.adaptationCredit = positiveOr(source.adaptationCredit, 0)
-    source.dailyStimulus = positiveOr(source.dailyStimulus, 0)
-    source.lastActiveMinute = clamp(
-        positiveOr(source.lastActiveMinute, activeMinutes), 0, activeMinutes)
-    source.lastQualifiedSessionMinute = positiveOr(
+    source.adaptation = Num.clamp(source.adaptation, 0, 1)
+    source.adaptationCredit = Num.positive(source.adaptationCredit, 0)
+    source.dailyStimulus = Num.positive(source.dailyStimulus, 0)
+    source.lastActiveMinute = Num.clamp(
+        Num.positive(source.lastActiveMinute, activeMinutes), 0, activeMinutes)
+    source.lastQualifiedSessionMinute = Num.positive(
         source.lastQualifiedSessionMinute, activeMinutes)
-    source.lastSessionStartedMinute = positiveOr(
+    source.lastSessionStartedMinute = Num.positive(
         source.lastSessionStartedMinute, activeMinutes)
-    source.lastSessionCompletedMinute = positiveOr(
+    source.lastSessionCompletedMinute = Num.positive(
         source.lastSessionCompletedMinute, activeMinutes)
-    if finiteOr(source.adaptationGraceRemaining, nil) == nil then
+    if Num.finite(source.adaptationGraceRemaining, nil) == nil then
         source.adaptationGraceRemaining =
-            positiveOr(adaptationSettings().GraceHours, 72) * 60
+            Num.positive(adaptationSettings().GraceHours, 72) * 60
     else
         source.adaptationGraceRemaining =
             math.max(0, source.adaptationGraceRemaining)
@@ -317,6 +302,25 @@ local function adoptFromCharacter(character, holder, key)
     return carried
 end
 
+-- Death is the one event that ends a character's progress for good, and on a
+-- dedicated server nothing removes the state by itself: the holder is a global
+-- store keyed by the account name, not the character, so the account's next
+-- character reads the dead one's load, credit and adaptation. Measured live
+-- 2026-08-25 on `PPOTest420Mods`, twice: a brand new character started with
+-- `dailyStimulus 0.4562` and credit `0.153`.
+--
+-- In single player the holder is the character's own mod data, where this is
+-- already unreachable; clearing it there costs nothing and keeps one rule for
+-- both worlds.
+function ExerciseState.discard(character)
+    if character == nil or character.getModData == nil then return false end
+
+    local holder, key = holderFor(character)
+    if type(holder) ~= "table" or holder[key] == nil then return false end
+    holder[key] = nil
+    return true
+end
+
 function ExerciseState.get(character)
     if character == nil or character.getModData == nil then return nil end
 
@@ -342,7 +346,7 @@ function ExerciseState.get(character)
         return state
     end
 
-    state.activeMinutes = positiveOr(state.activeMinutes, 0)
+    state.activeMinutes = Num.positive(state.activeMinutes, 0)
     state.supplements = normalizeSupplements(state.supplements)
     state.utility = normalizeUtility(state.utility)
     for _, direction in ipairs(DIRECTIONS) do
@@ -388,7 +392,7 @@ function ExerciseState.extendWindow(character, kind, servings)
 end
 
 function ExerciseState.getComponent(character, direction)
-    if direction ~= "Strength" and direction ~= "Fitness" then return nil end
+    if not PPO.Directions.supported(direction) then return nil end
     local state = ExerciseState.get(character)
     if state == nil then return nil end
     return state[direction]
@@ -407,8 +411,8 @@ function ExerciseState.setTone(character, direction, quality, minutesRemaining)
     if component == nil then return nil end
 
     local tone = component.tone
-    local newQuality = clamp(positiveOr(quality, 0), 0, 1)
-    local newMinutes = positiveOr(minutesRemaining, 0)
+    local newQuality = Num.clamp(Num.positive(quality, 0), 0, 1)
+    local newMinutes = Num.positive(minutesRemaining, 0)
     tone.quality = math.max(tone.quality, newQuality)
     tone.minutesRemaining = math.max(tone.minutesRemaining, newMinutes)
     if tone.minutesRemaining <= 0 then tone.quality = 0 end
@@ -422,7 +426,7 @@ function ExerciseState.advanceTone(character, direction, elapsedMinutes)
     if component == nil then return nil end
 
     local tone = component.tone
-    local elapsed = positiveOr(elapsedMinutes, 0)
+    local elapsed = Num.positive(elapsedMinutes, 0)
     if elapsed <= 0 then return tone end
 
     tone.minutesRemaining = math.max(0, tone.minutesRemaining - elapsed)
@@ -462,7 +466,7 @@ function ExerciseState.applyAcceptedRepeat(character, stimulus)
     if state == nil or type(stimulus) ~= "table" then return false end
 
     for _, direction in ipairs(DIRECTIONS) do
-        local addition = positiveOr(stimulus[direction], 0)
+        local addition = Num.positive(stimulus[direction], 0)
         state[direction].dailyStimulus =
             state[direction].dailyStimulus + addition
     end
@@ -477,7 +481,7 @@ function ExerciseState.resetSession(character, direction, anchorMinute)
 
     local state = ExerciseState.get(character)
     component.session = newSession(
-        positiveOr(anchorMinute, state.activeMinutes))
+        Num.positive(anchorMinute, state.activeMinutes))
     return true
 end
 
@@ -579,8 +583,8 @@ function ExerciseState.advanceActiveMinutes(character, elapsedMinutes,
     local state = ExerciseState.get(character)
     if state == nil then return false end
 
-    local elapsed = positiveOr(elapsedMinutes, 0)
-    local hours = math.max(0.001, finiteOr(recoveryHours, 24))
+    local elapsed = Num.positive(elapsedMinutes, 0)
+    local hours = math.max(0.001, Num.finite(recoveryHours, 24))
     state.activeMinutes = state.activeMinutes + elapsed
 
     local supplementSettings = PPO.Config.getSupplementSettings()

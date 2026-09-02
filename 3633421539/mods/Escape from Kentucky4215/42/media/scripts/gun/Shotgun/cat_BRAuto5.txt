@@ -2,6 +2,7 @@ module Base
 {	
 item BRAuto5_cat
 	{
+        FireMode = Single,
 	CyclicRateMultiplier = 0.5,       
         Weight = 3,
         MaxAmmo = 4,
@@ -24,8 +25,6 @@ item BRAuto5_cat
         AimingPerkCritModifier = 10,
         AimingPerkHitChanceModifier = 4,
         MinAngle = 0.90,
-        FireMode = Auto,
-        FireModePossibilities = Auto/Single,
         MinSightRange = 2,
         MaxSightRange = 8,
         KnockdownMod = 8,
@@ -42,11 +41,10 @@ item BRAuto5_cat
         ProjectileWeightCenter = 1.0,
           Icon = Shotgun2,
         RangeFalloff = TRUE,
-        MuzzleFlashModelKey = muzzle_flash_assault_rifle,
+        MuzzleFlashModelKey = muzzle_flash_shotgun,
         AttachmentType = Rifle,
         RunAnim = Run_Weapon2,
         AmmoBox = ShotgunShellsBox,
-        ModelWeaponPart = Gunpart.AmmoShellDish_cat Gunpart.AmmoShellDish_cat,
         AmmoType =base:shotgun_shells,
         SwingSound = JS2000ShotgunShoot,
         DropSound = JS2000ShotgunDrop,
@@ -77,7 +75,7 @@ item BRAuto5_cat
         Tags = base:hasmetal;base:firearm,
         DisplayCategory = Weapon,
         ModelWeaponPart = Gunpart.QT_sr Gunpart.QT_sr Stock Stock,
-        ModelWeaponPart = Gunpart.WaltherMRS_2 Gunpart.WaltherMRS_2,
+        ModelWeaponPart = Gunpart.WaltherMRS_2 Gunpart.WaltherMRS_2 Scope Scope,
         ModelWeaponPart = Gunpart.HD511a_cat Gunpart.HD511a_cat Scope Scope,
         HitSound = BulletImpact,
         IsAimedFirearm = TRUE,

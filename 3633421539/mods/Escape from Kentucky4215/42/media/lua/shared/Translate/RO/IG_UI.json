@@ -85,5 +85,7 @@
     "IGUI_ItemCat_L_Scope": "Weapon attachment - Left sight",
     "IGUI_ItemCat_Misc": "Weapon attachment - Miscellaneous",
     "IGUI_ItemCat_Skin": "Weapon attachment - Skin (useless)",
-    "IGUI_FixItem": "Folosește Kit de Reparație"
+    "IGUI_FixItem": "Folosește Kit de Reparație",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

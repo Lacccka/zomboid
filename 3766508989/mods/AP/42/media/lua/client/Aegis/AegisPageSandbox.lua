@@ -127,7 +127,13 @@ function AegisPageSandbox:createChildren()
     self.search:setClearButton(true)
     self.search:setPlaceholderText(getText("UI_Aegis_SearchCategory"))
     local page = self
-    self.search.onTextChange = function() page:rebuildNav() end
+    self.search.onTextChange = function()
+        page:rebuildNav()
+        -- the rebuild can raise a category panel full of fresh entry
+        -- boxes, which drops the keyboard focus after the first letter;
+        -- from then on the game keys fired while typing
+        page.search:focus()
+    end
     self:addChild(self.search)
 
     local listY = navY + 38

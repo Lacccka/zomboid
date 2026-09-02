@@ -11,5 +11,7 @@
     "Sandbox_ExplosivesOptions_DelayedFuseEnabled": "着地時の遅延信管",
     "Sandbox_ExplosivesOptions_DelayedFuseEnabled_tooltip": "デフォルトはオフ。有効にすると、このMod独自の手榴弾(Mk2、M26、M67、M84フラッシュバン、M14 TH3)は着弾時に即座に爆発せず、着地後数秒間起爆状態のまま地面に留まります。地雷/クレイモア(既に設置済みの罠として着地します)やバニラの投擲物には影響しません。",
     "Sandbox_ExplosivesOptions_DelayedFuseSeconds": "信管遅延(秒)",
-    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "「着地時の遅延信管」が有効な場合、着地した手榴弾が爆発するまで起爆状態で留まる秒数。"
+    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "「着地時の遅延信管」が有効な場合、着地した手榴弾が爆発するまで起爆状態で留まる秒数。",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled": "デバッグ生成キーを有効化",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled_tooltip": "デフォルトはオフ。有効にすると、Shift + テンキー「+」(Mod設定で再割り当て可能)でスタングレネードを1個、素早い弾道テスト用にインベントリへ直接生成します。"
 }

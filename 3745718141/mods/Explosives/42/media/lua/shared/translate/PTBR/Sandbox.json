@@ -11,5 +11,7 @@
     "Sandbox_ExplosivesOptions_DelayedFuseEnabled": "Pavio Retardado ao Pousar",
     "Sandbox_ExplosivesOptions_DelayedFuseEnabled_tooltip": "Desativado por padrão. Quando ativado, as granadas próprias deste mod (Mk2, M26, M67, M84 Flashbang, M14 TH3) pousam armadas e ficam no chão por alguns segundos antes de explodir, em vez de detonar imediatamente ao impacto. Não afeta minas/Claymores (que já pousam como armadilhas posicionadas) nem itens arremessáveis vanilla.",
     "Sandbox_ExplosivesOptions_DelayedFuseSeconds": "Atraso do Pavio (segundos)",
-    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "Quantos segundos uma granada pousada fica armada antes de explodir, quando 'Pavio Retardado ao Pousar' está ativado."
+    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "Quantos segundos uma granada pousada fica armada antes de explodir, quando 'Pavio Retardado ao Pousar' está ativado.",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled": "Ativar Tecla de Spawn de Depuração",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled_tooltip": "Desativado por padrão. Quando ativado, Shift + Numpad \"+\" (pode ser reatribuído nas Opções do Mod) gera uma única granada de efeito moral diretamente no seu inventário para testes rápidos de trajetória."
 }

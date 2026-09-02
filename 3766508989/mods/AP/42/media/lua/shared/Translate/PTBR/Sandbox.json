@@ -1,5 +1,5 @@
 {
-    "Sandbox_AegisEvents": "Eventos Aegis",
+    "Sandbox_AegisEvents": "Aegis",
     "Sandbox_AegisSiegeWaves": "Cerco: ondas",
     "Sandbox_AegisSiegeWaves_tooltip": "Quantas ondas de horda o cerco envia.",
     "Sandbox_AegisSiegeCount": "Cerco: zumbis por onda",
@@ -58,6 +58,8 @@
     "Sandbox_AegisPlayerClaims_tooltip": "Permite que jogadores reivindiquem uma zona no próprio abrigo dentro do orçamento do cargo. Desligado bloqueia toda reivindicação.",
     "Sandbox_AegisPlayerKits": "Kits de jogador ativos",
     "Sandbox_AegisPlayerKits_tooltip": "A página de kits da area do jogador, incluindo resgate de booster. Desligado a esconde para todos; o editor de kits continua funcionando.",
+    "Sandbox_AegisKitCodeGates": "Kits do Discord no editor de kits",
+    "Sandbox_AegisKitCodeGates_tooltip": "Oferece \"Impulsionador do Discord\" e \"Somente com código de kit\" ao editar um kit. Ambos exigem um bot próprio do Discord. Desligado, some da lista. Um kit que já usa um deles mantém.",
     "Sandbox_AegisPlayerVehicles": "Veículos lembrados por jogador",
     "Sandbox_AegisPlayerVehicles_tooltip": "Quantos veículos um jogador pode manter na página de veículos da área do jogador. 0 desativa. Ignorado onde o Knox Claim roda, aquele mod traz seu próprio limite. Veículos já salvos nunca são perdidos ao reduzir o valor.",
     "Sandbox_AegisPlayerHealthInfection": "Mostrar infecção zumbi aos jogadores",

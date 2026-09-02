@@ -143,6 +143,18 @@ local function loadKey()
     end
 end
 
+-- the kit codes ride the same key and the same signature, so this is
+-- shared rather than copied; two versions of one formula drift apart
+function AegisBoost.sign(payload)
+    loadKey()
+    if type(secret) ~= "string" then return nil end
+    return mac(payload)
+end
+
+function AegisBoost.toB36(n) return b36(n) end
+function AegisBoost.fromB36(s) return fromB36(s) end
+function AegisBoost.discordIdOk(id) return discordOk(id) end
+
 function AegisBoost.keySet()
     loadKey()
     return type(secret) == "string"
@@ -570,7 +582,7 @@ local function refreshUser(name)
     if not p then return end
     pushInfo(p, name)
     if AegisKits and AegisKits.pushPlayerList then
-        pcall(AegisKits.pushPlayerList, p)
+        AegisKits.pushPlayerList(p)
     end
 end
 
@@ -620,10 +632,10 @@ AdminCommands.boostKey = function(player, args)
                 local p = players:get(i)
                 if p then
                     if AegisPlayerPanel and AegisPlayerPanel.push then
-                        pcall(AegisPlayerPanel.push, p)
+                        AegisPlayerPanel.push(p)
                     end
                     if AegisKits and AegisKits.pushPlayerList then
-                        pcall(AegisKits.pushPlayerList, p)
+                        AegisKits.pushPlayerList(p)
                     end
                 end
             end
@@ -685,8 +697,7 @@ local PlayerCommands = {}
 local function panelUnlocked(name)
     if not isServer() then return true end
     if not (AegisRoles and AegisRoles.playerPanelFor) then return false end
-    local ok, pp = pcall(AegisRoles.playerPanelFor, name)
-    return ok and type(pp) == "table"
+    return type(AegisRoles.playerPanelFor(name)) == "table"
 end
 
 PlayerCommands.boostInfo = function(player, args)
@@ -710,7 +721,7 @@ PlayerCommands.boostRedeem = function(player, args)
         pushInfo(player, name)
         -- a freshly unlocked @booster kit must show up without a reconnect
         if AegisKits and AegisKits.pushPlayerList then
-            pcall(AegisKits.pushPlayerList, player)
+            AegisKits.pushPlayerList(player)
         end
     end
 end

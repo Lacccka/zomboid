@@ -82,5 +82,7 @@
     "IGUI_ItemCat_L_Scope": "武器アタッチメント - 左サイト",
     "IGUI_ItemCat_Misc": "武器アタッチメント - その他",
     "IGUI_ItemCat_Skin": "武器アタッチメント - スキン（無用）",
-    "IGUI_FixItem": "修理キットを使用"
+    "IGUI_FixItem": "修理キットを使用",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

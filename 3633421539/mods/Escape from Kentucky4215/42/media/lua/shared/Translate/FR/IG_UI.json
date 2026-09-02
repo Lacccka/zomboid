@@ -82,5 +82,7 @@
     "IGUI_ItemCat_L_Scope": "Accessoire d'arme - Viseur gauche",
     "IGUI_ItemCat_Misc": "Accessoire d'arme - Divers",
     "IGUI_ItemCat_Skin": "Accessoire d'arme - Habillage (inutile)",
-    "IGUI_FixItem": "Utiliser le kit de réparation"
+    "IGUI_FixItem": "Utiliser le kit de réparation",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

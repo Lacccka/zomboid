@@ -1,15 +1,15 @@
+require "PPO_Directions"
+require "PPO_Num"
+
 PPO = PPO or {}
 PPO.RepetitionMatcher = PPO.RepetitionMatcher or {}
 
 local Matcher = PPO.RepetitionMatcher
+local DIRECTIONS = PPO.Directions.order()
+local Num = PPO.Num
 local MAX_QUEUE = 2
 local EXCESS_WINDOW_MS = 10000
 local EXCESS_LIMIT = 3
-
-local function finitePositive(value)
-    return type(value) == "number" and value == value
-        and value ~= math.huge and value ~= -math.huge and value > 0
-end
 
 local function deepCopy(value)
     if type(value) ~= "table" then return value end
@@ -48,10 +48,10 @@ end
 
 local function expectedComponents(token)
     local expected = {}
-    for _, component in ipairs({ "Strength", "Fitness" }) do
+    for _, component in ipairs(DIRECTIONS) do
         local raw = token.rawXp and token.rawXp[component]
         local capped = token.capped and token.capped[component]
-        if finitePositive(raw) and not capped then
+        if Num.isPositive(raw) and not capped then
             table.insert(expected, component)
         end
     end
@@ -140,7 +140,7 @@ function Matcher.open(matcher, playerKey, ttlMs)
     matcher.players[playerKey] = {
         generation = generation,
         open = true,
-        ttlMs = finitePositive(ttlMs) and ttlMs or 5000,
+        ttlMs = Num.isPositive(ttlMs) and ttlMs or 5000,
         tokens = {},
         evidence = {},
         excessAt = {},
@@ -168,7 +168,7 @@ function Matcher.mintToken(matcher, playerKey, sourceToken)
     local token = deepCopy(sourceToken)
     token.generation = state.generation
     token.atMs = now
-    if not finitePositive(token.ttlMs) then token.ttlMs = state.ttlMs end
+    if not Num.isPositive(token.ttlMs) then token.ttlMs = state.ttlMs end
 
     if #expectedComponents(token) == 0 then
         return { kind = "accepted", token = token }
@@ -184,10 +184,10 @@ end
 function Matcher.observeEvidence(matcher, playerKey, component, amount)
     local state = matcher.players[playerKey]
     if state == nil or not state.open then return { kind = "ignored" } end
-    if component ~= "Strength" and component ~= "Fitness" then
+    if not PPO.Directions.supported(component) then
         return { kind = "ignored" }
     end
-    if not finitePositive(amount) then return { kind = "ignored" } end
+    if not Num.isPositive(amount) then return { kind = "ignored" } end
 
     local now = matcher.clock()
     local _, _, closed = expireOld(state, now)
@@ -206,6 +206,23 @@ function Matcher.observeEvidence(matcher, playerKey, component, amount)
     local accepted = tryMatch(state)
     if accepted ~= nil then return accepted end
     return { kind = "pending" }
+end
+
+-- Read-only: does this player already hold an unclaimed proof in `component`?
+-- The queue is the only place that knows, and `PPO.Compat.ForeignXp` is the
+-- only caller -- it needs the answer to tell a repetition's own award apart
+-- from a foreign mod's echo of that award.
+function Matcher.hasEvidence(matcher, playerKey, component)
+    if matcher == nil then return false end
+    local state = matcher.players[playerKey]
+    if state == nil or not state.open then return false end
+    for _, item in ipairs(state.evidence) do
+        if item.generation == state.generation
+                and item.component == component then
+            return true
+        end
+    end
+    return false
 end
 
 function Matcher.expire(matcher, playerKey)

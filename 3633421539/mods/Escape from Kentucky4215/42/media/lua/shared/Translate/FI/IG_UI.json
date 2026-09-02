@@ -1555,5 +1555,7 @@
     "IGUI_SearchMode_Tip_Crops_Text": "Luonnonviljakasvit ovat yleisimpiä viljelymailla, ja kaikilla on mahdollisuus olla siemeniä.",
     "IGUI_SearchMode_Tip_Seasons_Title": "Vuodet",
     "IGUI_SearchMode_Tip_Seasons_Text": "Kaikki luonnossa esiintyvät tuotteet määräytyvät kuukauden ja vuodenajan mukaan. Löytämäsi määrä riippuu vuodenajasta!",
-    "IGUI_FixItem": "Käytä Korjaussarjaa"
+    "IGUI_FixItem": "Käytä Korjaussarjaa",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

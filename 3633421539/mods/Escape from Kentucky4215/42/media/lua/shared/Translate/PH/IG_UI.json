@@ -1573,5 +1573,7 @@
     "IGUI_SearchMode_Tip_Seasons_Text": "Ang lahat ng mga natural na bagay ay pinamamahalaan ng buwan at panahon. Ang mahahanap mo ay depende sa oras ng taon!",
     "IGUI_SearchMode_Tip_SearchFocus_Title": "Search Focus",
     "IGUI_SearchMode_Tip_SearchFocus_Text": "Naghahanap ng isang bagay na espesyal? Gamitin ang Focus sa Paghahanap upang madagdagan ang iyong pagkakataong makahanap ng napiling kategorya!",
-    "IGUI_FixItem": "Gamitin ang Repair Kit"
+    "IGUI_FixItem": "Gamitin ang Repair Kit",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

@@ -1,5 +1,7 @@
+require "PPO_Directions"
+require "PPO_Num"
+require "PPO_Identity"
 require "PPO_Config"
-require "PPO_ToneMath"
 require "PPO_BonusMath"
 require "PPO_WindowState"
 
@@ -7,7 +9,7 @@ PPO = PPO or {}
 PPO.StateReport = PPO.StateReport or {}
 
 local StateReport = PPO.StateReport
-local DIRECTIONS = { "Strength", "Fitness" }
+local DIRECTIONS = PPO.Directions.order()
 -- Kind to the settings resolver that owns its cap. A window is a
 -- whole-character value, so it sits beside the two directions rather than
 -- inside either of them.
@@ -16,62 +18,22 @@ local WINDOWS = {
     { key = "thermogenic", settings = "getThermogenicSettings" },
 }
 
-local function finiteOr(value, fallback)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return fallback
-    end
-    return value
-end
-
-local function clamp(value, minimum, maximum)
-    if value < minimum then return minimum end
-    if value > maximum then return maximum end
-    return value
-end
-
-local function ownerOnlineID(character)
-    if character == nil or type(character.getOnlineID) ~= "function" then
-        return nil
-    end
-    local ok, value = pcall(character.getOnlineID, character)
-    if not ok then return nil end
-    value = finiteOr(value, -1)
-    if value < 0 then return nil end
-    return value
-end
-
-local function ownerUsername(character)
-    if character == nil or type(character.getUsername) ~= "function" then
-        return nil
-    end
-    local ok, value = pcall(character.getUsername, character)
-    if not ok or type(value) ~= "string" or value == "" then return nil end
-    return value
-end
+local Num = PPO.Num
+local Identity = PPO.Identity
 
 local function settings()
-    local ok, resolved = pcall(PPO.Config.getToneSettings)
-    if not ok or type(resolved) ~= "table" then return PPO.Config.Tone end
-    return resolved
+    return PPO.Config.resolve("getToneSettings", PPO.Config.Tone)
 end
 
+-- The instance is a bare record. Every caller reaches the functions through the
+-- module and passes the record as the first argument, so the three method
+-- wrappers this used to build were never called by anything.
 function StateReport.new()
-    local instance = { lastStages = {} }
-    instance.build = function(self, tickResult, character)
-        return StateReport.build(tickResult, character)
-    end
-    instance.publish = function(self, character, report)
-        return StateReport.publish(self, character, report)
-    end
-    instance.forget = function(self, character)
-        return StateReport.forget(self, character)
-    end
-    return instance
+    return { lastStages = {} }
 end
 
 function StateReport.toneTimeDisplay(minutes)
-    local remaining = math.max(0, finiteOr(minutes, 0))
+    local remaining = math.max(0, Num.finite(minutes, 0))
     if remaining <= 0 then return "None", 0 end
     if remaining < 60 then return "UnderHour", 0 end
     return "Hours", math.max(1, math.floor(remaining / 60 + 0.5))
@@ -82,8 +44,8 @@ end
 function StateReport.build(tickResult, character)
     local resolved = settings()
     local report = {}
-    report.ownerOnlineID = ownerOnlineID(character)
-    report.ownerUsername = ownerUsername(character)
+    report.ownerOnlineID = Identity.onlineID(character)
+    report.ownerUsername = Identity.username(character)
     report.exerciseBonusDecay = PPO.BonusMath.isExerciseBonusDecayEnabled()
 
     local windowSource = nil
@@ -91,7 +53,7 @@ function StateReport.build(tickResult, character)
     if type(windowSource) ~= "table" then windowSource = {} end
     report.windows = {}
     for _, window in ipairs(WINDOWS) do
-        local minutes = math.max(0, finiteOr(windowSource[window.key], 0))
+        local minutes = math.max(0, Num.finite(windowSource[window.key], 0))
         local resolved = PPO.Config[window.settings]()
         local timeKind, hours = StateReport.toneTimeDisplay(minutes)
         report.windows[window.key] = {
@@ -109,11 +71,11 @@ function StateReport.build(tickResult, character)
         if type(entry) ~= "table" then entry = {} end
 
         local toneStage = math.floor(math.max(0,
-            math.min(3, finiteOr(entry.toneStage, 0))))
+            math.min(3, Num.finite(entry.toneStage, 0))))
         local carryBonus = 0
         local enduranceStrength = 0
         if direction == "Strength" then
-            carryBonus = math.floor(math.max(0, finiteOr(entry.carryBonus, 0)))
+            carryBonus = math.floor(math.max(0, Num.finite(entry.carryBonus, 0)))
         else
             local stages = resolved.EnduranceStages
             local percent = 0
@@ -125,7 +87,7 @@ function StateReport.build(tickResult, character)
         end
 
         local toneMinutesRemaining = math.max(0,
-            finiteOr(entry.toneMinutes, 0))
+            Num.finite(entry.toneMinutes, 0))
         local toneTimeKind, toneHoursRemaining =
             StateReport.toneTimeDisplay(toneMinutesRemaining)
 
@@ -135,20 +97,20 @@ function StateReport.build(tickResult, character)
         local source = entry.shares
         if type(source) ~= "table" then source = {} end
         local shares = {
-            adaptation = clamp(finiteOr(source.adaptation, 0), 0, 1),
-            protein = clamp(finiteOr(source.protein, 0), 0, 1),
-            creatine = clamp(finiteOr(source.creatine, 0), 0, 1),
-            sleep = clamp(finiteOr(source.sleep, 0), 0, 1),
-            fuel = clamp(finiteOr(source.fuel, 0), 0, 1),
-            tone = clamp(finiteOr(source.tone, 0), 0, 1),
+            adaptation = Num.clamp(Num.finite(source.adaptation, 0), 0, 1),
+            protein = Num.clamp(Num.finite(source.protein, 0), 0, 1),
+            creatine = Num.clamp(Num.finite(source.creatine, 0), 0, 1),
+            sleep = Num.clamp(Num.finite(source.sleep, 0), 0, 1),
+            fuel = Num.clamp(Num.finite(source.fuel, 0), 0, 1),
+            tone = Num.clamp(Num.finite(source.tone, 0), 0, 1),
         }
         report[direction] = {
-            capEffective = math.max(0, finiteOr(entry.capEffective, 0)),
-            fill = clamp(finiteOr(entry.fill, 0), 0, 1),
+            capEffective = math.max(0, Num.finite(entry.capEffective, 0)),
+            fill = Num.clamp(Num.finite(entry.fill, 0), 0, 1),
             shares = shares,
-            course = clamp(finiteOr(entry.course, 0), 0, 1),
-            courseLevel = clamp(finiteOr(entry.courseLevel, 0), 0, 1),
-            withdrawal = clamp(finiteOr(entry.withdrawal, 0), 0, 1),
+            course = Num.clamp(Num.finite(entry.course, 0), 0, 1),
+            courseLevel = Num.clamp(Num.finite(entry.courseLevel, 0), 0, 1),
+            withdrawal = Num.clamp(Num.finite(entry.withdrawal, 0), 0, 1),
             sleepRequired = entry.sleepRequired ~= false,
             loadStage = entry.loadStage or "Fresh",
             toneStage = toneStage,
@@ -158,12 +120,12 @@ function StateReport.build(tickResult, character)
             carryBonus = carryBonus,
             enduranceStrength = enduranceStrength,
             -- The skill panel renders these and derives nothing.
-            level = math.floor(clamp(finiteOr(entry.level, 0), 0, 10)),
-            multiplier = math.max(1, finiteOr(entry.displayMultiplier, 1)),
+            level = math.floor(Num.clamp(Num.finite(entry.level, 0), 0, 10)),
+            multiplier = math.max(1, Num.finite(entry.displayMultiplier, 1)),
             restedMultiplier = math.max(1,
-                finiteOr(entry.restedMultiplier, 1)),
-            levelCap = math.max(0, finiteOr(entry.levelCap, 0)),
-            adaptation = clamp(finiteOr(entry.adaptation, 0), 0, 1),
+                Num.finite(entry.restedMultiplier, 1)),
+            levelCap = math.max(0, Num.finite(entry.levelCap, 0)),
+            adaptation = Num.clamp(Num.finite(entry.adaptation, 0), 0, 1),
         }
     end
     return report
@@ -172,7 +134,7 @@ end
 -- Bucketing is what keeps a continuously moving multiplier from becoming a
 -- packet per tick more often than the tick itself fires.
 local function bucket(value, size)
-    return math.floor(finiteOr(value, 0) / size + 0.5)
+    return math.floor(Num.finite(value, 0) / size + 0.5)
 end
 
 local function directionKey(entry)
@@ -211,10 +173,6 @@ function StateReport.stageKeyFor(report)
     return key
 end
 
-local function stageKey(report)
-    return StateReport.stageKeyFor(report)
-end
-
 local function isStandaloneContext()
     if type(isClient) ~= "function" or type(isServer) ~= "function" then
         return false
@@ -237,7 +195,7 @@ function StateReport.publish(instance, character, report)
     if instance == nil or character == nil then return false end
     if type(report) ~= "table" or report.Strength == nil then return false end
 
-    local key = stageKey(report)
+    local key = StateReport.stageKeyFor(report)
     if instance.lastStages[character] == key then return false end
 
     local ok = deliver(character, report)

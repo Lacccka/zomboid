@@ -1,17 +1,14 @@
 local EnterFlag = false
 local FakeEnterFlag = false
-local function getJavaFieldNum(object, fieldName)
-    for i = 0, getNumClassFields(object) - 1 do
-        local javaField = getClassField(object, i)
-        if luautils.stringEnds(tostring(javaField), '.' .. fieldName) then
-            return i
-        end
-    end
-end
+-- MFS Patch 5: getJavaFieldNum() removed - see the note in UI/risky_inspect_button.lua.
+-- getNumClassFields/getClassField/getClassFieldVal are debug-only in B42.20 and
+-- throw IllegalStateException("Not in debug") in a normal game, which would abort
+-- every bolt-cycle animation frame. item:getWorldStaticModel() is the public
+-- equivalent on the same ScriptItem object.
 local function SetGunMoved(playerObj, weapon, PartFullID, PartType, offset, rotate)
     local item = ScriptManager.instance:getItem(PartFullID)
-    local wTransformFieldNum = getJavaFieldNum(item, "worldStaticModel")
-    local worldmodel = getClassFieldVal(item, getClassField(item, wTransformFieldNum))
+    if not item then return end
+    local worldmodel = item:getWorldStaticModel()
     local modelscript = "Base." .. weapon:getWeaponSprite()
     local model = ScriptManager.instance:getModelScript(modelscript)
     if model and worldmodel then

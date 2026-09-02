@@ -32,6 +32,19 @@ function ISUpgradeWeapon:perform()
             self.weapon:getModData().LightBatteryReamin = 100
         end
     end
+    if MFS_RefreshWeaponAttachmentState then
+        MFS_RefreshWeaponAttachmentState(self.character, self.weapon)
+    else
+        self.character:resetEquippedHandsModels()
+        if MFS_SyncEquippedWeaponState then
+            MFS_SyncEquippedWeaponState(self.character, self.weapon, true)
+        end
+    end
+
+    -- 安装配件后即时刷新检视 UI 的 3D 预览，否则要关闭再打开才会显示新配件。
+    if riskyInspectWindow and riskyInspectWindow:getIsVisible() then
+        riskyInspectWindow:renderInventory()
+    end
 end
 
 -- function ISUpgradeWeapon:perfom()

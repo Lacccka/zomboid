@@ -1,5 +1,5 @@
 {
-    "Sandbox_AegisEvents": "Peristiwa Aegis",
+    "Sandbox_AegisEvents": "Aegis",
     "Sandbox_AegisSiegeWaves": "Pengepungan: gelombang",
     "Sandbox_AegisSiegeWaves_tooltip": "Berapa banyak gelombang gerombolan yang dikirim oleh pengepungan.",
     "Sandbox_AegisSiegeCount": "Pengepungan: zombi per gelombang",
@@ -58,6 +58,8 @@
     "Sandbox_AegisPlayerClaims_tooltip": "Mengizinkan pemain mengklaim zona di safehouse sendiri sesuai anggaran perannya. Mati memblokir semua klaim.",
     "Sandbox_AegisPlayerKits": "Kit pemain aktif",
     "Sandbox_AegisPlayerKits_tooltip": "Halaman kit di area pemain termasuk penukaran booster. Mati menyembunyikannya untuk semua; editor kit tetap berfungsi.",
+    "Sandbox_AegisKitCodeGates": "Kit Discord di editor kit",
+    "Sandbox_AegisKitCodeGates_tooltip": "Menawarkan \"Booster Discord\" dan \"Hanya dengan kode kit\" saat mengedit kit. Keduanya butuh bot Discord sendiri. Mati akan menyembunyikannya. Kit yang sudah memakainya tetap menyimpannya.",
     "Sandbox_AegisPlayerVehicles": "Kendaraan tersimpan per pemain",
     "Sandbox_AegisPlayerVehicles_tooltip": "Berapa kendaraan yang boleh disimpan pemain di halaman kendaraan area pemain. 0 mematikannya. Diabaikan bila Knox Claim aktif, mod itu punya batasnya sendiri. Kendaraan yang sudah tersimpan tidak pernah hilang saat nilai diturunkan.",
     "Sandbox_AegisPlayerHealthInfection": "Tampilkan infeksi zombie ke pemain",

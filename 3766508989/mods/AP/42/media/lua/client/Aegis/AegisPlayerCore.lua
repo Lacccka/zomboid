@@ -90,10 +90,15 @@ Events.OnServerCommand.Add(function(module, command, args)
         -- guarded call: the alert file loads later alphabetically, and a
         -- packet during that window must not kill the listener
         if AegisSosAlert and AegisSosAlert.push then
-            pcall(AegisSosAlert.push, args)
+            AegisSosAlert.push(args)
         else
             local text = args.par and getText(args.key, tostring(args.par)) or getText(args.key)
             Aegis.showToast(text)
+        end
+    elseif command == "sosPending" and args then
+        -- backlog count for the dock badge, staff only gets this sent
+        if AegisSosAlert then
+            AegisSosAlert.pending = math.max(0, math.floor(tonumber(args.n) or 0))
         end
     end
 end)
@@ -102,6 +107,9 @@ local function sendReq()
     local p = getPlayer()
     if not p then return end
     sendClientCommand(p, MODULE, "ppReq", {})
+    -- rides the same retry loop: a lone shot at game start can race the
+    -- connection and the badge count would silently never arrive
+    sendClientCommand(p, MODULE, "sosCountReq", {})
     reqAt = getTimestampMs()
 end
 

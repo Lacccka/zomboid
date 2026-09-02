@@ -1511,5 +1511,7 @@
     "IGUI_SearchMode_Vision_Effect_Aiming": "Bonus Membidik: ",
     "IGUI_SearchMode_Vision_Effect_Crouching": "Bonus berjongkok: ",
     "IGUI_SearchMode_Vision_Effect_Trait_Profession_Bonuses": "Bonus trait dan pekerjaan: ",
-    "IGUI_FixItem": "Gunakan Kit Perbaikan"
+    "IGUI_FixItem": "Gunakan Kit Perbaikan",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

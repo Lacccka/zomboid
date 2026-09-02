@@ -8,7 +8,7 @@ AegisPageItems = ISPanel:derive("AegisPageItems")
 
 local ROW_H = 36
 local MAX_ROWS = 400
-local MAX_QTY = 100
+local MAX_QTY = 1000
 
 function AegisPageItems.create(window, x, y, w, h)
     local o = ISPanel:new(x, y, w, h)
@@ -160,17 +160,64 @@ function AegisPageItems:createChildren()
     self.list.doDrawItem = AegisPageItems.drawItemRow
     self:addChild(self.list)
 
-    -- quantity chips, cart and give buttons below the list
+    -- quantity chips, cart and give buttons below the list. The buttons
+    -- are glued to the right edge, so everything left of them shares what
+    -- is left: first the chips shrink, only then the entry is dropped.
+    -- Fixed positions used to let the buttons sit ON the chips
     local by = self.list:getBottom() + 16
+    local room = innerW - 460 - 12
+    local QTY = { 1, 5, 10, 25 }
+    local cw, gap, entryW = 44, 8, 52
+    local function rowWidth(n, withEntry)
+        return n * cw + (n - (withEntry and 0 or 1)) * gap + (withEntry and entryW or 0)
+    end
+    local withEntry = true
+    while cw > 30 and rowWidth(#QTY, withEntry) > room do cw = cw - 2 end
+    if rowWidth(#QTY, withEntry) > room then
+        withEntry = false
+        cw = 44
+        while cw > 30 and rowWidth(#QTY, false) > room do cw = cw - 2 end
+    end
+
     local qx = innerX
     self.qtyButtons = {}
-    for _, q in ipairs({ 1, 5, 10, 25 }) do
-        local btn = AegisButton:new(qx, by, 44, 32, tostring(q), nil, self, function(p, b) p:setQty(b.qtyValue) end)
+    for _, q in ipairs(QTY) do
+        local btn = AegisButton:new(qx, by, cw, 32, tostring(q), nil, self, function(p, b) p:setQty(b.qtyValue) end)
         btn.qtyValue = q
         btn.radius = 16
         self:addChild(btn)
         table.insert(self.qtyButtons, btn)
-        qx = qx + 52
+        qx = qx + cw + gap
+    end
+
+    if withEntry then
+        self.qtyEntry = AegisQtyBox:new(qx, by, entryW, 32)
+        self.qtyEntry:initialise()
+        self.qtyEntry:instantiate()
+        self.qtyEntry:setOnlyNumbers(true)
+        self.qtyEntry:setHasFrame(false)
+        self.qtyEntry:setMaxTextLength(4)
+        self.qtyChip = { x = qx, y = by, w = entryW, h = 32 }
+        self.qtyEntry.onTextChange = function()
+            -- rewriting the text fires this again, so the guard stops the
+            -- second pass instead of letting it bounce
+            if page.qtyBusy then return end
+            local v = tonumber(page.qtyEntry:getInternalText() or "")
+            if not v then return end
+            v = math.floor(v)
+            local capped = math.max(1, math.min(MAX_QTY, v))
+            if capped ~= v then
+                -- show what will really be handed over, a field reading
+                -- 5000 while 1000 leaves the panel is a lie
+                page.qtyBusy = true
+                page.qtyEntry:setText(tostring(capped))
+                page.qtyBusy = false
+            end
+            page.qty = capped
+            -- the chips show the pick, a typed number belongs to none
+            for _, b in ipairs(page.qtyButtons) do b.style = "ghost" end
+        end
+        self:addChild(self.qtyEntry)
     end
     self.cartBtn = AegisButton:new(innerX + innerW - 460, by, 150, 32, getText("UI_Aegis_AddToCart"), "plus", self, AegisPageItems.onAddCart)
     self:addChild(self.cartBtn)
@@ -277,6 +324,7 @@ end
 
 function AegisPageItems:setQty(q)
     self.qty = q
+    if self.qtyEntry then self.qtyEntry:setText("") end
     for _, btn in ipairs(self.qtyButtons) do
         btn.style = (btn.qtyValue == q) and "gold" or "ghost"
     end
@@ -518,6 +566,12 @@ function AegisPageItems:prerender()
                 cx = cx + cw + 8
             end
         end
+    end
+
+    -- last, the page frame above would paint over it
+    local chip = self.qtyChip
+    if chip then
+        Aegis.roundFrame(self, chip.x, chip.y, chip.w, chip.h, 16, 1, c.line, c.dark)
     end
 end
 

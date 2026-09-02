@@ -1,10 +1,12 @@
-require "PPO_Config"
+require "PPO_Num"
+require "PPO_ReadinessMath"
 require "PPO_ReadinessEngine"
 
 PPO = PPO or {}
 PPO.RecoveryContext = PPO.RecoveryContext or {}
 
 local RecoveryContext = PPO.RecoveryContext
+local Num = PPO.Num
 
 local NEUTRAL = 1
 
@@ -36,15 +38,11 @@ local function fallbackBonus(character, direction)
 end
 
 -- Every provider value stays bounded to 0..1 so a future nutrition or
--- pharmacology input can never escape the designed range.
+-- pharmacology input can never escape the designed range. Unlike PPO.Num.unit,
+-- an unreadable value reads neutral here rather than empty: a provider that
+-- cannot answer must not be heard as a starving, sleepless character.
 function RecoveryContext.bounded(value)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return NEUTRAL
-    end
-    if value < 0 then return 0 end
-    if value > 1 then return 1 end
-    return value
+    return Num.clamp(Num.finite(value, NEUTRAL), 0, 1)
 end
 
 -- Stage 3 owns real short-term recovery. This provider keeps the Stage 2

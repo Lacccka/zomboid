@@ -1,5 +1,5 @@
-require "client/ExplosionFX"
-require "client/FlareHandler"
+require "ExplosionFX"
+require "FlareHandler"
 
 local GrenadeBallistic = {}
 GrenadeBallistic._activeProjectiles = {}

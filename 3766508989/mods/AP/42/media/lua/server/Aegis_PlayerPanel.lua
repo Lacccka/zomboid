@@ -48,8 +48,8 @@ end
 -- nil unless the roles file unlocks the panel for this user
 local function panelFor(name)
     if not AegisRoles.playerPanelFor then return nil end
-    local ok, pp = pcall(AegisRoles.playerPanelFor, name)
-    if ok and type(pp) == "table" then return pp end
+    local pp = AegisRoles.playerPanelFor(name)
+    if type(pp) == "table" then return pp end
     return nil
 end
 
@@ -126,8 +126,7 @@ function AegisPlayerPanel.push(player)
         -- a booster without the kits flag still needs the redeem strip;
         -- boostReady opens the kits page for the boost slice, the kit
         -- list side enforces the matching scope
-        local boostReady = false
-        pcall(function() boostReady = AegisBoost.keySet() == true end)
+        local boostReady = AegisBoost.keySet() == true
         -- enabled carries the grant, role may be nil for the default
         -- panel every player gets
         -- the sandbox switches trim the grant before it travels: claims off
@@ -163,6 +162,14 @@ Commands.statsReq = function(player, args)
     if throttled(name, "stats", 2) then return end
     local s = AegisPlayerStats.get(name)
     s.playtimeH = AegisPlayerStats.playtimeHours(name)
+    -- the ledger holds the finished lives, the running one is added on
+    -- top. The server copy of hoursSurvived lags a full player sync
+    -- behind, the client value is current, so the larger of the two
+    -- counts; display only, the ledger itself is fed at death
+    local live = tonumber(player and player:getHoursSurvived()) or 0
+    local sent = tonumber(args and args.hours) or 0
+    if sent > live and sent < 1000000 then live = sent end
+    s.totalHours = math.floor(((s.totalHours or 0) + math.max(0, live)) * 10 + 0.5) / 10
     toClient(player, "statsSync", s)
 end
 
@@ -289,6 +296,52 @@ end
 local SOS_COOLDOWN = 120
 local lastSos = {}
 
+-- calls no admin has dealt with yet: answered or closed cards clear
+-- their entry, the blinking badge feeds off the count. The file keeps
+-- the backlog across restarts, stale calls expire on load
+local SOS_FILE = AegisStore.ROOT .. "/Status/sos.txt"
+local SOS_MAX = 30
+local SOS_KEEP = 24 * 3600
+
+local sosOpen = nil
+
+local function sosLoad()
+    if sosOpen then return end
+    sosOpen = {}
+    local lines = AegisStore.readLines(SOS_FILE, 200)
+    local now = AegisShared.realTime()
+    for _, line in ipairs(lines or {}) do
+        local epoch, who, x, y, z, text = line:match("^O|(%d+)|([^|]*)|(%-?%d+)|(%-?%d+)|(%-?%d+)|(.*)$")
+        if epoch and now - (tonumber(epoch) or 0) < SOS_KEEP then
+            table.insert(sosOpen, { at = tonumber(epoch), name = who,
+                x = tonumber(x), y = tonumber(y), z = tonumber(z), text = text })
+        end
+    end
+end
+
+local function sosSave()
+    local lines = {}
+    for _, e in ipairs(sosOpen) do
+        table.insert(lines, "O|" .. e.at .. "|" .. tostring(e.name):gsub("|", "_")
+            .. "|" .. math.floor(e.x or 0) .. "|" .. math.floor(e.y or 0)
+            .. "|" .. math.floor(e.z or 0) .. "|" .. e.text)
+    end
+    local content = table.concat(lines, "\n")
+    if #lines > 0 then content = content .. "\n" end
+    AegisStore.write(SOS_FILE, content)
+end
+
+local function sosPushCount()
+    local players = getOnlinePlayers()
+    if not players then return end
+    for i = 0, players:size() - 1 do
+        local p = players:get(i)
+        if p and AegisRoles.isVanillaAdmin(p) then
+            toClient(p, "sosPending", { n = #sosOpen })
+        end
+    end
+end
+
 Commands.sos = function(player, args)
     local name = username(player)
     if not name or not unlocked(name) then return end
@@ -305,19 +358,23 @@ Commands.sos = function(player, args)
     -- listener shows it only when the receiver is an admin; solo has
     -- nobody else to notify
     if isServer() then
-        pcall(function()
-            local players = getOnlinePlayers()
-            if not players then return end
+        sosLoad()
+        table.insert(sosOpen, { at = now, name = cap(name, 48), x = x, y = y, z = z, text = text })
+        while #sosOpen > SOS_MAX do table.remove(sosOpen, 1) end
+        sosSave()
+        local players = getOnlinePlayers()
+        if players then
             for i = 0, players:size() - 1 do
                 local p = players:get(i)
                 if p and AegisRoles.isVanillaAdmin(p) then
                     toClient(p, "sosNotice", {
                         key = "UI_Aegis_SosNotice", par = cap(name, 48),
-                        x = x, y = y, z = z, text = text,
+                        x = x, y = y, z = z, text = text, at = now,
                     })
+                    toClient(p, "sosPending", { n = #sosOpen })
                 end
             end
-        end)
+        end
     end
     local pos = ""
     if x and y then
@@ -326,6 +383,62 @@ Commands.sos = function(player, args)
     AegisLog.write("Actions", name, name, "SOS: " .. text .. pos)
     toClient(player, "sosAck", { wait = 0 })
 end
+
+-- the badge asks once on boot; only staff gets an answer
+Commands.sosCountReq = function(player, args)
+    if not isServer() then return end
+    if not AegisRoles.isVanillaAdmin(player) then return end
+    sosLoad()
+    toClient(player, "sosPending", { n = #sosOpen })
+end
+
+-- the blinking badge was clicked: hand the newest calls over as the
+-- usual alert cards and consider the whole backlog seen
+Commands.sosPendingReq = function(player, args)
+    if not isServer() then return end
+    if not AegisRoles.isVanillaAdmin(player) then return end
+    sosLoad()
+    if #sosOpen == 0 then return end
+    for i = math.max(1, #sosOpen - 3), #sosOpen do
+        local e = sosOpen[i]
+        toClient(player, "sosNotice", {
+            key = "UI_Aegis_SosNotice", par = cap(e.name, 48),
+            x = e.x, y = e.y, z = e.z, text = e.text, at = e.at,
+        })
+    end
+    sosOpen = {}
+    sosSave()
+    sosPushCount()
+    AegisLog.write("Actions", username(player) or "?", "players", "Missed SOS calls reviewed")
+end
+
+-- a live card was answered or closed: that call is settled for everyone
+Commands.sosSeen = function(player, args)
+    if not isServer() then return end
+    if not AegisRoles.isVanillaAdmin(player) then return end
+    local at = tonumber(args and args.at)
+    if not at then return end
+    sosLoad()
+    for i = #sosOpen, 1, -1 do
+        if sosOpen[i].at == at then table.remove(sosOpen, i) end
+    end
+    sosSave()
+    sosPushCount()
+end
+
+-- the one-shot count request races the boot: it can arrive before the
+-- server knows the sender is an admin and is then dropped for good. A
+-- slow pulse catches every admin a minute in at the latest, and stays
+-- silent while nothing is open
+local sosPulseAt = 0
+Events.OnTick.Add(function()
+    if not isServer() then return end
+    local now = AegisShared.realTime()
+    if now < sosPulseAt then return end
+    sosPulseAt = now + 60
+    sosLoad()
+    if #sosOpen > 0 then sosPushCount() end
+end)
 
 -- kitClaim is handled ONLY by the player dispatcher in Aegis_Kits.lua;
 -- a routing copy here double dispatched every claim and passed the raw
@@ -359,12 +472,12 @@ Events.EveryOneMinute.Add(function()
             local players = getOnlinePlayers()
             for i = 0, players:size() - 1 do
                 local pl = players:get(i)
-                if pl then pcall(AegisPlayerPanel.push, pl) end
+                if pl then AegisPlayerPanel.push(pl) end
             end
         end)
     else
         local p = getPlayer()
-        if p then pcall(AegisPlayerPanel.push, p) end
+        if p then AegisPlayerPanel.push(p) end
     end
 end)
 

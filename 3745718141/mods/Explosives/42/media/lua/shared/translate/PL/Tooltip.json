@@ -9,5 +9,6 @@
   "Tooltip_StrikerLever": "Sprężynowa dźwignia zapalnika, wykuta ze złomu. Potrzebna do złożenia dowolnego granatu ręcznego - to ona uruchamia zapalnik po zwolnieniu.",
   "Tooltip_Mk2FuzeAssembly": "Ręcznie zbudowany zespół zapalnika do korpusu granatu Mk2 - spłonka, element opóźniający i okablowanie, gotowy do wkręcenia w korpus.",
   "Tooltip_M26FuzeAssembly": "Ręcznie zbudowany zespół zapalnika do korpusu granatu M26 - spłonka, element opóźniający i okablowanie, gotowy do wkręcenia w korpus.",
-  "Tooltip_M67FuzeAssembly": "Ręcznie zbudowany zespół zapalnika do korpusu granatu M67 - spłonka, element opóźniający i okablowanie, gotowy do wkręcenia w korpus."
+  "Tooltip_M67FuzeAssembly": "Ręcznie zbudowany zespół zapalnika do korpusu granatu M67 - spłonka, element opóźniający i okablowanie, gotowy do wkręcenia w korpus.",
+  "Tooltip_Explosives_DEBUG_SPAWN_KEY": "Przytrzymaj Shift i naciśnij ten klawisz, aby wygenerować jeden granat ogłuszający bezpośrednio w ekwipunku, do testowania torów lotu/kolizji granatów bez potrzeby pełnego trybu debugowania."
 }

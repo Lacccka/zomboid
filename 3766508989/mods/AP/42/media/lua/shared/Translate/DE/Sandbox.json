@@ -1,5 +1,5 @@
 {
-    "Sandbox_AegisEvents": "Aegis Ereignisse",
+    "Sandbox_AegisEvents": "Aegis",
     "Sandbox_AegisSiegeWaves": "Belagerung: Wellen",
     "Sandbox_AegisSiegeWaves_tooltip": "Wie viele Hordenwellen die Belagerung losschickt.",
     "Sandbox_AegisSiegeCount": "Belagerung: Zombies pro Welle",
@@ -58,6 +58,8 @@
     "Sandbox_AegisPlayerClaims_tooltip": "Lässt Spieler im Rahmen ihres Rollen-Budgets eine Zone am eigenen Safehouse beanspruchen. Aus blockiert jeden Anspruch, egal welche Rolle.",
     "Sandbox_AegisPlayerKits": "Spieler-Kits aktiv",
     "Sandbox_AegisPlayerKits_tooltip": "Die Kits-Seite im Spielerbereich samt Booster-Einlösung. Aus blendet sie für alle aus; der Kit-Editor für Admins bleibt nutzbar.",
+    "Sandbox_AegisKitCodeGates": "Discord-Kits im Kit-Editor",
+    "Sandbox_AegisKitCodeGates_tooltip": "Bietet beim Bearbeiten eines Kits die Einträge \"Discord-Booster\" und \"Nur mit Kit-Code\" an. Beide brauchen einen eigenen Discord-Bot. Aus hält sie aus der Liste. Ein Kit das eines davon schon nutzt behält es.",
     "Sandbox_AegisPlayerVehicles": "Gemerkte Fahrzeuge je Spieler",
     "Sandbox_AegisPlayerVehicles_tooltip": "Wie viele Fahrzeuge ein Spieler auf der Fahrzeuge-Seite des Spielerbereichs behalten darf. 0 schaltet das Merken ab. Wird ignoriert, wo Knox Claim läuft, dieser Mod bringt seine eigene Grenze mit. Bereits gemerkte Fahrzeuge gehen beim Verkleinern nie verloren.",
     "Sandbox_AegisPlayerHealthInfection": "Zombie-Infektion den Spielern zeigen",

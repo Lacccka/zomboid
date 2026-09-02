@@ -1,12 +1,11 @@
+require "PPO_Directions"
 require "PPO_Config"
-require "PPO_MultiplierMath"
 require "PPO_BonusMath"
 require "PPO_ExerciseDefinitions"
 require "PPO_ExerciseState"
 require "PPO_RepetitionMatcher"
 require "PPO_MultiplierOwnership"
 require "PPO_BonusAwarder"
-require "PPO_RecoveryContext"
 require "PPO_AdaptationEngine"
 require "PPO_TrainingSession"
 
@@ -14,6 +13,7 @@ PPO = PPO or {}
 PPO.ExerciseAuthority = PPO.ExerciseAuthority or {}
 
 local Authority = PPO.ExerciseAuthority
+local DIRECTIONS = PPO.Directions.order()
 
 local function defaultClock()
     return getTimestampMs()
@@ -100,6 +100,28 @@ end
 local INSTALL_SCOPE = "exercise authority not installed"
 local SESSION_SCOPE = "exercise session refused"
 local REPEAT_SCOPE = "exercise repetition dropped"
+
+-- The client's copy of the award crosses the wire as a float, so the echo is
+-- recognized by value with a tolerance rather than by equality.
+local ECHO_TOLERANCE = 0.001
+
+-- On a dedicated server some exercise actions loop on the client as well, and
+-- the client's own vanilla award syncs back to the server outside every loop.
+-- Measured live on 42.20 with the timer authority probe: the bench press echoes
+-- `13` and the treadmill `6` -- in both cases exactly the award this exercise
+-- pays. Such an arrival proves nothing, but it is not evidence that PPO has
+-- lost the loop either.
+local function isEchoedAward(definition, component, amount)
+    if type(amount) ~= "number" or amount ~= amount then return false end
+    local mpAward = definition.mpXp[component]
+    if type(mpAward) == "number" and math.abs(amount - mpAward) <= ECHO_TOLERANCE
+    then
+        return true
+    end
+    local spAward = definition.spXp[component]
+    return type(spAward) == "number"
+        and math.abs(amount - spAward) <= ECHO_TOLERANCE
+end
 
 local function reportOnce(authority, scope, reason)
     if authority == nil or type(authority.reported) ~= "table" then
@@ -195,7 +217,7 @@ local function beginSession(authority, action)
     if previous ~= nil then closeSession(authority, previous) end
 
     local acquired = true
-    for _, component in ipairs({ "Strength", "Fitness" }) do
+    for _, component in ipairs(DIRECTIONS) do
         if definition.spXp[component] ~= nil then
             local perk = Perks[component]
             local level = action.character:getPerkLevel(perk)
@@ -269,7 +291,7 @@ local function makeToken(authority, session)
         workMinutes = {},
         mintMinute = mintMinute,
     }
-    for _, component in ipairs({ "Strength", "Fitness" }) do
+    for _, component in ipairs(DIRECTIONS) do
         if rawXp[component] ~= nil then
             local perk = Perks[component]
             local level = character:getPerkLevel(perk)
@@ -337,7 +359,7 @@ local function commitTokenSpan(authority, session, token)
     if not ok then return nil end
     charged = charged or 0
 
-    for _, component in ipairs({ "Strength", "Fitness" }) do
+    for _, component in ipairs(DIRECTIONS) do
         if token.stimulus[component] ~= nil
                 and definition.loadPerRepeat[component] ~= nil then
             token.loadMinutes[component] = charged
@@ -385,15 +407,46 @@ local function onAddXp(authority, character, perk, amount)
     local session = authority.activeByCharacter[character]
     if session == nil or not session.open then return end
 
-    local component = nil
-    if perk == Perks.Strength then component = "Strength" end
-    if perk == Perks.Fitness then component = "Fitness" end
+    local component = PPO.Directions.forPerk(perk)
     if component == nil then return end
+
+    -- A set can only prove the directions its exercise actually trains. Squats
+    -- pay Strength `0.0` on a dedicated server every repetition, and that call
+    -- is dropped one layer down for being non-positive; a positive Strength
+    -- award during squats is somebody else's, and charging it to this
+    -- repetition credits a direction the character never worked.
+    local definition = session.definition
+    if definition.spXp[component] == nil
+            and definition.mpXp[component] == nil then
+        return
+    end
+
+    -- The one seam the mod-support tree owns on this path. A direction that
+    -- already holds an unclaimed proof cannot be proved twice by the same
+    -- repetition, and a second award in it belongs to whichever mod paid it.
+    -- Reasons and the mods this was written for live under `shared/Compat`;
+    -- with that tree absent this is a no-op and the queue behaves as before.
+    if PPO.Compat ~= nil and PPO.Compat.Shared ~= nil
+            and PPO.Compat.Shared.ForeignXp ~= nil then
+        local asked, echo = pcall(PPO.Compat.Shared.ForeignXp.isEcho,
+            authority.matcher, character, component)
+        if asked and echo then return end
+    end
 
     -- Under server timer authority the vanilla repeat runs inside the original
     -- loop, so trained XP arriving outside that window is not this repetition's
     -- evidence. Matching it would pay a bonus for work PPO cannot attribute, so
     -- the session closes instead and the character keeps plain vanilla rates.
+    -- The echo is dropped, not matched and not fatal. Closing the session on it
+    -- cost the whole set: on the treadmill the client's first repetition landed
+    -- 1.2 seconds before the server's own first loop, so the session died before
+    -- it could prove anything, and the bench press lost whichever half of the
+    -- set followed the first echo that won the race.
+    if usesServerTimerAuthority() and not session.inOriginalLoop
+            and isEchoedAward(session.definition, component, amount) then
+        return
+    end
+
     if usesServerTimerAuthority() and not session.inOriginalLoop then
         if not session.unexpectedXpWarningEmitted then
             session.unexpectedXpWarningEmitted = true
@@ -431,21 +484,9 @@ local function authorityLoop(authority, action)
         return false
     end
 
-    if isServer() and not usesServerTimerAuthority() then
-        local matchedOk, match = pcall(
-            PPO.RepetitionMatcher.mintToken,
-            authority.matcher, session.character, token)
-        if not matchedOk then
-            reportOnce(authority, REPEAT_SCOPE, "repetition matcher failed")
-            closeSession(authority, session)
-            return false
-        end
-        action.repnb = (action.repnb or 0) + 1
-        action:setFitnessSpeed()
-        handleMatch(authority, session, match)
-        return true
-    end
-
+    -- Minted once, before the flows diverge: both of them mint exactly this
+    -- token from exactly this state, and the only thing that differs is what
+    -- they do with the match afterwards.
     local matchedOk, match = pcall(
         PPO.RepetitionMatcher.mintToken,
         authority.matcher, session.character, token)
@@ -454,6 +495,16 @@ local function authorityLoop(authority, action)
         closeSession(authority, session)
         return false
     end
+
+    -- The old server flow drives the repetition itself, so the match is settled
+    -- here and the vanilla loop never runs.
+    if isServer() and not usesServerTimerAuthority() then
+        action.repnb = (action.repnb or 0) + 1
+        action:setFitnessSpeed()
+        handleMatch(authority, session, match)
+        return true
+    end
+
     if match.kind == "closed" then
         reportOnce(authority, REPEAT_SCOPE, "repetition matcher closed")
         closeSession(authority, session)
@@ -482,9 +533,7 @@ function Authority.refreshActiveLevel(character, perk, level, applyMultiplier)
     local session = authority.activeByCharacter[character]
     if session == nil or not session.open then return false end
 
-    local component = nil
-    if perk == Perks.Strength then component = "Strength" end
-    if perk == Perks.Fitness then component = "Fitness" end
+    local component = PPO.Directions.forPerk(perk)
     if component == nil or session.definition.spXp[component] == nil then
         return false
     end

@@ -1,3 +1,5 @@
+require "PPO_Directions"
+require "PPO_Num"
 require "PPO_ClientRuntime"
 
 PPO = PPO or {}
@@ -5,23 +7,10 @@ PPO.SkillTooltip = PPO.SkillTooltip or { Installed = false }
 
 local SkillTooltip = PPO.SkillTooltip
 
-local function finiteOr(value, fallback)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return fallback
-    end
-    return value
-end
-
-local function directionFor(perkType)
-    if Perks == nil then return nil end
-    if perkType == Perks.Strength then return "Strength" end
-    if perkType == Perks.Fitness then return "Fitness" end
-    return nil
-end
+local Num = PPO.Num
 
 local function multiplierText(value)
-    return string.format("%.2f", math.max(1, finiteOr(value, 1)))
+    return string.format("%.2f", math.max(1, Num.finite(value, 1)))
 end
 
 -- The exact string vanilla appended, rebuilt from the same inputs, so the line
@@ -30,7 +19,7 @@ function SkillTooltip.vanillaMultiplierLine(character, perkType)
     local ok, multiplier = pcall(function()
         return character:getXp():getMultiplier(perkType)
     end)
-    if not ok or finiteOr(multiplier, 0) <= 0 then return nil end
+    if not ok or Num.finite(multiplier, 0) <= 0 then return nil end
 
     local textOk, text = pcall(getText, "IGUI_skills_Multiplier",
         round(multiplier, 2))
@@ -50,7 +39,7 @@ end
 -- Level 10 owns no multiplier, so it gets nothing: the breakdown that used to
 -- justify a lone conditioning line here now lives in the training tab.
 function SkillTooltip.block(entry)
-    local cap = finiteOr(entry.levelCap, 0)
+    local cap = Num.finite(entry.levelCap, 0)
     if cap <= 1 then return "" end
 
     -- The two numbers are equal exactly when load is zero, and the comparison
@@ -68,12 +57,12 @@ function SkillTooltip.block(entry)
     -- The ceiling line shows the course-adjusted value, because that is the
     -- number the multiplier is actually measured against; `levelCap` stays the
     -- untouched band and only decides whether the block is rendered at all.
-    local ceiling = finiteOr(entry.capEffective, 0)
+    local ceiling = Num.finite(entry.capEffective, 0)
     if ceiling <= 0 then ceiling = cap end
 
     return block
         .. " <LINE> " .. getText("IGUI_PPO_MultiplierCeiling",
-            tostring(math.floor(finiteOr(entry.level, 0))),
+            tostring(math.floor(Num.finite(entry.level, 0))),
             multiplierText(ceiling))
         .. " <LINE> <INDENT:0> "
 end
@@ -83,12 +72,12 @@ function SkillTooltip.decorate(bar, lvlSelected)
     if bar.perk == nil or bar.char == nil then return false end
 
     local perkType = bar.perk:getType()
-    local direction = directionFor(perkType)
+    local direction = PPO.Directions.forPerk(perkType)
     if direction == nil then return false end
 
     -- Vanilla annotates only the square in progress. At level 10 there is no
     -- such square, and conditioning must still be reachable.
-    local level = finiteOr(bar.level, 0)
+    local level = Num.finite(bar.level, 0)
     if level < 10 and lvlSelected ~= bar.level then return false end
 
     local state = PPO.ClientRuntime.state(bar.char)

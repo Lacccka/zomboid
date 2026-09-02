@@ -106,8 +106,8 @@ local lastState = {}
 -- nil unless the roles file unlocks the panel for this user
 local function panelFor(name)
     if not AegisRoles.playerPanelFor then return nil end
-    local ok, pp = pcall(AegisRoles.playerPanelFor, name)
-    if ok and type(pp) == "table" then return pp end
+    local pp = AegisRoles.playerPanelFor(name)
+    if type(pp) == "table" then return pp end
     return nil
 end
 

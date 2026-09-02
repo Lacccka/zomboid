@@ -1,3 +1,5 @@
+require "PPO_Num"
+
 PPO = PPO or {}
 
 PPO.Config = {
@@ -110,9 +112,6 @@ PPO.Config = {
         RecoveryWithdrawalPenalty = 0.50,
         SideEffectScale = 1.0,
     },
-    Nutrition = {
-        SupportDurationHours = 24,
-    },
     Supplements = {
         ServingHours = 24,
         CourseDoseHours = 48,
@@ -213,22 +212,31 @@ PPO.Config = {
     },
 }
 
-local function bounded(value, minimum, maximum, fallback)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return fallback
-    end
-    if value < minimum then return minimum end
-    if value > maximum then return maximum end
-    return value
-end
+local Num = PPO.Num
 
--- `bounded` is for numbers, and the `and`/`or` idiom collapses on a legitimate
--- `false`. Absent means the option was never written, which is the shipped
--- behaviour rather than the off state.
+-- `PPO.Num.bounded` is for numbers, and the `and`/`or` idiom collapses on a
+-- legitimate `false`. Absent means the option was never written, which is the
+-- shipped behaviour rather than the off state.
 local function switched(value, fallback)
     if type(value) ~= "boolean" then return fallback end
     return value
+end
+
+-- Every consumer wants the same answer from a settings resolver: what it
+-- returned, or the shipped defaults when it is absent or throws. Seven modules
+-- carried a private copy of that policy, which is seven places a change to it
+-- would have to land.
+--
+-- `resolver` is either the name of one on this table -- the shipped case -- or a
+-- function, which is what the two modules that take their provider by injection
+-- hand in. Anything else is an absent resolver and falls back, which is also
+-- what an injected provider set to a non-function has to mean.
+function PPO.Config.resolve(resolver, defaults)
+    if type(resolver) == "string" then resolver = PPO.Config[resolver] end
+    if type(resolver) ~= "function" then return defaults end
+    local ok, resolved = pcall(resolver)
+    if not ok or type(resolved) ~= "table" then return defaults end
+    return resolved
 end
 
 -- Server-safe resolver. Returns a fresh table every call so a caller cannot
@@ -238,15 +246,15 @@ function PPO.Config.getAdaptationSettings()
     local source = SandboxVars
         and SandboxVars.PhysicalProgressionOverhaul or nil
     return {
-        GainScale = bounded(source and source.AdaptationGainScale,
+        GainScale = Num.bounded(source and source.AdaptationGainScale,
             0.25, 4.0, defaults.GainScale),
-        CreditCap = bounded(source and source.AdaptationCreditCap,
+        CreditCap = Num.bounded(source and source.AdaptationCreditCap,
             0.15, 1.20, defaults.CreditCap),
-        ConversionHours = bounded(source and source.AdaptationConversionHours,
+        ConversionHours = Num.bounded(source and source.AdaptationConversionHours,
             6, 96, defaults.ConversionHours),
-        GraceHours = bounded(source and source.AdaptationGraceHours,
+        GraceHours = Num.bounded(source and source.AdaptationGraceHours,
             0, 336, defaults.GraceHours),
-        DecayDays = bounded(source and source.AdaptationDecayDays,
+        DecayDays = Num.bounded(source and source.AdaptationDecayDays,
             5, 120, defaults.DecayDays),
         -- Rides this table rather than taking a resolver of its own, unlike
         -- `courseWithdrawalEnabled`: the tick builds these settings exactly
@@ -254,10 +262,10 @@ function PPO.Config.getAdaptationSettings()
         -- from the same call.
         DecayEnabled = switched(source and source.AdaptationDecay,
             defaults.DecayEnabled),
-        MinimumTrainingMinutes = bounded(
+        MinimumTrainingMinutes = Num.bounded(
             source and source.AdaptationMinimumTrainingMinutes,
             10, 30, defaults.MinimumTrainingMinutes),
-        FullQualityTrainingMinutes = bounded(
+        FullQualityTrainingMinutes = Num.bounded(
             source and source.AdaptationFullQualityTrainingMinutes,
             10, 60, defaults.FullQualityTrainingMinutes),
         MinimumDirectionCoverage = defaults.MinimumDirectionCoverage,
@@ -275,11 +283,11 @@ function PPO.Config.getLoadSettings()
     local defaults = PPO.Config.Load
     local source = SandboxVars
         and SandboxVars.PhysicalProgressionOverhaul or nil
-    local minutes = bounded(source and source.TrainingBudgetMinutes, 0, 180,
+    local minutes = Num.bounded(source and source.TrainingBudgetMinutes, 0, 180,
         defaults.RecoverableStimulus * defaults.MinutesPerStimulus)
     return {
         RecoverableStimulus = minutes / defaults.MinutesPerStimulus,
-        RecoveryHours = bounded(source and source.TrainingBudgetRecoveryHours,
+        RecoveryHours = Num.bounded(source and source.TrainingBudgetRecoveryHours,
             6, 168, defaults.RecoveryHours),
         MinutesPerStimulus = defaults.MinutesPerStimulus,
     }
@@ -319,9 +327,9 @@ function PPO.Config.courseCeilingScale()
     local source = SandboxVars
         and SandboxVars.PhysicalProgressionOverhaul or nil
     return {
-        Strength = bounded(source and source.CourseCeilingAnabolic,
+        Strength = Num.bounded(source and source.CourseCeilingAnabolic,
             0, 100, SHIPPED_COURSE_PERCENT) / SHIPPED_COURSE_PERCENT,
-        Fitness = bounded(source and source.CourseCeilingCardio,
+        Fitness = Num.bounded(source and source.CourseCeilingCardio,
             0, 100, SHIPPED_COURSE_PERCENT) / SHIPPED_COURSE_PERCENT,
     }
 end
@@ -352,7 +360,7 @@ function PPO.Config.getMultiplierSettings()
 
     local caps = {}
     for index = 1, #MULTIPLIER_CAP_KEYS do
-        caps[index] = bounded(source and source[MULTIPLIER_CAP_KEYS[index]],
+        caps[index] = Num.bounded(source and source[MULTIPLIER_CAP_KEYS[index]],
             1, 50, defaults.LevelCaps[index])
     end
     resolved.LevelCaps = caps
@@ -365,7 +373,7 @@ function PPO.Config.getMultiplierSettings()
     local total = 0
     for index = 1, #SHARE_ORDER do
         local field = SHARE_ORDER[index]
-        local percent = bounded(source and source[SHARE_KEYS[field]],
+        local percent = Num.bounded(source and source[SHARE_KEYS[field]],
             0, 100, defaults[field] * 100)
         weights[field] = percent
         total = total + percent
@@ -405,17 +413,17 @@ function PPO.Config.getRecoverySettings()
     local source = SandboxVars
         and SandboxVars.PhysicalProgressionOverhaul or nil
     return {
-        ReadinessFloor = bounded(source and source.ReadinessFloorPercent,
+        ReadinessFloor = Num.bounded(source and source.ReadinessFloorPercent,
             0, 100, defaults.ReadinessFloor * 100) / 100,
         FatigueRampStart = defaults.FatigueRampStart,
         FatigueRampEnd = defaults.FatigueRampEnd,
-        FatiguePenalty = bounded(source and source.ReadinessFatiguePenalty,
+        FatiguePenalty = Num.bounded(source and source.ReadinessFatiguePenalty,
             0, 100, defaults.FatiguePenalty * 100) / 100,
         ShareFatigueRampEnd = defaults.ShareFatigueRampEnd,
         ShareFatiguePenalty = defaults.ShareFatiguePenalty,
         FuelRampStart = defaults.FuelRampStart,
         FuelRampEnd = defaults.FuelRampEnd,
-        FuelPenalty = bounded(source and source.ReadinessFuelPenalty,
+        FuelPenalty = Num.bounded(source and source.ReadinessFuelPenalty,
             0, 100, defaults.FuelPenalty * 100) / 100,
         RecoverySupportFloor = defaults.RecoverySupportFloor,
         SleepInfluence = sleepInfluence(source and source.SleepInfluence,
@@ -434,32 +442,21 @@ function PPO.Config.getToneSettings()
     local carry = {}
     local endurance = {}
     for stage = 1, 3 do
-        carry[stage] = bounded(source and source["ToneCarryStage" .. stage],
+        carry[stage] = Num.bounded(source and source["ToneCarryStage" .. stage],
             0, 30, defaults.CarryStages[stage])
-        endurance[stage] = bounded(
+        endurance[stage] = Num.bounded(
             source and source["ToneEnduranceStage" .. stage],
             0, 100, defaults.EnduranceStages[stage])
     end
     return {
         CarryStages = carry,
         EnduranceStages = endurance,
-        MaxDurationHours = bounded(source and source.ToneMaxDurationHours,
+        MaxDurationHours = Num.bounded(source and source.ToneMaxDurationHours,
             1, 24, defaults.MaxDurationHours),
         EnduranceRefundEnabled = refund,
         EnduranceRecoveryPerMinute = defaults.EnduranceRecoveryPerMinute,
         FallbackReadinessBonus = defaults.FallbackReadinessBonus,
         MaxPlausibleEnduranceDrop = defaults.MaxPlausibleEnduranceDrop,
-    }
-end
-
-function PPO.Config.getNutritionSettings()
-    local defaults = PPO.Config.Nutrition
-    local source = SandboxVars
-        and SandboxVars.PhysicalProgressionOverhaul or nil
-    return {
-        SupportDurationHours = bounded(
-            source and source.NutritionSupportDurationHours,
-            6, 336, defaults.SupportDurationHours),
     }
 end
 
@@ -470,16 +467,16 @@ function PPO.Config.getSupplementSettings()
     local source = SandboxVars
         and SandboxVars.PhysicalProgressionOverhaul or nil
     return {
-        ServingHours = bounded(
+        ServingHours = Num.bounded(
             source and source.NutritionSupportDurationHours,
             6, 336, defaults.ServingHours),
-        CourseDoseHours = bounded(
+        CourseDoseHours = Num.bounded(
             source and source.SupplementCourseDurationHours,
             12, 720, defaults.CourseDoseHours),
         -- The felt course chases the reservoir over this window. Accounting is
         -- instant; the effect is not, so a lone dose never reaches its nominal
         -- value.
-        OnsetHours = bounded(
+        OnsetHours = Num.bounded(
             source and source.SupplementOnsetHours,
             1, 168, defaults.OnsetHours),
     }
@@ -494,11 +491,11 @@ function PPO.Config.getStimulantSettings()
     local source = SandboxVars
         and SandboxVars.PhysicalProgressionOverhaul or nil
     return {
-        WindowHours = bounded(
+        WindowHours = Num.bounded(
             source and source.SupplementStimulantHours,
             0, 72, defaults.WindowHours),
         StrainAcceleration = defaults.StrainAcceleration,
-        ContainerServings = bounded(
+        ContainerServings = Num.bounded(
             source and source.StimulantTankServings,
             1, 10, PPO.Config.Windows.StimulantServings),
     }
@@ -512,13 +509,13 @@ function PPO.Config.getThermogenicSettings()
     local source = SandboxVars
         and SandboxVars.PhysicalProgressionOverhaul or nil
     return {
-        WindowHours = bounded(
+        WindowHours = Num.bounded(
             source and source.SupplementThermogenicHours,
             0, 72, defaults.WindowHours),
         CalorieCeiling = defaults.CalorieCeiling,
         DescentPerHour = defaults.DescentPerHour,
         HeatFloor = defaults.HeatFloor,
-        ContainerServings = bounded(
+        ContainerServings = Num.bounded(
             source and source.ThermogenicTankServings,
             1, 10, PPO.Config.Windows.ContainerServings),
     }
@@ -546,7 +543,7 @@ function PPO.Config.getCourseEffectSettings()
         and SandboxVars.PhysicalProgressionOverhaul or nil
     local resolved = {}
     for key, value in pairs(defaults) do resolved[key] = value end
-    resolved.SideEffectScale = bounded(
+    resolved.SideEffectScale = Num.bounded(
         source and source.SupplementCourseSideEffects,
         0, 200, 100) / 100
     resolved.CourseCeilingScale = PPO.Config.courseCeilingScale()

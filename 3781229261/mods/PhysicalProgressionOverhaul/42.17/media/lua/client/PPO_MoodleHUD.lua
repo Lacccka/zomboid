@@ -1,3 +1,4 @@
+require "PPO_Num"
 require "PPO_MoodlePresenter"
 require "PPO_ClientRuntime"
 
@@ -15,18 +16,12 @@ local VANILLA_MOODLES = {
     "HEAVY_LOAD", "FOOD_EATEN",
 }
 
-local function finiteOr(value, fallback)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return fallback
-    end
-    return value
-end
+local Num = PPO.Num
 
 local function guardedNumber(call, fallback)
     local ok, value = pcall(call)
     if not ok then return fallback end
-    return finiteOr(value, fallback)
+    return Num.finite(value, fallback)
 end
 
 local function viewport(playerNum)
@@ -46,7 +41,7 @@ local function viewport(playerNum)
 end
 
 function MoodleHUD.textureMetrics(option, fontSizeOption)
-    local selected = finiteOr(option, 0)
+    local selected = Num.finite(option, 0)
     if selected >= 1 and selected <= #STANDARD_SIZES
             and selected == math.floor(selected) then
         local size = STANDARD_SIZES[selected]
@@ -58,7 +53,7 @@ function MoodleHUD.textureMetrics(option, fontSizeOption)
         }
     end
     if selected == 7 then
-        local fontOption = finiteOr(fontSizeOption, 0)
+        local fontOption = Num.finite(fontSizeOption, 0)
         if fontOption >= 1 and fontOption <= #STANDARD_SIZES
                 and fontOption == math.floor(fontOption) then
             local size = STANDARD_SIZES[fontOption]
@@ -85,7 +80,7 @@ function MoodleHUD.visibleVanillaCount(character)
         if moodleType ~= nil then
             local readOK, level = pcall(moodles.getMoodleLevel,
                 moodles, moodleType)
-            level = readOK and finiteOr(level, 0) or 0
+            level = readOK and Num.finite(level, 0) or 0
             if level ~= 0
                     and (name ~= "FOOD_EATEN" or level >= 3) then
                 count = count + 1
@@ -99,7 +94,7 @@ local function activeCustomRecord(record)
     if type(record) ~= "table" then return false end
     if record.active == true or record.visible == true then return true end
     for _, name in ipairs({ "Level", "level", "Value", "value" }) do
-        local value = finiteOr(record[name], 0)
+        local value = Num.finite(record[name], 0)
         if value ~= 0 then return true end
     end
     return false
@@ -188,12 +183,12 @@ end
 function MoodleHUD.tooltipBounds(playerNum, iconRect, width, height)
     local area = viewport(playerNum)
     local resolvedWidth = math.min(area.width,
-        math.max(0, finiteOr(width, 0)))
+        math.max(0, Num.finite(width, 0)))
     local resolvedHeight = math.min(area.height,
-        math.max(0, finiteOr(height, 0)))
-    local desiredX = finiteOr(iconRect and iconRect.x, area.left)
+        math.max(0, Num.finite(height, 0)))
+    local desiredX = Num.finite(iconRect and iconRect.x, area.left)
         - resolvedWidth - 6
-    local desiredY = finiteOr(iconRect and iconRect.y, area.top)
+    local desiredY = Num.finite(iconRect and iconRect.y, area.top)
     local maximumX = area.left + area.width - resolvedWidth
     local maximumY = area.top + area.height - resolvedHeight
     return {
@@ -245,7 +240,7 @@ local function colourComponents(alignment, severity)
         blue = guardedNumber(function() return selected:getB() end, blue)
     end
     local share = math.max(0, math.min(1,
-        finiteOr(severity, 1) / 3))
+        Num.finite(severity, 1) / 3))
     local inverse = 1 - share
     return grayRed * inverse + red * share,
         grayGreen * inverse + green * share,
@@ -380,11 +375,13 @@ function Container:render()
     self.lastWiggleOffset = wiggle
 
     local hoveredRect = nil
+    -- Read once per frame rather than once per icon: the moodle size is a
+    -- whole-HUD option and every record resolves it to the same answer.
+    local sourceSize = currentMetrics().sourceSize
+    local base = "media/ui/Moodles/" .. tostring(sourceSize) .. "/"
     for _, rect in ipairs(self.rects) do
         local record = rect.record
-        local size = self.records ~= nil and rect.width or 32
-        local sourceSize = currentMetrics().sourceSize
-        local base = "media/ui/Moodles/" .. tostring(sourceSize) .. "/"
+        local size = rect.width
         local icon = texture(base .. tostring(record.icon))
         if icon ~= nil then
             local solid = texture(base .. "_Moodles_BGsolid.png")

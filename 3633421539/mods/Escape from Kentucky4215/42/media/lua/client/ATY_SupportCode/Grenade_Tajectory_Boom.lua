@@ -1,5 +1,16 @@
 Grenade_Tajectory = Grenade_Tajectory or {}
 Grenade_Tajectory = Grenade_Tajectory or {}
+MFSPerformanceSafety = MFSPerformanceSafety or {}
+local previousGrenadeCheck = Grenade_Tajectory.checkontick
+if type(previousGrenadeCheck) == "function" then
+    Events.OnTick.Remove(previousGrenadeCheck)
+end
+if MFSPerformanceSafety.grenadeCheckOnTick then
+    Events.OnTick.Remove(MFSPerformanceSafety.grenadeCheckOnTick)
+end
+if MFSPerformanceSafety.grenadeKillOnTick then
+    Events.OnTick.Remove(MFSPerformanceSafety.grenadeKillOnTick)
+end
 Grenade_Tajectory.table = {}
 Grenade_Tajectory.boomtable = {}
 Grenade_Tajectory.aimcursor = nil
@@ -95,10 +106,9 @@ end
 function Grenade_Tajectory.boomontick()
     local tablenow = Grenade_Tajectory.boomtable
     for kt, vt in pairs(tablenow) do
-        print(vt[7])
-        for kz, vz in pairs(vt[12]) do
-            Grenade_Tajectory.itemremove(vt[12][vt[3] - vt[13]])
-        end
+        -- The original loop removed the same FX object once for every entry
+        -- in vt[12]. Remove the selected expired object exactly once.
+        Grenade_Tajectory.itemremove(vt[12][vt[3] - vt[13]])
         if vt[3] > vt[2] + vt[13] then
             tablenow[kt] = nil
             break
@@ -158,9 +168,12 @@ Grenade_Tajectory.damagedisplayer = {}
 function Grenade_Tajectory.checkontick()
     Grenade_Tajectory.boomontick()
 end
-Events.OnTick.Add(Grenade_Tajectory.checkontick)
+MFSPerformanceSafety.grenadeCheckOnTick = Grenade_Tajectory.checkontick
+Events.OnTick.Remove(MFSPerformanceSafety.grenadeCheckOnTick)
+Events.OnTick.Add(MFSPerformanceSafety.grenadeCheckOnTick)
 
 local list = {}
+local DEAD_CONFIRM_MS = 5000
 
 local function KillReachableSquaresZombie(square, range, Damage, ExplosionSound)
     if not square then
@@ -188,7 +201,10 @@ local function KillReachableSquaresZombie(square, range, Damage, ExplosionSound)
                         local distance = math.sqrt((dx * dx) + (dy * dy))
                         local scaledDamage = Damage * (math.abs((range - distance)) / range) * 2
                         local newHealth = zombie:getHealth() - scaledDamage
-                        table.insert(list, zombie)
+                        table.insert(list, {
+                            zombie = zombie,
+                            deadSince = nil
+                        })
                         if newHealth < 0 then
                             newHealth = 0
                         end
@@ -213,29 +229,44 @@ function Grenade_Tajectory.Boom(sq, GrenadeTypeInfo)
 end
 
 local function OnKillingZombieRagdoll()
-    for i,v in pairs(list) do
-        if v == nil then return end
+    -- Entries were previously retained forever and scanned on every tick.
+    -- Keep the original retry behavior during a bounded confirmation window.
+    -- This allows delayed server ownership correction to revive a zombie and
+    -- trigger another Kill call, without retaining every zombie forever.
+    for i = #list, 1, -1 do
+        local entry = list[i]
+        local v = entry and entry.zombie or nil
+        if v then
+            if v:getModData()["RagdollTimer"] == nil then
+                v:getModData()["RagdollTimer"] = 0
+            else
+                v:getModData()["RagdollTimer"] =
+                    v:getModData()["RagdollTimer"] + getGameTime():getTimeDelta()
+            end
 
-        if v:getModData()["RagdollTimer"] == nil then
-            v:getModData()["RagdollTimer"] = 0
-        else
-            v:getModData()["RagdollTimer"] = v:getModData()["RagdollTimer"] + getGameTime():getTimeDelta()
-        end
+            --v:setSitAgainstWall(true)
+            --v:setVariable("bMoving", false)
+            --v:setMoving(false)
 
-        --v:setSitAgainstWall(true)
-        --v:setVariable("bMoving", false)
-        --v:setMoving(false)
-
-       if not v:isDead() then
-           --v:setRagdoll(true)
-            --if v:isSitAgainstWall() and not v:getVariableBoolean("bMoving", true) and v:getVariableBoolean("issitting", true) then
+            if not v:isDead() then
+                entry.deadSince = nil
+                --v:setRagdoll(true)
+                --if v:isSitAgainstWall() and not v:getVariableBoolean("bMoving", true) and v:getVariableBoolean("issitting", true) then
                 v:Kill(getPlayer())
-        --elseif v:getModData()["RagdollTimer"] > 3 then
-            --v:becomeCorpse()
-            --table.remove(list, i)
-       end
-   
+                --elseif v:getModData()["RagdollTimer"] > 3 then
+                --v:becomeCorpse()
+            end
+            if v:isDead() then
+                entry.deadSince = entry.deadSince or getTimestampMs()
+            end
+        end
+        if not v or (entry.deadSince and getTimestampMs() - entry.deadSince >= DEAD_CONFIRM_MS) then
+            table.remove(list, i)
+        end
     end
 end
 
-Events.OnTick.Add(OnKillingZombieRagdoll)
+MFSPerformanceSafety.grenadeKillOnTick = OnKillingZombieRagdoll
+Events.OnTick.Remove(MFSPerformanceSafety.grenadeKillOnTick)
+Events.OnTick.Add(MFSPerformanceSafety.grenadeKillOnTick)
+MFSPerformanceSafety.grenadeOverride = "1.3.1"

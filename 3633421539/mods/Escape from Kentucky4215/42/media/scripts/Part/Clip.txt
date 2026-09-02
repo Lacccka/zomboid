@@ -93,24 +93,6 @@ module Gunpart {
                 mesh = 弹匣/Clip_ARX200_cat,
                 texture = GunTexture/ARX200_cat,
                 }  
-            item Clip_M82_cat
-            {
-                WorldRender      = FALSE,
-                ItemType         = base:weaponpart,
-                DisplayCategory = WeaponPart,
-                DisplayName      = 弹匣,
-                Icon             = Clip_M82_cat,
-                Weight           = 0.2,
-                MountOn = M82_cat,
-                PartType         = Clip,
-                WorldStaticModel = Clip_M82_cat,
-            }
-            model Clip_M82_cat
-            {
-                cullface = None,
-                mesh = 弹匣/Clip_M82_cat,
-                texture = GunTexture/M82_cat,
-                }  
             item Clip_SRM3_cat
             {
                 WorldRender      = FALSE,
@@ -216,8 +198,8 @@ module Gunpart {
             model Clip_SG553_cat
             {
                 cullface = None,
-                mesh = 弹匣/Clip_SG553_cat,
-                texture = GunTexture/SG553_cat,
+                mesh = 弹匣/clip_SG553_STANAG_cat,
+                texture = GunTexture/clip_M4A1S_V2_cat,
             }
             item Clip_M4A1S_cat
             {
@@ -237,24 +219,6 @@ module Gunpart {
                 mesh = 弹匣/Clip_HK416_cat,
                 texture = GunTexture/Clip_HK416_cat,
             }
-            item Clip_M4Mk18_cat
-            {
-                WorldRender      = FALSE,
-                ItemType         = base:weaponpart,
-                DisplayCategory = WeaponPart,
-                DisplayName      = 弹匣,
-                Icon             = Clip_AK12_cat,
-                Weight           = 0.2,
-                MountOn = M4Mk18_cat,
-                PartType         = Clip,
-                WorldStaticModel = Clip_M4Mk18_cat,
-            }
-            model Clip_M4Mk18_cat
-            {
-                cullface = None,
-                mesh = 弹匣/Clip_M4Mk18_cat,
-                texture = GunTexture/M4Mk18_cat,
-             }    
             item Clip_SAI_GRY_cat
             {
                 WorldRender      = FALSE,
@@ -418,8 +382,8 @@ module Gunpart {
             model Clip_M240_cat
             {
                 cullface = None,
-                mesh = 弹匣/Clip_M240_cat,
-                texture = GunTexture/M240_cat1,
+                mesh = 弹匣/Clip_M240_Box_cat,
+                texture = GunTexture/Clip_MG338_cat,
             }
             item Clip_PKM_cat
             {
@@ -776,7 +740,7 @@ module Gunpart {
             model Clip_QLU_11_cat
             {
                 cullface = None,
-                mesh = 弹匣/Clip_QLU_11_cat,
+                mesh = 弹匣/clip_QLU_11,
                 texture = GunTexture/QLU_11_cat,
             }
             
@@ -877,7 +841,7 @@ module Gunpart {
             model Clip_Factor_cat
             {
                 cullface = None,
-                mesh = Clip_Factor_cat,
+                mesh = 弹匣/Clip_Factor_cat,
                 texture = GunTexture/Factor_cat,
             }
             
@@ -917,7 +881,7 @@ module Gunpart {
             model Clip_MP7_cat
             {
                 cullface = None,
-                mesh = 弹匣/Clip_MP7_cat,
+                mesh = nil_cat,
                 texture = GunTexture/MP7_cat,
             }
             item Clip_556Drum_cat
@@ -928,7 +892,7 @@ module Gunpart {
                 DisplayName      = 弹匣,
                 Icon             = 556Drum_cat,
                 Weight           = 0.2,
-                MountOn = AssaultRifle;QBZ191_cat;QBZ192_cat;AK12_cat;QBU191_cat;HK416_cat;AS_VAL_MOD4_cat;NoveskeN4_cat;URG_S_cat;M4A1S_cat;SG553_cat;SAI_GRY_cat;KS1_KAC_cat;M4Mk18_cat;MCX_cat;QBZ95_cat;ScarH_cat,
+                MountOn = AssaultRifle;M16D_cat;QBZ191_cat;QBZ192_cat;AK12_cat;QBU191_cat;HK416_cat;AS_VAL_MOD4_cat;NoveskeN4_cat;URG_S_cat;M4A1S_cat;SG553_cat;SAI_GRY_cat;KS1_KAC_cat;M4Mk18_cat;MCX_cat;QBZ95_cat;ScarH_cat,
                 PartType         = Clip,
                 WorldStaticModel = Clip_556Drum_cat,
                 Tooltip          = "556弹鼓(60发)",
@@ -955,8 +919,26 @@ module Gunpart {
             model Clip_M14Drum_cat
             {
                 cullface = None,
-                mesh = M14Drum_cat,
+                mesh = 弹匣/clip_M14DRum_cat,
                 texture = GunTexture/M14Drum_cat,
+            }
+            item Clip_M14_Albedo
+            {
+                WorldRender      = FALSE,
+                ItemType         = base:weaponpart,
+                DisplayCategory = WeaponPart,
+                DisplayName      = Clip_M14_Albedo,
+                Icon             = Mag14,
+                Weight           = 0.2,
+                MountOn = M14_Albedo,
+                PartType         = Clip,
+                WorldStaticModel = Clip_M14_Albedo,
+            }
+            model Clip_M14_Albedo
+            {
+                cullface = None,
+                mesh = 弹匣/Clip_M14_Albedo,
+                texture = GunTexture/m14_Albedo,
             }
             item Clip_762Drum_cat
             {
@@ -1105,6 +1087,25 @@ module Gunpart {
                 Tooltip          = "AR15弹匣",
             }
             model Clip_AssaultRifle
+            {
+                cullface = None,
+                mesh = 弹匣/Clip_AssaultRifle,
+                texture = GunTexture/M16_cat,
+            }
+            item Clip_M16D_cat
+            {
+                WorldRender      = FALSE,
+                ItemType         = base:weaponpart,
+                DisplayCategory = WeaponPart,
+                DisplayName      = 弹匣,
+                Icon             = Clip_M16D_cat,
+                Weight           = 0.2,
+                MountOn = M16D_cat,
+                PartType         = Clip,
+                WorldStaticModel = Clip_M16D_cat,
+                Tooltip          = "AR15弹匣",
+            }
+            model Clip_M16D_cat
             {
                 cullface = None,
                 mesh = 弹匣/Clip_AssaultRifle,
@@ -1392,7 +1393,7 @@ module Gunpart {
             model Clip_M14_cat
             {
                 cullface = None,
-                mesh = 弹匣/Clip_M14_cat,
+                mesh = 弹匣/clip_M14EBR_cat,
                 texture = GunTexture/Clip_M14_cat,
             }
             

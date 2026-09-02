@@ -7,6 +7,7 @@ require "GunpartTooltipOptions"
 
 GunpartTooltipCompact = GunpartTooltipCompact or {}
 GunpartTooltipCompact.maxLineLength = 70 -- Characters per line
+GunpartTooltipCompact.maxLineWidth = 520 -- Rendered pixels; Unicode-safe
 
 -- Helper: Get color for stat value (returns r, g, b)
 local function getStatColor(value, isReversed)
@@ -106,7 +107,52 @@ local function buildCustomTooltipText(item)
             table.insert(lines, {type = "labelvalue", label = getText("Tooltip_weapon_AimingTime") .. ": ", value = sign .. string.format("%.0f", aimTime), labelR = 1.0, labelG = 1.0, labelB = 0.8, valueR = r, valueG = g, valueB = b})
         end
     end
-    
+        
+    if item.getAngle then
+        local Angle = item:getAngle()
+        if Angle ~= 0 then
+            local sign = Angle > 0 and "+" or ""
+            local r, g, b = getStatColor(Angle, true)  -- REVERSED: positive is bad (slower)
+            table.insert(lines, {type = "labelvalue", label = getText("Tooltip_weapon_Angle") .. ": ", value = sign .. string.format("%.0f", Angle), labelR = 1.0, labelG = 1.0, labelB = 0.8, valueR = r, valueG = g, valueB = b})
+        end
+    end
+            
+    if item.getMinSightRange then
+        local MinSightRange = item:getMinSightRange()
+        if MinSightRange ~= 0 then
+            local sign = MinSightRange > 0 and "+" or ""
+            local r, g, b = getStatColor(MinSightRange, false)  -- REVERSED: positive is bad (slower)
+            table.insert(lines, {type = "labelvalue", label = getText("Tooltip_weapon_MinSightRange") .. ": ", value = sign .. string.format("%.0f", MinSightRange), labelR = 1.0, labelG = 1.0, labelB = 0.8, valueR = r, valueG = g, valueB = b})
+        end
+    end
+                 
+    if item.getMaxSightRange then
+        local MaxSightRange = item:getMaxSightRange()
+        if MaxSightRange ~= 0 then
+            local sign = MaxSightRange > 0 and "+" or ""
+            local r, g, b = getStatColor(MaxSightRange, false)  -- REVERSED: positive is bad (slower)
+            table.insert(lines, {type = "labelvalue", label = getText("Tooltip_weapon_MaxSightRange") .. ": ", value = sign .. string.format("%.0f", MaxSightRange), labelR = 1.0, labelG = 1.0, labelB = 0.8, valueR = r, valueG = g, valueB = b})
+        end
+    end
+            
+    if item.getLowLightBonus then
+        local LowLightBonus = item:getLowLightBonus()
+        if LowLightBonus ~= 0 then
+            local sign = LowLightBonus > 0 and "+" or ""
+            local r, g, b = getStatColor(LowLightBonus, false)  -- REVERSED: positive is bad (slower)
+            table.insert(lines, {type = "labelvalue", label = getText("Tooltip_weapon_LowLightBonus") .. ": ", value = sign .. string.format("%.0f", LowLightBonus), labelR = 1.0, labelG = 1.0, labelB = 0.8, valueR = r, valueG = g, valueB = b})
+        end
+    end
+            
+    if item.getWeightModifier then
+        local Weight = item:getWeightModifier()
+        if Weight ~= 0 then
+            local sign = Weight > 0 and "+" or ""
+            local r, g, b = getStatColor(Weight, true)  -- REVERSED: heavier is bad
+            table.insert(lines, {type = "labelvalue", label = getText("Tooltip_weapon_Weight") .. ": ", value = sign .. string.format("%.2f", Weight), labelR = 1.0, labelG = 1.0, labelB = 0.8, valueR = r, valueG = g, valueB = b})
+        end
+    end
+
     if item.getMinRange then
         local minRange = item:getMinRange()
         if minRange ~= 0 then
@@ -122,6 +168,50 @@ local function buildCustomTooltipText(item)
             local sign = maxRange > 0 and "+" or ""
             local r, g, b = getStatColor(maxRange, false)
             table.insert(lines, {type = "labelvalue", label = getText("Tooltip_weapon_MaxRange") .. ": ", value = sign .. string.format("%.0f", maxRange), labelR = 1.0, labelG = 1.0, labelB = 0.8, valueR = r, valueG = g, valueB = b})
+        end
+    end
+
+    if item.getMinRange then
+        local minRange = item:getMinRange()
+        if minRange ~= 0 then
+            local sign = minRange > 0 and "+" or ""
+            local r, g, b = getStatColor(minRange, false)
+            table.insert(lines, {type = "labelvalue", label = getText("Tooltip_weapon_MinRange") .. ": ", value = sign .. string.format("%.0f", minRange), labelR = 1.0, labelG = 1.0, labelB = 0.8, valueR = r, valueG = g, valueB = b})
+        end
+    end
+            
+    if item.getCrit then
+        local Crit = item:getCrit()
+        if Crit ~= 0 then
+            local sign = Crit > 0 and "+" or ""
+            local r, g, b = getStatColor(Crit, false)
+            table.insert(lines, {type = "labelvalue", label = getText("Tooltip_weapon_Crit") .. ": ", value = sign .. string.format("%.0f", Crit), labelR = 1.0, labelG = 1.0, labelB = 0.8, valueR = r, valueG = g, valueB = b})
+        end
+    end
+
+    -- CriticalChance / CritDmgMultiplier / CyclicRateMultiplier have no native
+    -- WeaponPart fields; their values live in AWCWF_PartStatSet keyed by part type.
+    if AWCWF_GetPartStatBonus then
+        local statBonus = AWCWF_GetPartStatBonus(item)
+        if statBonus then
+            local critChance = statBonus.CriticalChance or 0
+            if critChance ~= 0 then
+                local sign = critChance > 0 and "+" or ""
+                local r, g, b = getStatColor(critChance, false)
+                table.insert(lines, {type = "labelvalue", label = getText("IGUI_WeaponUI_CriticalChance") .. ": ", value = sign .. string.format("%.0f", critChance) .. "%", labelR = 1.0, labelG = 1.0, labelB = 0.8, valueR = r, valueG = g, valueB = b})
+            end
+            local critDmg = statBonus.CritDmgMultiplier or 0
+            if critDmg ~= 0 then
+                local sign = critDmg > 0 and "+" or ""
+                local r, g, b = getStatColor(critDmg, false)
+                table.insert(lines, {type = "labelvalue", label = getText("IGUI_WeaponUI_CritDmg") .. ": ", value = sign .. string.format("%.2f", critDmg) .. "x", labelR = 1.0, labelG = 1.0, labelB = 0.8, valueR = r, valueG = g, valueB = b})
+            end
+            local cyclic = statBonus.CyclicRateMultiplier or 0
+            if cyclic ~= 0 then
+                local sign = cyclic > 0 and "+" or ""
+                local r, g, b = getStatColor(cyclic, false)
+                table.insert(lines, {type = "labelvalue", label = getText("IGUI_WeaponUI_CyclicRate") .. ": ", value = sign .. string.format("%.2f", cyclic) .. "x", labelR = 1.0, labelG = 1.0, labelB = 0.8, valueR = r, valueG = g, valueB = b})
+            end
         end
     end
     
@@ -208,7 +298,8 @@ local function buildCustomTooltipText(item)
             local testLineText = currentLineText .. weaponText .. commaText
             
             -- Check if adding this weapon would exceed the line length
-            if #testLineText > GunpartTooltipCompact.maxLineLength and #currentSegments > 1 then
+            if getTextManager():MeasureStringX(ISToolTip.GetFont(), testLineText)
+                    > GunpartTooltipCompact.maxLineWidth and #currentSegments > 1 then
                 -- Flush current line
                 table.insert(lines, {type = "segments", segments = currentSegments})
                 -- Start new continuation line with indent
@@ -241,6 +332,43 @@ end
 -- so we can hook directly at module load time without any event wrapper.
 local original_ISToolTipInv_render = ISToolTipInv.render
 
+-- Put wide translated tooltips wholly to one side of the cursor. The previous
+-- screen-edge clamp could move a long compatibility tooltip back over the
+-- container row being hovered, repeatedly closing and reopening the tooltip.
+local function getCompactTooltipPosition(width, height)
+    local mouseX = getMouseX()
+    local mouseY = getMouseY()
+    local gap = 24
+    local screenW = getCore():getScreenWidth()
+    local screenH = getCore():getScreenHeight()
+    local rightSpace = screenW - mouseX - gap
+    local leftSpace = mouseX - gap
+
+    if leftSpace >= rightSpace and leftSpace >= width then
+        return mouseX - gap - width,
+                math.max(0, math.min(mouseY + gap, screenH - height - 1))
+    end
+    if rightSpace >= width then
+        return mouseX + gap,
+                math.max(0, math.min(mouseY + gap, screenH - height - 1))
+    end
+    if leftSpace >= width then
+        return mouseX - gap - width,
+                math.max(0, math.min(mouseY + gap, screenH - height - 1))
+    end
+    if screenH - mouseY - gap >= height then
+        return math.max(0, math.min(mouseX + gap, screenW - width - 1)),
+                mouseY + gap
+    end
+    if mouseY - gap >= height then
+        return math.max(0, math.min(mouseX + gap, screenW - width - 1)),
+                mouseY - gap - height
+    end
+
+    return math.max(0, math.min(mouseX + gap, screenW - width - 1)),
+            math.max(0, math.min(mouseY + gap, screenH - height - 1))
+end
+
 function ISToolTipInv:render()
         -- Check if compact tooltip is enabled in mod options
         if not GunpartTooltipOptions.isCompactTooltipEnabled() then
@@ -255,9 +383,6 @@ function ISToolTipInv:render()
                 local tooltipLines = buildCustomTooltipText(self.item)
                 
                 if not ISContextMenu.instance or not ISContextMenu.instance.visibleCheck then
-                    local mx = getMouseX() + 24
-                    local my = getMouseY() + 24
-                    
                     -- Use vanilla font and calculate size
                     local font = ISToolTip.GetFont()
                     local padding = 6
@@ -294,10 +419,7 @@ function ISToolTipInv:render()
                     local th = totalHeight + (padding * 2) + 2
                     
                     -- Position tooltip
-                    local maxX = getCore():getScreenWidth()
-                    local maxY = getCore():getScreenHeight()
-                    local tx = math.max(0, math.min(mx, maxX - tw - 1))
-                    local ty = math.max(0, math.min(my, maxY - th - 1))
+                    local tx, ty = getCompactTooltipPosition(tw, th)
                     
                     self:setX(tx)
                     self:setY(ty)

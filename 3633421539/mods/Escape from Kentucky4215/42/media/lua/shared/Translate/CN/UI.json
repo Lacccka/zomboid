@@ -26,5 +26,7 @@
     "UI_options_AWCWF_weapon_shot_volume": "武器射击音量",
     "UI_options_AWCWF_weapon_shot_volume_tooltip": "批量调整所有射击音效。",
     "UI_options_AWCWF_weapon_reload_volume": "武器换弹音量",
-    "UI_options_AWCWF_weapon_reload_volume_tooltip": "批量调整所有换弹音效。"
+    "UI_options_AWCWF_weapon_reload_volume_tooltip": "批量调整所有换弹音效。",
+    "UI_GunpartTooltip_ShowMountList": "显示可安装配件列表",
+    "UI_GunpartTooltip_EnableCompact": "启用精简提示框"
 }

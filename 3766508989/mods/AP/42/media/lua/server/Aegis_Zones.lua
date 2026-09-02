@@ -1867,6 +1867,67 @@ Commands.zoneUnlock = function(player, args)
     end
 end
 
+-- hand a zone to another player: the owner changes on the main rectangle
+-- and every annex part, the guard mirrors members as usual afterwards.
+-- The old owner drops out entirely, the member list stays untouched
+Commands.shChown = function(player, args)
+    if not AegisRoles.canArea(player, "zones") then denyPlayer(player) return end
+    if not args then return end
+    local ax = math.floor(tonumber(args.x) or -1)
+    local ay = math.floor(tonumber(args.y) or -1)
+    local owner = tostring(args.owner or "")
+    if ax < 0 or ay < 0 or owner == "" or #owner > 48 or owner:find("[%c|]") then
+        toClient(player, "shChown", { ok = false, reason = "data" })
+        return
+    end
+    loadGroups()
+    if groupsIncomplete then
+        toClient(player, "shChown", { ok = false, reason = "registry" })
+        return
+    end
+    local main = findSafehouseAt(ax, ay)
+    if not main then
+        toClient(player, "shChown", { ok = false, reason = "gone" })
+        return
+    end
+    local now = AegisShared.realTime()
+    cleanLocks(now)
+    local holder = lockHolder(groupKey(ax, ay), now)
+    if holder and holder ~= adminOf(player) then
+        toClient(player, "shChown", { ok = false, reason = "locked", admin = holder })
+        return
+    end
+    local old = shOwner(main)
+    if old == owner then
+        toClient(player, "shChown", { ok = true })
+        return
+    end
+    local shs = { main }
+    local g = groups[groupKey(ax, ay)]
+    for _, r in ipairs(g and g.parts or {}) do
+        local sh = findSafehouseAt(r.x, r.y)
+        if sh then table.insert(shs, sh) end
+    end
+    for _, sh in ipairs(shs) do
+        sh:setOwner(owner)
+        -- was he a member before, he now owns; the double entry would
+        -- survive every guard pass on the main rectangle
+        sh:removePlayer(owner)
+        syncToAll(sh)
+    end
+    -- a registered self claim of the old owner leaves his ledger; an
+    -- admin handover never grants the target one
+    if playerClaims[old] and playerClaims[old].x == ax and playerClaims[old].y == ay then
+        playerClaims[old] = nil
+        saveGroups()
+    end
+    zlog(string.format("shChown by %s: %s -> %s at %d,%d (%d parts)",
+        adminOf(player), old, owner, ax, ay, #shs))
+    AegisLog.write("Actions", adminOf(player), owner,
+        string.format("Safehouse owner changed: %s to %s (%d,%d)", old, owner, ax, ay))
+    toClient(player, "shChown", { ok = true })
+end
+
 -- ---------- Guard ----------
 -- (1) a released main safehouse deletes its zone with it (requirement),
 -- (2) decay: align the annexes' lastVisited to the freshest group

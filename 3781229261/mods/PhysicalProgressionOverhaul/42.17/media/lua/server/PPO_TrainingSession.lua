@@ -1,3 +1,5 @@
+require "PPO_Directions"
+require "PPO_Num"
 require "PPO_Config"
 require "PPO_AdaptationMath"
 require "PPO_ExerciseDefinitions"
@@ -9,25 +11,9 @@ PPO = PPO or {}
 PPO.TrainingSession = PPO.TrainingSession or {}
 
 local TrainingSession = PPO.TrainingSession
-local DIRECTIONS = { "Strength", "Fitness" }
+local DIRECTIONS = PPO.Directions.order()
 
-local function finiteOr(value, fallback)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return fallback
-    end
-    return value
-end
-
-local function clamp(value, minimum, maximum)
-    if value < minimum then return minimum end
-    if value > maximum then return maximum end
-    return value
-end
-
-local function positiveOr(value, fallback)
-    return math.max(0, finiteOr(value, fallback))
-end
+local Num = PPO.Num
 
 -- Server-observed monotonic world minute. A missing or throwing seam returns
 -- nil, which contributes zero duration instead of inventing proof of training.
@@ -48,10 +34,6 @@ local function defaultRegularity(character, exerciseId)
     return value
 end
 
-local function defaultSettings()
-    return PPO.Config.getAdaptationSettings()
-end
-
 -- The injection table is checked by type, not against `nil`: an unpassed
 -- parameter carries whatever the caller left on the stack, and reading fields
 -- off that value is an error rather than a fallback.
@@ -61,7 +43,7 @@ function TrainingSession.new(options)
     return {
         worldMinute = injected.worldMinute or defaultWorldMinute,
         regularity = injected.regularity or defaultRegularity,
-        settings = injected.settings or defaultSettings,
+        settings = injected.settings or PPO.Config.getAdaptationSettings,
         fragments = {},
     }
 end
@@ -78,21 +60,13 @@ end
 local function currentMinute(manager)
     local ok, value = pcall(manager.worldMinute)
     if not ok then return nil end
-    return finiteOr(value, nil)
-end
-
-local function resolveSettings(manager)
-    local ok, settings = pcall(manager.settings)
-    if not ok or type(settings) ~= "table" then
-        return PPO.Config.Adaptation
-    end
-    return settings
+    return Num.finite(value, nil)
 end
 
 local function sampleRegularity(manager, character, exerciseId)
     local ok, value = pcall(manager.regularity, character, exerciseId)
     if not ok then return nil end
-    return finiteOr(value, nil)
+    return Num.finite(value, nil)
 end
 
 local function emptyResult()
@@ -154,7 +128,7 @@ end
 local function loadCeilingFor(periodMs)
     local ceiling = 1
     local ok, resolved = pcall(PPO.GameClock.loadCeiling, periodMs)
-    if ok then ceiling = positiveOr(resolved, 1) end
+    if ok then ceiling = Num.positive(resolved, 1) end
     return ceiling
 end
 
@@ -171,7 +145,7 @@ function TrainingSession.peekLoadMinutes(manager, character, periodMs)
     local minute = currentMinute(manager)
     if minute == nil then return 0, nil end
 
-    return clamp(minute - fragment.lastLoadMinute, 0,
+    return Num.clamp(minute - fragment.lastLoadMinute, 0,
         loadCeilingFor(periodMs)), minute
 end
 
@@ -182,9 +156,9 @@ function TrainingSession.commitLoadMinutes(manager, character, minute, periodMs)
     if manager == nil or character == nil then return 0 end
     local fragment = manager.fragments[character]
     if fragment == nil or fragment.lastLoadMinute == nil then return 0 end
-    if finiteOr(minute, nil) == nil then return 0 end
+    if Num.finite(minute, nil) == nil then return 0 end
 
-    local delta = clamp(minute - fragment.lastLoadMinute, 0,
+    local delta = Num.clamp(minute - fragment.lastLoadMinute, 0,
         loadCeilingFor(periodMs))
     if minute > fragment.lastLoadMinute then
         fragment.lastLoadMinute = minute
@@ -198,7 +172,7 @@ function TrainingSession.rewindLoadMinute(manager, character, minute)
     if manager == nil or character == nil then return false end
     local fragment = manager.fragments[character]
     if fragment == nil then return false end
-    if finiteOr(minute, nil) == nil then return false end
+    if Num.finite(minute, nil) == nil then return false end
     fragment.lastLoadMinute = minute
     return true
 end
@@ -234,17 +208,17 @@ function TrainingSession.acceptRepeat(manager, character, token)
             local session = state[direction].session
             local loadReturn = 0
             if type(token.loadReturn) == "table" then
-                loadReturn = clamp(
-                    positiveOr(token.loadReturn[direction], 0), 0, 1)
+                loadReturn = Num.clamp(
+                    Num.positive(token.loadReturn[direction], 0), 0, 1)
             end
 
             local covered = 0
             if type(token.loadMinutes) == "table" then
-                covered = positiveOr(token.loadMinutes[direction], 0)
+                covered = Num.positive(token.loadMinutes[direction], 0)
             end
             local worked = 0
             if type(token.workMinutes) == "table" then
-                worked = positiveOr(token.workMinutes[direction], 0)
+                worked = Num.positive(token.workMinutes[direction], 0)
             end
             session.coveredMinutes = session.coveredMinutes + covered
             session.workMinutes = session.workMinutes + worked
@@ -312,15 +286,15 @@ local function finalizeDirection(character, direction, settings,
 
     -- The credit commit and the accumulator reset belong to one transaction.
     session.awaitingFinalization = true
-    component.adaptationCredit = clamp(
+    component.adaptationCredit = Num.clamp(
         component.adaptationCredit + earned,
         0,
-        positiveOr(settings.CreditCap, 0.60))
+        Num.positive(settings.CreditCap, 0.60))
     component.lastQualifiedSessionMinute = completedMinute
     component.lastSessionStartedMinute = startedMinute
     component.lastSessionCompletedMinute = completedMinute
     component.adaptationGraceRemaining =
-        positiveOr(settings.GraceHours, 72) * 60
+        Num.positive(settings.GraceHours, 72) * 60
     PPO.ExerciseState.resetSession(character, direction, completedMinute)
 
     -- Tone is created inside the same transaction that commits credit, so an
@@ -400,9 +374,9 @@ function TrainingSession.finishFragment(manager, character, allowFinalize)
         elapsed = math.max(0, finishedAt - fragment.startedAt)
     end
 
-    local settings = resolveSettings(manager)
-    local minimumMinutes = positiveOr(settings.MinimumTrainingMinutes, 10)
-    local minimumCoverage = positiveOr(settings.MinimumDirectionCoverage, 0.50)
+    local settings = PPO.Config.resolve(manager.settings, PPO.Config.Adaptation)
+    local minimumMinutes = Num.positive(settings.MinimumTrainingMinutes, 10)
+    local minimumCoverage = Num.positive(settings.MinimumDirectionCoverage, 0.50)
 
     for _, direction in ipairs(DIRECTIONS) do
         local session = state[direction].session
@@ -467,8 +441,8 @@ function TrainingSession.expireIncomplete(manager, character)
     local minute = currentMinute(manager)
     if minute == nil then return false end
 
-    local settings = resolveSettings(manager)
-    local gap = positiveOr(settings.IncompleteSessionGapMinutes, 30)
+    local settings = PPO.Config.resolve(manager.settings, PPO.Config.Adaptation)
+    local gap = Num.positive(settings.IncompleteSessionGapMinutes, 30)
     local expired = false
 
     for _, direction in ipairs(DIRECTIONS) do

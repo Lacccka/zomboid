@@ -11,5 +11,7 @@
     "Sandbox_ExplosivesOptions_DelayedFuseEnabled": "落地延迟引信",
     "Sandbox_ExplosivesOptions_DelayedFuseEnabled_tooltip": "默认关闭。启用后，本模组自带的手雷（Mk2、M26、M67、M84闪光弹、M14 TH3）落地后会保持待爆状态几秒钟，而不是撞击后立即爆炸。不影响地雷/阔剑雷（它们落地后已经是布设好的陷阱）或原版投掷物。",
     "Sandbox_ExplosivesOptions_DelayedFuseSeconds": "引信延迟（秒）",
-    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "启用「落地延迟引信」后，落地的手雷在爆炸前保持待爆状态的秒数。"
+    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "启用「落地延迟引信」后，落地的手雷在爆炸前保持待爆状态的秒数。",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled": "启用调试生成按键",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled_tooltip": "默认关闭。启用后，Shift + 数字键盘「+」（可在模组选项中重新绑定）会直接在你的物品栏中生成一枚闪光弹，用于快速测试弹道。"
 }

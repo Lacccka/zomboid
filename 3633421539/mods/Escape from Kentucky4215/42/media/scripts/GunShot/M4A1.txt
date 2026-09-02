@@ -10,64 +10,64 @@ module Base
         clip
         {
             file = media/sound/GunShot/M4A1/weap_iw9_mike4_fire_plr_mech_01.wav,
-            distanceMin = 1,
-            distanceMax = 20,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.55,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_iw9_mike4_fire_plr_mech_02.wav,
-            distanceMin = 1,
-            distanceMax = 20,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.55,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_iw9_mike4_fire_plr_mech_03.wav,
-            distanceMin = 1,
-            distanceMax = 20,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.55,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_iw9_mike4_fire_plr_mech_04.wav,
-            distanceMin = 1,
-            distanceMax = 20,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.55,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_iw9_mike4_fire_plr_mech_05.wav,
-            distanceMin = 1,
-            distanceMax = 20,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.55,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_iw9_mike4_fire_plr_mech_06.wav,
-            distanceMin = 1,
-            distanceMax = 20,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.55,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_iw9_mike4_fire_plr_mech_07.wav,
-            distanceMin = 1,
-            distanceMax = 20,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.55,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_iw9_mike4_fire_plr_mech_08.wav,
-            distanceMin = 1,
-            distanceMax = 20,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.25,
             volume = 0.55,
         }
@@ -82,40 +82,40 @@ module Base
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_dist_01.wav,
-            distanceMin = 25,
-            distanceMax = 95,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_dist_02.wav,
-            distanceMin = 25,
-            distanceMax = 95,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_dist_03.wav,
-            distanceMin = 25,
-            distanceMax = 95,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_dist_04.wav,
-            distanceMin = 25,
-            distanceMax = 95,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_dist_05.wav,
-            distanceMin = 25,
-            distanceMax = 95,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.35,
             volume = 0.65,
         }
@@ -130,7 +130,7 @@ module Base
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_far_01.wav,
-            distanceMin = 60,
+            distanceMin = 0,
             distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
@@ -138,7 +138,7 @@ module Base
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_far_02.wav,
-            distanceMin = 60,
+            distanceMin = 0,
             distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
@@ -146,7 +146,7 @@ module Base
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_far_03.wav,
-            distanceMin = 60,
+            distanceMin = 0,
             distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
@@ -154,7 +154,7 @@ module Base
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_far_04.wav,
-            distanceMin = 60,
+            distanceMin = 0,
             distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
@@ -162,7 +162,7 @@ module Base
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_far_05.wav,
-            distanceMin = 60,
+            distanceMin = 0,
             distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
@@ -170,7 +170,7 @@ module Base
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_far_06.wav,
-            distanceMin = 60,
+            distanceMin = 0,
             distanceMax = 160,
             reverbFactor = 0.45,
             volume = 0.45,
@@ -185,64 +185,64 @@ module Base
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_sup_plr_shot_01.wav,
-            distanceMin = 2,
-            distanceMax = 38,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.18,
             volume = 0.75,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_sup_plr_shot_02.wav,
-            distanceMin = 2,
-            distanceMax = 38,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.18,
             volume = 0.75,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_sup_plr_shot_03.wav,
-            distanceMin = 2,
-            distanceMax = 38,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.18,
             volume = 0.75,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_sup_plr_shot_04.wav,
-            distanceMin = 2,
-            distanceMax = 38,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.18,
             volume = 0.75,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_sup_plr_shot_05.wav,
-            distanceMin = 2,
-            distanceMax = 38,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.18,
             volume = 0.75,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_sup_plr_shot_06.wav,
-            distanceMin = 2,
-            distanceMax = 38,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.18,
             volume = 0.75,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_sup_plr_shot_07.wav,
-            distanceMin = 2,
-            distanceMax = 38,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.18,
             volume = 0.75,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_sup_plr_shot_08.wav,
-            distanceMin = 2,
-            distanceMax = 38,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.18,
             volume = 0.75,
         }
@@ -257,64 +257,64 @@ module Base
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_med_01.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_med_02.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_med_03.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_med_04.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_med_05.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_med_06.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_med_07.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }
         clip
         {
             file = media/sound/GunShot/M4A1/weap_mike4_fire_npc_med_08.wav,
-            distanceMin = 10,
-            distanceMax = 50,
+            distanceMin = 0,
+            distanceMax = 160,
             reverbFactor = 0.3,
             volume = 0.6,
         }

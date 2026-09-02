@@ -1,4 +1,5 @@
 require "ISUI/ISPanelJoypad"
+require "PPO_ClientRuntime"
 require "PPO_TrainingPanelMath"
 
 PPO = PPO or {}

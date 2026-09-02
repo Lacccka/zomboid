@@ -85,5 +85,7 @@
     "IGUI_ItemCat_L_Scope": "Accessorio arma - Mirino sinistro",
     "IGUI_ItemCat_Misc": "Accessorio arma - Varie",
     "IGUI_ItemCat_Skin": "Accessorio arma - Aspetto (inutile)",
-    "IGUI_FixItem": "Usa kit di riparazione"
+    "IGUI_FixItem": "Usa kit di riparazione",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

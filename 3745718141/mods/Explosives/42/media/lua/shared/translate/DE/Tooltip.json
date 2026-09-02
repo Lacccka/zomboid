@@ -9,5 +9,6 @@
   "Tooltip_StrikerLever": "Ein federbelasteter Zündhebel, aus Schrott geschmiedet. Wird für den Zusammenbau jeder Handgranate benötigt – löst beim Loslassen die Zündung aus.",
   "Tooltip_Mk2FuzeAssembly": "Eine selbstgebaute Zünderbaugruppe für eine Mk2-Granatenhülle – Zündsatz, Verzögerungselement und Verkabelung, bereit zum Einschrauben in die Hülle.",
   "Tooltip_M26FuzeAssembly": "Eine selbstgebaute Zünderbaugruppe für eine M26-Granatenhülle – Zündsatz, Verzögerungselement und Verkabelung, bereit zum Einschrauben in die Hülle.",
-  "Tooltip_M67FuzeAssembly": "Eine selbstgebaute Zünderbaugruppe für eine M67-Granatenhülle – Zündsatz, Verzögerungselement und Verkabelung, bereit zum Einschrauben in die Hülle."
+  "Tooltip_M67FuzeAssembly": "Eine selbstgebaute Zünderbaugruppe für eine M67-Granatenhülle – Zündsatz, Verzögerungselement und Verkabelung, bereit zum Einschrauben in die Hülle.",
+  "Tooltip_Explosives_DEBUG_SPAWN_KEY": "Halte Shift und drücke diese Taste, um eine einzelne Blendgranate direkt in dein Inventar zu erzeugen, um Flugbahnen/Kollisionen von Granaten zu testen, ohne den vollständigen Debug-Modus zu benötigen."
 }

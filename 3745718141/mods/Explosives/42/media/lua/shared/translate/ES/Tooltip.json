@@ -9,5 +9,6 @@
   "Tooltip_StrikerLever": "Una palanca percutora con resorte, forjada a partir de chatarra. Necesaria para montar cualquier granada de mano - es lo que activa el detonador al soltarla.",
   "Tooltip_Mk2FuzeAssembly": "Un conjunto de espoleta hecho a mano para una carcasa de granada Mk2 - cebo, elemento de retardo y cableado, listo para atornillarse en la carcasa.",
   "Tooltip_M26FuzeAssembly": "Un conjunto de espoleta hecho a mano para una carcasa de granada M26 - cebo, elemento de retardo y cableado, listo para atornillarse en la carcasa.",
-  "Tooltip_M67FuzeAssembly": "Un conjunto de espoleta hecho a mano para una carcasa de granada M67 - cebo, elemento de retardo y cableado, listo para atornillarse en la carcasa."
+  "Tooltip_M67FuzeAssembly": "Un conjunto de espoleta hecho a mano para una carcasa de granada M67 - cebo, elemento de retardo y cableado, listo para atornillarse en la carcasa.",
+  "Tooltip_Explosives_DEBUG_SPAWN_KEY": "Mantén pulsado Shift y presiona esta tecla para generar una única granada cegadora directamente en tu inventario, para probar trayectorias/colisiones de granadas sin necesidad del modo de depuración completo."
 }

@@ -4,7 +4,7 @@ item Shotgun
     {
         DisplayCategory = Weapon,
         ModelWeaponPart = Gunpart.QT_sr Gunpart.QT_sr Stock Stock,
-        ModelWeaponPart = Gunpart.WaltherMRS_2 Gunpart.WaltherMRS_2,
+        ModelWeaponPart = Gunpart.WaltherMRS_2 Gunpart.WaltherMRS_2 Scope Scope,
         ModelWeaponPart = Gunpart.HD511a_cat Gunpart.HD511a_cat Scope Scope,
         ItemType = base:weapon,
         Weight = 4.0,
@@ -56,7 +56,6 @@ item Shotgun
         ModelWeaponPart = x2Scope x2Scope scope scope,
         ModelWeaponPart = ChokeTubeFull ChokeTube choketube choketube,
         ModelWeaponPart = ChokeTubeImproved ChokeTube choketube choketube,
-        ModelWeaponPart = RecoilPad RecoilPad recoilpad recoilpad,
         MultipleHitConditionAffected = false,
         MuzzleFlashModelKey = muzzle_flash_shotgun,
         Projectilecount = 9,

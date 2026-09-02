@@ -1,3 +1,6 @@
+require "PPO_Num"
+require "PPO_BonusMath"
+
 PPO = PPO or {}
 PPO.MultiplierMath = PPO.MultiplierMath or {}
 
@@ -39,13 +42,7 @@ function MultiplierMath.levelCap(level)
     return step
 end
 
-local function bounded(value)
-    if type(value) ~= "number" or value ~= value
-            or value == math.huge or value == -math.huge then
-        return 0
-    end
-    return MultiplierMath.clamp(value, 0, 1)
-end
+local Num = PPO.Num
 
 -- When sleep is not required its share is neither granted for free nor lost:
 -- the remaining shares are renormalized so the ceiling stays reachable.
@@ -75,15 +72,15 @@ end
 function MultiplierMath.fill(inputs, sleepRequired)
     if type(inputs) ~= "table" then return 0 end
     local shares = MultiplierMath.shares(sleepRequired)
-    local base = shares.adaptation * bounded(inputs.adaptation)
-        + shares.protein * bounded(inputs.protein)
-        + shares.creatine * bounded(inputs.creatine)
-        + shares.sleep * bounded(inputs.sleepFactor)
-        + shares.fuel * bounded(inputs.fuelFactor)
+    local base = shares.adaptation * Num.unit(inputs.adaptation)
+        + shares.protein * Num.unit(inputs.protein)
+        + shares.creatine * Num.unit(inputs.creatine)
+        + shares.sleep * Num.unit(inputs.sleepFactor)
+        + shares.fuel * Num.unit(inputs.fuelFactor)
 
     local ceiling = settings().ToneFallbackCeiling
     local fallback = MultiplierMath.clamp(
-        bounded(inputs.toneFallback), 0, ceiling)
+        Num.unit(inputs.toneFallback), 0, ceiling)
     return MultiplierMath.clamp(base + fallback, 0, 1)
 end
 
@@ -107,8 +104,8 @@ function MultiplierMath.effectiveCap(level, course, withdrawal, direction)
 
     local resolved = settings()
     local scale = ceilingScale(resolved, direction)
-    local factor = 1 + resolved.CourseCapBonus * scale * bounded(course)
-        - resolved.WithdrawalCapPenalty * scale * bounded(withdrawal)
+    local factor = 1 + resolved.CourseCapBonus * scale * Num.unit(course)
+        - resolved.WithdrawalCapPenalty * scale * Num.unit(withdrawal)
     return cap * math.max(0, factor)
 end
 
@@ -120,7 +117,7 @@ function MultiplierMath.multiplier(level, inputs, sleepRequired, loadFactor,
         direction)
     if cap == nil then return nil end
 
-    local load = bounded(loadFactor)
+    local load = Num.unit(loadFactor)
     if type(loadFactor) ~= "number" then load = 1 end
     local result = 1 + (cap - 1) * MultiplierMath.fill(inputs, sleepRequired)
         * load

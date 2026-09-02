@@ -210,8 +210,7 @@ Events.OnMouseDown.Add(function(x, y)
     Clipboard.setClipboard(sprite)
     -- the same click also feeds the builder's custom category; the toast
     -- names the store only the first time a sprite lands there
-    local added = false
-    pcall(function() added = AegisBuilder.addCustom(sprite) end)
+    local added = AegisBuilder.addCustom(sprite)
     if added then
         Aegis.showToast(getText("UI_Aegis_InspectorStored") .. ": " .. sprite)
     else

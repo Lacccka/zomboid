@@ -1,5 +1,5 @@
 {
-    "Sandbox_AegisEvents": "Aegis-begivenheder",
+    "Sandbox_AegisEvents": "Aegis",
     "Sandbox_AegisSiegeWaves": "Belejring: bølger",
     "Sandbox_AegisSiegeWaves_tooltip": "Hvor mange hordebølger belejringen sender ud.",
     "Sandbox_AegisSiegeCount": "Belejring: zombier per bølge",
@@ -58,6 +58,8 @@
     "Sandbox_AegisPlayerClaims_tooltip": "Lader spillere gøre krav paa en zone ved deres eget tilflugtssted inden for rollens budget. Fra blokerer alle krav.",
     "Sandbox_AegisPlayerKits": "Spillerkits aktive",
     "Sandbox_AegisPlayerKits_tooltip": "Kitsiden i spillerområdet inklusive boosterindløsning. Fra skjuler den for alle; kiteditoren virker fortsat.",
+    "Sandbox_AegisKitCodeGates": "Discord-kits i kit-editoren",
+    "Sandbox_AegisKitCodeGates_tooltip": "Tilbyder \"Discord booster\" og \"Kun med en kit-kode\", når du redigerer et kit. Begge kræver din egen Discord-bot. Slukket holder dem ude af listen. Et kit der allerede bruger en beholder den.",
     "Sandbox_AegisPlayerVehicles": "Gemte køretøjer per spiller",
     "Sandbox_AegisPlayerVehicles_tooltip": "Hvor mange køretøjer en spiller må beholde på køretøjssiden i spillerområdet. 0 slår det fra. Ignoreres hvor Knox Claim kører, den mod har sin egen grænse. Allerede gemte køretøjer går aldrig tabt ved en sænkning.",
     "Sandbox_AegisPlayerHealthInfection": "Vis zombieinfektion for spillere",

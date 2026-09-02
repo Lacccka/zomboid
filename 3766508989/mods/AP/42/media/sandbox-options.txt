@@ -145,6 +145,11 @@ option AegisEvents.PlayerKits
 	type = boolean, default = true,
 	page = AegisEvents, translation = AegisPlayerKits,
 }
+option AegisEvents.KitCodeGates
+{
+	type = boolean, default = true,
+	page = AegisEvents, translation = AegisKitCodeGates,
+}
 option AegisEvents.PlayerVehicles
 {
 	type = integer, min = 0, max = 20, default = 5,

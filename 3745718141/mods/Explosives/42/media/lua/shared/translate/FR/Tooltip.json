@@ -9,5 +9,6 @@
   "Tooltip_StrikerLever": "Un levier percuteur à ressort, forgé à partir de ferraille. Nécessaire pour assembler n'importe quelle grenade à main - c'est lui qui déclenche la mèche une fois relâché.",
   "Tooltip_Mk2FuzeAssembly": "Un ensemble de fusée fabriqué à la main pour un corps de grenade Mk2 - amorce, élément de retard et câblage, prêt à être vissé dans le corps.",
   "Tooltip_M26FuzeAssembly": "Un ensemble de fusée fabriqué à la main pour un corps de grenade M26 - amorce, élément de retard et câblage, prêt à être vissé dans le corps.",
-  "Tooltip_M67FuzeAssembly": "Un ensemble de fusée fabriqué à la main pour un corps de grenade M67 - amorce, élément de retard et câblage, prêt à être vissé dans le corps."
+  "Tooltip_M67FuzeAssembly": "Un ensemble de fusée fabriqué à la main pour un corps de grenade M67 - amorce, élément de retard et câblage, prêt à être vissé dans le corps.",
+  "Tooltip_Explosives_DEBUG_SPAWN_KEY": "Maintenez Shift et appuyez sur cette touche pour générer une seule grenade assourdissante directement dans votre inventaire, afin de tester les trajectoires/collisions des grenades sans avoir besoin du mode débogage complet."
 }

@@ -9,5 +9,6 @@
   "Tooltip_StrikerLever": "Uma alavanca percussora com mola, forjada a partir de sucata. Necessária para montar qualquer granada de mão - é o que aciona o estopim ao ser solta.",
   "Tooltip_Mk2FuzeAssembly": "Um conjunto de espoleta feito à mão para um corpo de granada Mk2 - espoleta, elemento de retardo e fiação, pronto para ser parafusado no corpo.",
   "Tooltip_M26FuzeAssembly": "Um conjunto de espoleta feito à mão para um corpo de granada M26 - espoleta, elemento de retardo e fiação, pronto para ser parafusado no corpo.",
-  "Tooltip_M67FuzeAssembly": "Um conjunto de espoleta feito à mão para um corpo de granada M67 - espoleta, elemento de retardo e fiação, pronto para ser parafusado no corpo."
+  "Tooltip_M67FuzeAssembly": "Um conjunto de espoleta feito à mão para um corpo de granada M67 - espoleta, elemento de retardo e fiação, pronto para ser parafusado no corpo.",
+  "Tooltip_Explosives_DEBUG_SPAWN_KEY": "Segure Shift e pressione esta tecla para gerar uma única granada de efeito moral diretamente no seu inventário, para testar trajetórias/colisões de granadas sem precisar do modo de depuração completo."
 }

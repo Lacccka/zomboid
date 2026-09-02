@@ -1,5 +1,5 @@
 {
-    "Sandbox_AegisEvents": "Aegisイベント",
+    "Sandbox_AegisEvents": "Aegis",
     "Sandbox_AegisSiegeWaves": "包囲: 波の数",
     "Sandbox_AegisSiegeWaves_tooltip": "包囲イベントが送り出すホードの波の数です。",
     "Sandbox_AegisSiegeCount": "包囲: 1波あたりのゾンビ数",
@@ -58,6 +58,8 @@
     "Sandbox_AegisPlayerClaims_tooltip": "ロールの予算内で自分のセーフハウスに区域を申請できます。オフで全ての申請を遮断します。",
     "Sandbox_AegisPlayerKits": "プレイヤーキットを有効化",
     "Sandbox_AegisPlayerKits_tooltip": "プレイヤーパネルのキットページ（ブースター引き換え含む）。オフで全員に非表示。管理者のキット編集は引き続き使えます。",
+    "Sandbox_AegisKitCodeGates": "キット編集の Discord キット",
+    "Sandbox_AegisKitCodeGates_tooltip": "キット編集時に「Discord ブースト」と「キットコードのみ」を選べるようにします。どちらも自前の Discord ボットが必要です。オフで一覧から外れます。",
     "Sandbox_AegisPlayerVehicles": "プレイヤーごとの記憶車両数",
     "Sandbox_AegisPlayerVehicles_tooltip": "プレイヤーエリアの車両ページに保持できる車両の数です。0 で記憶機能を無効にします。Knox Claim が動作する環境では無視されます（あちらに独自の上限があります）。値を下げても既存の車両が失われることはありません。",
     "Sandbox_AegisPlayerHealthInfection": "ゾンビ感染をプレイヤーに表示",

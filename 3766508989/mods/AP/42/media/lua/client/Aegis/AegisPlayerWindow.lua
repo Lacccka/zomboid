@@ -25,7 +25,7 @@ local MIN_H = 540
 local EDGE = 12
 
 -- the player panel counts on its own, separate from the admin panel version
-AegisPlayerWindow.version = "1.4"
+AegisPlayerWindow.version = "1.4.2"
 
 -- pages register here: { id, icon, label (translation key), create(window) }.
 -- Files load alphabetically, so without a fixed order the kits page came

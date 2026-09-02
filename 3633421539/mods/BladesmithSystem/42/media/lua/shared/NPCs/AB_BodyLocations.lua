@@ -7,6 +7,7 @@ if BodyLocations and BodyLocations.getGroup and ABWeapon then
         local locations = {
             ABWeapon.MurasamaBladeScabbard,
             ABWeapon.OnimaruKunitusnaS,
+            ABWeapon.Avalon_cat,
             ABWeapon.FantasyKnightSwordScabbard,
             ABWeapon.MiaoSwordS,
             ABWeapon.YamatoScabbard,

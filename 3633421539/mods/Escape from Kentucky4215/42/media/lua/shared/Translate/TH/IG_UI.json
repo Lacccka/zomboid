@@ -1599,5 +1599,7 @@
     "IGUI_Hair_HatLong": "หมวก (ผมยาว)",
     "IGUI_Hair_HatLongBraided": "หมวก (ผมยาวถักเปีย)",
     "IGUI_Hair_HatLongCurly": "หมวก (ผมยาวหยิก)",
-    "IGUI_FixItem": "ใช้ชุดซ่อม"
+    "IGUI_FixItem": "ใช้ชุดซ่อม",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

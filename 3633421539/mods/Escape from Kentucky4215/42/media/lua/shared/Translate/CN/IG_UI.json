@@ -1,6 +1,7 @@
 {
     "IGUI_CLIP": "弹匣种类",
     "IGUI_WeaponUI_DamageMax": "最大伤害",
+    "IGUI_WeaponUI_HitChance": "命中率",
     "IGUI_WeaponUI_DamageMin": "最小伤害",
     "IGUI_ItemCat_R_SCOPE": "武器配件 - 右瞄准镜",
     "IGUI_ItemCat_L_SCOPE": "武器配件 - 左瞄准镜",
@@ -96,5 +97,17 @@
 "IGUI_UnloadItem50":"卸载50个",
 "IGUI_UnloadItemAll":"卸载全部",
 "IGUI_ZombieLeft":"未惊动的僵尸：",
-"IGUI_ZombiesInComing":"它们来了！"
+ "IGUI_CraftCategory_现代枪械系统ModernFirearmsSystem": "现代枪械系统",
+ "IGUI_CraftingCategories_Ammunition": "弹药",
+"IGUI_ZombiesInComing":"它们来了！",
+    "IGUI_WeaponUI_CritDmg": "暴击伤害",
+    "IGUI_WeaponUI_CyclicRate": "射速倍率",
+    "IGUI_MFSTrade_Title": "无线电交易",
+    "IGUI_MFSTrade_Money": "资金",
+    "IGUI_MFSTrade_Buy": "收购",
+    "IGUI_MFSTrade_BuyHint": "点击出售给商人",
+    "IGUI_MFSTrade_Sell": "贩卖",
+    "IGUI_MFSTrade_SellHint": "点击向商人购买",
+    "IGUI_MFSTrade_NeedRadio": "需要对讲机",
+    "IGUI_MFSTrade_Refresh": "距刷新"
 }

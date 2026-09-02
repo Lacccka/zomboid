@@ -124,7 +124,17 @@ end
 function AegisPagePlayers:createChildren()
     local pad = 20
 
-    self.list = ISScrollingListBox:new(pad + 1, pad + 44, LIST_W - 2, self.height - pad * 2 - 45)
+    self.search = ISTextEntryBox:new("", pad + 1, pad + 44, LIST_W - 2, 28)
+    self.search:initialise()
+    self.search:instantiate()
+    self.search.font = UIFont.Small
+    self.search:setClearButton(true)
+    self.search:setPlaceholderText(getText("UI_Aegis_SearchPlayer"))
+    local page = self
+    self.search.onTextChange = function() page:fillList() end
+    self:addChild(self.search)
+
+    self.list = ISScrollingListBox:new(pad + 1, pad + 76, LIST_W - 2, self.height - pad * 2 - 77)
     self.list:initialise()
     self.list:instantiate()
     self.list.itemheight = ROW_H
@@ -228,6 +238,14 @@ end
 -- List
 -- ------------------------------------------------------------------
 
+-- typed letters narrow the list from the first character on: only names
+-- that START with the text stay, checked against display and account name
+local function nameFits(q, name, account)
+    if q == "" then return true end
+    if string.find(string.lower(name or ""), q, 1, true) == 1 then return true end
+    return string.find(string.lower(account or ""), q, 1, true) == 1
+end
+
 function AegisPagePlayers:fillList()
     -- drop the offline cache on every refill, otherwise it lags behind
     -- the online section: without this a player who was online while the
@@ -237,17 +255,20 @@ function AegisPagePlayers:fillList()
     self.list:clear()
     -- clear() sets selected to 1, but nothing should be marked without a real selection
     self.list.selected = -1
+    local q = string.lower(self.search and self.search:getInternalText() or "")
     if isClient() then
         local known = {}
         local rows = Aegis.scoreboard or {}
         for _, row in ipairs(rows) do
             row.online = true
             known[row.username] = true
-            self.list:addItem(row.displayName, row)
+            if nameFits(q, row.displayName, row.username) then
+                self.list:addItem(row.displayName, row)
+            end
         end
         if self.showOffline then
             for _, entry in ipairs(self:offlineUsers()) do
-                if not known[entry.username] then
+                if not known[entry.username] and nameFits(q, entry.displayName, entry.username) then
                     self.list:addItem(entry.displayName, entry)
                 end
             end

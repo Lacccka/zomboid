@@ -85,5 +85,7 @@
     "IGUI_ItemCat_L_Scope": "Modyfikacja broni - Celownik lewy",
     "IGUI_ItemCat_Misc": "Modyfikacja broni - Różne",
     "IGUI_ItemCat_Skin": "Modyfikacja broni - Wygląd (bezużyteczne)",
-    "IGUI_FixItem": "Użyj zestawu naprawczego"
+    "IGUI_FixItem": "Użyj zestawu naprawczego",
+    "IGUI_WeaponUI_CritDmg": "Crit damage",
+    "IGUI_WeaponUI_CyclicRate": "Cyclic rate"
 }

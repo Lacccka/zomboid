@@ -25,7 +25,6 @@ local MAX_KILL_GAIN = 150
 local FLUSH_GAP = 60
 local FLUSH_EVERY = 600
 local DEATH_DEDUPE = 10
-local PLAY_CACHE_TTL = 300
 
 local stats = {}
 local loaded = false
@@ -42,7 +41,11 @@ local function round1(v)
     return math.floor((tonumber(v) or 0) * 10 + 0.5) / 10
 end
 
--- ledger line: S|user|deaths|zkills|bandits|pvp|distM|bestHours|bestKills
+-- ledger line: S|user|deaths|zkills|bandits|pvp|distM|bestHours|bestKills|totalHours|playedMin
+-- playedMin -1 means the old session files were never summed up for this
+-- user; the one-time takeover happens on the first playtime request
+-- totalHours came later; an old line without it reads as zero and the
+-- counter starts over, there is nothing to recover it from
 local function load()
     if loaded then return end
     loaded = true
@@ -62,7 +65,7 @@ local function load()
             table.insert(parts, field)
         end
         if parts[1] == "S" and nameOk(parts[2]) then
-            stats[parts[2]] = {
+            local e = {
                 deaths = tonumber(parts[3]) or 0,
                 zkills = tonumber(parts[4]) or 0,
                 bandits = tonumber(parts[5]) or 0,
@@ -70,7 +73,13 @@ local function load()
                 distM = tonumber(parts[7]) or 0,
                 bestHours = tonumber(parts[8]) or 0,
                 bestKills = tonumber(parts[9]) or 0,
+                totalHours = tonumber(parts[10]) or 0,
+                playedMin = tonumber(parts[11]) or -1,
             }
+            -- lines from before the total column: the sum of all lives is
+            -- at least the best one, starting there beats starting at zero
+            if e.totalHours == 0 and e.bestHours > 0 then e.totalHours = e.bestHours end
+            stats[parts[2]] = e
         end
     end
 end
@@ -91,6 +100,8 @@ local function save()
             tostring(math.floor((e.distM or 0) + 0.5)),
             tostring(round1(e.bestHours)),
             tostring(math.floor((e.bestKills or 0) + 0.5)),
+            tostring(round1(e.totalHours)),
+            tostring(math.floor(e.playedMin or -1)),
         }, "|"))
     end
     table.sort(lines)
@@ -118,7 +129,7 @@ local function entry(name)
     local e = stats[name]
     if not e then
         e = { deaths = 0, zkills = 0, bandits = 0, pvp = 0, distM = 0,
-            bestHours = 0, bestKills = 0 }
+            bestHours = 0, bestKills = 0, totalHours = 0, playedMin = -1 }
         stats[name] = e
     end
     return e
@@ -264,6 +275,10 @@ local function onCharacterDeath(c)
     lastKills[name] = kills
     -- the sampler may only credit the next drop because of THIS death
     diedSinceSample[name] = true
+    -- the life that just ended is added to the running total; the current
+    -- one is counted live on top, otherwise the number would stand still
+    -- between two deaths
+    e.totalHours = (e.totalHours or 0) + hours
     -- best life snapshot, kept as a pair keyed on survival time
     if hours > (e.bestHours or 0) then
         e.bestHours = hours
@@ -324,6 +339,7 @@ function AegisPlayerStats.get(username)
         distM = math.floor(((e and e.distM) or 0) + 0.5),
         bestHours = round1(e and e.bestHours or 0),
         bestKills = e and e.bestKills or 0,
+        totalHours = round1(e and e.totalHours or 0),
     }
 end
 
@@ -360,22 +376,20 @@ function AegisPlayerStats.top(kind)
 end
 
 -- ---------- playtime ----------
--- sums the closed player session files the log engine writes, plus the
--- running session from the live map; summing reads the area manifest and
--- one file per session, so the result is cached per user
-local playCache = {}
-
-function AegisPlayerStats.playtimeHours(username)
-    if type(username) ~= "string" or username == "" then return 0 end
-    local now = AegisShared.realTime()
-    local c = playCache[username]
-    if c and now - c.epoch < PLAY_CACHE_TTL then return c.hours end
+-- the total of closed sessions lives in the ledger and is advanced by the
+-- log engine when a session ends. The old per-request walk over every
+-- session file stalled the main thread on full servers (measured by a
+-- server owner: vehicle packets dropped right after statsReq), so reading
+-- files here is only the one-time takeover of pre-ledger history
+local function closedMinutes(key)
+    load()
+    local e = stats[key]
+    if e and (e.playedMin or -1) >= 0 then return e.playedMin end
     local minutes = 0
-    local key = AegisShared.sanitizeName(username)
     local entries = AegisStore.readManifest(SESSION_MANIFEST)
-    for _, e in ipairs(entries) do
-        if e.admin == key then
-            local lines = AegisStore.readLastLines(e.path, 40)
+    for _, en in ipairs(entries) do
+        if en.admin == key then
+            local lines = AegisStore.readLastLines(en.path, 40)
             if lines then
                 for _, line in ipairs(lines) do
                     -- crash leftovers get a Left line without a duration
@@ -386,15 +400,31 @@ function AegisPlayerStats.playtimeHours(username)
             end
         end
     end
-    pcall(function()
-        local info = AegisLog.sessionInfo(username)
-        if info and info.since then
-            minutes = minutes + math.max(0, math.floor((now - info.since) / 60))
-        end
-    end)
-    local hours = round1(minutes / 60)
-    playCache[username] = { epoch = now, hours = hours }
-    return hours
+    e = entry(key)
+    e.playedMin = minutes
+    markDirty()
+    return minutes
+end
+
+-- the ledger alone: the running session feeds it minute by minute
+-- through the ticker below, adding it here again would count it twice
+function AegisPlayerStats.playtimeHours(username)
+    if type(username) ~= "string" or username == "" then return 0 end
+    return round1(closedMinutes(AegisShared.sanitizeName(username)) / 60)
+end
+
+-- called by the log engine when it closes a player session. Before the
+-- one-time takeover ran, the minutes are not added: the session file is
+-- already on disk and the takeover will count it
+function AegisPlayerStats.addPlaytime(username, minutes)
+    local key = AegisShared.sanitizeName(username)
+    if not nameOk(key) then return end
+    minutes = math.max(0, math.floor(tonumber(minutes) or 0))
+    load()
+    local e = stats[key]
+    if not e or (e.playedMin or -1) < 0 then return end
+    e.playedMin = e.playedMin + minutes
+    markDirty()
 end
 
 -- ---------- client commands ----------
@@ -421,7 +451,8 @@ Commands.statsReset = function(player, args)
     if not args then return end
     local who = args.user and AegisShared.sanitizeName(args.user) or nil
     local FIELDS = { zkills = true, deaths = true, distM = true,
-        bestHours = true, bestKills = true, bandits = true, pvp = true }
+        bestHours = true, bestKills = true, bandits = true, pvp = true,
+        totalHours = true }
     load()
     local admin = player:getUsername() or "?"
     local touched = 0
@@ -490,3 +521,36 @@ local function onClientCommand(module, command, player, args)
 end
 
 Events.OnClientCommand.Add(onClientCommand)
+
+-- ---------- playtime ticker ----------
+-- one real minute online is one ledger minute. Counting live makes the
+-- session end style irrelevant: a clean logout, a server stop and a
+-- crash all lose one minute at most. The playtimeHours call runs the
+-- one time takeover of pre-ledger history before the first minute lands
+local playAt = 0
+local function playtimeTick()
+    local now = AegisShared.realTime()
+    if now < playAt then return end
+    playAt = now + 60
+    if isServer() then
+        local players = getOnlinePlayers()
+        if not players then return end
+        for i = 0, players:size() - 1 do
+            local p = players:get(i)
+            local name = p and p:getUsername()
+            if name then
+                AegisPlayerStats.playtimeHours(name)
+                AegisPlayerStats.addPlaytime(name, 1)
+            end
+        end
+    else
+        local p = getPlayer()
+        local name = p and p:getUsername()
+        if name then
+            AegisPlayerStats.playtimeHours(name)
+            AegisPlayerStats.addPlaytime(name, 1)
+        end
+    end
+end
+
+Events.OnTick.Add(playtimeTick)

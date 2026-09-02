@@ -2,7 +2,7 @@ module Base
 {
 	item C96_cat
 	{
-        MuzzleFlashModelKey = muzzle_flash_handgun,
+        MuzzleFlashModelKey = muzzle_flash_handgun02,
         ModelWeaponPart = Gunpart.XM157_cat Gunpart.XM157_cat Scope Scope,
         ModelWeaponPart = Gunpart.MZ_UH1 Gunpart.MZ_UH1 Scope Scope,
         ModelWeaponPart = Gunpart.MZ_HCO Gunpart.MZ_HCO Scope Scope,
@@ -10,13 +10,16 @@ module Base
         ModelWeaponPart = Gunpart.AR15_slience Gunpart.AR15_slience Canon Canon,
         ModelWeaponPart = Gunpart.XY_baoguo Gunpart.XY_baoguo Canon Canon,
         ModelWeaponPart = Gunpart.XY_fang Gunpart.XY_fang Canon Canon,
+        ModelWeaponPart = Gunpart.MZ_M6D Gunpart.MZ_M6D,
+        ModelWeaponPart = Gunpart.MZ_LTHY Gunpart.MZ_LTHY,
+        ModelWeaponPart = Gunpart.lee_enfield_scope Gunpart.lee_enfield_scope,
         ModelWeaponPart = Gunpart.XY_pomen Gunpart.XY_pomen Canon Canon,
         ModelWeaponPart = Gunpart.XY_yazhui Gunpart.XY_yazhui Canon Canon,
         ModelWeaponPart = Gunpart.XY_yazhuiX Gunpart.XY_yazhuiX Canon Canon,
         ModelWeaponPart = Gunpart.XY_kac Gunpart.XY_kac Canon Canon,       
         ModelWeaponPart = Gunpart.HAMR_cat Gunpart.HAMR_cat Scope Scope,
         ModelWeaponPart = Gunpart.WB_xie Gunpart.WB_xie Grip Grip,
-        ModelWeaponPart = Gunpart.Harris_Open1 Gunpart.Harris_Open1,
+        ModelWeaponPart = Gunpart.Harris_Open1 Gunpart.Harris_Open1 Stool Stool,
         MinSightRange = 2,
         MaxSightRange = 16,
         DisplayCategory = Weapon,
@@ -76,12 +79,12 @@ module Base
         AmmoBox = 308Box,
         MaxAmmo = 20,
         BringToBearSound = MagnumBringToBear,
-        SwingSound = Pistol_3,
+        SwingSound = ,
         HitSound = BulletHitBody,
         ClickSound = MagnumJam,
         EquipSound = MagnumEquip,
         UnequipSound = MagumUnEquip,
-        InsertAmmoSound = WingmanReload,
+        InsertAmmoSound = MagnumInsertAmmo,
         EjectAmmoSound = MagnumEjectAmmo,
         InsertAmmoStartSound  = 98kInsert,
         InsertAmmoStopSound = MagnumInsertAmmoStop,
@@ -106,9 +109,8 @@ module Base
         ModelWeaponPart = Gunpart.bayonet2_cat Gunpart.bayonet2_cat Harris Harris,
         ModelWeaponPart = Gunpart.Laser Gunpart.Laser Laser Laser,
         ModelWeaponPart = Gunpart.DBAL77Laser_cat Gunpart.DBAL77Laser_cat Laser Laser,
-        ModelWeaponPart = Recoilpad.HK_SteelMag Recoilpad.HK_SteelMag,
-        ModelWeaponPart = Recoilpad.CQ300_Mag_blk Recoilpad.CQ300_Mag_blk,
-        ModelWeaponPart = Gunpart.Harris_Open Gunpart.Harris_Open,
+        ModelWeaponPart = Gunpart.Harris_Open Gunpart.Harris_Open Stool Stool,
+ModelWeaponPart = Gunpart.Flamethrower Gunpart.Flamethrower Stool Stool,
         ModelWeaponPart = Gunpart.x4Scope Gunpart.x4Scope Scope Scope,
         ModelWeaponPart = Gunpart.x2Scope Gunpart.x2Scope Scope Scope,
         ModelWeaponPart = Gunpart.Unertl8X_cat Gunpart.Unertl8X_cat Scope Scope,
@@ -137,11 +139,11 @@ module Base
         ModelWeaponPart = Gunpart.ViperStock Gunpart.ViperStock,
         ModelWeaponPart = Gunpart.MagpulStock Gunpart.MagpulStock,
         ModelWeaponPart = Gunpart.Clip_556Drum_cat Gunpart.Clip_556Drum_cat Clip Clip,
-        ModelWeaponPart = Gunpart.leupold Gunpart.leupold,
-        ModelWeaponPart = Gunpart.G33_cat Gunpart.G33_cat,
+        ModelWeaponPart = Gunpart.leupold Gunpart.leupold R_Scope R_Scope,
+        ModelWeaponPart = Gunpart.G33_cat Gunpart.G33_cat R_Scope R_Scope,
         ModelWeaponPart = Gunpart.okp7 Gunpart.okp7,
-        ModelWeaponPart = Gunpart.HeartbeatSensor Gunpart.HeartbeatSensor,
-        ModelWeaponPart = Gunpart.HeartbeatSensorPlus Gunpart.HeartbeatSensorPlus,
+        ModelWeaponPart = Gunpart.HeartbeatSensor Gunpart.HeartbeatSensor L_Scope L_Scope,
+        ModelWeaponPart = Gunpart.HeartbeatSensorPlus Gunpart.HeartbeatSensorPlus L_Scope L_Scope,
         ModelWeaponPart = Gunpart.Clip_COLT902_cat Gunpart.Clip_COLT902_cat,
         ModelWeaponPart = Gunpart.Clip_QBZ191_cat Gunpart.Clip_QBZ191_cat,
         ModelWeaponPart = Gunpart.Clip_ar_10_cat Gunpart.Clip_ar_10_cat,
@@ -180,7 +182,7 @@ module Base
         ModelWeaponPart = Gunpart.GJ_cat2 Gunpart.GJ_cat2,
         ModelWeaponPart = Gunpart.GJ_cat3 Gunpart.GJ_cat3,
         ModelWeaponPart = Gunpart.XM157_cat Gunpart.XM157_cat Scope Scope,
-        ModelWeaponPart = Gunpart.ThermalImaging_cat Gunpart.ThermalImaging_cat,
+        ModelWeaponPart = Gunpart.ThermalImaging_cat Gunpart.ThermalImaging_cat L_Scope L_Scope,
         ModelWeaponPart = Gunpart.PEQ_cat Gunpart.PEQ_cat,
         ModelWeaponPart = Gunpart.ATACR Gunpart.ATACR Scope Scope,
         ModelWeaponPart = Gunpart.VortexSight Gunpart.VortexSight Scope Scope,
@@ -192,6 +194,9 @@ module Base
         ModelWeaponPart = Gunpart.AR15_slience Gunpart.AR15_slience Canon Canon,
         ModelWeaponPart = Gunpart.XY_baoguo Gunpart.XY_baoguo Canon Canon,
         ModelWeaponPart = Gunpart.XY_fang Gunpart.XY_fang Canon Canon,
+        ModelWeaponPart = Gunpart.MZ_M6D Gunpart.MZ_M6D,
+        ModelWeaponPart = Gunpart.MZ_LTHY Gunpart.MZ_LTHY,
+        ModelWeaponPart = Gunpart.lee_enfield_scope Gunpart.lee_enfield_scope,
         ModelWeaponPart = Gunpart.XY_pomen Gunpart.XY_pomen Canon Canon,
         ModelWeaponPart = Gunpart.XY_yazhui Gunpart.XY_yazhui Canon Canon,
         ModelWeaponPart = Gunpart.XY_yazhuiX Gunpart.XY_yazhuiX Canon Canon,
@@ -203,9 +208,9 @@ module Base
         ModelWeaponPart = Gunpart.bayonet2_cat Gunpart.bayonet2_cat Harris Harris,
         ModelWeaponPart = Gunpart.Laser Gunpart.Laser Laser Laser,
         ModelWeaponPart = Gunpart.DBAL77Laser_cat Gunpart.DBAL77Laser_cat Laser Laser,
-        ModelWeaponPart = Gunpart.Harris_Open1 Gunpart.Harris_Open1,
-        ModelWeaponPart = Gunpart.M203_cat Gunpart.M203_cat,
-        ModelWeaponPart = Gunpart.M203_cat_empty Gunpart.M203_cat_empty,
+        ModelWeaponPart = Gunpart.Harris_Open1 Gunpart.Harris_Open1 Stool Stool,
+        ModelWeaponPart = Gunpart.M203_cat Gunpart.M203_cat Stool Stool,
+        ModelWeaponPart = Gunpart.M203_cat_empty Gunpart.M203_cat_empty Stool Stool,
         ModelWeaponPart = Gunpart.M26_cat Gunpart.M26_cat,
         ModelWeaponPart = Gunpart.M26_cat_empty Gunpart.M26_cat_empty,
         ModelWeaponPart = Gunpart.bayonet_cat Gunpart.bayonet_cat,
@@ -215,9 +220,6 @@ module Base
         ModelWeaponPart = Gunpart.AR15_slience Gunpart.AR15_slience,
         ModelWeaponPart = Gunpart.558holo Gunpart.558holo Scope Scope,
         ModelWeaponPart = Gunpart.ar15Stock Gunpart.ar15Stock,
-       ModelWeaponPart = Gunpart.Sling_cat Gunpart.Sling_cat, 
-        ModelWeaponPart = Gunpart.AmmoStraps_cat Gunpart.AmmoStraps_cat, 
-        ModelWeaponPart = Gunpart.Recoilpad_cat Gunpart.Recoilpad_cat,
       
        StopPower = 12,
         ShellFallSound = M16CartridgeFall,
@@ -243,5 +245,25 @@ attachment Stock
             offset = -0.0035 -0.028 -0.058,
             rotate = -3.0 0.0 -2.0,
         }
+        attachment R_Scope
+        {
+            offset = 0.0 0.0 0.0,
+            rotate = 0.0000 0.0000 0.0000,
+        }
+        attachment L_Scope
+        {
+            offset = 0.0 0.0 0.0,
+            rotate = 0.0000 0.0000 0.0000,
+        }
+        attachment Stool
+        {
+            offset = 0.0 0.0 0.0,
+            rotate = 0.0000 0.0000 0.0000,
+        }
+	    attachment Bip01_Prop2
+	    {
+	        offset = -0.0338 0.0424 0.0,
+	        rotate = 90.0008 1.1964 -90.0396,
+	    }
 	}
 }

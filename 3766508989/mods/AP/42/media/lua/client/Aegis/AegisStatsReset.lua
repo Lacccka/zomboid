@@ -11,6 +11,7 @@ local FIELDS = {
     { key = "deaths",    fields = { "deaths" },                  label = "UI_AegisPlayer_StatDeaths" },
     { key = "distM",     fields = { "distM" },                   label = "UI_AegisPlayer_StatDist" },
     { key = "best",      fields = { "bestHours", "bestKills" },  label = "UI_Aegis_StatsFieldBest", tip = "UI_Aegis_StatsFieldBestTip" },
+    { key = "total",     fields = { "totalHours" },              label = "UI_AegisPlayer_StatTotalHours" },
     { key = "bandits",   fields = { "bandits" },                 label = "UI_AegisPlayer_StatBandits" },
     { key = "pvp",       fields = { "pvp" },                     label = "UI_Aegis_StatsFieldPvp" },
 }
