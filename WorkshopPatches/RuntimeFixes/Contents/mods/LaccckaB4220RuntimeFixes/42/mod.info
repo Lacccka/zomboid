@@ -2,6 +2,6 @@ name=Lacccka B42 Runtime Fixes
 id=LaccckaB4220RuntimeFixes
 author=Lacccka
 description=Source-clean targeted runtime compatibility hooks for selected Build 42 mods. Lacccka B42 Patch Core is strongly recommended; without Core this patch runs in degraded fallback mode and correct operation is not guaranteed. No original third-party Lua files are bundled.
-modversion=1.2.2
+modversion=1.2.3
 versionMin=42.20.0
 loadModAfter=\LaccckaB4220PatchCore,\Bandits2,\ModernFirearmsSystem,\MFS_community_fix

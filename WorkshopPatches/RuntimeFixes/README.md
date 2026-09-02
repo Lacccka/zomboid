@@ -4,7 +4,7 @@ This Workshop project contains LCC-authored low-level runtime compatibility hook
 
 Validated NPC combat, terminal-death and corpse/clothing behavior now belongs to the separate stable `NPCFixes` item. Diagnostics and admin stress tooling remain in `NPCCombatExperimental`.
 
-Validated against the repository snapshot at `3268487204/mods/Bandits/42.20` (`Mod ID: Bandits2`) and the B42.20 dedicated/client failures observed by this server project.
+Validated against the repository snapshot at `3268487204/mods/Bandits/42.20` (`Mod ID: Bandits2`) and the B42.20 dedicated/client failures observed by this server project. The MFS attachment overlay was statically rebased on 2026-09-02 against repository commit `02462abb9a87b9d1ed58661e626a82559d5afae8` (`ModernFirearmsSystem`).
 
 ## 1. Squareless/despawned zombie lifecycle
 
@@ -24,15 +24,24 @@ Upstream Bandits caches `IsoZombie` references and B42.20 MP can transiently del
 
 `client/ISUI/ISCharacterScreen.lua` is a tiny path shim redirecting the old module name to B42.20 `XpSystem/ISUI/ISCharacterScreen`. It contains no upstream character-screen source.
 
-## 5. Modern Firearms System attachment access and slot UX
+## 5. Modern Firearms System occupied-slot replacement guard
 
 `client/MFSAttachmentAccessFix.lua` is an LCC-authored overlay for `ModernFirearmsSystem` plus `MFS_community_fix`; it does not modify or bundle either upstream mod.
 
-It extends the weapon-inspection attachment selector to compatible parts in the player's main inventory, equipped bags and vanilla-accessible nearby loot containers. Non-root parts are first moved through vanilla `ISInventoryTransferAction`, preserving B42.20 multiplayer item transactions and access validation before any weapon mutation is queued.
+As of the 2026-09-02 MFS import, upstream now owns attachment discovery and rendering. Its `getReachableContainers()` + recursive `scanParts()` path covers the player's inventory, nested/equipped containers and nearby reachable world containers, and its `addAttachmentButton` transfers a selected non-root part through vanilla `ISInventoryTransferAction`. RuntimeFixes therefore no longer replaces `selectAttachmentPane:renderInventory()`, `selectAttachmentPane:update()` or the new magazine-selection code.
 
-For normal weapon-part slots, LMB always opens the compatible-part selector even when the slot is occupied, selecting another part queues replacement, RMB removes the installed part, and double-LMB removal is disabled. Magazine, attack-mode and skin controls retain their upstream behavior.
+The overlay now fills only the remaining occupied-slot UX/safety gap for normal `WeaponPart` slots:
 
-The runtime patch is deliberately soft: `RuntimeFixes` remains usable without MFS. `loadModAfter` only establishes ordering when `ModernFirearmsSystem` and/or `MFS_community_fix` are present.
+- LMB opens the upstream compatible-part selector even when a slot is already occupied;
+- selecting a part from a non-root container first validates that the original source is still reachable and then uses vanilla inventory transfer;
+- a zero-time bridge action uses a CAS-style snapshot of the occupied part ID, so a stale selector can never remove a different attachment that was installed after the click;
+- only after the selected part is present in the root inventory does the queue run upstream `ISRemoveWeaponUpgrade` followed by upstream `ISUpgradeWeapon` and `ISEquipWeaponAction`;
+- RMB explicitly removes an installed normal attachment, while double-LMB removal stays disabled;
+- magazine, attack-mode, skin, 3D-positioning and selector rendering remain fully upstream-authoritative.
+
+This arrangement intentionally preserves the MFS 2026-09-02 attachment-state/model/MP refresh added to `ISUpgradeWeapon:perform()` instead of reimplementing it in the patch.
+
+The runtime patch remains soft: `RuntimeFixes` is usable without MFS. `loadModAfter` only establishes ordering when `ModernFirearmsSystem` and/or `MFS_community_fix` are present.
 
 ## Boundary with NPCFixes
 
@@ -47,6 +56,9 @@ Test with the original upstream mods and split patch items; `Bandits-LCC-Dev` mu
 - devirtualize populated areas; no squareless `getSquare()` crash or persistent stale Bandit cache growth;
 - exercise valid/invalid NPC farming actions; valid actions remain authoritative and transient invalid states complete cleanly;
 - exercise server paths needing `BanditZombie.GetInstanceById()`; no missing-API exception and no complete-zombie-list fallback scan;
-- with MFS + `MFS_community_fix`, verify attachment discovery from equipped bags and reachable nearby containers, occupied-slot LMB replacement, RMB removal and no double-LMB removal;
-- move away from a world container after opening the selector and ensure a stale selection cannot remove the currently installed attachment;
+- with MFS + `MFS_community_fix`, verify the unmodified upstream selector still discovers attachments in the root inventory, equipped/nested bags, nearby built containers and nearby dropped bags;
+- verify an occupied normal attachment slot opens the selector on LMB, selecting a replacement removes the old part and installs the selected part, RMB removes, and double-LMB does not remove;
+- verify magazine/drum selection by shared ammo type, attack-mode controls, skin controls and 3D attachment-position sliders still use the updated upstream behavior;
+- move away from a world container after opening the selector and ensure a stale selection neither removes the installed attachment nor mutates the weapon;
+- in MP, verify transfer -> remove -> install ordering and that the updated upstream attachment-state/hand-model/inspect-preview refresh executes after installation;
 - grouped audit must reject reintroduced complete third-party source under RuntimeFixes.

@@ -28,7 +28,9 @@ Every Workshop item must keep this warning:
 
 `NPCFixes` code is currently `1.0.3`. Version `1.0.2` is the last full runtime-accepted baseline from 2026-08-21; `1.0.3` rebases the source-clean `BanditUpdate.lua` transformer onto the Bandits Workshop source imported on 2026-08-26 and is pending the normal runtime regression pass. The Workshop project remains private with staging `id=0` only until a real Workshop ID and final preview are assigned.
 
-`RussianTextFixes` is currently `1.1.4`; the 2026-08-26 update adds the revised PZK Vanilla Plus Car Pack recipe keys and the new vehicle crafting-category translation.
+`RuntimeFixes` is currently `1.2.3`. The 2026-09-02 rebase against `ModernFirearmsSystem` commit `02462abb9a87b9d1ed58661e626a82559d5afae8` removes the obsolete duplicate attachment-selector/container scan and keeps only the occupied-slot replacement and stale-source safety bridge. Upstream MFS remains authoritative for selector rendering, recursive container discovery, magazine selection and attachment-state/model refresh.
+
+`RussianTextFixes` is currently `1.1.6`; the 2026-09-02 update adds Russian text for the new MFS critical-damage/cyclic-rate fields and Radio Trade UI while retaining the earlier PZK Vanilla Plus Car Pack recipe/category fixes.
 
 ## Dependency model
 
@@ -54,7 +56,8 @@ Upstream mods are not hard-required by the generic patch items because fixes are
 - squareless/despawned Bandits cache protection;
 - farming callback guards;
 - dedicated `BanditZombie.GetInstanceById()` compatibility without complete-zombie-list scans;
-- the B42 character-screen path shim.
+- the B42 character-screen path shim;
+- a narrow MFS occupied-slot replacement/stale-source guard that delegates selector/container discovery and final weapon mutation to upstream MFS actions.
 
 NPC combat/death behavior does not belong in `RuntimeFixes` now that `NPCFixes` exists.
 
