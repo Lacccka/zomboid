@@ -59,7 +59,10 @@ TABLES = (
     "UI",
 )
 
-TARGET_MOD_VERSION = "1.1.5"
+# Keep this aligned with the release version documented in WorkshopPatches/README.md.
+# The 2026-09-02 MFS rebase is RussianTextFixes 1.1.6; the aggregate workflow
+# must never downgrade mod.info when materializing the canonical Build 42 tables.
+TARGET_MOD_VERSION = "1.1.6"
 
 
 def load_object(path: Path) -> OrderedDict[str, object]:
