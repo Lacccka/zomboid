@@ -32,6 +32,7 @@ jobs:
         shell: bash
         run: bash WorkshopPatches/audit_split.sh
       - name: Verify updated MFS rebase contract
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
@@ -45,7 +46,6 @@ jobs:
             test -s "$file"
           done
 
-          # RuntimeFixes must stay a narrow occupied-slot/stale-source bridge.
           grep -Fq 'Fix.VERSION = "1.1.0"' "$patch"
           grep -Fq 'type(getReachableContainers) == "function"' "$patch"
           grep -Fq 'part:canAttach(player, weapon)' "$patch"
@@ -56,15 +56,11 @@ jobs:
           grep -Fq 'ISUpgradeWeapon:new' "$patch"
           grep -Fq 'upstream selector retained' "$patch"
 
-          # The duplicate selector implementation removed by the 2026-09-02
-          # rebase must never silently return.
           if grep -Fq 'function selectAttachmentPane:renderInventory' "$patch"; then
             echo 'RuntimeFixes must not override updated MFS selector rendering' >&2
             exit 1
           fi
 
-          # Assert the upstream seams that make delegation safe. A future MFS
-          # update changing any of these forces a deliberate patch review.
           grep -Fq 'function getReachableContainers(player)' "$upstream_core"
           grep -Fq 'getReachableContainers(getPlayer())' "$upstream_pane"
           grep -Fq 'ISInventoryTransferAction:new(player, part, srcContainer' "$upstream_button"
