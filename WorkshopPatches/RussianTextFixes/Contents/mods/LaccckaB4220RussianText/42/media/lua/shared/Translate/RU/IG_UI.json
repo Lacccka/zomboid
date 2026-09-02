@@ -1076,5 +1076,15 @@
     "IGUI_VehiclePartATA2PoliceAntennaOuter": "Внешние полицейские антенны",
     "IGUI_VehiclePartATA2PoliceAntennaFull": "Полный комплект полицейских антенн",
     "IGUI_VehiclePartATA2RadioAntenna": "Радиоантенна",
-    "IGUI_VehiclePartATA2Turret": "Оружейная турель"
+    "IGUI_VehiclePartATA2Turret": "Оружейная турель",
+    "IGUI_WeaponUI_CritDmg": "Крит. урон",
+    "IGUI_WeaponUI_CyclicRate": "Множитель темпа стрельбы",
+    "IGUI_MFSTrade_Title": "Торговля по радио",
+    "IGUI_MFSTrade_Money": "Деньги",
+    "IGUI_MFSTrade_Buy": "Скупка",
+    "IGUI_MFSTrade_BuyHint": "Продать торговцу",
+    "IGUI_MFSTrade_Sell": "Продажа",
+    "IGUI_MFSTrade_SellHint": "Купить у торговца",
+    "IGUI_MFSTrade_NeedRadio": "Нужна рация",
+    "IGUI_MFSTrade_Refresh": "Обновление через"
 }
