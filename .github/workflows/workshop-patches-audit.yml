@@ -3,10 +3,12 @@ name: Grouped Workshop patches audit
 on:
   push:
     paths:
+      - '*/mods/**'
       - 'WorkshopPatches/**'
       - '.github/workflows/workshop-patches-audit.yml'
   pull_request:
     paths:
+      - '*/mods/**'
       - 'WorkshopPatches/**'
       - '.github/workflows/workshop-patches-audit.yml'
   workflow_dispatch:
@@ -29,6 +31,46 @@ jobs:
       - name: Verify grouped Workshop patch contracts
         shell: bash
         run: bash WorkshopPatches/audit_split.sh
+      - name: Verify updated MFS rebase contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          patch='WorkshopPatches/RuntimeFixes/Contents/mods/LaccckaB4220RuntimeFixes/42/media/lua/client/MFSAttachmentAccessFix.lua'
+          upstream_core='3633421539/mods/Escape from Kentucky4215/42/media/lua/client/UI/risky_inspect_core.lua'
+          upstream_pane='3633421539/mods/Escape from Kentucky4215/42/media/lua/client/UI/risky_inspect_selectAttachmentPane.lua'
+          upstream_button='3633421539/mods/Escape from Kentucky4215/42/media/lua/client/UI/risky_inspect_button.lua'
+          upstream_upgrade='3633421539/mods/Escape from Kentucky4215/42/media/lua/client/FixCode/ISUpgradeWeapon_FIX.lua'
+
+          for file in "$patch" "$upstream_core" "$upstream_pane" "$upstream_button" "$upstream_upgrade"; do
+            test -s "$file"
+          done
+
+          # RuntimeFixes must stay a narrow occupied-slot/stale-source bridge.
+          grep -Fq 'Fix.VERSION = "1.1.0"' "$patch"
+          grep -Fq 'type(getReachableContainers) == "function"' "$patch"
+          grep -Fq 'part:canAttach(player, weapon)' "$patch"
+          grep -Fq 'expectedInstalledId' "$patch"
+          grep -Fq 'Fix.queueInstallOrReplace' "$patch"
+          grep -Fq 'ISInventoryTransferAction:new' "$patch"
+          grep -Fq 'ISRemoveWeaponUpgrade:new' "$patch"
+          grep -Fq 'ISUpgradeWeapon:new' "$patch"
+          grep -Fq 'upstream selector retained' "$patch"
+
+          # The duplicate selector implementation removed by the 2026-09-02
+          # rebase must never silently return.
+          if grep -Fq 'function selectAttachmentPane:renderInventory' "$patch"; then
+            echo 'RuntimeFixes must not override updated MFS selector rendering' >&2
+            exit 1
+          fi
+
+          # Assert the upstream seams that make delegation safe. A future MFS
+          # update changing any of these forces a deliberate patch review.
+          grep -Fq 'function getReachableContainers(player)' "$upstream_core"
+          grep -Fq 'getReachableContainers(getPlayer())' "$upstream_pane"
+          grep -Fq 'ISInventoryTransferAction:new(player, part, srcContainer' "$upstream_button"
+          grep -Fq 'MFS_RefreshWeaponAttachmentState' "$upstream_upgrade"
+
+          lua -e "assert(loadfile([[$patch]]))"
       - name: Verify wanderer devirtualization preservation guard
         if: always()
         shell: bash
