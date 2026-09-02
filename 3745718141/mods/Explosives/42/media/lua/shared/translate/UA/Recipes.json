@@ -1,0 +1,14 @@
+{
+  "SewGrenadeBandolier": "Пошити патронташ для гранат",
+  "AddRemoteTriggerToClaymore": "Додати дистанційний детонатор до Клеймора",
+  "ForgeMk2Shell": "Викувати корпус гранати Mk2",
+  "ForgeM26Shell": "Викувати корпус гранати M26",
+  "ForgeM67Shell": "Викувати корпус гранати M67",
+  "MakeStrikerLever": "Зварити ударний важіль гранати",
+  "MakeMk2FuzeAssembly": "Виготовити запал Mk2 в зборі",
+  "MakeM26FuzeAssembly": "Виготовити запал M26 в зборі",
+  "MakeM67FuzeAssembly": "Виготовити запал M67 в зборі",
+  "AssembleMk2": "Зібрати гранату Mk2",
+  "AssembleM26": "Зібрати гранату M26",
+  "AssembleM67": "Зібрати гранату M67"
+}

@@ -1,0 +1,17 @@
+{
+    "Sandbox_ExplosivesOptions": "ABD Askeri Bombaları",
+    "Sandbox_ExplosivesOptions_LootMultiplier": "Yağma Çarpanı",
+    "Sandbox_ExplosivesOptions_LootMultiplier_tooltip": "Konteynerlerdeki tüm bomba ve mayınların oluşma şansını çarpar. 0.5 = yarı sıklık, 1.0 = varsayılan, 2.0 = iki kat sıklık.",
+    "Sandbox_ExplosivesOptions_VanillaBallisticsEnabled": "Orijinal Fırlatılabilir Silahlara Balistik Yay Uygula",
+    "Sandbox_ExplosivesOptions_VanillaBallisticsEnabled_tooltip": "Varsayılan olarak kapalı. Etkinleştirildiğinde, modun özel atış yayı ve hedef işaretçisi yalnızca bu modun kendi bombalarına değil, orijinal oyunun Boru Bombaları, Aerosol Bombaları, Duman Bombaları, Alev Tuzakları, Ses Tuzakları, Maytaplar ve Molotof Kokteylleri'ne (sensörlü, uzaktan kumandalı ve zamanlayıcılı varyantları da dahil, mevcut oldukları yerlerde) de uygulanır.",
+    "Sandbox_ExplosivesOptions_FireDamageEnabled": "Gelişmiş Ateş Hasarı",
+    "Sandbox_ExplosivesOptions_FireDamageEnabled_tooltip": "Etkinleştirildiğinde, zombiler ateş kaynağından bağımsız olarak yanarken ek hasar alır. Orijinal oyun davranışını kullanmak için devre dışı bırakın.",
+    "Sandbox_ExplosivesOptions_FireDamageMultiplier": "Ateş Hasarı Çarpanı",
+    "Sandbox_ExplosivesOptions_FireDamageMultiplier_tooltip": "Yanan zombilere verilen ek ateş hasarını çarpar. 0.5 = orijinalden yaklaşık %30 daha hızlı, 1.0 = yaklaşık iki kat daha hızlı, 5.0 = orijinalden yaklaşık beş kat daha hızlı.",
+    "Sandbox_ExplosivesOptions_DelayedFuseEnabled": "İnişte Gecikmeli Fünye",
+    "Sandbox_ExplosivesOptions_DelayedFuseEnabled_tooltip": "Varsayılan olarak kapalı. Etkinleştirildiğinde, bu modun kendi bombaları (Mk2, M26, M67, M84 Flashbang, M14 TH3) çarpma anında hemen patlamak yerine, yere indikten sonra birkaç saniye kurulu halde bekler. Mayınları/Claymore'ları (zaten kurulmuş tuzaklar olarak inen) veya orijinal fırlatılabilir silahları etkilemez.",
+    "Sandbox_ExplosivesOptions_DelayedFuseSeconds": "Fünye Gecikmesi (saniye)",
+    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "İnişte Gecikmeli Fünye etkinleştirildiğinde, yere inen bir bombanın patlamadan önce kaç saniye kurulu halde beklediği.",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled": "Hata Ayıklama Oluşturma Tuşunu Etkinleştir",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled_tooltip": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Shift + Numpad \"+\" (Mod Ayarları'ndan yeniden atanabilir) hızlı yörünge testi için envanterinize doğrudan bir sersemletici bomba oluşturur."
+}

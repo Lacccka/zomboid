@@ -1,0 +1,11 @@
+{
+    "IGUI_HotbarAttachment_HolsterMountDeltaR": "Кобура оператора справа",
+    "IGUI_HotbarAttachment_HolsterMountDeltaL": "Кобура оператора слева",
+    "IGUI_HotbarAttachment_OperatorHolsterSide": "Боковая кобура оператора",
+    "IGUI_HotbarAttachment_ChestMountDT": "Нагрудная кобура Delta",
+    "IGUI_HotbarAttachment_FRFirearmVest": "Оружейный жилет FR",
+    "IGUI_HotbarAttachment_OperatorVestMain": "Крепление радиостанции PRC Falcon",
+    "IGUI_HotbarAttachment_StanagMolleStorage": "Подсумок MOLLE для STANAG",
+    "IGUI_HotbarAttachment_StanagMolleStorageRight": "Правый подсумок MOLLE для STANAG",
+    "IGUI_HotbarAttachment_StanagMolleStorageMiddle": "Центральный подсумок MOLLE для STANAG"
+}

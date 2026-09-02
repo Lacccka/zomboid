@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\Administrator\\\\Zomboid\\\\Workshop\\\\逃肯42 3.0\\\\Contents\\\\mods\\\\Escape from Kentucky4215\\\\42\\\\media\\\\lua\\\\client\\\\WeaponAbility\" -Recurse -File | ForEach-Object { $_.FullName.Substring\\($_.FullName.IndexOf\\('WeaponAbility'\\)\\) })",
+      "WebSearch"
+    ]
+  }
+}

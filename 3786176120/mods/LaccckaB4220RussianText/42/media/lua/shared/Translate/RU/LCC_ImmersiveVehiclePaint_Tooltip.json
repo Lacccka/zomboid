@@ -1,0 +1,19 @@
+{
+    "Tooltip_IVP_Item_AutomotivePaintingMag": "Самостоятельная покраска автомобиля: от кузовных работ до финишного слоя!",
+    "Tooltip_IVP_Recipe_AutomotivePainting": "Учит шлифовать, грунтовать и красить автомобили.",
+    "Tooltip_IVP_Item_SandingBlock": "Используется для снятия краски и зачистки ржавчины.",
+    "Tooltip_IVP_Requirements": "Требования:",
+    "Tooltip_IVP_NecessaryTools": "Инструменты:",
+    "Tooltip_IVP_NecessaryMaterials": "Материалы:",
+    "Tooltip_IVP_NeededMaterial": "Нужно:",
+    "Tooltip_IVP_AvailableMaterial": "Доступно:",
+    "Tooltip_IVP_AnyAutomotiveSprayPaint": "Любая автомобильная аэрозольная краска",
+    "Tooltip_IVP_NeedsPPE": "Средства индивидуальной защиты:",
+    "Tooltip_IVP_NeedsBodywork": "Требования к кузову:",
+    "Tooltip_IVP_BodyworkInformation": "Состояние этих деталей должно быть не ниже %1%%.",
+    "Tooltip_IVP_AdditionalRequirements": "Дополнительные требования:",
+    "Tooltip_IVP_GoToGarage": "Перейдите в гараж",
+    "Tooltip_IVP_WashVehicle": "Вымойте автомобиль",
+    "Tooltip_IVP_and": "и",
+    "Tooltip_IVP_or": "или"
+}

@@ -1,0 +1,14 @@
+{
+  "Tooltip_GrenadeBandolier": "4 bomba takma yuvası sağlar. Hızlı erişim için bombaları takma simgelerinin üzerine sürükleyip oraya asın - bu bir depolama kabı değildir.",
+  "Tooltip_FlareBurning": "Parlak şekilde yanan, kıvılcım ve duman saçan yakılmış bir işaret fişeği. Bir konumu işaretlemek veya alanı aydınlatmak için fırlatın.",
+  "Tooltip_FlareSpent": "Sönmüş bir işaret fişeği. Artık işe yaramaz.",
+  "Tooltip_ClaymoreRemote": "Hareket sensörü yerine uzaktan kumandalı tetikleyici takılmış bir M18A1 Claymore mayını. Uzaktan kumanda kullanarak mesafeden patlatın.",
+  "Tooltip_Explosives_DEBUG_SPAWN_KEY": "Tam hata ayıklama moduna gerek kalmadan bomba yörüngelerini/çarpışmalarını test etmek için Shift'e basılı tutup bu tuşa basarak envanterinize doğrudan bir sersemletici bomba oluşturun.",
+  "Tooltip_Mk2Shell": "Tamamlanmamış, içi boş bir Mk2 parçalanma bombası gövdesi. Çalışan bir bombaya dönüşmesi için fünye grubu, ateşleme kolu ve barut gerektirir.",
+  "Tooltip_M26Shell": "Tamamlanmamış, içi boş bir M26 parçalanma bombası gövdesi. Çalışan bir bombaya dönüşmesi için fünye grubu, ateşleme kolu ve barut gerektirir.",
+  "Tooltip_M67Shell": "Tamamlanmamış, içi boş bir M67 parçalanma bombası gövdesi. Çalışan bir bombaya dönüşmesi için fünye grubu, ateşleme kolu ve barut gerektirir.",
+  "Tooltip_StrikerLever": "Hurda metalden dövülmüş, yaylı bir ateşleme kolu. Herhangi bir el bombasını birleştirmek için gereklidir - bırakıldığında fünyeyi tetikleyen parça budur.",
+  "Tooltip_Mk2FuzeAssembly": "Mk2 bomba gövdesi için elle yapılmış bir fünye grubu - kapsül, gecikme elemanı ve kablolama, gövdeye vidalanmaya hazır.",
+  "Tooltip_M26FuzeAssembly": "M26 bomba gövdesi için elle yapılmış bir fünye grubu - kapsül, gecikme elemanı ve kablolama, gövdeye vidalanmaya hazır.",
+  "Tooltip_M67FuzeAssembly": "M67 bomba gövdesi için elle yapılmış bir fünye grubu - kapsül, gecikme elemanı ve kablolama, gövdeye vidalanmaya hazır."
+}

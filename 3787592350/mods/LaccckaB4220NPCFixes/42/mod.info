@@ -1,0 +1,7 @@
+name=Lacccka B42 NPC Fixes
+id=LaccckaB4220NPCFixes
+author=Lacccka
+description=Source-clean Build 42.20 NPC combat, death, corpse-lifecycle and provider scheduling compatibility fixes. Version 1.0.5 replaces runtime source compilation with a source-fingerprinted predicate/task bridge that leaves the installed Bandits2 source untouched and includes a Build 42.20.4 zero-vector guard for the preserved ordinary crawler-to-player lunge seam. Lacccka B42 Patch Core is strongly recommended; without Core this patch runs in degraded fallback mode and correct operation is not guaranteed. No original third-party Lua files or assets are bundled.
+modversion=1.0.5
+versionMin=42.20.0
+loadModAfter=\LaccckaB4220PatchCore,\Bandits2,\LaccckaB4220RuntimeFixes

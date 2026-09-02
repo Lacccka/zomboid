@@ -1,0 +1,17 @@
+{
+    "Sandbox_ExplosivesOptions": "Військові гранати США",
+    "Sandbox_ExplosivesOptions_LootMultiplier": "Множник здобичі",
+    "Sandbox_ExplosivesOptions_LootMultiplier_tooltip": "Множить шанс появи всіх гранат і мін у контейнерах. 0.5 = вдвічі рідше, 1.0 = за замовчуванням, 2.0 = вдвічі частіше.",
+    "Sandbox_ExplosivesOptions_VanillaBallisticsEnabled": "Застосувати балістичну дугу до ванільної метальної зброї",
+    "Sandbox_ExplosivesOptions_VanillaBallisticsEnabled_tooltip": "За замовчуванням вимкнено. Якщо увімкнено, власна дуга кидка та маркер цілі мода застосовуються також до ванільних трубних бомб, аерозольних бомб, димових шашок, вогняних пасток, шумових пасток, петард і коктейлів Молотова (включно з їхніми сенсорними, дистанційними та таймерними варіантами, де вони існують), а не лише до гранат цього мода.",
+    "Sandbox_ExplosivesOptions_FireDamageEnabled": "Посилена шкода від вогню",
+    "Sandbox_ExplosivesOptions_FireDamageEnabled_tooltip": "Якщо увімкнено, зомбі отримують додаткову шкоду під час горіння, незалежно від джерела вогню. Вимкніть для стандартної поведінки.",
+    "Sandbox_ExplosivesOptions_FireDamageMultiplier": "Множник шкоди від вогню",
+    "Sandbox_ExplosivesOptions_FireDamageMultiplier_tooltip": "Множить додаткову шкоду від вогню, завдану палаючим зомбі. 0.5 = приблизно на 30% швидше за ваніль, 1.0 = приблизно вдвічі швидше, 5.0 = приблизно вп'ятеро швидше за ваніль.",
+    "Sandbox_ExplosivesOptions_DelayedFuseEnabled": "Уповільнений запал при приземленні",
+    "Sandbox_ExplosivesOptions_DelayedFuseEnabled_tooltip": "За замовчуванням вимкнено. Якщо увімкнено, власні гранати цього мода (Mk2, M26, M67, M84 Flashbang, M14 TH3) приземляються зведеними та лежать кілька секунд перед вибухом, замість миттєвої детонації при ударі. Не впливає на міни/Клеймори (які вже приземляються як встановлені пастки) або ванільні метальні предмети.",
+    "Sandbox_ExplosivesOptions_DelayedFuseSeconds": "Затримка запалу (секунди)",
+    "Sandbox_ExplosivesOptions_DelayedFuseSeconds_tooltip": "Скільки секунд приземлена граната лежить зведеною перед вибухом, коли увімкнено «Уповільнений запал при приземленні».",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled": "Увімкнути клавішу відладкового створення",
+    "Sandbox_ExplosivesOptions_DebugSpawnKeyEnabled_tooltip": "За замовчуванням вимкнено. Якщо увімкнено, Shift + цифрова клавіатура «+» (можна перепризначити в налаштуваннях мода) створює одну світлошумову гранату прямо в інвентарі для швидкої перевірки траєкторії."
+}

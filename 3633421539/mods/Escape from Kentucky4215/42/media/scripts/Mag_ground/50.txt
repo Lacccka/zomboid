@@ -1,0 +1,11 @@
+module Base {
+    
+        model Bullets50Clip
+            {
+                cullface = None,
+                mesh = 弹匣/Clip_M82_cat,
+                texture = GunTexture/M82_cat,
+            }
+
+
+}

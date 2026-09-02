@@ -1,0 +1,41 @@
+require 'Items/ProceduralDistributions'
+require "Items/ItemPicker"
+
+if not SandboxVars.ModernFirearmsSystemSandboxGun._CycloneAK_cat_Spawn then return end
+
+table.insert(ProceduralDistributions["list"]["GunStoreShelf"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["GunStoreShelf"].items, 0.15);
+table.insert(ProceduralDistributions["list"]["PlankStashGun"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["PlankStashGun"].items, 0.15);
+table.insert(ProceduralDistributions["list"]["FirearmWeapons"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["FirearmWeapons"].items, 0.15);
+table.insert(ProceduralDistributions["list"]["ArmyStorageGuns"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["ArmyStorageGuns"].items, 0.15);
+table.insert(ProceduralDistributions["list"]["GunStoreCounter"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["GunStoreCounter"].items, 0.15);
+table.insert(ProceduralDistributions["list"]["PoliceStorageGuns"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["PoliceStorageGuns"].items, 0.15);
+table.insert(ProceduralDistributions["list"]["PawnShopGunsSpecial"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["PawnShopGunsSpecial"].items, 0.15);
+table.insert(ProceduralDistributions["list"]["GunStoreDisplayCase"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["GunStoreDisplayCase"].items, 0.15);
+table.insert(ProceduralDistributions["list"]["GarageFirearms"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["GarageFirearms"].items, 0.15);
+table.insert(ProceduralDistributions["list"]["DrugLabGuns"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["DrugLabGuns"].items, 0.15);
+table.insert(ProceduralDistributions["list"]["GunStoreAmmunition"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["GunStoreAmmunition"].items, 0.15);
+table.insert(ProceduralDistributions["list"]["ArmyStorageAmmunition"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["ArmyStorageAmmunition"].items, 0.15);
+table.insert(ProceduralDistributions["list"]["ArmySurplusCases"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["ArmySurplusCases"].items, 0.15);
+table.insert(ProceduralDistributions["list"]["LockerArmyBedroom"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["LockerArmyBedroom"].items, 0.15);
+table.insert(ProceduralDistributions["list"]["LockerArmyBedroomHome"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["LockerArmyBedroomHome"].items, 0.15);
+table.insert(ProceduralDistributions["list"]["ArmySurplusAmmoBoxes"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["ArmySurplusAmmoBoxes"].items, 0.15);
+table.insert(ProceduralDistributions["list"]["PoliceStorageAmmunition"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["PoliceStorageAmmunition"].items, 0.15);
+table.insert(ProceduralDistributions["list"]["PrisonArmoryShotguns"].items, "Base.CycloneAK_cat");
+table.insert(ProceduralDistributions["list"]["PrisonArmoryShotguns"].items, 0.15);

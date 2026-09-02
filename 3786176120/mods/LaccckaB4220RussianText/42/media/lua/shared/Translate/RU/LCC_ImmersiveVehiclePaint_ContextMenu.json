@@ -1,0 +1,23 @@
+{
+    "ContextMenu_IVP_Sand": "Отшлифовать автомобиль",
+    "ContextMenu_IVP_Prime": "Загрунтовать автомобиль",
+    "ContextMenu_IVP_Paint": "Покрасить автомобиль",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.WhiteAutomotiveSprayPaint": "Белый",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.PearlWhiteAutomotiveSprayPaint": "Жемчужно-белый",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.SilverAutomotiveSprayPaint": "Серебристый",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.GraphiteAutomotiveSprayPaint": "Графитовый",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.BlackAutomotiveSprayPaint": "Чёрный",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.MustardAutomotiveSprayPaint": "Горчичный",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.TangerineAutomotiveSprayPaint": "Мандариновый",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.CherryAutomotiveSprayPaint": "Вишнёвый",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.BurgundyAutomotiveSprayPaint": "Бордовый",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.HotPinkAutomotiveSprayPaint": "Ярко-розовый",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.AmethystAutomotiveSprayPaint": "Аметистовый",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.VioletAutomotiveSprayPaint": "Фиолетовый",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.SapphireAutomotiveSprayPaint": "Сапфировый",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.SkyBlueAutomotiveSprayPaint": "Небесно-голубой",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.LimeGreenAutomotiveSprayPaint": "Лаймовый",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.HunterGreenAutomotiveSprayPaint": "Охотничий зелёный",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.HazelAutomotiveSprayPaint": "Ореховый",
+    "ContextMenu_IVP_ImmersiveVehiclePaint.CoffeeAutomotiveSprayPaint": "Кофейный"
+}

@@ -1,0 +1,14 @@
+{
+  "SewGrenadeBandolier": "수류탄 탄띠 바느질하기",
+  "AddRemoteTriggerToClaymore": "클레이모어에 원격 기폭장치 추가",
+  "ForgeMk2Shell": "Mk2 수류탄 외피 단조",
+  "ForgeM26Shell": "M26 수류탄 외피 단조",
+  "ForgeM67Shell": "M67 수류탄 외피 단조",
+  "MakeStrikerLever": "수류탄 격발 레버 용접",
+  "MakeMk2FuzeAssembly": "Mk2 신관 조립체 제작",
+  "MakeM26FuzeAssembly": "M26 신관 조립체 제작",
+  "MakeM67FuzeAssembly": "M67 신관 조립체 제작",
+  "AssembleMk2": "Mk2 수류탄 조립",
+  "AssembleM26": "M26 수류탄 조립",
+  "AssembleM67": "M67 수류탄 조립"
+}
