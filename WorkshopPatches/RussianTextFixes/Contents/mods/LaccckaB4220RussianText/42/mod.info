@@ -2,6 +2,6 @@ name=Lacccka B42 Russian Text Fixes
 id=LaccckaB4220RussianText
 author=Lacccka
 description=Russian localization and interface text fixes for selected Build 42 mods and supported UI keys. Do not use unless you are sure this patch is required. Patch/localization files only; original mods are not included.
-modversion=1.1.5
+modversion=1.1.6
 versionMin=42.20.0
 loadModAfter=\Bandits2,\LifestyleHobbies,\BackpackSystemB42,\Federal_Rangers_Chimera,\StandardizedVehicleUpgrades3Core,\StandardizedVehicleUpgrades3V,\ImmersiveVehiclePaint,\ModernFirearmsSystem,\MFS_community_fix,\Explosives,\PzkVanillaPlusCarPack,\PZKCarzoneWorkshop,\SurvivalsHauler
